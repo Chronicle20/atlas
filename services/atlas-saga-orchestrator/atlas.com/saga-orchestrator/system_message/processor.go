@@ -28,6 +28,8 @@ type Processor interface {
 	ShowGuideHint(transactionId uuid.UUID, ch channel.Model, characterId uint32, hintId uint32, duration uint32) error
 	// ShowIntro sends a command to show an intro/direction effect for a character
 	ShowIntro(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error
+	// FieldEffect sends a command to show a field effect for a character
+	FieldEffect(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -82,4 +84,9 @@ func (p *ProcessorImpl) ShowGuideHint(transactionId uuid.UUID, ch channel.Model,
 // ShowIntro sends a Kafka command to atlas-channel to show an intro/direction effect
 func (p *ProcessorImpl) ShowIntro(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(ShowIntroCommandProvider(transactionId, ch, characterId, path))
+}
+
+// FieldEffect sends a Kafka command to atlas-channel to show a field effect
+func (p *ProcessorImpl) FieldEffect(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(FieldEffectCommandProvider(transactionId, ch, characterId, path))
 }

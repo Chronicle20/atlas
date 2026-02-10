@@ -35,7 +35,7 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 					return func(w http.ResponseWriter, r *http.Request) {
 						transactionId := uuid.New()
 						f := field.NewBuilder(worldId, channelId, mapId).SetInstance(instanceId).Build()
-						mp := NewProcessor(d.Logger(), d.Context(), nil)
+						mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
 						ids, err := mp.GetCharactersInMap(transactionId, f)
 						if err != nil {
 							w.WriteHeader(http.StatusInternalServerError)

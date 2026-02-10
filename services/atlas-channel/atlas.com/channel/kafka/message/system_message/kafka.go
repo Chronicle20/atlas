@@ -17,6 +17,7 @@ const (
 	CommandShowHint        = "SHOW_HINT"
 	CommandShowGuideHint   = "SHOW_GUIDE_HINT"
 	CommandShowIntro       = "SHOW_INTRO"
+	CommandFieldEffect     = "FIELD_EFFECT"
 )
 
 // Command represents a Kafka command for system message operations
@@ -72,4 +73,9 @@ type ShowGuideHintBody struct {
 // ShowIntroBody is the body for showing an intro/direction effect to a character
 type ShowIntroBody struct {
 	Path string `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
+}
+
+// FieldEffectBody is the body for showing a field effect to a character
+type FieldEffectBody struct {
+	Path string `json:"path"` // Path to the field effect (e.g., "maplemap/enter/1020000")
 }

@@ -40,6 +40,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp))))
 			}
 		}
 	}
@@ -247,6 +248,29 @@ func handleShowIntro(sc server.Model, wp writer.Producer) message.Handler[system
 			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowIntroEffectBody(l)(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show intro for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleFieldEffect(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.FieldEffectBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.FieldEffectBody]) {
+		if cmd.Type != system_message2.CommandFieldEffect {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectScreenBody(l)(cmd.Body.Path)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to show field effect for character [%d].", cmd.CharacterId)
 		}
 	}
 }

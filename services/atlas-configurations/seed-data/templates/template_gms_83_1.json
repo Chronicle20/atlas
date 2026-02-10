@@ -1386,7 +1386,7 @@
             "TOP_SCROLL": 4,
             "PINK_TEXT": 5,
             "BLUE_TEXT": 6,
-            "NPC":7,
+            "NPC": 7,
             "ITEM_MEGAPHONE": 8,
             "YELLOW_MEGAPHONE": 9,
             "MULTI_MEGAPHONE": 10,
@@ -1428,6 +1428,22 @@
       {
         "opCode": "0x87",
         "writer": "CharacterChatWhisper"
+      },
+      {
+        "opCode": "0x8A",
+        "writer": "FieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        }
       },
       {
         "opCode": "0x93",
@@ -2759,9 +2775,18 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
     }
   }

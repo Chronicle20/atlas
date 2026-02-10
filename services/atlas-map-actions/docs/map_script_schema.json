@@ -1,0 +1,218 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Map Script",
+  "description": "JSON schema for map scripts - defines rules for map entry behavior (onFirstUserEnter, onUserEnter)",
+  "type": "object",
+  "required": [
+    "scriptName",
+    "rules"
+  ],
+  "properties": {
+    "scriptName": {
+      "type": "string",
+      "description": "The script name identifier (e.g., 'goSwordman', '1020100'). For onUserEnter scripts, matches the script name in WZ data. For onFirstUserEnter scripts, typically the map ID."
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the script's purpose"
+    },
+    "rules": {
+      "type": "array",
+      "description": "Rules evaluated when the map entry event fires - first matching rule wins",
+      "items": {
+        "$ref": "#/definitions/rule"
+      }
+    }
+  },
+  "definitions": {
+    "rule": {
+      "type": "object",
+      "description": "A single rule with conditions and operations",
+      "required": [
+        "id",
+        "conditions",
+        "operations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the rule within this script"
+        },
+        "conditions": {
+          "type": "array",
+          "description": "Conditions that must ALL be true for this rule to match (AND logic). Empty array = always matches.",
+          "items": {
+            "$ref": "#/definitions/condition"
+          }
+        },
+        "operations": {
+          "type": "array",
+          "description": "Operations to execute when this rule matches",
+          "items": {
+            "$ref": "#/definitions/operation"
+          }
+        }
+      }
+    },
+    "condition": {
+      "type": "object",
+      "description": "A condition to evaluate",
+      "required": [
+        "type",
+        "operator",
+        "value"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of condition",
+          "enum": [
+            "map_id",
+            "gender",
+            "job",
+            "level",
+            "quest_status"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "description": "Comparison operator",
+          "enum": ["=", ">", "<", ">=", "<=", "!="]
+        },
+        "value": {
+          "type": "string",
+          "description": "Value to compare against"
+        },
+        "referenceId": {
+          "type": "string",
+          "description": "Reference identifier (e.g., quest ID for quest_status conditions)"
+        }
+      }
+    },
+    "operation": {
+      "type": "object",
+      "description": "An operation to execute",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "Type of operation",
+          "enum": [
+            "field_effect",
+            "unlock_ui",
+            "spawn_monster",
+            "show_intro",
+            "drop_message"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Parameters for the operation",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "type": { "const": "field_effect" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Effect path (e.g., 'maplemap/enter/1010100')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "show_intro" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["path"],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "description": "Intro/cutscene path (e.g., 'Effect/Direction3.img/swordman/Scene0')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "spawn_monster" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["monsterId"],
+                "properties": {
+                  "monsterId": {
+                    "type": "string",
+                    "description": "Monster ID to spawn"
+                  },
+                  "x": {
+                    "type": "string",
+                    "description": "X coordinate for spawn position"
+                  },
+                  "y": {
+                    "type": "string",
+                    "description": "Y coordinate for spawn position"
+                  },
+                  "count": {
+                    "type": "string",
+                    "description": "Number of monsters to spawn (default: 1)"
+                  },
+                  "mapId": {
+                    "type": "string",
+                    "description": "Map ID to spawn in (defaults to current map)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "drop_message" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "messageType": {
+                    "type": "string",
+                    "description": "Message type (default: PINK_TEXT)"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message to display to player"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

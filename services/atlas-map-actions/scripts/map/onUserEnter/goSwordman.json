@@ -1,0 +1,42 @@
+{
+  "scriptName": "goSwordman",
+  "description": "Warriors' Sanctuary (1020100) - Explorer job advancement intro for Swordman path",
+  "rules": [
+    {
+      "id": "intro_male",
+      "conditions": [
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": "0"
+        }
+      ],
+      "operations": [
+        {
+          "type": "show_intro",
+          "params": {
+            "path": "Effect/Direction3.img/swordman/Scene0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "intro_female",
+      "conditions": [
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": "1"
+        }
+      ],
+      "operations": [
+        {
+          "type": "show_intro",
+          "params": {
+            "path": "Effect/Direction3.img/swordman/Scene1"
+          }
+        }
+      ]
+    }
+  ]
+}

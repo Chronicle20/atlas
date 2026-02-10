@@ -463,6 +463,7 @@ const (
 	ShowHint         Action = "show_hint"          // Show hint box to character
 	ShowGuideHint    Action = "show_guide_hint"   // Show pre-defined guide hint by ID to character
 	ShowIntro        Action = "show_intro"        // Show intro/direction effect to character (e.g., tutorial animations)
+	FieldEffect      Action = "field_effect"      // Show field effect to character (e.g., "maplemap/enter/1020000")
 	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 
@@ -961,6 +962,15 @@ type ShowIntroPayload struct {
 	Path        string     `json:"path"`        // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
 }
 
+// FieldEffectPayload represents the payload required to show a field effect to a character.
+// This is a synchronous action that immediately completes after sending.
+type FieldEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show field effect for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the field effect (e.g., "maplemap/enter/1020000")
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is an asynchronous action that completes when the character status event is received.
 type SetHPPayload struct {
@@ -1452,6 +1462,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ShowIntro:
 		var payload ShowIntroPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case FieldEffect:
+		var payload FieldEffectPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

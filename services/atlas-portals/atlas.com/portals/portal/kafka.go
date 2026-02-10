@@ -10,6 +10,7 @@ import (
 const (
 	EnvPortalCommandTopic = "COMMAND_TOPIC_PORTAL"
 	CommandTypeEnter      = "ENTER"
+	CommandTypeWarp       = "WARP"
 	CommandTypeBlock      = "BLOCK"
 	CommandTypeUnblock    = "UNBLOCK"
 )
@@ -22,6 +23,20 @@ type commandEvent[E any] struct {
 	PortalId  uint32     `json:"portalId"`
 	Type      string     `json:"type"`
 	Body      E          `json:"body"`
+}
+
+type warpEvent struct {
+	WorldId   world.Id   `json:"worldId"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	Type      string     `json:"type"`
+	Body      warpBody   `json:"body"`
+}
+
+type warpBody struct {
+	CharacterId uint32  `json:"characterId"`
+	TargetMapId _map.Id `json:"targetMapId"`
 }
 
 type enterBody struct {

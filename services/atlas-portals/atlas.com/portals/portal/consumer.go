@@ -28,6 +28,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvPortalCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWarpCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleBlockCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUnblockCommand)))
 	}
@@ -40,6 +41,15 @@ func handleEnterCommand(l logrus.FieldLogger, ctx context.Context, command comma
 	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
 	l.Debugf("Received command for Character [%d] to enter portal [%d] in map [%d].", command.Body.CharacterId, command.PortalId, command.MapId)
 	Enter(l)(ctx)(f, command.PortalId, command.Body.CharacterId)
+}
+
+func handleWarpCommand(l logrus.FieldLogger, ctx context.Context, command warpEvent) {
+	if command.Type != CommandTypeWarp {
+		return
+	}
+	f := field.NewBuilder(command.WorldId, command.ChannelId, command.MapId).SetInstance(command.Instance).Build()
+	l.Debugf("Received command for Character [%d] to warp to map [%d] from map [%d].", command.Body.CharacterId, command.Body.TargetMapId, command.MapId)
+	Warp(l)(ctx)(f, command.Body.CharacterId, command.Body.TargetMapId)
 }
 
 func handleBlockCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[blockBody]) {

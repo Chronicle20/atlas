@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "atlas-map-actions",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}

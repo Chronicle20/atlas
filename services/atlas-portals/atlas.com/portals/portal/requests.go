@@ -18,6 +18,10 @@ func getBaseRequest() string {
 	return requests.RootUrl("DATA")
 }
 
+func requestInMap(mapId _map.Id) requests.Request[[]RestModel] {
+	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+portalsInMap, mapId))
+}
+
 func requestInMapByName(mapId _map.Id, name string) requests.Request[[]RestModel] {
 	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+portalsByName, mapId, name))
 }

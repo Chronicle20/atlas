@@ -7,11 +7,13 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
 	Enter(f field.Model, portalName string, characterId uint32) error
+	Warp(f field.Model, characterId uint32, targetMapId _map.Id) error
 }
 
 type ProcessorImpl struct {
@@ -35,6 +37,9 @@ func (p *ProcessorImpl) Enter(f field.Model, portalName string, characterId uint
 		p.l.WithError(err).Errorf("Unable to locate portal [%s] in map [%d].", portalName, f.MapId())
 		return err
 	}
-	err = producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(EnterCommandProvider(f, pm.Id(), characterId))
-	return err
+	return producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(EnterCommandProvider(f, pm.Id(), characterId))
+}
+
+func (p *ProcessorImpl) Warp(f field.Model, characterId uint32, targetMapId _map.Id) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(portal.EnvPortalCommandTopic)(WarpCommandProvider(f, characterId, targetMapId))
 }

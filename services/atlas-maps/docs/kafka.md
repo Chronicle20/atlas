@@ -12,6 +12,7 @@ Character status events from character service.
 | LOGOUT | StatusEventLogoutBody | Character logged out |
 | MAP_CHANGED | StatusEventMapChangedBody | Character changed maps |
 | CHANNEL_CHANGED | ChangeChannelEventLoginBody | Character changed channels |
+| DELETED | StatusEventDeletedBody | Character deleted |
 
 ### EVENT_TOPIC_CASH_SHOP_STATUS
 
@@ -61,6 +62,7 @@ StatusEvent[E] {
 {
     channelId: channel.Id
     mapId: map.Id
+    instance: UUID
 }
 ```
 
@@ -70,6 +72,7 @@ StatusEvent[E] {
 {
     channelId: channel.Id
     mapId: map.Id
+    instance: UUID
 }
 ```
 
@@ -79,7 +82,9 @@ StatusEvent[E] {
 {
     channelId: channel.Id
     oldMapId: map.Id
+    oldInstance: UUID
     targetMapId: map.Id
+    targetInstance: UUID
     targetPortalId: uint32
 }
 ```
@@ -91,7 +96,14 @@ StatusEvent[E] {
     channelId: channel.Id
     oldChannelId: channel.Id
     mapId: map.Id
+    instance: UUID
 }
+```
+
+#### StatusEventDeletedBody
+
+```
+{}
 ```
 
 ### Cash Shop Status Event (Consumed)
@@ -123,6 +135,7 @@ StatusEvent[E] {
     worldId: world.Id
     channelId: channel.Id
     mapId: map.Id
+    instance: UUID
     type: string
     body: E
 }
@@ -152,6 +165,7 @@ Command[E] {
     worldId: world.Id
     channelId: channel.Id
     mapId: map.Id
+    instance: UUID
     type: string
     body: E
 }

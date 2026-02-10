@@ -123,11 +123,15 @@ const (
 	ShowStorage            Action = "show_storage"
 	SpawnReactorDrops      Action = "spawn_reactor_drops"
 
+	// Field effect actions
+	FieldEffect Action = "field_effect"
+
 	// Portal-specific actions
 	PlayPortalSound Action = "play_portal_sound"
 	UpdateAreaInfo  Action = "update_area_info"
 	ShowInfo        Action = "show_info"
 	ShowInfoText    Action = "show_info_text"
+	ShowIntro       Action = "show_intro"
 	ShowHint        Action = "show_hint"
 	BlockPortal     Action = "block_portal"
 	UnblockPortal   Action = "unblock_portal"
@@ -403,6 +407,15 @@ type ExperienceDistributions struct {
 	Attr1          uint32 `json:"attr1"`
 }
 
+// FieldEffectPayload represents the payload for showing a field effect to a character
+// Used for town entrance animations (e.g., maplemap/enter/1020000)
+type FieldEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show effect to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the field effect (e.g., "maplemap/enter/1020000")
+}
+
 // PlayPortalSoundPayload represents the payload for playing portal sound effect
 type PlayPortalSoundPayload struct {
 	CharacterId uint32     `json:"characterId"` // CharacterId to play sound for
@@ -436,6 +449,15 @@ type ShowInfoTextPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	Text        string     `json:"text"`        // Text message to display
+}
+
+// ShowIntroPayload represents the payload for showing an intro/direction effect to a player
+// Used for job advancement intro cutscenes (e.g., Effect/Direction3.img/rogue/Scene0)
+type ShowIntroPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to show intro to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Path        string     `json:"path"`        // Path to the intro effect (e.g., "Effect/Direction3.img/rogue/Scene0")
 }
 
 // ShowHintPayload represents the payload for showing a hint box to a player
@@ -683,6 +705,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}
 		s.Payload = any(payload).(T)
+	case FieldEffect:
+		var payload FieldEffectPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
 	case PlayPortalSound:
 		var payload PlayPortalSoundPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
@@ -703,6 +731,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case ShowInfoText:
 		var payload ShowInfoTextPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case ShowIntro:
+		var payload ShowIntroPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

@@ -464,6 +464,7 @@ const (
 	ShowGuideHint    Action = "show_guide_hint"   // Show pre-defined guide hint by ID to character
 	ShowIntro        Action = "show_intro"        // Show intro/direction effect to character (e.g., tutorial animations)
 	FieldEffect      Action = "field_effect"      // Show field effect to character (e.g., "maplemap/enter/1020000")
+	UiLock           Action = "ui_lock"           // Lock or unlock UI for a character
 	BlockPortal      Action = "block_portal"       // Block a portal for a character (session-based)
 	UnblockPortal    Action = "unblock_portal"     // Unblock a portal for a character
 
@@ -971,6 +972,15 @@ type FieldEffectPayload struct {
 	Path        string     `json:"path"`        // Path to the field effect (e.g., "maplemap/enter/1020000")
 }
 
+// UiLockPayload represents the payload required to lock or unlock a character's UI.
+// This is a synchronous action that immediately completes after sending.
+type UiLockPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to lock/unlock UI for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Enable      bool       `json:"enable"`      // true = lock UI, false = unlock UI
+}
+
 // SetHPPayload represents the payload required to set a character's HP to an absolute value.
 // This is an asynchronous action that completes when the character status event is received.
 type SetHPPayload struct {
@@ -1468,6 +1478,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case FieldEffect:
 		var payload FieldEffectPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case UiLock:
+		var payload UiLockPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

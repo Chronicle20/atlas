@@ -156,3 +156,35 @@ func FieldEffectCommandProvider(transactionId uuid.UUID, ch channel.Model, chara
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// UiLockCommandProvider creates a Kafka message for locking or unlocking the UI
+func UiLockCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.UiLockBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandUiLock,
+		Body: system_message.UiLockBody{
+			Enable: enable,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// UiDisableCommandProvider creates a Kafka message for disabling or enabling UI input
+func UiDisableCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.UiDisableBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandUiDisable,
+		Body: system_message.UiDisableBody{
+			Enable: enable,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

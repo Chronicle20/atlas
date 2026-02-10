@@ -101,6 +101,7 @@
           "description": "Type of operation",
           "enum": [
             "field_effect",
+            "lock_ui",
             "unlock_ui",
             "spawn_monster",
             "show_intro",

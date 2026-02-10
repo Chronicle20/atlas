@@ -75,17 +75,8 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.ReturnMapId = _map.Id(i.GetIntegerWithDefault("returnMap", 0))
 			m.MonsterRate = i.GetFloatWithDefault("mobRate", 0)
 
-			firstUserEnter := i.GetString("onFirstUserEnter", strconv.Itoa(int(mapId)))
-			if firstUserEnter == "" {
-				firstUserEnter = strconv.Itoa(int(mapId))
-			}
-			m.OnFirstUserEnter = firstUserEnter
-
-			onUserEnter := i.GetString("onUserEnter", strconv.Itoa(int(mapId)))
-			if onUserEnter == "" {
-				onUserEnter = strconv.Itoa(int(mapId))
-			}
-			m.OnUserEnter = onUserEnter
+			m.OnFirstUserEnter = i.GetString("onFirstUserEnter", "")
+			m.OnUserEnter = i.GetString("onUserEnter", "")
 
 			m.FieldLimit = uint32(i.GetIntegerWithDefault("fieldLimit", 0))
 			m.MobInterval = uint32(i.GetIntegerWithDefault("createMobInterval", 5000))

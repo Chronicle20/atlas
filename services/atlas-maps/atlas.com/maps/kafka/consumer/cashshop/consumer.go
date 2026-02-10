@@ -39,7 +39,7 @@ func handleStatusEventEnter(l logrus.FieldLogger, ctx context.Context, event cas
 		l.Debugf("Character [%d] has entered cash shop.", event.Body.CharacterId)
 		transactionId := uuid.New()
 		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).Build()
-		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
+		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), nil)
 		_ = p.ExitAndEmit(transactionId, f, event.Body.CharacterId)
 		return
 	}
@@ -50,7 +50,7 @@ func handleStatusEventExit(l logrus.FieldLogger, ctx context.Context, event cash
 		l.Debugf("Character [%d] has exited cash shop.", event.Body.CharacterId)
 		transactionId := uuid.New()
 		f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).Build()
-		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
+		p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), nil)
 		_ = p.EnterAndEmit(transactionId, f, event.Body.CharacterId)
 		return
 	}

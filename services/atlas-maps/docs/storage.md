@@ -2,25 +2,17 @@
 
 ## Tables
 
-None. This service uses in-memory storage only.
+### character_map_visits
 
-## In-Memory Registries
+Records the first time a character visits a map.
 
-### Character Registry
-
-Singleton registry tracking character presence in maps.
-
-| Key | Value |
-|-----|-------|
-| MapKey | []uint32 (character IDs) |
-
-### Spawn Point Registry
-
-Singleton registry tracking spawn point cooldowns.
-
-| Key | Value |
-|-----|-------|
-| MapKey | []CooldownSpawnPoint |
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| tenant_id | UUID | Not null |
+| character_id | uint32 | Not null |
+| map_id | uint32 | Not null |
+| first_visited_at | timestamp | Not null, default CURRENT_TIMESTAMP |
 
 ## Relationships
 
@@ -28,8 +20,30 @@ None.
 
 ## Indexes
 
-None.
+| Name | Columns | Type |
+|------|---------|------|
+| idx_visits_tenant_char_map | tenant_id, character_id, map_id | Unique |
+| idx_visits_tenant_char | tenant_id, character_id | Non-unique |
 
 ## Migration Rules
 
-Not applicable. State is not persisted and is rebuilt from events on service restart.
+- Table migration via GORM AutoMigrate on service startup
+- Schema changes are additive
+
+## In-Memory Registries
+
+### Character Registry
+
+Singleton registry tracking character presence in maps. State is not persisted and is rebuilt from events on service restart.
+
+| Key | Value |
+|-----|-------|
+| MapKey | []uint32 (character IDs) |
+
+### Spawn Point Registry
+
+Singleton registry tracking spawn point cooldowns. State is not persisted and is lazily initialized from atlas-data on first access per map.
+
+| Key | Value |
+|-----|-------|
+| MapKey | []*CooldownSpawnPoint |

@@ -34,6 +34,7 @@ use (
 	./services/atlas-invites/atlas.com/invites
 	./services/atlas-keys/atlas.com/keys
 	./services/atlas-login/atlas.com/login
+	./services/atlas-map-actions/atlas.com/map-actions
 	./services/atlas-maps/atlas.com/maps
 	./services/atlas-marriages/atlas.com/marriages
 	./services/atlas-messages/atlas.com/messages

@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Tracks character presence in maps, manages monster spawn points with cooldown enforcement, and coordinates reactor spawning.
+Tracks character presence in maps, manages monster spawn points with cooldown enforcement, coordinates reactor spawning, and records character map visit history.
 
 ## Core Models
 
@@ -13,9 +13,7 @@ Composite key identifying a map instance.
 | Field | Type | Description |
 |-------|------|-------------|
 | Tenant | tenant.Model | Tenant identifier |
-| WorldId | world.Id | World identifier |
-| ChannelId | channel.Id | Channel identifier |
-| MapId | map.Id | Map identifier |
+| Field | field.Model | Field identifier (worldId, channelId, mapId, instance) |
 
 ### SpawnPoint
 
@@ -46,14 +44,12 @@ Spawn point with cooldown tracking.
 
 ### Reactor Model
 
-Reactor instance in a map.
+Reactor instance in a map. Immutable with Builder pattern.
 
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Reactor identifier |
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
-| mapId | uint32 | Map identifier |
+| f | field.Model | Field identifier (worldId, channelId, mapId, instance) |
 | classification | uint32 | Reactor classification |
 | name | string | Reactor name |
 | state | int8 | Current state |
@@ -78,6 +74,16 @@ Reactor data from atlas-data service.
 | delay | uint32 | Delay value |
 | direction | byte | Direction |
 
+### Visit
+
+Character map visit record. Immutable.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| mapId | map.Id | Map identifier |
+| firstVisitedAt | time.Time | Timestamp of first visit |
+
 ## Invariants
 
 - SpawnPoints with MobTime < 0 are not spawnable
@@ -87,6 +93,7 @@ Reactor data from atlas-data service.
 - Only spawn points with NextSpawnAt <= now are eligible for spawning
 - Reactor name cannot be empty
 - Reactor classification must be positive
+- Visit records are unique per tenant, character, and map (upsert via FirstOrCreate)
 
 ## Processors
 
@@ -94,7 +101,7 @@ Reactor data from atlas-data service.
 
 Coordinates character entry and exit from maps.
 
-- Enter: Registers character in map, triggers monster and reactor spawning, emits CHARACTER_ENTER event
+- Enter: Registers character in map, records visit, triggers monster and reactor spawning, emits CHARACTER_ENTER event
 - EnterAndEmit: Executes Enter with Kafka emission
 - Exit: Removes character from map, emits CHARACTER_EXIT event
 - ExitAndEmit: Executes Exit with Kafka emission
@@ -139,6 +146,15 @@ Manages reactor spawning.
 - GetInMap: Gets reactors in map via REST
 - Spawn: Creates reactors that do not exist in map
 - SpawnAndEmit: Spawns reactors and emits Kafka messages
+
+### Visit Processor
+
+Manages character map visit records in PostgreSQL.
+
+- RecordVisit: Records a character visiting a map (upsert)
+- ByCharacterIdProvider: Provides all visits for a character
+- ByCharacterIdAndMapIdProvider: Provides a specific visit for a character and map
+- DeleteByCharacterId: Deletes all visit records for a character
 
 ### Data Processors
 

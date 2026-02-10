@@ -1,0 +1,20 @@
+{
+  "scriptName": "spaceGaGa_sMap",
+  "description": "Space Gaga - spawns monster on first entry",
+  "rules": [
+    {
+      "id": "spawn_space_gaga",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9300331",
+            "x": "-28",
+            "y": "0"
+          }
+        }
+      ]
+    }
+  ]
+}

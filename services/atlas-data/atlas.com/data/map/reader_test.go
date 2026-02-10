@@ -456,6 +456,9 @@ func TestReader(t *testing.T) {
 	if rm.ReturnMapId != 1000000 {
 		t.Fatal("returnMapId != 1000000")
 	}
+	if rm.OnFirstUserEnter != "" {
+		t.Fatal("onFirstUserEnter should be empty")
+	}
 	if rm.OnUserEnter != "go50000" {
 		t.Fatal("onUserEnter != go50000")
 	}

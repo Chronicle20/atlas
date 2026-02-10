@@ -6,6 +6,7 @@ import (
 	"atlas-portals/kafka/producer"
 	"atlas-portals/portal_actions"
 	"context"
+	"math/rand"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -47,6 +48,38 @@ func GetInMapById(l logrus.FieldLogger) func(ctx context.Context) func(mapId _ma
 	}
 }
 
+func InMapProvider(l logrus.FieldLogger) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]Model] {
+	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]Model] {
+		return func(mapId _map.Id) model.Provider[[]Model] {
+			return requests.SliceProvider[RestModel, Model](l, ctx)(requestInMap(mapId), Extract, model.Filters[Model]())
+		}
+	}
+}
+
+func Warp(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id) {
+	return func(ctx context.Context) func(f field.Model, characterId uint32, targetMapId _map.Id) {
+		return func(f field.Model, characterId uint32, targetMapId _map.Id) {
+			l.Debugf("Character [%d] warping to map [%d].", characterId, targetMapId)
+
+			portals, err := InMapProvider(l)(ctx)(targetMapId)()
+			if err != nil {
+				l.WithError(err).Errorf("Unable to retrieve portals for map [%d].", targetMapId)
+				character.EnableActions(l)(ctx)(f, characterId)
+				return
+			}
+
+			if len(portals) == 0 {
+				l.Warnf("No portals found in target map [%d]. Defaulting to portal 0.", targetMapId)
+				WarpById(l)(ctx)(f, characterId, targetMapId, 0)
+				return
+			}
+
+			tp := portals[rand.Intn(len(portals))]
+			WarpById(l)(ctx)(f, characterId, targetMapId, tp.Id())
+		}
+	}
+}
+
 func Enter(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, portalId uint32, characterId uint32) {
 	return func(ctx context.Context) func(f field.Model, portalId uint32, characterId uint32) {
 		return func(f field.Model, portalId uint32, characterId uint32) {
@@ -73,7 +106,7 @@ func Enter(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, p
 			}
 
 			if p.HasTargetMap() {
-				l.Debugf("Portal [%s] has target. Transfering character [%d] to [%d].", p.String(), characterId, p.TargetMapId())
+				l.Debugf("Portal [%s] has target. Transferring character [%d] to [%d].", p.String(), characterId, p.TargetMapId())
 
 				var tp Model
 				tp, err = GetInMapByName(l)(ctx)(p.TargetMapId(), p.Target())

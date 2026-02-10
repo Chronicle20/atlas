@@ -13,6 +13,7 @@ const (
 	EventCharacterStatusTypeLogout         = "LOGOUT"
 	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
 	EventCharacterStatusTypeMapChanged     = "MAP_CHANGED"
+	EventCharacterStatusTypeDeleted        = "DELETED"
 )
 
 type StatusEvent[E any] struct {
@@ -50,3 +51,5 @@ type ChangeChannelEventLoginBody struct {
 	MapId        _map.Id    `json:"mapId"`
 	Instance     uuid.UUID  `json:"instance"`
 }
+
+type StatusEventDeletedBody struct{}

@@ -151,7 +151,7 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	}
 
 	if len(statups) > 0 {
-		_ = bp.Apply(f, characterId, -int32(itemId), duration, statups)(characterId)
+		_ = bp.Apply(f, characterId, -int32(itemId), byte(0), duration, statups)(characterId)
 	}
 }
 
@@ -523,7 +523,6 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 			// TODO consume vega scroll
 			successProb := ci.SuccessRate()
 
-			// TODO spikes / cursed property
 			successRoll := rand.Int31n(100)
 			isSuccess := successRoll <= int32(successProb)
 
@@ -620,33 +619,41 @@ func ConsumeScroll(transactionId uuid.UUID, characterId uint32, scrollItem *asse
 	}
 }
 
-func applyChaos(m asset.Model) ([]equipable.Change, error) {
-	currents := make([]uint16, 0)
-	changers := make([]func(int16) equipable.Change, 0)
-	currents = append(currents, m.Strength(), m.Dexterity(), m.Intelligence(), m.Luck(), m.WeaponAttack(), m.WeaponDefense(), m.MagicAttack(), m.MagicDefense(), m.Accuracy(), m.Avoidability(), m.Speed(), m.Jump(), m.Hp(), m.Mp())
-	changers = append(changers, equipable.AddStrength, equipable.AddDexterity, equipable.AddIntelligence, equipable.AddLuck, equipable.AddWeaponAttack, equipable.AddWeaponDefense, equipable.AddMagicAttack, equipable.AddMagicDefense, equipable.AddAccuracy, equipable.AddAvoidability, equipable.AddSpeed, equipable.AddJump, equipable.AddHp, equipable.AddMp)
-	return generateChaosChanges(currents, changers)
+type chaosStat struct {
+	value      uint16
+	changer    func(int16) equipable.Change
+	multiplier int16
 }
 
-func generateChaosChanges(current []uint16, changers []func(int16) equipable.Change) ([]equipable.Change, error) {
-	if len(current) != len(changers) {
-		return nil, errors.New("input slices must be of the same length")
+func applyChaos(m asset.Model) ([]equipable.Change, error) {
+	stats := []chaosStat{
+		{m.Strength(), equipable.AddStrength, 1},
+		{m.Dexterity(), equipable.AddDexterity, 1},
+		{m.Intelligence(), equipable.AddIntelligence, 1},
+		{m.Luck(), equipable.AddLuck, 1},
+		{m.WeaponAttack(), equipable.AddWeaponAttack, 1},
+		{m.WeaponDefense(), equipable.AddWeaponDefense, 1},
+		{m.MagicAttack(), equipable.AddMagicAttack, 1},
+		{m.MagicDefense(), equipable.AddMagicDefense, 1},
+		{m.Accuracy(), equipable.AddAccuracy, 1},
+		{m.Avoidability(), equipable.AddAvoidability, 1},
+		{m.Speed(), equipable.AddSpeed, 1},
+		{m.Jump(), equipable.AddJump, 1},
+		{m.Hp(), equipable.AddHp, 10},
+		{m.Mp(), equipable.AddMp, 10},
 	}
-	var changes []equipable.Change
+	return generateChaosChanges(stats)
+}
 
-	for i, value := range current {
-		if value == 0 {
+func generateChaosChanges(stats []chaosStat) ([]equipable.Change, error) {
+	var changes []equipable.Change
+	for _, s := range stats {
+		if s.value == 0 {
 			continue
 		}
-		adjustment := rollStatAdjustment()
-		// TODO maybe structure this better, but for now assume last two items are hp/mp
-		if i == len(current)-1 || i == len(current)-2 {
-			adjustment *= 10
-		}
-		change := changers[i](adjustment)
+		change := s.changer(rollStatAdjustment() * s.multiplier)
 		changes = append(changes, change)
 	}
-
 	return changes, nil
 }
 

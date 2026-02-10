@@ -97,11 +97,6 @@ func (p *Processor) Deposit(worldId world.Id, accountId uint32, body message.Dep
 		SetSpeed(body.Speed).
 		SetJump(body.Jump).
 		SetSlots(body.Slots).
-		SetLocked(body.Locked).
-		SetSpikes(body.Spikes).
-		SetKarmaUsed(body.KarmaUsed).
-		SetCold(body.Cold).
-		SetCanBeTraded(body.CanBeTraded).
 		SetLevelType(body.LevelType).
 		SetLevel(body.Level).
 		SetExperience(body.Experience).
@@ -259,11 +254,6 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 		SetSpeed(body.Speed).
 		SetJump(body.Jump).
 		SetSlots(body.Slots).
-		SetLocked(body.Locked).
-		SetSpikes(body.Spikes).
-		SetKarmaUsed(body.KarmaUsed).
-		SetCold(body.Cold).
-		SetCanBeTraded(body.CanBeTraded).
 		SetLevelType(body.LevelType).
 		SetLevel(body.Level).
 		SetExperience(body.Experience).

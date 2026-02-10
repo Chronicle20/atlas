@@ -50,13 +50,8 @@ type CreatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots          uint16     `json:"slots"`
-	Locked         bool       `json:"locked"`
-	Spikes         bool       `json:"spikes"`
-	KarmaUsed      bool       `json:"karmaUsed"`
-	Cold           bool       `json:"cold"`
-	CanBeTraded    bool       `json:"canBeTraded"`
-	LevelType      byte       `json:"levelType"`
+	Slots     uint16 `json:"slots"`
+	LevelType byte   `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -89,13 +84,8 @@ type UpdatedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots          uint16     `json:"slots"`
-	Locked         bool       `json:"locked"`
-	Spikes         bool       `json:"spikes"`
-	KarmaUsed      bool       `json:"karmaUsed"`
-	Cold           bool       `json:"cold"`
-	CanBeTraded    bool       `json:"canBeTraded"`
-	LevelType      byte       `json:"levelType"`
+	Slots     uint16 `json:"slots"`
+	LevelType byte   `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`
@@ -140,13 +130,8 @@ type AcceptedStatusEventBody struct {
 	Hands          uint16     `json:"hands"`
 	Speed          uint16     `json:"speed"`
 	Jump           uint16     `json:"jump"`
-	Slots          uint16     `json:"slots"`
-	Locked         bool       `json:"locked"`
-	Spikes         bool       `json:"spikes"`
-	KarmaUsed      bool       `json:"karmaUsed"`
-	Cold           bool       `json:"cold"`
-	CanBeTraded    bool       `json:"canBeTraded"`
-	LevelType      byte       `json:"levelType"`
+	Slots     uint16 `json:"slots"`
+	LevelType byte   `json:"levelType"`
 	Level          byte       `json:"level"`
 	Experience     uint32     `json:"experience"`
 	HammersApplied uint32     `json:"hammersApplied"`

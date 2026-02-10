@@ -28,10 +28,23 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 	return func(rf func(topic string, handler handler.Handler) (string, error)) {
 		var t string
 		t, _ = topic.EnvProvider(l)(messageCharacter.EnvEventTopicCharacterStatus)()
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeleted)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogin)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogout)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChanged)))
 	}
+}
+
+func handleStatusEventDeleted(l logrus.FieldLogger, ctx context.Context, e messageCharacter.StatusEvent[messageCharacter.StatusEventDeletedBody]) {
+	if e.Type != messageCharacter.EventCharacterStatusTypeDeleted {
+		return
+	}
+	_ = character.Logout(l)(ctx)(e.TransactionId, e.CharacterId)
+	m, err := model.FirstProvider(messenger.AllProvider(ctx), model.Filters(messenger.MemberFilter(e.CharacterId)))()
+	if err != nil {
+		return
+	}
+	_, _ = messenger.Leave(l)(ctx)(e.TransactionId, m.Id(), e.CharacterId)
 }
 
 func handleStatusEventLogin(l logrus.FieldLogger, ctx context.Context, e messageCharacter.StatusEvent[messageCharacter.StatusEventLoginBody]) {

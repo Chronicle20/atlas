@@ -51,8 +51,8 @@ func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *syn
 	return cm, cml
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId world.Id, characterId uint32, sourceId int32, duration int32, changes []stat.Model) (buff.Model, error) {
-	b, err := buff.NewBuff(sourceId, duration, changes)
+func (r *Registry) Apply(t tenant.Model, worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
+	b, err := buff.NewBuff(sourceId, level, duration, changes)
 	if err != nil {
 		return buff.Model{}, err
 	}

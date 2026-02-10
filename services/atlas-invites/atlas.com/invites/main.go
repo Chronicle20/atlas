@@ -3,6 +3,7 @@ package main
 import (
 	"atlas-invites/character"
 	"atlas-invites/invite"
+	character2 "atlas-invites/kafka/consumer/character"
 	invite2 "atlas-invites/kafka/consumer/invite"
 	"atlas-invites/logger"
 	"atlas-invites/service"
@@ -51,7 +52,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	invite2.InitConsumers(l)(cmf)(consumerGroupId)
+	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	invite2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Create the service with the router
 	server.New(l).

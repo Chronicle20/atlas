@@ -20,7 +20,7 @@ func TestNewBuff(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
 
 	assert.NoError(t, err)
 	assert.Equal(t, sourceId, b.SourceId())
@@ -35,7 +35,7 @@ func TestBuff_Timestamps(t *testing.T) {
 	changes := setupTestChanges()
 
 	before := time.Now().Add(-time.Millisecond) // Small buffer for timing
-	b, err := NewBuff(sourceId, duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err)
 	after := time.Now().Add(time.Millisecond) // Small buffer for timing
 
@@ -55,7 +55,7 @@ func TestBuff_Expired_NotExpired(t *testing.T) {
 	duration := int32(60) // 60 seconds - should not be expired
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err)
 
 	assert.False(t, b.Expired())
@@ -66,7 +66,7 @@ func TestBuff_Expired_ZeroDuration(t *testing.T) {
 	duration := int32(0) // 0 seconds - should be rejected
 	changes := setupTestChanges()
 
-	_, err := NewBuff(sourceId, duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes)
 
 	assert.ErrorIs(t, err, ErrInvalidDuration)
 }
@@ -76,7 +76,7 @@ func TestBuff_Expired_NegativeDuration(t *testing.T) {
 	duration := int32(-1) // Negative duration - should be rejected
 	changes := setupTestChanges()
 
-	_, err := NewBuff(sourceId, duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes)
 
 	assert.ErrorIs(t, err, ErrInvalidDuration)
 }
@@ -90,7 +90,7 @@ func TestBuff_Changes(t *testing.T) {
 		stat.NewStat("INT", 15),
 	}
 
-	b, err := NewBuff(sourceId, duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err)
 
 	resultChanges := b.Changes()
@@ -110,9 +110,9 @@ func TestBuff_UniqueIds(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b1, err1 := NewBuff(sourceId, duration, changes)
+	b1, err1 := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err1)
-	b2, err2 := NewBuff(sourceId, duration, changes)
+	b2, err2 := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err2)
 
 	// Each buff should have a unique ID
@@ -124,7 +124,7 @@ func TestBuff_EmptyChanges(t *testing.T) {
 	duration := int32(60)
 	changes := []stat.Model{}
 
-	_, err := NewBuff(sourceId, duration, changes)
+	_, err := NewBuff(sourceId, byte(5), duration, changes)
 
 	assert.ErrorIs(t, err, ErrEmptyChanges)
 }
@@ -134,7 +134,7 @@ func TestBuff_Accessors(t *testing.T) {
 	duration := int32(60)
 	changes := setupTestChanges()
 
-	b, err := NewBuff(sourceId, duration, changes)
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
 	assert.NoError(t, err)
 
 	// Test all accessors return expected values

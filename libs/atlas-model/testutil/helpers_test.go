@@ -505,9 +505,9 @@ func TestConcurrentRunner(t *testing.T) {
 			t.Errorf("Expected 3 completed operations, got %d", atomic.LoadInt64(&completed))
 		}
 
-		// Should take at least as long as the longest operation
-		if elapsed < 20*time.Millisecond {
-			t.Errorf("Expected to wait at least 20ms, waited %v", elapsed)
+		// Should take at least as long as the longest operation (with small tolerance for timer imprecision)
+		if elapsed < 19*time.Millisecond {
+			t.Errorf("Expected to wait at least ~20ms, waited %v", elapsed)
 		}
 	})
 }

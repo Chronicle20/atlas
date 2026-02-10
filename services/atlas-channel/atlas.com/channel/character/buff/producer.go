@@ -10,7 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func ApplyCommandProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
+func ApplyCommandProvider(f field.Model, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, statups []statup.Model) model.Provider[[]kafka.Message] {
 	changes := make([]buff.StatChange, 0)
 	for _, su := range statups {
 		changes = append(changes, buff.StatChange{
@@ -30,6 +30,7 @@ func ApplyCommandProvider(f field.Model, characterId uint32, fromId uint32, sour
 		Body: buff.ApplyCommandBody{
 			FromId:   fromId,
 			SourceId: sourceId,
+			Level:    level,
 			Duration: duration,
 			Changes:  changes,
 		},

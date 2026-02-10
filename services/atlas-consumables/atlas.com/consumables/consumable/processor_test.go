@@ -89,15 +89,14 @@ func TestRollStatAdjustment_ZeroIsMostCommon(t *testing.T) {
 
 func TestGenerateChaosChanges_SkipsZeroStats(t *testing.T) {
 	// All zero stats - should produce no changes
-	currents := []uint16{0, 0, 0, 0}
-	changers := []func(int16) equipable.Change{
-		equipable.AddStrength,
-		equipable.AddDexterity,
-		equipable.AddIntelligence,
-		equipable.AddLuck,
+	stats := []chaosStat{
+		{0, equipable.AddStrength, 1},
+		{0, equipable.AddDexterity, 1},
+		{0, equipable.AddIntelligence, 1},
+		{0, equipable.AddLuck, 1},
 	}
 
-	changes, err := generateChaosChanges(currents, changers)
+	changes, err := generateChaosChanges(stats)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -109,15 +108,14 @@ func TestGenerateChaosChanges_SkipsZeroStats(t *testing.T) {
 
 func TestGenerateChaosChanges_GeneratesForNonZeroStats(t *testing.T) {
 	// Non-zero stats should produce changes
-	currents := []uint16{10, 0, 15, 0} // 2 non-zero stats
-	changers := []func(int16) equipable.Change{
-		equipable.AddStrength,
-		equipable.AddDexterity,
-		equipable.AddIntelligence,
-		equipable.AddLuck,
+	stats := []chaosStat{
+		{10, equipable.AddStrength, 1},
+		{0, equipable.AddDexterity, 1},
+		{15, equipable.AddIntelligence, 1},
+		{0, equipable.AddLuck, 1},
 	}
 
-	changes, err := generateChaosChanges(currents, changers)
+	changes, err := generateChaosChanges(stats)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -127,15 +125,18 @@ func TestGenerateChaosChanges_GeneratesForNonZeroStats(t *testing.T) {
 	}
 }
 
-func TestGenerateChaosChanges_MismatchedLengths(t *testing.T) {
-	currents := []uint16{10, 20}
-	changers := []func(int16) equipable.Change{
-		equipable.AddStrength,
+func TestGenerateChaosChanges_AppliesMultiplier(t *testing.T) {
+	stats := []chaosStat{
+		{10, equipable.AddHp, 10},
 	}
 
-	_, err := generateChaosChanges(currents, changers)
-	if err == nil {
-		t.Error("expected error for mismatched lengths")
+	changes, err := generateChaosChanges(stats)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(changes) != 1 {
+		t.Errorf("expected 1 change for HP stat, got %d", len(changes))
 	}
 }
 

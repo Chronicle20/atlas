@@ -3,6 +3,7 @@ package asset
 import (
 	"time"
 
+	af "github.com/Chronicle20/atlas-constants/asset"
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/google/uuid"
@@ -36,13 +37,8 @@ type Model struct {
 	hands          uint16
 	speed          uint16
 	jump           uint16
-	slots          uint16
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
-	levelType      byte
+	slots     uint16
+	levelType byte
 	level          byte
 	experience     uint32
 	hammersApplied uint32
@@ -80,11 +76,11 @@ func (m Model) Hands() uint16            { return m.hands }
 func (m Model) Speed() uint16            { return m.speed }
 func (m Model) Jump() uint16             { return m.jump }
 func (m Model) Slots() uint16            { return m.slots }
-func (m Model) Locked() bool             { return m.locked }
-func (m Model) Spikes() bool             { return m.spikes }
-func (m Model) KarmaUsed() bool          { return m.karmaUsed }
-func (m Model) Cold() bool               { return m.cold }
-func (m Model) CanBeTraded() bool        { return m.canBeTraded }
+func (m Model) Locked() bool             { return af.HasFlag(m.flag, af.FlagLock) }
+func (m Model) Spikes() bool             { return af.HasFlag(m.flag, af.FlagSpikes) }
+func (m Model) KarmaUsed() bool          { return af.HasFlag(m.flag, af.FlagKarmaUse) }
+func (m Model) Cold() bool               { return af.HasFlag(m.flag, af.FlagCold) }
+func (m Model) CanBeTraded() bool        { return !af.HasFlag(m.flag, af.FlagUntradeable) }
 func (m Model) LevelType() byte          { return m.levelType }
 func (m Model) Level() byte              { return m.level }
 func (m Model) Experience() uint32       { return m.experience }

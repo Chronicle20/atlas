@@ -29,6 +29,7 @@ type Command[E any] struct {
 type ApplyCommandBody struct {
 	FromId   uint32       `json:"fromId"`
 	SourceId int32        `json:"sourceId"`
+	Level    byte         `json:"level"`
 	Duration int32        `json:"duration"`
 	Changes  []StatChange `json:"changes"`
 }
@@ -61,6 +62,7 @@ type StatusEvent[E any] struct {
 type AppliedStatusEventBody struct {
 	FromId    uint32       `json:"fromId"`
 	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
 	Duration  int32        `json:"duration"`
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`
@@ -69,6 +71,7 @@ type AppliedStatusEventBody struct {
 
 type ExpiredStatusEventBody struct {
 	SourceId  int32        `json:"sourceId"`
+	Level     byte         `json:"level"`
 	Duration  int32        `json:"duration"`
 	Changes   []StatChange `json:"changes"`
 	CreatedAt time.Time    `json:"createdAt"`

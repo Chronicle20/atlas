@@ -49,5 +49,5 @@ func (p *ProcessorImpl) Apply(f field.Model, characterId uint32, fromId uint32, 
 		})
 	}
 
-	return producer.ProviderImpl(p.l)(p.ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(f, characterId, fromId, int32(skillId), duration, changes))
+	return producer.ProviderImpl(p.l)(p.ctx)(buff.EnvCommandTopic)(buff.ApplyCommandProvider(f, characterId, fromId, int32(skillId), level, duration, changes))
 }

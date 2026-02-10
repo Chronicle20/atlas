@@ -244,11 +244,7 @@ func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId 
 			SetSpeed(stats.Speed()).
 			SetJump(stats.Jump()).
 			SetSlots(stats.Slots()).
-			SetLocked(stats.Locked()).
-			SetSpikes(stats.Spikes()).
-			SetKarmaUsed(stats.KarmaUsed()).
-			SetCold(stats.Cold()).
-			SetCanBeTraded(stats.CanBeTraded()).
+			SetFlag(stats.Flag()).
 			SetLevelType(stats.LevelType()).
 			SetLevel(stats.Level()).
 			SetExperience(stats.Experience()).
@@ -293,6 +289,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 
 			switch inventoryType {
 			case inventory.TypeValueEquip:
+				// TODO wire up template tradeBlock data to set UNTRADEABLE flag during asset creation
 				ea, err := p.statProcessor.GetById(templateId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)

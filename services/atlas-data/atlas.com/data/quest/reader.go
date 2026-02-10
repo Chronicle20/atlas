@@ -136,7 +136,7 @@ func readRequirements(n *xml.Node) RequirementsRestModel {
 		MesoMin:         uint32(n.GetIntegerWithDefault("money", 0)),
 		MesoMax:         uint32(n.GetIntegerWithDefault("moneyMax", 0)),
 		PetTamenessMin:  int16(n.GetIntegerWithDefault("pettamenessmin", 0)),
-		DayOfWeek:       n.GetString("dayOfWeek", ""),
+		DayByDay:        n.GetBool("dayByDay", false),
 		Start:           n.GetString("start", ""),
 		End:             n.GetString("end", ""),
 		Interval:        uint32(n.GetIntegerWithDefault("interval", 0)),
@@ -145,6 +145,13 @@ func readRequirements(n *xml.Node) RequirementsRestModel {
 		InfoNumber:      uint32(n.GetIntegerWithDefault("infoNumber", 0)),
 		NormalAutoStart: n.GetBool("normalAutoStart", false),
 		CompletionCount: uint32(n.GetIntegerWithDefault("completeCount", 0)),
+	}
+
+	// Read day of week restrictions
+	if dowNode, err := n.ChildByName("dayOfWeek"); err == nil {
+		for _, sn := range dowNode.StringNodes {
+			req.DayOfWeek = append(req.DayOfWeek, sn.Name)
+		}
 	}
 
 	// Read job requirements

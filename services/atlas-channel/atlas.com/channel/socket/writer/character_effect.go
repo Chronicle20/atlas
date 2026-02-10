@@ -116,7 +116,6 @@ func CharacterSkillAffectedEffectForeignBody(l logrus.FieldLogger) func(characte
 	}
 }
 
-// TODO this is how we communicate quest complete
 func CharacterQuestEffectBody(l logrus.FieldLogger) func(message string, rewards []model.QuestReward, nEffect uint32) BodyProducer {
 	return func(message string, rewards []model.QuestReward, nEffect uint32) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

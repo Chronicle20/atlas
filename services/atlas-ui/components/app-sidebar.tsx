@@ -14,7 +14,7 @@ import {
     SidebarMenuSubButton,
     SidebarMenuSubItem,
 } from "@/components/ui/sidebar"
-import {Cog, MonitorCog} from "lucide-react";
+import {Cog, MonitorCog, Shield} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
 import Image from "next/image";
@@ -59,6 +59,21 @@ const items = [
             {
                 title: "Gachapons",
                 url: "/gachapons"
+            },
+        ],
+    },
+    {
+        title: "Security",
+        url: "#",
+        icon: Shield,
+        children: [
+            {
+                title: "Bans",
+                url: "/bans"
+            },
+            {
+                title: "Login History",
+                url: "/login-history"
             },
         ],
     },

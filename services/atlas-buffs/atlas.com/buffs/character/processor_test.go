@@ -57,7 +57,7 @@ func TestProcessor_GetById_AfterApply(t *testing.T) {
 	duration := int32(60)
 
 	// Apply a buff (this will fail to emit to Kafka, but registry state should be updated)
-	_ = processor.Apply(worldId, characterId, fromId, sourceId, duration, changes)
+	_ = processor.Apply(worldId, characterId, fromId, sourceId, byte(5), duration, changes)
 
 	// Get the character
 	m, err := processor.GetById(characterId)
@@ -79,7 +79,7 @@ func TestProcessor_Apply(t *testing.T) {
 
 	// Apply will return an error due to Kafka being unavailable,
 	// but registry state should still be updated (message buffer pattern)
-	_ = processor.Apply(worldId, characterId, fromId, sourceId, duration, changes)
+	_ = processor.Apply(worldId, characterId, fromId, sourceId, byte(5), duration, changes)
 
 	// Verify buff was added to registry despite Kafka error
 	m, err := GetRegistry().Get(ten, characterId)
@@ -100,9 +100,9 @@ func TestProcessor_Apply_MultipleBuffs(t *testing.T) {
 	fromId := uint32(2000)
 
 	// Apply multiple buffs
-	_ = processor.Apply(worldId, characterId, fromId, int32(2001001), int32(60), changes)
-	_ = processor.Apply(worldId, characterId, fromId, int32(2001002), int32(120), changes)
-	_ = processor.Apply(worldId, characterId, fromId, int32(2001003), int32(180), changes)
+	_ = processor.Apply(worldId, characterId, fromId, int32(2001001), byte(5), int32(60), changes)
+	_ = processor.Apply(worldId, characterId, fromId, int32(2001002), byte(5), int32(120), changes)
+	_ = processor.Apply(worldId, characterId, fromId, int32(2001003), byte(5), int32(180), changes)
 
 	m, err := GetRegistry().Get(ten, characterId)
 	assert.NoError(t, err)
@@ -120,7 +120,7 @@ func TestProcessor_Cancel(t *testing.T) {
 	duration := int32(60)
 
 	// Apply a buff first (ignore Kafka error)
-	_ = processor.Apply(worldId, characterId, fromId, sourceId, duration, changes)
+	_ = processor.Apply(worldId, characterId, fromId, sourceId, byte(5), duration, changes)
 
 	// Verify buff exists
 	m, _ := GetRegistry().Get(ten, characterId)
@@ -153,7 +153,7 @@ func TestProcessor_Cancel_WrongSourceId(t *testing.T) {
 	duration := int32(60)
 
 	// Apply a buff
-	_ = processor.Apply(worldId, characterId, fromId, sourceId, duration, changes)
+	_ = processor.Apply(worldId, characterId, fromId, sourceId, byte(5), duration, changes)
 
 	// Cancel with wrong sourceId
 	err := processor.Cancel(worldId, characterId, int32(9999))
@@ -188,7 +188,7 @@ func TestProcessor_TenantContext(t *testing.T) {
 	changes := setupProcessorTestChanges()
 
 	// Apply buff in tenant1
-	_ = processor1.Apply(world.Id(0), uint32(1000), uint32(2000), int32(2001001), int32(60), changes)
+	_ = processor1.Apply(world.Id(0), uint32(1000), uint32(2000), int32(2001001), byte(5), int32(60), changes)
 
 	// Get from processor1 should work
 	m, err := processor1.GetById(uint32(1000))

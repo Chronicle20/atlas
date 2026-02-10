@@ -40,7 +40,7 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			cts := model.NewCharacterTemporaryStat()
 			for _, b := range bs {
 				for _, ch := range b.Changes() {
-					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.ExpiresAt())
+					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.Level(), b.ExpiresAt())
 				}
 			}
 			cts.EncodeForeign(l, t, options)(w)

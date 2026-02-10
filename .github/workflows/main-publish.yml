@@ -53,6 +53,7 @@ jobs:
           SPECIFIC_SERVICE="${{ github.event.inputs.service }}"
           HAS_WORKSPACE_CHANGES="${{ steps.detect.outputs.has-go-workspace-changes }}"
           HAS_WORKFLOW_CHANGES="${{ steps.detect.outputs.has-workflow-changes }}"
+          HAS_LIBRARY_CHANGES="${{ steps.detect.outputs.has-library-changes }}"
 
           CONFIG_FILE=".github/config/services.json"
 
@@ -61,8 +62,8 @@ jobs:
           if [ -n "$SPECIFIC_SERVICE" ]; then
             echo "Building specific service: $SPECIFIC_SERVICE"
             DOCKER_SERVICES=$(jq -c --arg name "$SPECIFIC_SERVICE" '[.services[] | select(.name == $name) | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
-          # Handle force all or global changes
-          elif [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ]; then
+          # Handle force all or global changes (library changes trigger all service rebuilds)
+          elif [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ] || [ "$HAS_LIBRARY_CHANGES" == "true" ]; then
             echo "Building all services"
             DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
           # Normal change detection
@@ -84,6 +85,7 @@ jobs:
           # Summary
           echo "### Publish Detection Summary" >> $GITHUB_STEP_SUMMARY
           echo "- **Force all**: $FORCE_ALL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Library changes**: $HAS_LIBRARY_CHANGES" >> $GITHUB_STEP_SUMMARY
           echo "- **Specific service**: ${SPECIFIC_SERVICE:-none}" >> $GITHUB_STEP_SUMMARY
           echo "- **Services to publish**: $SERVICE_COUNT" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY

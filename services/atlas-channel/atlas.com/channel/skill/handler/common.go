@@ -28,7 +28,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
 			}
 			if e.Duration() > 0 && len(e.StatUps()) > 0 {
-				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), e.Duration(), e.StatUps())
+				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
 				_ = applyBuffFunc(characterId)
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 			}

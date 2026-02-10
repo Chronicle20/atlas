@@ -107,7 +107,6 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Proper temp stat encoding for GMS v12 (`socket/model/monster.go:206`)
 - [ ] Complete skill ID list for skill_usage_info (`socket/model/skill_usage_info.go:65,123,166`)
 - [ ] Battle Mage attack info handling (`socket/model/attack_info.go:96,139`)
-- [ ] Character model TODOs (`socket/model/character.go:213,222`)
 - [ ] Look up actual buff values if riding mount (`socket/model/character.go:482`)
 - [ ] Document GMS v83/v95 constants (`socket/writer/character_attack_common.go:42,51,59`)
 - [ ] Wild Hunter swallow (`socket/writer/character_attack_common.go:118`)
@@ -139,7 +138,6 @@ Location: `socket/handler/character_damage.go:24-33`
 ### Consumables Service
 - [ ] Consume Vega scroll (`consumable/processor.go:523`)
 - [ ] Handle spikes/cursed property (`consumable/processor.go:526`)
-- [ ] Improve HP/MP structure (`consumable/processor.go:642`)
 - [ ] Field migration for monster requests (`monster/requests.go:28`)
 
 ### Data Service
@@ -162,12 +160,10 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] Second query for party information (`party/rest.go:92`)
 
 ### Inventory Service
-- [ ] Asset owner validation for stacking (`compartment/processor.go:579`)
 - [ ] Migrate TransactionId usage (5 locations in `kafka/consumer/compartment/consumer.go:118,133,148,214,266`)
 - [ ] TransactionId removal from producers (`compartment/producer.go:63,124,138,153`)
 
 ### Invite Service
-- [ ] Character deletion should remove pending invites
 - [ ] Invites should be able to be queued
 
 ### Login Service

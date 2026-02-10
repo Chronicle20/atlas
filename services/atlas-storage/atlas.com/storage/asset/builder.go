@@ -3,6 +3,7 @@ package asset
 import (
 	"time"
 
+	af "github.com/Chronicle20/atlas-constants/asset"
 	"github.com/google/uuid"
 )
 
@@ -33,11 +34,6 @@ func Clone(m Model) *ModelBuilder {
 		speed:          m.speed,
 		jump:           m.jump,
 		slots:          m.slots,
-		locked:         m.locked,
-		spikes:         m.spikes,
-		karmaUsed:      m.karmaUsed,
-		cold:           m.cold,
-		canBeTraded:    m.canBeTraded,
 		levelType:      m.levelType,
 		level:          m.level,
 		experience:     m.experience,
@@ -77,11 +73,6 @@ type ModelBuilder struct {
 	speed          uint16
 	jump           uint16
 	slots          uint16
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
 	levelType      byte
 	level          byte
 	experience     uint32
@@ -126,11 +117,54 @@ func (b *ModelBuilder) SetHands(v uint16) *ModelBuilder                { b.hands
 func (b *ModelBuilder) SetSpeed(v uint16) *ModelBuilder                { b.speed = v; return b }
 func (b *ModelBuilder) SetJump(v uint16) *ModelBuilder                 { b.jump = v; return b }
 func (b *ModelBuilder) SetSlots(v uint16) *ModelBuilder                { b.slots = v; return b }
-func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder                 { b.locked = v; return b }
-func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder                 { b.spikes = v; return b }
-func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder              { b.karmaUsed = v; return b }
-func (b *ModelBuilder) SetCold(v bool) *ModelBuilder                   { b.cold = v; return b }
-func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder            { b.canBeTraded = v; return b }
+func (b *ModelBuilder) SetLocked(v bool) *ModelBuilder {
+	if v {
+		b.flag = af.SetFlag(b.flag, af.FlagLock)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagLock)
+	}
+	return b
+}
+func (b *ModelBuilder) SetSpikes(v bool) *ModelBuilder {
+	if v {
+		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagSpikes)
+	}
+	return b
+}
+func (b *ModelBuilder) SetKarmaUsed(v bool) *ModelBuilder {
+	if v {
+		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagKarmaEquip)
+	}
+	return b
+}
+func (b *ModelBuilder) SetCold(v bool) *ModelBuilder {
+	if v {
+		b.flag = af.SetFlag(b.flag, af.FlagCold)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagCold)
+	}
+	return b
+}
+func (b *ModelBuilder) SetCanBeTraded(v bool) *ModelBuilder {
+	if v {
+		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
+	} else {
+		b.flag = af.SetFlag(b.flag, af.FlagUntradeable)
+	}
+	return b
+}
+func (b *ModelBuilder) AddFlag(f af.Flag) *ModelBuilder {
+	b.flag = af.SetFlag(b.flag, f)
+	return b
+}
+func (b *ModelBuilder) RemoveFlag(f af.Flag) *ModelBuilder {
+	b.flag = af.ClearFlag(b.flag, f)
+	return b
+}
 func (b *ModelBuilder) SetLevelType(v byte) *ModelBuilder              { b.levelType = v; return b }
 func (b *ModelBuilder) SetLevel(v byte) *ModelBuilder                  { b.level = v; return b }
 func (b *ModelBuilder) SetExperience(v uint32) *ModelBuilder           { b.experience = v; return b }
@@ -167,11 +201,6 @@ func (b *ModelBuilder) Build() Model {
 		speed:          b.speed,
 		jump:           b.jump,
 		slots:          b.slots,
-		locked:         b.locked,
-		spikes:         b.spikes,
-		karmaUsed:      b.karmaUsed,
-		cold:           b.cold,
-		canBeTraded:    b.canBeTraded,
 		levelType:      b.levelType,
 		level:          b.level,
 		experience:     b.experience,

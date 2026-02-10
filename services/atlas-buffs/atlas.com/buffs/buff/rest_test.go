@@ -30,7 +30,7 @@ func TestTransform(t *testing.T) {
 		stat.NewStat("STR", 10),
 		stat.NewStat("DEX", 5),
 	}
-	b, err := NewBuff(int32(2001001), int32(60), changes)
+	b, err := NewBuff(int32(2001001), byte(5), int32(60), changes)
 	assert.NoError(t, err)
 
 	rm, err := Transform(b)
@@ -50,7 +50,7 @@ func TestTransform_StatChanges(t *testing.T) {
 		stat.NewStat("DEX", 5),
 		stat.NewStat("INT", 15),
 	}
-	b, err := NewBuff(int32(2001001), int32(60), changes)
+	b, err := NewBuff(int32(2001001), byte(5), int32(60), changes)
 	assert.NoError(t, err)
 
 	rm, err := Transform(b)

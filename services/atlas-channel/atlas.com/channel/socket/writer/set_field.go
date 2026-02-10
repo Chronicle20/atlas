@@ -414,7 +414,7 @@ func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPo
 
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 				w.WriteAsciiString("") // TODO retrieve owner name from id
-				w.WriteShort(0)        // TODO need to create flags bitmask
+				w.WriteShort(e.Flag())
 
 				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 					for i := 0; i < 10; i++ {
@@ -591,7 +591,7 @@ func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *res
 
 				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 					w.WriteAsciiString("") // TODO retrieve owner name from id
-					w.WriteShort(0)        // TODO
+					w.WriteShort(e.Flag())
 				}
 
 				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {

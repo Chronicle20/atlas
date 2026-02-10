@@ -52,11 +52,7 @@ type EquipableRestData struct {
 	Jump           uint16 `json:"jump"`
 	Slots          uint16 `json:"slots"`
 	OwnerId        uint32 `json:"ownerId"`
-	Locked         bool   `json:"locked"`
-	Spikes         bool   `json:"spikes"`
-	KarmaUsed      bool   `json:"karmaUsed"`
-	Cold           bool   `json:"cold"`
-	CanBeTraded    bool   `json:"canBeTraded"`
+	Flag           uint16 `json:"flag"`
 	LevelType      byte   `json:"levelType"`
 	Level          byte   `json:"level"`
 	Experience     uint32 `json:"experience"`
@@ -189,11 +185,7 @@ func Transform(m Model[any]) (BaseRestModel, error) {
 				Jump:           em.jump,
 				Slots:          em.slots,
 				OwnerId:        em.ownerId,
-				Locked:         em.locked,
-				Spikes:         em.spikes,
-				KarmaUsed:      em.karmaUsed,
-				Cold:           em.cold,
-				CanBeTraded:    em.canBeTraded,
+				Flag:           em.flag,
 				LevelType:      em.levelType,
 				Level:          em.level,
 				Experience:     em.experience,
@@ -288,11 +280,7 @@ func Extract(rm BaseRestModel) (Model[any], error) {
 			jump:           erm.Jump,
 			slots:          erm.Slots,
 			ownerId:        erm.OwnerId,
-			locked:         erm.Locked,
-			spikes:         erm.Spikes,
-			karmaUsed:      erm.KarmaUsed,
-			cold:           erm.Cold,
-			canBeTraded:    erm.CanBeTraded,
+			flag:           erm.Flag,
 			levelType:      erm.LevelType,
 			level:          erm.Level,
 			experience:     erm.Experience,

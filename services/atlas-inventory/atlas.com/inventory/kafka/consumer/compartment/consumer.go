@@ -238,11 +238,7 @@ func handleAcceptCommand(db *gorm.DB) message.Handler[compartment2.Command[compa
 			SetSpeed(c.Body.Speed).
 			SetJump(c.Body.Jump).
 			SetSlots(c.Body.Slots).
-			SetLocked(c.Body.Locked).
-			SetSpikes(c.Body.Spikes).
-			SetKarmaUsed(c.Body.KarmaUsed).
-			SetCold(c.Body.Cold).
-			SetCanBeTraded(c.Body.CanBeTraded).
+			SetFlag(c.Body.Flag).
 			SetLevelType(c.Body.LevelType).
 			SetLevel(c.Body.Level).
 			SetExperience(c.Body.Experience).
@@ -322,11 +318,7 @@ func handleModifyEquipmentCommand(db *gorm.DB) message.Handler[compartment2.Comm
 			SetSpeed(c.Body.Speed).
 			SetJump(c.Body.Jump).
 			SetSlots(c.Body.Slots).
-			SetLocked(c.Body.Locked).
-			SetSpikes(c.Body.Spikes).
-			SetKarmaUsed(c.Body.KarmaUsed).
-			SetCold(c.Body.Cold).
-			SetCanBeTraded(c.Body.CanBeTraded).
+			SetFlag(c.Body.Flag).
 			SetLevelType(c.Body.LevelType).
 			SetLevel(c.Body.Level).
 			SetExperience(c.Body.Experience).

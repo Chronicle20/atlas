@@ -210,8 +210,7 @@ func ValueAsIntForeignValueWriter(v CharacterTemporaryStatValue) func(w *respons
 
 func LevelSourceForeignValueWriter(v CharacterTemporaryStatValue) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		// TODO
-		w.WriteInt16(int16(1))
+		w.WriteInt16(int16(v.Level()))
 		w.WriteInt16(int16(v.SourceId()))
 	}
 }
@@ -219,8 +218,7 @@ func LevelSourceForeignValueWriter(v CharacterTemporaryStatValue) func(w *respon
 func ValueSourceLevelForeignValueWriter(v CharacterTemporaryStatValue) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteInt16(int16(v.Value()))
-		// TODO
-		w.WriteInt16(int16(1))
+		w.WriteInt16(int16(v.Level()))
 		w.WriteInt16(int16(v.SourceId()))
 	}
 }
@@ -228,6 +226,7 @@ func ValueSourceLevelForeignValueWriter(v CharacterTemporaryStatValue) func(w *r
 type CharacterTemporaryStatValue struct {
 	statType  CharacterTemporaryStatType
 	sourceId  int32
+	level     byte
 	value     int32
 	expiresAt time.Time
 }
@@ -238,6 +237,10 @@ func (v CharacterTemporaryStatValue) Value() int32 {
 
 func (v CharacterTemporaryStatValue) SourceId() int32 {
 	return v.sourceId
+}
+
+func (v CharacterTemporaryStatValue) Level() byte {
+	return v.level
 }
 
 func (v CharacterTemporaryStatValue) ExpiresAt() time.Time {
@@ -351,9 +354,9 @@ func NewCharacterTemporaryStat() *CharacterTemporaryStat {
 	}
 }
 
-func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, expiresAt time.Time) {
-	return func(t tenant.Model) func(n string, sourceId int32, amount int32, expiresAt time.Time) {
-		return func(n string, sourceId int32, amount int32, expiresAt time.Time) {
+func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
+	return func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
+		return func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 			name := character.TemporaryStatType(n)
 			st, err := CharacterTemporaryStatTypeByName(t)(name)
 			if err != nil {
@@ -363,6 +366,7 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 			v := CharacterTemporaryStatValue{
 				statType:  st,
 				sourceId:  sourceId,
+				level:     level,
 				value:     amount,
 				expiresAt: expiresAt,
 			}

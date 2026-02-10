@@ -1,6 +1,10 @@
 package asset
 
-import "time"
+import (
+	"time"
+
+	af "github.com/Chronicle20/atlas-constants/asset"
+)
 
 type EquipableReferenceData struct {
 	strength       uint16
@@ -20,11 +24,7 @@ type EquipableReferenceData struct {
 	jump           uint16
 	slots          uint16
 	ownerId        uint32
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
+	flag           uint16
 	levelType      byte
 	level          byte
 	experience     uint32
@@ -49,35 +49,17 @@ func (e EquipableReferenceData) GetSpeed() uint16          { return e.speed }
 func (e EquipableReferenceData) GetJump() uint16           { return e.jump }
 func (e EquipableReferenceData) GetSlots() uint16          { return e.slots }
 func (e EquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e EquipableReferenceData) IsLocked() bool            { return e.locked }
-func (e EquipableReferenceData) HasSpikes() bool           { return e.spikes }
-func (e EquipableReferenceData) IsKarmaUsed() bool         { return e.karmaUsed }
-func (e EquipableReferenceData) IsCold() bool              { return e.cold }
-func (e EquipableReferenceData) CanBeTraded() bool         { return e.canBeTraded }
+func (e EquipableReferenceData) IsLocked() bool            { return af.HasFlag(e.flag, af.FlagLock) }
+func (e EquipableReferenceData) HasSpikes() bool           { return af.HasFlag(e.flag, af.FlagSpikes) }
+func (e EquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaUse) }
+func (e EquipableReferenceData) IsCold() bool              { return af.HasFlag(e.flag, af.FlagCold) }
+func (e EquipableReferenceData) CanBeTraded() bool         { return !af.HasFlag(e.flag, af.FlagUntradeable) }
 func (e EquipableReferenceData) GetLevelType() byte        { return e.levelType }
 func (e EquipableReferenceData) GetLevel() byte            { return e.level }
 func (e EquipableReferenceData) GetExperience() uint32     { return e.experience }
 func (e EquipableReferenceData) GetHammersApplied() uint32 { return e.hammersApplied }
 func (e EquipableReferenceData) GetExpiration() time.Time  { return e.expiration }
-func (e EquipableReferenceData) Flags() uint16 {
-	flag := uint16(0)
-	if e.locked {
-		flag |= 0x01
-	}
-	if e.spikes {
-		flag |= 0x02
-	}
-	if e.cold {
-		flag |= 0x04
-	}
-	if e.canBeTraded {
-		flag |= 0x08
-	}
-	if e.karmaUsed {
-		flag |= 0x10
-	}
-	return flag
-}
+func (e EquipableReferenceData) Flags() uint16 { return e.flag }
 
 type EquipableReferenceDataBuilder struct {
 	strength       uint16
@@ -97,11 +79,7 @@ type EquipableReferenceDataBuilder struct {
 	jump           uint16
 	slots          uint16
 	ownerId        uint32
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
+	flag           uint16
 	levelType      byte
 	level          byte
 	experience     uint32
@@ -134,11 +112,7 @@ func (b *EquipableReferenceDataBuilder) Clone(model EquipableReferenceData) *Equ
 		jump:           model.jump,
 		slots:          model.slots,
 		ownerId:        model.ownerId,
-		locked:         model.locked,
-		spikes:         model.spikes,
-		karmaUsed:      model.karmaUsed,
-		cold:           model.cold,
-		canBeTraded:    model.canBeTraded,
+		flag:           model.flag,
 		levelType:      model.levelType,
 		level:          model.level,
 		experience:     model.experience,
@@ -168,11 +142,7 @@ func (b *EquipableReferenceDataBuilder) Build() EquipableReferenceData {
 		jump:           b.jump,
 		slots:          b.slots,
 		ownerId:        b.ownerId,
-		locked:         b.locked,
-		spikes:         b.spikes,
-		karmaUsed:      b.karmaUsed,
-		cold:           b.cold,
-		canBeTraded:    b.canBeTraded,
+		flag:           b.flag,
 		levelType:      b.levelType,
 		level:          b.level,
 		experience:     b.experience,
@@ -269,27 +239,62 @@ func (b *EquipableReferenceDataBuilder) SetOwnerId(value uint32) *EquipableRefer
 }
 
 func (b *EquipableReferenceDataBuilder) SetLocked(value bool) *EquipableReferenceDataBuilder {
-	b.locked = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagLock)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagLock)
+	}
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetSpikes(value bool) *EquipableReferenceDataBuilder {
-	b.spikes = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagSpikes)
+	}
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetKarmaUsed(value bool) *EquipableReferenceDataBuilder {
-	b.karmaUsed = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagKarmaEquip)
+	}
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetCold(value bool) *EquipableReferenceDataBuilder {
-	b.cold = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagCold)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagCold)
+	}
 	return b
 }
 
 func (b *EquipableReferenceDataBuilder) SetCanBeTraded(value bool) *EquipableReferenceDataBuilder {
-	b.canBeTraded = value
+	if value {
+		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
+	} else {
+		b.flag = af.SetFlag(b.flag, af.FlagUntradeable)
+	}
+	return b
+}
+
+func (b *EquipableReferenceDataBuilder) SetFlag(value uint16) *EquipableReferenceDataBuilder {
+	b.flag = value
+	return b
+}
+
+func (b *EquipableReferenceDataBuilder) AddFlag(f af.Flag) *EquipableReferenceDataBuilder {
+	b.flag = af.SetFlag(b.flag, f)
+	return b
+}
+
+func (b *EquipableReferenceDataBuilder) RemoveFlag(f af.Flag) *EquipableReferenceDataBuilder {
+	b.flag = af.ClearFlag(b.flag, f)
 	return b
 }
 
@@ -337,11 +342,7 @@ type CashEquipableReferenceData struct {
 	jump           uint16
 	slots          uint16
 	ownerId        uint32
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
+	flag           uint16
 	levelType      byte
 	level          byte
 	experience     uint32
@@ -367,11 +368,12 @@ func (e CashEquipableReferenceData) GetSpeed() uint16          { return e.speed 
 func (e CashEquipableReferenceData) GetJump() uint16           { return e.jump }
 func (e CashEquipableReferenceData) GetSlots() uint16          { return e.slots }
 func (e CashEquipableReferenceData) GetOwnerId() uint32        { return e.ownerId }
-func (e CashEquipableReferenceData) IsLocked() bool            { return e.locked }
-func (e CashEquipableReferenceData) HasSpikes() bool           { return e.spikes }
-func (e CashEquipableReferenceData) IsKarmaUsed() bool         { return e.karmaUsed }
-func (e CashEquipableReferenceData) IsCold() bool              { return e.cold }
-func (e CashEquipableReferenceData) CanBeTraded() bool         { return e.canBeTraded }
+func (e CashEquipableReferenceData) IsLocked() bool            { return af.HasFlag(e.flag, af.FlagLock) }
+func (e CashEquipableReferenceData) HasSpikes() bool           { return af.HasFlag(e.flag, af.FlagSpikes) }
+func (e CashEquipableReferenceData) IsKarmaUsed() bool         { return af.HasFlag(e.flag, af.FlagKarmaUse) }
+func (e CashEquipableReferenceData) IsCold() bool              { return af.HasFlag(e.flag, af.FlagCold) }
+func (e CashEquipableReferenceData) CanBeTraded() bool         { return !af.HasFlag(e.flag, af.FlagUntradeable) }
+func (e CashEquipableReferenceData) Flags() uint16             { return e.flag }
 func (e CashEquipableReferenceData) GetLevelType() byte        { return e.levelType }
 func (e CashEquipableReferenceData) GetLevel() byte            { return e.level }
 func (e CashEquipableReferenceData) GetExperience() uint32     { return e.experience }
@@ -397,11 +399,7 @@ type CashEquipableReferenceDataBuilder struct {
 	jump           uint16
 	slots          uint16
 	ownerId        uint32
-	locked         bool
-	spikes         bool
-	karmaUsed      bool
-	cold           bool
-	canBeTraded    bool
+	flag           uint16
 	levelType      byte
 	level          byte
 	experience     uint32
@@ -435,11 +433,7 @@ func (b *CashEquipableReferenceDataBuilder) Clone(model CashEquipableReferenceDa
 		jump:           model.jump,
 		slots:          model.slots,
 		ownerId:        model.ownerId,
-		locked:         model.locked,
-		spikes:         model.spikes,
-		karmaUsed:      model.karmaUsed,
-		cold:           model.cold,
-		canBeTraded:    model.canBeTraded,
+		flag:           model.flag,
 		levelType:      model.levelType,
 		level:          model.level,
 		experience:     model.experience,
@@ -470,11 +464,7 @@ func (b *CashEquipableReferenceDataBuilder) Build() CashEquipableReferenceData {
 		jump:           b.jump,
 		slots:          b.slots,
 		ownerId:        b.ownerId,
-		locked:         b.locked,
-		spikes:         b.spikes,
-		karmaUsed:      b.karmaUsed,
-		cold:           b.cold,
-		canBeTraded:    b.canBeTraded,
+		flag:           b.flag,
 		levelType:      b.levelType,
 		level:          b.level,
 		experience:     b.experience,
@@ -574,27 +564,62 @@ func (b *CashEquipableReferenceDataBuilder) SetOwnerId(value uint32) *CashEquipa
 }
 
 func (b *CashEquipableReferenceDataBuilder) SetLocked(value bool) *CashEquipableReferenceDataBuilder {
-	b.locked = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagLock)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagLock)
+	}
 	return b
 }
 
 func (b *CashEquipableReferenceDataBuilder) SetSpikes(value bool) *CashEquipableReferenceDataBuilder {
-	b.spikes = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagSpikes)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagSpikes)
+	}
 	return b
 }
 
 func (b *CashEquipableReferenceDataBuilder) SetKarmaUsed(value bool) *CashEquipableReferenceDataBuilder {
-	b.karmaUsed = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagKarmaEquip)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagKarmaEquip)
+	}
 	return b
 }
 
 func (b *CashEquipableReferenceDataBuilder) SetCold(value bool) *CashEquipableReferenceDataBuilder {
-	b.cold = value
+	if value {
+		b.flag = af.SetFlag(b.flag, af.FlagCold)
+	} else {
+		b.flag = af.ClearFlag(b.flag, af.FlagCold)
+	}
 	return b
 }
 
 func (b *CashEquipableReferenceDataBuilder) SetCanBeTraded(value bool) *CashEquipableReferenceDataBuilder {
-	b.canBeTraded = value
+	if value {
+		b.flag = af.ClearFlag(b.flag, af.FlagUntradeable)
+	} else {
+		b.flag = af.SetFlag(b.flag, af.FlagUntradeable)
+	}
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) SetFlag(value uint16) *CashEquipableReferenceDataBuilder {
+	b.flag = value
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) AddFlag(f af.Flag) *CashEquipableReferenceDataBuilder {
+	b.flag = af.SetFlag(b.flag, f)
+	return b
+}
+
+func (b *CashEquipableReferenceDataBuilder) RemoveFlag(f af.Flag) *CashEquipableReferenceDataBuilder {
+	b.flag = af.ClearFlag(b.flag, f)
 	return b
 }
 

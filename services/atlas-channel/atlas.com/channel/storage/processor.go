@@ -148,11 +148,7 @@ func transformAsset(a AssetRestModel) asset.Model {
 		SetSpeed(a.Speed).
 		SetJump(a.Jump).
 		SetSlots(a.Slots).
-		SetLocked(a.Locked).
-		SetSpikes(a.Spikes).
-		SetKarmaUsed(a.KarmaUsed).
-		SetCold(a.Cold).
-		SetCanBeTraded(a.CanBeTraded).
+		SetFlag(a.Flag).
 		SetLevelType(a.LevelType).
 		SetLevel(a.Level).
 		SetExperience(a.Experience).

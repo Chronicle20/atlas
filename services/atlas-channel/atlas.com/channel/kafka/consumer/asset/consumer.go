@@ -97,11 +97,7 @@ func buildAssetFromCreatedBody(e asset2.StatusEvent[asset2.CreatedStatusEventBod
 		SetSpeed(e.Body.Speed).
 		SetJump(e.Body.Jump).
 		SetSlots(e.Body.Slots).
-		SetLocked(e.Body.Locked).
-		SetSpikes(e.Body.Spikes).
-		SetKarmaUsed(e.Body.KarmaUsed).
-		SetCold(e.Body.Cold).
-		SetCanBeTraded(e.Body.CanBeTraded).
+		SetFlag(e.Body.Flag).
 		SetLevelType(e.Body.LevelType).
 		SetLevel(e.Body.Level).
 		SetExperience(e.Body.Experience).
@@ -139,11 +135,7 @@ func buildAssetFromUpdatedBody(e asset2.StatusEvent[asset2.UpdatedStatusEventBod
 		SetSpeed(e.Body.Speed).
 		SetJump(e.Body.Jump).
 		SetSlots(e.Body.Slots).
-		SetLocked(e.Body.Locked).
-		SetSpikes(e.Body.Spikes).
-		SetKarmaUsed(e.Body.KarmaUsed).
-		SetCold(e.Body.Cold).
-		SetCanBeTraded(e.Body.CanBeTraded).
+		SetFlag(e.Body.Flag).
 		SetLevelType(e.Body.LevelType).
 		SetLevel(e.Body.Level).
 		SetExperience(e.Body.Experience).
@@ -181,11 +173,7 @@ func buildAssetFromAcceptedBody(e asset2.StatusEvent[asset2.AcceptedStatusEventB
 		SetSpeed(e.Body.Speed).
 		SetJump(e.Body.Jump).
 		SetSlots(e.Body.Slots).
-		SetLocked(e.Body.Locked).
-		SetSpikes(e.Body.Spikes).
-		SetKarmaUsed(e.Body.KarmaUsed).
-		SetCold(e.Body.Cold).
-		SetCanBeTraded(e.Body.CanBeTraded).
+		SetFlag(e.Body.Flag).
 		SetLevelType(e.Body.LevelType).
 		SetLevel(e.Body.Level).
 		SetExperience(e.Body.Experience).

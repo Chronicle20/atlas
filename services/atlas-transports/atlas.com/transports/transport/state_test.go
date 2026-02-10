@@ -228,8 +228,8 @@ func TestStateMachine_GetState(t *testing.T) {
 
 	trip1 := uuid.New()
 
-	// Update state
-	now := time.Now()
+	// Use a fixed reference time to avoid midnight-crossing issues with time-of-day comparisons
+	now := time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC)
 	trip, err := NewTripScheduleBuilder().
 		SetTripId(trip1).
 		SetRouteId(routeID).

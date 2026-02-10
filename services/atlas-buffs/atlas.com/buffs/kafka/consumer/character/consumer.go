@@ -43,7 +43,7 @@ func handleApply(l logrus.FieldLogger, ctx context.Context, c character2.Command
 		statChanges = append(statChanges, stat.NewStat(cs.Type, cs.Amount))
 	}
 
-	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Duration, statChanges); err != nil {
+	if err := character.NewProcessor(l, ctx).Apply(c.WorldId, c.CharacterId, c.Body.FromId, c.Body.SourceId, c.Body.Level, c.Body.Duration, statChanges); err != nil {
 		l.WithError(err).Errorf("Unable to apply buff [%d] to character [%d].", c.Body.SourceId, c.CharacterId)
 	}
 }

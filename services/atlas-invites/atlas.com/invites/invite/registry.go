@@ -209,6 +209,44 @@ func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, ori
 	return errors.New("not found")
 }
 
+func (r *Registry) DeleteForCharacter(t tenant.Model, characterId uint32) []Model {
+	tl := r.getOrCreateTenantLock(t)
+
+	tl.Lock()
+	defer tl.Unlock()
+
+	r.lock.RLock()
+	tenReg := r.inviteReg[t]
+	r.lock.RUnlock()
+
+	var removed = make([]Model, 0)
+
+	// Remove all invites targeting this character.
+	if charReg, ok := tenReg[characterId]; ok {
+		for _, is := range charReg {
+			removed = append(removed, is...)
+		}
+		delete(tenReg, characterId)
+	}
+
+	// Remove all invites originated by this character from other targets.
+	for targetId, charReg := range tenReg {
+		for inviteType, is := range charReg {
+			var remain = make([]Model, 0)
+			for _, i := range is {
+				if i.OriginatorId() == characterId {
+					removed = append(removed, i)
+				} else {
+					remain = append(remain, i)
+				}
+			}
+			tenReg[targetId][inviteType] = remain
+		}
+	}
+
+	return removed
+}
+
 func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {
 	var results = make([]Model, 0)
 

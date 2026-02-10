@@ -19,6 +19,8 @@ type Processor interface {
 	CreateAndEmit(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error)
 	Delete(banId uint32) error
 	DeleteAndEmit(banId uint32) error
+	ExpireBan(banId uint32) error
+	ExpireBanAndEmit(banId uint32) error
 	GetById(banId uint32) (Model, error)
 	GetByTenant() ([]Model, error)
 	GetByType(banType BanType) ([]Model, error)
@@ -86,6 +88,36 @@ func (p *ProcessorImpl) DeleteAndEmit(banId uint32) error {
 			return err
 		}
 		return buf.Put(ban2.EnvEventTopicStatus, deletedEventProvider(banId))
+	})
+}
+
+func (p *ProcessorImpl) ExpireBan(banId uint32) error {
+	p.l.Debugf("Expiring ban [%d] early.", banId)
+	m, err := p.GetById(banId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to retrieve ban [%d] for expiration.", banId)
+		return err
+	}
+	if m.Permanent() {
+		p.l.Warnf("Cannot expire permanent ban [%d].", banId)
+		return ErrCannotExpirePermanentBan
+	}
+	err = updateExpiresAt(p.db)(p.t, banId, time.Now())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to expire ban [%d].", banId)
+		return err
+	}
+	p.l.Infof("Expired ban [%d] early.", banId)
+	return nil
+}
+
+func (p *ProcessorImpl) ExpireBanAndEmit(banId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		err := p.ExpireBan(banId)
+		if err != nil {
+			return err
+		}
+		return buf.Put(ban2.EnvEventTopicStatus, expiredEventProvider(banId))
 	})
 }
 

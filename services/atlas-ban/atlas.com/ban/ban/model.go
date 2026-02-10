@@ -1,10 +1,13 @@
 package ban
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrCannotExpirePermanentBan = errors.New("cannot expire a permanent ban")
 
 type BanType byte
 

@@ -55,6 +55,14 @@ func isCIDR(value string) bool {
 	return err == nil
 }
 
+func updateExpiresAt(db *gorm.DB) func(tenant tenant.Model, id uint32, expiresAt time.Time) error {
+	return func(tenant tenant.Model, id uint32, expiresAt time.Time) error {
+		return db.Model(&Entity{}).
+			Where(&Entity{TenantId: tenant.Id(), ID: id}).
+			Update("expires_at", expiresAt).Error
+	}
+}
+
 func Make(e Entity) (Model, error) {
 	return NewBuilder(e.TenantId, BanType(e.BanType), e.Value).
 		SetId(e.ID).

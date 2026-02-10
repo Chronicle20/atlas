@@ -11,6 +11,7 @@ import (
 	"atlas-login/world"
 	"context"
 	"sort"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -123,7 +124,7 @@ func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) fu
 
 		if e.Body.Code != session2.EventStatusErrorCodeDeletedOrBlocked {
 			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announceError(l)(ctx)(wp)(e.Body.Code))
-		} else if e.Body.Until != 0 {
+		} else if !e.Body.Until.IsZero() {
 			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announceTemporaryBan(l)(ctx)(wp)(e.Body.Until, e.Body.Reason))
 		} else {
 			session.NewProcessor(l, ctx).IfPresentById(e.SessionId, announcePermanentBan(l)(ctx)(wp))
@@ -147,12 +148,12 @@ func announcePermanentBan(l logrus.FieldLogger) func(ctx context.Context) func(w
 	}
 }
 
-func announceTemporaryBan(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(until uint64, reason byte) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(until uint64, reason byte) model.Operator[session.Model] {
+func announceTemporaryBan(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
 		t := tenant.MustFromContext(ctx)
-		return func(wp writer.Producer) func(until uint64, reason byte) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
 			authTemporaryBanFunc := session.Announce(l)(wp)(writer.AuthTemporaryBan)
-			return func(until uint64, reason byte) model.Operator[session.Model] {
+			return func(until time.Time, reason byte) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					err := authTemporaryBanFunc(s, writer.AuthTemporaryBanBody(l, t)(until, reason))
 					if err != nil {

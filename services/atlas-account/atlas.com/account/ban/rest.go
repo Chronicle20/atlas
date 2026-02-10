@@ -2,6 +2,7 @@ package ban
 
 import (
 	"strconv"
+	"time"
 )
 
 type CheckRestModel struct {
@@ -11,7 +12,7 @@ type CheckRestModel struct {
 	Reason     string `json:"reason,omitempty"`
 	ReasonCode byte   `json:"reasonCode,omitempty"`
 	Permanent  bool   `json:"permanent,omitempty"`
-	ExpiresAt  int64  `json:"expiresAt,omitempty"`
+	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
 }
 
 func (r CheckRestModel) GetName() string {

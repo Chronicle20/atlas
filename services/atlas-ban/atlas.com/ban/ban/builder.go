@@ -15,7 +15,7 @@ type Builder struct {
 	reason     string
 	reasonCode byte
 	permanent  bool
-	expiresAt  int64
+	expiresAt  time.Time
 	issuedBy   string
 	createdAt  time.Time
 	updatedAt  time.Time
@@ -29,7 +29,6 @@ func NewBuilder(tenantId uuid.UUID, banType BanType, value string) *Builder {
 		reason:     "",
 		reasonCode: 0,
 		permanent:  false,
-		expiresAt:  0,
 		issuedBy:   "",
 	}
 }
@@ -54,7 +53,7 @@ func (b *Builder) SetPermanent(permanent bool) *Builder {
 	return b
 }
 
-func (b *Builder) SetExpiresAt(expiresAt int64) *Builder {
+func (b *Builder) SetExpiresAt(expiresAt time.Time) *Builder {
 	b.expiresAt = expiresAt
 	return b
 }

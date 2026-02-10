@@ -51,7 +51,7 @@ export interface BanAttributes {
     reason: string;
     reasonCode: BanReasonCode;
     permanent: boolean;
-    expiresAt: number; // Unix timestamp in milliseconds
+    expiresAt: string; // RFC3339 timestamp from Go backend
     issuedBy: string;
 }
 
@@ -72,7 +72,7 @@ export interface CreateBanRequest {
     reason: string;
     reasonCode: BanReasonCode;
     permanent: boolean;
-    expiresAt: number;
+    expiresAt: string;
     issuedBy: string;
 }
 
@@ -90,7 +90,7 @@ export interface CheckBanAttributes {
     reason?: string;
     reasonCode?: BanReasonCode;
     permanent?: boolean;
-    expiresAt?: number;
+    expiresAt?: string;
 }
 
 /**
@@ -114,13 +114,20 @@ export interface LoginHistoryEntry {
 }
 
 /**
+ * Check if a time string represents Go's zero value
+ */
+export function isZeroTime(t: string): boolean {
+    return !t || t === '0001-01-01T00:00:00Z';
+}
+
+/**
  * Helper function to check if a ban is expired
  */
 export function isBanExpired(ban: Ban): boolean {
     if (ban.attributes.permanent) {
         return false;
     }
-    return ban.attributes.expiresAt > 0 && ban.attributes.expiresAt < Date.now();
+    return !isZeroTime(ban.attributes.expiresAt) && new Date(ban.attributes.expiresAt) < new Date();
 }
 
 /**
@@ -137,7 +144,7 @@ export function formatBanExpiration(ban: Ban): string {
     if (ban.attributes.permanent) {
         return 'Never (Permanent)';
     }
-    if (ban.attributes.expiresAt === 0) {
+    if (isZeroTime(ban.attributes.expiresAt)) {
         return 'Not set';
     }
     return new Date(ban.attributes.expiresAt).toLocaleString();

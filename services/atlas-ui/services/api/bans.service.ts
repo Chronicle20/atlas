@@ -53,7 +53,7 @@ class BansService extends BaseService {
                     errors.push({ field: 'value', message: 'Invalid IP address or CIDR format' });
                 }
             }
-            if (!data.permanent && (!data.expiresAt || data.expiresAt <= Date.now())) {
+            if (!data.permanent && (!data.expiresAt || new Date(data.expiresAt) <= new Date())) {
                 errors.push({ field: 'expiresAt', message: 'Expiration date must be in the future for non-permanent bans' });
             }
         }
@@ -72,7 +72,7 @@ class BansService extends BaseService {
                 banType: Number(transformed.attributes.banType),
                 reasonCode: Number(transformed.attributes.reasonCode),
                 permanent: Boolean(transformed.attributes.permanent),
-                expiresAt: Number(transformed.attributes.expiresAt),
+                expiresAt: String(transformed.attributes.expiresAt),
             };
             return transformed as T;
         }

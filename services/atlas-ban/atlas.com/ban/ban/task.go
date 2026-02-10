@@ -23,8 +23,8 @@ func NewExpiredBanCleanup(l logrus.FieldLogger, db *gorm.DB, interval time.Durat
 // single global sweep rather than iterating per-tenant.
 func (t *ExpiredBanCleanup) Run() {
 	t.l.Debugf("Executing expired ban cleanup task.")
-	now := time.Now().Unix()
-	err := t.db.Where("permanent = ? AND expires_at <= ? AND expires_at > 0", false, now).Delete(&Entity{}).Error
+	now := time.Now()
+	err := t.db.Where("permanent = ? AND expires_at <= ?", false, now).Delete(&Entity{}).Error
 	if err != nil {
 		t.l.WithError(err).Errorf("Unable to cleanup expired bans.")
 	}

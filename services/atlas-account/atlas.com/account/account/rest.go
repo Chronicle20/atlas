@@ -83,6 +83,10 @@ func (r PinAttemptInputRestModel) GetName() string {
 	return "pin-attempts"
 }
 
+func (r PinAttemptInputRestModel) GetID() string {
+	return r.Id
+}
+
 func (r *PinAttemptInputRestModel) SetID(idStr string) error {
 	r.Id = idStr
 	return nil
@@ -114,6 +118,10 @@ type PicAttemptInputRestModel struct {
 
 func (r PicAttemptInputRestModel) GetName() string {
 	return "pic-attempts"
+}
+
+func (r PicAttemptInputRestModel) GetID() string {
+	return r.Id
 }
 
 func (r *PicAttemptInputRestModel) SetID(idStr string) error {

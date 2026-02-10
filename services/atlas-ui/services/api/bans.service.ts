@@ -142,6 +142,14 @@ class BansService extends BaseService {
     }
 
     /**
+     * Expire a ban early by setting its expiresAt to the current time
+     */
+    async expireBan(tenant: Tenant, id: string, options?: ServiceOptions): Promise<void> {
+        api.setTenant(tenant);
+        await api.post(`${this.basePath}/${id}/expire`, {}, options);
+    }
+
+    /**
      * Check if a value is banned (IP, HWID, or account ID)
      */
     async checkBan(tenant: Tenant, params: CheckBanParams, options?: ServiceOptions): Promise<CheckBanResult> {

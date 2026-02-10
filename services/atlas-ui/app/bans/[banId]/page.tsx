@@ -8,13 +8,14 @@ import { Ban, BanTypeLabels, BanReasonCodeLabels, formatBanExpiration, isBanActi
 import { BanTypeBadge } from "@/components/features/bans/BanTypeBadge";
 import { BanStatusBadge } from "@/components/features/bans/BanStatusBadge";
 import { DeleteBanDialog } from "@/components/features/bans/DeleteBanDialog";
+import { ExpireBanDialog } from "@/components/features/bans/ExpireBanDialog";
 import { Toaster, toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Trash2, Shield, Calendar, User, FileText, Hash } from "lucide-react";
+import { ArrowLeft, Trash2, Shield, Calendar, User, FileText, Hash, Clock } from "lucide-react";
 
 function BanDetailSkeleton() {
     return (
@@ -50,6 +51,7 @@ export default function BanDetailPage() {
     const [ban, setBan] = useState<Ban | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [expireDialogOpen, setExpireDialogOpen] = useState(false);
 
     const fetchBan = useCallback(async () => {
         if (!activeTenant || !banId) return;
@@ -75,6 +77,12 @@ export default function BanDetailPage() {
     const handleDeleteSuccess = () => {
         router.push("/bans");
     };
+
+    const handleExpireSuccess = () => {
+        fetchBan();
+    };
+
+    const canExpire = ban && !ban.attributes.permanent && isBanActive(ban);
 
     if (loading) {
         return <BanDetailSkeleton />;
@@ -104,13 +112,24 @@ export default function BanDetailPage() {
                         <h2 className="text-2xl font-bold tracking-tight">Ban Details</h2>
                     </div>
                 </div>
-                <Button
-                    variant="destructive"
-                    onClick={() => setDeleteDialogOpen(true)}
-                >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete Ban
-                </Button>
+                <div className="flex items-center gap-2">
+                    {canExpire && (
+                        <Button
+                            variant="outline"
+                            onClick={() => setExpireDialogOpen(true)}
+                        >
+                            <Clock className="mr-2 h-4 w-4" />
+                            Expire Early
+                        </Button>
+                    )}
+                    <Button
+                        variant="destructive"
+                        onClick={() => setDeleteDialogOpen(true)}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete Ban
+                    </Button>
+                </div>
             </div>
 
             <Card>
@@ -210,6 +229,14 @@ export default function BanDetailPage() {
                 onOpenChange={setDeleteDialogOpen}
                 tenant={activeTenant}
                 onSuccess={handleDeleteSuccess}
+            />
+
+            <ExpireBanDialog
+                ban={ban}
+                open={expireDialogOpen}
+                onOpenChange={setExpireDialogOpen}
+                tenant={activeTenant}
+                onSuccess={handleExpireSuccess}
             />
 
             <Toaster richColors />

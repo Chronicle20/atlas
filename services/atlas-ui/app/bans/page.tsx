@@ -8,6 +8,7 @@ import { bansService } from "@/services/api/bans.service";
 import { Ban, BanType, BanTypeLabels } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
 import { DeleteBanDialog } from "@/components/features/bans/DeleteBanDialog";
+import { ExpireBanDialog } from "@/components/features/bans/ExpireBanDialog";
 import { Toaster } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
@@ -51,6 +52,7 @@ export default function BansPage() {
     const [typeFilter, setTypeFilter] = useState<string>("all");
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [expireDialogOpen, setExpireDialogOpen] = useState(false);
     const [selectedBan, setSelectedBan] = useState<Ban | null>(null);
 
     const fetchBans = useCallback(async () => {
@@ -84,7 +86,17 @@ export default function BansPage() {
         setDeleteDialogOpen(true);
     };
 
+    const handleExpire = (ban: Ban) => {
+        setSelectedBan(ban);
+        setExpireDialogOpen(true);
+    };
+
     const handleDeleteSuccess = () => {
+        setSelectedBan(null);
+        fetchBans();
+    };
+
+    const handleExpireSuccess = () => {
         setSelectedBan(null);
         fetchBans();
     };
@@ -96,6 +108,7 @@ export default function BansPage() {
     const columns = getColumns({
         onView: handleView,
         onDelete: handleDelete,
+        onExpire: handleExpire,
     });
 
     if (loading && bans.length === 0) {
@@ -163,6 +176,14 @@ export default function BansPage() {
                 onOpenChange={setDeleteDialogOpen}
                 tenant={activeTenant}
                 onSuccess={handleDeleteSuccess}
+            />
+
+            <ExpireBanDialog
+                ban={selectedBan}
+                open={expireDialogOpen}
+                onOpenChange={setExpireDialogOpen}
+                tenant={activeTenant}
+                onSuccess={handleExpireSuccess}
             />
 
             <Toaster richColors />

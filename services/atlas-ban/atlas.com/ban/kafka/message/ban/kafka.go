@@ -11,6 +11,7 @@ const (
 	EnvEventTopicStatus = "EVENT_TOPIC_BAN_STATUS"
 	EventStatusCreated  = "CREATED"
 	EventStatusDeleted  = "DELETED"
+	EventStatusExpired  = "EXPIRED"
 )
 
 type Command[E any] struct {

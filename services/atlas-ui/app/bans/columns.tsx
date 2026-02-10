@@ -3,19 +3,20 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { MoreHorizontal, Eye, Trash2 } from "lucide-react";
+import { MoreHorizontal, Eye, Trash2, Clock } from "lucide-react";
 import { BanTypeBadge } from "@/components/features/bans/BanTypeBadge";
 import { BanStatusBadge } from "@/components/features/bans/BanStatusBadge";
-import { Ban, BanReasonCodeLabels, isZeroTime } from "@/types/models/ban";
+import { Ban, BanReasonCodeLabels, isZeroTime, isBanActive } from "@/types/models/ban";
 
 interface ColumnProps {
     onView?: (ban: Ban) => void;
     onDelete?: (ban: Ban) => void;
+    onExpire?: (ban: Ban) => void;
 }
 
 export const hiddenColumns = ["attributes.reasonCode"];
 
-export const getColumns = ({ onView, onDelete }: ColumnProps): ColumnDef<Ban>[] => {
+export const getColumns = ({ onView, onDelete, onExpire }: ColumnProps): ColumnDef<Ban>[] => {
     return [
         {
             accessorKey: "id",
@@ -95,6 +96,9 @@ export const getColumns = ({ onView, onDelete }: ColumnProps): ColumnDef<Ban>[] 
         {
             id: "actions",
             cell: ({ row }) => {
+                const ban = row.original;
+                const canExpire = !ban.attributes.permanent && isBanActive(ban);
+
                 return (
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -104,14 +108,20 @@ export const getColumns = ({ onView, onDelete }: ColumnProps): ColumnDef<Ban>[] 
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => onView?.(row.original)}>
+                            <DropdownMenuItem onClick={() => onView?.(ban)}>
                                 <Eye className="mr-2 h-4 w-4" />
                                 View Details
                             </DropdownMenuItem>
+                            {canExpire && (
+                                <DropdownMenuItem onClick={() => onExpire?.(ban)}>
+                                    <Clock className="mr-2 h-4 w-4" />
+                                    Expire Early
+                                </DropdownMenuItem>
+                            )}
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
-                                onClick={() => onDelete?.(row.original)}
+                                onClick={() => onDelete?.(ban)}
                             >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete

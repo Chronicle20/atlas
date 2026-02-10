@@ -10,6 +10,7 @@ import (
 	"atlas-data/cosmetic/hair"
 	"atlas-data/equipment"
 	"atlas-data/etc"
+	"atlas-data/item"
 	"atlas-data/kafka/producer"
 	_map "atlas-data/map"
 	"atlas-data/monster"
@@ -186,6 +187,10 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {
+					if err = item.InitStringNested(t, filepath.Join(path, "String.wz", "Eqp.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize equipment item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, "Character.wz", equipment.RegisterEquipment(db))()
 				} else if name == WorkerReactor {
 					err = RegisterAllData(l)(ctx)(path, "Reactor.wz", reactor.RegisterReactor(db))()
@@ -197,16 +202,36 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
 					_ = skill.GetSkillStringRegistry().Clear(t)
 				} else if name == WorkerPet {
+					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Pet.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize pet item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
+					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Consume.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize consumable item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
 				} else if name == WorkerCash {
+					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Cash.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize cash item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Cash"), cash.RegisterCash(db))()
 				} else if name == WorkerCommodity {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
 				} else if name == WorkerEtc {
+					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Etc.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize etc item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
 				} else if name == WorkerSetup {
+					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Ins.img.xml")); err != nil {
+						l.WithError(err).Errorf("Failed to initialize setup item string registry.")
+						return err
+					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Install"), setup.RegisterSetup(db))()
 				} else if name == WorkerCharacterCreation {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "MakeCharInfo.img.xml"), templates.RegisterCharacterTemplate(db))()

@@ -1,6 +1,8 @@
 package session
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -55,5 +57,5 @@ type StateChangedEventBody[E any] struct {
 type ErrorStatusEventBody struct {
 	Code   string `json:"code"`
 	Reason byte   `json:"reason"`
-	Until  uint64 `json:"until"`
+	Until  time.Time `json:"until"`
 }

@@ -40,12 +40,12 @@ export const npcKeys = {
  * Hook to fetch all NPCs for a tenant (combines shop and conversation data)
  */
 export function useNPCs(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: QueryOptions
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.list(tenant, options),
-    queryFn: () => npcsService.getAllNPCs(tenant, options),
+    queryFn: () => npcsService.getAllNPCs(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (NPC data changes less frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -56,13 +56,13 @@ export function useNPCs(
  * Hook to fetch a specific NPC by ID
  */
 export function useNPC(
-  tenant: Tenant, 
-  npcId: number, 
+  tenant: Tenant,
+  npcId: number,
   options?: ServiceOptions
 ): UseQueryResult<NPC | null, Error> {
   return useQuery({
     queryKey: npcKeys.detail(tenant, npcId),
-    queryFn: () => npcsService.getNPCById(npcId, tenant, options),
+    queryFn: () => npcsService.getNPCById(npcId, tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -73,12 +73,12 @@ export function useNPC(
  * Hook to fetch NPCs that have shops
  */
 export function useNPCsWithShops(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: QueryOptions
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withShops(tenant),
-    queryFn: () => npcsService.getNPCsWithShops(tenant, options),
+    queryFn: () => npcsService.getNPCsWithShops(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -89,12 +89,12 @@ export function useNPCsWithShops(
  * Hook to fetch NPCs that have conversations
  */
 export function useNPCsWithConversations(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: QueryOptions
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withConversations(tenant),
-    queryFn: () => npcsService.getNPCsWithConversations(tenant, options),
+    queryFn: () => npcsService.getNPCsWithConversations(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -105,13 +105,13 @@ export function useNPCsWithConversations(
  * Hook to fetch NPC shop details with commodities
  */
 export function useNPCShop(
-  tenant: Tenant, 
-  npcId: number, 
+  tenant: Tenant,
+  npcId: number,
   options?: ServiceOptions
 ): UseQueryResult<ShopResponse, Error> {
   return useQuery({
     queryKey: npcKeys.shop(tenant, npcId),
-    queryFn: () => npcsService.getNPCShop(npcId, tenant, options),
+    queryFn: () => npcsService.getNPCShop(npcId, tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 1 * 60 * 1000, // 1 minute (shop data changes more frequently)
     gcTime: 3 * 60 * 1000,

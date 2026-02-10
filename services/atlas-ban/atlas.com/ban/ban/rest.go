@@ -2,6 +2,7 @@ package ban
 
 import (
 	"strconv"
+	"time"
 )
 
 type RestModel struct {
@@ -11,8 +12,8 @@ type RestModel struct {
 	Reason     string `json:"reason"`
 	ReasonCode byte   `json:"reasonCode"`
 	Permanent  bool   `json:"permanent"`
-	ExpiresAt  int64  `json:"expiresAt"`
-	IssuedBy   string `json:"issuedBy"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	IssuedBy   string    `json:"issuedBy"`
 }
 
 func (r RestModel) GetName() string {
@@ -67,7 +68,7 @@ type CheckRestModel struct {
 	Reason     string `json:"reason,omitempty"`
 	ReasonCode byte   `json:"reasonCode,omitempty"`
 	Permanent  bool   `json:"permanent,omitempty"`
-	ExpiresAt  int64  `json:"expiresAt,omitempty"`
+	ExpiresAt  time.Time `json:"expiresAt,omitempty"`
 }
 
 func (r CheckRestModel) GetName() string {

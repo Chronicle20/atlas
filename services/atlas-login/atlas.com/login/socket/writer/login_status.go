@@ -1,6 +1,8 @@
 package writer
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -107,8 +109,8 @@ func AuthSuccessBody(tenant tenant.Model) func(accountId uint32, name string, ge
 	}
 }
 
-func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until uint64, reason byte) BodyProducer {
-	return func(until uint64, reason byte) BodyProducer {
+func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until time.Time, reason byte) BodyProducer {
+	return func(until time.Time, reason byte) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
 			w.WriteByte(code)
@@ -119,13 +121,19 @@ func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until 
 			}
 
 			w.WriteByte(reason)
-			w.WriteLong(until) // Temp ban date is handled as a 64-bit long, number of 100NS intervals since 1/1/1601.
+			w.WriteLong(uint64(msTime(until)))
 
 			rtn := w.Bytes()
-			//l.Debugf("Writing [%s] message. opcode [0x%02X]. body={reason=%d, until=%d}.", AuthTemporaryBan, op&0xFF, reason, until)
 			return rtn
 		}
 	}
+}
+
+func msTime(t time.Time) int64 {
+	if t.IsZero() {
+		return -1
+	}
+	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }
 
 func AuthPermanentBanBody(l logrus.FieldLogger, tenant tenant.Model) BodyProducer {

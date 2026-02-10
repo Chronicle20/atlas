@@ -1,10 +1,13 @@
 package ban
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
+
+var ErrCannotExpirePermanentBan = errors.New("cannot expire a permanent ban")
 
 type BanType byte
 
@@ -22,7 +25,7 @@ type Model struct {
 	reason     string
 	reasonCode byte
 	permanent  bool
-	expiresAt  int64
+	expiresAt  time.Time
 	issuedBy   string
 	createdAt  time.Time
 	updatedAt  time.Time
@@ -56,7 +59,7 @@ func (m Model) Permanent() bool {
 	return m.permanent
 }
 
-func (m Model) ExpiresAt() int64 {
+func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
 }
 
@@ -76,5 +79,5 @@ func IsExpired(m Model) bool {
 	if m.permanent {
 		return false
 	}
-	return time.Now().Unix() > m.expiresAt
+	return !m.expiresAt.IsZero() && time.Now().After(m.expiresAt)
 }

@@ -22,12 +22,16 @@ import (
 )
 
 const (
+	ReasonCodeInvalidAttempts = byte(99)
+
 	SystemError       = "SYSTEM_ERROR"
 	NotRegistered     = "NOT_REGISTERED"
 	DeletedOrBlocked  = "DELETED_OR_BLOCKED"
 	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
 	IncorrectPassword = "INCORRECT_PASSWORD"
 	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
+	InvalidPin        = "INVALID_PIN"
+	InvalidPic        = "INVALID_PIC"
 )
 
 var (
@@ -56,10 +60,10 @@ type Processor interface {
 	ByNameProvider(name string) model.Provider[Model]
 	ByTenantProvider() ([]Model, error)
 	LoggedInTenantProvider() ([]Model, error)
-	RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
-	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
-	RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
-	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
+	RecordPinAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 type ProcessorImpl struct {
@@ -366,7 +370,7 @@ func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUI
 			p.l.WithError(err).Warnf("Unable to check ban status for account [%d]. Proceeding with fail-open strategy.", a.Id())
 		} else if checkResult.Banned {
 			p.l.Infof("Account [%d] is banned. type=[%d] reason=[%s].", a.Id(), checkResult.BanType, checkResult.Reason)
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), DeletedOrBlocked, ipAddress, hwid))
+			return mb.Put(account2.EnvEventSessionStatusTopic, banStatusProvider(sessionId, a.Id(), a.Name(), ipAddress, hwid, checkResult.ReasonCode, checkResult.ExpiresAt))
 		}
 
 		if a.State() != StateNotLoggedIn {
@@ -439,19 +443,19 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 	}
 }
 
-func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	var attempts int
 	var limitReached bool
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		var innerErr error
-		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success)
+		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success, ipAddress, hwid)
 		return innerErr
 	})
 	return attempts, limitReached, err
 }
 
-func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
-	return func(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	return func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIN attempt recording.", accountId)
@@ -473,6 +477,8 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 		newAttempts := a.PinAttempts() + 1
 		p.l.Debugf("Recording failed PIN attempt [%d] for account [%d].", newAttempts, accountId)
 
+		_ = mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(uuid.Nil, accountId, a.Name(), InvalidPin, ipAddress, hwid))
+
 		c, err := configuration.Get()
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to read configuration for PIN attempt limit.")
@@ -488,10 +494,10 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 				p.l.WithError(err).Errorf("Unable to parse PIN ban duration [%s]. Defaulting to 15 minutes.", c.PinBanDuration)
 				duration = 15 * time.Minute
 			}
-			expiresAt := time.Now().Add(duration).UnixMilli()
+			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIN attempts (%d)", c.MaxPinAttempts)
 
-			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, ReasonCodeInvalidAttempts, expiresAt))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
 				return newAttempts, true, err
@@ -515,19 +521,19 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 	}
 }
 
-func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	var attempts int
 	var limitReached bool
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		var innerErr error
-		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success)
+		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success, ipAddress, hwid)
 		return innerErr
 	})
 	return attempts, limitReached, err
 }
 
-func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
-	return func(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	return func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIC attempt recording.", accountId)
@@ -549,6 +555,8 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 		newAttempts := a.PicAttempts() + 1
 		p.l.Debugf("Recording failed PIC attempt [%d] for account [%d].", newAttempts, accountId)
 
+		_ = mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(uuid.Nil, accountId, a.Name(), InvalidPic, ipAddress, hwid))
+
 		c, err := configuration.Get()
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to read configuration for PIC attempt limit.")
@@ -564,10 +572,10 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 				p.l.WithError(err).Errorf("Unable to parse PIC ban duration [%s]. Defaulting to 15 minutes.", c.PicBanDuration)
 				duration = 15 * time.Minute
 			}
-			expiresAt := time.Now().Add(duration).UnixMilli()
+			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIC attempts (%d)", c.MaxPicAttempts)
 
-			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, ReasonCodeInvalidAttempts, expiresAt))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
 				return newAttempts, true, err

@@ -16,7 +16,7 @@ export function useMonsters(options?: QueryOptions): UseQueryResult<MonsterData[
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: monsterKeys.list(options),
-    queryFn: () => monstersService.getAllMonsters(activeTenant!, options),
+    queryFn: () => monstersService.getAllMonsters(activeTenant!, { ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -27,7 +27,7 @@ export function useMonster(id: string, options?: ServiceOptions): UseQueryResult
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: monsterKeys.detail(id),
-    queryFn: () => monstersService.getMonsterById(id, activeTenant!, options),
+    queryFn: () => monstersService.getMonsterById(id, activeTenant!, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

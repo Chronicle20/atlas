@@ -1,5 +1,7 @@
 package ban
 
+import "time"
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_BAN"
 
@@ -9,6 +11,7 @@ const (
 	EnvEventTopicStatus = "EVENT_TOPIC_BAN_STATUS"
 	EventStatusCreated  = "CREATED"
 	EventStatusDeleted  = "DELETED"
+	EventStatusExpired  = "EXPIRED"
 )
 
 type Command[E any] struct {
@@ -22,8 +25,8 @@ type CreateCommandBody struct {
 	Reason     string `json:"reason"`
 	ReasonCode byte   `json:"reasonCode"`
 	Permanent  bool   `json:"permanent"`
-	ExpiresAt  int64  `json:"expiresAt"`
-	IssuedBy   string `json:"issuedBy"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	IssuedBy   string    `json:"issuedBy"`
 }
 
 type DeleteCommandBody struct {

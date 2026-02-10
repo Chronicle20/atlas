@@ -49,13 +49,13 @@ export const inventoryKeys = {
  * Hook to fetch inventory data for a specific character
  */
 export function useInventory(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   options?: ServiceOptions
 ): UseQueryResult<InventoryResponse, Error> {
   return useQuery({
     queryKey: inventoryKeys.inventory(tenant, characterId, options),
-    queryFn: () => inventoryService.getInventory(tenant, characterId, options),
+    queryFn: () => inventoryService.getInventory(tenant, characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000, // 30 seconds (inventory changes frequently)
     gcTime: 2 * 60 * 1000, // 2 minutes
@@ -66,13 +66,13 @@ export function useInventory(
  * Hook to fetch compartments for a specific character
  */
 export function useCompartments(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   options?: ServiceOptions
 ): UseQueryResult<Compartment[], Error> {
   return useQuery({
     queryKey: inventoryKeys.compartmentsList(tenant, characterId, options),
-    queryFn: () => inventoryService.getCompartments(tenant, characterId, options),
+    queryFn: () => inventoryService.getCompartments(tenant, characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -83,14 +83,14 @@ export function useCompartments(
  * Hook to fetch assets for a specific compartment
  */
 export function useCompartmentAssets(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   compartmentId: string,
   options?: ServiceOptions
 ): UseQueryResult<Asset[], Error> {
   return useQuery({
     queryKey: inventoryKeys.compartmentAssetsList(tenant, characterId, compartmentId, options),
-    queryFn: () => inventoryService.getCompartmentAssets(tenant, characterId, compartmentId, options),
+    queryFn: () => inventoryService.getCompartmentAssets(tenant, characterId, compartmentId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId && !!compartmentId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -101,8 +101,8 @@ export function useCompartmentAssets(
  * Hook to fetch inventory summary with compartment counts
  */
 export function useInventorySummary(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   options?: ServiceOptions
 ): UseQueryResult<{
   totalCompartments: number;
@@ -116,7 +116,7 @@ export function useInventorySummary(
 }, Error> {
   return useQuery({
     queryKey: inventoryKeys.summary(tenant, characterId, options),
-    queryFn: () => inventoryService.getInventorySummary(tenant, characterId, options),
+    queryFn: () => inventoryService.getInventorySummary(tenant, characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -127,14 +127,14 @@ export function useInventorySummary(
  * Hook to check if an asset exists in inventory
  */
 export function useHasAsset(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   assetId: string,
   options?: ServiceOptions
 ): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: inventoryKeys.hasAsset(tenant, characterId, assetId, options),
-    queryFn: () => inventoryService.hasAsset(tenant, characterId, assetId, options),
+    queryFn: () => inventoryService.hasAsset(tenant, characterId, assetId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId && !!assetId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,

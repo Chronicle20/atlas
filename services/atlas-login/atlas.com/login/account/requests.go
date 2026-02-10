@@ -37,12 +37,12 @@ func requestUpdate(m Model) requests.Request[RestModel] {
 	return rest.MakePatchRequest[RestModel](fmt.Sprintf(getBaseRequest()+Update, m.id), im)
 }
 
-func requestRecordPinAttempt(accountId uint32, success bool) requests.Request[PinAttemptOutputRestModel] {
-	input := PinAttemptInputRestModel{Success: success}
+func requestRecordPinAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PinAttemptOutputRestModel] {
+	input := PinAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
 	return rest.MakePostRequest[PinAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PinAttempts, accountId), input)
 }
 
-func requestRecordPicAttempt(accountId uint32, success bool) requests.Request[PicAttemptOutputRestModel] {
-	input := PicAttemptInputRestModel{Success: success}
+func requestRecordPicAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PicAttemptOutputRestModel] {
+	input := PicAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
 	return rest.MakePostRequest[PicAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PicAttempts, accountId), input)
 }

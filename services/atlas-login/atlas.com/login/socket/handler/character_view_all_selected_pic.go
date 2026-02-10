@@ -10,6 +10,7 @@ import (
 	"atlas-login/socket/writer"
 	"atlas-login/world"
 	"context"
+	"net"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/request"
@@ -49,6 +50,18 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 		}
 
 		ap := account.NewProcessor(l, ctx)
+		ipAddress := ""
+		if addr := s.GetRemoteAddress(); addr != nil {
+			if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+				ipAddress = tcpAddr.IP.String()
+			} else {
+				host, _, err := net.SplitHostPort(addr.String())
+				if err == nil {
+					ipAddress = host
+				}
+			}
+		}
+
 		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d].", s.AccountId())
@@ -57,7 +70,7 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 
 		if a.PIC() != pic {
 			l.Debugf("Incorrect PIC for account [%d].", s.AccountId())
-			_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false)
+			_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false, ipAddress, "")
 			if limitReached {
 				l.Warnf("Account [%d] has exceeded PIC attempt limit. Terminating session.", s.AccountId())
 				_ = sp.Destroy(s)
@@ -65,7 +78,7 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 			return
 		}
 
-		ap.RecordPicAttempt(s.AccountId(), true)
+		ap.RecordPicAttempt(s.AccountId(), true, ipAddress, "")
 
 		w, err := world.NewProcessor(l, ctx).GetById(worldId)
 		if err != nil {

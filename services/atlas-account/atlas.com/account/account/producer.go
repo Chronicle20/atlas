@@ -5,6 +5,7 @@ import (
 	ban2 "atlas-account/kafka/message/ban"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -105,7 +106,7 @@ func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, accountNa
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createBanCommandProvider(accountId uint32, reason string, expiresAt int64) model.Provider[[]kafka.Message] {
+func createBanCommandProvider(accountId uint32, reason string, reasonCode byte, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &ban2.Command[ban2.CreateCommandBody]{
 		Type: ban2.CommandTypeCreate,
@@ -113,10 +114,28 @@ func createBanCommandProvider(accountId uint32, reason string, expiresAt int64) 
 			BanType:    2, // Account ban
 			Value:      fmt.Sprintf("%d", accountId),
 			Reason:     reason,
-			ReasonCode: 0,
+			ReasonCode: reasonCode,
 			Permanent:  false,
 			ExpiresAt:  expiresAt,
 			IssuedBy:   "atlas-account",
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func banStatusProvider(sessionId uuid.UUID, accountId uint32, accountName string, ipAddress string, hwid string, reason byte, until time.Time) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(accountId))
+	value := &account2.SessionStatusEvent[account2.ErrorSessionStatusEventBody]{
+		SessionId:   sessionId,
+		AccountId:   accountId,
+		AccountName: accountName,
+		Type:        account2.SessionEventStatusTypeError,
+		Body: account2.ErrorSessionStatusEventBody{
+			Code:      DeletedOrBlocked,
+			Reason:    reason,
+			Until:     until,
+			IPAddress: ipAddress,
+			HWID:      hwid,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

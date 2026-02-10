@@ -2,6 +2,7 @@ package ban
 
 import (
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -13,7 +14,6 @@ func TestTransform(t *testing.T) {
 		SetReason("Cheating").
 		SetReasonCode(1).
 		SetPermanent(true).
-		SetExpiresAt(0).
 		SetIssuedBy("admin").
 		Build()
 
@@ -52,6 +52,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestExtract(t *testing.T) {
+	expectedExpiry := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
 	rm := RestModel{
 		Id:         200,
 		BanType:    byte(BanTypeHWID),
@@ -59,7 +60,7 @@ func TestExtract(t *testing.T) {
 		Reason:     "Bot usage",
 		ReasonCode: 2,
 		Permanent:  false,
-		ExpiresAt:  1234567890,
+		ExpiresAt:  expectedExpiry,
 		IssuedBy:   "moderator",
 	}
 
@@ -92,8 +93,8 @@ func TestExtract(t *testing.T) {
 		t.Errorf("Permanent mismatch. Expected false, got %v", m.Permanent())
 	}
 
-	if m.ExpiresAt() != 1234567890 {
-		t.Errorf("ExpiresAt mismatch. Expected 1234567890, got %v", m.ExpiresAt())
+	if !m.ExpiresAt().Equal(expectedExpiry) {
+		t.Errorf("ExpiresAt mismatch. Expected %v, got %v", expectedExpiry, m.ExpiresAt())
 	}
 
 	if m.IssuedBy() != "moderator" {
@@ -172,7 +173,6 @@ func TestTransformCheckBannedModel(t *testing.T) {
 		SetReason("Hacking").
 		SetReasonCode(7).
 		SetPermanent(true).
-		SetExpiresAt(0).
 		Build()
 
 	result := TransformCheck(&m)

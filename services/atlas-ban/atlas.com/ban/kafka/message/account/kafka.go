@@ -1,6 +1,10 @@
 package account
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 const (
 	EnvEventSessionStatusTopic = "EVENT_TOPIC_ACCOUNT_SESSION_STATUS"
@@ -26,7 +30,7 @@ type CreatedSessionStatusEventBody struct {
 type ErrorSessionStatusEventBody struct {
 	Code      string `json:"code"`
 	Reason    byte   `json:"reason"`
-	Until     uint64 `json:"until"`
+	Until     time.Time `json:"until"`
 	IPAddress string `json:"ipAddress"`
 	HWID      string `json:"hwid"`
 }

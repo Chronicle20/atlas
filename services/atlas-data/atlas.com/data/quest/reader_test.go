@@ -26,6 +26,12 @@ const testQuestInfoXML = `
     <int name="autoStart" value="1"/>
     <int name="autoPreComplete" value="1"/>
   </imgdir>
+  <imgdir name="8248">
+    <string name="name" value="Maple 7th Day Market opens tomorrow!"/>
+    <int name="area" value="50"/>
+    <int name="autoStart" value="1"/>
+    <int name="autoPreComplete" value="1"/>
+  </imgdir>
 </imgdir>
 `
 
@@ -80,6 +86,19 @@ const testCheckXML = `
       </imgdir>
     </imgdir>
   </imgdir>
+  <imgdir name="8248">
+    <imgdir name="0">
+      <int name="npc" value="9209001"/>
+      <int name="normalAutoStart" value="1"/>
+      <int name="dayByDay" value="1"/>
+      <imgdir name="dayOfWeek">
+        <string name="sat" value="1"/>
+      </imgdir>
+    </imgdir>
+    <imgdir name="1">
+      <int name="npc" value="9209001"/>
+    </imgdir>
+  </imgdir>
 </imgdir>
 `
 
@@ -128,6 +147,12 @@ const testActXML = `
       </imgdir>
     </imgdir>
   </imgdir>
+  <imgdir name="8248">
+    <imgdir name="0">
+    </imgdir>
+    <imgdir name="1">
+    </imgdir>
+  </imgdir>
 </imgdir>
 `
 
@@ -136,8 +161,8 @@ func TestReadQuestInfo(t *testing.T) {
 
 	quests := ReadQuestInfo(l)(xml.FromByteArrayProvider([]byte(testQuestInfoXML)))
 
-	if len(quests) != 2 {
-		t.Fatalf("expected 2 quests, got %d", len(quests))
+	if len(quests) != 3 {
+		t.Fatalf("expected 3 quests, got %d", len(quests))
 	}
 
 	// Test quest 2000
@@ -193,6 +218,7 @@ func TestReadQuestCheck(t *testing.T) {
 	quests := make(map[uint32]RestModel)
 	quests[2000] = RestModel{Id: 2000, Name: "Test Quest"}
 	quests[10000] = RestModel{Id: 10000, Name: "Test Quest 2"}
+	quests[8248] = RestModel{Id: 8248, Name: "Maple 7th Day Market opens tomorrow!"}
 
 	quests = ReadQuestCheck(l)(xml.FromByteArrayProvider([]byte(testCheckXML)))(quests)
 
@@ -252,6 +278,21 @@ func TestReadQuestCheck(t *testing.T) {
 	if q10000.EndRequirements.Quests[0].Id != 9999 || q10000.EndRequirements.Quests[0].State != 2 {
 		t.Fatalf("expected quest {9999, 2}, got %v", q10000.EndRequirements.Quests[0])
 	}
+
+	// Test quest 8248 - dayByDay and dayOfWeek
+	q8248 := quests[8248]
+	if !q8248.StartRequirements.DayByDay {
+		t.Fatal("expected dayByDay true for quest 8248")
+	}
+	if !q8248.StartRequirements.NormalAutoStart {
+		t.Fatal("expected normalAutoStart true for quest 8248")
+	}
+	if len(q8248.StartRequirements.DayOfWeek) != 1 {
+		t.Fatalf("expected 1 dayOfWeek entry, got %d", len(q8248.StartRequirements.DayOfWeek))
+	}
+	if q8248.StartRequirements.DayOfWeek[0] != "sat" {
+		t.Fatalf("expected dayOfWeek 'sat', got '%s'", q8248.StartRequirements.DayOfWeek[0])
+	}
 }
 
 func TestReadQuestAct(t *testing.T) {
@@ -261,6 +302,7 @@ func TestReadQuestAct(t *testing.T) {
 	quests := make(map[uint32]RestModel)
 	quests[2000] = RestModel{Id: 2000, Name: "Test Quest"}
 	quests[10000] = RestModel{Id: 10000, Name: "Test Quest 2"}
+	quests[8248] = RestModel{Id: 8248, Name: "Maple 7th Day Market opens tomorrow!"}
 
 	quests = ReadQuestAct(l)(xml.FromByteArrayProvider([]byte(testActXML)))(quests)
 
@@ -333,8 +375,8 @@ func TestReadQuestIntegration(t *testing.T) {
 	quests = ReadQuestCheck(l)(xml.FromByteArrayProvider([]byte(testCheckXML)))(quests)
 	quests = ReadQuestAct(l)(xml.FromByteArrayProvider([]byte(testActXML)))(quests)
 
-	if len(quests) != 2 {
-		t.Fatalf("expected 2 quests, got %d", len(quests))
+	if len(quests) != 3 {
+		t.Fatalf("expected 3 quests, got %d", len(quests))
 	}
 
 	// Verify quest 2000 has all data merged

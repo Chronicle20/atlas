@@ -159,7 +159,7 @@ func produceDistribution(l logrus.FieldLogger) func(ctx context.Context) func(f 
 
 			// TODO account for healing
 			totalDamage := mi.Hp()
-			epd := float64(mi.Experience()*20) / float64(totalDamage)
+			epd := float64(mi.Experience()) / float64(totalDamage)
 
 			personalRatio := make(map[uint32]float64)
 			entryExperienceRatio := make([]float64, 0)

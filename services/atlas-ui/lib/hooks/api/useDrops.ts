@@ -13,7 +13,7 @@ export function useMonsterDrops(monsterId: string): UseQueryResult<DropData[], E
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: dropKeys.monster(monsterId),
-    queryFn: () => dropsService.getMonsterDrops(monsterId, activeTenant!),
+    queryFn: () => dropsService.getMonsterDrops(monsterId, activeTenant!, { useCache: false }),
     enabled: !!monsterId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -24,7 +24,7 @@ export function useReactorDrops(reactorId: string): UseQueryResult<ReactorDropDa
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: dropKeys.reactor(reactorId),
-    queryFn: () => dropsService.getReactorDrops(reactorId, activeTenant!),
+    queryFn: () => dropsService.getReactorDrops(reactorId, activeTenant!, { useCache: false }),
     enabled: !!reactorId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

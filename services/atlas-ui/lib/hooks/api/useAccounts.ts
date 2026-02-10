@@ -37,12 +37,12 @@ export const accountKeys = {
  * Hook to fetch all accounts for a tenant with optional filtering
  */
 export function useAccounts(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: AccountQueryOptions
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.list(tenant, options),
-    queryFn: () => accountsService.getAllAccounts(tenant, options),
+    queryFn: () => accountsService.getAllAccounts(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (accounts change more frequently than tenants)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -53,13 +53,13 @@ export function useAccounts(
  * Hook to fetch a specific account by ID within a tenant
  */
 export function useAccount(
-  tenant: Tenant, 
-  id: string, 
+  tenant: Tenant,
+  id: string,
   options?: ServiceOptions
 ): UseQueryResult<Account, Error> {
   return useQuery({
     queryKey: accountKeys.detail(tenant, id),
-    queryFn: () => accountsService.getAccountById(tenant, id, options),
+    queryFn: () => accountsService.getAccountById(tenant, id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -70,13 +70,13 @@ export function useAccount(
  * Hook to check if an account exists within a tenant
  */
 export function useAccountExists(
-  tenant: Tenant, 
-  id: string, 
+  tenant: Tenant,
+  id: string,
   options?: ServiceOptions
 ): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: [...accountKeys.detail(tenant, id), 'exists'],
-    queryFn: () => accountsService.accountExists(tenant, id, options),
+    queryFn: () => accountsService.accountExists(tenant, id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 1 * 60 * 1000, // 1 minute for existence checks
     gcTime: 2 * 60 * 1000,
@@ -87,13 +87,13 @@ export function useAccountExists(
  * Hook to search accounts by name pattern within a tenant
  */
 export function useAccountSearch(
-  tenant: Tenant, 
-  namePattern: string, 
+  tenant: Tenant,
+  namePattern: string,
   options?: ServiceOptions
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.search(tenant, namePattern),
-    queryFn: () => accountsService.searchAccountsByName(tenant, namePattern, options),
+    queryFn: () => accountsService.searchAccountsByName(tenant, namePattern, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!namePattern && namePattern.length > 0,
     staleTime: 1 * 60 * 1000, // Search results can be more stale
     gcTime: 3 * 60 * 1000,
@@ -104,12 +104,12 @@ export function useAccountSearch(
  * Hook to fetch logged-in accounts for a tenant
  */
 export function useLoggedInAccounts(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: ServiceOptions
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.loggedIn(tenant),
-    queryFn: () => accountsService.getLoggedInAccounts(tenant, options),
+    queryFn: () => accountsService.getLoggedInAccounts(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 30 * 1000, // 30 seconds (login status changes frequently)
     gcTime: 2 * 60 * 1000,
@@ -121,7 +121,7 @@ export function useLoggedInAccounts(
  * Hook to fetch account statistics for a tenant
  */
 export function useAccountStats(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: ServiceOptions
 ): UseQueryResult<{
   total: number;
@@ -131,7 +131,7 @@ export function useAccountStats(
 }, Error> {
   return useQuery({
     queryKey: accountKeys.stats(tenant),
-    queryFn: () => accountsService.getAccountStats(tenant, options),
+    queryFn: () => accountsService.getAccountStats(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,

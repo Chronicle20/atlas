@@ -41,7 +41,7 @@ export const guildKeys = {
 export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.list(tenant, options),
-    queryFn: () => tenant ? guildsService.getAll(tenant, options) : Promise.reject(new Error('Tenant is required')),
+    queryFn: () => tenant ? guildsService.getAll(tenant, { ...options, useCache: false }) : Promise.reject(new Error('Tenant is required')),
     enabled: !!tenant?.id,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -54,7 +54,7 @@ export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQue
 export function useGuild(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<Guild, Error> {
   return useQuery({
     queryKey: guildKeys.detail(tenant, guildId),
-    queryFn: () => guildsService.getById(tenant, guildId, options),
+    queryFn: () => guildsService.getById(tenant, guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -67,7 +67,7 @@ export function useGuild(tenant: Tenant, guildId: string, options?: ServiceOptio
 export function useGuildsByWorld(tenant: Tenant, worldId: number, options?: ServiceOptions): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.byWorld(tenant, worldId),
-    queryFn: () => guildsService.getByWorld(tenant, worldId, options),
+    queryFn: () => guildsService.getByWorld(tenant, worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id && worldId !== undefined,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -85,7 +85,7 @@ export function useGuildSearch(
 ): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.search(tenant, searchTerm, worldId),
-    queryFn: () => guildsService.search(tenant, searchTerm, worldId, options),
+    queryFn: () => guildsService.search(tenant, searchTerm, worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!searchTerm,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -98,7 +98,7 @@ export function useGuildSearch(
 export function useGuildsWithSpace(tenant: Tenant, worldId?: number, options?: ServiceOptions): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.withSpace(tenant, worldId),
-    queryFn: () => guildsService.getWithSpace(tenant, worldId, options),
+    queryFn: () => guildsService.getWithSpace(tenant, worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 3 * 60 * 1000,
     gcTime: 8 * 60 * 1000,
@@ -116,7 +116,7 @@ export function useGuildRankings(
 ): UseQueryResult<Guild[], Error> {
   return useQuery({
     queryKey: guildKeys.rankings(tenant, worldId, limit),
-    queryFn: () => guildsService.getRankings(tenant, worldId, limit, options),
+    queryFn: () => guildsService.getRankings(tenant, worldId, limit, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
@@ -129,7 +129,7 @@ export function useGuildRankings(
 export function useGuildExists(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: [...guildKeys.detail(tenant, guildId), 'exists'],
-    queryFn: () => guildsService.exists(tenant, guildId, options),
+    queryFn: () => guildsService.exists(tenant, guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -142,7 +142,7 @@ export function useGuildExists(tenant: Tenant, guildId: string, options?: Servic
 export function useGuildMemberCount(tenant: Tenant, guildId: string, options?: ServiceOptions): UseQueryResult<number, Error> {
   return useQuery({
     queryKey: [...guildKeys.detail(tenant, guildId), 'memberCount'],
-    queryFn: () => guildsService.getMemberCount(tenant, guildId, options),
+    queryFn: () => guildsService.getMemberCount(tenant, guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
     staleTime: 3 * 60 * 1000,
     gcTime: 8 * 60 * 1000,

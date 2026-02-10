@@ -11,7 +11,7 @@ export function useReactorScript(reactorId: string): UseQueryResult<ReactorScrip
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: reactorScriptKeys.byReactor(reactorId),
-    queryFn: () => reactorScriptsService.getScriptsByReactor(reactorId, activeTenant!),
+    queryFn: () => reactorScriptsService.getScriptsByReactor(reactorId, activeTenant!, { useCache: false }),
     enabled: !!reactorId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

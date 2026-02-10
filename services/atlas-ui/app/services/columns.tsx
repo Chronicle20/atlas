@@ -29,7 +29,7 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Service>[] => [
     cell: ({ row }) => {
       const id = row.getValue("id") as string;
       return (
-        <span className="font-mono text-xs">{id.substring(0, 8)}...</span>
+        <span className="font-mono text-xs">{id}</span>
       );
     },
   },

@@ -19,7 +19,7 @@ export function useMapPortals(mapId: string): UseQueryResult<MapPortalData[], Er
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.portals(mapId),
-    queryFn: () => mapEntitiesService.getPortals(mapId, activeTenant!),
+    queryFn: () => mapEntitiesService.getPortals(mapId, activeTenant!, { useCache: false }),
     enabled: !!mapId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -30,7 +30,7 @@ export function useMapNpcs(mapId: string): UseQueryResult<MapNpcData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.npcs(mapId),
-    queryFn: () => mapEntitiesService.getNpcs(mapId, activeTenant!),
+    queryFn: () => mapEntitiesService.getNpcs(mapId, activeTenant!, { useCache: false }),
     enabled: !!mapId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -41,7 +41,7 @@ export function useMapReactors(mapId: string): UseQueryResult<MapReactorData[], 
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.reactors(mapId),
-    queryFn: () => mapEntitiesService.getReactors(mapId, activeTenant!),
+    queryFn: () => mapEntitiesService.getReactors(mapId, activeTenant!, { useCache: false }),
     enabled: !!mapId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -52,7 +52,7 @@ export function useMapMonsters(mapId: string): UseQueryResult<MapMonsterData[], 
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapEntityKeys.monsters(mapId),
-    queryFn: () => mapEntitiesService.getMonsters(mapId, activeTenant!),
+    queryFn: () => mapEntitiesService.getMonsters(mapId, activeTenant!, { useCache: false }),
     enabled: !!mapId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

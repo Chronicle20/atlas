@@ -57,11 +57,10 @@ export default function LoginHistoryPage() {
         setHasSearched(true);
 
         try {
-            const criteria = {
-                ip: ip || undefined,
-                hwid: hwid || undefined,
-                accountId: accountId ? Number(accountId) : undefined,
-            };
+            const criteria: { ip?: string; hwid?: string; accountId?: number } = {};
+            if (ip) criteria.ip = ip;
+            if (hwid) criteria.hwid = hwid;
+            if (accountId) criteria.accountId = Number(accountId);
             const data = await loginHistoryService.search(activeTenant, criteria);
             setEntries(data);
 
@@ -275,7 +274,7 @@ export default function LoginHistoryPage() {
                     if (!open) setPrefillData(null);
                 }}
                 tenant={activeTenant}
-                prefill={prefillData || undefined}
+                {...(prefillData ? { prefill: prefillData } : {})}
                 onSuccess={() => {
                     toast.success("Ban created. You can view it in the Bans page.");
                 }}

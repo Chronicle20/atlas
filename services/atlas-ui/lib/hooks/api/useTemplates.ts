@@ -395,7 +395,7 @@ export function useValidateTemplate(templateId: string): UseQueryResult<
 > {
   return useQuery({
     queryKey: templateKeys.validation(templateId),
-    queryFn: () => templatesService.validateTemplateConsistency(templateId, { useCache: false }),
+    queryFn: () => templatesService.validateTemplateConsistency(templateId),
     enabled: !!templateId,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,

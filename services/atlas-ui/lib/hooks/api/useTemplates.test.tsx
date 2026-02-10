@@ -370,7 +370,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(validationResult);
-      expect(mockTemplatesService.validateTemplateConsistency).toHaveBeenCalledWith('1', { useCache: false });
+      expect(mockTemplatesService.validateTemplateConsistency).toHaveBeenCalledWith('1');
     });
   });
 

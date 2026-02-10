@@ -119,7 +119,7 @@ describe('useTenants hooks', () => {
         });
 
         expect(result.current.data).toEqual(mockTenants);
-        expect(tenantsService.getAllTenants).toHaveBeenCalledWith(undefined);
+        expect(tenantsService.getAllTenants).toHaveBeenCalledWith({ useCache: false });
       });
 
       it('should pass options to service', async () => {
@@ -131,7 +131,7 @@ describe('useTenants hooks', () => {
         });
 
         await waitFor(() => {
-          expect(tenantsService.getAllTenants).toHaveBeenCalledWith(options);
+          expect(tenantsService.getAllTenants).toHaveBeenCalledWith({ ...options, useCache: false });
         });
       });
     });
@@ -149,7 +149,7 @@ describe('useTenants hooks', () => {
         });
 
         expect(result.current.data).toEqual(mockTenant);
-        expect(tenantsService.getTenantById).toHaveBeenCalledWith('test-tenant-1', undefined);
+        expect(tenantsService.getTenantById).toHaveBeenCalledWith('test-tenant-1', { useCache: false });
       });
 
       it('should not run query when ID is empty', () => {
@@ -257,7 +257,7 @@ describe('useTenants hooks', () => {
         });
 
         expect(result.current.data).toEqual(mockConfigs);
-        expect(tenantsService.getAllTenantConfigurations).toHaveBeenCalledWith(undefined);
+        expect(tenantsService.getAllTenantConfigurations).toHaveBeenCalledWith({ useCache: false });
       });
     });
 
@@ -274,7 +274,7 @@ describe('useTenants hooks', () => {
         });
 
         expect(result.current.data).toEqual(mockTenantConfig);
-        expect(tenantsService.getTenantConfigurationById).toHaveBeenCalledWith('test-config-1', undefined);
+        expect(tenantsService.getTenantConfigurationById).toHaveBeenCalledWith('test-config-1', { useCache: false });
       });
     });
 

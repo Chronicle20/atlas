@@ -2,20 +2,25 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import type { GachaponData } from "@/types/models/gachapon";
+import Link from "next/link";
 
 export const columns: ColumnDef<GachaponData>[] = [
   {
     accessorKey: "id",
     header: "ID",
     cell: ({ row }) => (
-      <span className="font-mono">{row.original.id}</span>
+      <Link href={`/gachapons/${row.original.id}`} className="font-mono text-primary hover:underline">
+        {row.original.id}
+      </Link>
     ),
   },
   {
     accessorKey: "attributes.name",
     header: "Name",
     cell: ({ row }) => (
-      <span className="font-medium">{row.original.attributes.name}</span>
+      <Link href={`/gachapons/${row.original.id}`} className="font-medium hover:underline">
+        {row.original.attributes.name}
+      </Link>
     ),
   },
   {

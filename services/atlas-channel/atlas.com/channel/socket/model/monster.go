@@ -16,7 +16,35 @@ const (
 	MonsterAppearTypeRevived   MonsterAppearType = -3
 	MonsterAppearTypeSuspended MonsterAppearType = -4
 	MonsterAppearTypeDelay     MonsterAppearType = -5
-	MonsterAppearTypeEffect    MonsterAppearType = 0
+	// Effect.wz/Summon.img
+	MonsterAppearTypeBalrog              MonsterAppearType = 0
+	MonsterAppearTypeSmoke               MonsterAppearType = 1
+	MonsterAppearTypeWerewolf            MonsterAppearType = 2
+	MonsterAppearTypeKingSlimeMinion     MonsterAppearType = 3
+	MonsterAppearTypeSummoningRock       MonsterAppearType = 4
+	MonsterAppearTypeEyeOfHorus          MonsterAppearType = 5
+	MonsterAppearTypeBlueStars           MonsterAppearType = 6
+	MonsterAppearTypeSmoke2              MonsterAppearType = 7
+	MonsterAppearTypeTheBoss             MonsterAppearType = 8
+	MonsterAppearTypeGrimPhantomBlack    MonsterAppearType = 9
+	MonsterAppearTypeGrimPhantomBlue     MonsterAppearType = 10
+	MonsterAppearTypeThorn               MonsterAppearType = 11
+	MonsterAppearTypeUnknown             MonsterAppearType = 12
+	MonsterAppearTypeFrankenstein        MonsterAppearType = 13
+	MonsterAppearTypeFrankensteinEnraged MonsterAppearType = 14
+	MonsterAppearTypeOrbit               MonsterAppearType = 15
+	MonsterAppearTypeHiver               MonsterAppearType = 16
+	MonsterAppearTypeSmoke3              MonsterAppearType = 17
+	MonsterAppearTypeSmoke4              MonsterAppearType = 18
+	MonsterAppearTypePrimeMinister       MonsterAppearType = 19
+	MonsterAppearTypePrimeMinister2      MonsterAppearType = 23
+	MonsterAppearTypeOlivia              MonsterAppearType = 24
+	MonsterAppearTypeWingedEvilStump     MonsterAppearType = 25
+	MonsterAppearTypeWingedEvilStump2    MonsterAppearType = 26
+	MonsterAppearTypeApsu                MonsterAppearType = 27
+	MonsterAppearTypeBlackFluid          MonsterAppearType = 28
+	MonsterAppearTypeHiver2              MonsterAppearType = 29
+	MonsterAppearTypeDragonRider         MonsterAppearType = 30
 )
 
 type MonsterTemporaryStatType struct {
@@ -201,7 +229,9 @@ func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[stri
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
 			w.WriteInt8(m.team)
 			w.WriteInt(m.effectItemId)
-			w.WriteInt(m.phase)
+			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+				w.WriteInt(m.phase)
+			}
 		} else {
 			// TODO proper temp stat encoding for GMS v12
 			w.WriteInt(0)

@@ -25,8 +25,8 @@ type Processor interface {
 	UpdatePic(id uint32, pic string) error
 	UpdateTos(id uint32, tos bool) error
 	UpdateGender(id uint32, gender byte) error
-	RecordPinAttempt(id uint32, success bool) (int, bool, error)
-	RecordPicAttempt(id uint32, success bool) (int, bool, error)
+	RecordPinAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 type ProcessorImpl struct {
@@ -139,16 +139,16 @@ func (p *ProcessorImpl) UpdateGender(id uint32, gender byte) error {
 	return nil
 }
 
-func (p *ProcessorImpl) RecordPinAttempt(id uint32, success bool) (int, bool, error) {
-	result, err := requestRecordPinAttempt(id, success)(p.l, p.ctx)
+func (p *ProcessorImpl) RecordPinAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	result, err := requestRecordPinAttempt(id, success, ipAddress, hwid)(p.l, p.ctx)
 	if err != nil {
 		return 0, false, err
 	}
 	return result.Attempts, result.LimitReached, nil
 }
 
-func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool) (int, bool, error) {
-	result, err := requestRecordPicAttempt(id, success)(p.l, p.ctx)
+func (p *ProcessorImpl) RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	result, err := requestRecordPicAttempt(id, success, ipAddress, hwid)(p.l, p.ctx)
 	if err != nil {
 		return 0, false, err
 	}

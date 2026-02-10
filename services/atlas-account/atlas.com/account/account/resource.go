@@ -169,7 +169,7 @@ func handleDeleteAccount(d *rest.HandlerDependency, _ *rest.HandlerContext) http
 func handleRecordPinAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, input PinAttemptInputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPinAttemptAndEmit(accountId, input.Success)
+			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPinAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIN attempt for account [%d].", accountId)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -192,7 +192,7 @@ func handleRecordPinAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, i
 func handleRecordPicAttempt(d *rest.HandlerDependency, c *rest.HandlerContext, input PicAttemptInputRestModel) http.HandlerFunc {
 	return rest.ParseAccountId(d.Logger(), func(accountId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPicAttemptAndEmit(accountId, input.Success)
+			attempts, limitReached, err := NewProcessor(d.Logger(), d.Context(), d.DB()).RecordPicAttemptAndEmit(accountId, input.Success, input.IpAddress, input.HWID)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to record PIC attempt for account [%d].", accountId)
 				w.WriteHeader(http.StatusInternalServerError)

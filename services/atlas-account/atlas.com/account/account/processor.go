@@ -30,6 +30,8 @@ const (
 	AlreadyLoggedIn   = "ALREADY_LOGGED_IN"
 	IncorrectPassword = "INCORRECT_PASSWORD"
 	TooManyAttempts   = "TOO_MANY_ATTEMPTS"
+	InvalidPin        = "INVALID_PIN"
+	InvalidPic        = "INVALID_PIC"
 )
 
 var (
@@ -58,10 +60,10 @@ type Processor interface {
 	ByNameProvider(name string) model.Provider[Model]
 	ByTenantProvider() ([]Model, error)
 	LoggedInTenantProvider() ([]Model, error)
-	RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
-	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
-	RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error)
-	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error)
+	RecordPinAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 type ProcessorImpl struct {
@@ -441,19 +443,19 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 	}
 }
 
-func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPinAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	var attempts int
 	var limitReached bool
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		var innerErr error
-		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success)
+		attempts, limitReached, innerErr = p.RecordPinAttempt(buf)(accountId, success, ipAddress, hwid)
 		return innerErr
 	})
 	return attempts, limitReached, err
 }
 
-func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
-	return func(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	return func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIN attempt recording.", accountId)
@@ -474,6 +476,8 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 
 		newAttempts := a.PinAttempts() + 1
 		p.l.Debugf("Recording failed PIN attempt [%d] for account [%d].", newAttempts, accountId)
+
+		_ = mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(uuid.Nil, accountId, a.Name(), InvalidPin, ipAddress, hwid))
 
 		c, err := configuration.Get()
 		if err != nil {
@@ -517,19 +521,19 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 	}
 }
 
-func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPicAttemptAndEmit(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	var attempts int
 	var limitReached bool
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		var innerErr error
-		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success)
+		attempts, limitReached, innerErr = p.RecordPicAttempt(buf)(accountId, success, ipAddress, hwid)
 		return innerErr
 	})
 	return attempts, limitReached, err
 }
 
-func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool) (int, bool, error) {
-	return func(accountId uint32, success bool) (int, bool, error) {
+func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
+	return func(accountId uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 		a, err := p.GetById(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to locate account [%d] for PIC attempt recording.", accountId)
@@ -550,6 +554,8 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 
 		newAttempts := a.PicAttempts() + 1
 		p.l.Debugf("Recording failed PIC attempt [%d] for account [%d].", newAttempts, accountId)
+
+		_ = mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(uuid.Nil, accountId, a.Name(), InvalidPic, ipAddress, hwid))
 
 		c, err := configuration.Get()
 		if err != nil {

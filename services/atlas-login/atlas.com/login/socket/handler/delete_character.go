@@ -7,6 +7,7 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+	"net"
 
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -35,6 +36,18 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		if verifyPic {
 			ap := account.NewProcessor(l, ctx)
+			ipAddress := ""
+			if addr := s.GetRemoteAddress(); addr != nil {
+				if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+					ipAddress = tcpAddr.IP.String()
+				} else {
+					host, _, err := net.SplitHostPort(addr.String())
+					if err == nil {
+						ipAddress = host
+					}
+				}
+			}
+
 			a, err := ap.GetById(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account performing deletion.")
@@ -47,7 +60,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 			if a.PIC() != pic {
 				l.Debugf("Failing character deletion due to PIC being incorrect.")
-				_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false)
+				_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false, ipAddress, "")
 				if limitReached {
 					l.Warnf("Account [%d] has exceeded PIC attempt limit. Terminating session.", s.AccountId())
 					_ = session.NewProcessor(l, ctx).Destroy(s)
@@ -60,7 +73,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 				return
 			}
 
-			ap.RecordPicAttempt(s.AccountId(), true)
+			ap.RecordPicAttempt(s.AccountId(), true, ipAddress, "")
 		}
 
 		_, err := cp.GetById()(characterId)

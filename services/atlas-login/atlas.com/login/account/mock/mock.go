@@ -21,8 +21,8 @@ type MockProcessor struct {
 	UpdatePicFunc           func(id uint32, pic string) error
 	UpdateTosFunc           func(id uint32, tos bool) error
 	UpdateGenderFunc        func(id uint32, gender byte) error
-	RecordPinAttemptFunc    func(id uint32, success bool) (int, bool, error)
-	RecordPicAttemptFunc    func(id uint32, success bool) (int, bool, error)
+	RecordPinAttemptFunc    func(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
+	RecordPicAttemptFunc    func(id uint32, success bool, ipAddress string, hwid string) (int, bool, error)
 }
 
 // ForAccountByName implements account.Processor
@@ -134,17 +134,17 @@ func (m *MockProcessor) UpdateGender(id uint32, gender byte) error {
 }
 
 // RecordPinAttempt implements account.Processor
-func (m *MockProcessor) RecordPinAttempt(id uint32, success bool) (int, bool, error) {
+func (m *MockProcessor) RecordPinAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	if m.RecordPinAttemptFunc != nil {
-		return m.RecordPinAttemptFunc(id, success)
+		return m.RecordPinAttemptFunc(id, success, ipAddress, hwid)
 	}
 	return 0, false, nil
 }
 
 // RecordPicAttempt implements account.Processor
-func (m *MockProcessor) RecordPicAttempt(id uint32, success bool) (int, bool, error) {
+func (m *MockProcessor) RecordPicAttempt(id uint32, success bool, ipAddress string, hwid string) (int, bool, error) {
 	if m.RecordPicAttemptFunc != nil {
-		return m.RecordPicAttemptFunc(id, success)
+		return m.RecordPicAttemptFunc(id, success, ipAddress, hwid)
 	}
 	return 0, false, nil
 }

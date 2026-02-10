@@ -152,7 +152,7 @@ describe('useConversations hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockConversations);
-      expect(mockConversationsService.getAll).toHaveBeenCalledWith(undefined);
+      expect(mockConversationsService.getAll).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -195,7 +195,7 @@ describe('useConversations hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockConversation);
-      expect(mockConversationsService.getById).toHaveBeenCalledWith('conversation-1', undefined);
+      expect(mockConversationsService.getById).toHaveBeenCalledWith('conversation-1', { useCache: false });
     });
   });
 
@@ -212,7 +212,7 @@ describe('useConversations hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockConversationsService.exists).toHaveBeenCalledWith('conversation-1', undefined);
+      expect(mockConversationsService.exists).toHaveBeenCalledWith('conversation-1', { useCache: false });
     });
   });
 
@@ -229,7 +229,7 @@ describe('useConversations hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockConversation);
-      expect(mockConversationsService.getByNpcId).toHaveBeenCalledWith(100, undefined);
+      expect(mockConversationsService.getByNpcId).toHaveBeenCalledWith(100, { useCache: false });
     });
 
     it('should return null when no conversation exists for NPC', async () => {
@@ -260,7 +260,7 @@ describe('useConversations hooks', () => {
       });
 
       expect(result.current.data).toEqual([mockConversation]);
-      expect(mockConversationsService.searchByText).toHaveBeenCalledWith('shop', undefined);
+      expect(mockConversationsService.searchByText).toHaveBeenCalledWith('shop', { useCache: false });
     });
 
     it('should not search when search text is too short', () => {

@@ -26,3 +26,12 @@ func deletedEventProvider(banId uint32) model.Provider[[]kafka.Message] {
 	}
 	return kafkago.SingleMessageProvider(key, value)
 }
+
+func expiredEventProvider(banId uint32) model.Provider[[]kafka.Message] {
+	key := kafkago.CreateKey(rand.Int())
+	value := &ban2.StatusEvent{
+		BanId:  banId,
+		Status: ban2.EventStatusExpired,
+	}
+	return kafkago.SingleMessageProvider(key, value)
+}

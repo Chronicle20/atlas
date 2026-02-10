@@ -45,7 +45,7 @@ func entitiesByType(t tenant.Model, banType BanType) database.EntityProvider[[]E
 func activeIPBans(t tenant.Model) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		now := time.Now().Unix()
+		now := time.Now()
 		err := db.Where("tenant_id = ? AND ban_type = ? AND (permanent = ? OR expires_at > ?)", t.Id(), byte(BanTypeIP), true, now).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
@@ -57,7 +57,7 @@ func activeIPBans(t tenant.Model) database.EntityProvider[[]Entity] {
 func activeExactBans(t tenant.Model, banType BanType, value string) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		now := time.Now().Unix()
+		now := time.Now()
 		err := db.Where("tenant_id = ? AND ban_type = ? AND value = ? AND (permanent = ? OR expires_at > ?)", t.Id(), byte(banType), value, true, now).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)

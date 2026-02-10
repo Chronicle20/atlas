@@ -935,11 +935,57 @@
       },
       {
         "opCode": "0x00",
-        "writer": "AuthTemporaryBan"
+        "writer": "AuthTemporaryBan",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
       },
       {
         "opCode": "0x00",
-        "writer": "AuthPermanentBan"
+        "writer": "AuthPermanentBan",
+        "options": {
+          "failedReasonCodes": {
+            "BANNED": 2,
+            "DELETED_OR_BLOCKED": 3,
+            "INCORRECT_PASSWORD": 4,
+            "NOT_REGISTERED": 5,
+            "SYSTEM_ERROR_1": 6,
+            "ALREADY_LOGGED_IN": 7,
+            "SYSTEM_ERROR_2": 8,
+            "SYSTEM_ERROR_3": 9,
+            "TOO_MANY_CONNECTIONS": 10,
+            "AGE_LIMIT": 11,
+            "UNABLE_TO_LOG_ON_AS_MASTER_AT_IP": 13,
+            "WRONG_GATEWAY": 14,
+            "PROCESSING_REQUEST": 15,
+            "ACCOUNT_VERIFICATION_NEEDED": 16,
+            "WRONG_PERSONAL_INFORMATION": 17,
+            "ACCOUNT_VERIFICATION_NEEDED_2": 21,
+            "LICENSE_AGREEMENT": 23,
+            "MAPLE_EUROPE_NOTICE": 25,
+            "FULL_CLIENT_NOTICE": 27
+          }
+        }
       },
       {
         "opCode": "0x00",

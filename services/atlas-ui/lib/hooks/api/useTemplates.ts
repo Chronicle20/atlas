@@ -45,7 +45,7 @@ export const templateKeys = {
 export function useTemplates(options?: QueryOptions): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.list(options),
-    queryFn: () => templatesService.getAll(options),
+    queryFn: () => templatesService.getAll({ ...options, useCache: false }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -57,7 +57,7 @@ export function useTemplates(options?: QueryOptions): UseQueryResult<Template[],
 export function useTemplate(id: string, options?: ServiceOptions): UseQueryResult<Template, Error> {
   return useQuery({
     queryKey: templateKeys.detail(id),
-    queryFn: () => templatesService.getById(id, options),
+    queryFn: () => templatesService.getById(id, { ...options, useCache: false }),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -70,7 +70,7 @@ export function useTemplate(id: string, options?: ServiceOptions): UseQueryResul
 export function useTemplateExists(id: string, options?: ServiceOptions): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: [...templateKeys.details(), id, 'exists'],
-    queryFn: () => templatesService.exists(id, options),
+    queryFn: () => templatesService.exists(id, { ...options, useCache: false }),
     enabled: !!id,
     staleTime: 2 * 60 * 1000, // 2 minutes (shorter for existence checks)
     gcTime: 5 * 60 * 1000,
@@ -340,7 +340,7 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
 export function useTemplatesByRegion(region: string, options?: QueryOptions): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.byRegion(region, options),
-    queryFn: () => templatesService.getByRegion(region, options),
+    queryFn: () => templatesService.getByRegion(region, { ...options, useCache: false }),
     enabled: !!region,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -351,13 +351,13 @@ export function useTemplatesByRegion(region: string, options?: QueryOptions): Us
  * Hook to fetch templates by version
  */
 export function useTemplatesByVersion(
-  majorVersion: number, 
-  minorVersion?: number, 
+  majorVersion: number,
+  minorVersion?: number,
   options?: QueryOptions
 ): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.byVersion(majorVersion, minorVersion, options),
-    queryFn: () => templatesService.getByVersion(majorVersion, minorVersion, options),
+    queryFn: () => templatesService.getByVersion(majorVersion, minorVersion, { ...options, useCache: false }),
     enabled: majorVersion >= 0,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -375,7 +375,7 @@ export function useTemplatesByRegionAndVersion(
 ): UseQueryResult<Template[], Error> {
   return useQuery({
     queryKey: templateKeys.byRegionAndVersion(region, majorVersion, minorVersion, options),
-    queryFn: () => templatesService.getByRegionAndVersion(region, majorVersion, minorVersion, options),
+    queryFn: () => templatesService.getByRegionAndVersion(region, majorVersion, minorVersion, { ...options, useCache: false }),
     enabled: !!region && majorVersion >= 0,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -390,7 +390,7 @@ export function useTemplatesByRegionAndVersion(
  * Hook to validate template consistency
  */
 export function useValidateTemplate(templateId: string): UseQueryResult<
-  { isValid: boolean; errors: string[] }, 
+  { isValid: boolean; errors: string[] },
   Error
 > {
   return useQuery({

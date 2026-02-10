@@ -1,5 +1,7 @@
 package ban
 
+import "time"
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_BAN"
 
@@ -17,6 +19,6 @@ type CreateCommandBody struct {
 	Reason     string `json:"reason"`
 	ReasonCode byte   `json:"reasonCode"`
 	Permanent  bool   `json:"permanent"`
-	ExpiresAt  int64  `json:"expiresAt"`
-	IssuedBy   string `json:"issuedBy"`
+	ExpiresAt  time.Time `json:"expiresAt"`
+	IssuedBy   string    `json:"issuedBy"`
 }

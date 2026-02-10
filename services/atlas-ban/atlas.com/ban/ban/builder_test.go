@@ -76,7 +76,7 @@ func TestBuilderAllSetters(t *testing.T) {
 		SetReason("Bot usage").
 		SetReasonCode(3).
 		SetPermanent(false).
-		SetExpiresAt(1234567890).
+		SetExpiresAt(time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)).
 		SetIssuedBy("admin").
 		SetCreatedAt(now).
 		SetUpdatedAt(now).
@@ -110,8 +110,9 @@ func TestBuilderAllSetters(t *testing.T) {
 		t.Errorf("Permanent mismatch. Expected false, got %v", m.Permanent())
 	}
 
-	if m.ExpiresAt() != 1234567890 {
-		t.Errorf("ExpiresAt mismatch. Expected 1234567890, got %v", m.ExpiresAt())
+	expectedExpiry := time.Date(2026, 3, 1, 12, 0, 0, 0, time.UTC)
+	if !m.ExpiresAt().Equal(expectedExpiry) {
+		t.Errorf("ExpiresAt mismatch. Expected %v, got %v", expectedExpiry, m.ExpiresAt())
 	}
 
 	if m.IssuedBy() != "admin" {
@@ -150,8 +151,8 @@ func TestBuilderDefaults(t *testing.T) {
 		t.Errorf("Default permanent should be false, got %v", m.Permanent())
 	}
 
-	if m.ExpiresAt() != 0 {
-		t.Errorf("Default expiresAt should be 0, got %v", m.ExpiresAt())
+	if !m.ExpiresAt().IsZero() {
+		t.Errorf("Default expiresAt should be zero, got %v", m.ExpiresAt())
 	}
 
 	if m.IssuedBy() != "" {
@@ -184,7 +185,7 @@ func TestIsExpiredPermanent(t *testing.T) {
 func TestIsExpiredNotYet(t *testing.T) {
 	m, _ := NewBuilder(uuid.New(), BanTypeIP, "10.0.0.1").
 		SetPermanent(false).
-		SetExpiresAt(time.Now().Unix() + 3600).
+		SetExpiresAt(time.Now().Add(time.Hour)).
 		Build()
 
 	if IsExpired(m) {
@@ -195,7 +196,7 @@ func TestIsExpiredNotYet(t *testing.T) {
 func TestIsExpiredAlready(t *testing.T) {
 	m, _ := NewBuilder(uuid.New(), BanTypeIP, "10.0.0.1").
 		SetPermanent(false).
-		SetExpiresAt(time.Now().Unix() - 3600).
+		SetExpiresAt(time.Now().Add(-time.Hour)).
 		Build()
 
 	if !IsExpired(m) {

@@ -53,8 +53,10 @@ func Transform(m Model) (RestModel, error) {
 }
 
 type PinAttemptInputRestModel struct {
-	Id      string `json:"-"`
-	Success bool   `json:"success"`
+	Id        string `json:"-"`
+	Success   bool   `json:"success"`
+	IpAddress string `json:"ipAddress"`
+	HWID      string `json:"hwid"`
 }
 
 func (r PinAttemptInputRestModel) GetName() string {
@@ -90,8 +92,10 @@ func (r *PinAttemptOutputRestModel) SetID(idStr string) error {
 }
 
 type PicAttemptInputRestModel struct {
-	Id      string `json:"-"`
-	Success bool   `json:"success"`
+	Id        string `json:"-"`
+	Success   bool   `json:"success"`
+	IpAddress string `json:"ipAddress"`
+	HWID      string `json:"hwid"`
 }
 
 func (r PicAttemptInputRestModel) GetName() string {

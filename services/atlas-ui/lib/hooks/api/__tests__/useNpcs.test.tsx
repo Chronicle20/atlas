@@ -149,7 +149,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs);
-      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith(mockTenant, undefined);
+      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith(mockTenant, { useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -192,7 +192,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs[0]);
-      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, mockTenant, undefined);
+      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, mockTenant, { useCache: false });
     });
 
     it('should return null when NPC is not found', async () => {
@@ -224,7 +224,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(npcsWithShops);
-      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith(mockTenant, undefined);
+      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith(mockTenant, { useCache: false });
     });
   });
 
@@ -242,7 +242,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(npcsWithConversations);
-      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith(mockTenant, undefined);
+      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith(mockTenant, { useCache: false });
     });
   });
 
@@ -259,7 +259,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShopResponse);
-      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, mockTenant, undefined);
+      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, mockTenant, { useCache: false });
     });
   });
 

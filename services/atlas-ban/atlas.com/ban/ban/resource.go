@@ -2,6 +2,7 @@ package ban
 
 import (
 	"atlas-ban/rest"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -25,6 +26,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("/check", register("check_ban", handleCheckBan)).Methods(http.MethodGet)
 			r.HandleFunc("/{banId}", register("get_ban", handleGetBanById)).Methods(http.MethodGet)
 			r.HandleFunc("/{banId}", register("delete_ban", handleDeleteBan)).Methods(http.MethodDelete)
+			r.HandleFunc("/{banId}/expire", register("expire_ban", handleExpireBan)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -127,6 +129,24 @@ func handleDeleteBan(d *rest.HandlerDependency, _ *rest.HandlerContext) http.Han
 			err := NewProcessor(d.Logger(), d.Context(), d.DB()).DeleteAndEmit(banId)
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to delete ban [%d].", banId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusNoContent)
+		}
+	})
+}
+
+func handleExpireBan(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseBanId(d.Logger(), func(banId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			err := NewProcessor(d.Logger(), d.Context(), d.DB()).ExpireBanAndEmit(banId)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to expire ban [%d].", banId)
+				if errors.Is(err, ErrCannotExpirePermanentBan) {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

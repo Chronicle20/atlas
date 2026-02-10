@@ -249,7 +249,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInventoryResponse);
-      expect(mockInventoryService.getInventory).toHaveBeenCalledWith(mockTenant, '123', undefined);
+      expect(mockInventoryService.getInventory).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -303,7 +303,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCompartments);
-      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith(mockTenant, '123', undefined);
+      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
     });
   });
 
@@ -321,7 +321,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockAssets);
-      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith(mockTenant, '123', 'comp-1', undefined);
+      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith(mockTenant, '123', 'comp-1', { useCache: false });
     });
 
     it('should not fetch when compartmentId is not provided', () => {
@@ -349,7 +349,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInventorySummary);
-      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith(mockTenant, '123', undefined);
+      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
     });
   });
 
@@ -367,7 +367,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith(mockTenant, '123', 'asset-1', undefined);
+      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith(mockTenant, '123', 'asset-1', { useCache: false });
     });
 
     it('should not fetch when assetId is not provided', () => {

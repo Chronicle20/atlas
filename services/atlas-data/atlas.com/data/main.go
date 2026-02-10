@@ -12,6 +12,7 @@ import (
 	"atlas-data/document"
 	"atlas-data/equipment"
 	"atlas-data/etc"
+	"atlas-data/item"
 	data2 "atlas-data/kafka/consumer/data"
 	"atlas-data/logger"
 	_map "atlas-data/map"
@@ -86,6 +87,7 @@ func main() {
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
+		AddRouteInitializer(item.InitStringResource(GetServer())).
 		AddRouteInitializer(setup.InitResource(db)(GetServer())).
 		AddRouteInitializer(templates.InitResource(db)(GetServer())).
 		AddRouteInitializer(quest.InitResource(db)(GetServer())).

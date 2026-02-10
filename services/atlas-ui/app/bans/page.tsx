@@ -62,8 +62,8 @@ export default function BansPage() {
         setError(null);
 
         try {
-            const filterType = typeFilter !== "all" ? Number(typeFilter) as BanType : undefined;
-            const data = await bansService.getAllBans(activeTenant, { type: filterType });
+            const options = typeFilter !== "all" ? { type: Number(typeFilter) as BanType } : undefined;
+            const data = await bansService.getAllBans(activeTenant, options);
             setBans(data);
         } catch (err: unknown) {
             const errorInfo = createErrorFromUnknown(err, "Failed to fetch bans");

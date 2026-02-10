@@ -324,6 +324,7 @@ func produceWriters() []string {
 		writer.ReactorHit,
 		writer.GuideTalk,
 		writer.ScriptProgress,
+		writer.Ping,
 		writer.FieldEffect,
 	}
 }
@@ -396,6 +397,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
+	handlerMap[handler.PongHandle] = handler.PongHandleFunc
 	return handlerMap
 }
 

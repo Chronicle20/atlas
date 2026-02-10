@@ -129,7 +129,7 @@ export function CreateBanDialog({ open, onOpenChange, tenant, onSuccess, prefill
                 reason: values.reason || "",
                 reasonCode: values.reasonCode,
                 permanent: values.permanent,
-                expiresAt: values.permanent ? 0 : new Date(values.expiresAt!).getTime(),
+                expiresAt: values.permanent ? "0001-01-01T00:00:00Z" : new Date(values.expiresAt!).toISOString(),
                 issuedBy: values.issuedBy || "",
             };
 

@@ -366,7 +366,7 @@ func (p *ProcessorImpl) AttemptLogin(mb *message.Buffer) func(sessionId uuid.UUI
 			p.l.WithError(err).Warnf("Unable to check ban status for account [%d]. Proceeding with fail-open strategy.", a.Id())
 		} else if checkResult.Banned {
 			p.l.Infof("Account [%d] is banned. type=[%d] reason=[%s].", a.Id(), checkResult.BanType, checkResult.Reason)
-			return mb.Put(account2.EnvEventSessionStatusTopic, errorStatusProvider(sessionId, a.Id(), a.Name(), DeletedOrBlocked, ipAddress, hwid))
+			return mb.Put(account2.EnvEventSessionStatusTopic, banStatusProvider(sessionId, a.Id(), a.Name(), ipAddress, hwid, checkResult.ReasonCode, checkResult.ExpiresAt))
 		}
 
 		if a.State() != StateNotLoggedIn {
@@ -488,7 +488,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 				p.l.WithError(err).Errorf("Unable to parse PIN ban duration [%s]. Defaulting to 15 minutes.", c.PinBanDuration)
 				duration = 15 * time.Minute
 			}
-			expiresAt := time.Now().Add(duration).UnixMilli()
+			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIN attempts (%d)", c.MaxPinAttempts)
 
 			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
@@ -564,7 +564,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 				p.l.WithError(err).Errorf("Unable to parse PIC ban duration [%s]. Defaulting to 15 minutes.", c.PicBanDuration)
 				duration = 15 * time.Minute
 			}
-			expiresAt := time.Now().Add(duration).UnixMilli()
+			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIC attempts (%d)", c.MaxPicAttempts)
 
 			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))

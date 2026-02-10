@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Eye, Trash2 } from "lucide-react";
 import { BanTypeBadge } from "@/components/features/bans/BanTypeBadge";
 import { BanStatusBadge } from "@/components/features/bans/BanStatusBadge";
-import { Ban, BanReasonCodeLabels } from "@/types/models/ban";
+import { Ban, BanReasonCodeLabels, isZeroTime } from "@/types/models/ban";
 
 interface ColumnProps {
     onView?: (ban: Ban) => void;
@@ -79,7 +79,7 @@ export const getColumns = ({ onView, onDelete }: ColumnProps): ColumnDef<Ban>[] 
             cell: ({ row }) => {
                 const { permanent, expiresAt } = row.original.attributes;
                 if (permanent) return <span className="text-muted-foreground">Never</span>;
-                if (!expiresAt) return <span className="text-muted-foreground">-</span>;
+                if (isZeroTime(expiresAt)) return <span className="text-muted-foreground">-</span>;
                 return new Date(expiresAt).toLocaleString();
             },
         },

@@ -2,6 +2,7 @@ package ban
 
 import (
 	"net"
+	"time"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
@@ -9,8 +10,8 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *Entity))
 
-func create(db *gorm.DB) func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error) {
-	return func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error) {
+func create(db *gorm.DB) func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
+	return func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 		a := &Entity{
 			TenantId:   tenant.Id(),
 			BanType:    byte(banType),

@@ -6,6 +6,7 @@ import (
 	"atlas-ban/kafka/producer"
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -14,8 +15,8 @@ import (
 )
 
 type Processor interface {
-	Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error)
-	CreateAndEmit(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error)
+	Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error)
+	CreateAndEmit(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error)
 	Delete(banId uint32) error
 	DeleteAndEmit(banId uint32) error
 	GetById(banId uint32) (Model, error)
@@ -43,7 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-func (p *ProcessorImpl) Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error) {
+func (p *ProcessorImpl) Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 	p.l.Debugf("Creating ban type [%d] value [%s] reason [%s].", banType, value, reason)
 	m, err := create(p.db)(p.t, banType, value, reason, reasonCode, permanent, expiresAt, issuedBy)
 	if err != nil {
@@ -54,7 +55,7 @@ func (p *ProcessorImpl) Create(banType BanType, value string, reason string, rea
 	return m, nil
 }
 
-func (p *ProcessorImpl) CreateAndEmit(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt int64, issuedBy string) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 	var result Model
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		m, err := p.Create(banType, value, reason, reasonCode, permanent, expiresAt, issuedBy)

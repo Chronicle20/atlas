@@ -33,7 +33,7 @@ func testContext(t tenant.Model) context.Context {
 	return tenant.WithContext(context.Background(), t)
 }
 
-func createTestBan(t *testing.T, db *gorm.DB, tm tenant.Model, banType BanType, value string, permanent bool, expiresAt int64) Model {
+func createTestBan(t *testing.T, db *gorm.DB, tm tenant.Model, banType BanType, value string, permanent bool, expiresAt time.Time) Model {
 	t.Helper()
 	m, err := create(db)(tm, banType, value, "test reason", 1, permanent, expiresAt, "admin")
 	if err != nil {
@@ -49,7 +49,7 @@ func TestProcessorCreate(t *testing.T) {
 	ctx := testContext(st)
 
 	p := NewProcessor(l, ctx, db)
-	m, err := p.Create(BanTypeIP, "10.0.0.1", "Cheating", 1, true, 0, "admin")
+	m, err := p.Create(BanTypeIP, "10.0.0.1", "Cheating", 1, true, time.Time{}, "admin")
 	if err != nil {
 		t.Fatalf("Failed to create ban: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestProcessorGetById(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	created := createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
+	created := createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	found, err := p.GetById(created.Id())
@@ -112,9 +112,9 @@ func TestProcessorGetByTenant(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
-	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, 0)
-	createTestBan(t, db, st, BanTypeAccount, "42", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
+	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, time.Time{})
+	createTestBan(t, db, st, BanTypeAccount, "42", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	bans, err := p.GetByTenant()
@@ -133,9 +133,9 @@ func TestProcessorGetByTenantIsolation(t *testing.T) {
 	st1 := sampleTenant()
 	st2 := sampleTenant()
 
-	createTestBan(t, db, st1, BanTypeIP, "10.0.0.1", true, 0)
-	createTestBan(t, db, st1, BanTypeIP, "10.0.0.2", true, 0)
-	createTestBan(t, db, st2, BanTypeIP, "10.0.0.3", true, 0)
+	createTestBan(t, db, st1, BanTypeIP, "10.0.0.1", true, time.Time{})
+	createTestBan(t, db, st1, BanTypeIP, "10.0.0.2", true, time.Time{})
+	createTestBan(t, db, st2, BanTypeIP, "10.0.0.3", true, time.Time{})
 
 	p := NewProcessor(l, testContext(st1), db)
 	bans, err := p.GetByTenant()
@@ -154,9 +154,9 @@ func TestProcessorGetByType(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.2", true, 0)
-	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.2", true, time.Time{})
+	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	bans, err := p.GetByType(BanTypeIP)
@@ -175,7 +175,7 @@ func TestProcessorDelete(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	created := createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
+	created := createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	err := p.Delete(created.Id())
@@ -195,7 +195,7 @@ func TestProcessorCheckBanExactIP(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "192.168.1.50", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "192.168.1.50", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("192.168.1.50", "", 0)
@@ -216,7 +216,7 @@ func TestProcessorCheckBanCIDR(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.0/8", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.0/8", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("10.5.3.1", "", 0)
@@ -237,7 +237,7 @@ func TestProcessorCheckBanCIDRNoMatch(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "192.168.1.0/24", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "192.168.1.0/24", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("10.0.0.1", "", 0)
@@ -255,7 +255,7 @@ func TestProcessorCheckBanHWID(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeHWID, "ABC123", true, 0)
+	createTestBan(t, db, st, BanTypeHWID, "ABC123", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("", "ABC123", 0)
@@ -276,7 +276,7 @@ func TestProcessorCheckBanAccount(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeAccount, "42", true, 0)
+	createTestBan(t, db, st, BanTypeAccount, "42", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("", "", 42)
@@ -313,9 +313,9 @@ func TestProcessorCheckBanPriority(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
-	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, 0)
-	createTestBan(t, db, st, BanTypeAccount, "42", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
+	createTestBan(t, db, st, BanTypeHWID, "HWID123", true, time.Time{})
+	createTestBan(t, db, st, BanTypeAccount, "42", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("10.0.0.1", "HWID123", 42)
@@ -336,7 +336,7 @@ func TestProcessorCheckBanExpiredIgnored(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", false, time.Now().Unix()-3600)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", false, time.Now().Add(-time.Hour))
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("10.0.0.1", "", 0)
@@ -354,7 +354,7 @@ func TestProcessorCheckBanActiveTemporary(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", false, time.Now().Unix()+3600)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", false, time.Now().Add(time.Hour))
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("10.0.0.1", "", 0)
@@ -372,7 +372,7 @@ func TestProcessorCheckBanEmptyInputs(t *testing.T) {
 	st := sampleTenant()
 	ctx := testContext(st)
 
-	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, 0)
+	createTestBan(t, db, st, BanTypeIP, "10.0.0.1", true, time.Time{})
 
 	p := NewProcessor(l, ctx, db)
 	m, err := p.CheckBan("", "", 0)

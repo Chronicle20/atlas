@@ -19,7 +19,7 @@ type Entity struct {
 	Reason     string    `gorm:"not null;default=''"`
 	ReasonCode byte      `gorm:"not null;default=0"`
 	Permanent  bool      `gorm:"not null;default=false"`
-	ExpiresAt  int64     `gorm:"not null;default=0"`
+	ExpiresAt  time.Time `gorm:"not null"`
 	IssuedBy   string    `gorm:"not null;default=''"`
 	CreatedAt  time.Time
 	UpdatedAt  time.Time

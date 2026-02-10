@@ -1,6 +1,10 @@
 package account
 
-import "github.com/google/uuid"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_ACCOUNT"
@@ -95,9 +99,9 @@ type StateChangedSessionStatusEventBody struct {
 }
 
 type ErrorSessionStatusEventBody struct {
-	Code      string `json:"code"`
-	Reason    byte   `json:"reason"`
-	Until     uint64 `json:"until"`
-	IPAddress string `json:"ipAddress"`
-	HWID      string `json:"hwid"`
+	Code      string    `json:"code"`
+	Reason    byte      `json:"reason"`
+	Until     time.Time `json:"until"`
+	IPAddress string    `json:"ipAddress"`
+	HWID      string    `json:"hwid"`
 }

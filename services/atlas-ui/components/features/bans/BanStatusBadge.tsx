@@ -3,14 +3,15 @@
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Shield, Clock, Ban } from "lucide-react";
+import { isZeroTime } from "@/types/models/ban";
 
 interface BanStatusBadgeProps {
     permanent: boolean;
-    expiresAt: number;
+    expiresAt: string;
 }
 
-function isExpired(expiresAt: number): boolean {
-    return expiresAt > 0 && expiresAt < Date.now();
+function isExpired(expiresAt: string): boolean {
+    return !isZeroTime(expiresAt) && new Date(expiresAt) < new Date();
 }
 
 export function BanStatusBadge({ permanent, expiresAt }: BanStatusBadgeProps) {

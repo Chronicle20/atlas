@@ -2,6 +2,8 @@ package validation
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	dataquest "atlas-quest/data/quest"
 
@@ -28,10 +30,37 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
-	var conditions []ConditionInput
+// parseQuestDate parses a WZ quest date string in the format "YYYYMMDDhh" into a time.Time.
+func parseQuestDate(s string) (time.Time, error) {
+	if len(s) != 10 {
+		return time.Time{}, fmt.Errorf("invalid quest date length: %s", s)
+	}
+	return time.Parse("2006010215", s)
+}
 
+func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
 	req := questDef.StartRequirements
+
+	// Date range requirements (checked locally, no external validation needed)
+	now := time.Now()
+	if req.Start != "" {
+		startTime, err := parseQuestDate(req.Start)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to parse quest start date [%s] for quest [%d].", req.Start, questDef.Id)
+		} else if now.Before(startTime) {
+			return false, []string{fmt.Sprintf("quest_not_yet_available (starts %s)", req.Start)}, nil
+		}
+	}
+	if req.End != "" {
+		endTime, err := parseQuestDate(req.End)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to parse quest end date [%s] for quest [%d].", req.End, questDef.Id)
+		} else if now.After(endTime) {
+			return false, []string{fmt.Sprintf("quest_expired (ended %s)", req.End)}, nil
+		}
+	}
+
+	var conditions []ConditionInput
 
 	// Level requirements
 	if req.LevelMin > 0 {

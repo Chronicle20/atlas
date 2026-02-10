@@ -18,6 +18,8 @@ const (
 	CommandShowGuideHint   = "SHOW_GUIDE_HINT"
 	CommandShowIntro       = "SHOW_INTRO"
 	CommandFieldEffect     = "FIELD_EFFECT"
+	CommandUiLock          = "UI_LOCK"
+	CommandUiDisable       = "UI_DISABLE"
 )
 
 // Command represents a Kafka command for system message operations
@@ -78,4 +80,14 @@ type ShowIntroBody struct {
 // FieldEffectBody is the body for showing a field effect to a character
 type FieldEffectBody struct {
 	Path string `json:"path"` // Path to the field effect (e.g., "maplemap/enter/1020000")
+}
+
+// UiLockBody is the body for locking or unlocking the UI for a character
+type UiLockBody struct {
+	Enable bool `json:"enable"` // true = lock UI, false = unlock UI
+}
+
+// UiDisableBody is the body for disabling or enabling UI input for a character
+type UiDisableBody struct {
+	Enable bool `json:"enable"` // true = disable UI input, false = enable UI input
 }

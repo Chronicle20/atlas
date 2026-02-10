@@ -326,6 +326,9 @@ func produceWriters() []string {
 		writer.ScriptProgress,
 		writer.Ping,
 		writer.FieldEffect,
+		writer.UiOpen,
+		writer.UiLock,
+		writer.UiDisable,
 	}
 }
 

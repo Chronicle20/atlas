@@ -41,6 +41,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiDisable(sc, wp))))
 			}
 		}
 	}
@@ -271,6 +273,52 @@ func handleFieldEffect(sc server.Model, wp writer.Producer) message.Handler[syst
 			session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectScreenBody(l)(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show field effect for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleUiLock(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.UiLockBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.UiLockBody]) {
+		if cmd.Type != system_message2.CommandUiLock {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.UiLock)(writer.UiLockBody(t)(cmd.Body.Enable, 0)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to lock/unlock UI for character [%d].", cmd.CharacterId)
+		}
+	}
+}
+
+func handleUiDisable(sc server.Model, wp writer.Producer) message.Handler[system_message2.Command[system_message2.UiDisableBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, cmd system_message2.Command[system_message2.UiDisableBody]) {
+		if cmd.Type != system_message2.CommandUiDisable {
+			return
+		}
+
+		t := tenant.MustFromContext(ctx)
+		if !t.Is(sc.Tenant()) {
+			return
+		}
+
+		if !sc.Is(t, cmd.WorldId, cmd.ChannelId) {
+			return
+		}
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
+			session.Announce(l)(ctx)(wp)(writer.UiDisable)(writer.UiDisableBody(t)(cmd.Body.Enable)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to disable/enable UI for character [%d].", cmd.CharacterId)
 		}
 	}
 }

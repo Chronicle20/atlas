@@ -39,6 +39,7 @@ The script type is determined by the directory the source file is in:
 | Type | When to Use | Params |
 |------|-------------|--------|
 | `field_effect` | `ms.fieldEffect(path)` | `path` |
+| `lock_ui` | `ms.lockUI()` | (none) |
 | `unlock_ui` | `ms.unlockUI()` | (none) |
 | `spawn_monster` | `ms.spawnMonster(id, x, y)` or `spawnMob(x, y, id, map)` | `monsterId`, `x`, `y`, `count` (optional), `mapId` (optional) |
 | `show_intro` | `ms.showIntro(path)` | `path` |
@@ -73,6 +74,7 @@ Identify the key patterns:
 
 **Supported Operations:**
 - `ms.fieldEffect("maplemap/enter/1010100")` → `field_effect` operation
+- `ms.lockUI()` → `lock_ui` operation
 - `ms.unlockUI()` → `unlock_ui` operation
 - `ms.spawnMonster(9300331, -28, 0)` → `spawn_monster` operation
 - `ms.showIntro("Effect/Direction3.img/swordman/Scene0")` → `show_intro` operation

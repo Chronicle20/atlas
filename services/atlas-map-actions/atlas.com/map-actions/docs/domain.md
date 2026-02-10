@@ -67,10 +67,11 @@ Executes operations by creating saga commands. Supported operation types:
 | Operation Type | Saga Step Action | Required Params |
 |----------------|-----------------|-----------------|
 | `field_effect` | `FieldEffect` | `path` |
-| `show_intro` | `ShowInfo` | `path` |
+| `lock_ui` | `UiLock` | (none) |
+| `unlock_ui` | `UiLock` | (none) |
+| `show_intro` | `ShowIntro` | `path` |
 | `spawn_monster` | `SpawnMonster` | `monsterId`; optional: `x`, `y`, `count`, `mapId` |
 | `drop_message` | `SendMessage` | `message`; optional: `messageType` |
-| `unlock_ui` | (no-op) | (none) |
 
 ## Saga
 

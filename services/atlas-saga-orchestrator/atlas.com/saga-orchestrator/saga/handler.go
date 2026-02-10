@@ -120,6 +120,7 @@ type Handler interface {
 	handleShowGuideHint(s Saga, st Step[any]) error
 	handleShowIntro(s Saga, st Step[any]) error
 	handleFieldEffect(s Saga, st Step[any]) error
+	handleUiLock(s Saga, st Step[any]) error
 	handleBlockPortal(s Saga, st Step[any]) error
 	handleUnblockPortal(s Saga, st Step[any]) error
 	handleDeductExperience(s Saga, st Step[any]) error
@@ -724,6 +725,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleShowIntro, true
 	case FieldEffect:
 		return h.handleFieldEffect, true
+	case UiLock:
+		return h.handleUiLock, true
 	case SetHP:
 		return h.handleSetHP, true
 	case BlockPortal:
@@ -1932,6 +1935,30 @@ func (h *HandlerImpl) handleFieldEffect(s Saga, st Step[any]) error {
 	err := h.systemMessageP.FieldEffect(s.TransactionId(), ch, payload.CharacterId, payload.Path)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to show field effect.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+func (h *HandlerImpl) handleUiLock(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(UiLockPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	err := h.systemMessageP.UiLock(s.TransactionId(), ch, payload.CharacterId, payload.Enable)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to lock/unlock UI.")
+		return err
+	}
+
+	err = h.systemMessageP.UiDisable(s.TransactionId(), ch, payload.CharacterId, payload.Enable)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to disable/enable UI.")
 		return err
 	}
 

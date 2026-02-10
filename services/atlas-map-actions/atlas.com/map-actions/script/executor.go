@@ -41,10 +41,10 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 		return e.executeSpawnMonster(f, characterId, op)
 	case "drop_message":
 		return e.executeDropMessage(f, characterId, op)
+	case "lock_ui":
+		return e.executeUiLock(f, characterId, true)
 	case "unlock_ui":
-		// unlock_ui is handled implicitly by enabling character actions after processing
-		e.l.Debugf("Unlock UI for character [%d] (handled by consumer).", characterId)
-		return nil
+		return e.executeUiLock(f, characterId, false)
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d].", op.Type(), characterId)
 		return nil
@@ -184,6 +184,27 @@ func (e *OperationExecutor) executeSpawnMonster(f field.Model, characterId uint3
 				X:           x,
 				Y:           y,
 				Count:       count,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+func (e *OperationExecutor) executeUiLock(f field.Model, characterId uint32, enable bool) error {
+	e.l.Debugf("Setting UI lock [%t] for character [%d].", enable, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("ui-lock").
+		AddStep(
+			fmt.Sprintf("ui-lock-%d", characterId),
+			saga.Pending,
+			saga.UiLock,
+			saga.UiLockPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				ChannelId:   f.ChannelId(),
+				Enable:      enable,
 			},
 		).Build()
 

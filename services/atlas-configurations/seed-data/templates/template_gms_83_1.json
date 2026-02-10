@@ -1836,6 +1836,43 @@
         "writer": "CharacterHint"
       },
       {
+        "opCode": "0xDC",
+        "writer": "UiOpen",
+        "options": {
+          "operations": {
+            "ITEM": 0,
+            "EQUIPMENT": 1,
+            "STATISTICS": 2,
+            "SKILLS": 3,
+            "KEYBOARD": 5,
+            "QUEST": 6,
+            "MONSTER_BOOK": 9,
+            "CHARACTER_INFORMATION": 10,
+            "GUILD_BBS": 11,
+            "MONSTER_CARNIVAL": 18,
+            "ENERGY_BAR": 20,
+            "PARTY_SEARCH": 22,
+            "ITEM_MAKER": 23,
+            "RANKING": 26,
+            "FAMILY": 27,
+            "FAMILY_PEDIGREE": 28,
+            "OPERATOR_BOARD": 29,
+            "OPERATOR_BOARD_STATE": 30,
+            "MEDAL_MEDAL_QUEST": 31,
+            "WEB_EVENT": 32,
+            "SKILLS_EX": 33
+          }
+        }
+      },
+      {
+        "opCode": "0xDD",
+        "writer": "UiLock"
+      },
+      {
+        "opCode": "0xDE",
+        "writer": "UiDisable"
+      },
+      {
         "opCode": "0xE0",
         "writer": "GuideTalk"
       },

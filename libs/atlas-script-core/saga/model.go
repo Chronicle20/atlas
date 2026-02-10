@@ -125,6 +125,7 @@ const (
 
 	// Field effect actions
 	FieldEffect Action = "field_effect"
+	UiLock      Action = "ui_lock"
 
 	// Portal-specific actions
 	PlayPortalSound Action = "play_portal_sound"
@@ -414,6 +415,14 @@ type FieldEffectPayload struct {
 	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	Path        string     `json:"path"`        // Path to the field effect (e.g., "maplemap/enter/1020000")
+}
+
+// UiLockPayload represents the payload for locking or unlocking the UI for a character
+type UiLockPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to lock/unlock UI for
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	Enable      bool       `json:"enable"`      // true = lock UI, false = unlock UI
 }
 
 // PlayPortalSoundPayload represents the payload for playing portal sound effect
@@ -707,6 +716,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case FieldEffect:
 		var payload FieldEffectPayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case UiLock:
+		var payload UiLockPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

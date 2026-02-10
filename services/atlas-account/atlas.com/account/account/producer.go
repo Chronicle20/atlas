@@ -106,7 +106,7 @@ func stateChangedStatusProvider(sessionId uuid.UUID, accountId uint32, accountNa
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createBanCommandProvider(accountId uint32, reason string, expiresAt time.Time) model.Provider[[]kafka.Message] {
+func createBanCommandProvider(accountId uint32, reason string, reasonCode byte, expiresAt time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &ban2.Command[ban2.CreateCommandBody]{
 		Type: ban2.CommandTypeCreate,
@@ -114,7 +114,7 @@ func createBanCommandProvider(accountId uint32, reason string, expiresAt time.Ti
 			BanType:    2, // Account ban
 			Value:      fmt.Sprintf("%d", accountId),
 			Reason:     reason,
-			ReasonCode: 0,
+			ReasonCode: reasonCode,
 			Permanent:  false,
 			ExpiresAt:  expiresAt,
 			IssuedBy:   "atlas-account",

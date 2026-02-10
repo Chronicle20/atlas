@@ -22,6 +22,8 @@ import (
 )
 
 const (
+	ReasonCodeInvalidAttempts = byte(99)
+
 	SystemError       = "SYSTEM_ERROR"
 	NotRegistered     = "NOT_REGISTERED"
 	DeletedOrBlocked  = "DELETED_OR_BLOCKED"
@@ -491,7 +493,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIN attempts (%d)", c.MaxPinAttempts)
 
-			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, ReasonCodeInvalidAttempts, expiresAt))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
 				return newAttempts, true, err
@@ -567,7 +569,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 			expiresAt := time.Now().Add(duration)
 			reason := fmt.Sprintf("Exceeded maximum PIC attempts (%d)", c.MaxPicAttempts)
 
-			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, expiresAt))
+			err = mb.Put(ban2.EnvCommandTopic, createBanCommandProvider(accountId, reason, ReasonCodeInvalidAttempts, expiresAt))
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to emit ban command for account [%d].", accountId)
 				return newAttempts, true, err

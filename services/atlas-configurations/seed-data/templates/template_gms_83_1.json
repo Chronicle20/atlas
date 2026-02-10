@@ -91,6 +91,11 @@
         "handler": "DeleteCharacterHandle"
       },
       {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
         "opCode": "0x19",
         "validator": "NoOpValidator",
         "handler": "NoOpHandler"
@@ -1147,6 +1152,10 @@
       {
         "opCode": "0x10",
         "writer": "ChannelChange"
+      },
+      {
+        "opCode": "0x11",
+        "writer": "Ping"
       },
       {
         "opCode": "0x1A",

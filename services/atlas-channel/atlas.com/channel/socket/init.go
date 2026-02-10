@@ -4,17 +4,21 @@ import (
 	"atlas-channel/channel"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/Chronicle20/atlas-socket"
 	"github.com/sirupsen/logrus"
 )
 
-func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port int) {
-	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, sc server.Model, ipAddress string, port int) {
+const idleThreshold = 30 * time.Second
+
+func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
+	return func(hp socket.HandlerProducer, rw socket.OpReadWriter, wp writer.Producer, sc server.Model, ipAddress string, port int) {
 		go func() {
 			l.Infof("Creating channel socket service for [%s] on port [%d].", sc.String(), port)
 
@@ -41,6 +45,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
 					socket.SetDestroyer(sp.DestroyByIdWithSpan),
 					socket.SetReadWriter(rw),
+					socket.SetIdleNotifier(session.SendPing(l, ctx, t, wp), idleThreshold),
 				)
 
 				if err != nil {

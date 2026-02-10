@@ -106,7 +106,7 @@ export default function LoginHistoryPage() {
     };
 
     return (
-        <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
+        <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
             <div className="flex items-center gap-2">
                 <History className="h-6 w-6" />
                 <h2 className="text-2xl font-bold tracking-tight">Login History</h2>
@@ -168,8 +168,8 @@ export default function LoginHistoryPage() {
             </Card>
 
             {hasSearched && (
-                <Card>
-                    <CardHeader>
+                <Card className="flex-1 min-h-0 flex flex-col">
+                    <CardHeader className="shrink-0">
                         <CardTitle>
                             Results
                             {entries.length > 0 && (
@@ -179,15 +179,15 @@ export default function LoginHistoryPage() {
                             )}
                         </CardTitle>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="flex-1 min-h-0 flex flex-col">
                         {entries.length === 0 ? (
                             <div className="text-center py-8 text-muted-foreground">
                                 No login history found matching your search criteria.
                             </div>
                         ) : (
-                            <div className="rounded-md border">
+                            <div className="rounded-md border flex-1 min-h-0 overflow-auto">
                                 <Table>
-                                    <TableHeader>
+                                    <TableHeader className="sticky top-0 bg-background z-10">
                                         <TableRow>
                                             <TableHead>Account</TableHead>
                                             <TableHead>IP Address</TableHead>

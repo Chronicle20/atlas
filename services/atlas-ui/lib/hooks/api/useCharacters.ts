@@ -34,7 +34,7 @@ export const characterKeys = {
 export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQueryResult<Character[], Error> {
   return useQuery({
     queryKey: characterKeys.list(tenant, options),
-    queryFn: () => charactersService.getAll(tenant, options),
+    queryFn: () => charactersService.getAll(tenant, { ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (characters change more frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -45,13 +45,13 @@ export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQuer
  * Hook to fetch a specific character by ID for a tenant
  */
 export function useCharacter(
-  tenant: Tenant, 
-  characterId: string, 
+  tenant: Tenant,
+  characterId: string,
   options?: ServiceOptions
 ): UseQueryResult<Character, Error> {
   return useQuery({
     queryKey: characterKeys.detail(tenant, characterId),
-    queryFn: () => charactersService.getById(tenant, characterId, options),
+    queryFn: () => charactersService.getById(tenant, characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,

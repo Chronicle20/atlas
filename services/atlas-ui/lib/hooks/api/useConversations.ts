@@ -56,12 +56,12 @@ export const conversationKeys = {
  * Hook to fetch all conversations for a tenant
  */
 export function useConversations(
-  tenant: Tenant, 
+  tenant: Tenant,
   options?: QueryOptions
 ): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: conversationKeys.list(tenant, options),
-    queryFn: () => conversationsService.getAll<Conversation>(options),
+    queryFn: () => conversationsService.getAll<Conversation>({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 3 * 60 * 1000, // 3 minutes (conversations change less frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -72,13 +72,13 @@ export function useConversations(
  * Hook to fetch a specific conversation by ID
  */
 export function useConversation(
-  tenant: Tenant, 
-  id: string, 
+  tenant: Tenant,
+  id: string,
   options?: ServiceOptions
 ): UseQueryResult<Conversation, Error> {
   return useQuery({
     queryKey: conversationKeys.detail(tenant, id),
-    queryFn: () => conversationsService.getById(id, options),
+    queryFn: () => conversationsService.getById(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -89,13 +89,13 @@ export function useConversation(
  * Hook to check if a conversation exists
  */
 export function useConversationExists(
-  tenant: Tenant, 
-  id: string, 
+  tenant: Tenant,
+  id: string,
   options?: ServiceOptions
 ): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: [...conversationKeys.detail(tenant, id), 'exists'],
-    queryFn: () => conversationsService.exists(id, options),
+    queryFn: () => conversationsService.exists(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 2 * 60 * 1000, // 2 minutes for existence checks
     gcTime: 5 * 60 * 1000,
@@ -106,13 +106,13 @@ export function useConversationExists(
  * Hook to fetch conversation for a specific NPC
  */
 export function useConversationByNpc(
-  tenant: Tenant, 
-  npcId: number, 
+  tenant: Tenant,
+  npcId: number,
   options?: QueryOptions
 ): UseQueryResult<Conversation | null, Error> {
   return useQuery({
     queryKey: conversationKeys.npcConversation(tenant, npcId),
-    queryFn: () => conversationsService.getByNpcId(npcId, options),
+    queryFn: () => conversationsService.getByNpcId(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -123,13 +123,13 @@ export function useConversationByNpc(
  * Hook to search conversations by text content
  */
 export function useConversationSearch(
-  tenant: Tenant, 
-  searchText: string, 
+  tenant: Tenant,
+  searchText: string,
   options?: QueryOptions
 ): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: conversationKeys.search(tenant, searchText),
-    queryFn: () => conversationsService.searchByText(searchText, options),
+    queryFn: () => conversationsService.searchByText(searchText, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!searchText && searchText.length > 2,
     staleTime: 1 * 60 * 1000, // Search results can be more stale
     gcTime: 3 * 60 * 1000,
@@ -140,13 +140,13 @@ export function useConversationSearch(
  * Hook to get conversations by NPC ID with filtering
  */
 export function useConversationsByNpc(
-  tenant: Tenant, 
-  npcId: number, 
+  tenant: Tenant,
+  npcId: number,
   options?: QueryOptions
 ): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: [...conversationKeys.byNpc(), tenant?.id || 'no-tenant', npcId, 'all'],
-    queryFn: () => conversationsService.getConversationsByNpc(npcId, options),
+    queryFn: () => conversationsService.getConversationsByNpc(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

@@ -14,7 +14,7 @@ export function useGachapons(options?: QueryOptions): UseQueryResult<GachaponDat
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: gachaponKeys.list(options),
-    queryFn: () => gachaponsService.getAllGachapons(activeTenant!, options),
+    queryFn: () => gachaponsService.getAllGachapons(activeTenant!, { ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

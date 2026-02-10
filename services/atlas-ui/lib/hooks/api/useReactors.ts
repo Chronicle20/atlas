@@ -16,7 +16,7 @@ export function useReactors(options?: QueryOptions): UseQueryResult<ReactorData[
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: reactorKeys.list(options),
-    queryFn: () => reactorsService.getAllReactors(activeTenant!, options),
+    queryFn: () => reactorsService.getAllReactors(activeTenant!, { ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -27,7 +27,7 @@ export function useReactor(id: string, options?: ServiceOptions): UseQueryResult
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: reactorKeys.detail(id),
-    queryFn: () => reactorsService.getReactorById(id, activeTenant!, options),
+    queryFn: () => reactorsService.getReactorById(id, activeTenant!, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

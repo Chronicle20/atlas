@@ -36,7 +36,7 @@ export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.list(options),
-    queryFn: () => mapsService.getAllMaps(activeTenant!, options),
+    queryFn: () => mapsService.getAllMaps(activeTenant!, { ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -50,7 +50,7 @@ export function useMap(id: string, options?: ServiceOptions): UseQueryResult<Map
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.detail(id),
-    queryFn: () => mapsService.getMapById(id, activeTenant!, options),
+    queryFn: () => mapsService.getMapById(id, activeTenant!, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -64,7 +64,7 @@ export function useMapsByName(name: string, options?: ServiceOptions): UseQueryR
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByName(name),
-    queryFn: () => mapsService.searchMapsByName(name, activeTenant!, options),
+    queryFn: () => mapsService.searchMapsByName(name, activeTenant!, { ...options, useCache: false }),
     enabled: !!name && name.trim().length > 0 && !!activeTenant,
     staleTime: 2 * 60 * 1000, // 2 minutes for search results
     gcTime: 5 * 60 * 1000,
@@ -78,7 +78,7 @@ export function useMapsByStreetName(streetName: string, options?: ServiceOptions
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: mapKeys.searchByStreet(streetName),
-    queryFn: () => mapsService.getMapsByStreetName(streetName, activeTenant!, options),
+    queryFn: () => mapsService.getMapsByStreetName(streetName, activeTenant!, { ...options, useCache: false }),
     enabled: !!streetName && streetName.trim().length > 0 && !!activeTenant,
     staleTime: 2 * 60 * 1000, // 2 minutes for search results
     gcTime: 5 * 60 * 1000,

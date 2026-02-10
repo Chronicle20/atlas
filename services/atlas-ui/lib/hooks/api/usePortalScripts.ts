@@ -11,7 +11,7 @@ export function usePortalScript(portalId: string): UseQueryResult<PortalScriptDa
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: portalScriptKeys.byPortal(portalId),
-    queryFn: () => portalScriptsService.getScriptsByPortal(portalId, activeTenant!),
+    queryFn: () => portalScriptsService.getScriptsByPortal(portalId, activeTenant!, { useCache: false }),
     enabled: !!portalId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

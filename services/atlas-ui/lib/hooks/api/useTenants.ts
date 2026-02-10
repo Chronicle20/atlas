@@ -38,7 +38,7 @@ export const tenantKeys = {
 export function useTenants(options?: QueryOptions): UseQueryResult<TenantBasic[], Error> {
   return useQuery({
     queryKey: tenantKeys.basicList(options),
-    queryFn: () => tenantsService.getAllTenants(options),
+    queryFn: () => tenantsService.getAllTenants({ ...options, useCache: false }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -50,7 +50,7 @@ export function useTenants(options?: QueryOptions): UseQueryResult<TenantBasic[]
 export function useTenant(id: string, options?: ServiceOptions): UseQueryResult<TenantBasic, Error> {
   return useQuery({
     queryKey: tenantKeys.basicDetail(id),
-    queryFn: () => tenantsService.getTenantById(id, options),
+    queryFn: () => tenantsService.getTenantById(id, { ...options, useCache: false }),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -165,7 +165,7 @@ export function useDeleteTenant(): UseMutationResult<void, Error, { id: string }
 export function useTenantConfigurations(options?: QueryOptions): UseQueryResult<TenantConfig[], Error> {
   return useQuery({
     queryKey: tenantKeys.configList(options),
-    queryFn: () => tenantsService.getAllTenantConfigurations(options),
+    queryFn: () => tenantsService.getAllTenantConfigurations({ ...options, useCache: false }),
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -177,7 +177,7 @@ export function useTenantConfigurations(options?: QueryOptions): UseQueryResult<
 export function useTenantConfiguration(id: string, options?: ServiceOptions): UseQueryResult<TenantConfig, Error> {
   return useQuery({
     queryKey: tenantKeys.configDetail(id),
-    queryFn: () => tenantsService.getTenantConfigurationById(id, options),
+    queryFn: () => tenantsService.getTenantConfigurationById(id, { ...options, useCache: false }),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

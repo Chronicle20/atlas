@@ -134,7 +134,7 @@ describe('useCharacters hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCharacters);
-      expect(mockCharactersService.getAll).toHaveBeenCalledWith(mockTenant, undefined);
+      expect(mockCharactersService.getAll).toHaveBeenCalledWith(mockTenant, { useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -178,7 +178,7 @@ describe('useCharacters hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCharacter);
-      expect(mockCharactersService.getById).toHaveBeenCalledWith(mockTenant, 'char-123', undefined);
+      expect(mockCharactersService.getById).toHaveBeenCalledWith(mockTenant, 'char-123', { useCache: false });
     });
 
     it('should not fetch when characterId is not provided', () => {

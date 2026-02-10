@@ -139,7 +139,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTemplates);
-      expect(mockTemplatesService.getAll).toHaveBeenCalledWith(undefined);
+      expect(mockTemplatesService.getAll).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should pass options to service', async () => {
@@ -154,7 +154,7 @@ describe('useTemplates hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockTemplatesService.getAll).toHaveBeenCalledWith(options);
+      expect(mockTemplatesService.getAll).toHaveBeenCalledWith({ ...options, useCache: false });
     });
   });
 
@@ -171,7 +171,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTemplate);
-      expect(mockTemplatesService.getById).toHaveBeenCalledWith('1', undefined);
+      expect(mockTemplatesService.getById).toHaveBeenCalledWith('1', { useCache: false });
     });
 
     it('should not fetch when ID is empty', () => {
@@ -197,7 +197,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockTemplatesService.exists).toHaveBeenCalledWith('1', undefined);
+      expect(mockTemplatesService.exists).toHaveBeenCalledWith('1', { useCache: false });
     });
   });
 
@@ -307,7 +307,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTemplates);
-      expect(mockTemplatesService.getByRegion).toHaveBeenCalledWith('GMS', undefined);
+      expect(mockTemplatesService.getByRegion).toHaveBeenCalledWith('GMS', { useCache: false });
     });
 
     it('should not fetch when region is empty', () => {
@@ -334,7 +334,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTemplates);
-      expect(mockTemplatesService.getByVersion).toHaveBeenCalledWith(83, 1, undefined);
+      expect(mockTemplatesService.getByVersion).toHaveBeenCalledWith(83, 1, { useCache: false });
     });
   });
 
@@ -352,7 +352,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTemplates);
-      expect(mockTemplatesService.getByRegionAndVersion).toHaveBeenCalledWith('GMS', 83, 1, undefined);
+      expect(mockTemplatesService.getByRegionAndVersion).toHaveBeenCalledWith('GMS', 83, 1, { useCache: false });
     });
   });
 
@@ -370,7 +370,7 @@ describe('useTemplates hooks', () => {
       });
 
       expect(result.current.data).toEqual(validationResult);
-      expect(mockTemplatesService.validateTemplateConsistency).toHaveBeenCalledWith('1');
+      expect(mockTemplatesService.validateTemplateConsistency).toHaveBeenCalledWith('1', { useCache: false });
     });
   });
 

@@ -5,6 +5,7 @@ import (
 	"atlas-login/session"
 	"atlas-login/socket/writer"
 	"context"
+	"net"
 
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -30,6 +31,18 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		}
 
 		ap := account.NewProcessor(l, ctx)
+		ipAddress := ""
+		if addr := s.GetRemoteAddress(); addr != nil {
+			if tcpAddr, ok := addr.(*net.TCPAddr); ok {
+				ipAddress = tcpAddr.IP.String()
+			} else {
+				host, _, err := net.SplitHostPort(addr.String())
+				if err == nil {
+					ipAddress = host
+				}
+			}
+		}
+
 		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get account [%d] being acted upon.", s.AccountId())
@@ -57,7 +70,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		if opt1 == 1 && opt2 == 0 {
 			if pin == a.PIN() {
 				l.Debugf("Validated account [%d] PIN.", s.AccountId())
-				_, _, err = ap.RecordPinAttempt(s.AccountId(), true)
+				_, _, err = ap.RecordPinAttempt(s.AccountId(), true, ipAddress, "")
 				if err != nil {
 					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
 				}
@@ -69,7 +82,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				return
 			}
 			l.Debugf("Account [%d] PIN invalid.", s.AccountId())
-			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false)
+			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false, ipAddress, "")
 			if err != nil {
 				l.WithError(err).Errorf("Unable to record failed PIN attempt for account [%d].", s.AccountId())
 			}
@@ -88,7 +101,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		if opt1 == 2 && opt2 == 0 {
 			if pin == a.PIN() {
 				l.Debugf("Requesting account [%d] to create PIN.", s.AccountId())
-				_, _, err = ap.RecordPinAttempt(s.AccountId(), true)
+				_, _, err = ap.RecordPinAttempt(s.AccountId(), true, ipAddress, "")
 				if err != nil {
 					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
 				}
@@ -100,7 +113,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				return
 			}
 			l.Debugf("Account [%d] PIN invalid.", s.AccountId())
-			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false)
+			_, limitReached, err := ap.RecordPinAttempt(s.AccountId(), false, ipAddress, "")
 			if err != nil {
 				l.WithError(err).Errorf("Unable to record failed PIN attempt for account [%d].", s.AccountId())
 			}

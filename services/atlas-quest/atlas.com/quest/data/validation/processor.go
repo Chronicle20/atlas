@@ -3,12 +3,24 @@ package validation
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	dataquest "atlas-quest/data/quest"
 
 	"github.com/sirupsen/logrus"
 )
+
+// wzDayToWeekday maps WZ day-of-week abbreviations to Go's time.Weekday.
+var wzDayToWeekday = map[string]time.Weekday{
+	"sun": time.Sunday,
+	"mon": time.Monday,
+	"tue": time.Tuesday,
+	"wed": time.Wednesday,
+	"thu": time.Thursday,
+	"fri": time.Friday,
+	"sat": time.Saturday,
+}
 
 // Processor provides validation functionality against query-aggregator
 type Processor interface {
@@ -57,6 +69,21 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 			p.l.WithError(err).Warnf("Unable to parse quest end date [%s] for quest [%d].", req.End, questDef.Id)
 		} else if now.After(endTime) {
 			return false, []string{fmt.Sprintf("quest_expired (ended %s)", req.End)}, nil
+		}
+	}
+
+	// Day of week requirements
+	if len(req.DayOfWeek) > 0 {
+		today := now.Weekday()
+		allowed := false
+		for _, day := range req.DayOfWeek {
+			if wd, ok := wzDayToWeekday[strings.ToLower(day)]; ok && wd == today {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return false, []string{fmt.Sprintf("wrong_day_of_week (allowed %v)", req.DayOfWeek)}, nil
 		}
 	}
 

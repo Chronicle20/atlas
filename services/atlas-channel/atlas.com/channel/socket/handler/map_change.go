@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -88,6 +89,10 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 
 		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
 		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
+		if portalName == "" {
+			_ = portal.NewProcessor(l, ctx).Warp(s.Field(), s.CharacterId(), _map.Id(targetId))
+		} else {
+			_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
+		}
 	}
 }

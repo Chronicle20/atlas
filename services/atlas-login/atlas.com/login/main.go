@@ -98,7 +98,7 @@ func main() {
 		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 		seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
 
-		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, ten.Port)
+		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, ten.Port)
 	}
 	span.End()
 
@@ -145,6 +145,7 @@ func produceWriters() []string {
 		writer.ServerLoad,
 		writer.SetAccountResult,
 		writer.CharacterViewAll,
+		writer.Ping,
 	}
 }
 
@@ -174,6 +175,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
 	handlerMap[handler.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
 	handlerMap[handler.ClientStartHandle] = handler.ClientStartHandleFunc
+	handlerMap[handler.PongHandle] = handler.PongHandleFunc
 	return handlerMap
 }
 

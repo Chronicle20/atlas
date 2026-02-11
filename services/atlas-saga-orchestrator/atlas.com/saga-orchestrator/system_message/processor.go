@@ -28,6 +28,12 @@ type Processor interface {
 	ShowGuideHint(transactionId uuid.UUID, ch channel.Model, characterId uint32, hintId uint32, duration uint32) error
 	// ShowIntro sends a command to show an intro/direction effect for a character
 	ShowIntro(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error
+	// FieldEffect sends a command to show a field effect for a character
+	FieldEffect(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error
+	// UiLock sends a command to lock or unlock the UI for a character
+	UiLock(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error
+	// UiDisable sends a command to disable or enable UI input for a character
+	UiDisable(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -82,4 +88,19 @@ func (p *ProcessorImpl) ShowGuideHint(transactionId uuid.UUID, ch channel.Model,
 // ShowIntro sends a Kafka command to atlas-channel to show an intro/direction effect
 func (p *ProcessorImpl) ShowIntro(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(ShowIntroCommandProvider(transactionId, ch, characterId, path))
+}
+
+// FieldEffect sends a Kafka command to atlas-channel to show a field effect
+func (p *ProcessorImpl) FieldEffect(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(FieldEffectCommandProvider(transactionId, ch, characterId, path))
+}
+
+// UiLock sends a Kafka command to atlas-channel to lock or unlock the UI
+func (p *ProcessorImpl) UiLock(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(UiLockCommandProvider(transactionId, ch, characterId, enable))
+}
+
+// UiDisable sends a Kafka command to atlas-channel to disable or enable UI input
+func (p *ProcessorImpl) UiDisable(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(system_message.EnvCommandTopic)(UiDisableCommandProvider(transactionId, ch, characterId, enable))
 }

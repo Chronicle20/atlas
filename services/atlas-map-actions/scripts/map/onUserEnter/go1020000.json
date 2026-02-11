@@ -1,0 +1,21 @@
+{
+  "scriptName": "go1020000",
+  "description": "Perion entrance - unlock UI and show map effect",
+  "rules": [
+    {
+      "id": "unlock_and_effect",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "unlock_ui"
+        },
+        {
+          "type": "field_effect",
+          "params": {
+            "path": "maplemap/enter/1020000"
+          }
+        }
+      ]
+    }
+  ]
+}

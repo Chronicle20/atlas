@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
+	socket "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -222,5 +223,16 @@ func Teardown(l logrus.FieldLogger) func() {
 			p := NewProcessor(l, tenant.WithContext(ctx, t))
 			return model.ForEachSlice(p.AllInTenantProvider, p.Destroy)
 		})
+	}
+}
+
+func SendPing(l logrus.FieldLogger, t tenant.Model, wp writer.Producer) socket.IdleNotifier {
+	return func(sessionId uuid.UUID) {
+		s, ok := getRegistry().Get(t.Id(), sessionId)
+		if !ok {
+			return
+		}
+		l.Debugf("Session [%s] idle, sending PING.", sessionId)
+		_ = Announce(l)(wp)(writer.Ping)(s, writer.PingBody())
 	}
 }

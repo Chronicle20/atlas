@@ -304,6 +304,7 @@ func CharacterBuffItemEffectForeignBody(l logrus.FieldLogger) func(characterId u
 func CharacterShowIntroEffectBody(l logrus.FieldLogger) func(message string) BodyProducer {
 	return func(message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
+			// TODO characters may be facing the wrong way during these interactions. Not possible to change facing direction.
 			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectShowIntroEffect))
 			w.WriteAsciiString(message)
 			return w.Bytes()

@@ -14,6 +14,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
+	socket "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -341,4 +342,15 @@ func (p *Processor) ClearStorageNpcId(id uuid.UUID) Model {
 // Returns the session and true if found, or an empty Model and false if not found.
 func (p *Processor) GetSessionByCharacterId(characterId uint32) (Model, bool) {
 	return getRegistry().GetByCharacterId(p.t.Id(), characterId)
+}
+
+func SendPing(l logrus.FieldLogger, ctx context.Context, t tenant.Model, wp writer.Producer) socket.IdleNotifier {
+	return func(sessionId uuid.UUID) {
+		s, ok := getRegistry().Get(t.Id(), sessionId)
+		if !ok {
+			return
+		}
+		l.Debugf("Session [%s] idle, sending PING.", sessionId)
+		_ = Announce(l)(ctx)(wp)(writer.Ping)(writer.PingBody())(s)
+	}
 }

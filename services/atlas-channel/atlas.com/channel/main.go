@@ -213,7 +213,7 @@ func main() {
 				gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
-				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, sc, ten.IPAddress, c.Port)
+				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, ten.IPAddress, c.Port)
 			}
 		}
 	}
@@ -324,6 +324,11 @@ func produceWriters() []string {
 		writer.ReactorHit,
 		writer.GuideTalk,
 		writer.ScriptProgress,
+		writer.Ping,
+		writer.FieldEffect,
+		writer.UiOpen,
+		writer.UiLock,
+		writer.UiDisable,
 	}
 }
 
@@ -395,6 +400,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
+	handlerMap[handler.PongHandle] = handler.PongHandleFunc
 	return handlerMap
 }
 

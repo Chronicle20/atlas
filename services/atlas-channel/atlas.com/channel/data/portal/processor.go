@@ -34,3 +34,4 @@ func (p *ProcessorImpl) InMapByNameModelProvider(mapId _map.Id, name string) mod
 func (p *ProcessorImpl) GetInMapByName(mapId _map.Id, name string) (Model, error) {
 	return model.First(p.InMapByNameModelProvider(mapId, name), model.Filters[Model]())
 }
+

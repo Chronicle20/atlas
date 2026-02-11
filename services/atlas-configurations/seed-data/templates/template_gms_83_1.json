@@ -91,6 +91,11 @@
         "handler": "DeleteCharacterHandle"
       },
       {
+        "opCode": "0x18",
+        "validator": "NoOpValidator",
+        "handler": "PongHandle"
+      },
+      {
         "opCode": "0x19",
         "validator": "NoOpValidator",
         "handler": "NoOpHandler"
@@ -1149,6 +1154,10 @@
         "writer": "ChannelChange"
       },
       {
+        "opCode": "0x11",
+        "writer": "Ping"
+      },
+      {
         "opCode": "0x1A",
         "writer": "SelectWorld"
       },
@@ -1386,7 +1395,7 @@
             "TOP_SCROLL": 4,
             "PINK_TEXT": 5,
             "BLUE_TEXT": 6,
-            "NPC":7,
+            "NPC": 7,
             "ITEM_MEGAPHONE": 8,
             "YELLOW_MEGAPHONE": 9,
             "MULTI_MEGAPHONE": 10,
@@ -1428,6 +1437,22 @@
       {
         "opCode": "0x87",
         "writer": "CharacterChatWhisper"
+      },
+      {
+        "opCode": "0x8A",
+        "writer": "FieldEffect",
+        "options": {
+          "operations": {
+            "SUMMON": 0,
+            "TREMBLE": 1,
+            "OBJECT": 2,
+            "SCREEN": 3,
+            "SOUND": 4,
+            "BOSS_HP": 5,
+            "BACKGROUND_MUSIC": 6,
+            "REWARD_RULLET": 7
+          }
+        }
       },
       {
         "opCode": "0x93",
@@ -1809,6 +1834,43 @@
       {
         "opCode": "0xD6",
         "writer": "CharacterHint"
+      },
+      {
+        "opCode": "0xDC",
+        "writer": "UiOpen",
+        "options": {
+          "operations": {
+            "ITEM": 0,
+            "EQUIPMENT": 1,
+            "STATISTICS": 2,
+            "SKILLS": 3,
+            "KEYBOARD": 5,
+            "QUEST": 6,
+            "MONSTER_BOOK": 9,
+            "CHARACTER_INFORMATION": 10,
+            "GUILD_BBS": 11,
+            "MONSTER_CARNIVAL": 18,
+            "ENERGY_BAR": 20,
+            "PARTY_SEARCH": 22,
+            "ITEM_MAKER": 23,
+            "RANKING": 26,
+            "FAMILY": 27,
+            "FAMILY_PEDIGREE": 28,
+            "OPERATOR_BOARD": 29,
+            "OPERATOR_BOARD_STATE": 30,
+            "MEDAL_MEDAL_QUEST": 31,
+            "WEB_EVENT": 32,
+            "SKILLS_EX": 33
+          }
+        }
+      },
+      {
+        "opCode": "0xDD",
+        "writer": "UiLock"
+      },
+      {
+        "opCode": "0xDE",
+        "writer": "UiDisable"
       },
       {
         "opCode": "0xE0",
@@ -2759,9 +2821,18 @@
   "cashShop": {
     "commodities": {
       "hourlyExpirations": [
-        {"templateId": 5211060, "hours": 2},
-        {"templateId": 5211048, "hours": 4},
-        {"templateId": 5360042, "hours": 4}
+        {
+          "templateId": 5211060,
+          "hours": 2
+        },
+        {
+          "templateId": 5211048,
+          "hours": 4
+        },
+        {
+          "templateId": 5360042,
+          "hours": 4
+        }
       ]
     }
   }

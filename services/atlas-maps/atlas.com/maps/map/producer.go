@@ -2,6 +2,7 @@ package _map
 
 import (
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/kafka/message/mapactions"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -37,6 +38,24 @@ func exitMapProvider(transactionId uuid.UUID, f field.Model, characterId uint32)
 		Type:          mapKafka.EventTopicMapStatusTypeCharacterExit,
 		Body: mapKafka.CharacterExit{
 			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func enterMapActionsProvider(transactionId uuid.UUID, f field.Model, characterId uint32, scriptName string, scriptType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(f.MapId()))
+	value := &mapactions.Command[mapactions.EnterCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       f.WorldId(),
+		ChannelId:     f.ChannelId(),
+		MapId:         f.MapId(),
+		Instance:      f.Instance(),
+		Type:          mapactions.CommandTypeEnter,
+		Body: mapactions.EnterCommandBody{
+			CharacterId: characterId,
+			ScriptName:  scriptName,
+			ScriptType:  scriptType,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

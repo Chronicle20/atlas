@@ -5,7 +5,7 @@ package monster
 type SpawnPoint struct {
 	Id       uint32 // Unique identifier for this spawn point
 	Template uint32 // Monster template ID to spawn
-	MobTime  uint32 // Time-related spawn behavior (negative values indicate non-spawnable)
+	MobTime  int32  // Time-related spawn behavior (negative values indicate non-spawnable)
 	Team     int8   // Team assignment for spawned monsters
 	Cy       int16  // Y coordinate for spawn behavior
 	F        uint32 // Flags for spawn behavior

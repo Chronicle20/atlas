@@ -15,9 +15,9 @@ type entity struct {
 	ID             string         `gorm:"primaryKey;not null"`
 	Name           string         `gorm:"not null"`
 	NpcIds         pq.Int64Array  `gorm:"type:integer[];not null"`
-	CommonWeight   uint32         `gorm:"not null;default:70"`
-	UncommonWeight uint32         `gorm:"not null;default:25"`
-	RareWeight     uint32         `gorm:"not null;default:5"`
+	CommonWeight   uint32         `gorm:"not null"`
+	UncommonWeight uint32         `gorm:"not null"`
+	RareWeight     uint32         `gorm:"not null"`
 }
 
 func (e entity) TableName() string {

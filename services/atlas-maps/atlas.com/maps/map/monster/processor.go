@@ -5,7 +5,7 @@
 // by enforcing cooldown periods on individual spawn points. The key features include:
 //
 // - In-memory registry scoped by MapKey (tenant/world/channel/map)
-// - 5-second cooldown enforcement per spawn point
+// - MobTime-based cooldown enforcement per spawn point (default 5s for normal monsters)
 // - Lazy initialization from REST provider
 // - Thread-safe concurrent access with per-map mutexes
 // - Maintains existing spawn rate calculations
@@ -49,7 +49,7 @@ type Processor interface {
 // Key Features:
 // - Uses singleton SpawnPointRegistry for persistent state
 // - Per-map spawn point registry scoped by MapKey (tenant/world/channel/map)
-// - 5-second cooldown enforcement after each spawn
+// - MobTime-based cooldown enforcement after each spawn (default 5s, bosses use MobTime seconds)
 // - Thread-safe concurrent access with per-map RWMutex
 // - Lazy initialization from data provider on first access
 // - Maintains existing spawn rate calculations and character-based logic
@@ -83,7 +83,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // 3. Filter spawn points by cooldown eligibility (NextSpawnAt.Before(now))
 // 4. Calculate spawn requirements based on character count and monster limits
 // 5. Randomly select from eligible spawn points
-// 6. Update cooldown (NextSpawnAt = now + 5 seconds) before spawning
+// 6. Update cooldown (NextSpawnAt = now + MobTime seconds, default 5s) before spawning
 // 7. Spawn monsters asynchronously and log activity
 //
 // Thread Safety:
@@ -168,8 +168,12 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, field field.Model
 		sp := spawnPoints[originalIdx].SpawnPoint
 
 		// Update cooldown before spawning
+		cooldown := 5 * time.Second
+		if sp.MobTime > 0 {
+			cooldown = time.Duration(sp.MobTime) * time.Second
+		}
 		mutex.Lock()
-		spawnPoints[originalIdx].NextSpawnAt = now.Add(5 * time.Second)
+		spawnPoints[originalIdx].NextSpawnAt = now.Add(cooldown)
 		mutex.Unlock()
 
 		spawned++

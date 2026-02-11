@@ -214,6 +214,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-map-actions",
+      "type": "go-service",
+      "path": "services/atlas-map-actions",
+      "module_path": "services/atlas-map-actions/atlas.com/map-actions",
+      "docker_image": "ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-maps",
       "type": "go-service",
       "path": "services/atlas-maps",

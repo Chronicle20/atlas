@@ -75,13 +75,15 @@ func defaultDestroyer(_ uuid.UUID) {
 }
 
 type config struct {
-	rw        OpReadWriter
-	creator   Creator
-	decryptor MessageDecryptor
-	destroyer Destroyer
-	ipAddress string
-	port      int
-	handlers  map[uint16]request.Handler
+	rw            OpReadWriter
+	creator       Creator
+	decryptor     MessageDecryptor
+	destroyer     Destroyer
+	ipAddress     string
+	port          int
+	handlers      map[uint16]request.Handler
+	idleNotifier  IdleNotifier
+	idleThreshold time.Duration
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -180,6 +182,10 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 
 		fl := l.WithField("session", sessionId.String())
 
+		// Idle state tracking
+		lastActivity := time.Now()
+		isIdle := false
+
 		for {
 			buffer := make([]byte, readSize)
 
@@ -187,6 +193,13 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 			_, err := conn.Read(buffer)
 			if err != nil {
 				if os.IsTimeout(err) {
+					// Check idle state on timeout
+					if config.idleNotifier != nil && !isIdle && config.idleThreshold > 0 {
+						if time.Since(lastActivity) > config.idleThreshold {
+							isIdle = true
+							config.idleNotifier(sessionId)
+						}
+					}
 					continue
 				}
 				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
@@ -197,6 +210,10 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 				config.destroyer(sessionId)
 				return
 			}
+
+			// Data received - reset activity tracking
+			lastActivity = time.Now()
+			isIdle = false
 
 			if header {
 				readSize = crypto.PacketLength(buffer)

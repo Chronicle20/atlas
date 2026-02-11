@@ -77,6 +77,10 @@ data:
           proxy_pass http://atlas-buddies.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/characters/[^/]+/visits(/.*)?$ {
+          proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/characters/[^/]+/buffs(/.*)?$ {
           proxy_pass http://atlas-buffs.atlas.svc.cluster.local:8080;
         }
@@ -195,6 +199,14 @@ data:
 
         location ~ ^/api/history(/.*)?$ {
           proxy_pass http://atlas-ban.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/maps/actions(/.*)?$ {
+          proxy_pass http://atlas-map-actions.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/maps/[^/]+/actions(/.*)?$ {
+          proxy_pass http://atlas-map-actions.atlas.svc.cluster.local:8080;
         }
 
         location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/characters(/.*)?$ {

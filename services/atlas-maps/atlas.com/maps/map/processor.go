@@ -1,18 +1,23 @@
 package _map
 
 import (
+	scriptData "atlas-maps/data/map/script"
 	"atlas-maps/kafka/message"
 	mapKafka "atlas-maps/kafka/message/map"
+	"atlas-maps/kafka/message/mapactions"
 	"atlas-maps/kafka/producer"
 	"atlas-maps/map/character"
 	monster2 "atlas-maps/map/monster"
 	"atlas-maps/reactor"
+	"atlas-maps/visit"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 type Processor interface {
@@ -32,20 +37,47 @@ type ProcessorImpl struct {
 	ctx context.Context
 	p   producer.Provider
 	cp  character.Processor
+	db  *gorm.DB
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider) Processor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider, db *gorm.DB) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		p:   p,
 		cp:  character.NewProcessor(l, ctx),
+		db:  db,
 	}
 }
 
 func (p *ProcessorImpl) Enter(mb *message.Buffer) func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 	return func(transactionId uuid.UUID, f field.Model, characterId uint32) error {
 		p.cp.Enter(transactionId, f, characterId)
+
+		isFirstVisit := false
+		if p.db != nil {
+			vp := visit.NewProcessor(p.l, p.ctx, p.db)
+			_, err := vp.ByCharacterIdAndMapIdProvider(characterId, f.MapId())()
+			if err != nil && errors.Is(err, gorm.ErrRecordNotFound) {
+				isFirstVisit = true
+				if err := vp.RecordVisit(characterId, f.MapId()); err != nil {
+					p.l.WithError(err).Errorf("Failed to record visit for character [%d] map [%d].", characterId, f.MapId())
+				}
+			}
+		}
+
+		scripts, err := scriptData.NewProcessor(p.l, p.ctx).GetScripts(f.MapId())
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to fetch script names for map [%d]. Skipping map actions.", f.MapId())
+		} else {
+			if isFirstVisit && scripts.OnFirstUserEnter() != "" {
+				_ = mb.Put(mapactions.EnvCommandTopic, enterMapActionsProvider(transactionId, f, characterId, scripts.OnFirstUserEnter(), "onFirstUserEnter"))
+			}
+			if scripts.OnUserEnter() != "" {
+				_ = mb.Put(mapactions.EnvCommandTopic, enterMapActionsProvider(transactionId, f, characterId, scripts.OnUserEnter(), "onUserEnter"))
+			}
+		}
+
 		go func() {
 			_ = monster2.NewProcessor(p.l, p.ctx).SpawnMonsters(transactionId, f)
 		}()

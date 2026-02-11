@@ -1,6 +1,14 @@
 package socket
 
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
+
 type Configurator func(s *config)
+
+type IdleNotifier func(sessionId uuid.UUID)
 
 //goland:noinspection GoUnusedExportedFunction
 func SetIpAddress(ipAddress string) func(*config) {
@@ -47,5 +55,13 @@ func SetReadWriter(rw OpReadWriter) Configurator {
 func SetHandlers(producer HandlerProducer) Configurator {
 	return func(s *config) {
 		s.handlers = producer()
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SetIdleNotifier(notifier IdleNotifier, threshold time.Duration) Configurator {
+	return func(s *config) {
+		s.idleNotifier = notifier
+		s.idleThreshold = threshold
 	}
 }

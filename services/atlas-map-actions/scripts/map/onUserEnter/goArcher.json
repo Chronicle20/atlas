@@ -1,0 +1,42 @@
+{
+  "scriptName": "goArcher",
+  "description": "Bowman Instructional School (1020300) - Explorer job advancement intro for Archer path",
+  "rules": [
+    {
+      "id": "intro_male",
+      "conditions": [
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": "0"
+        }
+      ],
+      "operations": [
+        {
+          "type": "show_intro",
+          "params": {
+            "path": "Effect/Direction3.img/archer/Scene0"
+          }
+        }
+      ]
+    },
+    {
+      "id": "intro_female",
+      "conditions": [
+        {
+          "type": "gender",
+          "operator": "=",
+          "value": "1"
+        }
+      ],
+      "operations": [
+        {
+          "type": "show_intro",
+          "params": {
+            "path": "Effect/Direction3.img/archer/Scene1"
+          }
+        }
+      ]
+    }
+  ]
+}

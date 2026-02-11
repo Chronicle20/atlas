@@ -146,3 +146,17 @@ func ParseInstanceId(l logrus.FieldLogger, next InstanceIdHandler) http.HandlerF
 		next(instanceId)(w, r)
 	}
 }
+
+type CharacterIdHandler func(characterId uint32) http.HandlerFunc
+
+func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		characterId, err := strconv.Atoi(mux.Vars(r)["characterId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse characterId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(characterId))(w, r)
+	}
+}

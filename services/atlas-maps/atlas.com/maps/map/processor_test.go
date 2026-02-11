@@ -133,6 +133,7 @@ func createTestProcessor(l logrus.FieldLogger, ctx context.Context, cp character
 		ctx: ctx,
 		p:   pp.Provider(),
 		cp:  cp,
+		db:  nil,
 	}
 }
 

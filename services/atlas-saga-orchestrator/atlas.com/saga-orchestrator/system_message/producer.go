@@ -140,3 +140,51 @@ func ShowIntroCommandProvider(transactionId uuid.UUID, ch channel.Model, charact
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// FieldEffectCommandProvider creates a Kafka message for showing a field effect
+func FieldEffectCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, path string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.FieldEffectBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandFieldEffect,
+		Body: system_message.FieldEffectBody{
+			Path: path,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// UiLockCommandProvider creates a Kafka message for locking or unlocking the UI
+func UiLockCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.UiLockBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandUiLock,
+		Body: system_message.UiLockBody{
+			Enable: enable,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// UiDisableCommandProvider creates a Kafka message for disabling or enabling UI input
+func UiDisableCommandProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, enable bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.UiDisableBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		ChannelId:     ch.Id(),
+		CharacterId:   characterId,
+		Type:          system_message.CommandUiDisable,
+		Body: system_message.UiDisableBody{
+			Enable: enable,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

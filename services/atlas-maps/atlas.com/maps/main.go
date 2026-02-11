@@ -1,6 +1,7 @@
 package main
 
 import (
+	"atlas-maps/database"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	"atlas-maps/kafka/consumer/monster"
@@ -9,6 +10,7 @@ import (
 	"atlas-maps/service"
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
+	"atlas-maps/visit"
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -49,11 +51,13 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	db := database.Connect(l, database.SetMigrations(visit.MigrateTable))
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
@@ -65,6 +69,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(visit.InitResource(GetServer())(db)).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

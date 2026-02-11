@@ -1,0 +1,106 @@
+{
+  "scriptName": "108010301",
+  "description": "Job advancement test maps - spawns job-specific test monster based on map ID",
+  "rules": [
+    {
+      "id": "spawn_archer_test",
+      "conditions": [
+        {
+          "type": "map_id",
+          "operator": "=",
+          "value": "108010101"
+        }
+      ],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9001002",
+            "x": "188",
+            "y": "20"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spawn_warrior_test",
+      "conditions": [
+        {
+          "type": "map_id",
+          "operator": "=",
+          "value": "108010301"
+        }
+      ],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9001000",
+            "x": "188",
+            "y": "20"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spawn_mage_test",
+      "conditions": [
+        {
+          "type": "map_id",
+          "operator": "=",
+          "value": "108010201"
+        }
+      ],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9001001",
+            "x": "188",
+            "y": "20"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spawn_thief_test",
+      "conditions": [
+        {
+          "type": "map_id",
+          "operator": "=",
+          "value": "108010401"
+        }
+      ],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9001003",
+            "x": "188",
+            "y": "20"
+          }
+        }
+      ]
+    },
+    {
+      "id": "spawn_pirate_test",
+      "conditions": [
+        {
+          "type": "map_id",
+          "operator": "=",
+          "value": "108010501"
+        }
+      ],
+      "operations": [
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9001008",
+            "x": "188",
+            "y": "20"
+          }
+        }
+      ]
+    }
+  ]
+}

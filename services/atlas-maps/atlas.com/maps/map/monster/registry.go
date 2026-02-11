@@ -134,6 +134,31 @@ func (r *SpawnPointRegistry) GetOrInitializeSpawnPoints(mapKey character.MapKey,
 	return spawnPoints, mutex, nil
 }
 
+// ResetCooldown resets the cooldown for all spawn points matching the given template ID within a map.
+// This is called when a boss monster is killed to ensure the full MobTime delay applies from the kill time.
+// Only spawn points with MobTime > 0 (boss/special monsters) are affected.
+// This is a no-op if the mapKey is not in the registry (no players on map = no registry entry).
+func (r *SpawnPointRegistry) ResetCooldown(mapKey character.MapKey, templateId uint32) {
+	r.registryMu.RLock()
+	spawnPoints, exists := r.spawnPointRegistry[mapKey]
+	mutex, mutexExists := r.spawnPointMu[mapKey]
+	r.registryMu.RUnlock()
+
+	if !exists || !mutexExists {
+		return
+	}
+
+	now := time.Now()
+	mutex.Lock()
+	defer mutex.Unlock()
+
+	for _, csp := range spawnPoints {
+		if csp.Template == templateId && csp.MobTime > 0 {
+			csp.NextSpawnAt = now.Add(time.Duration(csp.MobTime) * time.Second)
+		}
+	}
+}
+
 // Reset clears all spawn point registries. This is primarily used for testing.
 func (r *SpawnPointRegistry) Reset() {
 	r.registryMu.Lock()

@@ -402,7 +402,7 @@ func getLife(t tenant.Model, exml xml.Node) ([]monster.RestModel, []npc.RestMode
 		x := int16(life.GetIntegerWithDefault("x", 0))
 		y := int16(life.GetIntegerWithDefault("y", 0))
 		hide := life.GetIntegerWithDefault("hide", 0)
-		mobTime := uint32(life.GetIntegerWithDefault("mobTime", 0))
+		mobTime := int32(life.GetIntegerWithDefault("mobTime", 0))
 
 		if lifeType == "m" {
 			monster := monster.RestModel{

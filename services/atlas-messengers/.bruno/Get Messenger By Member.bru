@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/messengers
+  url: {{scheme}}://{{host}}:{{port}}/api/messengers?filter[members.id]={{memberId}}
   body: none
   auth: none
+}
+
+params:query {
+  filter[members.id]: {{memberId}}
 }

@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/configurations/templates?region=GMS&majorVersion=83&minorVersion=1
+  url: {{scheme}}://{{host}}:{{port}}/api/configurations/templates?region={{REGION}}&majorVersion={{MAJOR_VERSION}}&minorVersion={{MINOR_VERSION}}
   body: none
   auth: none
 }
 
 params:query {
-  region: GMS
-  majorVersion: 83
-  minorVersion: 1
+  region: {{REGION}}
+  majorVersion: {{MAJOR_VERSION}}
+  minorVersion: {{MINOR_VERSION}}
 }

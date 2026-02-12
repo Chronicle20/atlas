@@ -1236,9 +1236,10 @@ func TestSpawnMonsters_CooldownValidation(t *testing.T) {
 	updatedCount := 0
 
 	for _, csp := range registrySpawnPoints {
-		// Check if cooldown was updated (NextSpawnAt should be approximately now + 3-5 seconds)
-		// Since spawning happened a bit ago, the cooldown should be in the future but not too far
-		if csp.NextSpawnAt.After(now.Add(2*time.Second)) && csp.NextSpawnAt.Before(now.Add(7*time.Second)) {
+		// Check if cooldown was updated (NextSpawnAt should be approximately now + MobTime seconds)
+		// MobTime is 10 for these spawn points, so cooldown should be ~10 seconds from spawn time
+		// Since spawning happened a bit ago, allow a generous window
+		if csp.NextSpawnAt.After(now.Add(7*time.Second)) && csp.NextSpawnAt.Before(now.Add(12*time.Second)) {
 			updatedCount++
 		}
 	}

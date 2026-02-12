@@ -4,6 +4,7 @@ import (
 	"atlas-maps/database"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
+	"atlas-maps/kafka/consumer/monster"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
 	"atlas-maps/service"
@@ -55,8 +56,10 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
+	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 

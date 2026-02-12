@@ -7,7 +7,7 @@ import (
 type RestModel struct {
 	Id       uint32 `json:"-"`
 	Template uint32 `json:"template"`
-	MobTime  uint32 `json:"mob_time"`
+	MobTime  int32  `json:"mob_time"`
 	Team     int8   `json:"team"`
 	CY       int16  `json:"cy"`
 	F        uint32 `json:"f"`

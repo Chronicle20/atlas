@@ -1,0 +1,18 @@
+name: GMS v83
+variables:
+  - name: TENANT_ID
+    value: ed65dc23-167a-4d27-85be-5a1778838a69
+  - name: REGION
+    value: GMS
+  - name: MAJOR_VERSION
+    value: "83"
+  - name: MINOR_VERSION
+    value: "1"
+  - name: accountId
+    value: "1"
+  - name: accountName
+    value: Atlas
+  - name: characterId
+    value: "1"
+  - name: worldId
+    value: "0"

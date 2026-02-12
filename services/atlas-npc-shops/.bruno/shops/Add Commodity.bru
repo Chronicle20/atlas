@@ -27,26 +27,22 @@ body:json {
   }
 }
 
-vars:pre-request {
-  npcId: 11000
-}
-
 docs {
   # Add Commodity
-
+  
   This endpoint adds a commodity to a shop.
-
+  
   ## Request Body
-
+  
   The request body should include the commodity details:
   - `templateId`: The template ID of the item
   - `mesoPrice`: The price in mesos
   - `perfectPitchPrice`: The price in perfect pitch (optional)
-
+  
   ## Response
-
+  
   The response includes the created commodity details with its ID.
-
+  
   ```json
   {
     "data": {

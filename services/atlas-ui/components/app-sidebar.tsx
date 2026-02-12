@@ -53,6 +53,10 @@ const items = [
                 url: "/monsters"
             },
             {
+                title: "Items",
+                url: "/items"
+            },
+            {
                 title: "Maps",
                 url: "/maps"
             },

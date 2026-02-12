@@ -187,7 +187,7 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					_ = monster.GetMonsterStringRegistry().Clear(t)
 					_ = monster.GetMonsterGaugeRegistry().Clear(t)
 				} else if name == WorkerCharacter {
-					if err = item.InitStringNested(t, filepath.Join(path, "String.wz", "Eqp.img.xml")); err != nil {
+					if err = item.InitStringNested(db)(l)(ctx)(filepath.Join(path, "String.wz", "Eqp.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize equipment item string registry.")
 						return err
 					}
@@ -202,19 +202,19 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					err = RegisterAllData(l)(ctx)(path, "Skill.wz", skill.RegisterSkill(db))()
 					_ = skill.GetSkillStringRegistry().Clear(t)
 				} else if name == WorkerPet {
-					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Pet.img.xml")); err != nil {
+					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Pet.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize pet item string registry.")
 						return err
 					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Pet"), pet.RegisterPet(db))()
 				} else if name == WorkerConsume {
-					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Consume.img.xml")); err != nil {
+					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Consume.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize consumable item string registry.")
 						return err
 					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Consume"), consumable.RegisterConsumable(db))()
 				} else if name == WorkerCash {
-					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Cash.img.xml")); err != nil {
+					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Cash.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize cash item string registry.")
 						return err
 					}
@@ -222,13 +222,13 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 				} else if name == WorkerCommodity {
 					err = RegisterFileData(l)(ctx)(path, filepath.Join("Etc.wz", "Commodity.img.xml"), commodity.RegisterCommodity(db))()
 				} else if name == WorkerEtc {
-					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Etc.img.xml")); err != nil {
+					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Etc.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize etc item string registry.")
 						return err
 					}
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Item.wz", "Etc"), etc.RegisterEtc(db))()
 				} else if name == WorkerSetup {
-					if err = item.InitStringFlat(t, filepath.Join(path, "String.wz", "Ins.img.xml")); err != nil {
+					if err = item.InitStringFlat(db)(l)(ctx)(filepath.Join(path, "String.wz", "Ins.img.xml")); err != nil {
 						l.WithError(err).Errorf("Failed to initialize setup item string registry.")
 						return err
 					}

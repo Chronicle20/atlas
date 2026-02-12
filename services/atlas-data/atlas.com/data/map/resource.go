@@ -9,6 +9,7 @@ import (
 	"atlas-data/rest"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -51,11 +52,35 @@ func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				return
 			}
 
+			searchQuery := r.URL.Query().Get("search")
+			if searchQuery != "" {
+				res = filterMaps(res, searchQuery, 50)
+			}
+
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
 	}
+}
+
+func filterMaps(maps []RestModel, search string, limit int) []RestModel {
+	searchLower := strings.ToLower(search)
+	searchId, isNumeric := strconv.Atoi(search)
+	results := make([]RestModel, 0)
+	for _, m := range maps {
+		if isNumeric == nil && int(m.Id) == searchId {
+			results = append(results, m)
+		} else if strings.Contains(strings.ToLower(m.Name), searchLower) {
+			results = append(results, m)
+		} else if strings.Contains(strings.ToLower(m.StreetName), searchLower) {
+			results = append(results, m)
+		}
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results
 }
 
 func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

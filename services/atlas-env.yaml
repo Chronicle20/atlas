@@ -5,7 +5,6 @@ metadata:
   namespace: atlas
 data:
   TRACE_ENDPOINT: "192.168.23.237:4317"
-  TRACE_AGENT_ENDPOINT: "192.168.23.237:6831"
   DB_HOST: "postgres.home"
   DB_PORT: "5432"
   REST_PORT: "8080"

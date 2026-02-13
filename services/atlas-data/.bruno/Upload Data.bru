@@ -4,12 +4,12 @@ meta {
   seq: 21
 }
 
-patch {
-  url: {{scheme}}://{{host}}:{{port}}/api/data
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/data/process
   body: multipartForm
   auth: none
 }
 
 body:multipart-form {
-  zip_file: @file(C:\Temp\83.1.zip)
+  zip_file: 
 }

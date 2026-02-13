@@ -37,24 +37,30 @@ func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Con
 
 				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					s := NewStringStorage(l, tx)
-					for _, mxml := range exml.ChildNodes {
-						if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
-							continue
-						}
-						rm := StringRestModel{
-							Id:   mxml.Name,
-							Name: mxml.GetString("name", "MISSINGNO"),
-						}
-						_, err = s.Add(ctx)(rm)()
-						if err != nil {
-							return err
-						}
-					}
-					return nil
+					return addStringItems(ctx, s, exml.ChildNodes)
 				})
 			}
 		}
 	}
+}
+
+func addStringItems(ctx context.Context, s *document.Storage[string, StringRestModel], nodes []xml.Node) error {
+	for _, mxml := range nodes {
+		if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
+			if err := addStringItems(ctx, s, mxml.ChildNodes); err != nil {
+				return err
+			}
+			continue
+		}
+		rm := StringRestModel{
+			Id:   mxml.Name,
+			Name: mxml.GetString("name", "MISSINGNO"),
+		}
+		if _, err := s.Add(ctx)(rm)(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func InitStringNested(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {

@@ -12,7 +12,7 @@ import (
 
 func InitTracer(l logrus.FieldLogger) func(serviceName string) (io.Closer, error) {
 	return func(serviceName string) (io.Closer, error) {
-		jaegerHostPort := os.Getenv("JAEGER_HOST_PORT")
+		jaegerHostPort := os.Getenv("TRACE_AGENT_ENDPOINT")
 		cfg := &config.Configuration{
 			ServiceName: serviceName,
 			Sampler:     &config.SamplerConfig{Type: "const", Param: 1},

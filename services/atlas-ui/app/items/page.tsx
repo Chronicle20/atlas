@@ -1,7 +1,7 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { itemsService } from "@/services/api/items.service";
 import { type ItemSearchResult, getItemTypeBadgeVariant } from "@/types/models/item";
 import { toast } from "sonner";
@@ -20,16 +20,30 @@ import {
 } from "@/components/ui/table";
 import { Package, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Image from "next/image";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
 
 export default function ItemsPage() {
+  return (
+    <Suspense>
+      <ItemsPageContent />
+    </Suspense>
+  );
+}
+
+function ItemsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [items, setItems] = useState<ItemSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const autoSearched = useRef(false);
 
   const handleSearch = useCallback(async () => {
     if (!activeTenant) {
@@ -44,6 +58,7 @@ export default function ItemsPage() {
 
     setLoading(true);
     setHasSearched(true);
+    router.replace(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
 
     try {
       const data = await itemsService.searchItems(searchQuery.trim(), activeTenant);
@@ -58,12 +73,13 @@ export default function ItemsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTenant, searchQuery]);
+  }, [activeTenant, searchQuery, router, pathname]);
 
   const handleClear = () => {
     setSearchQuery("");
     setItems([]);
     setHasSearched(false);
+    router.replace(pathname, { scroll: false });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -71,6 +87,13 @@ export default function ItemsPage() {
       handleSearch();
     }
   };
+
+  useEffect(() => {
+    if (activeTenant && initialQuery && !autoSearched.current) {
+      autoSearched.current = true;
+      handleSearch();
+    }
+  }, [activeTenant, initialQuery, handleSearch]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">

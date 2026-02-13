@@ -3,10 +3,13 @@
 import { useParams } from "next/navigation";
 import { useMonster } from "@/lib/hooks/api/useMonsters";
 import { useMonsterDrops } from "@/lib/hooks/api/useDrops";
+import { useMobData } from "@/lib/hooks/useMobData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
+import Image from "next/image";
+import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
 import {
   Table,
   TableBody,
@@ -22,6 +25,7 @@ export default function MonsterDetailPage() {
 
   const { data: monster, isLoading, error, refetch } = useMonster(id);
   const { data: drops, isLoading: dropsLoading } = useMonsterDrops(id);
+  const { iconUrl: monsterIconUrl } = useMobData(parseInt(id));
 
   if (isLoading) {
     return <PageLoader />;
@@ -40,6 +44,16 @@ export default function MonsterDetailPage() {
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 overflow-y-auto">
       <div className="flex items-center gap-3">
+        {monsterIconUrl && (
+          <Image
+            src={monsterIconUrl}
+            alt={attrs.name}
+            width={64}
+            height={64}
+            unoptimized={shouldUnoptimizeImageSrc(monsterIconUrl)}
+            className="object-contain"
+          />
+        )}
         <h2 className="text-2xl font-bold tracking-tight">{attrs.name}</h2>
         <span className="text-muted-foreground font-mono">#{monster.id}</span>
         {attrs.boss && <Badge variant="destructive">Boss</Badge>}

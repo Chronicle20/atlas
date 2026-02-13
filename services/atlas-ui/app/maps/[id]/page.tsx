@@ -9,6 +9,9 @@ import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
+import { NpcImage } from "@/components/features/npc/NpcImage";
+import { useTenant } from "@/context/tenant-context";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import {
   Table,
   TableBody,
@@ -22,6 +25,7 @@ export default function MapDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
+  const { activeTenant } = useTenant();
   const { data: map, isLoading, error, refetch } = useMap(id);
   const { data: portals, isLoading: portalsLoading } = useMapPortals(id);
   const { data: npcs, isLoading: npcsLoading } = useMapNpcs(id);
@@ -136,6 +140,7 @@ export default function MapDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">Icon</TableHead>
                       <TableHead>ID</TableHead>
                       <TableHead>Template</TableHead>
                       <TableHead>Name</TableHead>
@@ -146,8 +151,29 @@ export default function MapDetailPage() {
                   <TableBody>
                     {npcs.map((npc) => (
                       <TableRow key={npc.id}>
+                        <TableCell>
+                          <NpcImage
+                            npcId={npc.attributes.template}
+                            iconUrl={activeTenant ? getAssetIconUrl(
+                              activeTenant.id,
+                              activeTenant.attributes.region,
+                              activeTenant.attributes.majorVersion,
+                              activeTenant.attributes.minorVersion,
+                              'npc',
+                              npc.attributes.template,
+                            ) : undefined}
+                            size={32}
+                            lazy={true}
+                            showRetryButton={false}
+                            maxRetries={1}
+                          />
+                        </TableCell>
                         <TableCell className="font-mono">{npc.id}</TableCell>
-                        <TableCell className="font-mono">{npc.attributes.template}</TableCell>
+                        <TableCell>
+                          <Link href={`/npcs/${npc.attributes.template}`} className="font-mono text-primary hover:underline">
+                            {npc.attributes.template}
+                          </Link>
+                        </TableCell>
                         <TableCell>{npc.attributes.name}</TableCell>
                         <TableCell className="font-mono">
                           ({npc.attributes.x}, {npc.attributes.y})

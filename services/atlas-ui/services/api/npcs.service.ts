@@ -12,7 +12,7 @@
 
 import { BaseService, type ServiceOptions, type QueryOptions, type ValidationError } from './base.service';
 import type { ApiSingleResponse } from '@/types/api/responses';
-import type { NPC, Shop, Commodity, CommodityAttributes, ShopResponse } from '@/types/models/npc';
+import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse } from '@/types/models/npc';
 import type { Tenant } from '@/types/models/tenant';
 
 // Input types for JSON:API requests
@@ -184,6 +184,21 @@ class NpcsService extends BaseService {
       console.error('Failed to fetch NPCs:', error);
       throw new Error('Unable to retrieve NPC data. Please try again later.');
     }
+  }
+
+  /**
+   * Search NPCs by ID or name via atlas-data
+   */
+  async searchNpcs(query: string, tenant: Tenant): Promise<NpcSearchResult[]> {
+    const { api } = await import('@/lib/api/client');
+    api.setTenant(tenant);
+    const npcs = await api.getList<{ id: string; attributes: { name: string } }>(
+      `/api/data/npcs?search=${encodeURIComponent(query)}`,
+    );
+    return npcs.map(npc => ({
+      id: parseInt(npc.id),
+      name: npc.attributes.name,
+    }));
   }
 
   /**
@@ -573,10 +588,11 @@ class NpcsService extends BaseService {
 export const npcsService = new NpcsService();
 
 // Export types for use in other files  
-export type { 
-  NPC, 
-  Shop, 
-  Commodity, 
-  CommodityAttributes, 
-  ShopResponse 
+export type {
+  NPC,
+  NpcSearchResult,
+  Shop,
+  Commodity,
+  CommodityAttributes,
+  ShopResponse
 };

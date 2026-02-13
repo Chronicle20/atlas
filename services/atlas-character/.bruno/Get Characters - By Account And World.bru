@@ -5,12 +5,12 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters?accountId=1&worldId=0
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?accountId={{accountId}}&worldId={{worldId}}
   body: none
   auth: none
 }
 
 params:query {
-  accountId: 1
-  worldId: 0
+  accountId: {{accountId}}
+  worldId: {{worldId}}
 }

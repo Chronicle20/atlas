@@ -164,6 +164,21 @@ class MapsService extends BaseService {
   }
 
   /**
+   * Search maps by ID, name, or street name
+   */
+  async searchMaps(query: string, tenant: Tenant, options?: QueryOptions): Promise<MapData[]> {
+    api.setTenant(tenant);
+    const searchOptions: QueryOptions = {
+      ...options,
+      search: query,
+      useCache: false,
+      fields: { maps: ['name', 'streetName'], ...options?.fields },
+    };
+    const maps = await this.getAll<MapData>(searchOptions);
+    return this.sortMaps(maps);
+  }
+
+  /**
    * Search maps by name
    */
   async searchMapsByName(name: string, tenant: Tenant, options?: ServiceOptions): Promise<MapData[]> {

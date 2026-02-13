@@ -87,7 +87,7 @@ func main() {
 		AddRouteInitializer(cash.InitResource(db)(GetServer())).
 		AddRouteInitializer(commodity.InitResource(db)(GetServer())).
 		AddRouteInitializer(etc.InitResource(db)(GetServer())).
-		AddRouteInitializer(item.InitStringResource(GetServer())).
+		AddRouteInitializer(item.InitStringResource(db)(GetServer())).
 		AddRouteInitializer(setup.InitResource(db)(GetServer())).
 		AddRouteInitializer(templates.InitResource(db)(GetServer())).
 		AddRouteInitializer(quest.InitResource(db)(GetServer())).

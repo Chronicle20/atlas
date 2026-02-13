@@ -5,11 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters?name=chronicle
+  url: {{scheme}}://{{host}}:{{port}}/api/characters?name={{characterName}}
   body: none
   auth: none
 }
 
 params:query {
-  name: chronicle
+  name: {{characterName}}
 }

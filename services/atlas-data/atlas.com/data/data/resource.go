@@ -17,43 +17,27 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/data").Subrouter()
-			r.HandleFunc("", rest.RegisterHandler(l)(si)("upload", uploadData(db))).Methods(http.MethodPatch)
+			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process", processData(db))).Methods(http.MethodPost)
 		}
 	}
 }
 
-func uploadData(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+func processData(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			t := tenant.MustFromContext(d.Context())
-			d.Logger().Debugf("Processing .zip for tenant [%s], region [%s], version [%d.%d].", t.Id().String(), t.Region(), t.MajorVersion(), t.MinorVersion())
-			r.Body = http.MaxBytesReader(w, r.Body, 1<<30)
+			d.Logger().Debugf("Processing data for tenant [%s], region [%s], version [%d.%d].", t.Id().String(), t.Region(), t.MajorVersion(), t.MinorVersion())
 
-			err := r.ParseMultipartForm(1 << 30) // 1GB max file size
+			err := document.DeleteAll(d.Context())(db)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to process zip.")
-				w.WriteHeader(http.StatusRequestHeaderFieldsTooLarge)
-				return
-			}
-
-			// Get file from request
-			file, handler, err := r.FormFile("zip_file")
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to process zip.")
-				w.WriteHeader(http.StatusBadRequest)
-				return
-			}
-			defer file.Close()
-
-			err = document.DeleteAll(d.Context())(db)
-			if err != nil {
+				d.Logger().WithError(err).Errorf("Unable to delete existing documents.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
-			err = ProcessZip(d.Logger())(d.Context())(file, handler)
+			err = ProcessData(d.Logger())(d.Context())
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Unable to process zip.")
+				d.Logger().WithError(err).Errorf("Unable to process data.")
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}

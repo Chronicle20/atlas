@@ -5,11 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/guilds?filter[member.id]=3
+  url: {{scheme}}://{{host}}:{{port}}/api/guilds?filter[member.id]={{memberId}}
   body: none
   auth: none
 }
 
 params:query {
-  filter[member.id]: 3
+  filter[member.id]: {{memberId}}
 }

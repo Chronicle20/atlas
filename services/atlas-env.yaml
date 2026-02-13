@@ -4,7 +4,8 @@ metadata:
   name: atlas-env
   namespace: atlas
 data:
-  JAEGER_HOST_PORT: "192.168.23.237:4317"
+  TRACE_ENDPOINT: "192.168.23.237:4317"
+  TRACE_AGENT_ENDPOINT: "192.168.23.237:6831"
   DB_HOST: "postgres.home"
   DB_PORT: "5432"
   REST_PORT: "8080"

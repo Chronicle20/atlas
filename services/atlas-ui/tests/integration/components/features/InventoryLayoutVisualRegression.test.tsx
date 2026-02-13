@@ -9,7 +9,30 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { InventoryCard, InventoryCardSkeleton } from '@/components/features/characters/InventoryCard';
 import { InventoryGrid } from '@/components/features/characters/InventoryGrid';
 import type { Asset, Compartment } from '@/services/api/inventory.service';
-import type { ItemDataResult } from '@/types/models/maplestory';
+
+// Local result type matching the hook's internal interface
+interface ItemDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+// Mock the tenant context
+jest.mock('@/context/tenant-context', () => ({
+  useTenant: () => ({
+    activeTenant: {
+      id: 'test-tenant',
+      type: 'tenant',
+      attributes: {
+        region: 'GMS',
+        majorVersion: 83,
+        minorVersion: 1,
+      },
+    },
+  }),
+}));
 
 // Mock Next.js Image component for consistent visual testing
 jest.mock('next/image', () => {
@@ -42,13 +65,6 @@ jest.mock('next/image', () => {
   };
 });
 
-// Mock errorLogger
-jest.mock('@/services/errorLogger', () => ({
-  errorLogger: {
-    logError: jest.fn().mockResolvedValue(undefined),
-  },
-}));
-
 // Mock hooks for controlled testing
 const mockUseItemData = jest.fn();
 const mockUseLazyLoad = jest.fn();
@@ -77,7 +93,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
     });
 
     jest.clearAllMocks();
-    
+
     // Default mocks
     mockUseLazyLoad.mockReturnValue({
       shouldLoad: true,
@@ -86,6 +102,8 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
     mockUseItemDataCache.mockReturnValue({
       warmCache: jest.fn().mockResolvedValue([]),
+      getCacheStats: jest.fn().mockReturnValue({ totalQueries: 0, activeQueries: 0, errorQueries: 0, loadingQueries: 0 }),
+      clearCache: jest.fn(),
     });
   });
 
@@ -93,25 +111,29 @@ describe('Inventory Layout Visual Regression Tests', () => {
     queryClient.clear();
   });
 
-  const createAsset = (templateId: number, slot: number): Asset => ({
+  const createAsset = (templateId: number, slot: number) => ({
     id: `asset-${templateId}-${slot}`,
-    type: 'inventory',
+    type: 'assets',
     attributes: {
-      characterId: 'test-char',
       slot,
       templateId,
-      quantity: 1,
     },
-  });
+  }) as unknown as Asset;
 
-  const createCompartment = (capacity: number, type: number = 1): Compartment => ({
+  const createCompartment = (capacity: number, type: number = 1) => ({
     id: `compartment-${type}`,
-    type: 'compartment',
+    type: 'compartments',
     attributes: {
       capacity,
       type,
     },
-  });
+    relationships: {
+      assets: {
+        links: { related: '', self: '' },
+        data: [],
+      },
+    },
+  }) as Compartment;
 
   const createWrapper = () => {
     const TestWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -124,7 +146,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
   describe('InventoryCard Layout Tests', () => {
     it('should maintain consistent dimensions across all states', async () => {
       const asset = createAsset(1302000, 1);
-      
+
       // Test loading state
       mockUseItemData.mockReturnValueOnce({
         itemData: undefined,
@@ -134,19 +156,19 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { rerender, container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
       // Capture loading state dimensions
       const loadingCard = container.querySelector('.w-\\[100px\\].h-\\[120px\\]');
       expect(loadingCard).toBeInTheDocument();
-      
+
       // Test loaded state with icon
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Sword',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -158,7 +180,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       rerender(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />
+        <InventoryCard asset={asset} />
       );
 
       await waitFor(() => {
@@ -178,7 +200,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       rerender(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />
+        <InventoryCard asset={asset} />
       );
 
       // Verify error state maintains same dimensions
@@ -191,7 +213,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -203,10 +225,10 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const asset = createAsset(1302000, 1);
-      
+
       // Without delete button
       const { rerender, container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -214,18 +236,18 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
       // With delete button
       rerender(
-        <InventoryCard 
-          asset={asset} 
-          region="GMS" 
-          majorVersion={214} 
+        <InventoryCard
+          asset={asset}
           onDelete={jest.fn()}
         />
       );
 
       const deleteButton = container.querySelector('button');
       expect(deleteButton).toBeInTheDocument();
-      expect(deleteButton).toHaveClass('absolute', 'top-0', 'right-0');
-      
+      expect(deleteButton!.className).toContain('absolute');
+      expect(deleteButton!.className).toContain('top-0');
+      expect(deleteButton!.className).toContain('right-0');
+
       // Card dimensions should remain consistent
       const card = container.querySelector('.w-\\[100px\\].h-\\[120px\\]');
       expect(card).toBeInTheDocument();
@@ -236,7 +258,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -248,7 +270,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -258,7 +280,8 @@ describe('Inventory Layout Visual Regression Tests', () => {
 
       // Icon container should have fixed dimensions
       const iconContainer = screen.getByTestId('mock-image').parentElement;
-      expect(iconContainer).toHaveClass('h-8', 'w-8');
+      expect(iconContainer!.className).toContain('h-8');
+      expect(iconContainer!.className).toContain('w-8');
     });
 
     it('should render text content within fixed height containers', () => {
@@ -266,7 +289,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Very Long Item Name That Should Wrap',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -278,7 +301,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -310,8 +333,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={smallCompartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />,
         { wrapper: createWrapper() }
       );
@@ -325,8 +346,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={mediumCompartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />
       );
 
@@ -339,8 +358,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={largeCompartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />
       );
 
@@ -363,8 +380,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={compartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />,
         { wrapper: createWrapper() }
       );
@@ -378,7 +393,10 @@ describe('Inventory Layout Visual Regression Tests', () => {
       expect(emptySlots).toHaveLength(3); // 3 empty slots
 
       emptySlots.forEach(slot => {
-        expect(slot).toHaveClass('w-[100px]', 'h-[120px]', 'border-2', 'border-dashed');
+        expect(slot.className).toContain('w-[100px]');
+        expect(slot.className).toContain('h-[120px]');
+        expect(slot.className).toContain('border-2');
+        expect(slot.className).toContain('border-dashed');
       });
     });
 
@@ -397,8 +415,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={compartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />,
         { wrapper: createWrapper() }
       );
@@ -416,8 +432,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={compartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
           isLoading={true}
         />,
         { wrapper: createWrapper() }
@@ -447,8 +461,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={equipCompartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />,
         { wrapper: createWrapper() }
       );
@@ -461,8 +473,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={etcCompartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />
       );
 
@@ -474,7 +484,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Test Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -486,7 +496,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -512,7 +522,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { rerender, container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -524,7 +534,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Loaded Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -536,7 +546,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       rerender(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />
+        <InventoryCard asset={asset} />
       );
 
       await waitFor(() => {
@@ -556,7 +566,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
         itemData: {
           id: 1302000,
           name: 'Test Item',
-          iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+          iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
           cached: false,
         },
         isLoading: false,
@@ -565,7 +575,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { rerender, container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -582,7 +592,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       rerender(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />
+        <InventoryCard asset={asset} />
       );
 
       // Should show fallback with template ID
@@ -601,7 +611,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Basic Sword',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -613,7 +623,7 @@ describe('Inventory Layout Visual Regression Tests', () => {
       });
 
       const { container } = render(
-        <InventoryCard asset={asset} region="GMS" majorVersion={214} />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -644,8 +654,6 @@ describe('Inventory Layout Visual Regression Tests', () => {
         <InventoryGrid
           compartment={compartment}
           assets={assets}
-          region="GMS"
-          majorVersion={214}
         />,
         { wrapper: createWrapper() }
       );

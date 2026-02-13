@@ -225,8 +225,6 @@ export default function CharacterDetailPage() {
                                                     }
                                                 }}
                                                 deletingAssetId={deletingAsset}
-                                                region={activeTenant?.attributes.region}
-                                                majorVersion={activeTenant?.attributes.majorVersion}
                                                 isLoading={loading}
                                             />
                                         </div>

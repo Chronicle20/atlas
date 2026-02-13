@@ -9,6 +9,11 @@ export interface NPC {
     hasConversation: boolean;
 }
 
+export interface NpcSearchResult {
+    id: number;
+    name: string;
+}
+
 // API response data type is defined in @/types/models/maplestory.ts as NpcApiData
 
 // Shop-related types

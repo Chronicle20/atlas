@@ -3,27 +3,31 @@
  * Tests loading states, error handling, icon display, and user interactions
  */
 
+import React, { ReactNode } from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
 import { InventoryCard, InventoryCardSkeleton } from '@/components/features/characters/InventoryCard';
-import { mapleStoryService } from '@/services/api/maplestory.service';
-import { errorLogger } from '@/services/errorLogger';
 import type { Asset } from '@/services/api/inventory.service';
-import type { ItemDataResult } from '@/types/models/maplestory';
 
-// Mock the MapleStory service
-jest.mock('@/services/api/maplestory.service', () => ({
-  mapleStoryService: {
-    getItemDataWithCache: jest.fn(),
-  },
+// Mock the tenant context
+jest.mock('@/context/tenant-context', () => ({
+  useTenant: () => ({
+    activeTenant: {
+      id: 'test-tenant',
+      type: 'tenant',
+      attributes: {
+        region: 'GMS',
+        majorVersion: 83,
+        minorVersion: 1,
+      },
+    },
+  }),
 }));
 
-// Mock the error logger
-jest.mock('@/services/errorLogger', () => ({
-  errorLogger: {
-    logError: jest.fn().mockResolvedValue({}),
-  },
+// Mock the useItemData hook
+const mockUseItemData = jest.fn();
+jest.mock('@/lib/hooks/useItemData', () => ({
+  useItemData: (...args: any[]) => mockUseItemData(...args),
 }));
 
 // Mock the intersection observer hook
@@ -43,35 +47,32 @@ jest.mock('next/image', () => {
   };
 });
 
-const mockMapleStoryService = mapleStoryService as jest.Mocked<typeof mapleStoryService>;
-const mockErrorLogger = errorLogger as jest.Mocked<typeof errorLogger>;
-
 // Import the mocked intersection observer hook
 import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
 const mockUseLazyLoad = useLazyLoad as jest.MockedFunction<typeof useLazyLoad>;
 
-// Mock asset data
-const mockAsset: Asset = {
+// Mock asset data - cast partial data since tests only use id, slot, templateId
+const mockAsset = {
   id: 'test-asset-123',
+  type: 'assets',
   attributes: {
     templateId: 1001,
     slot: 1,
-    compartmentType: 'EQUIP',
   },
-};
+} as unknown as Asset;
 
-const mockAssetWithHighSlot: Asset = {
+const mockAssetWithHighSlot = {
   id: 'test-asset-456',
+  type: 'assets',
   attributes: {
     templateId: 2001,
     slot: 99,
-    compartmentType: 'USE',
   },
-};
+} as unknown as Asset;
 
 describe('InventoryCard', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => React.JSX.Element;
   const mockOnDelete = jest.fn();
 
   beforeEach(() => {
@@ -90,6 +91,21 @@ describe('InventoryCard', () => {
     );
 
     jest.clearAllMocks();
+
+    // Default mock return for useItemData
+    mockUseItemData.mockReturnValue({
+      itemData: undefined,
+      isLoading: true,
+      hasError: false,
+      errorMessage: undefined,
+      name: undefined,
+      iconUrl: undefined,
+      cached: false,
+      isError: false,
+      error: null,
+      invalidate: jest.fn(),
+      prefetchItem: jest.fn(),
+    });
   });
 
   afterEach(() => {
@@ -98,14 +114,19 @@ describe('InventoryCard', () => {
 
   describe('Basic Rendering', () => {
     it('should render with basic asset information', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Blue Potion', iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Blue Potion',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -123,7 +144,7 @@ describe('InventoryCard', () => {
       // Verify image is rendered
       const image = screen.getByTestId('next-image');
       expect(image).toBeInTheDocument();
-      expect(image).toHaveAttribute('src', mockItemData.iconUrl);
+      expect(image).toHaveAttribute('src', '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png');
       expect(image).toHaveAttribute('alt', 'Blue Potion');
     });
 
@@ -138,7 +159,7 @@ describe('InventoryCard', () => {
 
     it('should apply custom className', () => {
       const customClass = 'my-custom-inventory-card';
-      
+
       render(
         <InventoryCard asset={mockAsset} className={customClass} />,
         { wrapper }
@@ -152,9 +173,19 @@ describe('InventoryCard', () => {
 
   describe('Loading States', () => {
     it('should show loading skeleton while data is fetching', () => {
-      mockMapleStoryService.getItemDataWithCache.mockImplementation(
-        () => new Promise(resolve => setTimeout(resolve, 1000))
-      );
+      mockUseItemData.mockReturnValue({
+        itemData: undefined,
+        isLoading: true,
+        hasError: false,
+        errorMessage: undefined,
+        name: undefined,
+        iconUrl: undefined,
+        cached: false,
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -166,14 +197,19 @@ describe('InventoryCard', () => {
     });
 
     it('should hide loading state after data loads successfully', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Red Potion', iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Red Potion',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -192,13 +228,19 @@ describe('InventoryCard', () => {
 
   describe('Error Handling', () => {
     it('should display fallback when item data fetch fails', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, cached: false, error: 'Item not found' },
+        isLoading: false,
+        hasError: true,
+        errorMessage: 'Item not found',
+        name: undefined,
+        iconUrl: undefined,
         cached: false,
-        error: 'Item not found',
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -214,14 +256,19 @@ describe('InventoryCard', () => {
     });
 
     it('should handle image load errors gracefully', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Test Item', iconUrl: 'https://invalid-url.com/image.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Test Item',
         iconUrl: 'https://invalid-url.com/image.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -238,30 +285,25 @@ describe('InventoryCard', () => {
 
       await waitFor(() => {
         // Should still display the item name since that loaded successfully
-        // Only the image failed to load, so we see package icon but keep the name
         expect(screen.getByText('Test Item')).toBeInTheDocument();
         expect(document.querySelector('.lucide-package')).toBeInTheDocument();
       });
-
-      // Verify error logging
-      expect(mockErrorLogger.logError).toHaveBeenCalledWith(
-        expect.any(Error),
-        undefined,
-        expect.objectContaining({
-          userId: 'character_inventory_user',
-          tenantId: 'atlas_ui',
-        })
-      );
     });
 
     it('should show template ID when no name or icon is available', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
+        name: undefined,
+        iconUrl: undefined,
         cached: false,
-        // No name or iconUrl
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -284,7 +326,9 @@ describe('InventoryCard', () => {
 
       const deleteButton = screen.getByRole('button');
       expect(deleteButton).toBeInTheDocument();
-      expect(deleteButton).toHaveClass('absolute', 'top-0', 'right-0');
+      expect(deleteButton.className).toContain('absolute');
+      expect(deleteButton.className).toContain('top-0');
+      expect(deleteButton.className).toContain('right-0');
     });
 
     it('should not render delete button when onDelete is not provided', () => {
@@ -311,10 +355,10 @@ describe('InventoryCard', () => {
 
     it('should disable delete button when isDeleting is true', () => {
       render(
-        <InventoryCard 
-          asset={mockAsset} 
-          onDelete={mockOnDelete} 
-          isDeleting={true} 
+        <InventoryCard
+          asset={mockAsset}
+          onDelete={mockOnDelete}
+          isDeleting={true}
         />,
         { wrapper }
       );
@@ -333,78 +377,26 @@ describe('InventoryCard', () => {
       );
 
       const deleteButton = screen.getByRole('button');
-      expect(deleteButton).toHaveClass('hover:bg-red-100', 'hover:text-red-600');
-    });
-  });
-
-  describe('Region and Version Configuration', () => {
-    it('should use custom region and version when provided', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
-        name: 'Regional Item',
-        iconUrl: 'https://maplestory.io/api/MSEA/214/item/1001/icon',
-        cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
-
-      render(
-        <InventoryCard 
-          asset={mockAsset} 
-          region="MSEA" 
-          majorVersion={214} 
-        />,
-        { wrapper }
-      );
-
-      await waitFor(() => {
-        expect(mockMapleStoryService.getItemDataWithCache).toHaveBeenCalledWith(
-          1001,
-          'MSEA',
-          '214'
-        );
-      });
-    });
-
-    it('should use default values when region and version are undefined', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
-        name: 'Default Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
-        cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
-
-      render(
-        <InventoryCard 
-          asset={mockAsset} 
-          region={undefined} 
-          majorVersion={undefined} 
-        />,
-        { wrapper }
-      );
-
-      await waitFor(() => {
-        expect(mockMapleStoryService.getItemDataWithCache).toHaveBeenCalledWith(
-          1001,
-          undefined,
-          undefined
-        );
-      });
+      expect(deleteButton.className).toContain('hover:bg-red-100');
+      expect(deleteButton.className).toContain('hover:text-red-600');
     });
   });
 
   describe('Image Preloading', () => {
     it('should preload images when shouldPreload is true', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Preload Item', iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Preload Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} shouldPreload={true} />,
@@ -424,26 +416,15 @@ describe('InventoryCard', () => {
       // Mock shouldLoad to be false for this test
       mockUseLazyLoad.mockReturnValueOnce({
         shouldLoad: false,
-        ref: jest.fn(),
+        ref: { current: null } as unknown as React.RefObject<Element>,
       });
-
-      const mockItemData: ItemDataResult = {
-        id: 1001,
-        name: 'Regular Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
-        cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
 
       render(
         <InventoryCard asset={mockAsset} shouldPreload={false} />,
         { wrapper }
       );
 
-      // Since shouldLoad is false and shouldPreload is false, priority should be false
-      // Note: Since shouldLoad is false, the item won't actually load and display
-      // So we check that no image is rendered
+      // Since shouldLoad is false and shouldPreload is false, no image should render
       const image = screen.queryByTestId('next-image');
       expect(image).not.toBeInTheDocument();
     });
@@ -451,14 +432,19 @@ describe('InventoryCard', () => {
 
   describe('Image Loading States', () => {
     it('should show image loading skeleton until image loads', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Loading Item', iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Loading Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -482,14 +468,19 @@ describe('InventoryCard', () => {
 
   describe('Accessibility', () => {
     it('should have proper alt text for images', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, name: 'Accessibility Item', iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
         name: 'Accessibility Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -503,14 +494,19 @@ describe('InventoryCard', () => {
     });
 
     it('should provide fallback alt text when item name is not available', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1001,
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1001/icon',
+      mockUseItemData.mockReturnValue({
+        itemData: { id: 1001, iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png', cached: false },
+        isLoading: false,
+        hasError: false,
+        errorMessage: undefined,
+        name: undefined,
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1001/icon.png',
         cached: false,
-        // No name
-      };
-
-      mockMapleStoryService.getItemDataWithCache.mockResolvedValue(mockItemData);
+        isError: false,
+        error: null,
+        invalidate: jest.fn(),
+        prefetchItem: jest.fn(),
+      });
 
       render(
         <InventoryCard asset={mockAsset} />,
@@ -530,7 +526,10 @@ describe('InventoryCard', () => {
       );
 
       const deleteButton = screen.getByRole('button');
-      expect(deleteButton).toHaveClass('absolute', 'top-0', 'right-0', 'z-10');
+      expect(deleteButton.className).toContain('absolute');
+      expect(deleteButton.className).toContain('top-0');
+      expect(deleteButton.className).toContain('right-0');
+      expect(deleteButton.className).toContain('z-10');
     });
   });
 });

@@ -5,11 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/7/inventories/1/items?slot=1
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventories/{{inventoryId}}/items?slot={{slot}}
   body: none
   auth: none
 }
 
 params:query {
-  slot: 1
+  slot: {{slot}}
 }

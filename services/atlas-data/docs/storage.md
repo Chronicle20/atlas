@@ -10,7 +10,7 @@ Stores all game data documents as JSON blobs with tenant isolation.
 |--------|------|-------------|-------------|
 | id | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique document identifier |
 | tenant_id | UUID | NOT NULL | Tenant identifier for multi-tenancy |
-| type | VARCHAR | NOT NULL | Document type (CASH, EQUIPMENT, MAP, etc.) |
+| type | VARCHAR | NOT NULL | Document type discriminator |
 | document_id | INTEGER (uint32) | NOT NULL | Domain-specific document identifier |
 | content | JSON | NOT NULL | JSON representation of the document |
 
@@ -25,6 +25,9 @@ Document types:
 - CONSUMABLE
 - EQUIPMENT
 - ETC
+- FACE
+- HAIR
+- ITEM_STRING
 - MAP
 - MONSTER
 - NPC

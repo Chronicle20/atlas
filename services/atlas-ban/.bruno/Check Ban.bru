@@ -5,7 +5,13 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/bans/check?ip=127.0.0.1&hwid=&accountId=1
+  url: {{scheme}}://{{host}}:{{port}}/api/bans/check?ip={{ipAddress}}&hwid={{hwid}}&accountId={{accountId}}
   body: none
   auth: none
+}
+
+params:query {
+  ip: {{ipAddress}}
+  hwid: {{hwid}}
+  accountId: {{accountId}}
 }

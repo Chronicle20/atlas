@@ -1,0 +1,54 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-assets-pvc
+  namespace: atlas
+spec:
+  storageClassName: longhorn
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-assets
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-assets
+  template:
+    metadata:
+      labels:
+        app: atlas-assets
+    spec:
+      containers:
+      - name: nginx
+        image: ghcr.io/chronicle20/atlas-assets/atlas-assets:latest
+        ports:
+        - containerPort: 8080
+        volumeMounts:
+          - mountPath: "/usr/assets"
+            name: assets-storage
+            readOnly: true
+      volumes:
+        - name: assets-storage
+          persistentVolumeClaim:
+            claimName: atlas-assets-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-assets
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-assets
+  ports:
+  - protocol: TCP
+    port: 8080

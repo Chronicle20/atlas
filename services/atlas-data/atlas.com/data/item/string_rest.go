@@ -17,10 +17,3 @@ func (r *StringRestModel) SetID(idStr string) error {
 	r.Id = idStr
 	return nil
 }
-
-func TransformString(m ItemString) (StringRestModel, error) {
-	return StringRestModel{
-		Id:   m.GetID(),
-		Name: m.Name(),
-	}, nil
-}

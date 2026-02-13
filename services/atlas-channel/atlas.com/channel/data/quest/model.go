@@ -54,7 +54,7 @@ type RequirementsModel struct {
 	fieldEnter      []uint32
 	pet             []uint32
 	petTamenessMin  int16
-	dayOfWeek       string
+	dayOfWeek       []string
 	start           string
 	end             string
 	interval        uint32
@@ -78,7 +78,7 @@ func (m RequirementsModel) Mobs() []MobRequirementModel        { return m.mobs }
 func (m RequirementsModel) FieldEnter() []uint32               { return m.fieldEnter }
 func (m RequirementsModel) Pet() []uint32                      { return m.pet }
 func (m RequirementsModel) PetTamenessMin() int16              { return m.petTamenessMin }
-func (m RequirementsModel) DayOfWeek() string                  { return m.dayOfWeek }
+func (m RequirementsModel) DayOfWeek() []string                { return m.dayOfWeek }
 func (m RequirementsModel) Start() string                      { return m.start }
 func (m RequirementsModel) End() string                        { return m.end }
 func (m RequirementsModel) Interval() uint32                   { return m.interval }

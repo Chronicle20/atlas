@@ -82,7 +82,6 @@ export default function MapDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>Position</TableHead>
@@ -93,15 +92,14 @@ export default function MapDetailPage() {
                   <TableBody>
                     {portals.map((portal) => (
                       <TableRow key={portal.id}>
-                        <TableCell className="font-mono">
+                        <TableCell>
                           <Link
                             href={`/maps/${id}/portals/${portal.id}`}
                             className="text-primary hover:underline"
                           >
-                            {portal.id}
+                            {portal.attributes.name || portal.id}
                           </Link>
                         </TableCell>
-                        <TableCell>{portal.attributes.name}</TableCell>
                         <TableCell>{portal.attributes.type}</TableCell>
                         <TableCell className="font-mono">
                           ({portal.attributes.x}, {portal.attributes.y})
@@ -142,8 +140,7 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Template</TableHead>
+                      <TableHead>NPC ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Hidden</TableHead>
@@ -169,7 +166,6 @@ export default function MapDetailPage() {
                             maxRetries={1}
                           />
                         </TableCell>
-                        <TableCell className="font-mono">{npc.id}</TableCell>
                         <TableCell>
                           <Link href={`/npcs/${npc.attributes.template}`} className="font-mono text-primary hover:underline">
                             {npc.attributes.template}
@@ -203,9 +199,8 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>ID</TableHead>
+                      <TableHead>Monster ID</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Template</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Mob Time</TableHead>
                       <TableHead>Team</TableHead>
@@ -234,8 +229,7 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>ID</TableHead>
-                      <TableHead>Classification</TableHead>
+                      <TableHead>Reactor ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Delay</TableHead>
@@ -261,7 +255,6 @@ export default function MapDetailPage() {
                             maxRetries={1}
                           />
                         </TableCell>
-                        <TableCell className="font-mono">{reactor.id}</TableCell>
                         <TableCell>
                           <Link
                             href={`/reactors/${reactor.attributes.classification}`}

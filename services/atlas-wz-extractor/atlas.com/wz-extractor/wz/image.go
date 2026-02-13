@@ -39,8 +39,8 @@ func (i *Image) parse() error {
 		return err
 	}
 
-	// Read the object tag
-	tag, err := r.ReadWzStringBlock(i.wzFile.contentStart)
+	// Read the object tag using the image's data offset as the base for string references
+	tag, err := r.ReadWzStringBlock(i.dataOffset)
 	if err != nil {
 		return fmt.Errorf("unable to read image tag: %w", err)
 	}
@@ -54,7 +54,7 @@ func (i *Image) parse() error {
 		return err
 	}
 
-	props, err := i.wzFile.parsePropertyList()
+	props, err := i.wzFile.parsePropertyList(i.dataOffset)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,8 @@ func (i *Image) parse() error {
 }
 
 // parsePropertyList reads a list of key-value property entries.
-func (wz *File) parsePropertyList() ([]property.Property, error) {
+// imageOffset is the base offset for resolving offset-referenced strings within the image.
+func (wz *File) parsePropertyList(imageOffset int64) ([]property.Property, error) {
 	r := wz.reader
 
 	count, err := r.ReadWzInt()
@@ -73,7 +74,7 @@ func (wz *File) parsePropertyList() ([]property.Property, error) {
 
 	props := make([]property.Property, 0, count)
 	for j := int32(0); j < count; j++ {
-		name, err := r.ReadWzStringBlock(wz.contentStart)
+		name, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -83,7 +84,7 @@ func (wz *File) parsePropertyList() ([]property.Property, error) {
 			return nil, err
 		}
 
-		prop, err := wz.parsePropertyValue(name, propType)
+		prop, err := wz.parsePropertyValue(name, propType, imageOffset)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing property [%s] type %d: %w", name, propType, err)
 		}
@@ -96,7 +97,7 @@ func (wz *File) parsePropertyList() ([]property.Property, error) {
 }
 
 // parsePropertyValue parses a single property value based on its type tag.
-func (wz *File) parsePropertyValue(name string, propType byte) (property.Property, error) {
+func (wz *File) parsePropertyValue(name string, propType byte, imageOffset int64) (property.Property, error) {
 	r := wz.reader
 
 	switch propType {
@@ -153,7 +154,7 @@ func (wz *File) parsePropertyValue(name string, propType byte) (property.Propert
 
 	case 8:
 		// String
-		v, err := r.ReadWzStringBlock(wz.contentStart)
+		v, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -172,7 +173,7 @@ func (wz *File) parsePropertyValue(name string, propType byte) (property.Propert
 		}
 		endPos := pos + int64(size)
 
-		prop, err := wz.parseExtendedProperty(name)
+		prop, err := wz.parseExtendedProperty(name, imageOffset)
 		if err != nil {
 			// Skip to end of sub-object on error
 			_, _ = r.Seek(endPos, io.SeekStart)
@@ -192,10 +193,10 @@ func (wz *File) parsePropertyValue(name string, propType byte) (property.Propert
 }
 
 // parseExtendedProperty parses an extended (type 9) sub-object.
-func (wz *File) parseExtendedProperty(name string) (property.Property, error) {
+func (wz *File) parseExtendedProperty(name string, imageOffset int64) (property.Property, error) {
 	r := wz.reader
 
-	tag, err := r.ReadWzStringBlock(wz.contentStart)
+	tag, err := r.ReadWzStringBlock(imageOffset)
 	if err != nil {
 		return nil, err
 	}
@@ -205,14 +206,14 @@ func (wz *File) parseExtendedProperty(name string) (property.Property, error) {
 		if err := r.Skip(2); err != nil {
 			return nil, err
 		}
-		children, err := wz.parsePropertyList()
+		children, err := wz.parsePropertyList(imageOffset)
 		if err != nil {
 			return nil, err
 		}
 		return property.NewSub(name, children), nil
 
 	case "Canvas":
-		return wz.parseCanvasProperty(name)
+		return wz.parseCanvasProperty(name, imageOffset)
 
 	case "Shape2D#Vector2D":
 		x, err := r.ReadWzInt()
@@ -232,7 +233,7 @@ func (wz *File) parseExtendedProperty(name string) (property.Property, error) {
 		}
 		children := make([]property.Property, 0, count)
 		for k := int32(0); k < count; k++ {
-			child, err := wz.parseExtendedProperty(fmt.Sprintf("%d", k))
+			child, err := wz.parseExtendedProperty(fmt.Sprintf("%d", k), imageOffset)
 			if err != nil {
 				return nil, err
 			}
@@ -244,7 +245,7 @@ func (wz *File) parseExtendedProperty(name string) (property.Property, error) {
 		if err := r.Skip(1); err != nil {
 			return nil, err
 		}
-		v, err := r.ReadWzStringBlock(wz.contentStart)
+		v, err := r.ReadWzStringBlock(imageOffset)
 		if err != nil {
 			return nil, err
 		}
@@ -259,7 +260,7 @@ func (wz *File) parseExtendedProperty(name string) (property.Property, error) {
 }
 
 // parseCanvasProperty parses a canvas (image) property.
-func (wz *File) parseCanvasProperty(name string) (property.Property, error) {
+func (wz *File) parseCanvasProperty(name string, imageOffset int64) (property.Property, error) {
 	r := wz.reader
 
 	// Skip 1 byte
@@ -278,7 +279,7 @@ func (wz *File) parseCanvasProperty(name string) (property.Property, error) {
 		if err := r.Skip(2); err != nil {
 			return nil, err
 		}
-		children, err = wz.parsePropertyList()
+		children, err = wz.parsePropertyList(imageOffset)
 		if err != nil {
 			return nil, err
 		}

@@ -261,15 +261,15 @@ export default function MapDetailPage() {
                             maxRetries={1}
                           />
                         </TableCell>
+                        <TableCell className="font-mono">{reactor.id}</TableCell>
                         <TableCell>
                           <Link
                             href={`/reactors/${reactor.attributes.classification}`}
                             className="font-mono text-primary hover:underline"
                           >
-                            {reactor.id}
+                            {reactor.attributes.classification}
                           </Link>
                         </TableCell>
-                        <TableCell className="font-mono">{reactor.attributes.classification}</TableCell>
                         <TableCell>{reactor.attributes.name}</TableCell>
                         <TableCell className="font-mono">
                           ({reactor.attributes.x}, {reactor.attributes.y})

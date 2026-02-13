@@ -61,6 +61,10 @@ const items = [
                 url: "/maps"
             },
             {
+                title: "Reactors",
+                url: "/reactors"
+            },
+            {
                 title: "Gachapons",
                 url: "/gachapons"
             },

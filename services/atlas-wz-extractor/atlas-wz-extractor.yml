@@ -1,36 +1,16 @@
 ---
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: atlas-wz-input-pv
-  labels:
-    directory: atlas-wz-input
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 10Gi
-  accessModes:
-  - ReadWriteMany
-  persistentVolumeReclaimPolicy: Delete
-  nfs:
-    path: /volume1/K3S/atlas/wz-input
-    server: dev.nas.home
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: atlas-wz-input-pvc
   namespace: atlas
 spec:
-  storageClassName: manual
+  storageClassName: longhorn
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
-  selector:
-    matchLabels:
-      directory: atlas-wz-input
 ---
 apiVersion: apps/v1
 kind: Deployment

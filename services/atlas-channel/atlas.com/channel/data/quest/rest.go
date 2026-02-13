@@ -54,7 +54,7 @@ type RequirementsRestModel struct {
 	FieldEnter      []uint32                  `json:"fieldEnter,omitempty"`
 	Pet             []uint32                  `json:"pet,omitempty"`
 	PetTamenessMin  int16                     `json:"petTamenessMin,omitempty"`
-	DayOfWeek       string                    `json:"dayOfWeek,omitempty"`
+	DayOfWeek       []string                  `json:"dayOfWeek,omitempty"`
 	Start           string                    `json:"start,omitempty"`
 	End             string                    `json:"end,omitempty"`
 	Interval        uint32                    `json:"interval,omitempty"`

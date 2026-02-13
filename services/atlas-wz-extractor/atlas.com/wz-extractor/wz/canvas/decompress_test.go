@@ -191,21 +191,22 @@ func TestDecodeDXT1ColorsC0LessOrEqualC1(t *testing.T) {
 
 func TestIsZlibHeader(t *testing.T) {
 	tests := []struct {
-		header uint16
+		b0, b1 byte
 		want   bool
 	}{
-		{0x9C78, true},
-		{0xDA78, true},
-		{0x0178, true},
-		{0x5E78, true},
-		{0x0000, false},
-		{0xFFFF, false},
-		{0x1234, false},
+		{0x78, 0x9C, true},
+		{0x78, 0xDA, true},
+		{0x78, 0x01, true},
+		{0x78, 0x5E, true},
+		{0x00, 0x00, false},
+		{0xFF, 0xFF, false},
+		{0x12, 0x34, false},
+		{0x9C, 0x78, false}, // Reversed bytes should not match
 	}
 	for _, tt := range tests {
-		got := isZlibHeader(tt.header)
+		got := isZlibHeader(tt.b0, tt.b1)
 		if got != tt.want {
-			t.Errorf("isZlibHeader(0x%04X) = %v, want %v", tt.header, got, tt.want)
+			t.Errorf("isZlibHeader(0x%02X, 0x%02X) = %v, want %v", tt.b0, tt.b1, got, tt.want)
 		}
 	}
 }

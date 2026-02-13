@@ -2,14 +2,13 @@
 
 import { useTenant } from "@/context/tenant-context";
 import { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { itemsService } from "@/services/api/items.service";
-import { type ItemSearchResult, getItemTypeBadgeVariant } from "@/types/models/item";
+import { reactorsService } from "@/services/api/reactors.service";
+import type { ReactorData } from "@/types/models/reactor";
 import { toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -18,29 +17,28 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Loader2 } from "lucide-react";
+import { Zap, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import Image from "next/image";
+import { NpcImage } from "@/components/features/npc/NpcImage";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
-import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
 
-export default function ItemsPage() {
+export default function ReactorsPage() {
   return (
     <Suspense>
-      <ItemsPageContent />
+      <ReactorsPageContent />
     </Suspense>
   );
 }
 
-function ItemsPageContent() {
+function ReactorsPageContent() {
   const { activeTenant } = useTenant();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
   const initialQuery = searchParams.get("q") ?? "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [items, setItems] = useState<ItemSearchResult[]>([]);
+  const [reactors, setReactors] = useState<ReactorData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const autoSearched = useRef(false);
@@ -61,14 +59,14 @@ function ItemsPageContent() {
     router.replace(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
 
     try {
-      const data = await itemsService.searchItems(searchQuery.trim(), activeTenant);
-      setItems(data);
+      const data = await reactorsService.searchReactors(searchQuery.trim(), activeTenant);
+      setReactors(data);
 
       if (data.length === 0) {
-        toast.info("No items found matching your search");
+        toast.info("No reactors found matching your search");
       }
     } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search items");
+      const errorInfo = createErrorFromUnknown(err, "Failed to search reactors");
       toast.error(errorInfo.message);
     } finally {
       setLoading(false);
@@ -77,7 +75,7 @@ function ItemsPageContent() {
 
   const handleClear = () => {
     setSearchQuery("");
-    setItems([]);
+    setReactors([]);
     setHasSearched(false);
     router.replace(pathname, { scroll: false });
   };
@@ -98,22 +96,22 @@ function ItemsPageContent() {
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
       <div className="flex items-center gap-2">
-        <Package className="h-6 w-6" />
-        <h2 className="text-2xl font-bold tracking-tight">Items</h2>
+        <Zap className="h-6 w-6" />
+        <h2 className="text-2xl font-bold tracking-tight">Reactors</h2>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Search Items</CardTitle>
+          <CardTitle>Search Reactors</CardTitle>
           <CardDescription>
-            Search for items by ID or name. Results are limited to 50 entries.
+            Search for reactors by ID or name. Results are limited to 50 entries.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
             <div className="flex-1">
               <Input
-                placeholder="Enter item ID or name..."
+                placeholder="Enter reactor ID or name..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
@@ -139,17 +137,17 @@ function ItemsPageContent() {
           <CardHeader className="shrink-0">
             <CardTitle>
               Results
-              {items.length > 0 && (
+              {reactors.length > 0 && (
                 <span className="ml-2 text-muted-foreground font-normal">
-                  ({items.length} {items.length === 1 ? "item" : "items"})
+                  ({reactors.length} {reactors.length === 1 ? "reactor" : "reactors"})
                 </span>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 flex flex-col">
-            {items.length === 0 ? (
+            {reactors.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                No items found matching your search criteria.
+                No reactors found matching your search criteria.
               </div>
             ) : (
               <div className="rounded-md border flex-1 min-h-0 overflow-auto">
@@ -157,53 +155,43 @@ function ItemsPageContent() {
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>Item ID</TableHead>
+                      <TableHead>Reactor ID</TableHead>
                       <TableHead>Name</TableHead>
-                      <TableHead>Type</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item) => {
+                    {reactors.map((reactor) => {
                       const iconUrl = activeTenant ? getAssetIconUrl(
                         activeTenant.id,
                         activeTenant.attributes.region,
                         activeTenant.attributes.majorVersion,
                         activeTenant.attributes.minorVersion,
-                        'item',
-                        parseInt(item.id),
-                      ) : '';
+                        'reactor',
+                        parseInt(reactor.id),
+                      ) : undefined;
                       return (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          {iconUrl ? (
-                            <Image
-                              src={iconUrl}
-                              alt={item.name}
-                              width={32}
-                              height={32}
-                              unoptimized={shouldUnoptimizeImageSrc(iconUrl)}
-                              className="object-contain"
+                        <TableRow key={reactor.id}>
+                          <TableCell>
+                            <NpcImage
+                              npcId={parseInt(reactor.id)}
+                              iconUrl={iconUrl}
+                              size={32}
+                              lazy={true}
+                              showRetryButton={false}
+                              maxRetries={1}
                             />
-                          ) : (
-                            <Package className="h-8 w-8 text-muted-foreground" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/items/${item.id}`} className="font-mono text-primary hover:underline">
-                            {item.id}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/items/${item.id}`} className="font-medium hover:underline">
-                            {item.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={getItemTypeBadgeVariant(item.type)}>
-                            {item.type}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/reactors/${reactor.id}`} className="font-mono text-primary hover:underline">
+                              {reactor.id}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/reactors/${reactor.id}`} className="font-medium hover:underline">
+                              {reactor.attributes.name || `Reactor ${reactor.id}`}
+                            </Link>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
                   </TableBody>

@@ -1,7 +1,7 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { mapsService, type MapData } from "@/services/api/maps.service";
 import { toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
@@ -11,13 +11,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns } from "./columns";
 import { Map, Search, Loader2 } from "lucide-react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
 export default function MapsPage() {
+  return (
+    <Suspense>
+      <MapsPageContent />
+    </Suspense>
+  );
+}
+
+function MapsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [maps, setMaps] = useState<MapData[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const autoSearched = useRef(false);
 
   const handleSearch = useCallback(async () => {
     if (!activeTenant) {
@@ -32,6 +46,7 @@ export default function MapsPage() {
 
     setLoading(true);
     setHasSearched(true);
+    router.replace(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
 
     try {
       const data = await mapsService.searchMaps(searchQuery.trim(), activeTenant);
@@ -46,12 +61,13 @@ export default function MapsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTenant, searchQuery]);
+  }, [activeTenant, searchQuery, router, pathname]);
 
   const handleClear = () => {
     setSearchQuery("");
     setMaps([]);
     setHasSearched(false);
+    router.replace(pathname, { scroll: false });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -59,6 +75,13 @@ export default function MapsPage() {
       handleSearch();
     }
   };
+
+  useEffect(() => {
+    if (activeTenant && initialQuery && !autoSearched.current) {
+      autoSearched.current = true;
+      handleSearch();
+    }
+  }, [activeTenant, initialQuery, handleSearch]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">

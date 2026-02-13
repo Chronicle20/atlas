@@ -16,11 +16,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { NpcImage } from "@/components/features/npc/NpcImage";
+import { useTenant } from "@/context/tenant-context";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import Link from "next/link";
 
 export default function ReactorDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
+  const { activeTenant } = useTenant();
   const { data: reactor, isLoading, error, refetch } = useReactor(id);
   const { data: drops, isLoading: dropsLoading } = useReactorDrops(id);
   const { data: script, isLoading: scriptLoading } = useReactorScript(id);
@@ -40,11 +45,37 @@ export default function ReactorDetailPage() {
   const attrs = reactor.attributes;
   const stateEntries = attrs.stateInfo ? Object.entries(attrs.stateInfo) : [];
 
+  const iconUrl = activeTenant ? getAssetIconUrl(
+    activeTenant.id,
+    activeTenant.attributes.region,
+    activeTenant.attributes.majorVersion,
+    activeTenant.attributes.minorVersion,
+    'reactor',
+    parseInt(reactor.id),
+  ) : undefined;
+
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
       <div className="flex items-center gap-3">
-        <h2 className="text-2xl font-bold tracking-tight">{attrs.name || `Reactor ${reactor.id}`}</h2>
-        <span className="text-muted-foreground font-mono">#{reactor.id}</span>
+        <NpcImage
+          npcId={parseInt(reactor.id)}
+          iconUrl={iconUrl}
+          size={40}
+          lazy={false}
+          showRetryButton={false}
+          maxRetries={2}
+        />
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-bold tracking-tight">{attrs.name || `Reactor ${reactor.id}`}</h2>
+            <span className="text-muted-foreground font-mono">#{reactor.id}</span>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            <Link href="/reactors" className="hover:underline">Reactors</Link>
+            {" > "}
+            <span>{attrs.name || `Reactor ${reactor.id}`}</span>
+          </p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

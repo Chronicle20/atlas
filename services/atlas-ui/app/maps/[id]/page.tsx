@@ -10,6 +10,7 @@ import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { NpcImage } from "@/components/features/npc/NpcImage";
+import { MonsterTableRow } from "@/components/features/monsters/MonsterTableRow";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import {
@@ -201,7 +202,9 @@ export default function MapDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">Icon</TableHead>
                       <TableHead>ID</TableHead>
+                      <TableHead>Name</TableHead>
                       <TableHead>Template</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Mob Time</TableHead>
@@ -210,22 +213,7 @@ export default function MapDetailPage() {
                   </TableHeader>
                   <TableBody>
                     {monsters.map((monster) => (
-                      <TableRow key={monster.id}>
-                        <TableCell className="font-mono">{monster.id}</TableCell>
-                        <TableCell>
-                          <Link
-                            href={`/monsters/${monster.attributes.template}`}
-                            className="font-mono text-primary hover:underline"
-                          >
-                            {monster.attributes.template}
-                          </Link>
-                        </TableCell>
-                        <TableCell className="font-mono">
-                          ({monster.attributes.x}, {monster.attributes.y})
-                        </TableCell>
-                        <TableCell>{monster.attributes.mobTime}</TableCell>
-                        <TableCell>{monster.attributes.team}</TableCell>
-                      </TableRow>
+                      <MonsterTableRow key={monster.id} monster={monster} />
                     ))}
                   </TableBody>
                 </Table>
@@ -245,6 +233,7 @@ export default function MapDetailPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-10">Icon</TableHead>
                       <TableHead>ID</TableHead>
                       <TableHead>Classification</TableHead>
                       <TableHead>Name</TableHead>
@@ -255,6 +244,23 @@ export default function MapDetailPage() {
                   <TableBody>
                     {reactors.map((reactor) => (
                       <TableRow key={reactor.id}>
+                        <TableCell>
+                          <NpcImage
+                            npcId={reactor.attributes.classification}
+                            iconUrl={activeTenant ? getAssetIconUrl(
+                              activeTenant.id,
+                              activeTenant.attributes.region,
+                              activeTenant.attributes.majorVersion,
+                              activeTenant.attributes.minorVersion,
+                              'reactor',
+                              reactor.attributes.classification,
+                            ) : undefined}
+                            size={32}
+                            lazy={true}
+                            showRetryButton={false}
+                            maxRetries={1}
+                          />
+                        </TableCell>
                         <TableCell>
                           <Link
                             href={`/reactors/${reactor.attributes.classification}`}

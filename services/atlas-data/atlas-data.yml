@@ -1,36 +1,16 @@
 ---
 apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: atlas-data-pv
-  labels:
-    directory: atlas
-spec:
-  storageClassName: manual
-  capacity:
-    storage: 10Gi
-  accessModes:
-  - ReadWriteMany
-  persistentVolumeReclaimPolicy: Delete
-  nfs:
-    path: /volume1/K3S/atlas/data
-    server: dev.nas.home
----
-apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: atlas-data-pvc
   namespace: atlas
 spec:
-  storageClassName: manual
+  storageClassName: longhorn
   accessModes:
     - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
-  selector:
-    matchLabels:
-      directory: atlas
 ---
 apiVersion: apps/v1
 kind: Deployment

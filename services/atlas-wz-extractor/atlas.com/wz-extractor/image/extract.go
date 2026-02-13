@@ -70,6 +70,8 @@ func extractEntityIcons(l logrus.FieldLogger, f *wz.File, outputDir, category st
 
 // extractItemIcons extracts item icons from Item.wz.
 // Items are organized in subdirectories by category (Cash, Consume, Etc, Install, Pet).
+// Some categories store one item per .img (e.g., Pet), while others store multiple items
+// per .img as sub-properties (e.g., Cash, Consume, Etc, Install).
 func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	root := f.Root()
 	if root == nil {
@@ -79,22 +81,38 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 	count := 0
 	for _, dir := range root.Directories() {
 		for _, img := range dir.Images() {
-			itemId := img.Name()
 			props := img.Properties()
 			if len(props) == 0 {
 				continue
 			}
 
+			// Check if this image directly has info/icon (single-item images like Pet)
 			cp := findInfoIcon(props)
-			if cp == nil {
+			if cp != nil {
+				if err := writeCanvasPng(l, f, cp, outputDir, "item", img.Name()); err != nil {
+					l.WithError(err).Warnf("Unable to extract icon for item [%s].", img.Name())
+				} else {
+					count++
+				}
 				continue
 			}
 
-			if err := writeCanvasPng(l, f, cp, outputDir, "item", itemId); err != nil {
-				l.WithError(err).Warnf("Unable to extract icon for item [%s].", itemId)
-				continue
+			// Multi-item image: each sub-property is an item with its own info/icon
+			for _, p := range props {
+				sub, ok := p.(*property.SubProperty)
+				if !ok {
+					continue
+				}
+				cp = findInfoIcon(sub.Children())
+				if cp == nil {
+					continue
+				}
+				if err := writeCanvasPng(l, f, cp, outputDir, "item", sub.Name()); err != nil {
+					l.WithError(err).Warnf("Unable to extract icon for item [%s].", sub.Name())
+					continue
+				}
+				count++
 			}
-			count++
 		}
 	}
 	l.Infof("Extracted [%d] item icons.", count)

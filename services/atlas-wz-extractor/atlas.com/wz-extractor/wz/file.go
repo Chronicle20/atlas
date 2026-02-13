@@ -96,13 +96,11 @@ func (wz *File) EncryptionKey() *crypto.WzKey {
 }
 
 // ReadCanvasData reads raw canvas data from the WZ file at the given offset and size.
-// Skips the 1-byte header at the start of the canvas data block.
 func (wz *File) ReadCanvasData(offset int64, size int32) ([]byte, error) {
-	// Skip the 1-byte header (0x00) at the start of canvas data
-	if _, err := wz.reader.Seek(offset+1, io.SeekStart); err != nil {
+	if _, err := wz.reader.Seek(offset, io.SeekStart); err != nil {
 		return nil, err
 	}
-	return wz.reader.ReadBytes(int(size - 1))
+	return wz.reader.ReadBytes(int(size))
 }
 
 // CanvasEncryptionKey returns the raw key bytes for canvas block decryption.

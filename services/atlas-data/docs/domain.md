@@ -4,12 +4,12 @@
 
 ### Responsibility
 
-The data domain manages static game data that is parsed from XML files and served via REST endpoints. Data is tenant-aware, supporting both tenant-specific and region-based defaults.
+The data domain manages static game data that is parsed from WZ/XML files and served via REST endpoints. Data is tenant-aware, with per-tenant isolation.
 
 ### Core Models
 
 #### Cash Item
-Represents cash shop item data with slot limits and spec modifiers.
+Represents cash shop item data with slot limits, spec modifiers, and time windows.
 
 #### Character Template
 Defines character creation templates with faces, hair styles, hair colors, skin colors, tops, bottoms, shoes, and weapons.
@@ -18,13 +18,22 @@ Defines character creation templates with faces, hair styles, hair colors, skin 
 Represents commodity items with item ID, count, price, period, priority, gender, and sale status.
 
 #### Consumable
-Represents consumable items with trade properties, price, slot limits, level requirements, and spec modifiers including HP/MP recovery, stat buffs, morph effects, and summons.
+Represents consumable items with trade properties, price, slot limits, level requirements, and spec modifiers including HP/MP recovery, stat buffs, morph effects, monster summons, skills, rewards, and rechargeable status.
 
 #### Equipment
-Represents equipment statistics including strength, dexterity, intelligence, luck, HP, MP, weapon attack, magic attack, weapon defense, magic defense, accuracy, avoidability, speed, jump, slots, cash status, and price. Equipment has related equipment slots.
+Represents equipment statistics including strength, dexterity, intelligence, luck, HP, MP, weapon attack, magic attack, weapon defense, magic defense, accuracy, avoidability, speed, jump, slots, cash status, price, time-limited status, replace item ID, replace message, and bonus experience tiers. Equipment has related equipment slots.
 
 #### ETC Item
-Represents ETC items with price, unit price, and slot limits.
+Represents ETC items with price, unit price, slot limits, time-limited status, replace item ID, and replace message.
+
+#### Face
+Represents face cosmetic data with cash status.
+
+#### Hair
+Represents hair cosmetic data with cash status.
+
+#### Item String
+Represents item name lookup data with item ID and name.
 
 #### Map
 Represents game maps with name, street name, return map ID, monster rate, event triggers (onFirstUserEnter, onUserEnter), field limits, mob intervals, portals, time mobs, map areas, foothold trees, areas, seats, clock status, everLast status, town status, decay HP, protect item, forced return map ID, boat status, time limits, field type, mob capacity, recovery rate, background types, X limits, reactors, NPCs, and monsters.
@@ -66,25 +75,29 @@ Represents quest actions with NPC ID, experience, money, fame, item rewards, ski
 Represents reactor data with name, bounding box (TL, BR), state info mapping state IDs to reactor states, and timeout info.
 
 #### Setup
-Represents setup items with price, slot max, recovery HP, trade block, not sale, required level, distance (X, Y), max diff, and direction.
+Represents setup items with price, slot max, recovery HP, trade block, not sale, required level, distance (X, Y), max diff, direction, time-limited status, replace item ID, and replace message.
 
 #### Skill
-Represents skill data with action status, element type, animation time, and skill effects including stat modifiers, durations, targets, and special properties.
+Represents skill data with name, action status, element type, animation time, and skill effects including stat modifiers, durations, targets, and special properties.
 
 ### Processors
 
 Each data type has a processor responsible for:
-- Creating storage instances
-- Registering data from XML providers
-- Executing database transactions during registration
+- Parsing WZ/XML data files
+- Registering data into in-memory registries
+- Persisting data as JSON documents in the database
+
+Processing is triggered via `POST /api/data/process`, which dispatches workers through Kafka for each data type. Workers use a pool of 10 goroutines for parallel file processing.
 
 Processors include:
 - `cash.RegisterCash`
-- `templates.RegisterCharacterTemplate` (character templates)
+- `templates.RegisterCharacterTemplate`
 - `commodity.RegisterCommodity`
 - `consumable.RegisterConsumable`
 - `equipment.RegisterEquipment`
 - `etc.RegisterEtc`
+- `face.RegisterFace`
+- `hair.RegisterHair`
 - `_map.RegisterMap`
 - `monster.RegisterMonster`
 - `npc.RegisterNpc`

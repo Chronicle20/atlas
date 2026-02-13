@@ -478,6 +478,16 @@ class NpcsService extends BaseService {
     return allNPCs.find(npc => npc.id === npcId) || null;
   }
 
+  /**
+   * Get NPC name from atlas-data
+   */
+  async getNpcName(npcId: number, tenant: Tenant): Promise<string> {
+    const { api } = await import('@/lib/api/client');
+    api.setTenant(tenant);
+    const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
+    return npc.attributes.name;
+  }
+
   // === HELPER METHODS ===
 
   /**

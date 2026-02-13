@@ -2,7 +2,7 @@
 
 /**
  * Entity name components for displaying resolved names for NPCs, items, mobs, skills, and maps.
- * Uses MapleStory.io API for name lookups with graceful fallback to IDs.
+ * Uses atlas-data API for name lookups with graceful fallback to IDs.
  */
 
 import { useNpcData } from "@/lib/hooks/useNpcData"
@@ -13,8 +13,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 interface EntityNameProps {
     id: number
-    region?: string
-    version?: string
     showId?: boolean
     className?: string
 }
@@ -22,9 +20,8 @@ interface EntityNameProps {
 /**
  * Display NPC name with fallback to ID
  */
-export function NpcName({ id, region, version, showId = false, className }: EntityNameProps) {
-    const options = region || version ? { ...(region && { region }), ...(version && { version }) } : {}
-    const { name, isLoading, hasError } = useNpcData(id, options)
+export function NpcName({ id, showId = false, className }: EntityNameProps) {
+    const { name, isLoading, hasError } = useNpcData(id)
 
     if (isLoading) {
         return <Skeleton className="h-4 w-16 inline-block" />
@@ -45,9 +42,8 @@ export function NpcName({ id, region, version, showId = false, className }: Enti
 /**
  * Display Item name with fallback to ID
  */
-export function ItemName({ id, region, version, showId = false, className }: EntityNameProps) {
-    const options = region || version ? { ...(region && { region }), ...(version && { version }) } : {}
-    const { name, isLoading, hasError } = useItemData(id, options)
+export function ItemName({ id, showId = false, className }: EntityNameProps) {
+    const { name, isLoading, hasError } = useItemData(id)
 
     if (isLoading) {
         return <Skeleton className="h-4 w-16 inline-block" />
@@ -68,9 +64,8 @@ export function ItemName({ id, region, version, showId = false, className }: Ent
 /**
  * Display Mob/Monster name with fallback to ID
  */
-export function MobName({ id, region, version, showId = false, className }: EntityNameProps) {
-    const options = region || version ? { ...(region && { region }), ...(version && { version }) } : {}
-    const { name, isLoading, hasError } = useMobData(id, options)
+export function MobName({ id, showId = false, className }: EntityNameProps) {
+    const { name, isLoading, hasError } = useMobData(id)
 
     if (isLoading) {
         return <Skeleton className="h-4 w-16 inline-block" />
@@ -91,9 +86,8 @@ export function MobName({ id, region, version, showId = false, className }: Enti
 /**
  * Display Skill name with fallback to ID
  */
-export function SkillName({ id, region, version, showId = false, className }: EntityNameProps) {
-    const options = region || version ? { ...(region && { region }), ...(version && { version }) } : {}
-    const { name, isLoading, hasError } = useSkillData(id, options)
+export function SkillName({ id, showId = false, className }: EntityNameProps) {
+    const { name, isLoading, hasError } = useSkillData(id)
 
     if (isLoading) {
         return <Skeleton className="h-4 w-16 inline-block" />

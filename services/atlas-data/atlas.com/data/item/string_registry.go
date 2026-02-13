@@ -5,6 +5,7 @@ import (
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
+	"strconv"
 	"sync"
 
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,9 @@ func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Con
 				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
 					s := NewStringStorage(l, tx)
 					for _, mxml := range exml.ChildNodes {
+						if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
+							continue
+						}
 						rm := StringRestModel{
 							Id:   mxml.Name,
 							Name: mxml.GetString("name", "MISSINGNO"),
@@ -67,6 +71,9 @@ func InitStringNested(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.C
 					for _, cat := range exml.ChildNodes {
 						for _, subCat := range cat.ChildNodes {
 							for _, mxml := range subCat.ChildNodes {
+								if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
+									continue
+								}
 								rm := StringRestModel{
 									Id:   mxml.Name,
 									Name: mxml.GetString("name", "MISSINGNO"),

@@ -169,6 +169,10 @@ data:
           proxy_pass http://atlas-configurations.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/assets(/.*)?$ {
+          proxy_pass http://atlas-assets.atlas.svc.cluster.local:8080$1;
+        }
+
         location ~ ^/api/accounts(/.*)?$ {
           proxy_pass http://atlas-account.atlas.svc.cluster.local:8080;
         }
@@ -187,6 +191,10 @@ data:
 
         location ~ ^/api/data(/.*)?$ {
           proxy_pass http://atlas-data.atlas.svc.cluster.local:8080;
+        }
+
+        location ~ ^/api/wz(/.*)?$ {
+          proxy_pass http://atlas-wz-extractor.atlas.svc.cluster.local:8080;
         }
 
         location ~ ^/api/gachapons(/.*)?$ {

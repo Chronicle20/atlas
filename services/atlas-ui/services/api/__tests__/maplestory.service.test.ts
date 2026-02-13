@@ -1,5 +1,5 @@
 /**
- * Comprehensive tests for MapleStory service with various equipment combinations
+ * Tests for MapleStory service - character rendering functionality
  */
 
 import { MapleStoryService } from '../maplestory.service';
@@ -36,7 +36,7 @@ describe('MapleStoryService', () => {
     describe('Basic character rendering', () => {
       it('should generate URL for character with no equipment', () => {
         const url = service.generateCharacterUrl(baseCharacterOptions);
-        
+
         expect(url).toContain('maplestory.io/api/GMS/214/character/center');
         expect(url).toContain('2000'); // Skin color
         expect(url).toContain('30000:0,20000:0'); // Hair and face
@@ -47,14 +47,14 @@ describe('MapleStoryService', () => {
       it('should handle different skin colors correctly', () => {
         const darkSkinOptions = { ...baseCharacterOptions, skin: 2013 };
         const url = service.generateCharacterUrl(darkSkinOptions);
-        
+
         expect(url).toContain('2013');
       });
 
       it('should handle different stances', () => {
         const stand2Options = { ...baseCharacterOptions, stance: 'stand2' };
         const url = service.generateCharacterUrl(stand2Options);
-        
+
         expect(url).toContain('stand2');
       });
     });
@@ -71,7 +71,7 @@ describe('MapleStoryService', () => {
 
         const options = { ...baseCharacterOptions, equipment: armorSet };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('1001000:0'); // Hat
         expect(url).toContain('1041000:0'); // Top
         expect(url).toContain('1061000:0'); // Bottom
@@ -85,13 +85,13 @@ describe('MapleStoryService', () => {
           '-11': 1302000, // One-handed sword
         };
 
-        const options = { 
-          ...baseCharacterOptions, 
+        const options = {
+          ...baseCharacterOptions,
           equipment: weaponSet,
           stance: undefined // Let it auto-detect stance
         };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('1092000:0'); // Shield
         expect(url).toContain('1302000:0'); // Weapon
         expect(url).toContain('stand1'); // Should auto-detect one-handed stance
@@ -110,7 +110,7 @@ describe('MapleStoryService', () => {
 
         const options = { ...baseCharacterOptions, equipment: accessorySet };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('1102000:0'); // Cape
         // Note: Rings and other accessories not in EQUIPMENT_RENDER_ORDER won't appear in URL
         // This is expected behavior - only core visual equipment is rendered
@@ -126,7 +126,7 @@ describe('MapleStoryService', () => {
 
         const options = { ...baseCharacterOptions, equipment: cashSet };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('1001001:0'); // Cash Hat
         expect(url).toContain('1041001:0'); // Cash Top
         expect(url).toContain('1061001:0'); // Cash Bottom
@@ -143,7 +143,7 @@ describe('MapleStoryService', () => {
 
         const options = { ...baseCharacterOptions, equipment: mixedSet };
         const url = service.generateCharacterUrl(options);
-        
+
         // Both regular and cash items should be included
         expect(url).toContain('1001000:0'); // Regular Hat
         expect(url).toContain('1041000:0'); // Regular Top
@@ -181,7 +181,7 @@ describe('MapleStoryService', () => {
 
         const options = { ...baseCharacterOptions, equipment: fullSet };
         const url = service.generateCharacterUrl(options);
-        
+
         // Verify URL contains essential equipment
         expect(url).toContain('1001000:0'); // Hat
         expect(url).toContain('1041000:0'); // Top
@@ -215,13 +215,13 @@ describe('MapleStoryService', () => {
       weaponTestCases.forEach(({ weaponId, expectedStance, category }) => {
         it(`should use ${expectedStance} stance for ${category} (${weaponId})`, () => {
           const weaponEquipment: EquipmentData = { '-11': weaponId };
-          const options = { 
-            ...baseCharacterOptions, 
+          const options = {
+            ...baseCharacterOptions,
             equipment: weaponEquipment,
-            stance: undefined // Let it auto-detect stance 
+            stance: undefined // Let it auto-detect stance
           };
           const url = service.generateCharacterUrl(options);
-          
+
           expect(url).toContain(expectedStance);
           expect(url).toContain(`${weaponId}:0`);
         });
@@ -229,13 +229,13 @@ describe('MapleStoryService', () => {
 
       it('should check cash weapon slot when regular weapon slot is empty', () => {
         const cashWeaponEquipment: EquipmentData = { '-111': 1402000 }; // Cash two-handed sword
-        const options = { 
-          ...baseCharacterOptions, 
+        const options = {
+          ...baseCharacterOptions,
           equipment: cashWeaponEquipment,
           stance: undefined // Let it auto-detect stance
         };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('stand2');
         expect(url).toContain('1402000:0');
       });
@@ -247,7 +247,7 @@ describe('MapleStoryService', () => {
         };
         const options = { ...baseCharacterOptions, equipment: mixedWeaponEquipment };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('stand1'); // Should use one-handed stance
         expect(url).toContain('1302000:0'); // Regular weapon
         expect(url).toContain('1402000:0'); // Cash weapon
@@ -258,28 +258,28 @@ describe('MapleStoryService', () => {
       it('should include resize parameter', () => {
         const options = { ...baseCharacterOptions, resize: 3 };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('resize=3');
       });
 
       it('should include renderMode parameter', () => {
         const options = { ...baseCharacterOptions, renderMode: 'compact' };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('renderMode=compact');
       });
 
       it('should include flipX parameter when true', () => {
         const options = { ...baseCharacterOptions, flipX: true };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('flipX=true');
       });
 
       it('should not include flipX parameter when false', () => {
         const options = { ...baseCharacterOptions, flipX: false };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).not.toContain('flipX');
       });
 
@@ -291,7 +291,7 @@ describe('MapleStoryService', () => {
           flipX: true,
         };
         const url = service.generateCharacterUrl(options);
-        
+
         expect(url).toContain('resize=4');
         expect(url).toContain('renderMode=compact');
         expect(url).toContain('flipX=true');
@@ -319,7 +319,7 @@ describe('MapleStoryService', () => {
       ];
 
       const result = service.extractEquipmentFromInventory(inventory);
-      
+
       expect(result.equipment).toEqual({
         '-1': 1001000,
         '-11': 1202000,
@@ -339,7 +339,7 @@ describe('MapleStoryService', () => {
       ];
 
       const result = service.extractEquipmentFromInventory(inventory);
-      
+
       expect(result.equipment).toEqual({
         '-1': 1001000,
         '-5': 1041000,
@@ -363,7 +363,7 @@ describe('MapleStoryService', () => {
       ];
 
       const result = service.extractEquipmentFromInventory(inventory);
-      
+
       expect(result.equipment).toEqual({
         '-12': 1112000,
         '-13': 1112001,
@@ -384,7 +384,7 @@ describe('MapleStoryService', () => {
       ];
 
       const result = service.extractEquipmentFromInventory(inventory);
-      
+
       expect(result.equipment).toEqual({
         '-101': 1001001,
         '-104': 1041001,
@@ -403,7 +403,7 @@ describe('MapleStoryService', () => {
       const result = service.extractEquipmentFromInventory(inventory, {
         includeCashEquipment: false,
       });
-      
+
       expect(result.equipment).toEqual({
         '-1': 1001000,
       });
@@ -420,7 +420,7 @@ describe('MapleStoryService', () => {
       const result = service.extractEquipmentFromInventory(inventory, {
         filterBySlotRange: { min: -11, max: -1 },
       });
-      
+
       expect(result.equipment).toEqual({
         '-1': 1001000,
         '-11': 1202000,
@@ -476,7 +476,7 @@ describe('MapleStoryService', () => {
       ];
 
       const result = service.characterToMapleStoryData(mockCharacter, inventory);
-      
+
       expect(result).toEqual({
         id: 'char1',
         name: 'TestWarrior',
@@ -496,7 +496,7 @@ describe('MapleStoryService', () => {
 
     it('should convert character data without equipment', () => {
       const result = service.characterToMapleStoryData(mockCharacter, []);
-      
+
       expect(result).toEqual({
         id: 'char1',
         name: 'TestWarrior',
@@ -529,7 +529,7 @@ describe('MapleStoryService', () => {
 
     it('should generate character image result', async () => {
       const result = await service.generateCharacterImage(mockCharacterData);
-      
+
       expect(result.url).toContain('maplestory.io/api');
       expect(result.character).toEqual(mockCharacterData);
       expect(result.options.hair).toBe(30000);
@@ -547,7 +547,7 @@ describe('MapleStoryService', () => {
       };
 
       const result = await service.generateCharacterImage(mockCharacterData, customOptions);
-      
+
       expect(result.options.resize).toBe(4);
       expect(result.options.renderMode).toBe('compact');
       expect(result.options.flipX).toBe(true);
@@ -631,490 +631,18 @@ describe('MapleStoryService', () => {
     it('should clear cache', () => {
       cachedService.clearCache();
       const stats = cachedService.getCacheStats();
-      
+
       expect(stats.images.size).toBe(0);
       expect(stats.images.urls).toEqual([]);
-      expect(stats.npcs.size).toBe(0);
-      expect(stats.npcs.keys).toEqual([]);
     });
 
     it('should provide cache statistics', () => {
       const stats = cachedService.getCacheStats();
-      
+
       expect(typeof stats.images.size).toBe('number');
       expect(Array.isArray(stats.images.urls)).toBe(true);
-      expect(typeof stats.npcs.size).toBe('number');
-      expect(Array.isArray(stats.npcs.keys)).toBe(true);
       expect(stats.enabled).toBe(true);
       expect(stats.ttl).toBe(1000);
-    });
-  });
-
-  describe('NPC functionality', () => {
-    it('should generate correct NPC icon URL', async () => {
-      // Mock successful response
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const iconUrl = await service.getNpcIcon(100000, 'GMS', '214');
-      
-      expect(iconUrl).toBe('https://maplestory.io/api/GMS/214/npc/100000/icon');
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/icon', { 
-        method: 'HEAD',
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should fetch NPC name correctly', async () => {
-      const mockName = 'Maple Administrator';
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve(mockName),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const name = await service.getNpcName(100000, 'GMS', '214');
-      
-      expect(name).toBe(mockName);
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/name', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should fetch complete NPC data', async () => {
-      const mockData = {
-        name: 'Maple Administrator',
-        description: 'The game administrator',
-        scripts: ['Welcome to MapleStory!']
-      };
-      
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(mockData),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const npcData = await service.getNpcData(100000, 'GMS', '214');
-      
-      expect(npcData).toEqual({
-        id: 100000,
-        name: 'Maple Administrator',
-        description: 'The game administrator',
-        scripts: ['Welcome to MapleStory!']
-      });
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should handle NPC data with caching', async () => {
-      const mockName = 'Maple Administrator';
-      const mockIconUrl = 'https://maplestory.io/api/GMS/214/npc/100000/icon';
-      
-      global.fetch = jest.fn()
-        .mockImplementationOnce(() => // First call for name
-          Promise.resolve({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(mockName),
-          } as Response)
-        )
-        .mockImplementationOnce(() => // Second call for icon validation
-          Promise.resolve({
-            ok: true,
-            status: 200,
-          } as Response)
-        );
-
-      const cachedService = new MapleStoryService({ cacheEnabled: true, cacheTTL: 1000 });
-      
-      // First call should fetch from API
-      const result1 = await cachedService.getNpcDataWithCache(100000, 'GMS', '214');
-      expect(result1.cached).toBe(false);
-      expect(result1.name).toBe(mockName);
-      expect(result1.iconUrl).toBe(mockIconUrl);
-      
-      // Second call should return cached result
-      const result2 = await cachedService.getNpcDataWithCache(100000, 'GMS', '214');
-      expect(result2.cached).toBe(true);
-      expect(result2.name).toBe(mockName);
-      expect(result2.iconUrl).toBe(mockIconUrl);
-      
-      // Should only have called fetch twice (once for name, once for icon validation)
-      expect(fetch).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle NPC API errors gracefully', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 404,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const result = await service.getNpcDataWithCache(999999);
-      
-      expect(result.cached).toBe(false);
-      expect(result.error).toBe('Failed to fetch NPC data');
-      expect(result.name).toBeUndefined();
-      expect(result.iconUrl).toBeUndefined();
-    });
-
-    it('should use default region and version', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve('Test NPC'),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      await service.getNpcName(100000);
-      
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/npc/100000/name', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-  });
-
-  describe('Item functionality', () => {
-    it('should generate correct item icon URL', async () => {
-      // Mock successful response
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const iconUrl = await service.getItemIcon(1002000, 'GMS', '214');
-      
-      expect(iconUrl).toBe('https://maplestory.io/api/GMS/214/item/1002000/icon');
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/item/1002000/icon', { 
-        method: 'HEAD',
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should fetch item name correctly', async () => {
-      const mockName = 'Red Headband';
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve(mockName),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const name = await service.getItemName(1002000, 'GMS', '214');
-      
-      expect(name).toBe(mockName);
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/item/1002000/name', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should handle item name JSON response', async () => {
-      const mockJsonResponse = { name: 'Blue Headband' };
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve(JSON.stringify(mockJsonResponse)),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const name = await service.getItemName(1002001, 'GMS', '214');
-      
-      expect(name).toBe('Blue Headband');
-    });
-
-    it('should handle item name string JSON response', async () => {
-      const mockStringResponse = '"Green Headband"';
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve(mockStringResponse),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const name = await service.getItemName(1002002, 'GMS', '214');
-      
-      expect(name).toBe('Green Headband');
-    });
-
-    it('should fetch complete item data', async () => {
-      const mockData = {
-        name: 'Red Headband',
-        description: 'A red colored headband',
-        category: 'Hat'
-      };
-      
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve(mockData),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const itemData = await service.getItemData(1002000, 'GMS', '214');
-      
-      expect(itemData).toEqual({
-        id: 1002000,
-        name: 'Red Headband',
-        description: 'A red colored headband',
-        category: 'Hat'
-      });
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/item/1002000', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should handle item data with caching', async () => {
-      const mockName = 'Red Headband';
-      const mockIconUrl = 'https://maplestory.io/api/GMS/214/item/1002000/icon';
-      
-      global.fetch = jest.fn()
-        .mockImplementationOnce(() => // First call for name
-          Promise.resolve({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve(mockName),
-          } as Response)
-        )
-        .mockImplementationOnce(() => // Second call for icon validation
-          Promise.resolve({
-            ok: true,
-            status: 200,
-          } as Response)
-        );
-
-      const cachedService = new MapleStoryService({ cacheEnabled: true, cacheTTL: 1000 });
-      
-      // First call should fetch from API
-      const result1 = await cachedService.getItemDataWithCache(1002000, 'GMS', '214');
-      expect(result1.cached).toBe(false);
-      expect(result1.name).toBe(mockName);
-      expect(result1.iconUrl).toBe(mockIconUrl);
-      
-      // Second call should return cached result
-      const result2 = await cachedService.getItemDataWithCache(1002000, 'GMS', '214');
-      expect(result2.cached).toBe(true);
-      expect(result2.name).toBe(mockName);
-      expect(result2.iconUrl).toBe(mockIconUrl);
-      
-      // Should only have called fetch twice (once for name, once for icon validation)
-      expect(fetch).toHaveBeenCalledTimes(2);
-    });
-
-    it('should handle item API errors gracefully', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 404,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      const result = await service.getItemDataWithCache(999999);
-      
-      expect(result.cached).toBe(false);
-      expect(result.error).toBe('Failed to fetch item data');
-      expect(result.name).toBeUndefined();
-      expect(result.iconUrl).toBeUndefined();
-    });
-
-    it('should use default region and version for item data', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          text: () => Promise.resolve('Test Item'),
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      await service.getItemName(1002000);
-      
-      expect(fetch).toHaveBeenCalledWith('https://maplestory.io/api/GMS/214/item/1002000/name', {
-        headers: expect.objectContaining({
-          'Cache-Control': expect.any(String),
-          'Accept': expect.any(String),
-        })
-      });
-    });
-
-    it('should handle item icon API failures', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 404,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      
-      await expect(service.getItemIcon(999999)).rejects.toThrow('Failed to fetch item icon for ID 999999');
-    });
-
-    it('should handle item name API failures', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 404,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      
-      await expect(service.getItemName(999999)).rejects.toThrow('Failed to fetch item name for ID 999999');
-    });
-
-    it('should handle item data API failures', async () => {
-      global.fetch = jest.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 404,
-        } as Response)
-      );
-
-      const service = new MapleStoryService();
-      
-      await expect(service.getItemData(999999)).rejects.toThrow('Failed to fetch item data for ID 999999');
-    });
-
-    describe('Batch item data fetching', () => {
-      it('should batch fetch multiple items successfully', async () => {
-        const mockItemData1 = { name: 'Item 1' };
-        const mockItemData2 = { name: 'Item 2' };
-        
-        global.fetch = jest.fn()
-          .mockResolvedValueOnce({ // Item 1 name
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve('Item 1'),
-          } as Response)
-          .mockResolvedValueOnce({ // Item 1 icon
-            ok: true,
-            status: 200,
-          } as Response)
-          .mockResolvedValueOnce({ // Item 2 name
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve('Item 2'),
-          } as Response)
-          .mockResolvedValueOnce({ // Item 2 icon
-            ok: true,
-            status: 200,
-          } as Response);
-
-        const service = new MapleStoryService({ cacheEnabled: false });
-        const results = await service.getItemDataBatch([1001000, 1002000], 'GMS', '214', 2);
-        
-        expect(results).toHaveLength(2);
-        expect(results[0].name).toBe('Item 1');
-        expect(results[1].name).toBe('Item 2');
-        expect(fetch).toHaveBeenCalledTimes(4); // 2 names + 2 icons
-      });
-
-      it('should handle empty item list', async () => {
-        const service = new MapleStoryService();
-        const results = await service.getItemDataBatch([]);
-        
-        expect(results).toEqual([]);
-      });
-
-      it('should process batches with size limit', async () => {
-        // Mock multiple successful responses
-        global.fetch = jest.fn()
-          .mockResolvedValue({
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve('Mock Item'),
-          } as Response);
-
-        const service = new MapleStoryService({ cacheEnabled: false });
-        const itemIds = [1001000, 1002000, 1003000, 1004000, 1005000];
-        
-        const results = await service.getItemDataBatch(itemIds, 'GMS', '214', 2);
-        
-        expect(results).toHaveLength(5);
-        results.forEach((result, index) => {
-          expect(result.id).toBe(itemIds[index]);
-          expect(result.name).toBe('Mock Item');
-        });
-      });
-
-      it('should handle mixed success and failure in batch', async () => {
-        global.fetch = jest.fn()
-          .mockResolvedValueOnce({ // Item 1 name - success
-            ok: true,
-            status: 200,
-            text: () => Promise.resolve('Item 1'),
-          } as Response)
-          .mockResolvedValueOnce({ // Item 1 icon - success
-            ok: true,
-            status: 200,
-          } as Response)
-          .mockResolvedValueOnce({ // Item 2 name - failure
-            ok: false,
-            status: 404,
-          } as Response)
-          .mockResolvedValueOnce({ // Item 2 icon - failure
-            ok: false,
-            status: 404,
-          } as Response);
-
-        const service = new MapleStoryService({ cacheEnabled: false });
-        const results = await service.getItemDataBatch([1001000, 999999], 'GMS', '214');
-        
-        expect(results).toHaveLength(2);
-        expect(results[0].name).toBe('Item 1');
-        expect(results[0].error).toBeUndefined();
-        expect(results[1].name).toBeUndefined();
-        expect(results[1].error).toBe('Failed to fetch item data');
-      });
     });
   });
 

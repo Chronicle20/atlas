@@ -1,39 +1,38 @@
 /**
  * React Query hook for Mob/Monster data fetching with caching
- * Provides name and icon URL data for mobs using MapleStory.io API
+ * Provides name and icon URL data for mobs using atlas-data API and atlas-assets
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { mapleStoryService } from '@/services/api/maplestory.service';
-import type { MobDataResult } from '@/types/models/maplestory';
+import { useTenant } from '@/context/tenant-context';
+import { monstersService } from '@/services/api/monsters.service';
+import { getAssetIconUrl } from '@/lib/utils/asset-url';
+
+interface MobDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
 
 interface UseMobDataOptions {
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
   retry?: number;
-  region?: string;
-  version?: string;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<UseMobDataOptions, 'region' | 'version'>> = {
+const DEFAULT_OPTIONS = {
   enabled: true,
-  staleTime: 30 * 60 * 1000, // 30 minutes
-  gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  staleTime: 30 * 60 * 1000,
+  gcTime: 24 * 60 * 60 * 1000,
   retry: 3,
 };
 
-/**
- * Generate a stable query key for mob data
- */
-function generateMobDataQueryKey(mobId: number, region?: string, version?: string): string[] {
-  return [
-    'mob-data',
-    region || 'GMS',
-    version || '214',
-    mobId.toString(),
-  ];
+function generateMobDataQueryKey(mobId: number, tenantId?: string): string[] {
+  return ['mob-data', tenantId || '', mobId.toString()];
 }
 
 /**
@@ -44,25 +43,41 @@ export function useMobData(
   hookOptions: UseMobDataOptions = {}
 ) {
   const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
 
-  const queryKey = generateMobDataQueryKey(mobId, options.region, options.version);
+  const queryKey = generateMobDataQueryKey(mobId, activeTenant?.id);
 
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<MobDataResult> => {
+      if (!activeTenant) {
+        return { id: mobId, cached: false, error: 'No active tenant' };
+      }
+
+      const iconUrl = getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        'mob',
+        mobId,
+      );
+
       try {
-        return await mapleStoryService.getMobDataWithCache(mobId, options.region, options.version);
+        const name = await monstersService.getMonsterName(mobId.toString(), activeTenant);
+        return { id: mobId, name, iconUrl, cached: false };
       } catch (error) {
-        console.error(`Failed to fetch mob data for ID ${mobId}:`, error);
+        console.error(`Failed to fetch mob name for ID ${mobId}:`, error);
         return {
           id: mobId,
+          iconUrl,
           cached: false,
           error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
     },
-    enabled: options.enabled && mobId > 0,
+    enabled: options.enabled && mobId > 0 && !!activeTenant,
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
@@ -77,9 +92,7 @@ export function useMobData(
   });
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: ['mob-data', mobId.toString()],
-    });
+    queryClient.invalidateQueries({ queryKey: ['mob-data', mobId.toString()] });
   }, [queryClient, mobId]);
 
   return {

@@ -30,31 +30,25 @@ import type { Asset, Compartment } from '@/services/api/inventory.service';
 interface InventoryGridProps {
   /** The inventory compartment containing metadata like capacity and type. */
   compartment: Compartment;
-  
+
   /** Array of inventory assets/items to display. Assets are mapped to grid slots based on their slot property. */
   assets: Asset[];
-  
+
   /** Optional callback function called when an item's delete button is clicked. */
   onDeleteAsset?: (assetId: string) => void;
-  
+
   /** ID of the asset currently being deleted. Used to show loading state on the specific item. */
   deletingAssetId?: string | null;
-  
-  /** MapleStory region identifier used for API calls. */
-  region?: string | undefined;
-  
-  /** MapleStory major version number used for API calls. */
-  majorVersion?: number | undefined;
-  
+
   /** Whether the grid is in a loading state. Shows skeleton components when true. */
   isLoading?: boolean;
-  
+
   /** Additional CSS classes to apply to the grid container. */
   className?: string;
-  
+
   /** Optional callback for when empty slots are clicked. Useful for future drag-and-drop functionality. */
   onSlotClick?: (slotIndex: number) => void;
-  
+
   /** Whether drag-and-drop interactions are enabled. Changes cursor and hover states. */
   isDragEnabled?: boolean;
 }
@@ -138,8 +132,6 @@ export function InventoryGrid({
   assets,
   onDeleteAsset,
   deletingAssetId,
-  region,
-  majorVersion,
   isLoading = false,
   className,
   onSlotClick,
@@ -180,16 +172,16 @@ export function InventoryGrid({
   // Preload item data for all visible items when component mounts or assets change
   useEffect(() => {
     if (itemIds.length > 0 && !isLoading) {
-      // Warm the cache for all item IDs in this grid
-      warmCache(itemIds, region, majorVersion?.toString())
+      warmCache(itemIds)
         .then((results) => {
+          if (!results) return;
           const successful = results.filter(result => result.status === 'fulfilled').length;
           const failed = results.filter(result => result.status === 'rejected').length;
-          
+
           if (successful > 0) {
             console.log(`[InventoryGrid] Preloaded metadata for ${successful} items`);
           }
-          
+
           if (failed > 0) {
             console.warn(`[InventoryGrid] Failed to preload metadata for ${failed} items`);
           }
@@ -198,7 +190,7 @@ export function InventoryGrid({
           console.warn('[InventoryGrid] Cache warming failed:', error);
         });
     }
-  }, [itemIds, warmCache, region, majorVersion, isLoading]);
+  }, [itemIds, warmCache, isLoading]);
 
   // Calculate grid columns based on capacity
   const getGridColumns = (capacity: number): string => {
@@ -252,9 +244,7 @@ export function InventoryGrid({
               asset={asset}
               {...(onDeleteAsset && { onDelete: () => onDeleteAsset(asset.id) })}
               isDeleting={deletingAssetId === asset.id}
-              region={region}
-              majorVersion={majorVersion}
-              shouldPreload={slotIndex < 12} // Preload first 12 items for faster loading
+              shouldPreload={slotIndex < 12}
             />
           ) : (
             <EmptySlot slotIndex={slotIndex} />

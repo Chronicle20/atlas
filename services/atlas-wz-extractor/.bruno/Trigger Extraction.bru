@@ -1,0 +1,15 @@
+meta {
+  name: Trigger Extraction
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{scheme}}://{{host}}:{{port}}/api/wz/extractions
+  body: none
+  auth: inherit
+}
+
+settings {
+  encodeUrl: true
+}

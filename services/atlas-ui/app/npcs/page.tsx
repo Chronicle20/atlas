@@ -14,7 +14,7 @@ import {createErrorFromUnknown} from "@/types/api/errors";
 import {ErrorDisplay} from "@/components/common/ErrorDisplay";
 import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
 import { VirtualizedNpcGrid } from "@/components/features/npc/VirtualizedNpcGrid";
-import { useOptimizedNpcBatchData } from "@/lib/hooks/useNpcData";
+import { useNpcBatchData } from "@/lib/hooks/useNpcData";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
 import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
@@ -78,21 +78,15 @@ export default function Page() {
     const batchDataOptions = useMemo(() => ({
         enabled: npcIds.length > 0,
         staleTime: 30 * 60 * 1000, // 30 minutes
-        region: activeTenant?.attributes?.region || 'GMS',
-        version: activeTenant?.attributes?.majorVersion?.toString() || '214',
-        onError: (error: Error) => {
-            // Handle error without dependency on handleError function
-            console.error('Batch metadata fetch error:', error);
-        },
-    }), [npcIds.length, activeTenant?.attributes?.region, activeTenant?.attributes?.majorVersion]);
-    
-    // Fetch NPC metadata (names and icons) in batch using optimized hook
-    const { 
-        data: npcDataResults, 
-        isLoading: isMetadataLoading, 
-        error: metadataError,
-        invalidateBatch: refetchMetadata 
-    } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
+    }), [npcIds.length]);
+
+    // Fetch NPC metadata (names and icons) in batch
+    const {
+        data: npcDataResults,
+        isLoading: isMetadataLoading,
+        isError: metadataError,
+        invalidateAll: refetchMetadata
+    } = useNpcBatchData(npcIds, batchDataOptions);
 
     // Merge original NPC data with fetched metadata
     useEffect(() => {

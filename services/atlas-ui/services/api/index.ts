@@ -144,6 +144,7 @@ export { dropsService } from './drops.service';
 export { gachaponsService } from './gachapons.service';
 export { itemStringsService } from './item-strings.service';
 export { itemsService } from './items.service';
+export { skillsService } from './skills.service';
 export { portalScriptsService } from './portal-scripts.service';
 export { reactorScriptsService } from './reactor-scripts.service';
 export { seedService } from './seed.service';

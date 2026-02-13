@@ -30,8 +30,6 @@ export default function Page() {
         isLoading: isMetadataLoading
     } = useNpcData(npcId, {
         enabled: npcId > 0,
-        region: activeTenant?.attributes?.region || 'GMS',
-        version: activeTenant?.attributes?.majorVersion?.toString() || '214',
     });
 
     const fetchNpcData = useCallback(() => {

@@ -18,6 +18,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { DropTableRow } from "@/components/features/drops/DropTableRow";
 
 export default function MonsterDetailPage() {
   const params = useParams();
@@ -131,6 +132,7 @@ export default function MonsterDetailPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Item ID</TableHead>
+                  <TableHead>Item Name</TableHead>
                   <TableHead>Chance</TableHead>
                   <TableHead>Min Qty</TableHead>
                   <TableHead>Max Qty</TableHead>
@@ -139,13 +141,7 @@ export default function MonsterDetailPage() {
               </TableHeader>
               <TableBody>
                 {drops.map((drop) => (
-                  <TableRow key={drop.id}>
-                    <TableCell className="font-mono">{drop.attributes.itemId}</TableCell>
-                    <TableCell>{drop.attributes.chance.toLocaleString()}</TableCell>
-                    <TableCell>{drop.attributes.minimumQuantity}</TableCell>
-                    <TableCell>{drop.attributes.maximumQuantity}</TableCell>
-                    <TableCell className="font-mono">{drop.attributes.questId || "-"}</TableCell>
-                  </TableRow>
+                  <DropTableRow key={drop.id} drop={drop} />
                 ))}
               </TableBody>
             </Table>

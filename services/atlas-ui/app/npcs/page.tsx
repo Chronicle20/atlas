@@ -1,7 +1,7 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { npcsService } from "@/services/api";
 import { type NpcSearchResult, type Commodity } from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Users, Search, Loader2, ShoppingBag, MessageCircle } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
@@ -37,13 +38,26 @@ const AdvancedNpcActions = dynamic(() => import("@/components/features/npc/Advan
 });
 
 export default function NpcsPage() {
+  return (
+    <Suspense>
+      <NpcsPageContent />
+    </Suspense>
+  );
+}
+
+function NpcsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  const initialQuery = searchParams.get("q") ?? "";
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [results, setResults] = useState<NpcSearchResult[]>([]);
   const [npcStatus, setNpcStatus] = useState<Map<number, { hasShop: boolean; hasConversation: boolean }>>(new Map());
   const [loading, setLoading] = useState(false);
   const [statusLoading, setStatusLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const autoSearched = useRef(false);
 
   // Shop management state
   const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
@@ -66,6 +80,7 @@ export default function NpcsPage() {
 
     setLoading(true);
     setHasSearched(true);
+    router.replace(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
 
     try {
       const data = await npcsService.searchNpcs(searchQuery.trim(), activeTenant);
@@ -95,13 +110,14 @@ export default function NpcsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTenant, searchQuery]);
+  }, [activeTenant, searchQuery, router, pathname]);
 
   const handleClear = () => {
     setSearchQuery("");
     setResults([]);
     setNpcStatus(new Map());
     setHasSearched(false);
+    router.replace(pathname, { scroll: false });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -109,6 +125,13 @@ export default function NpcsPage() {
       handleSearch();
     }
   };
+
+  useEffect(() => {
+    if (activeTenant && initialQuery && !autoSearched.current) {
+      autoSearched.current = true;
+      handleSearch();
+    }
+  }, [activeTenant, initialQuery, handleSearch]);
 
   const handleCreateShop = async () => {
     if (!activeTenant) return;

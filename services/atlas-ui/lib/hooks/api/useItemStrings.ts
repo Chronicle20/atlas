@@ -18,3 +18,17 @@ export function useItemStrings(): UseQueryResult<ItemStringData[], Error> {
     gcTime: 30 * 60 * 1000,
   });
 }
+
+export function useItemName(itemId: string): UseQueryResult<string, Error> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: [...itemStringKeys.all, 'name', itemId],
+    queryFn: async () => {
+      const item = await itemStringsService.getItemString(itemId, activeTenant!);
+      return item.attributes.name;
+    },
+    enabled: !!itemId && !!activeTenant,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+}

@@ -41,10 +41,18 @@ type canvasFinder func(props []property.Property) *property.CanvasProperty
 
 // extractEntityIcons extracts icons from a flat WZ file (e.g., Npc.wz, Mob.wz).
 // Each image at the root level represents an entity by ID.
+// When an entity has no canvas but has an info/link string property pointing to another
+// entity ID, the linked entity's canvas is used instead.
 func extractEntityIcons(l logrus.FieldLogger, f *wz.File, outputDir, category string, finder canvasFinder) error {
 	root := f.Root()
 	if root == nil {
 		return nil
+	}
+
+	// Build a lookup map for resolving inter-entity links (e.g., mob 9300145 -> mob 6110300).
+	imagesByName := make(map[string]*wz.Image)
+	for _, img := range root.Images() {
+		imagesByName[img.Name()] = img
 	}
 
 	count := 0
@@ -57,6 +65,9 @@ func extractEntityIcons(l logrus.FieldLogger, f *wz.File, outputDir, category st
 
 		cp := finder(props)
 		if cp == nil {
+			cp = resolveLinkedCanvas(l, imagesByName, props, finder)
+		}
+		if cp == nil {
 			continue
 		}
 
@@ -67,6 +78,61 @@ func extractEntityIcons(l logrus.FieldLogger, f *wz.File, outputDir, category st
 		count++
 	}
 	l.Infof("Extracted [%d] %s icons.", count, category)
+	return nil
+}
+
+// resolveLinkedCanvas follows info/link string properties to find a canvas from a linked entity.
+// Follows up to 5 links to avoid infinite cycles.
+func resolveLinkedCanvas(l logrus.FieldLogger, images map[string]*wz.Image, props []property.Property, finder canvasFinder) *property.CanvasProperty {
+	for depth := 0; depth < 5; depth++ {
+		linkId := findInfoLink(props)
+		if linkId == "" {
+			return nil
+		}
+
+		linked := findImageById(images, linkId)
+		if linked == nil {
+			l.Debugf("Linked entity [%s] not found in WZ file.", linkId)
+			return nil
+		}
+
+		linkedProps := linked.Properties()
+		cp := finder(linkedProps)
+		if cp != nil {
+			return cp
+		}
+
+		// The linked entity may itself be a link — continue resolving.
+		props = linkedProps
+	}
+	return nil
+}
+
+// findInfoLink extracts the "link" string value from the "info" sub-property, if present.
+func findInfoLink(props []property.Property) string {
+	info := findSub(props, "info")
+	if info == nil {
+		return ""
+	}
+	for _, p := range info.Children() {
+		if sp, ok := p.(*property.StringProperty); ok && sp.Name() == "link" {
+			return sp.Value()
+		}
+	}
+	return ""
+}
+
+// findImageById looks up an image by its numeric ID, padding with leading zeros as needed.
+// WZ image names are zero-padded to 7 digits (e.g., "6110300" for mob 6110300).
+func findImageById(images map[string]*wz.Image, id string) *wz.Image {
+	if img, ok := images[id]; ok {
+		return img
+	}
+	// Try zero-padded form (most mob IDs are 7-digit padded).
+	padded := fmt.Sprintf("%07s", id)
+	if img, ok := images[padded]; ok {
+		return img
+	}
 	return nil
 }
 

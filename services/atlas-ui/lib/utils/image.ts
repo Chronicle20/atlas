@@ -33,12 +33,17 @@ export function shouldUnoptimizeImageSrc(src: string): boolean {
   if (src.startsWith('http://') || src.startsWith('https://')) {
     return true;
   }
-  
+
   // Always unoptimize SVG files
   if (src.endsWith('.svg')) {
     return true;
   }
-  
+
+  // Always unoptimize internal asset URLs served by atlas-assets
+  if (src.startsWith('/api/assets/')) {
+    return true;
+  }
+
   // Use global setting for other images
   return shouldUseUnoptimizedImages();
 }

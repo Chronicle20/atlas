@@ -257,6 +257,8 @@ func findFirstCanvas(props []property.Property) *property.CanvasProperty {
 	return nil
 }
 
+var canvasDiagCount int32
+
 // writeCanvasPng reads canvas data from the WZ file, decompresses it, and writes a PNG.
 func writeCanvasPng(l logrus.FieldLogger, f *wz.File, cp *property.CanvasProperty, outputDir, category, entityId string) error {
 	data, err := f.ReadCanvasData(cp.DataOffset(), cp.DataSize())
@@ -264,8 +266,21 @@ func writeCanvasPng(l logrus.FieldLogger, f *wz.File, cp *property.CanvasPropert
 		return fmt.Errorf("unable to read canvas data: %w", err)
 	}
 
+	canvasDiagCount++
+	if canvasDiagCount <= 10 {
+		headerBytes := data
+		if len(headerBytes) > 16 {
+			headerBytes = headerBytes[:16]
+		}
+		l.Infof("[DIAG] Canvas %s/%s: format=%d, size=%dx%d, dataLen=%d, dataOffset=%d, first16bytes=%X",
+			category, entityId, cp.Format(), cp.Width(), cp.Height(), len(data), cp.DataOffset(), headerBytes)
+	}
+
 	img, err := canvas.Decompress(data, cp.Width(), cp.Height(), cp.Format(), f.CanvasEncryptionKey())
 	if err != nil {
+		if canvasDiagCount <= 10 {
+			l.WithError(err).Errorf("[DIAG] Decompression FAILED for %s/%s", category, entityId)
+		}
 		return fmt.Errorf("unable to decompress canvas: %w", err)
 	}
 

@@ -96,11 +96,16 @@ func (wz *File) EncryptionKey() *crypto.WzKey {
 }
 
 // ReadCanvasData reads raw canvas data from the WZ file at the given offset and size.
+// The first byte at the offset is a flag/header byte that is skipped (matching MapleLib's approach).
+// Returns (size - 1) bytes of actual compressed canvas data.
 func (wz *File) ReadCanvasData(offset int64, size int32) ([]byte, error) {
-	if _, err := wz.reader.Seek(offset, io.SeekStart); err != nil {
+	if size <= 1 {
+		return nil, nil
+	}
+	if _, err := wz.reader.Seek(offset+1, io.SeekStart); err != nil {
 		return nil, err
 	}
-	return wz.reader.ReadBytes(int(size))
+	return wz.reader.ReadBytes(int(size - 1))
 }
 
 // CanvasEncryptionKey returns the raw key bytes for canvas block decryption.
@@ -175,7 +180,7 @@ func (wz *File) detectVersion() error {
 				wz.gameVersion = version
 				wz.encryptionKey = key
 				wz.reader.SetKey(key.Bytes(0x10000))
-				wz.l.Debugf("Detected version %d (hash=%d) with encryption=%d", version, hash, enc)
+				wz.l.Infof("Detected version %d (hash=%d) with encryption=%v, keyEmpty=%v", version, hash, enc, key.IsEmpty())
 				return nil
 			}
 		}

@@ -29,50 +29,93 @@ func Decompress(data []byte, width, height int, format int, encryptionKey []byte
 
 	pixels, err := decompressCanvasData(data, encryptionKey)
 	if err != nil {
-		// Try raw data as last resort
-		pixels = data
+		return nil, fmt.Errorf("canvas decompression failed (dataLen=%d, format=%d, %dx%d): %w",
+			len(data), format, width, height, err)
 	}
 
 	return decodePixels(pixels, width, height, format)
 }
 
 // decompressCanvasData handles both standard zlib and listWz encrypted block formats.
-// Standard zlib: data starts with a known zlib header (0x789C, 0x78DA, 0x7801, 0x785E).
-// ListWz format: data is a sequence of [uint32 blockSize][blockSize encrypted bytes] blocks
-// that must be XOR-decrypted with the WzKey before zlib decompression.
+// Tries multiple strategies in order:
+// 1. Standard zlib (if data starts with a zlib header)
+// 2. ListWz encrypted blocks with XOR key
+// 3. ListWz blocks without XOR (unencrypted blocks)
 func decompressCanvasData(data []byte, encryptionKey []byte) ([]byte, error) {
 	if len(data) < 2 {
-		return nil, fmt.Errorf("data too short")
+		return nil, fmt.Errorf("data too short: %d bytes", len(data))
 	}
 
-	// Check for known zlib headers
-	header := uint16(data[0]) | uint16(data[1])<<8
-	if isZlibHeader(header) {
-		return decompressZlib(data)
+	// Strategy 1: Check for standard zlib header
+	if isZlibHeader(data[0], data[1]) {
+		result, err := decompressZlib(data)
+		if err == nil {
+			return result, nil
+		}
 	}
 
-	// ListWz encrypted block format: [uint32 blockSize][blockSize XOR-encrypted bytes]...
-	return decompressEncryptedBlocks(data, encryptionKey)
+	// Strategy 2: ListWz encrypted block format with XOR key
+	if encryptionKey != nil && len(encryptionKey) > 0 {
+		result, err := decompressBlocks(data, encryptionKey)
+		if err == nil {
+			return result, nil
+		}
+	}
+
+	// Strategy 3: Block format without XOR encryption
+	result, err := decompressBlocks(data, nil)
+	if err == nil {
+		return result, nil
+	}
+
+	return nil, fmt.Errorf("all decompression strategies failed (first4bytes=%X)", firstN(data, 4))
 }
 
-func isZlibHeader(header uint16) bool {
-	// Standard zlib headers (big-endian in the stream, but we read as little-endian uint16)
-	return header == 0x9C78 || header == 0xDA78 || header == 0x0178 || header == 0x5E78
+func isZlibHeader(b0, b1 byte) bool {
+	// Zlib streams start with CMF=0x78 (deflate, 32K window) followed by FLG byte.
+	return b0 == 0x78 && (b1 == 0x9C || b1 == 0xDA || b1 == 0x01 || b1 == 0x5E)
 }
 
+// decompressZlib decompresses a zlib stream, tolerating truncated streams.
+// WZ canvas data often uses truncated zlib streams (missing the 4-byte Adler32 checksum),
+// which causes Go's zlib.Reader to return io.ErrUnexpectedEOF even though all pixel data
+// was successfully decompressed. This function reads in chunks and treats ErrUnexpectedEOF
+// as success, matching the behavior of other WZ libraries (MapleLib, wzexplorer).
 func decompressZlib(data []byte) ([]byte, error) {
 	r, err := zlib.NewReader(bytes.NewReader(data))
 	if err != nil {
 		return nil, err
 	}
 	defer r.Close()
-	return io.ReadAll(r)
+
+	var buf bytes.Buffer
+	chunk := make([]byte, 4096)
+	for {
+		n, readErr := r.Read(chunk)
+		if n > 0 {
+			buf.Write(chunk[:n])
+		}
+		if readErr != nil {
+			if readErr == io.EOF || readErr == io.ErrUnexpectedEOF {
+				break
+			}
+			// If we already have data, return it despite the error
+			if buf.Len() > 0 {
+				break
+			}
+			return nil, readErr
+		}
+	}
+	if buf.Len() == 0 {
+		return nil, fmt.Errorf("zlib decompression produced no data")
+	}
+	return buf.Bytes(), nil
 }
 
-// decompressEncryptedBlocks handles WZ listWz canvas block format.
-// Each block: [uint32 blockSize][blockSize bytes XOR'd with WzKey]
-// After decryption, all blocks are concatenated and decompressed as a single zlib stream.
-func decompressEncryptedBlocks(data []byte, encryptionKey []byte) ([]byte, error) {
+// decompressBlocks handles WZ listWz canvas block format.
+// Each block: [uint32 blockSize][blockSize bytes optionally XOR'd with WzKey]
+// After optional decryption, all blocks are concatenated and decompressed as a single zlib stream.
+func decompressBlocks(data []byte, encryptionKey []byte) ([]byte, error) {
 	var decrypted []byte
 	offset := 0
 
@@ -84,11 +127,10 @@ func decompressEncryptedBlocks(data []byte, encryptionKey []byte) ([]byte, error
 		blockSize := int(data[offset]) | int(data[offset+1])<<8 | int(data[offset+2])<<16 | int(data[offset+3])<<24
 		offset += 4
 
-		if blockSize <= 0 || offset+blockSize > len(data) {
+		if blockSize <= 0 || blockSize > 0x100000 || offset+blockSize > len(data) {
 			break
 		}
 
-		// Copy block data and XOR-decrypt with encryption key
 		block := make([]byte, blockSize)
 		copy(block, data[offset:offset+blockSize])
 		if encryptionKey != nil {
@@ -103,10 +145,17 @@ func decompressEncryptedBlocks(data []byte, encryptionKey []byte) ([]byte, error
 	}
 
 	if len(decrypted) == 0 {
-		return nil, fmt.Errorf("no blocks decrypted")
+		return nil, fmt.Errorf("no valid blocks found")
 	}
 
 	return decompressZlib(decrypted)
+}
+
+func firstN(data []byte, n int) []byte {
+	if len(data) < n {
+		return data
+	}
+	return data[:n]
 }
 
 func decodePixels(data []byte, width, height int, format int) (*image.NRGBA, error) {

@@ -5,7 +5,7 @@ meta {
 }
 
 patch {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/3/keys/18
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/keys/{{key}}
   body: json
   auth: none
 }
@@ -15,7 +15,7 @@ body:json {
     "data": 
       {
         "type": "keys",
-        "id": "18",
+        "id": "{{key}}",
         "attributes": {
           "type": 4,
           "action": 1

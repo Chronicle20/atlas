@@ -1,39 +1,38 @@
 /**
  * React Query hook for Skill data fetching with caching
- * Provides name and icon URL data for skills using MapleStory.io API
+ * Provides name and icon URL data for skills using atlas-data API and atlas-assets
  */
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { mapleStoryService } from '@/services/api/maplestory.service';
-import type { SkillDataResult } from '@/types/models/maplestory';
+import { useTenant } from '@/context/tenant-context';
+import { skillsService } from '@/services/api/skills.service';
+import { getAssetIconUrl } from '@/lib/utils/asset-url';
+
+interface SkillDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
 
 interface UseSkillDataOptions {
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
   retry?: number;
-  region?: string;
-  version?: string;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<UseSkillDataOptions, 'region' | 'version'>> = {
+const DEFAULT_OPTIONS = {
   enabled: true,
-  staleTime: 30 * 60 * 1000, // 30 minutes
-  gcTime: 24 * 60 * 60 * 1000, // 24 hours
+  staleTime: 30 * 60 * 1000,
+  gcTime: 24 * 60 * 60 * 1000,
   retry: 3,
 };
 
-/**
- * Generate a stable query key for skill data
- */
-function generateSkillDataQueryKey(skillId: number, region?: string, version?: string): string[] {
-  return [
-    'skill-data',
-    region || 'GMS',
-    version || '214',
-    skillId.toString(),
-  ];
+function generateSkillDataQueryKey(skillId: number, tenantId?: string): string[] {
+  return ['skill-data', tenantId || '', skillId.toString()];
 }
 
 /**
@@ -44,25 +43,41 @@ export function useSkillData(
   hookOptions: UseSkillDataOptions = {}
 ) {
   const options = useMemo(() => ({ ...DEFAULT_OPTIONS, ...hookOptions }), [hookOptions]);
+  const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
 
-  const queryKey = generateSkillDataQueryKey(skillId, options.region, options.version);
+  const queryKey = generateSkillDataQueryKey(skillId, activeTenant?.id);
 
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<SkillDataResult> => {
+      if (!activeTenant) {
+        return { id: skillId, cached: false, error: 'No active tenant' };
+      }
+
+      const iconUrl = getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        'skill',
+        skillId,
+      );
+
       try {
-        return await mapleStoryService.getSkillDataWithCache(skillId, options.region, options.version);
+        const name = await skillsService.getSkillName(skillId.toString(), activeTenant);
+        return { id: skillId, name, iconUrl, cached: false };
       } catch (error) {
-        console.error(`Failed to fetch skill data for ID ${skillId}:`, error);
+        console.error(`Failed to fetch skill name for ID ${skillId}:`, error);
         return {
           id: skillId,
+          iconUrl,
           cached: false,
           error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
       }
     },
-    enabled: options.enabled && skillId > 0,
+    enabled: options.enabled && skillId > 0 && !!activeTenant,
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
@@ -77,9 +92,7 @@ export function useSkillData(
   });
 
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: ['skill-data', skillId.toString()],
-    });
+    queryClient.invalidateQueries({ queryKey: ['skill-data', skillId.toString()] });
   }, [queryClient, skillId]);
 
   return {

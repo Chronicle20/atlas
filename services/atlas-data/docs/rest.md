@@ -13,26 +13,25 @@ All requests require tenant identification headers:
 
 ## Common Query Parameters
 
-All endpoints support JSON:API query parameters:
+All GET endpoints support JSON:API query parameters:
 - `fields[resourceType]` - Comma-separated list of fields to include
 - `include` - Comma-separated list of related resources to include
 
 ## Endpoints
 
-### PATCH /api/data
+### POST /api/data/process
 
-Uploads game data from a ZIP file.
+Triggers full data processing for the current tenant. Deletes all existing documents for the tenant, then dispatches workers for each data type via Kafka.
 
 #### Request
 
-- Content-Type: multipart/form-data
-- Form field: `zip_file` (ZIP file, max 1GB)
+- No body required
 
 #### Response
 
-- 202 Accepted: Upload processing started
-- 400 Bad Request: Invalid file
-- 413 Request Entity Too Large: File exceeds size limit
+- 202 Accepted: Processing started
+- 400 Bad Request: Data path does not exist
+- 500 Internal Server Error: Unable to delete existing documents
 
 ---
 
@@ -49,7 +48,8 @@ Returns all cash items.
     "id": "5000000",
     "attributes": {
       "slotMax": 100,
-      "spec": {}
+      "spec": {},
+      "timeWindows": []
     }
   }]
 }
@@ -154,6 +154,56 @@ Returns a specific consumable.
 
 ---
 
+### GET /api/data/cosmetics/faces
+
+Returns all faces.
+
+#### Response Model
+
+- 200: Array of faces resources
+
+---
+
+### GET /api/data/cosmetics/faces/{faceId}
+
+Returns a specific face.
+
+#### Parameters
+
+- faceId (path): Face ID
+
+#### Response Model
+
+- 200: faces resource
+- 404: Not found
+
+---
+
+### GET /api/data/cosmetics/hairs
+
+Returns all hairs.
+
+#### Response Model
+
+- 200: Array of hairs resources
+
+---
+
+### GET /api/data/cosmetics/hairs/{hairId}
+
+Returns a specific hair.
+
+#### Parameters
+
+- hairId (path): Hair ID
+
+#### Response Model
+
+- 200: hairs resource
+- 404: Not found
+
+---
+
 ### GET /api/data/equipment/{equipmentId}
 
 Returns equipment statistics.
@@ -248,9 +298,52 @@ Returns a specific ETC item.
 
 ---
 
+### GET /api/data/item-strings
+
+Returns all item strings. Supports search filtering.
+
+#### Query Parameters
+
+- search: Filter by item ID prefix or name substring (case-insensitive, limit 50 results)
+
+#### Response Model
+
+```json
+{
+  "data": [{
+    "type": "item-strings",
+    "id": "1000000",
+    "attributes": {
+      "name": "Sword"
+    }
+  }]
+}
+```
+
+---
+
+### GET /api/data/item-strings/{itemId}
+
+Returns the name for a specific item.
+
+#### Parameters
+
+- itemId (path): Item ID
+
+#### Response Model
+
+- 200: item-strings resource
+- 404: Not found
+
+---
+
 ### GET /api/data/maps
 
-Returns all maps.
+Returns all maps. Supports search filtering.
+
+#### Query Parameters
+
+- search: Filter by map ID, name, or street name (case-insensitive, limit 50 results)
 
 #### Response Model
 
@@ -492,6 +585,16 @@ Finds the foothold below a position in a map.
 
 ---
 
+### GET /api/data/monsters
+
+Returns all monsters.
+
+#### Response Model
+
+- 200: Array of monsters resources
+
+---
+
 ### GET /api/data/monsters/{monsterId}
 
 Returns monster information.
@@ -522,6 +625,35 @@ Returns lose items for a monster.
 
 ---
 
+### GET /api/data/npcs
+
+Returns all NPCs.
+
+#### Query Parameters
+
+- filter[storebank]: Filter by storebank status (true)
+
+#### Response Model
+
+- 200: Array of npcs resources
+
+---
+
+### GET /api/data/npcs/{npcId}
+
+Returns a specific NPC.
+
+#### Parameters
+
+- npcId (path): NPC ID
+
+#### Response Model
+
+- 200: npcs resource
+- 404: Not found
+
+---
+
 ### GET /api/data/pets
 
 Returns all pets.
@@ -544,6 +676,51 @@ Returns a specific pet.
 
 - 200: pets resource with skills relationship
 - 404: Not found
+
+---
+
+### GET /api/data/quests
+
+Returns all quests.
+
+#### Response Model
+
+- 200: Array of quests resources
+
+---
+
+### GET /api/data/quests/auto-start
+
+Returns all auto-start quests.
+
+#### Response Model
+
+- 200: Array of quests resources (filtered by autoStart = true)
+
+---
+
+### GET /api/data/quests/{questId}
+
+Returns a specific quest.
+
+#### Parameters
+
+- questId (path): Quest ID
+
+#### Response Model
+
+- 200: quests resource
+- 404: Not found
+
+---
+
+### GET /api/data/reactors
+
+Returns all reactors.
+
+#### Response Model
+
+- 200: Array of reactors resources
 
 ---
 
@@ -587,6 +764,21 @@ Returns a specific setup item.
 
 ---
 
+### GET /api/data/skills
+
+Searches skills by name.
+
+#### Query Parameters
+
+- name (required): Filter by skill name substring (case-insensitive, limit 10 results)
+
+#### Response Model
+
+- 200: Array of skills resources
+- 400: Bad Request (name parameter missing)
+
+---
+
 ### GET /api/data/skills/{skillId}
 
 Returns skill information.
@@ -598,68 +790,4 @@ Returns skill information.
 #### Response Model
 
 - 200: skills resource with effects
-- 404: Not found
-
----
-
-### GET /api/data/npcs
-
-Returns all NPCs.
-
-#### Query Parameters
-
-- filter[storebank]: Filter by storebank status (true)
-
-#### Response Model
-
-- 200: Array of npcs resources
-
----
-
-### GET /api/data/npcs/{npcId}
-
-Returns a specific NPC.
-
-#### Parameters
-
-- npcId (path): NPC ID
-
-#### Response Model
-
-- 200: npcs resource
-- 404: Not found
-
----
-
-### GET /api/data/quests
-
-Returns all quests.
-
-#### Response Model
-
-- 200: Array of quests resources
-
----
-
-### GET /api/data/quests/auto-start
-
-Returns all auto-start quests.
-
-#### Response Model
-
-- 200: Array of quests resources (filtered by autoStart = true)
-
----
-
-### GET /api/data/quests/{questId}
-
-Returns a specific quest.
-
-#### Parameters
-
-- questId (path): Quest ID
-
-#### Response Model
-
-- 200: quests resource
 - 404: Not found

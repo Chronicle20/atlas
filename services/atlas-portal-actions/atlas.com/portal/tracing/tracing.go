@@ -19,7 +19,7 @@ func InitTracer(serviceName string) (*trace.TracerProvider, error) {
 		context.Background(),
 		otlptracegrpc.NewClient(
 			otlptracegrpc.WithInsecure(),
-			otlptracegrpc.WithEndpoint(os.Getenv("JAEGER_HOST_PORT")),
+			otlptracegrpc.WithEndpoint(os.Getenv("TRACE_ENDPOINT")),
 		),
 	)
 	if err != nil {

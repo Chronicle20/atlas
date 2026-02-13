@@ -28,28 +28,23 @@ body:json {
   }
 }
 
-vars:pre-request {
-  npcId: 11000
-  commodityId: ba2beb08-9d9f-4784-b031-f8c37f1735e6
-}
-
 docs {
   # Update Commodity
-
+  
   This endpoint updates a commodity in a shop.
-
+  
   ## Request Body
-
+  
   The request body should include the commodity details to update:
   - `id`: The ID of the commodity to update
   - `templateId`: The template ID of the item
   - `mesoPrice`: The price in mesos
   - `perfectPitchPrice`: The price in perfect pitch (optional)
-
+  
   ## Response
-
+  
   The response includes the updated commodity details.
-
+  
   ```json
   {
     "data": {

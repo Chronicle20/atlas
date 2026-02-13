@@ -9,7 +9,6 @@ import { X, Package } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useItemData } from '@/lib/hooks/useItemData';
 import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
-import { errorLogger } from '@/services/errorLogger';
 import type { Asset } from '@/services/api/inventory.service';
 
 /**
@@ -36,23 +35,17 @@ import type { Asset } from '@/services/api/inventory.service';
 interface InventoryCardProps {
   /** The inventory asset/item to display. Must contain templateId and slot information. */
   asset: Asset;
-  
+
   /** Optional callback function called when the delete button is clicked. If not provided, delete button won't be shown. */
   onDelete?: (assetId: string) => void;
-  
+
   /** Whether the item is currently being deleted. Shows loading state on delete button when true. */
   isDeleting?: boolean;
-  
-  /** MapleStory region identifier (e.g., "GMS", "JMS", "KMS"). Used for API calls to fetch item data. */
-  region?: string | undefined;
-  
-  /** MapleStory major version number (e.g., 83, 251). Used for API calls to fetch version-specific item data. */
-  majorVersion?: number | undefined;
-  
+
   /** Additional CSS classes to apply to the card container. */
   className?: string;
-  
-  /** 
+
+  /**
    * Whether to preload the item's icon and metadata even before the card becomes visible.
    * Useful for improving perceived performance of frequently accessed items.
    * Default: false
@@ -117,12 +110,10 @@ interface InventoryCardProps {
  * @param props - The component props
  * @returns A card component displaying the inventory item
  */
-export function InventoryCard({ 
-  asset, 
-  onDelete, 
+export function InventoryCard({
+  asset,
+  onDelete,
   isDeleting = false,
-  region,
-  majorVersion,
   className,
   shouldPreload = false
 }: InventoryCardProps) {
@@ -136,33 +127,13 @@ export function InventoryCard({
   });
 
   // Use React Query for data fetching with lazy loading
-  const { 
-    itemData, 
-    isLoading, 
-    hasError, 
-    errorMessage 
+  const {
+    itemData,
+    isLoading,
+    hasError,
+    errorMessage
   } = useItemData(asset.attributes.templateId, {
-    enabled: shouldLoad || shouldPreload, // Enable if visible or should preload
-    ...(region && { region }),
-    ...(majorVersion && { version: majorVersion.toString() }),
-    staleTime: 30 * 60 * 1000, // 30 minutes
-    gcTime: 24 * 60 * 60 * 1000, // 24 hours
-    onError: (error: Error) => {
-      // Log errors for monitoring with context
-      const context: { userId?: string; tenantId?: string; url?: string } = {
-        userId: 'character_inventory_user', // Could be enhanced with actual user ID
-        tenantId: 'atlas_ui', // Could be enhanced with actual tenant ID
-      };
-      
-      if (typeof window !== 'undefined') {
-        context.url = window.location.href;
-      }
-      
-      errorLogger.logError(error, undefined, context).catch((loggingError) => {
-        // Fallback logging if errorLogger fails
-        console.warn('Failed to log inventory card error:', loggingError);
-      });
-    },
+    enabled: shouldLoad || shouldPreload,
   });
 
   // Image preloading effect - preload images when data is available
@@ -198,22 +169,7 @@ export function InventoryCard({
   const handleImageError = () => {
     setImageError(true);
     setImageLoaded(true);
-    
-    // Log image loading failures for monitoring
-    const imageError = new Error(`Failed to load item icon for item ${asset.attributes.templateId}`);
-    const context: { userId?: string; tenantId?: string; url?: string } = {
-      userId: 'character_inventory_user', // Could be enhanced with actual user ID
-      tenantId: 'atlas_ui', // Could be enhanced with actual tenant ID
-    };
-    
-    if (typeof window !== 'undefined') {
-      context.url = window.location.href;
-    }
-    
-    errorLogger.logError(imageError, undefined, context).catch((loggingError) => {
-      // Fallback logging if errorLogger fails
-      console.warn('Failed to log image error:', loggingError);
-    });
+    console.warn(`Failed to load item icon for item ${asset.attributes.templateId}`);
   };
 
   const handleDelete = () => {

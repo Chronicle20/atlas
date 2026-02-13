@@ -1,72 +1,93 @@
 package item
 
 import (
+	"atlas-data/database"
 	"atlas-data/document"
 	"atlas-data/xml"
+	"context"
+	"strconv"
 	"sync"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
-type ItemString struct {
-	id   string
-	name string
-}
-
-func (m ItemString) GetID() string {
-	return m.id
-}
-
-func (m ItemString) Name() string {
-	return m.name
-}
-
-var isReg *document.Registry[string, ItemString]
+var isReg *document.Registry[string, StringRestModel]
 var isOnce sync.Once
 
-func GetItemStringRegistry() *document.Registry[string, ItemString] {
+func GetStringModelRegistry() *document.Registry[string, StringRestModel] {
 	isOnce.Do(func() {
-		isReg = document.NewRegistry[string, ItemString]()
+		isReg = document.NewRegistry[string, StringRestModel]()
 	})
 	return isReg
 }
 
-func InitStringFlat(t tenant.Model, path string) error {
-	exml, err := xml.Read(path)
-	if err != nil {
-		return err
-	}
-
-	for _, mxml := range exml.ChildNodes {
-		_, err = GetItemStringRegistry().Add(t, ItemString{
-			id:   mxml.Name,
-			name: mxml.GetString("name", "MISSINGNO"),
-		})
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func NewStringStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, StringRestModel] {
+	return document.NewStorage(l, db, GetStringModelRegistry(), "ITEM_STRING")
 }
 
-func InitStringNested(t tenant.Model, path string) error {
-	exml, err := xml.Read(path)
-	if err != nil {
-		return err
-	}
-
-	for _, cat := range exml.ChildNodes {
-		for _, subCat := range cat.ChildNodes {
-			for _, mxml := range subCat.ChildNodes {
-				_, err = GetItemStringRegistry().Add(t, ItemString{
-					id:   mxml.Name,
-					name: mxml.GetString("name", "MISSINGNO"),
-				})
+func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				exml, err := xml.Read(path)
 				if err != nil {
 					return err
 				}
+
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					s := NewStringStorage(l, tx)
+					for _, mxml := range exml.ChildNodes {
+						if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
+							continue
+						}
+						rm := StringRestModel{
+							Id:   mxml.Name,
+							Name: mxml.GetString("name", "MISSINGNO"),
+						}
+						_, err = s.Add(ctx)(rm)()
+						if err != nil {
+							return err
+						}
+					}
+					return nil
+				})
 			}
 		}
 	}
-	return nil
+}
+
+func InitStringNested(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
+		return func(ctx context.Context) func(path string) error {
+			return func(path string) error {
+				exml, err := xml.Read(path)
+				if err != nil {
+					return err
+				}
+
+				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
+					s := NewStringStorage(l, tx)
+					for _, cat := range exml.ChildNodes {
+						for _, subCat := range cat.ChildNodes {
+							for _, mxml := range subCat.ChildNodes {
+								if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
+									continue
+								}
+								rm := StringRestModel{
+									Id:   mxml.Name,
+									Name: mxml.GetString("name", "MISSINGNO"),
+								}
+								_, err = s.Add(ctx)(rm)()
+								if err != nil {
+									return err
+								}
+							}
+						}
+					}
+					return nil
+				})
+			}
+		}
+	}
 }

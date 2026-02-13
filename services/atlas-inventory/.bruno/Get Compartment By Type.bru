@@ -5,15 +5,11 @@ meta {
 }
 
 get {
-  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory/compartments?type=1
+  url: {{scheme}}://{{host}}:{{port}}/api/characters/{{characterId}}/inventory/compartments?type={{compartmentType}}
   body: none
   auth: none
 }
 
 params:query {
-  type: 1
-}
-
-vars:pre-request {
-  characterId: 56
+  type: {{compartmentType}}
 }

@@ -4,6 +4,7 @@ import (
 	"atlas-data/rest"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -51,10 +52,32 @@ func handleGetNpcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 				results = filtered
 			}
 
+			// Apply search filter if specified
+			searchQuery := query.Get("search")
+			if searchQuery != "" {
+				results = filterNpcs(results, searchQuery, 50)
+			}
+
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
+}
+
+func filterNpcs(npcs []RestModel, search string, limit int) []RestModel {
+	searchLower := strings.ToLower(search)
+	results := make([]RestModel, 0)
+	for _, npc := range npcs {
+		if strings.HasPrefix(strconv.Itoa(int(npc.Id)), search) {
+			results = append(results, npc)
+		} else if strings.Contains(strings.ToLower(npc.Name), searchLower) {
+			results = append(results, npc)
+		}
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results
 }
 
 func handleGetNpcRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

@@ -414,6 +414,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-wz-extractor",
+      "type": "go-service",
+      "path": "services/atlas-wz-extractor",
+      "module_path": "services/atlas-wz-extractor/atlas.com/wz-extractor",
+      "docker_image": "ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-ui",
       "type": "node-service",
       "path": "services/atlas-ui",

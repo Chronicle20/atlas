@@ -1,20 +1,27 @@
 /**
  * React Query hook for NPC data fetching with caching and batch support
- * Provides name and icon URL data for NPCs using MapleStory.io API
+ * Provides name and icon URL data for NPCs using atlas-data API and atlas-assets
  */
 
 import { useQuery, useQueries, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo, useEffect } from 'react';
-import { mapleStoryService } from '@/services/api/maplestory.service';
-import type { NpcDataResult } from '@/types/models/maplestory';
+import { useTenant } from '@/context/tenant-context';
+import { npcsService } from '@/services/api/npcs.service';
+import { getAssetIconUrl } from '@/lib/utils/asset-url';
+
+interface NpcDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
 
 interface UseNpcDataOptions {
   enabled?: boolean;
   staleTime?: number;
   gcTime?: number;
   retry?: number;
-  region?: string;
-  version?: string;
   onSuccess?: (data: NpcDataResult) => void;
   onError?: (error: Error) => void;
 }
@@ -24,23 +31,15 @@ interface UseNpcBatchDataOptions extends Omit<UseNpcDataOptions, 'onSuccess' | '
   onError?: (error: Error) => void;
 }
 
-const DEFAULT_OPTIONS: Required<Omit<UseNpcDataOptions, 'onSuccess' | 'onError' | 'region' | 'version'>> = {
+const DEFAULT_OPTIONS = {
   enabled: true,
   staleTime: 30 * 60 * 1000, // 30 minutes
   gcTime: 24 * 60 * 60 * 1000, // 24 hours
   retry: 3,
 };
 
-/**
- * Generate a stable query key for NPC data
- */
-function generateNpcDataQueryKey(npcId: number, region?: string, version?: string): string[] {
-  return [
-    'npc-data',
-    region || 'GMS',
-    version || '214',
-    npcId.toString(),
-  ];
+function generateNpcDataQueryKey(npcId: number, tenantId?: string): string[] {
+  return ['npc-data', tenantId || '', npcId.toString()];
 }
 
 /**
@@ -50,100 +49,77 @@ export function useNpcData(
   npcId: number,
   hookOptions: UseNpcDataOptions = {}
 ) {
-  // Extract primitives to avoid object reference issues in dependencies
   const {
     enabled = DEFAULT_OPTIONS.enabled,
     staleTime = DEFAULT_OPTIONS.staleTime,
     gcTime = DEFAULT_OPTIONS.gcTime,
     retry = DEFAULT_OPTIONS.retry,
-    region,
-    version,
     onSuccess,
     onError,
   } = hookOptions;
 
   const options = useMemo(() => ({
-    enabled,
-    staleTime,
-    gcTime,
-    retry,
-    region,
-    version,
-    onSuccess,
-    onError,
-  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
+    enabled, staleTime, gcTime, retry, onSuccess, onError,
+  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+
+  const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
-  
-  const queryKey = generateNpcDataQueryKey(npcId, options.region, options.version);
-  
+
+  const queryKey = generateNpcDataQueryKey(npcId, activeTenant?.id);
+
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<NpcDataResult> => {
+      if (!activeTenant) {
+        return { id: npcId, cached: false, error: 'No active tenant' };
+      }
+
+      const iconUrl = getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        'npc',
+        npcId,
+      );
+
       try {
-        const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
-        
-        // Call success callback if provided
-        if (options.onSuccess && !result.error) {
-          options.onSuccess(result);
-        }
-        
+        const name = await npcsService.getNpcName(npcId, activeTenant);
+        const result: NpcDataResult = { id: npcId, name, iconUrl, cached: false };
+        if (options.onSuccess) options.onSuccess(result);
         return result;
       } catch (error) {
-        // Enhanced error logging with more context
-        console.error(`Failed to fetch NPC data for ID ${npcId}:`, error);
-        
-        // Return structured error result instead of throwing
-        const errorResult: NpcDataResult = {
+        console.error(`Failed to fetch NPC name for ID ${npcId}:`, error);
+        return {
           id: npcId,
+          iconUrl,
           cached: false,
           error: error instanceof Error ? error.message : 'Unknown error occurred',
         };
-        
-        return errorResult;
       }
     },
-    enabled: options.enabled && npcId > 0,
+    enabled: options.enabled && npcId > 0 && !!activeTenant,
     staleTime: options.staleTime,
     gcTime: options.gcTime,
     retry: (failureCount, error) => {
-      // Enhanced retry logic with better error classification
       const errorMessage = error?.message?.toLowerCase() || '';
-      
-      // Don't retry for client errors (4xx)
-      if (errorMessage.includes('404') || 
-          errorMessage.includes('not found') ||
-          errorMessage.includes('400') ||
-          errorMessage.includes('bad request') ||
-          errorMessage.includes('unauthorized') ||
-          errorMessage.includes('forbidden')) {
+      if (errorMessage.includes('404') || errorMessage.includes('not found') ||
+          errorMessage.includes('400') || errorMessage.includes('bad request')) {
         return false;
       }
-      
-      // Don't retry if we've exceeded the limit
-      if (failureCount >= options.retry) {
-        return false;
-      }
-      
-      // Log retry attempts for monitoring
-      console.warn(`Retrying NPC data fetch for ID ${npcId}, attempt ${failureCount + 1}/${options.retry}`);
-      
-      return true;
+      return failureCount < options.retry;
     },
     retryDelay: (attemptIndex) => {
-      // Exponential backoff with jitter
-      const baseDelay = 1000; // 1 second
-      const maxDelay = 10000; // 10 seconds
+      const baseDelay = 1000;
+      const maxDelay = 10000;
       const exponentialDelay = Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay);
-      const jitter = Math.random() * 1000; // Add up to 1 second of jitter
-      return exponentialDelay + jitter;
+      return exponentialDelay + Math.random() * 1000;
     },
     refetchOnWindowFocus: false,
-    refetchOnReconnect: true, // Refetch when connection is restored
-    // Keep previous data while refetching to avoid loading flicker
+    refetchOnReconnect: true,
     placeholderData: (previousData) => previousData,
   });
 
-  // Handle error callback with proper dependency management
   const handleError = options.onError;
   useEffect(() => {
     if (query.isError && query.error && handleError) {
@@ -151,22 +127,31 @@ export function useNpcData(
     }
   }, [query.isError, query.error, handleError]);
 
-  // Invalidate cache for this NPC
   const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: ['npc-data', npcId.toString()],
-    });
+    queryClient.invalidateQueries({ queryKey: ['npc-data', npcId.toString()] });
   }, [queryClient, npcId]);
 
-  // Prefetch related NPC data
   const prefetchNpc = useCallback((prefetchNpcId: number) => {
-    const prefetchKey = generateNpcDataQueryKey(prefetchNpcId, options.region, options.version);
+    if (!activeTenant) return;
+    const prefetchKey = generateNpcDataQueryKey(prefetchNpcId, activeTenant.id);
     queryClient.prefetchQuery({
       queryKey: prefetchKey,
-      queryFn: () => mapleStoryService.getNpcDataWithCache(prefetchNpcId, options.region, options.version),
+      queryFn: async () => {
+        const iconUrl = getAssetIconUrl(
+          activeTenant.id, activeTenant.attributes.region,
+          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
+          'npc', prefetchNpcId,
+        );
+        try {
+          const name = await npcsService.getNpcName(prefetchNpcId, activeTenant);
+          return { id: prefetchNpcId, name, iconUrl, cached: false };
+        } catch {
+          return { id: prefetchNpcId, iconUrl, cached: false };
+        }
+      },
       staleTime: options.staleTime,
     });
-  }, [queryClient, options.region, options.version, options.staleTime]);
+  }, [queryClient, activeTenant, options.staleTime]);
 
   return {
     ...query,
@@ -188,67 +173,45 @@ export function useNpcBatchData(
   npcIds: number[],
   hookOptions: UseNpcBatchDataOptions = {}
 ) {
-  // Extract primitives to avoid object reference issues in dependencies
   const {
     enabled = DEFAULT_OPTIONS.enabled,
     staleTime = DEFAULT_OPTIONS.staleTime,
     gcTime = DEFAULT_OPTIONS.gcTime,
     retry = DEFAULT_OPTIONS.retry,
-    region,
-    version,
     onSuccess,
     onError,
   } = hookOptions;
 
   const options = useMemo(() => ({
-    enabled,
-    staleTime,
-    gcTime,
-    retry,
-    region,
-    version,
-    onSuccess,
-    onError,
-  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
+    enabled, staleTime, gcTime, retry, onSuccess, onError,
+  }), [enabled, staleTime, gcTime, retry, onSuccess, onError]);
+
+  const { activeTenant } = useTenant();
   const queryClient = useQueryClient();
-  
-  // Create queries for each NPC ID
+
   const queries = useQueries({
     queries: npcIds.map((npcId) => ({
-      queryKey: generateNpcDataQueryKey(npcId, options.region, options.version),
+      queryKey: generateNpcDataQueryKey(npcId, activeTenant?.id),
       queryFn: async (): Promise<NpcDataResult> => {
+        if (!activeTenant) {
+          return { id: npcId, cached: false, error: 'No active tenant' };
+        }
+        const iconUrl = getAssetIconUrl(
+          activeTenant.id, activeTenant.attributes.region,
+          activeTenant.attributes.majorVersion, activeTenant.attributes.minorVersion,
+          'npc', npcId,
+        );
         try {
-          const result = await mapleStoryService.getNpcDataWithCache(npcId, options.region, options.version);
-          
-          // Ensure we return a valid result even if the API call partially fails
-          const validResult: NpcDataResult = {
-            id: npcId,
-            cached: result.cached || false,
-          };
-          
-          if (typeof result.name === 'string') {
-            validResult.name = result.name;
-          }
-          
-          if (typeof result.iconUrl === 'string') {
-            validResult.iconUrl = result.iconUrl;
-          }
-          
-          if (result.error) {
-            validResult.error = result.error;
-          }
-          
-          return validResult;
+          const name = await npcsService.getNpcName(npcId, activeTenant);
+          return { id: npcId, name, iconUrl, cached: false };
         } catch (error) {
-          console.error(`Failed to fetch NPC data for ID ${npcId}:`, error);
           return {
-            id: npcId,
-            cached: false,
-            error: error instanceof Error ? error.message : 'Unknown error occurred',
+            id: npcId, iconUrl, cached: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
           };
         }
       },
-      enabled: options.enabled && npcId > 0,
+      enabled: options.enabled && npcId > 0 && !!activeTenant,
       staleTime: options.staleTime,
       gcTime: options.gcTime,
       retry: (failureCount: number, error: Error) => {
@@ -262,7 +225,6 @@ export function useNpcBatchData(
     })),
   });
 
-  // Aggregate results - memoize to prevent infinite loops
   const allData = useMemo(
     () => queries.map(query => query.data).filter(Boolean) as NpcDataResult[],
     [queries]
@@ -275,7 +237,6 @@ export function useNpcBatchData(
     [queries]
   );
 
-  // Handle success callback with proper dependency management
   const handleSuccess = options.onSuccess;
   useEffect(() => {
     if (isSuccess && allData.length === npcIds.length && handleSuccess) {
@@ -283,7 +244,6 @@ export function useNpcBatchData(
     }
   }, [isSuccess, allData.length, npcIds.length, handleSuccess, allData]);
 
-  // Handle error callback with proper dependency management
   const handleError = options.onError;
   useEffect(() => {
     if (isError && errors.length > 0 && errors[0] && handleError) {
@@ -291,12 +251,9 @@ export function useNpcBatchData(
     }
   }, [isError, errors.length, errors, handleError]);
 
-  // Batch invalidate
   const invalidateAll = useCallback(() => {
     npcIds.forEach(npcId => {
-      queryClient.invalidateQueries({
-        queryKey: ['npc-data', npcId.toString()],
-      });
+      queryClient.invalidateQueries({ queryKey: ['npc-data', npcId.toString()] });
     });
   }, [queryClient, npcIds]);
 
@@ -320,7 +277,6 @@ export function useNpcDataCache() {
   const getCacheStats = useCallback(() => {
     const cache = queryClient.getQueryCache();
     const npcDataQueries = cache.findAll({ queryKey: ['npc-data'] });
-    
     return {
       totalQueries: npcDataQueries.length,
       activeQueries: npcDataQueries.filter(q => q.state.status === 'success').length,
@@ -331,200 +287,11 @@ export function useNpcDataCache() {
 
   const clearCache = useCallback((npcId?: number) => {
     if (npcId) {
-      queryClient.removeQueries({
-        queryKey: ['npc-data', npcId.toString()],
-      });
+      queryClient.removeQueries({ queryKey: ['npc-data', npcId.toString()] });
     } else {
-      queryClient.removeQueries({
-        queryKey: ['npc-data'],
-      });
+      queryClient.removeQueries({ queryKey: ['npc-data'] });
     }
   }, [queryClient]);
 
-  const warmCache = useCallback(async (
-    npcIds: number[],
-    region?: string,
-    version?: string
-  ) => {
-    const warmupPromises = npcIds.map(npcId => {
-      const queryKey = generateNpcDataQueryKey(npcId, region, version);
-      
-      return queryClient.prefetchQuery({
-        queryKey,
-        queryFn: () => mapleStoryService.getNpcDataWithCache(npcId, region, version),
-        staleTime: DEFAULT_OPTIONS.staleTime,
-      });
-    });
-
-    return Promise.allSettled(warmupPromises);
-  }, [queryClient]);
-
-  return {
-    getCacheStats,
-    clearCache,
-    warmCache,
-  };
-}
-
-/**
- * Hook for preloading NPC data
- */
-export function useNpcDataPreloader() {
-  const queryClient = useQueryClient();
-
-  const preloadNpcData = useCallback(async (
-    npcs: Array<{
-      npcId: number;
-      region?: string;
-      version?: string;
-    }>
-  ) => {
-    const preloadPromises = npcs.map(({ npcId, region, version }) => {
-      const queryKey = generateNpcDataQueryKey(npcId, region, version);
-      
-      return queryClient.prefetchQuery({
-        queryKey,
-        queryFn: () => mapleStoryService.getNpcDataWithCache(npcId, region, version),
-        staleTime: DEFAULT_OPTIONS.staleTime,
-      });
-    });
-
-    return Promise.allSettled(preloadPromises);
-  }, [queryClient]);
-
-  return {
-    preloadNpcData,
-  };
-}
-
-/**
- * Optimized hook for batch NPC data fetching with debouncing and intelligent caching
- */
-export function useOptimizedNpcBatchData(
-  npcIds: number[],
-  hookOptions: UseNpcBatchDataOptions = {}
-) {
-  // Extract primitives to avoid object reference issues in dependencies
-  const {
-    enabled = DEFAULT_OPTIONS.enabled,
-    staleTime = DEFAULT_OPTIONS.staleTime,
-    gcTime = DEFAULT_OPTIONS.gcTime,
-    retry = DEFAULT_OPTIONS.retry,
-    region,
-    version,
-    onSuccess,
-    onError,
-  } = hookOptions;
-
-  const options = useMemo(() => ({
-    enabled,
-    staleTime,
-    gcTime,
-    retry,
-    region,
-    version,
-    onSuccess,
-    onError,
-  }), [enabled, staleTime, gcTime, retry, region, version, onSuccess, onError]);
-  const queryClient = useQueryClient();
-  
-  // Debounced batch fetcher to reduce API calls
-  const batchFetch = useCallback(async (ids: number[]) => {
-    try {
-      // Increase batch size for better performance
-      const results = await mapleStoryService.getNpcDataBatch(ids, options.region, options.version, 20);
-      
-      console.log(`Fetched metadata for ${results.length} NPCs out of ${ids.length} requested using region: ${options.region}, version: ${options.version}`);
-      
-      // Cache individual results for future single requests
-      results.forEach((result) => {
-        if (result && result.id) {
-          const queryKey = generateNpcDataQueryKey(result.id, options.region, options.version);
-          queryClient.setQueryData(queryKey, {
-            ...result,
-            name: typeof result.name === 'string' ? result.name : undefined,
-            iconUrl: typeof result.iconUrl === 'string' ? result.iconUrl : undefined,
-          });
-        }
-      });
-      
-      // Log any NPCs that failed to fetch
-      const failedNpcs = results.filter(r => r.error);
-      if (failedNpcs.length > 0) {
-        console.warn(`Failed to fetch metadata for ${failedNpcs.length} NPCs:`, failedNpcs);
-      }
-      
-      return results;
-    } catch (error) {
-      console.error('Batch fetch failed:', error);
-      // Return empty results for failed batch
-      return ids.map(id => ({
-        id,
-        cached: false,
-        error: error instanceof Error ? error.message : 'Batch fetch failed',
-      }));
-    }
-  }, [options.region, options.version, queryClient]);
-
-  // Use a single query for the entire batch
-  const batchQueryKey = [
-    'npc-data-batch',
-    options.region || 'GMS',
-    options.version || '214',
-    npcIds.sort().join(','), // Stable key based on sorted IDs
-  ];
-
-  const query = useQuery({
-    queryKey: batchQueryKey,
-    queryFn: () => batchFetch(npcIds),
-    enabled: options.enabled && npcIds.length > 0,
-    staleTime: options.staleTime,
-    gcTime: options.gcTime,
-    retry: options.retry,
-    refetchOnWindowFocus: false,
-    refetchOnReconnect: true,
-    placeholderData: (previousData) => previousData,
-  });
-
-  // Handle success callback with proper dependency management
-  const handleSuccess = options.onSuccess;
-  useEffect(() => {
-    if (query.isSuccess && query.data && handleSuccess) {
-      handleSuccess(query.data);
-    }
-  }, [query.isSuccess, query.data, handleSuccess]);
-
-  // Handle error callback with proper dependency management
-  const handleError = options.onError;
-  useEffect(() => {
-    if (query.isError && query.error && handleError) {
-      handleError(query.error);
-    }
-  }, [query.isError, query.error, handleError]);
-
-  // Invalidate batch cache
-  const invalidateBatch = useCallback(() => {
-    queryClient.invalidateQueries({
-      queryKey: ['npc-data-batch'],
-    });
-    
-    // Also invalidate individual NPC queries
-    npcIds.forEach(npcId => {
-      queryClient.invalidateQueries({
-        queryKey: ['npc-data', npcId.toString()],
-      });
-    });
-  }, [queryClient, npcIds]);
-
-  // Memoize the data to avoid returning new empty array references
-  const data = useMemo(() => query.data || [], [query.data]);
-
-  return {
-    data,
-    isLoading: query.isLoading,
-    isError: query.isError,
-    isSuccess: query.isSuccess,
-    error: query.error,
-    invalidateBatch,
-  };
+  return { getCacheStats, clearCache };
 }

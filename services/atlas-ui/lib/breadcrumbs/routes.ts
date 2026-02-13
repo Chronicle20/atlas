@@ -140,6 +140,19 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     entityType: 'monster',
   },
 
+  // Item routes
+  {
+    pattern: '/items',
+    label: 'Items',
+    parent: '/',
+  },
+  {
+    pattern: '/items/[id]',
+    label: 'Item Details',
+    parent: '/items',
+    entityType: 'item',
+  },
+
   // Map routes
   {
     pattern: '/maps',
@@ -444,6 +457,8 @@ export const ROUTE_PATTERNS = {
   TEMPLATE_CHARACTER_TEMPLATES: '/templates/[id]/character/templates',
   MONSTERS: '/monsters',
   MONSTER_DETAIL: '/monsters/[id]',
+  ITEMS: '/items',
+  ITEM_DETAIL: '/items/[id]',
   MAPS: '/maps',
   MAP_DETAIL: '/maps/[id]',
   MAP_PORTAL_DETAIL: '/maps/[id]/portals/[portalId]',

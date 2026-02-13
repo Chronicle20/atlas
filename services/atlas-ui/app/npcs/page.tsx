@@ -1,392 +1,351 @@
 "use client"
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState, useMemo } from "react";
-import {npcsService} from "@/services/api";
-import {NPC, Commodity} from "@/types/models/npc";
+import { useCallback, useState } from "react";
+import { npcsService } from "@/services/api";
+import { type NpcSearchResult, type Commodity } from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
 import { Button } from "@/components/ui/button";
-import { RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Users, Search, Loader2, ShoppingBag, MessageCircle } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
+import { createErrorFromUnknown } from "@/types/api/errors";
+import { NpcImage } from "@/components/features/npc/NpcImage";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import dynamic from "next/dynamic";
-import {createErrorFromUnknown} from "@/types/api/errors";
-import {ErrorDisplay} from "@/components/common/ErrorDisplay";
-import {NpcPageSkeleton} from "@/components/common/skeletons/NpcPageSkeleton";
-import { VirtualizedNpcGrid } from "@/components/features/npc/VirtualizedNpcGrid";
-import { useOptimizedNpcBatchData } from "@/lib/hooks/useNpcData";
-import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";
-import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 
-// Dynamic imports for performance optimization
 const NpcDialogs = dynamic(() => import("@/components/features/npc/NpcDialogs").then(mod => ({ default: mod.NpcDialogs })), {
   loading: () => null,
   ssr: false,
 });
 
-// Dynamic import for heavy UI components that aren't immediately needed
 const AdvancedNpcActions = dynamic(() => import("@/components/features/npc/AdvancedNpcActions").then(mod => ({ default: mod.AdvancedNpcActions })), {
-  loading: () => (
-    <div className="flex items-center gap-2">
-      <div className="h-8 w-20 bg-muted rounded animate-pulse" />
-    </div>
-  ),
+  loading: () => null,
   ssr: false,
 });
 
-export default function Page() {
-    const { activeTenant } = useTenant();
-    const [npcs, setNpcs] = useState<NPC[]>([]);
-    const [npcsWithMetadata, setNpcsWithMetadata] = useState<NPC[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
-    const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
-    const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
-    const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
-    const [createShopJson, setCreateShopJson] = useState("");
-    const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
-    const [containerHeight, setContainerHeight] = useState(600);
+export default function NpcsPage() {
+  const { activeTenant } = useTenant();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [results, setResults] = useState<NpcSearchResult[]>([]);
+  const [npcStatus, setNpcStatus] = useState<Map<number, { hasShop: boolean; hasConversation: boolean }>>(new Map());
+  const [loading, setLoading] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
-    // Initialize error handler for batch operations
-    const { handleError } = useNpcErrorHandler({
-        showToasts: true,
-        logErrors: true,
-        maxToastsPerMinute: 5, // Allow more toasts for batch operations
-    });
+  // Shop management state
+  const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
+  const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
+  const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
+  const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
+  const [createShopJson, setCreateShopJson] = useState("");
+  const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
-    const fetchDataAgain = useCallback(() => {
-        if (!activeTenant) return;
+  const handleSearch = useCallback(async () => {
+    if (!activeTenant) {
+      toast.error("No tenant selected");
+      return;
+    }
 
-        setLoading(true);
+    if (!searchQuery.trim()) {
+      toast.error("Please enter a search term");
+      return;
+    }
 
+    setLoading(true);
+    setHasSearched(true);
+
+    try {
+      const data = await npcsService.searchNpcs(searchQuery.trim(), activeTenant);
+      setResults(data);
+
+      if (data.length === 0) {
+        toast.info("No NPCs found matching your search");
+      } else {
+        // Lazy load shop/conversation status
+        setStatusLoading(true);
         npcsService.getAllNPCs(activeTenant)
-            .then((npcData) => {
-                setNpcs(npcData);
-            })
-            .catch((err: unknown) => {
-                const errorInfo = createErrorFromUnknown(err, "Failed to fetch NPCs");
-                setError(errorInfo.message);
-            })
-            .finally(() => setLoading(false));
-    }, [activeTenant]);
-
-    // Extract NPC IDs for batch data fetching
-    const npcIds = useMemo(() => npcs.map(npc => npc.id), [npcs]);
-    
-    // Memoize batch data options to prevent unnecessary re-fetching
-    const batchDataOptions = useMemo(() => ({
-        enabled: npcIds.length > 0,
-        staleTime: 30 * 60 * 1000, // 30 minutes
-        region: activeTenant?.attributes?.region || 'GMS',
-        version: activeTenant?.attributes?.majorVersion?.toString() || '214',
-        onError: (error: Error) => {
-            // Handle error without dependency on handleError function
-            console.error('Batch metadata fetch error:', error);
-        },
-    }), [npcIds.length, activeTenant?.attributes?.region, activeTenant?.attributes?.majorVersion]);
-    
-    // Fetch NPC metadata (names and icons) in batch using optimized hook
-    const { 
-        data: npcDataResults, 
-        isLoading: isMetadataLoading, 
-        error: metadataError,
-        invalidateBatch: refetchMetadata 
-    } = useOptimizedNpcBatchData(npcIds, batchDataOptions);
-
-    // Merge original NPC data with fetched metadata
-    useEffect(() => {
-        if (!npcs || npcs.length === 0) {
-            // Only update if not already empty to avoid infinite loops
-            setNpcsWithMetadata(prev => prev.length === 0 ? prev : []);
-            return;
-        }
-
-        // If metadata is still loading and we have no results yet, show NPCs without metadata
-        if (isMetadataLoading && (!npcDataResults || npcDataResults.length === 0)) {
-            // Only update if different to avoid unnecessary re-renders
-            setNpcsWithMetadata(prev => {
-                if (prev.length === npcs.length && prev.every((p, i) => p.id === npcs[i]?.id)) {
-                    return prev;
-                }
-                return npcs;
+          .then((allNpcs) => {
+            const statusMap = new Map<number, { hasShop: boolean; hasConversation: boolean }>();
+            allNpcs.forEach(npc => {
+              statusMap.set(npc.id, { hasShop: npc.hasShop, hasConversation: npc.hasConversation });
             });
-            return;
-        }
+            setNpcStatus(statusMap);
+          })
+          .catch((err) => {
+            console.error("Failed to load NPC status:", err);
+          })
+          .finally(() => setStatusLoading(false));
+      }
+    } catch (err: unknown) {
+      const errorInfo = createErrorFromUnknown(err, "Failed to search NPCs");
+      toast.error(errorInfo.message);
+    } finally {
+      setLoading(false);
+    }
+  }, [activeTenant, searchQuery]);
 
-        const updatedNpcs: NPC[] = npcs.map(npc => {
-            // Find metadata for this NPC
-            const metadata = npcDataResults?.find(result => 
-                result && result.id === npc.id
-            );
-            
-            // Apply metadata if available (even if partially successful)
-            if (metadata) {
-                const updatedNpc = { ...npc };
-                
-                // Only update name if it's a valid string
-                if ('name' in metadata && metadata.name && typeof metadata.name === 'string') {
-                    updatedNpc.name = metadata.name;
-                }
-                
-                // Only update iconUrl if it's a valid string
-                if ('iconUrl' in metadata && metadata.iconUrl && typeof metadata.iconUrl === 'string') {
-                    updatedNpc.iconUrl = metadata.iconUrl;
-                }
-                
-                return updatedNpc;
-            }
-            
-            // Return original NPC if no metadata found
-            return npc;
-        });
-        
-        setNpcsWithMetadata(updatedNpcs);
-        
-        // Log statistics for debugging
-        const npcsWithNames = updatedNpcs.filter(n => n.name).length;
-        const npcsWithIcons = updatedNpcs.filter(n => n.iconUrl).length;
-        console.log(`NPCs updated: ${updatedNpcs.length} total, ${npcsWithNames} with names, ${npcsWithIcons} with icons`);
-    }, [npcs, npcDataResults, isMetadataLoading]);
+  const handleClear = () => {
+    setSearchQuery("");
+    setResults([]);
+    setNpcStatus(new Map());
+    setHasSearched(false);
+  };
 
-    // Handle metadata errors separately
-    useEffect(() => {
-        if (metadataError) {
-            // Log errors for debugging without causing re-renders
-            console.error('Metadata fetch error:', metadataError);
-        }
-    }, [metadataError]); // Safe to depend on error object
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
-    const handleCreateShop = async () => {
-        if (!activeTenant) return;
+  const handleCreateShop = async () => {
+    if (!activeTenant) return;
 
-        try {
-            // Send the entire JSON as is to the server
-            const jsonData = JSON.parse(createShopJson);
+    try {
+      const jsonData = JSON.parse(createShopJson);
 
-            if (!jsonData.data || !jsonData.data.attributes || !jsonData.data.attributes.npcId) {
-                toast.error("Invalid JSON format. Missing npcId in data.attributes");
-                return;
-            }
+      if (!jsonData.data || !jsonData.data.attributes || !jsonData.data.attributes.npcId) {
+        toast.error("Invalid JSON format. Missing npcId in data.attributes");
+        return;
+      }
 
-            const npcId = parseInt(jsonData.data.attributes.npcId);
-            if (isNaN(npcId)) {
-                toast.error("Please provide a valid NPC ID in the JSON");
-                return;
-            }
+      const npcId = parseInt(jsonData.data.attributes.npcId);
+      if (isNaN(npcId)) {
+        toast.error("Please provide a valid NPC ID in the JSON");
+        return;
+      }
 
-            const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
-            const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
-                method: "POST",
-                headers: tenantHeaders(activeTenant),
-                body: createShopJson
-            });
+      const rootUrl = process.env.NEXT_PUBLIC_ROOT_API_URL || window.location.origin;
+      const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
+        method: "POST",
+        headers: tenantHeaders(activeTenant),
+        body: createShopJson
+      });
 
-            if (!response.ok) {
-                throw new Error("Failed to create shop.");
-            }
-            await response.json();
-            toast.success("Shop created successfully");
-            setIsCreateShopDialogOpen(false);
-            setCreateShopJson("");
-            fetchDataAgain();
-        } catch (err: unknown) {
-            toast.error("Failed to create shop: " + (err instanceof Error ? err.message : String(err)));
-        }
-    };
+      if (!response.ok) {
+        throw new Error("Failed to create shop.");
+      }
+      await response.json();
+      toast.success("Shop created successfully");
+      setIsCreateShopDialogOpen(false);
+      setCreateShopJson("");
+    } catch (err: unknown) {
+      toast.error("Failed to create shop: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
-    const handleDeleteAllShops = async () => {
-        if (!activeTenant) return;
+  const handleDeleteAllShops = async () => {
+    if (!activeTenant) return;
 
-        try {
-            await npcsService.deleteAllShops(activeTenant);
-            toast.success("All shops deleted successfully");
-            setIsDeleteAllShopsDialogOpen(false);
-            fetchDataAgain();
-        } catch (err: unknown) {
-            toast.error("Failed to delete all shops: " + (err instanceof Error ? err.message : String(err)));
-        }
-    };
+    try {
+      await npcsService.deleteAllShops(activeTenant);
+      toast.success("All shops deleted successfully");
+      setIsDeleteAllShopsDialogOpen(false);
+    } catch (err: unknown) {
+      toast.error("Failed to delete all shops: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
-    const handleBulkUpdateShop = async () => {
-        if (!activeTenant || !selectedNpcId) return;
+  const handleBulkUpdateShop = async () => {
+    if (!activeTenant || !selectedNpcId) return;
 
-        try {
-            const jsonData = JSON.parse(bulkUpdateShopJson);
+    try {
+      const jsonData = JSON.parse(bulkUpdateShopJson);
 
-            // Extract commodities from the included array if available
-            let commoditiesToUpdate: Commodity[] = [];
+      let commoditiesToUpdate: Commodity[] = [];
+      if (jsonData.included && jsonData.included.length > 0) {
+        commoditiesToUpdate = jsonData.included;
+      } else if (jsonData.data.included && jsonData.data.included.length > 0) {
+        commoditiesToUpdate = jsonData.data.included;
+      }
 
-            // Check for commodities in the root level included array (standard JSON:API format)
-            if (jsonData.included && jsonData.included.length > 0) {
-                commoditiesToUpdate = jsonData.included;
-            }
-            // Fallback to check for commodities in data.included (alternative format)
-            else if (jsonData.data.included && jsonData.data.included.length > 0) {
-                commoditiesToUpdate = jsonData.data.included;
-            }
+      const rechargerValue = jsonData.data.attributes?.recharger;
 
-            // Get recharger value from JSON data if available
-            const rechargerValue = jsonData.data.attributes?.recharger;
+      await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, activeTenant, rechargerValue);
+      setIsBulkUpdateShopDialogOpen(false);
+      setBulkUpdateShopJson("");
+      toast.success("Shop updated successfully");
+    } catch (err: unknown) {
+      toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
+    }
+  };
 
-            await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, activeTenant, rechargerValue);
-            setIsBulkUpdateShopDialogOpen(false);
-            setBulkUpdateShopJson("");
-            fetchDataAgain();
-            toast.success("Shop updated successfully");
-        } catch (err: unknown) {
-            toast.error("Failed to update shop: " + (err instanceof Error ? err.message : String(err)));
-        }
-    };
-
-    useEffect(() => {
-        fetchDataAgain();
-    }, [activeTenant, fetchDataAgain]);
-
-    // Prevent body scrolling when this page is mounted
-    useEffect(() => {
-        // Save the original styles
-        const originalOverflow = document.documentElement.style.overflow;
-
-        // Apply overflow: hidden to html element
-        document.documentElement.style.overflow = 'hidden';
-
-        // Cleanup function to restore original styles when component unmounts
-        return () => {
-            document.documentElement.style.overflow = originalOverflow;
-        };
-    }, []);
-
-    // Calculate container height dynamically for virtual scrolling
-    useEffect(() => {
-        const calculateHeight = () => {
-            // Calculate available height: viewport height - header - padding - controls
-            const viewportHeight = window.innerHeight;
-            const headerHeight = 64; // Approximate header height
-            const paddingAndControls = 200; // Padding, title, controls space
-            const availableHeight = viewportHeight - headerHeight - paddingAndControls;
-            setContainerHeight(Math.max(400, availableHeight)); // Minimum 400px
-        };
-
-        calculateHeight();
-        window.addEventListener('resize', calculateHeight);
-        return () => window.removeEventListener('resize', calculateHeight);
-    }, []);
-
-    if (loading) return <NpcPageSkeleton />;
-    if (error) return <ErrorDisplay error={error} retry={fetchDataAgain} />;
-
-    return (
-        <div className="flex flex-col flex-1 space-y-6 p-10 pb-4 h-[calc(100vh-4rem)] overflow-hidden">
-            <div className="flex flex-col space-y-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
-                    {isMetadataLoading && npcDataResults && npcDataResults.length > 0 && (
-                        <div className="text-sm text-muted-foreground flex items-center gap-2">
-                            <RefreshCw className="h-3 w-3 animate-spin" />
-                            Loading metadata...
-                        </div>
-                    )}
-                </div>
-                <div className="flex items-center justify-between">
-                    <div className="flex gap-2 items-center">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={fetchDataAgain}
-                            className="hover:bg-accent cursor-pointer"
-                            title="Refresh All Data"
-                        >
-                            <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        {npcDataResults && npcDataResults.length > 0 && (
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                    refetchMetadata();
-                                    toast.info("Refreshing NPC metadata...");
-                                }}
-                                disabled={isMetadataLoading}
-                                className="hover:bg-accent cursor-pointer"
-                                title="Refresh NPC Names and Icons"
-                            >
-                                <RefreshCw className={`h-4 w-4 mr-2 ${isMetadataLoading ? 'animate-spin' : ''}`} />
-                                Refresh Metadata
-                            </Button>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <AdvancedNpcActions
-                            onCreateShop={() => setIsCreateShopDialogOpen(true)}
-                            onDeleteAllShops={() => setIsDeleteAllShopsDialogOpen(true)}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <div className="overflow-auto h-[calc(100vh-10rem)] pr-4">
-                <ErrorBoundary
-                    fallback={({ error, resetError }) => (
-                        <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                            <div className="text-center">
-                                <h3 className="text-lg font-medium text-destructive">Error Loading NPCs</h3>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    {error.message || 'An unexpected error occurred while loading the NPC grid.'}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button onClick={resetError} variant="outline">
-                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                    Try Again
-                                </Button>
-                                <Button onClick={fetchDataAgain} variant="default">
-                                    <RefreshCw className="h-4 w-4 mr-2" />
-                                    Reload All Data
-                                </Button>
-                            </div>
-                        </div>
-                    )}
-                    onError={(error, errorInfo) => {
-                        handleError(error, 0, { 
-                            context: 'npc_grid_rendering',
-                            componentStack: errorInfo.componentStack,
-                        });
-                    }}
-                >
-                    <VirtualizedNpcGrid
-                        npcs={npcsWithMetadata}
-                        isLoading={loading || (isMetadataLoading && npcs.length === 0)}
-                        containerHeight={containerHeight - 80} // Account for padding and headers
-                        onBulkUpdateShop={(npcId) => {
-                            setSelectedNpcId(npcId);
-                            setIsBulkUpdateShopDialogOpen(true);
-                        }}
-                        enableVirtualization={true}
-                        itemHeight={200} // Approximate height based on NPC card design
-                        overscan={2} // Render 2 extra rows for smooth scrolling
-                    />
-                </ErrorBoundary>
-            </div>
-
-            {/* Dynamic dialogs - only loaded when needed */}
-            <NpcDialogs
-                isCreateShopDialogOpen={isCreateShopDialogOpen}
-                setIsCreateShopDialogOpen={setIsCreateShopDialogOpen}
-                isDeleteAllShopsDialogOpen={isDeleteAllShopsDialogOpen}
-                setIsDeleteAllShopsDialogOpen={setIsDeleteAllShopsDialogOpen}
-                isBulkUpdateShopDialogOpen={isBulkUpdateShopDialogOpen}
-                setIsBulkUpdateShopDialogOpen={setIsBulkUpdateShopDialogOpen}
-                createShopJson={createShopJson}
-                setCreateShopJson={setCreateShopJson}
-                bulkUpdateShopJson={bulkUpdateShopJson}
-                setBulkUpdateShopJson={setBulkUpdateShopJson}
-                handleCreateShop={handleCreateShop}
-                handleDeleteAllShops={handleDeleteAllShops}
-                handleBulkUpdateShop={handleBulkUpdateShop}
-            />
-
-            <Toaster richColors />
+  return (
+    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Users className="h-6 w-6" />
+          <h2 className="text-2xl font-bold tracking-tight">NPCs</h2>
         </div>
-    );
+        <AdvancedNpcActions
+          onCreateShop={() => setIsCreateShopDialogOpen(true)}
+          onDeleteAllShops={() => setIsDeleteAllShopsDialogOpen(true)}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Search NPCs</CardTitle>
+          <CardDescription>
+            Search for NPCs by ID or name. Results are limited to 50 entries.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 items-end">
+            <div className="flex-1">
+              <Input
+                placeholder="Enter NPC ID or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleKeyDown}
+              />
+            </div>
+            <Button onClick={handleSearch} disabled={loading}>
+              {loading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="mr-2 h-4 w-4" />
+              )}
+              Search
+            </Button>
+            <Button variant="outline" onClick={handleClear} disabled={loading}>
+              Clear
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {hasSearched && (
+        <Card className="flex-1 min-h-0 flex flex-col">
+          <CardHeader className="shrink-0">
+            <CardTitle>
+              Results
+              {results.length > 0 && (
+                <span className="ml-2 text-muted-foreground font-normal">
+                  ({results.length} {results.length === 1 ? "NPC" : "NPCs"})
+                </span>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex-1 min-h-0 flex flex-col">
+            {results.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No NPCs found matching your search criteria.
+              </div>
+            ) : (
+              <div className="rounded-md border flex-1 min-h-0 overflow-auto">
+                <Table>
+                  <TableHeader className="sticky top-0 bg-background z-10">
+                    <TableRow>
+                      <TableHead className="w-10">Icon</TableHead>
+                      <TableHead>NPC ID</TableHead>
+                      <TableHead>Name</TableHead>
+                      <TableHead className="w-20">Shop</TableHead>
+                      <TableHead className="w-28">Conversation</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {results.map((npc) => {
+                      const status = npcStatus.get(npc.id);
+                      const iconUrl = activeTenant ? getAssetIconUrl(
+                        activeTenant.id,
+                        activeTenant.attributes.region,
+                        activeTenant.attributes.majorVersion,
+                        activeTenant.attributes.minorVersion,
+                        'npc',
+                        npc.id,
+                      ) : undefined;
+                      return (
+                        <TableRow key={npc.id}>
+                          <TableCell>
+                            <NpcImage
+                              npcId={npc.id}
+                              name={npc.name}
+                              iconUrl={iconUrl}
+                              size={32}
+                              lazy={true}
+                              showRetryButton={false}
+                              maxRetries={1}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/npcs/${npc.id}`} className="font-mono text-primary hover:underline">
+                              {npc.id}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            <Link href={`/npcs/${npc.id}`} className="font-medium hover:underline">
+                              {npc.name}
+                            </Link>
+                          </TableCell>
+                          <TableCell>
+                            {statusLoading ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                            ) : status?.hasShop ? (
+                              <Link href={`/npcs/${npc.id}/shop`}>
+                                <Badge variant="default" className="cursor-pointer">
+                                  <ShoppingBag className="h-3 w-3 mr-1" />
+                                  Shop
+                                </Badge>
+                              </Link>
+                            ) : status ? (
+                              <Badge variant="outline" className="text-muted-foreground">None</Badge>
+                            ) : null}
+                          </TableCell>
+                          <TableCell>
+                            {statusLoading ? (
+                              <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                            ) : status?.hasConversation ? (
+                              <Link href={`/npcs/${npc.id}/conversations`}>
+                                <Badge variant="default" className="cursor-pointer">
+                                  <MessageCircle className="h-3 w-3 mr-1" />
+                                  Chat
+                                </Badge>
+                              </Link>
+                            ) : status ? (
+                              <Badge variant="outline" className="text-muted-foreground">None</Badge>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <NpcDialogs
+        isCreateShopDialogOpen={isCreateShopDialogOpen}
+        setIsCreateShopDialogOpen={setIsCreateShopDialogOpen}
+        isDeleteAllShopsDialogOpen={isDeleteAllShopsDialogOpen}
+        setIsDeleteAllShopsDialogOpen={setIsDeleteAllShopsDialogOpen}
+        isBulkUpdateShopDialogOpen={isBulkUpdateShopDialogOpen}
+        setIsBulkUpdateShopDialogOpen={setIsBulkUpdateShopDialogOpen}
+        createShopJson={createShopJson}
+        setCreateShopJson={setCreateShopJson}
+        bulkUpdateShopJson={bulkUpdateShopJson}
+        setBulkUpdateShopJson={setBulkUpdateShopJson}
+        handleCreateShop={handleCreateShop}
+        handleDeleteAllShops={handleDeleteAllShops}
+        handleBulkUpdateShop={handleBulkUpdateShop}
+      />
+
+      <Toaster richColors />
+    </div>
+  );
 }

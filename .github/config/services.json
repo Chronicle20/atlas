@@ -22,6 +22,12 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-assets",
+      "type": "static-service",
+      "path": "services/atlas-assets",
+      "docker_image": "ghcr.io/chronicle20/atlas-assets/atlas-assets"
+    },
+    {
       "name": "atlas-ban",
       "type": "go-service",
       "path": "services/atlas-ban",

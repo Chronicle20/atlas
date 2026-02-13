@@ -13,7 +13,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ExtractIcons extracts domain imagery (NPC, mob, item, skill, reactor icons) to the output directory.
+// ExtractIcons extracts domain imagery (NPC, mob, item, skill, reactor, equipment icons) to the output directory.
 // Output structure: {outputDir}/{category}/{id}/icon.png
 func ExtractIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	name := strings.ToLower(f.Name())
@@ -29,6 +29,8 @@ func ExtractIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 		return extractItemIcons(l, f, outputDir)
 	case name == "skill":
 		return extractSkillIcons(l, f, outputDir)
+	case name == "character":
+		return extractEquipmentIcons(l, f, outputDir)
 	default:
 		return nil
 	}
@@ -47,7 +49,7 @@ func extractEntityIcons(l logrus.FieldLogger, f *wz.File, outputDir, category st
 
 	count := 0
 	for _, img := range root.Images() {
-		entityId := img.Name()
+		entityId := normalizeId(img.Name())
 		props := img.Properties()
 		if len(props) == 0 {
 			continue
@@ -89,7 +91,7 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 			// Check if this image directly has info/icon (single-item images like Pet)
 			cp := findInfoIcon(props)
 			if cp != nil {
-				if err := writeCanvasPng(l, f, cp, outputDir, "item", img.Name()); err != nil {
+				if err := writeCanvasPng(l, f, cp, outputDir, "item", normalizeId(img.Name())); err != nil {
 					l.WithError(err).Warnf("Unable to extract icon for item [%s].", img.Name())
 				} else {
 					count++
@@ -107,7 +109,7 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 				if cp == nil {
 					continue
 				}
-				if err := writeCanvasPng(l, f, cp, outputDir, "item", sub.Name()); err != nil {
+				if err := writeCanvasPng(l, f, cp, outputDir, "item", normalizeId(sub.Name())); err != nil {
 					l.WithError(err).Warnf("Unable to extract icon for item [%s].", sub.Name())
 					continue
 				}
@@ -145,7 +147,7 @@ func extractSkillIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error
 			if !ok {
 				continue
 			}
-			skillId := sub.Name()
+			skillId := normalizeId(sub.Name())
 			cp := findSubCanvas(sub.Children(), "icon")
 			if cp == nil {
 				continue
@@ -255,6 +257,49 @@ func findFirstCanvas(props []property.Property) *property.CanvasProperty {
 		}
 	}
 	return nil
+}
+
+// extractEquipmentIcons extracts equipment icons from Character.wz.
+// Equipment items are organized in subdirectories by type (Weapon, Cap, Coat, etc.).
+// Each .img file represents a single equipment item with an info/icon canvas.
+func extractEquipmentIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
+	root := f.Root()
+	if root == nil {
+		return nil
+	}
+
+	count := 0
+	for _, dir := range root.Directories() {
+		for _, img := range dir.Images() {
+			props := img.Properties()
+			if len(props) == 0 {
+				continue
+			}
+
+			cp := findInfoIcon(props)
+			if cp == nil {
+				continue
+			}
+
+			if err := writeCanvasPng(l, f, cp, outputDir, "item", normalizeId(img.Name())); err != nil {
+				l.WithError(err).Warnf("Unable to extract icon for equipment [%s].", img.Name())
+				continue
+			}
+			count++
+		}
+	}
+	l.Infof("Extracted [%d] equipment icons.", count)
+	return nil
+}
+
+// normalizeId strips leading zeros from a WZ entity ID to produce a numeric string
+// that matches how the web UI formats entity IDs (as numbers without zero-padding).
+func normalizeId(id string) string {
+	trimmed := strings.TrimLeft(id, "0")
+	if trimmed == "" {
+		return "0"
+	}
+	return trimmed
 }
 
 var canvasDiagCount int32

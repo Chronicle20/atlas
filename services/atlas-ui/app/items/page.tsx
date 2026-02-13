@@ -20,6 +20,9 @@ import {
 } from "@/components/ui/table";
 import { Package, Search, Loader2 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
 
 export default function ItemsPage() {
   const { activeTenant } = useTenant();
@@ -130,14 +133,38 @@ export default function ItemsPage() {
                 <Table>
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
+                      <TableHead className="w-10">Icon</TableHead>
                       <TableHead>Item ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {items.map((item) => (
+                    {items.map((item) => {
+                      const iconUrl = activeTenant ? getAssetIconUrl(
+                        activeTenant.id,
+                        activeTenant.attributes.region,
+                        activeTenant.attributes.majorVersion,
+                        activeTenant.attributes.minorVersion,
+                        'item',
+                        parseInt(item.id),
+                      ) : '';
+                      return (
                       <TableRow key={item.id}>
+                        <TableCell>
+                          {iconUrl ? (
+                            <Image
+                              src={iconUrl}
+                              alt={item.name}
+                              width={32}
+                              height={32}
+                              unoptimized={shouldUnoptimizeImageSrc(iconUrl)}
+                              className="object-contain"
+                            />
+                          ) : (
+                            <Package className="h-8 w-8 text-muted-foreground" />
+                          )}
+                        </TableCell>
                         <TableCell>
                           <Link href={`/items/${item.id}`} className="font-mono text-primary hover:underline">
                             {item.id}
@@ -154,7 +181,8 @@ export default function ItemsPage() {
                           </Badge>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

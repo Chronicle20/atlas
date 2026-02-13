@@ -1,7 +1,6 @@
 package data
 
 import (
-	"archive/zip"
 	"atlas-data/cash"
 	"atlas-data/characters/templates"
 	"atlas-data/commodity"
@@ -22,9 +21,7 @@ import (
 	"atlas-data/skill"
 	"context"
 	"fmt"
-	"io"
 	"io/fs"
-	"mime/multipart"
 	"os"
 	"path/filepath"
 	"sync"
@@ -55,95 +52,26 @@ const (
 
 var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair}
 
-func ProcessZip(l logrus.FieldLogger) func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
-	return func(ctx context.Context) func(file multipart.File, handler *multipart.FileHeader) error {
+func ProcessData(l logrus.FieldLogger) func(ctx context.Context) error {
+	return func(ctx context.Context) error {
 		t := tenant.MustFromContext(ctx)
-		return func(file multipart.File, handler *multipart.FileHeader) error {
-			uploadDir := os.Getenv("ZIP_DIR")
+		dataDir := os.Getenv("ZIP_DIR")
+		path := filepath.Join(dataDir, t.Id().String(), t.Region(), fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion()))
 
-			// Save ZIP file to disk
-			tenantDir := filepath.Join(uploadDir, t.Id().String(), t.Region())
-			zipPath := filepath.Join(tenantDir, handler.Filename)
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			return fmt.Errorf("data path does not exist: %s", path)
+		}
 
-			if err := os.MkdirAll(tenantDir, os.ModePerm); err != nil {
-				return err
-			}
+		l.Infof("Processing data from [%s] for tenant [%s].", path, t.Id().String())
 
-			outFile, err := os.Create(zipPath)
+		for _, wn := range Workers {
+			err := InstructWorker(l)(ctx)(wn, path)
 			if err != nil {
 				return err
 			}
-			defer outFile.Close()
-
-			// Stream file contents to disk
-			_, err = io.Copy(outFile, file)
-			if err != nil {
-				return err
-			}
-
-			err = unzip(zipPath, tenantDir)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to unzip [%s].", zipPath)
-				return err
-			}
-
-			l.Debugf("Unzipped to [%s].", zipPath)
-
-			for _, wn := range Workers {
-				err = InstructWorker(l)(ctx)(wn, filepath.Join(tenantDir, fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())))
-				if err != nil {
-					return err
-				}
-			}
-			return nil
 		}
+		return nil
 	}
-}
-
-func unzip(zipPath, dest string) error {
-	// Open the ZIP file
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	// Ensure destination directory exists
-	if err := os.MkdirAll(dest, os.ModePerm); err != nil {
-		return err
-	}
-
-	// Extract each file
-	for _, file := range r.File {
-		filePath := filepath.Join(dest, file.Name)
-
-		// Ensure parent directories exist
-		if file.FileInfo().IsDir() {
-			os.MkdirAll(filePath, os.ModePerm)
-			continue
-		} else {
-			os.MkdirAll(filepath.Dir(filePath), os.ModePerm)
-		}
-
-		// Extract file contents
-		destFile, err := os.Create(filePath)
-		if err != nil {
-			return err
-		}
-		defer destFile.Close()
-
-		srcFile, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer srcFile.Close()
-
-		_, err = io.Copy(destFile, srcFile)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func InstructWorker(l logrus.FieldLogger) func(ctx context.Context) func(workerName string, path string) error {

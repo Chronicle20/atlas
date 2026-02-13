@@ -78,6 +78,8 @@ collections:
     path: "..\\..\\services\\atlas-transports\\.bruno"
   - name: "atlas-world"
     path: "..\\..\\services\\atlas-world\\.bruno"
+  - name: "atlas-wz-extractor"
+    path: "..\\..\\services\\atlas-wz-extractor\\.bruno"
 
 specs:
 

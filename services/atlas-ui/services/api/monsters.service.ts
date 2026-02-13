@@ -16,6 +16,12 @@ class MonstersService extends BaseService {
     api.setTenant(tenant);
     return this.getById<MonsterData>(id, options);
   }
+
+  async getMonsterName(id: string, tenant: Tenant): Promise<string> {
+    api.setTenant(tenant);
+    const monster = await this.getById<MonsterData>(id);
+    return monster.attributes.name;
+  }
 }
 
 export const monstersService = new MonstersService();

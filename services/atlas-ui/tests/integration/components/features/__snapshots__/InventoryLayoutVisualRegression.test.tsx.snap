@@ -359,7 +359,7 @@ exports[`Inventory Layout Visual Regression Tests Visual Layout Snapshots should
           data-alt="Basic Sword"
           data-height="32"
           data-priority="true"
-          data-src="https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon"
+          data-src="/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png"
           data-testid="mock-image"
           data-unoptimized="true"
           data-width="32"

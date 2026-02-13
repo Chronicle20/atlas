@@ -1,0 +1,95 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: atlas-wz-input-pv
+  labels:
+    directory: atlas-wz-input
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 10Gi
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Delete
+  nfs:
+    path: /volume1/K3S/atlas/wz-input
+    server: dev.nas.home
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-wz-input-pvc
+  namespace: atlas
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi
+  selector:
+    matchLabels:
+      directory: atlas-wz-input
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-wz-extractor
+  namespace: atlas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: atlas-wz-extractor
+  template:
+    metadata:
+      labels:
+        app: atlas-wz-extractor
+    spec:
+      containers:
+      - name: wz-extractor
+        image: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor:latest
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: atlas-env
+        env:
+        - name: LOG_LEVEL
+          value: "debug"
+        - name: INPUT_WZ_DIR
+          value: "/usr/wz-input"
+        - name: OUTPUT_XML_DIR
+          value: "/usr/data"
+        - name: OUTPUT_IMG_DIR
+          value: "/usr/assets"
+        volumeMounts:
+          - mountPath: "/usr/wz-input"
+            name: wz-input-storage
+          - mountPath: "/usr/data"
+            name: data-storage
+          - mountPath: "/usr/assets"
+            name: assets-storage
+      volumes:
+        - name: wz-input-storage
+          persistentVolumeClaim:
+            claimName: atlas-wz-input-pvc
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: atlas-data-pvc
+        - name: assets-storage
+          persistentVolumeClaim:
+            claimName: atlas-assets-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-wz-extractor
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-wz-extractor
+  ports:
+  - protocol: TCP
+    port: 8080

@@ -7,9 +7,31 @@ import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { InventoryCard } from '@/components/features/characters/InventoryCard';
-import { InventoryGrid } from '@/components/features/characters/InventoryGrid';
 import type { Asset } from '@/services/api/inventory.service';
-import type { ItemDataResult } from '@/types/models/maplestory';
+
+// Local result type matching the hook's internal interface
+interface ItemDataResult {
+  id: number;
+  name?: string;
+  iconUrl?: string;
+  cached: boolean;
+  error?: string;
+}
+
+// Mock the tenant context
+jest.mock('@/context/tenant-context', () => ({
+  useTenant: () => ({
+    activeTenant: {
+      id: 'test-tenant',
+      type: 'tenant',
+      attributes: {
+        region: 'GMS',
+        majorVersion: 83,
+        minorVersion: 1,
+      },
+    },
+  }),
+}));
 
 // Mock Next.js Image component
 jest.mock('next/image', () => {
@@ -38,13 +60,6 @@ jest.mock('next/image', () => {
   };
 });
 
-// Mock the errorLogger to avoid real logging during tests
-jest.mock('@/services/errorLogger', () => ({
-  errorLogger: {
-    logError: jest.fn().mockResolvedValue(undefined),
-  },
-}));
-
 // Mock the useItemData hook to control data loading
 const mockUseItemData = jest.fn();
 jest.mock('@/lib/hooks/useItemData', () => ({
@@ -72,7 +87,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
     // Reset all mocks
     jest.clearAllMocks();
-    
+
     // Default intersection observer mock - item should load immediately for most tests
     mockUseLazyLoad.mockReturnValue({
       shouldLoad: true,
@@ -85,16 +100,14 @@ describe('Inventory Icon Loading Integration Tests', () => {
     jest.clearAllMocks();
   });
 
-  const createAsset = (templateId: number, slot: number = -11): Asset => ({
+  const createAsset = (templateId: number, slot: number = -11) => ({
     id: `asset-${templateId}`,
-    type: 'inventory',
+    type: 'assets',
     attributes: {
-      characterId: 'test-char',
       slot,
       templateId,
-      quantity: 1,
     },
-  });
+  }) as unknown as Asset;
 
   const createWrapper = () => {
     const TestWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -109,7 +122,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Basic Sword',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -132,11 +145,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302000);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -149,14 +158,12 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const icon = screen.getByTestId('inventory-item-icon');
       expect(icon).toHaveAttribute('src', mockItemData.iconUrl);
       expect(icon).toHaveAttribute('alt', 'Basic Sword');
-      
+
       // Should have called useItemData with correct parameters
       expect(mockUseItemData).toHaveBeenCalledWith(
         1302000,
         expect.objectContaining({
           enabled: true,
-          region: 'GMS',
-          version: '214',
         })
       );
     });
@@ -165,12 +172,11 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Preloaded Sword',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
       // Mock intersection observer to not be in view initially
-      // Note: The component should still load due to shouldPreload=true
       mockUseLazyLoad.mockReturnValue({
         shouldLoad: false,
         ref: { current: null },
@@ -196,26 +202,21 @@ describe('Inventory Icon Loading Integration Tests', () => {
       render(
         <InventoryCard
           asset={asset}
-          region="GMS"
-          majorVersion={214}
           shouldPreload={true}
         />,
         { wrapper: createWrapper() }
       );
 
       // Should display the preloaded content even though not in view
-      // Note: shouldPreload=true should override shouldLoad=false
       await waitFor(() => {
         expect(screen.getByText('Preloaded Sword')).toBeInTheDocument();
       }, { timeout: 2000 });
-      
+
       // Should have called useItemData with enabled: true due to shouldPreload
       expect(mockUseItemData).toHaveBeenCalledWith(
         1302000,
         expect.objectContaining({
           enabled: true, // enabled due to shouldPreload: true
-          region: 'GMS',
-          version: '214',
         })
       );
     });
@@ -224,7 +225,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302001,
         name: 'Cached Sword',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302001/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302001/valid-item/icon.png',
         cached: true,
       };
 
@@ -246,11 +247,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302001);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -262,8 +259,6 @@ describe('Inventory Icon Loading Integration Tests', () => {
         1302001,
         expect.objectContaining({
           enabled: true,
-          region: 'GMS',
-          version: '214',
         })
       );
     });
@@ -295,11 +290,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302404);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -331,11 +322,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302500);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -348,8 +335,6 @@ describe('Inventory Icon Loading Integration Tests', () => {
         1302500,
         expect.objectContaining({
           enabled: true,
-          region: 'GMS',
-          version: '214',
         })
       );
     });
@@ -358,7 +343,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Invalid Image Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/invalid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/invalid-item/icon.png',
         cached: false,
       };
 
@@ -380,11 +365,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302000);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -424,11 +405,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302002);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -454,7 +431,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const successData = {
         id: 1302000,
         name: 'Success Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -482,11 +459,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
       const successAsset = createAsset(1302000);
       const { unmount: unmountSuccess } = render(
-        <InventoryCard
-          asset={successAsset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={successAsset} />,
         { wrapper: createWrapper() }
       );
 
@@ -514,11 +487,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
       const failureAsset = createAsset(1302404);
       render(
-        <InventoryCard
-          asset={failureAsset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={failureAsset} />,
         { wrapper: createWrapper() }
       );
 
@@ -533,7 +502,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Cached Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: true,
       };
 
@@ -555,11 +524,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302000);
 
       const { rerender } = render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -570,16 +535,12 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
       // Rerender with same props
       rerender(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />
+        <InventoryCard asset={asset} />
       );
 
       // Should still display cached data
       expect(screen.getByText('Cached Item')).toBeInTheDocument();
-      
+
       // Hook should have been called for each render
       expect(mockUseItemData).toHaveBeenCalledTimes(2);
     });
@@ -588,7 +549,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData: ItemDataResult = {
         id: 1302000,
         name: 'Lazy Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
@@ -616,11 +577,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302000);
 
       render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -632,103 +589,8 @@ describe('Inventory Icon Loading Integration Tests', () => {
         1302000,
         expect.objectContaining({
           enabled: false, // not enabled due to shouldLoad: false
-          region: 'GMS',
-          version: '214',
         })
       );
-    });
-  });
-
-  describe('Region and Version Handling', () => {
-    it('should use correct region and version parameters', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1302000,
-        name: 'Regional Item',
-        iconUrl: 'https://maplestory.io/api/JMS/83/item/1302000/valid-item/icon',
-        cached: false,
-      };
-
-      mockUseItemData.mockReturnValue({
-        data: mockItemData,
-        itemData: mockItemData,
-        name: mockItemData.name,
-        iconUrl: mockItemData.iconUrl,
-        isLoading: false,
-        hasError: false,
-        errorMessage: undefined,
-        cached: false,
-        isError: false,
-        error: null,
-        invalidate: jest.fn(),
-        prefetchItem: jest.fn(),
-      });
-
-      const asset = createAsset(1302000);
-
-      render(
-        <InventoryCard
-          asset={asset}
-          region="JMS"
-          majorVersion={83}
-        />,
-        { wrapper: createWrapper() }
-      );
-
-      expect(mockUseItemData).toHaveBeenCalledWith(
-        1302000,
-        expect.objectContaining({
-          enabled: true,
-          region: 'JMS',
-          version: '83',
-        })
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Regional Item')).toBeInTheDocument();
-      });
-    });
-
-    it('should handle missing region and version with defaults', async () => {
-      const mockItemData: ItemDataResult = {
-        id: 1302000,
-        name: 'Default Region Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
-        cached: false,
-      };
-
-      mockUseItemData.mockReturnValue({
-        data: mockItemData,
-        itemData: mockItemData,
-        name: mockItemData.name,
-        iconUrl: mockItemData.iconUrl,
-        isLoading: false,
-        hasError: false,
-        errorMessage: undefined,
-        cached: false,
-        isError: false,
-        error: null,
-        invalidate: jest.fn(),
-        prefetchItem: jest.fn(),
-      });
-
-      const asset = createAsset(1302000);
-
-      render(
-        <InventoryCard asset={asset} />,
-        { wrapper: createWrapper() }
-      );
-
-      // Check that useItemData was called (parameters may vary based on defaults)
-      expect(mockUseItemData).toHaveBeenCalledWith(
-        1302000,
-        expect.objectContaining({
-          enabled: true,
-        })
-      );
-
-      await waitFor(() => {
-        expect(screen.getByText('Default Region Item')).toBeInTheDocument();
-      });
     });
   });
 
@@ -753,11 +615,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset = createAsset(1302000);
 
       const { rerender } = render(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset} />,
         { wrapper: createWrapper() }
       );
 
@@ -769,17 +627,17 @@ describe('Inventory Icon Loading Integration Tests', () => {
         data: {
           id: 1302000,
           name: 'Loaded Item',
-          iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+          iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
           cached: false,
         },
         itemData: {
           id: 1302000,
           name: 'Loaded Item',
-          iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+          iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
           cached: false,
         },
         name: 'Loaded Item',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         isLoading: false,
         hasError: false,
         errorMessage: undefined,
@@ -792,11 +650,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
       // Trigger rerender to simulate data loading
       rerender(
-        <InventoryCard
-          asset={asset}
-          region="GMS"
-          majorVersion={214}
-        />
+        <InventoryCard asset={asset} />
       );
 
       // Should show loaded content
@@ -812,14 +666,14 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const mockItemData1: ItemDataResult = {
         id: 1302000,
         name: 'Item 1',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302000/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302000/valid-item/icon.png',
         cached: false,
       };
 
       const mockItemData2: ItemDataResult = {
         id: 1302001,
         name: 'Item 2',
-        iconUrl: 'https://maplestory.io/api/GMS/214/item/1302001/valid-item/icon',
+        iconUrl: '/api/assets/test-tenant/GMS/83.1/item/1302001/valid-item/icon.png',
         cached: false,
       };
 
@@ -846,11 +700,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
       const asset2 = createAsset(1302001);
 
       const { rerender } = render(
-        <InventoryCard
-          asset={asset1}
-          region="GMS"
-          majorVersion={214}
-        />,
+        <InventoryCard asset={asset1} />,
         { wrapper: createWrapper() }
       );
 
@@ -861,11 +711,7 @@ describe('Inventory Icon Loading Integration Tests', () => {
 
       // Rapidly change to second item
       rerender(
-        <InventoryCard
-          asset={asset2}
-          region="GMS"
-          majorVersion={214}
-        />
+        <InventoryCard asset={asset2} />
       );
 
       // Should load second item

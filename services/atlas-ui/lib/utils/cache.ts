@@ -6,20 +6,13 @@
  * Cache configuration for different resource types
  */
 export const CACHE_STRATEGIES = {
-  // MapleStory.io API responses - cache for longer periods
+  // MapleStory.io API responses (character rendering) - cache for longer periods
   MAPLESTORY_API: {
     cacheName: 'maplestory-api-v1',
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
     strategy: 'cache-first',
   },
-  
-  // NPC images - cache aggressively
-  NPC_IMAGES: {
-    cacheName: 'npc-images-v1',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    strategy: 'cache-first',
-  },
-  
+
   // Static assets
   STATIC_ASSETS: {
     cacheName: 'static-assets-v1',

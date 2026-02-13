@@ -25,8 +25,6 @@ export function MonsterTableRow({ monster }: MonsterTableRowProps) {
           maxRetries={1}
         />
       </TableCell>
-      <TableCell className="font-mono">{monster.id}</TableCell>
-      <TableCell>{name ?? "—"}</TableCell>
       <TableCell>
         <Link
           href={`/monsters/${monster.attributes.template}`}
@@ -35,6 +33,7 @@ export function MonsterTableRow({ monster }: MonsterTableRowProps) {
           {monster.attributes.template}
         </Link>
       </TableCell>
+      <TableCell>{name ?? "—"}</TableCell>
       <TableCell className="font-mono">
         ({monster.attributes.x}, {monster.attributes.y})
       </TableCell>

@@ -1,0 +1,193 @@
+Boss Rush Party Quest
+Requires at least 1 players to register. Participants must be level 10 or higher.
+Recruitment is started by talking to Agent Meow (9000037) in Exclusive Training Center (970030000).
+Exit map - Exclusive Training Center (970030000) exists.
+Temporarily added for GMS Version 72
+This is an instance based party quest.
+
+Stage 1 - Mano
+This stage takes place in Stage 1 <Mano> (970030100)
+The party must kill Mano (9500337) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 2 - Stumpy
+This stage takes place in Stage 2 <Stumpy> (970030200)
+The party must kill Stumpy (9500338) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 3 - Deo
+This stage takes place in Stage 3 <Deo> (970030300)
+The party must kill Deo (9500339) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 4 - King Slime
+This stage takes place in Stage 4 <King Slime> (970030400)
+The party must kill King Slime (9500340) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 5 - Faust
+This stage takes place in Stage 5 <Faust> (970030500)
+The party must kill Faust (9500341) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 6 - Resting Spot I
+This stage takes place in Resting Spot I (970030001)
+The party leader must talk to Agent Meow (9000037) to proceed to the next stage.
+This stage has no time limit.
+
+Stage 7 - King Clang
+This stage takes place in Stage 6 <King Clang> (970030600)
+The party must kill King Clang (9500342) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 8 - Alishar
+This stage takes place in Stage 7 <Alishar> (970030700)
+The party must kill Alishar (9500343) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 9 - Timer
+This stage takes place in Stage 8 <Timer> (970030800)
+The party must kill Timer (9500344) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 10 - Mushmom
+This stage takes place in Stage 9 <Mushmom> (970030900)
+The party must kill Mushmom (9500345) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 11 - Dyle
+This stage takes place in Stage 10 <Dyle> (970031000)
+The party must kill Dyle (9500346) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 12 - Resting Spot II
+This stage takes place in Resting Spot II (970030002)
+The party leader must talk to Agent Meow (9000037) to proceed to the next stage.
+This stage has no time limit.
+
+Stage 13 - Zeno
+This stage takes place in Stage 11 <Zeno> (970031100)
+The party must kill Zeno (9500347) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 14 - Nona-Tailed Fox
+This stage takes place in Stage 12 <Nona-Tailed Fox> (970031200)
+The party must kill Nona-Tailed Fox (9500348) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 15 - Lord Pirate
+This stage takes place in Stage 13 <Lord Pirate> (970031300)
+The party must kill Lord Pirate (9500349) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 16 - Tae Roon
+This stage takes place in Stage 14 <Tae Roon> (970031400)
+The party must kill Tae Roon (9500350) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 17 - Papa Pixie
+This stage takes place in Stage 15 <Papa Pixie> (970031500)
+The party must kill Papa Pixie (9500351) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 18 - Resting Spot III
+This stage takes place in Resting Spot III (970030003)
+The party leader must talk to Agent Meow (9000037) to proceed to the next stage.
+This stage has no time limit.
+
+Stage 19 - Priest Cat
+This stage takes place in Stage 16 <Priest Cat> (970031600)
+The party must kill Priest Cat (9500352) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 20 - Jr. Balrog
+This stage takes place in Stage 17 <Jr. Balrog> (970031700)
+The party must kill Jr. Balrog (9500353) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 21 - Frankenroid
+This stage takes place in Stage 18 <Frankenroid> (970031800)
+The party must kill Frankenroid (9500354) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 22 - Eliza
+This stage takes place in Stage 19 <Eliza> (970031900)
+The party must kill Eliza (9500355) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 23 - Chimera
+This stage takes place in Stage 20 <Chimera> (970032000)
+The party must kill Chimera (9500356) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 24 - Resting Spot IV
+This stage takes place in Resting Spot IV (970030004)
+The party leader must talk to Agent Meow (9000037) to proceed to the next stage.
+This stage has no time limit.
+
+Stage 25 - Snowman
+This stage takes place in Stage 21 <Snowman> (970032100)
+The party must kill Snowman (9500357) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 26 - Crimson Balrog
+This stage takes place in Stage 22 <Crimson Balrog> (970032200)
+The party must kill Crimson Balrog (9500358) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 27 - Manon
+This stage takes place in Stage 23 <Manon> (970032300)
+The party must kill Manon (9500359) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 28 - Griffey
+This stage takes place in Stage 24 <Griffey> (970032400)
+The party must kill Griffey (9500360) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 29 - Leviathan
+This stage takes place in Stage 25 <Leviathan> (970032500)
+The party must kill Leviathan (9500361) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 30 - Last Resting Spot
+This stage takes place in Last Resting Spot (970030005)
+The party leader must talk to Agent Meow (9000037) to proceed to the next stage.
+This stage has no time limit.
+
+Stage 31 - Papulatus
+This stage takes place in Stage 26 <Papulatus> (970032600)
+The party must kill Papulatus (9500362) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.
+
+Stage 32 - Pianus
+This stage takes place in Stage 27 <Pianus> (970032700)
+The party must kill Pianus (9500363) to proceed to the next stage. When the boss is defeated, the portal clear is enabled, and the party can proceed to the next stage via portal script raid_stage.
+You have five minutes to complete this stage.
+When the stage is cleared, the party members will receive agent points.

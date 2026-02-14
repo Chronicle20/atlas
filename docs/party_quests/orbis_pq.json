@@ -1,0 +1,263 @@
+{
+  "id": "orbis-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Tower of Goddess Party Quest",
+    "fieldLock": "channel",
+    "duration": "3600000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "6"
+      },
+      {
+        "type": "level",
+        "operator": ">=",
+        "value": "51"
+      },
+      {
+        "type": "level",
+        "operator": "<=",
+        "value": "70"
+      }
+    ],
+    "startEvents": [
+      {
+        "conditions": [
+          {
+            "type": "registered_job_class",
+            "operator": "=",
+            "value": "bowman"
+          },
+          {
+            "type": "registered_job_class",
+            "operator": "=",
+            "value": "warrior"
+          },
+          {
+            "type": "registered_job_class",
+            "operator": "=",
+            "value": "magician"
+          },
+          {
+            "type": "registered_job_class",
+            "operator": "=",
+            "value": "thief"
+          },
+          {
+            "type": "registered_job_class",
+            "operator": "=",
+            "value": "pirate"
+          }
+        ],
+        "operations": [
+          {
+            "type": "apply_random_consumable_effect",
+            "params": {
+              "itemIds": ["2022090", "2022091", "2022092", "2022093"]
+            }
+          }
+        ]
+      }
+    ],
+    "failRequirements": [],
+    "registration": {
+      "type": "party",
+      "mode": "instant",
+      "duration": -1,
+      "mapId": "200080101"
+    },
+    "exit": "920011200",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Cloud Piece Collection",
+        "description": "Party members collect Cloud Pieces (4001063). Drop the Cloud Pieces on the pedestal in front of the glowing orb. Chamberlain Eak will appear, and you can proceed.",
+        "mapId": ["920010000"],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "5000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "1",
+        "name": "Box Coupon Collection",
+        "description": "Party members must complete the correct jump quest to collect the correct LP given the day of the week. Sunday - LP - Operatic Music (4001056), Monday - LP - Cute Music (4001057), Tuesday - LP - Scary Music (4001058), Wednesday - LP - Fun Music (4001059), Thursday - LP - Sad Music (4001060), Friday - LP - Cold Music (4001061), or Saturday - LP - Tight Music (4001062). Drop the correct record on the record player, and a box will spawn to collect the Statue of Goddess Piece.",
+        "mapId": ["920010400"],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "7500"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "2",
+        "name": "Sealed Room Combination Puzzle",
+        "description": "Party members (5) must occupy three platforms. If you do not get it, in seven attempts, you must leave and re-enter. A box will spawn at the top of the room to collect the Statue of Goddess Piece.",
+        "mapId": ["920010500"],
+        "type": "combination_puzzle",
+        "duration": 0,
+        "digits": "3",
+        "combination_reset": {
+          "type": "failed_attempts_and_re-entry",
+          "amount": "7"
+        },
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "7500"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "3",
+        "name": "Cellion Puzzle",
+        "description": "A Cellion will spawn on a platform. Once killed, it will spawn on another platform. On the 15th kill, it will drop a Statue of Goddess Piece.",
+        "mapId": ["920010300"],
+        "type": "monster_killing",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "4",
+        "name": "Small Piece Item Collection",
+        "description": "Party members must enter (3) portals and kill either Cellions, Grupins, or Lioners to collect 10 Small Piece (4001052) each. Another member (or two) should enter the bottom portal to break boxes to collect 10 Small Piece (4001052) each. All fourty Small Pieces are collected and provided to Chamberlain Eak will provide a Statue of Goddess Piece.",
+        "mapId": [
+          "920010600",
+          "920010601",
+          "920010602",
+          "920010603",
+          "920010604"
+        ],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "40",
+            "referenceId": "4001052"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "7500"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "5",
+        "name": "Kill Forty Pixies",
+        "description": "Party members must kill forty pixies to retrieve forty Small Piece (4001051). All fourty Small Pieces (4001051) are collected and provided to Chamberlain Eak will provide a Statue of Goddess Piece.",
+        "mapId": ["920010200"],
+        "type": "warp_puzzle",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "40",
+            "referenceId": "4001051"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "7500"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "6",
+        "name": "Warp and Lever Combination Puzzle",
+        "description": "Party members must navigate the jump quest, use warps to navigate a combination puzzle, and complete a combination puzzle to clear the stage. A box will spawn to collect the Statue of Goddess Piece.",
+        "mapId": ["920010700"],
+        "type": "warp_and_combination_puzzle",
+        "duration": 0,
+        "combination_reset": {},
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "7",
+        "name": "Statue Repair",
+        "description": "Party members drop the statue pieces on the respective platforms to trigger the reactor.",
+        "mapId": [
+          "920010100",
+          "920010900",
+          "920010911",
+          "920010912",
+          "920010920",
+          "920010921",
+          "920010922",
+          "920010930",
+          "920010931",
+          "920010932",
+          "920011000"
+        ],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "8",
+        "name": "Boss Stage",
+        "description": "Party members must kill Nependeth. They drop a Strange Seed (4001053) that must be put on one of the pots. The pot may trigger nothing, another normal Nependeth spawn, or a Dark Nependeth. Killing the Dark Nependeth will trigger Papa Pixie to spawn. Killing Papa Pixie will cause a Even Stranger Seed (4001054). Place this on a pot, to trigger grass to grow, which drops the Grass of Life (4001055). Drop the Grass of Life on the statue to rescue Minerva.",
+        "mapId": ["920010800"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "9",
+        "name": "Bonus",
+        "description": "The party quest has cleared, party members have a limited time to collect drops from boxes.",
+        "mapId": ["920011100"],
+        "type": "bonus",
+        "duration": 60000,
+        "warp": {
+          "type": "warp_out"
+        }
+      }
+    ]
+  }
+}

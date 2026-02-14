@@ -1,0 +1,81 @@
+{
+  "id": "ludi-maze-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Ludibrium Maze Party Quest",
+    "fieldLock": "channel",
+    "duration": "900000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "3"
+      },
+      {
+        "type": "level",
+        "operator": ">=",
+        "value": "51"
+      },
+      {
+        "type": "level",
+        "operator": "<=",
+        "value": "70"
+      }
+    ],
+    "startEvents": [],
+    "failRequirements": [
+      {
+        "type": "registered_size",
+        "operator": "<",
+        "value": "3"
+      }
+    ],
+    "registration": {
+      "type": "party",
+      "mode": "instant",
+      "duration": -1,
+      "mapId": "220000000"
+    },
+    "exit": "809050017",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Coupon Collection",
+        "description": "Party members traverse the maze map and collect Entrance Ticket to the Ludibrium Maze (4001106).",
+        "mapId": [
+          "809050000",
+          "809050001",
+          "809050002",
+          "809050003",
+          "809050004",
+          "809050005",
+          "809050006",
+          "809050007",
+          "809050008",
+          "809050009",
+          "809050010",
+          "809050011",
+          "809050012",
+          "809050013",
+          "809050014",
+          "809050015",
+          "809050016"
+        ],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "30",
+            "referenceId": "4001106"
+          }
+        ],
+        "rewards": [],
+        "warp": {
+          "type": "npc"
+        }
+      }
+    ]
+  }
+}

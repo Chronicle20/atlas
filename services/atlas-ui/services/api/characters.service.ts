@@ -33,6 +33,14 @@ class CharactersService {
   }
 
   /**
+   * Delete a character permanently
+   */
+  async deleteCharacter(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<void> {
+    api.setTenant(tenant);
+    return api.delete(`${this.basePath}/${characterId}`, options);
+  }
+
+  /**
    * Update existing character with JSON:API format
    */
   async update(tenant: Tenant, characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {

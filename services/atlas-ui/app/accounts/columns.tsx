@@ -10,6 +10,17 @@ import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
 import type {Tenant} from "@/types/models/tenant";
 import {toast} from "sonner";
+import {useState} from "react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ColumnProps {
     tenant: Tenant | null;
@@ -19,19 +30,6 @@ interface ColumnProps {
 export const hiddenColumns = ["id", "attributes.gm"];
 
 export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>[] => {
-    const handleLogout = async (id: string, name: string) => {
-        if (tenant === null) {
-            return
-        }
-
-        try {
-            await accountsService.terminateAccountSession(tenant, id);
-            toast.success("Successfully logged out " + name);
-            onRefresh?.();
-        } catch (error) {
-            toast.error("Failed to logout " + name + ": " + (error instanceof Error ? error.message : 'Unknown error'));
-        }
-    };
     return [ {
             accessorKey: "id",
             header: "Id",
@@ -106,22 +104,76 @@ export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>
         {
             id: "actions",
             cell: ({ row }) => {
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem disabled={row.original.attributes.loggedIn === 0} onClick={() => {handleLogout(row.original.id, row.original.attributes.name)}}>
-                                Logout
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
+                return <AccountActions account={row.original} tenant={tenant} onRefresh={onRefresh} />
             },
         }
     ]
 };
+
+function AccountActions({ account, tenant, onRefresh }: { account: Account; tenant: Tenant | null; onRefresh?: (() => void) | undefined }) {
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleLogout = async () => {
+        if (!tenant) return;
+        try {
+            await accountsService.terminateAccountSession(tenant, account.id);
+            toast.success("Successfully logged out " + account.attributes.name);
+            onRefresh?.();
+        } catch (error) {
+            toast.error("Failed to logout " + account.attributes.name + ": " + (error instanceof Error ? error.message : 'Unknown error'));
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!tenant) return;
+        try {
+            setDeleting(true);
+            await accountsService.deleteAccount(tenant, account.id);
+            toast.success("Successfully deleted account " + account.attributes.name);
+            onRefresh?.();
+        } catch (error) {
+            toast.error("Failed to delete account: " + (error instanceof Error ? error.message : 'Unknown error'));
+        } finally {
+            setDeleting(false);
+            setDeleteDialogOpen(false);
+        }
+    };
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuItem disabled={account.attributes.loggedIn === 0} onClick={handleLogout}>
+                        Logout
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+                        Delete Account
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the account &quot;{account.attributes.name}&quot; and all associated data.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+                            {deleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+}

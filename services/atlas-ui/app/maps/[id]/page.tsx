@@ -3,14 +3,16 @@
 import { useParams } from "next/navigation";
 import { useMap } from "@/lib/hooks/api/useMaps";
 import { useMapPortals, useMapNpcs, useMapReactors, useMapMonsters } from "@/lib/hooks/api/useMapEntities";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import Link from "next/link";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { MonsterTableRow } from "@/components/features/monsters/MonsterTableRow";
+import { MapCell } from "@/components/map-cell";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import {
@@ -21,6 +23,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+
+const NONE_MAP_ID = 999999999;
 
 export default function MapDetailPage() {
   const params = useParams();
@@ -106,12 +110,13 @@ export default function MapDetailPage() {
                         </TableCell>
                         <TableCell>
                           {portal.attributes.targetMapId ? (
-                            <Link
-                              href={`/maps/${portal.attributes.targetMapId}`}
-                              className="font-mono text-primary hover:underline"
-                            >
-                              {portal.attributes.targetMapId}
-                            </Link>
+                            Number(portal.attributes.targetMapId) === NONE_MAP_ID ? (
+                              <Badge variant="secondary">NONE</Badge>
+                            ) : (
+                              <Link href={`/maps/${portal.attributes.targetMapId}`}>
+                                <MapCell mapId={String(portal.attributes.targetMapId)} tenant={activeTenant} />
+                              </Link>
+                            )
                           ) : "-"}
                         </TableCell>
                         <TableCell>
@@ -140,7 +145,6 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>NPC ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Hidden</TableHead>
@@ -167,11 +171,19 @@ export default function MapDetailPage() {
                           />
                         </TableCell>
                         <TableCell>
-                          <Link href={`/npcs/${npc.attributes.template}`} className="font-mono text-primary hover:underline">
-                            {npc.attributes.template}
-                          </Link>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link href={`/npcs/${npc.attributes.template}`}>
+                                  <Badge variant="secondary">{npc.attributes.name}</Badge>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent copyable>
+                                <p>{npc.attributes.template}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
-                        <TableCell>{npc.attributes.name}</TableCell>
                         <TableCell className="font-mono">
                           ({npc.attributes.x}, {npc.attributes.y})
                         </TableCell>
@@ -199,7 +211,6 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>Monster ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Mob Time</TableHead>
@@ -229,7 +240,7 @@ export default function MapDetailPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>Reactor ID</TableHead>
+                      <TableHead>Template</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Delay</TableHead>

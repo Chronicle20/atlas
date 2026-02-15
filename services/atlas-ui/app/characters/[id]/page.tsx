@@ -13,6 +13,8 @@ import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { MapPin } from "lucide-react";
+import { MapCell } from "@/components/map-cell";
+import Link from "next/link";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
@@ -178,7 +180,12 @@ export default function CharacterDetailPage() {
                         <div><strong>Gender:</strong> {character.attributes.gender}</div>
                         <div><strong>Level:</strong> {character.attributes.level}</div>
                         <div><strong>Experience:</strong> {character.attributes.experience}</div>
-                        <div><strong>Map ID:</strong> {character.attributes.mapId}</div>
+                        <div className="flex items-center gap-1">
+                            <strong>Map:</strong>
+                            <Link href={"/maps/" + character.attributes.mapId}>
+                                <MapCell mapId={String(character.attributes.mapId)} tenant={activeTenant}/>
+                            </Link>
+                        </div>
                         <div><strong>Strength:</strong> {character.attributes.strength}</div>
                         <div><strong>Dexterity:</strong> {character.attributes.dexterity}</div>
                         <div><strong>Intelligence:</strong> {character.attributes.intelligence}</div>

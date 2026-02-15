@@ -177,10 +177,18 @@ class AccountsService extends BaseService {
   async terminateAccountSession(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
     // Set tenant context for this request
     api.setTenant(tenant);
-    
+
     const processedOptions = options ? { ...options } : {};
-    
+
     return api.delete(`${this.basePath}/${accountId}/session`, processedOptions);
+  }
+
+  /**
+   * Delete an account permanently
+   */
+  async deleteAccount(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
+    api.setTenant(tenant);
+    return api.delete(`${this.basePath}/${accountId}`, options);
   }
 
   /**

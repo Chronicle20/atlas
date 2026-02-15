@@ -14,6 +14,18 @@ import {MoreHorizontal} from "lucide-react";
 import Link from "next/link";
 import {ChangeMapDialog} from "@/components/features/characters/ChangeMapDialog";
 import {useState} from "react";
+import {charactersService} from "@/services/api/characters.service";
+import {toast} from "sonner";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ColumnProps {
     tenant: Tenant | null;
@@ -34,6 +46,11 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
         {
             accessorKey: "attributes.name",
             header: "Name",
+            cell: ({row}) => (
+                <Link href={"/characters/" + row.original.id} className="font-medium text-primary hover:underline">
+                    {row.original.attributes.name}
+                </Link>
+            ),
         },
         {
             accessorKey: "attributes.accountId",
@@ -131,7 +148,11 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
             header: "Map",
             cell: ({row}) => {
                 const mapId = String(row.getValue("attributes_mapId"))
-                return <MapCell mapId={mapId} tenant={tenant}/>
+                return (
+                    <Link href={"/maps/" + mapId}>
+                        <MapCell mapId={mapId} tenant={tenant}/>
+                    </Link>
+                )
             }
         },
         {
@@ -142,14 +163,31 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
         {
             id: "actions",
             cell: ({row}) => {
-                return <CharacterActions character={row.original} {...(onRefresh && { onRefresh })} />
+                return <CharacterActions character={row.original} tenant={tenant} {...(onRefresh && { onRefresh })} />
             },
         }
     ];
 };
 
-function CharacterActions({ character, onRefresh }: { character: Character; onRefresh?: () => void }) {
+function CharacterActions({ character, tenant, onRefresh }: { character: Character; tenant: Tenant | null; onRefresh?: () => void }) {
     const [changeMapOpen, setChangeMapOpen] = useState(false);
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!tenant) return;
+        try {
+            setDeleting(true);
+            await charactersService.deleteCharacter(tenant, character.id);
+            toast.success("Successfully deleted character " + character.attributes.name);
+            onRefresh?.();
+        } catch (error) {
+            toast.error("Failed to delete character: " + (error instanceof Error ? error.message : 'Unknown error'));
+        } finally {
+            setDeleting(false);
+            setDeleteDialogOpen(false);
+        }
+    };
 
     return (
         <>
@@ -161,22 +199,36 @@ function CharacterActions({ character, onRefresh }: { character: Character; onRe
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                        <Link href={"/characters/" + character.id}>
-                            View Character
-                        </Link>
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => setChangeMapOpen(true)}>
                         Change Map
                     </DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
+                        Delete Character
+                    </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-            <ChangeMapDialog 
+            <ChangeMapDialog
                 character={character}
                 open={changeMapOpen}
                 onOpenChange={setChangeMapOpen}
                 {...(onRefresh && { onSuccess: onRefresh })}
             />
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Character</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the character &quot;{character.attributes.name}&quot;.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+                            {deleting ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </>
     );
 }

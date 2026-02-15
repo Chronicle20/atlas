@@ -219,11 +219,11 @@ func main() {
 	}
 	span.End()
 
-	tt, err := config.FindTask(session.TimeoutTask)
+	//tt, err := config.FindTask(session.TimeoutTask)
 	if err != nil {
 		l.WithError(err).Fatalf("Unable to find task [%s].", session.TimeoutTask)
 	}
-	go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
+	//go tasks.Register(l, tdm.Context())(session.NewTimeout(l, time.Millisecond*time.Duration(tt.Interval)))
 	go tasks.Register(l, tdm.Context())(channel3.NewHeartbeat(l, tdm.Context(), time.Second*10))
 
 	tdm.TeardownFunc(session.Teardown(l))
@@ -329,6 +329,8 @@ func produceWriters() []string {
 		writer.UiOpen,
 		writer.UiLock,
 		writer.UiDisable,
+		writer.MonsterStatSet,
+		writer.MonsterStatReset,
 	}
 }
 

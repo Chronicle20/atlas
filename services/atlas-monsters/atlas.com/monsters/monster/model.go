@@ -36,6 +36,7 @@ type Model struct {
 	stance             byte
 	team               int8
 	damageEntries      []entry
+	statusEffects      []StatusEffect
 }
 
 type entry struct {
@@ -62,6 +63,7 @@ func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int
 		stance:             stance,
 		team:               team,
 		damageEntries:      make([]entry, 0),
+		statusEffects:      make([]StatusEffect, 0),
 	}
 }
 
@@ -200,4 +202,68 @@ func (m Model) MaxMp() uint32 {
 
 func (m Model) Mp() uint32 {
 	return m.mp
+}
+
+func (m Model) StatusEffects() []StatusEffect {
+	return m.statusEffects
+}
+
+func (m Model) HasStatusEffect(statusType string) bool {
+	for _, se := range m.statusEffects {
+		if se.HasStatus(statusType) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m Model) ApplyStatus(effect StatusEffect) Model {
+	return Clone(m).
+		AddStatusEffect(effect).
+		Build()
+}
+
+func (m Model) CancelStatus(effectId uuid.UUID) Model {
+	return Clone(m).
+		RemoveStatusEffect(effectId).
+		Build()
+}
+
+func (m Model) CancelStatusByType(statusType string) Model {
+	return Clone(m).
+		RemoveStatusEffectByType(statusType).
+		Build()
+}
+
+func (m Model) CancelAllStatuses() Model {
+	return Clone(m).
+		ClearStatusEffects().
+		Build()
+}
+
+func (m Model) DeductMp(amount uint32) Model {
+	deducted := amount
+	if deducted > m.mp {
+		deducted = m.mp
+	}
+	return Clone(m).
+		SetMp(m.mp - deducted).
+		Build()
+}
+
+func (m Model) Heal(amount uint32) Model {
+	newHp := m.hp + amount
+	if newHp > m.maxHp {
+		newHp = m.maxHp
+	}
+	return Clone(m).
+		SetHp(newHp).
+		Build()
+}
+
+func (m Model) HpPercentage() uint32 {
+	if m.maxHp == 0 {
+		return 0
+	}
+	return (m.hp * 100) / m.maxHp
 }

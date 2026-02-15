@@ -1,12 +1,26 @@
 package monster
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
+
+type StatusEffectEntry struct {
+	sourceSkillId    uint32
+	sourceSkillLevel uint32
+	statuses         map[string]int32
+	expiresAt        time.Time
+}
+
+func (s StatusEffectEntry) SourceSkillId() uint32       { return s.sourceSkillId }
+func (s StatusEffectEntry) SourceSkillLevel() uint32    { return s.sourceSkillLevel }
+func (s StatusEffectEntry) Statuses() map[string]int32  { return s.statuses }
+func (s StatusEffectEntry) ExpiresAt() time.Time        { return s.expiresAt }
 
 type Model struct {
 	field              field.Model
@@ -21,6 +35,7 @@ type Model struct {
 	fh                 int16
 	stance             byte
 	team               int8
+	statusEffects      []StatusEffectEntry
 }
 
 func (m Model) UniqueId() uint32 {
@@ -85,4 +100,8 @@ func (m Model) Hp() uint32 {
 
 func (m Model) MaxHp() uint32 {
 	return m.maxHp
+}
+
+func (m Model) StatusEffects() []StatusEffectEntry {
+	return m.statusEffects
 }

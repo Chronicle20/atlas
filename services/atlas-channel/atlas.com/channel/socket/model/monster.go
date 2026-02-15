@@ -1,8 +1,13 @@
 package model
 
 import (
+	"atlas-channel/tool"
+	"errors"
 	"math"
+	"sort"
+	"time"
 
+	"github.com/Chronicle20/atlas-constants/monster"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -48,62 +53,113 @@ const (
 )
 
 type MonsterTemporaryStatType struct {
-	bitPosition int32
-	value       int32
-	position    int8
+	name  monster.TemporaryStatType
+	shift uint
+	mask  tool.Uint128
 }
 
-func NewMonsterTemporaryStatType(bitPosition int32) MonsterTemporaryStatType {
+func (t MonsterTemporaryStatType) Name() monster.TemporaryStatType {
+	return t.name
+}
+
+func (t MonsterTemporaryStatType) Shift() uint {
+	return t.shift
+}
+
+func (t MonsterTemporaryStatType) Mask() tool.Uint128 {
+	return t.mask
+}
+
+func NewMonsterTemporaryStatType(name monster.TemporaryStatType, shift uint) MonsterTemporaryStatType {
+	mask := tool.Uint128{L: 1}.ShiftLeft(shift)
 	return MonsterTemporaryStatType{
-		bitPosition: bitPosition,
-		value:       1 << (bitPosition % 32),
-		position:    int8(bitPosition >> 5),
+		name:  name,
+		shift: shift,
+		mask:  mask,
 	}
 }
 
-var MonsterTemporaryStatTypePad = NewMonsterTemporaryStatType(0)
-var MonsterTemporaryStatTypePdr = NewMonsterTemporaryStatType(1)
-var MonsterTemporaryStatTypeMad = NewMonsterTemporaryStatType(2)
-var MonsterTemporaryStatTypeMdr = NewMonsterTemporaryStatType(3)
-var MonsterTemporaryStatTypeAcc = NewMonsterTemporaryStatType(4)
-var MonsterTemporaryStatTypeEva = NewMonsterTemporaryStatType(5)
-var MonsterTemporaryStatTypeSpeed = NewMonsterTemporaryStatType(6)
-var MonsterTemporaryStatTypeStun = NewMonsterTemporaryStatType(7)
-var MonsterTemporaryStatTypeFreeze = NewMonsterTemporaryStatType(8)
-var MonsterTemporaryStatTypePoison = NewMonsterTemporaryStatType(9)
-var MonsterTemporaryStatTypeSeal = NewMonsterTemporaryStatType(10)
-var MonsterTemporaryStatTypeDarkness = NewMonsterTemporaryStatType(11)
-var MonsterTemporaryStatTypePowerUp = NewMonsterTemporaryStatType(12)
-var MonsterTemporaryStatTypeMagicUp = NewMonsterTemporaryStatType(13)
-var MonsterTemporaryStatTypePowerGuardUp = NewMonsterTemporaryStatType(14)
-var MonsterTemporaryStatTypeMagicGuardUp = NewMonsterTemporaryStatType(15)
-var MonsterTemporaryStatTypeDoom = NewMonsterTemporaryStatType(16)
-var MonsterTemporaryStatTypeWeb = NewMonsterTemporaryStatType(17)
-var MonsterTemporaryStatTypePImmune = NewMonsterTemporaryStatType(18)
-var MonsterTemporaryStatTypeMImmune = NewMonsterTemporaryStatType(19)
-var MonsterTemporaryStatTypeShowdown = NewMonsterTemporaryStatType(20)
-var MonsterTemporaryStatTypeHardSkin = NewMonsterTemporaryStatType(21)
-var MonsterTemporaryStatTypeAmbush = NewMonsterTemporaryStatType(22)
-var MonsterTemporaryStatTypeDamagedElemAttr = NewMonsterTemporaryStatType(23)
-var MonsterTemporaryStatTypeVenom = NewMonsterTemporaryStatType(24)
-var MonsterTemporaryStatTypeBlind = NewMonsterTemporaryStatType(25)
-var MonsterTemporaryStatTypeSealSkill = NewMonsterTemporaryStatType(26)
-var MonsterTemporaryStatTypeBurned = NewMonsterTemporaryStatType(27)
-var MonsterTemporaryStatTypeDazzle = NewMonsterTemporaryStatType(28)
-var MonsterTemporaryStatTypePCounter = NewMonsterTemporaryStatType(29)
-var MonsterTemporaryStatTypeMCounter = NewMonsterTemporaryStatType(30)
-var MonsterTemporaryStatTypeDisable = NewMonsterTemporaryStatType(31)
-var MonsterTemporaryStatTypeRiseByToss = NewMonsterTemporaryStatType(32)
-var MonsterTemporaryStatTypeBodyPressure = NewMonsterTemporaryStatType(33)
-var MonsterTemporaryStatTypeWeakness = NewMonsterTemporaryStatType(34)
-var MonsterTemporaryStatTypeTimeBomb = NewMonsterTemporaryStatType(35)
-var MonsterTemporaryStatTypeMagicCrash = NewMonsterTemporaryStatType(36)
-var MonsterTemporaryStatTypeHealByDamage = NewMonsterTemporaryStatType(37)
+func MonsterTemporaryStatTypeByName(t tenant.Model) func(name monster.TemporaryStatType) (MonsterTemporaryStatType, error) {
+	var shift uint = 0
+	set := make(map[monster.TemporaryStatType]MonsterTemporaryStatType)
+
+	funcCallNewAndInc := func(name monster.TemporaryStatType) {
+		set[name] = NewMonsterTemporaryStatType(name, shift)
+		shift += 1
+	}
+	funcCallNewAndInc(monster.TemporaryStatTypeWeaponAttack)
+	funcCallNewAndInc(monster.TemporaryStatTypeWeaponDefense)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicAttack)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicDefense)
+	funcCallNewAndInc(monster.TemporaryStatTypeAccuracy)
+	funcCallNewAndInc(monster.TemporaryStatTypeAvoidability)
+	funcCallNewAndInc(monster.TemporaryStatTypeSpeed)
+	funcCallNewAndInc(monster.TemporaryStatTypeStun)
+	funcCallNewAndInc(monster.TemporaryStatTypeFrozen)
+	funcCallNewAndInc(monster.TemporaryStatTypePoison)
+	funcCallNewAndInc(monster.TemporaryStatTypeSeal)
+	funcCallNewAndInc(monster.TemporaryStatTypeDarkness)
+	funcCallNewAndInc(monster.TemporaryStatTypePowerUp)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicUp)
+	funcCallNewAndInc(monster.TemporaryStatTypePowerGuardUp)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicGuardUp)
+	funcCallNewAndInc(monster.TemporaryStatTypeDoom)
+	funcCallNewAndInc(monster.TemporaryStatTypeWeb)
+	funcCallNewAndInc(monster.TemporaryStatTypeWeaponAttackImmune)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicAttackImmune)
+	funcCallNewAndInc(monster.TemporaryStatTypeShowdown)
+	funcCallNewAndInc(monster.TemporaryStatTypeHardSkin)
+	funcCallNewAndInc(monster.TemporaryStatTypeAmbush)
+	funcCallNewAndInc(monster.TemporaryStatTypeDamagedElemAttr)
+	funcCallNewAndInc(monster.TemporaryStatTypeVenom)
+	funcCallNewAndInc(monster.TemporaryStatTypeBlind)
+	funcCallNewAndInc(monster.TemporaryStatTypeSealSkill)
+	funcCallNewAndInc(monster.TemporaryStatTypeBurned)
+	funcCallNewAndInc(monster.TemporaryStatTypeDazzle)
+	funcCallNewAndInc(monster.TemporaryStatTypeWeaponCounter)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicCounter)
+	funcCallNewAndInc(monster.TemporaryStatTypeDisable)
+	funcCallNewAndInc(monster.TemporaryStatTypeRiseByToss)
+	funcCallNewAndInc(monster.TemporaryStatTypeBodyPressure)
+	funcCallNewAndInc(monster.TemporaryStatTypeWeakness)
+	funcCallNewAndInc(monster.TemporaryStatTypeTimeBomb)
+	funcCallNewAndInc(monster.TemporaryStatTypeMagicCrash)
+	funcCallNewAndInc(monster.TemporaryStatTypeHealByDamage)
+
+	return func(name monster.TemporaryStatType) (MonsterTemporaryStatType, error) {
+		if val, ok := set[name]; ok {
+			return val, nil
+		}
+		return MonsterTemporaryStatType{}, errors.New("monster temporary stat type not found")
+	}
+}
 
 type MonsterTemporaryStatValue struct {
-	value    int32
-	reason   int32
-	duration int32
+	statType    MonsterTemporaryStatType
+	sourceId    int32
+	sourceLevel int32
+	value       int32
+	expiresAt   time.Time
+}
+
+func (m MonsterTemporaryStatValue) StatType() MonsterTemporaryStatType {
+	return m.statType
+}
+
+func (m MonsterTemporaryStatValue) SourceId() int32 {
+	return m.sourceId
+}
+
+func (m MonsterTemporaryStatValue) SourceLevel() int32 {
+	return m.sourceLevel
+}
+
+func (m MonsterTemporaryStatValue) Value() int32 {
+	return m.value
+}
+
+func (m MonsterTemporaryStatValue) ExpiresAt() time.Time {
+	return m.expiresAt
 }
 
 type MonsterBurnedInfo struct {
@@ -128,56 +184,123 @@ func (m *MonsterBurnedInfo) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[s
 
 type MonsterTemporaryStat struct {
 	burnedInfo []MonsterBurnedInfo
-	stats      map[MonsterTemporaryStatType]MonsterTemporaryStatValue
+	stats      map[monster.TemporaryStatType]MonsterTemporaryStatValue
 }
 
-func (m *MonsterTemporaryStat) getMask() []int32 {
-	mask := make([]int32, 4)
-	for k := range m.stats {
-		mask[k.position] |= k.value
+func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
+	return func(w *response.Writer) {
+		mask := tool.Uint128{}
+		for _, v := range m.stats {
+			mask = mask.Or(v.StatType().Mask())
+		}
+
+		w.WriteInt(uint32(mask.H >> 32))
+		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
+		w.WriteInt(uint32(mask.L >> 32))
+		w.WriteInt(uint32(mask.L & 0xFFFFFFFF))
 	}
-	return mask
 }
 
 func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		mask := m.getMask()
-		pCounter := int32(-1)
-		mCounter := int32(-1)
+		m.EncodeMask(l, tenant, ops)(w)
 
-		for i := len(mask) - 1; i >= 0; i-- {
-			w.WriteInt32(mask[i])
+		keys := make([]MonsterTemporaryStatType, 0)
+		for _, v := range m.stats {
+			keys = append(keys, v.statType)
 		}
-		for t, v := range m.stats {
-			switch t {
-			case MonsterTemporaryStatTypeBurned:
+
+		sort.Slice(keys, func(i, j int) bool {
+			return keys[i].Shift() < keys[j].Shift()
+		})
+
+		// Create a slice of values sorted by the keys' index
+		sortedValues := make([]MonsterTemporaryStatValue, 0)
+		for _, k := range keys {
+			sortedValues = append(sortedValues, m.stats[k.name])
+		}
+
+		weaponCounter := int32(-1)
+		magicCounter := int32(-1)
+		for k, v := range sortedValues {
+			tst := sortedValues[k].StatType().Name()
+			if tst == monster.TemporaryStatTypeBurned {
 				w.WriteInt(uint32(len(m.burnedInfo)))
 				for _, b := range m.burnedInfo {
 					b.Encode(l, tenant, ops)(w)
 				}
-			case MonsterTemporaryStatTypeDisable:
-				w.WriteBool(false)
-				w.WriteBool(false)
-			default:
-				if t == MonsterTemporaryStatTypePCounter {
-					pCounter = v.value
-				} else if t == MonsterTemporaryStatTypeMCounter {
-					mCounter = v.value
-				}
-				w.WriteInt16(int16(v.value))
-				w.WriteInt32(v.reason)
-				w.WriteInt16(int16(v.duration / 500))
+				continue
+			}
+			if tst == monster.TemporaryStatTypeDisable {
+				w.WriteBool(false) // bInvincible
+				w.WriteBool(false) // bDisable
+				continue
 			}
 
+			if tst == monster.TemporaryStatTypeWeaponCounter {
+				weaponCounter = v.Value()
+			}
+			if tst == monster.TemporaryStatTypeMagicCounter {
+				magicCounter = v.Value()
+			}
+			w.WriteInt16(int16(v.Value()))
+			w.WriteInt16(int16(v.SourceId()))
+			w.WriteInt16(int16(v.SourceLevel()))
+			w.WriteInt16(monsterStatExpiry(v.ExpiresAt()))
 		}
-		if pCounter != -1 {
-			w.WriteInt32(pCounter)
+
+		if weaponCounter != -1 {
+			w.WriteInt32(weaponCounter)
 		}
-		if mCounter != -1 {
-			w.WriteInt32(mCounter)
+		if magicCounter != -1 {
+			w.WriteInt32(magicCounter)
 		}
-		if pCounter != -1 || mCounter != -1 {
-			w.WriteInt32(int32(math.Max(float64(pCounter), float64(mCounter))))
+		if weaponCounter != -1 || magicCounter != -1 {
+			w.WriteInt32(int32(math.Max(float64(weaponCounter), float64(magicCounter))))
+		}
+	}
+}
+
+func monsterStatExpiry(_ time.Time) int16 {
+	// The client field is int16 which cannot hold a meaningful absolute time.
+	// Return -1 (permanent display) and let the server manage expiry via
+	// STATUS_EXPIRED / STATUS_CANCELLED events.
+	return -1
+}
+
+func NewMonsterTemporaryStat() *MonsterTemporaryStat {
+	return &MonsterTemporaryStat{
+		stats: make(map[monster.TemporaryStatType]MonsterTemporaryStatValue),
+	}
+}
+
+func (m *Monster) SetTemporaryStat(stat *MonsterTemporaryStat) {
+	m.monsterTemporaryStat = *stat
+}
+
+func (m *MonsterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId uint32, sourceLevel uint32, amount int32, expiresAt time.Time) {
+	return func(t tenant.Model) func(n string, sourceId uint32, sourceLevel uint32, amount int32, expiresAt time.Time) {
+		return func(n string, sourceId uint32, sourceLevel uint32, amount int32, expiresAt time.Time) {
+			name := monster.TemporaryStatType(n)
+			st, err := MonsterTemporaryStatTypeByName(t)(name)
+			if err != nil {
+				l.WithError(err).Errorf("Attempting to add buff [%s], but cannot find it.", name)
+				return
+			}
+			v := MonsterTemporaryStatValue{
+				statType:    st,
+				sourceId:    int32(sourceId),
+				sourceLevel: int32(sourceLevel),
+				value:       amount,
+				expiresAt:   expiresAt,
+			}
+			if e, ok := m.stats[name]; ok {
+				if v.Value() > e.Value() {
+					m.stats[name] = v
+				}
+			} else {
+				m.stats[name] = v
+			}
 		}
 	}
 }

@@ -11,6 +11,16 @@ import (
 
 const SpawnMonster = "SpawnMonster"
 
+func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *model.MonsterTemporaryStat {
+	stat := model.NewMonsterTemporaryStat()
+	for _, se := range m.StatusEffects() {
+		for name, value := range se.Statuses() {
+			stat.AddStat(l)(t)(name, se.SourceSkillId(), se.SourceSkillLevel(), value, se.ExpiresAt())
+		}
+	}
+	return stat
+}
+
 func SpawnMonsterBody(l logrus.FieldLogger, t tenant.Model) func(m monster.Model, newSpawn bool) BodyProducer {
 	return func(m monster.Model, newSpawn bool) BodyProducer {
 		return SpawnMonsterWithEffectBody(l, t)(m, newSpawn, 0)
@@ -36,6 +46,8 @@ func SpawnMonsterWithEffectBody(l logrus.FieldLogger, t tenant.Model) func(m mon
 			}
 
 			mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), appearType, m.Team())
+			stat := buildMonsterTemporaryStat(l, t, m)
+			mem.SetTemporaryStat(stat)
 			mem.Encode(l, t, options)(w)
 			return w.Bytes()
 		}

@@ -1997,6 +1997,14 @@
         "writer": "MoveMonsterAck"
       },
       {
+        "opCode": "0xF2",
+        "writer": "MonsterStatSet"
+      },
+      {
+        "opCode": "0xF3",
+        "writer": "MonsterStatReset"
+      },
+      {
         "opCode": "0xFA",
         "writer": "MonsterHealth"
       },

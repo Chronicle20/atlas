@@ -1,0 +1,220 @@
+{
+  "questId": "kerning_city_pq",
+  "name": "Kerning City Party Quest",
+  "fieldLock": "channel",
+  "duration": 1800,
+  "registration": {
+    "type": "npc",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 103000000
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "eq",
+      "value": 4,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 21,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 30,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "103000800"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 103000890,
+  "stages": [
+    {
+      "index": 0,
+      "name": "Ligator Coupon Collection",
+      "mapIds": [103000800],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 4,
+          "referenceId": 4001008
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 100
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020001,
+        "collectItemId": 4001007,
+        "passItemId": 4001008,
+        "amountsPerPlayer": [8, 10, 15, 20, 25, 35]
+      }
+    },
+    {
+      "index": 1,
+      "name": "Vine Combination",
+      "mapIds": [103000801],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 200
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020001,
+        "combinationLength": 3,
+        "combinationRange": 4
+      }
+    },
+    {
+      "index": 2,
+      "name": "Kitten Combination",
+      "mapIds": [103000802],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 400
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020001,
+        "combinationLength": 3,
+        "combinationRange": 5
+      }
+    },
+    {
+      "index": 3,
+      "name": "Barrel Combination",
+      "mapIds": [103000803],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 800
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020001,
+        "combinationLength": 3,
+        "combinationRange": 6
+      }
+    },
+    {
+      "index": 4,
+      "name": "Boss Stage",
+      "mapIds": [103000804],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 10,
+          "referenceId": 4001008
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 1500
+        },
+        {
+          "type": "random_item",
+          "amount": 1,
+          "items": [
+            {"templateId": 2040505, "weight": 1, "quantity": 1},
+            {"templateId": 2040514, "weight": 1, "quantity": 1},
+            {"templateId": 2040502, "weight": 1, "quantity": 1},
+            {"templateId": 2040002, "weight": 1, "quantity": 1},
+            {"templateId": 2040602, "weight": 1, "quantity": 1},
+            {"templateId": 2040402, "weight": 1, "quantity": 1},
+            {"templateId": 2040802, "weight": 1, "quantity": 1},
+            {"templateId": 1032009, "weight": 1, "quantity": 1},
+            {"templateId": 1032004, "weight": 1, "quantity": 1},
+            {"templateId": 1032005, "weight": 1, "quantity": 1},
+            {"templateId": 1032006, "weight": 1, "quantity": 1},
+            {"templateId": 1032007, "weight": 1, "quantity": 1},
+            {"templateId": 1032010, "weight": 1, "quantity": 1},
+            {"templateId": 1032002, "weight": 1, "quantity": 1},
+            {"templateId": 1002026, "weight": 1, "quantity": 1},
+            {"templateId": 1002089, "weight": 1, "quantity": 1},
+            {"templateId": 1002090, "weight": 1, "quantity": 1},
+            {"templateId": 2000003, "weight": 1, "quantity": 80},
+            {"templateId": 2000001, "weight": 1, "quantity": 80},
+            {"templateId": 2000002, "weight": 1, "quantity": 80},
+            {"templateId": 2000006, "weight": 1, "quantity": 50},
+            {"templateId": 2022003, "weight": 1, "quantity": 5},
+            {"templateId": 2022000, "weight": 1, "quantity": 15},
+            {"templateId": 2000004, "weight": 1, "quantity": 15},
+            {"templateId": 4003000, "weight": 1, "quantity": 30},
+            {"templateId": 4010000, "weight": 1, "quantity": 15},
+            {"templateId": 4010001, "weight": 1, "quantity": 15},
+            {"templateId": 4010002, "weight": 1, "quantity": 15},
+            {"templateId": 4010003, "weight": 1, "quantity": 15},
+            {"templateId": 4010004, "weight": 1, "quantity": 8},
+            {"templateId": 4010005, "weight": 1, "quantity": 8},
+            {"templateId": 4010006, "weight": 1, "quantity": 8},
+            {"templateId": 4010007, "weight": 1, "quantity": 8},
+            {"templateId": 4020000, "weight": 1, "quantity": 8},
+            {"templateId": 4020001, "weight": 1, "quantity": 8},
+            {"templateId": 4020002, "weight": 1, "quantity": 8},
+            {"templateId": 4020003, "weight": 1, "quantity": 8},
+            {"templateId": 4020004, "weight": 1, "quantity": 8},
+            {"templateId": 4020005, "weight": 1, "quantity": 8},
+            {"templateId": 4020006, "weight": 1, "quantity": 8},
+            {"templateId": 4020007, "weight": 1, "quantity": 3},
+            {"templateId": 4020008, "weight": 1, "quantity": 3}
+          ]
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020001,
+        "bossMonsters": [9300002, 9300000, 9300003],
+        "passItemId": 4001008
+      }
+    },
+    {
+      "index": 5,
+      "name": "Bonus Stage",
+      "mapIds": [103000805],
+      "type": "bonus",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9020002
+      }
+    }
+  ],
+  "rewards": []
+}

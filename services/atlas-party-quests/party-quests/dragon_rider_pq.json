@@ -1,0 +1,31 @@
+{
+  "questId": "dragon_rider_pq",
+  "name": "Dragon Rider Party Quest",
+  "fieldLock": "channel",
+  "duration": 3600,
+  "registration": {
+    "type": "npc",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 240030102
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 3,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 120,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [],
+  "failRequirements": [],
+  "exit": 240030102,
+  "stages": [],
+  "rewards": []
+}

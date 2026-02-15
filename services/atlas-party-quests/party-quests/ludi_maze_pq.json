@@ -1,0 +1,72 @@
+{
+  "questId": "ludi_maze_pq",
+  "name": "Ludibrium Maze Party Quest",
+  "fieldLock": "channel",
+  "duration": 900,
+  "registration": {
+    "type": "npc",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 220000000
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 3,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 51,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 70,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "809050000"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 809050017,
+  "stages": [
+    {
+      "index": 0,
+      "name": "The Maze",
+      "mapIds": [809050000, 809050001, 809050002, 809050003, 809050004, 809050005, 809050006, 809050007, 809050008, 809050009, 809050010, 809050011, 809050012, 809050013, 809050014, 809050015],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 30,
+          "referenceId": 4001106
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 0
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9103000,
+        "collectItemId": 4001106,
+        "minimumTickets": 30,
+        "exitNpcMap": 809050015
+      }
+    }
+  ],
+  "rewards": []
+}

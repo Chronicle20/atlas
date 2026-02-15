@@ -45,6 +45,7 @@ use (
 	./services/atlas-npc-conversations/atlas.com/npc
 	./services/atlas-npc-shops/atlas.com/npc
 	./services/atlas-parties/atlas.com/parties
+	./services/atlas-party-quests/atlas.com/party-quests
 	./services/atlas-pets/atlas.com/pets
 	./services/atlas-portal-actions/atlas.com/portal
 	./services/atlas-portals/atlas.com/portals

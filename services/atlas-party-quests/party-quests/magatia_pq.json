@@ -1,0 +1,193 @@
+{
+  "questId": "magatia_pq",
+  "name": "Romeo and Juliet Party Quest",
+  "fieldLock": "instance",
+  "duration": 2700,
+  "registration": {
+    "type": "npc",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 261000011
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "eq",
+      "value": 4,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 71,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 85,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "926100000"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 926100700,
+  "stages": [
+    {
+      "index": 0,
+      "name": "Investigation",
+      "mapIds": [926100000, 926110000],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "investigationNpc": 2112007,
+        "letterItems": [4001130, 4001131],
+        "romeoVariant": 926100000,
+        "julietVariant": 926110000
+      }
+    },
+    {
+      "index": 1,
+      "name": "Monster Elimination",
+      "mapIds": [926100001, 926110001],
+      "type": "monster_killing",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "killAll": true
+      }
+    },
+    {
+      "index": 2,
+      "name": "Suspicious Liquid Collection",
+      "mapIds": [926100100, 926110100],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 3,
+          "referenceId": 4001132
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "collectItemId": 4001132,
+        "monsters": [9300147]
+      }
+    },
+    {
+      "index": 3,
+      "name": "Card Key Retrieval",
+      "mapIds": [926100200, 926100201, 926100202, 926110200, 926110201, 926110202],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 1,
+          "referenceId": 4001133
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2112006,
+        "cardKeyId": 4001133,
+        "experimentFiles": [4001134, 4001135],
+        "monsters": [9300148]
+      }
+    },
+    {
+      "index": 4,
+      "name": "Reinforced Mutae",
+      "mapIds": [926100203, 926110203],
+      "type": "monster_killing",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "monsters": [9300252, 9300253],
+        "killAll": true
+      }
+    },
+    {
+      "index": 5,
+      "name": "Warp Combination Puzzle",
+      "mapIds": [926100300, 926100301, 926100302, 926100303, 926100304, 926110300, 926110301, 926110302, 926110303, 926110304],
+      "type": "warp_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "unitRooms": 4,
+        "levelsPerRoom": 10
+      }
+    },
+    {
+      "index": 6,
+      "name": "Boss Stage",
+      "mapIds": [926100400, 926100401, 926110400, 926110401],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "random_item",
+          "amount": 1,
+          "items": [
+            {"templateId": 2000003, "weight": 1, "quantity": 100},
+            {"templateId": 2000002, "weight": 1, "quantity": 100},
+            {"templateId": 2000004, "weight": 1, "quantity": 20},
+            {"templateId": 2000005, "weight": 1, "quantity": 10},
+            {"templateId": 2022003, "weight": 1, "quantity": 50},
+            {"templateId": 1032016, "weight": 1, "quantity": 1},
+            {"templateId": 1032015, "weight": 1, "quantity": 1},
+            {"templateId": 1032014, "weight": 1, "quantity": 1},
+            {"templateId": 2041212, "weight": 1, "quantity": 1},
+            {"templateId": 2041020, "weight": 1, "quantity": 1},
+            {"templateId": 2040502, "weight": 1, "quantity": 1},
+            {"templateId": 2041016, "weight": 1, "quantity": 1},
+            {"templateId": 2044701, "weight": 1, "quantity": 1},
+            {"templateId": 2040301, "weight": 1, "quantity": 1},
+            {"templateId": 2043201, "weight": 1, "quantity": 1},
+            {"templateId": 2040501, "weight": 1, "quantity": 1},
+            {"templateId": 2040704, "weight": 1, "quantity": 1},
+            {"templateId": 2044001, "weight": 1, "quantity": 1},
+            {"templateId": 2043701, "weight": 1, "quantity": 1},
+            {"templateId": 2040803, "weight": 1, "quantity": 1},
+            {"templateId": 1102026, "weight": 1, "quantity": 1},
+            {"templateId": 1102028, "weight": 1, "quantity": 1},
+            {"templateId": 1102029, "weight": 1, "quantity": 1}
+          ]
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "bossMonsters": [9300139, 9300140],
+        "friendlyNpc": 2112005,
+        "marbleRewards": {
+          "romeo": 4001160,
+          "juliet": 4001159
+        }
+      }
+    }
+  ],
+  "rewards": []
+}

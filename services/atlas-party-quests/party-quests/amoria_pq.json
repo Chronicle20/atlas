@@ -1,0 +1,193 @@
+{
+  "questId": "amoria_pq",
+  "name": "Amorian Challenge Party Quest",
+  "fieldLock": "channel",
+  "duration": 2700,
+  "registration": {
+    "type": "npc",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 670010100
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "eq",
+      "value": 6,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 40,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "670010200"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 670011000,
+  "stages": [
+    {
+      "index": 0,
+      "name": "Cloud Piece Collection",
+      "mapIds": [670010200],
+      "type": "monster_killing",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 2000
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9201047,
+        "wingHammerId": 4031596,
+        "mirrorReactor": 6702000
+      }
+    },
+    {
+      "index": 1,
+      "name": "Heart Strings Combination",
+      "mapIds": [670010300, 670010301, 670010302],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 4000
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9201044,
+        "maxAttempts": 7
+      }
+    },
+    {
+      "index": 2,
+      "name": "Twister Switcher Combination",
+      "mapIds": [670010400],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 6000
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9201044,
+        "maxAttempts": 7
+      }
+    },
+    {
+      "index": 3,
+      "name": "Last Man Standing",
+      "mapIds": [670010500],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 50,
+          "referenceId": 4031597
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 8000
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9201045,
+        "collectItemId": 4031597
+      }
+    },
+    {
+      "index": 4,
+      "name": "Fluttering Hearts",
+      "mapIds": [670010600],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 9000
+        }
+      ],
+      "warpType": "all",
+      "properties": {}
+    },
+    {
+      "index": 5,
+      "name": "Boss Stage",
+      "mapIds": [670010700],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": "gte",
+          "value": 1,
+          "referenceId": 4031594
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 11000
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "collectItemId": 4031594,
+        "bossPhases": 3
+      }
+    },
+    {
+      "index": 6,
+      "name": "Bonus Stage",
+      "mapIds": [670010800, 670010750],
+      "type": "bonus",
+      "duration": 60,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "random_item",
+          "amount": 1,
+          "items": [
+            {"templateId": 1102101, "weight": 1, "quantity": 1},
+            {"templateId": 1102102, "weight": 1, "quantity": 1},
+            {"templateId": 1102103, "weight": 1, "quantity": 1},
+            {"templateId": 1102104, "weight": 1, "quantity": 1},
+            {"templateId": 1102105, "weight": 1, "quantity": 1},
+            {"templateId": 1102106, "weight": 1, "quantity": 1}
+          ]
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "couplesVariant": 670010750,
+        "vaultVariant": 670010800,
+        "cupidCodePieceId": 4031597,
+        "couplesRequiredPieces": 35
+      }
+    }
+  ],
+  "rewards": []
+}

@@ -45,7 +45,7 @@ func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 			input := match[1]
 			if id, err := strconv.ParseUint(input, 10, 16); err == nil {
 				skillId = uint16(id)
-			} else if id, ok := monster2.SkillNameToId(strings.ToLower(input)); ok {
+			} else if id, ok := monster2.SkillNameToId(strings.ToUpper(input)); ok {
 				skillId = id
 			} else {
 				return func(l logrus.FieldLogger) func(ctx context.Context) error {

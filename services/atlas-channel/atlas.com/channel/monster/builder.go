@@ -23,6 +23,7 @@ type modelBuilder struct {
 	fh                 int16
 	stance             byte
 	team               int8
+	statusEffects      []StatusEffectEntry
 }
 
 // NewModelBuilder creates a new builder instance with required fields
@@ -49,6 +50,7 @@ func CloneModel(m Model) *modelBuilder {
 		fh:                 m.fh,
 		stance:             m.stance,
 		team:               m.team,
+		statusEffects:      m.statusEffects,
 	}
 }
 
@@ -115,6 +117,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		fh:                 b.fh,
 		stance:             b.stance,
 		team:               b.team,
+		statusEffects:      b.statusEffects,
 	}, nil
 }
 

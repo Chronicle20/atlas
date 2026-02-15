@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/monster"
 	"atlas-channel/party"
 	"atlas-channel/socket/model"
 	"context"
@@ -32,9 +33,50 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 				_ = applyBuffFunc(characterId)
 				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 			}
+
+			// Handle mob-affecting buffs (crash, dispel, etc.)
+			applyToMobs(l, ctx, f, characterId, info, e)
+
 			return nil
 		}
 	}
+}
+
+func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, info model.SkillUsageInfo, e effect.Model) {
+	mobIds := info.AffectedMobIds()
+	if len(mobIds) == 0 {
+		return
+	}
+
+	mp := monster.NewProcessor(l, ctx)
+	sid := skill2.Id(info.SkillId())
+
+	// Crash and Priest Dispel cancel monster self-buffs
+	if isCrashOrDispel(sid) {
+		for _, mobId := range mobIds {
+			_ = mp.CancelStatus(f, mobId, nil)
+		}
+	}
+
+	// Apply monster status effects from skill (e.g., crash debuff)
+	if len(e.MonsterStatus()) > 0 {
+		ms := make(map[string]int32)
+		for k, v := range e.MonsterStatus() {
+			ms[k] = int32(v)
+		}
+		for _, mobId := range mobIds {
+			_ = mp.ApplyStatus(f, mobId, characterId, uint32(info.SkillId()), uint32(info.SkillLevel()), ms, uint32(e.Duration()))
+		}
+	}
+}
+
+func isCrashOrDispel(skillId skill2.Id) bool {
+	return skill2.Is(skillId,
+		skill2.CrusaderArmorCrashId,
+		skill2.WhiteKnightMagicCrashId,
+		skill2.DragonKnightPowerCrashId,
+		skill2.PriestDispelId,
+	)
 }
 
 func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {

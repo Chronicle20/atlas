@@ -29,9 +29,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
+					var sk skill.Model
+					var se effect.Model
+
 					if ai.SkillId() > 0 {
 						// Process skill
-						var sk skill.Model
 						for _, tsk := range c.Skills() {
 							if tsk.Id() == skill3.Id(ai.SkillId()) {
 								sk = tsk
@@ -42,7 +44,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							return session.NewProcessor(l, ctx).Destroy(s)
 						}
 
-						var se effect.Model
 						se, err = skill2.NewProcessor(l, ctx).GetEffect(ai.SkillId(), sk.Level())
 						if err != nil {
 							return err
@@ -55,12 +56,22 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 					}
 
+					mp := monster.NewProcessor(l, ctx)
 					for _, di := range ai.DamageInfo() {
 						for _, d := range di.Damages() {
-							err := monster.NewProcessor(l, ctx).Damage(s.Field(), di.MonsterId(), s.CharacterId(), d)
+							err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), d, byte(ai.AttackType()))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
 							}
+						}
+
+						// Apply monster status effects from skill (e.g., freeze, poison, stun)
+						if len(se.MonsterStatus()) > 0 {
+							ms := make(map[string]int32)
+							for k, v := range se.MonsterStatus() {
+								ms[k] = int32(v)
+							}
+							_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
 						}
 					}
 

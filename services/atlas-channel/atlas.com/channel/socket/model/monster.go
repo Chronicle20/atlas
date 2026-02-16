@@ -187,13 +187,35 @@ type MonsterTemporaryStat struct {
 	stats      map[monster.TemporaryStatType]MonsterTemporaryStatValue
 }
 
+func (m *MonsterTemporaryStat) Mask() tool.Uint128 {
+	mask := tool.Uint128{}
+	for _, v := range m.stats {
+		mask = mask.Or(v.StatType().Mask())
+	}
+	return mask
+}
+
+func (m *MonsterTemporaryStat) IsMovementAffectingStat(t tenant.Model) bool {
+	lookup := MonsterTemporaryStatTypeByName(t)
+	filter := tool.Uint128{}
+	for _, name := range []monster.TemporaryStatType{
+		monster.TemporaryStatTypeSpeed,
+		monster.TemporaryStatTypeStun,
+		monster.TemporaryStatTypeFrozen,
+		monster.TemporaryStatTypeDoom,
+		monster.TemporaryStatTypeRiseByToss,
+	} {
+		if st, err := lookup(name); err == nil {
+			filter = filter.Or(st.Mask())
+		}
+	}
+	result := m.Mask().And(filter)
+	return result.H != 0 || result.L != 0
+}
+
 func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
-		mask := tool.Uint128{}
-		for _, v := range m.stats {
-			mask = mask.Or(v.StatType().Mask())
-		}
-
+		mask := m.Mask()
 		w.WriteInt(uint32(mask.H >> 32))
 		w.WriteInt(uint32(mask.H & 0xFFFFFFFF))
 		w.WriteInt(uint32(mask.L >> 32))

@@ -87,7 +87,7 @@ func (c *inventoryCheckerImpl) HasItem(characterId uint32, itemId uint32) (bool,
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
-// Supports both "{context.xxx}" and "context.xxx" formats
+// Supports both "{context.xxx}" and "context.xxx" formats, as well as embedded references like "-{context.cost}"
 func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramName string, value string) (string, error) {
 	// Get the conversation context
 	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
@@ -105,9 +105,22 @@ func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramNa
 
 	if isContextRef {
 		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", value, extractedValue, characterId)
+		return extractedValue, nil
 	}
 
-	return extractedValue, nil
+	// Not a direct context reference - try replacing embedded {context.xxx} placeholders
+	// This handles cases like "-{context.cost}" where the reference is part of a larger expression
+	replaced, err := scriptctx.ReplaceContextPlaceholders(extractedValue, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to replace context placeholders for parameter [%s]", paramName)
+		return "", err
+	}
+
+	if replaced != extractedValue {
+		e.l.Debugf("Replaced context placeholders [%s] to [%s] for character [%d]", value, replaced, characterId)
+	}
+
+	return replaced, nil
 }
 
 // getContextValue retrieves a value from the conversation context by key

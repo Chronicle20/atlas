@@ -77,7 +77,7 @@ func startedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string
 	return producer.SingleMessageProvider(key, value)
 }
 
-func stageClearedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, stageIndex uint32) model.Provider[[]kafka.Message] {
+func stageClearedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, stageIndex uint32, channelId channel.Id, mapIds []uint32, fieldInstances []uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(0))
 	value := &pq.StatusEvent[pq.StageClearedEventBody]{
 		WorldId:    worldId,
@@ -85,7 +85,10 @@ func stageClearedEventProvider(worldId world.Id, instanceId uuid.UUID, questId s
 		QuestId:    questId,
 		Type:       pq.EventTypeStageCleared,
 		Body: pq.StageClearedEventBody{
-			StageIndex: stageIndex,
+			StageIndex:     stageIndex,
+			ChannelId:      channelId,
+			MapIds:         mapIds,
+			FieldInstances: fieldInstances,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

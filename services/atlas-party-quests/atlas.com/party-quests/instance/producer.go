@@ -132,6 +132,20 @@ func failedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string,
 	return producer.SingleMessageProvider(key, value)
 }
 
+func characterRegisteredEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, characterId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &pq.StatusEvent[pq.CharacterRegisteredEventBody]{
+		WorldId:    worldId,
+		InstanceId: instanceId,
+		QuestId:    questId,
+		Type:       pq.EventTypeCharacterRegistered,
+		Body: pq.CharacterRegisteredEventBody{
+			CharacterId: characterId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func instanceDestroyedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(0))
 	value := &pq.StatusEvent[pq.InstanceDestroyedEventBody]{

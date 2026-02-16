@@ -3,17 +3,21 @@ package instance
 import (
 	"atlas-party-quests/condition"
 	"atlas-party-quests/definition"
+	"atlas-party-quests/guild"
 	character2 "atlas-party-quests/kafka/message/character"
 	"atlas-party-quests/kafka/message"
 	pq "atlas-party-quests/kafka/message/party_quest"
 	"atlas-party-quests/kafka/producer"
+	"atlas-party-quests/party"
 	"atlas-party-quests/stage"
 	"context"
 	"errors"
 	"math/rand"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -21,8 +25,8 @@ import (
 )
 
 type Processor interface {
-	Register(mb *message.Buffer) func(questId string, partyId uint32, characters []CharacterEntry) (Model, error)
-	RegisterAndEmit(questId string, partyId uint32, characters []CharacterEntry) (Model, error)
+	Register(mb *message.Buffer) func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []CharacterEntry) (Model, error)
+	RegisterAndEmit(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []CharacterEntry) (Model, error)
 
 	Start(mb *message.Buffer) func(instanceId uuid.UUID) error
 	StartAndEmit(instanceId uuid.UUID) error
@@ -91,19 +95,18 @@ func (p *ProcessorImpl) GetAll() []Model {
 	return GetRegistry().GetAll(p.t)
 }
 
-func (p *ProcessorImpl) RegisterAndEmit(questId string, partyId uint32, characters []CharacterEntry) (Model, error) {
+func (p *ProcessorImpl) RegisterAndEmit(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []CharacterEntry) (Model, error) {
 	var inst Model
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		var err error
-		inst, err = p.Register(buf)(questId, partyId, characters)
+		inst, err = p.Register(buf)(questId, partyId, channelId, mapId, characters)
 		return err
 	})
 	return inst, err
 }
 
-func (p *ProcessorImpl) Register(mb *message.Buffer) func(questId string, partyId uint32, characters []CharacterEntry) (Model, error) {
-	return func(questId string, partyId uint32, characters []CharacterEntry) (Model, error) {
-		// Look up definition
+func (p *ProcessorImpl) Register(mb *message.Buffer) func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []CharacterEntry) (Model, error) {
+	return func(questId string, partyId uint32, channelId channel.Id, mapId uint32, characters []CharacterEntry) (Model, error) {
 		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByQuestIdProvider(questId)()
 		if err != nil {
 			p.l.WithError(err).Errorf("PQ definition [%s] not found.", questId)
@@ -114,54 +117,204 @@ func (p *ProcessorImpl) Register(mb *message.Buffer) func(questId string, partyI
 			return Model{}, errors.New("at least one character required")
 		}
 
-		// Determine world/channel from first character
-		worldId := characters[0].WorldId
-		channelId := characters[0].ChannelId
-
-		inst := NewBuilder().
-			SetTenantId(p.t.Id()).
-			SetDefinitionId(def.Id()).
-			SetQuestId(questId).
-			SetWorldId(worldId).
-			SetChannelId(channelId).
-			SetPartyId(partyId).
-			SetCharacters(characters).
-			Build()
-
 		reg := def.Registration()
 
-		// For instant mode, go directly to registering (will be started immediately)
-		if reg.Mode() == "instant" {
-			inst = inst.SetState(StateRegistering)
-		} else {
-			inst = inst.SetState(StateRegistering)
+		switch reg.Type() {
+		case "party":
+			return p.registerParty(mb, def, questId, partyId, channelId, characters)
+		case "individual":
+			return p.registerIndividual(mb, def, questId, characters[0].WorldId, channelId, mapId, characters[0])
+		default:
+			return p.registerParty(mb, def, questId, partyId, channelId, characters)
+		}
+	}
+}
+
+func (p *ProcessorImpl) registerParty(mb *message.Buffer, def definition.Model, questId string, partyId uint32, channelId channel.Id, characters []CharacterEntry) (Model, error) {
+	reg := def.Registration()
+
+	// Resolve all party members via cross-service REST call.
+	if partyId > 0 {
+		members, err := party.NewProcessor(p.l, p.ctx).GetMembers(partyId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to resolve party [%d] members.", partyId)
+			return Model{}, err
+		}
+		if len(members) == 0 {
+			return Model{}, errors.New("party has no members")
+		}
+		characters = make([]CharacterEntry, 0, len(members))
+		for _, m := range members {
+			characters = append(characters, CharacterEntry{
+				CharacterId: m.Id(),
+				WorldId:     m.WorldId(),
+				ChannelId:   m.ChannelId(),
+			})
+		}
+	}
+
+	worldId := characters[0].WorldId
+	if channelId == 0 {
+		channelId = characters[0].ChannelId
+	}
+
+	inst := NewBuilder().
+		SetTenantId(p.t.Id()).
+		SetDefinitionId(def.Id()).
+		SetQuestId(questId).
+		SetWorldId(worldId).
+		SetChannelId(channelId).
+		SetPartyId(partyId).
+		SetAffinityId(partyId).
+		SetCharacters(characters).
+		Build()
+
+	inst = inst.SetState(StateRegistering)
+	inst = GetRegistry().Create(p.t, inst)
+
+	p.l.Infof("PQ instance [%s] created for quest [%s], party [%d], characters: %d.",
+		inst.Id(), questId, partyId, len(characters))
+
+	err := mb.Put(pq.EnvEventStatusTopic, instanceCreatedEventProvider(worldId, inst.Id(), questId, partyId, channelId))
+	if err != nil {
+		return Model{}, err
+	}
+
+	if reg.Mode() == "instant" {
+		return inst, p.Start(mb)(inst.Id())
+	}
+
+	if reg.Mode() == "timed" && reg.Duration() > 0 {
+		err = mb.Put(pq.EnvEventStatusTopic, registrationOpenedEventProvider(worldId, inst.Id(), questId, reg.Duration()))
+		if err != nil {
+			return Model{}, err
+		}
+	}
+
+	return inst, nil
+}
+
+func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Model, questId string, worldId world.Id, channelId channel.Id, mapId uint32, character CharacterEntry) (Model, error) {
+	reg := def.Registration()
+
+	// Validate registration map.
+	if reg.MapId() != 0 && mapId != 0 && reg.MapId() != mapId {
+		return Model{}, errors.New("character is not on the registration map")
+	}
+
+	// Resolve affinity for this character.
+	affinityId, err := p.resolveAffinity(reg.Affinity(), character.CharacterId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to resolve affinity [%s] for character [%d].", reg.Affinity(), character.CharacterId)
+		return Model{}, err
+	}
+
+	// Check for an existing registering instance to join.
+	existing, found := p.findRegistering(questId, worldId, channelId, affinityId)
+	if found {
+		// Check for duplicate character.
+		for _, c := range existing.Characters() {
+			if c.CharacterId == character.CharacterId {
+				p.l.Infof("Character [%d] already registered in PQ instance [%s].", character.CharacterId, existing.Id())
+				return existing, nil
+			}
 		}
 
-		inst = GetRegistry().Create(p.t, inst)
-
-		p.l.Infof("PQ instance [%s] created for quest [%s], party [%d], characters: %d.",
-			inst.Id(), questId, partyId, len(characters))
-
-		// Emit INSTANCE_CREATED event
-		err = mb.Put(pq.EnvEventStatusTopic, instanceCreatedEventProvider(worldId, inst.Id(), questId, partyId, channelId))
+		updated, err := GetRegistry().Update(p.t, existing.Id(), func(m Model) Model {
+			return m.AddCharacter(character)
+		})
 		if err != nil {
 			return Model{}, err
 		}
 
-		// For timed registration, emit REGISTRATION_OPENED
-		if reg.Mode() == "timed" && reg.Duration() > 0 {
-			err = mb.Put(pq.EnvEventStatusTopic, registrationOpenedEventProvider(worldId, inst.Id(), questId, reg.Duration()))
-			if err != nil {
-				return Model{}, err
-			}
+		p.l.Infof("Character [%d] joined registering PQ instance [%s] for quest [%s].",
+			character.CharacterId, existing.Id(), questId)
+
+		err = mb.Put(pq.EnvEventStatusTopic, characterRegisteredEventProvider(worldId, existing.Id(), questId, character.CharacterId))
+		if err != nil {
+			return Model{}, err
 		}
 
-		// For instant mode, start immediately
-		if reg.Mode() == "instant" {
-			return inst, p.Start(mb)(inst.Id())
-		}
+		return updated, nil
+	}
 
-		return inst, nil
+	// No existing instance — create a new one.
+	inst := NewBuilder().
+		SetTenantId(p.t.Id()).
+		SetDefinitionId(def.Id()).
+		SetQuestId(questId).
+		SetWorldId(worldId).
+		SetChannelId(channelId).
+		SetPartyId(0).
+		SetAffinityId(affinityId).
+		SetCharacters([]CharacterEntry{character}).
+		Build()
+
+	inst = inst.SetState(StateRegistering)
+	inst = GetRegistry().Create(p.t, inst)
+
+	p.l.Infof("PQ instance [%s] created for quest [%s], individual registration, affinity [%d].",
+		inst.Id(), questId, affinityId)
+
+	err = mb.Put(pq.EnvEventStatusTopic, instanceCreatedEventProvider(worldId, inst.Id(), questId, 0, channelId))
+	if err != nil {
+		return Model{}, err
+	}
+
+	if reg.Mode() == "instant" {
+		return inst, p.Start(mb)(inst.Id())
+	}
+
+	if reg.Mode() == "timed" && reg.Duration() > 0 {
+		err = mb.Put(pq.EnvEventStatusTopic, registrationOpenedEventProvider(worldId, inst.Id(), questId, reg.Duration()))
+		if err != nil {
+			return Model{}, err
+		}
+	}
+
+	return inst, nil
+}
+
+func (p *ProcessorImpl) findRegistering(questId string, worldId world.Id, channelId channel.Id, affinityId uint32) (Model, bool) {
+	for _, inst := range GetRegistry().GetAll(p.t) {
+		if inst.State() != StateRegistering {
+			continue
+		}
+		if inst.QuestId() != questId {
+			continue
+		}
+		if inst.WorldId() != worldId {
+			continue
+		}
+		if channelId != 0 && inst.ChannelId() != channelId {
+			continue
+		}
+		if affinityId != 0 && inst.AffinityId() != affinityId {
+			continue
+		}
+		return inst, true
+	}
+	return Model{}, false
+}
+
+func (p *ProcessorImpl) resolveAffinity(affinityType string, characterId uint32) (uint32, error) {
+	switch affinityType {
+	case "guild":
+		g, err := guild.NewProcessor(p.l, p.ctx).GetByMemberId(characterId)
+		if err != nil {
+			return 0, err
+		}
+		return g.Id(), nil
+	case "party":
+		pa, err := party.NewProcessor(p.l, p.ctx).GetByMemberId(characterId)
+		if err != nil {
+			return 0, err
+		}
+		return pa.Id(), nil
+	case "none", "":
+		return 0, nil
+	default:
+		return 0, errors.New("unknown affinity type: " + affinityType)
 	}
 }
 

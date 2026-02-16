@@ -1,6 +1,7 @@
 package party_quest
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -24,7 +25,8 @@ const (
 	EventTypeStageAdvanced      = "STAGE_ADVANCED"
 	EventTypeCompleted          = "COMPLETED"
 	EventTypeFailed             = "FAILED"
-	EventTypeInstanceDestroyed  = "INSTANCE_DESTROYED"
+	EventTypeCharacterRegistered = "CHARACTER_REGISTERED"
+	EventTypeInstanceDestroyed   = "INSTANCE_DESTROYED"
 )
 
 type Command[E any] struct {
@@ -35,8 +37,10 @@ type Command[E any] struct {
 }
 
 type RegisterCommandBody struct {
-	QuestId string `json:"questId"`
-	PartyId uint32 `json:"partyId,omitempty"`
+	QuestId   string     `json:"questId"`
+	PartyId   uint32     `json:"partyId,omitempty"`
+	ChannelId channel.Id `json:"channelId"`
+	MapId     uint32     `json:"mapId"`
 }
 
 type StartCommandBody struct {
@@ -97,6 +101,10 @@ type CompletedEventBody struct {
 
 type FailedEventBody struct {
 	Reason string `json:"reason"`
+}
+
+type CharacterRegisteredEventBody struct {
+	CharacterId uint32 `json:"characterId"`
 }
 
 type InstanceDestroyedEventBody struct {

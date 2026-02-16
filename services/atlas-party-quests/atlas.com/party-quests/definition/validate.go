@@ -22,8 +22,14 @@ var validFieldLocks = map[string]bool{
 }
 
 var validRegTypes = map[string]bool{
-	"npc":    true,
-	"portal": true,
+	"party":      true,
+	"individual": true,
+}
+
+var validAffinities = map[string]bool{
+	"none":  true,
+	"guild": true,
+	"party": true,
 }
 
 var validRegModes = map[string]bool{
@@ -102,13 +108,16 @@ func Validate(rm RestModel) ValidationResult {
 
 func validateRegistration(result *ValidationResult, reg RegistrationRestModel) {
 	if reg.Type != "" && !validRegTypes[reg.Type] {
-		result.addError(fmt.Sprintf("invalid registration type %q, must be one of: npc, portal", reg.Type))
+		result.addError(fmt.Sprintf("invalid registration type %q, must be one of: party, individual", reg.Type))
 	}
 	if reg.Mode != "" && !validRegModes[reg.Mode] {
 		result.addError(fmt.Sprintf("invalid registration mode %q, must be one of: instant, timed", reg.Mode))
 	}
 	if reg.Mode == "timed" && reg.Duration <= 0 {
 		result.addError("timed registration mode requires duration > 0")
+	}
+	if reg.Affinity != "" && !validAffinities[reg.Affinity] {
+		result.addError(fmt.Sprintf("invalid registration affinity %q, must be one of: none, guild, party", reg.Affinity))
 	}
 }
 

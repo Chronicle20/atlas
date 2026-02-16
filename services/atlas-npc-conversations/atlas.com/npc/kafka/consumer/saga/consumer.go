@@ -73,6 +73,18 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			return
 		}
 
+		// Check if this is a party quest action (party registered and warped, end conversation)
+		if _, isPartyQuest := conversationCtx.Context()["partyQuestAction_failureState"]; isPartyQuest {
+			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Party quest action completed - party registered, ending conversation")
+			delete(conversationCtx.Context(), "partyQuestAction_failureState")
+			delete(conversationCtx.Context(), "partyQuestAction_notInPartyState")
+			delete(conversationCtx.Context(), "partyQuestAction_notLeaderState")
+			conversationCtx = conversationCtx.ClearPendingSaga()
+			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			return
+		}
+
 		// Check if this is a gachapon action (item awarded, end conversation)
 		if _, isGachapon := conversationCtx.Context()["gachaponAction_failureState"]; isGachapon {
 			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Gachapon action completed - item awarded, ending conversation")
@@ -176,6 +188,11 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 		// Clean up temporary context values (gachapon action)
 		delete(conversationCtx.Context(), "gachaponAction_failureState")
 
+		// Clean up temporary context values (party quest action)
+		delete(conversationCtx.Context(), "partyQuestAction_failureState")
+		delete(conversationCtx.Context(), "partyQuestAction_notInPartyState")
+		delete(conversationCtx.Context(), "partyQuestAction_notLeaderState")
+
 		// Update the context in registry
 		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
 
@@ -191,7 +208,26 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 
 // resolveFailureState determines which failure state to use based on error code and reason
 func resolveFailureState(ctx conversation.ConversationContext, errorCode string, reason string) string {
-	// Check for transport-specific error codes first
+	// Check for party quest-specific error codes first
+	switch errorCode {
+	case "PQ_NOT_IN_PARTY":
+		if state, exists := ctx.Context()["partyQuestAction_notInPartyState"]; exists && state != "" {
+			return state
+		}
+	case "PQ_NOT_LEADER":
+		if state, exists := ctx.Context()["partyQuestAction_notLeaderState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Check for party quest general failure state
+	if errorCode != "" && len(errorCode) > 3 && errorCode[:3] == "PQ_" {
+		if state, exists := ctx.Context()["partyQuestAction_failureState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Check for transport-specific error codes
 	switch errorCode {
 	case "TRANSPORT_CAPACITY_FULL":
 		if state, exists := ctx.Context()["transportAction_capacityFullState"]; exists && state != "" {

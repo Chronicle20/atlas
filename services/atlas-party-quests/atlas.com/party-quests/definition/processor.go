@@ -20,6 +20,7 @@ type Processor interface {
 	AllProvider() model.Provider[[]Model]
 	DeleteAllForTenant() (int64, error)
 	Seed() (SeedResult, error)
+	ValidateDefinitions() []ValidationResult
 }
 
 type ProcessorImpl struct {
@@ -137,4 +138,20 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
+}
+
+func (p *ProcessorImpl) ValidateDefinitions() []ValidationResult {
+	models, errs := LoadDefinitionFiles()
+
+	var results []ValidationResult
+	for _, e := range errs {
+		results = append(results, ValidationResult{
+			Valid:  false,
+			Errors: []string{e.Error()},
+		})
+	}
+	for _, rm := range models {
+		results = append(results, Validate(rm))
+	}
+	return results
 }

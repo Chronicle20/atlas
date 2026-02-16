@@ -1,0 +1,11 @@
+meta {
+  name: Get Definition By Quest Id
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/party-quests/definitions/quest/{{questId}}
+  body: none
+  auth: inherit
+}

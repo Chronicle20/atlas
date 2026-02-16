@@ -75,10 +75,18 @@ func main() {
 				for _, t := range tenants {
 					ctx := tenant.WithContext(tdm.Context(), t)
 					ip := instance.NewProcessor(l, ctx, db)
-					_ = ip.TickGlobalTimerAndEmit()
-					_ = ip.TickStageTimerAndEmit()
-					_ = ip.TickBonusTimerAndEmit()
-					_ = ip.TickRegistrationTimerAndEmit()
+					if err := ip.TickGlobalTimerAndEmit(); err != nil {
+						l.WithError(err).Warn("Error ticking global timer.")
+					}
+					if err := ip.TickStageTimerAndEmit(); err != nil {
+						l.WithError(err).Warn("Error ticking stage timer.")
+					}
+					if err := ip.TickBonusTimerAndEmit(); err != nil {
+						l.WithError(err).Warn("Error ticking bonus timer.")
+					}
+					if err := ip.TickRegistrationTimerAndEmit(); err != nil {
+						l.WithError(err).Warn("Error ticking registration timer.")
+					}
 				}
 			}
 		}

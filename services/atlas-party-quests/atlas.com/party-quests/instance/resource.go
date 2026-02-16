@@ -21,7 +21,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/party-quests/instances", registerHandler("get_all_instances", GetAllInstancesHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/party-quests/instances/{instanceId}", registerHandler("get_instance", GetInstanceHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/party-quests/instances/character/{characterId}", registerHandler("get_instance_by_character", GetInstanceByCharacterHandler)).Methods(http.MethodGet)
-			router.HandleFunc("/party-quests/instances/{instanceId}/stage", registerHandler("get_instance_stage", GetInstanceStageHandler)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -88,25 +87,3 @@ func GetInstanceByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 	})
 }
 
-func GetInstanceStageHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetById(instanceId)
-			if err != nil {
-				w.WriteHeader(http.StatusNotFound)
-				return
-			}
-
-			rm, err := model.Map(Transform)(model.FixedProvider(m))()
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Creating REST model.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-
-			query := r.URL.Query()
-			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
-		}
-	})
-}

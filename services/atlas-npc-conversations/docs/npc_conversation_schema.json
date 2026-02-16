@@ -38,6 +38,7 @@
               "genericAction",
               "craftAction",
               "transportAction",
+              "partyQuestAction",
               "listSelection",
               "askNumber",
               "askStyle",
@@ -295,6 +296,32 @@
               "serviceErrorState": {
                 "type": "string",
                 "description": "State to transition to when the transport service is unavailable"
+              }
+            }
+          },
+          "partyQuestAction": {
+            "type": "object",
+            "description": "Party quest action state configuration. Used for registering a party for a party quest via saga-orchestrator. Creates a saga to validate party state and produce a REGISTER command to atlas-party-quests.",
+            "required": [
+              "questId",
+              "failureState"
+            ],
+            "properties": {
+              "questId": {
+                "type": "string",
+                "description": "Party quest definition ID (e.g., 'henesys_pq')"
+              },
+              "failureState": {
+                "type": "string",
+                "description": "General failure state ID (fallback for unhandled errors)"
+              },
+              "notInPartyState": {
+                "type": "string",
+                "description": "State to transition to when character is not in a party"
+              },
+              "notLeaderState": {
+                "type": "string",
+                "description": "State to transition to when character is not the party leader"
               }
             }
           },

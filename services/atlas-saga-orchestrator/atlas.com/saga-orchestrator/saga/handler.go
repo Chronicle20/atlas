@@ -18,6 +18,7 @@ import (
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/kafka/producer"
 	"atlas-saga-orchestrator/monster"
+	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
@@ -63,6 +64,7 @@ type Handler interface {
 	WithTransportProcessor(transport.Processor) Handler
 	WithSavedLocationProcessor(saved_location.Processor) Handler
 	WithGachaponProcessor(gachapon.Processor) Handler
+	WithPartyQuestProcessor(party_quest.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -132,6 +134,7 @@ type Handler interface {
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
 	handleSelectGachaponReward(s Saga, st Step[any]) error
 	handleEmitGachaponWin(s Saga, st Step[any]) error
+	handleRegisterPartyQuest(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -160,6 +163,7 @@ type HandlerImpl struct {
 	transportP      transport.Processor
 	savedLocationP  saved_location.Processor
 	gachaponP       gachapon.Processor
+	partyQuestP     party_quest.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -188,6 +192,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		transportP:      transport.NewProcessor(l, ctx),
 		savedLocationP:  saved_location.NewProcessor(l, ctx),
 		gachaponP:       gachapon.NewProcessor(l, ctx),
+		partyQuestP:     party_quest.NewProcessor(l, ctx),
 	}
 }
 
@@ -611,6 +616,36 @@ func (h *HandlerImpl) WithGachaponProcessor(gachaponP gachapon.Processor) Handle
 		transportP:     h.transportP,
 		savedLocationP: h.savedLocationP,
 		gachaponP:      gachaponP,
+		partyQuestP:    h.partyQuestP,
+	}
+}
+
+func (h *HandlerImpl) WithPartyQuestProcessor(partyQuestP party_quest.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: h.savedLocationP,
+		gachaponP:      h.gachaponP,
+		partyQuestP:    partyQuestP,
 	}
 }
 
@@ -751,6 +786,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSelectGachaponReward, true
 	case EmitGachaponWin:
 		return h.handleEmitGachaponWin, true
+	case RegisterPartyQuest:
+		return h.handleRegisterPartyQuest, true
 	}
 	return nil, false
 }
@@ -2347,6 +2384,66 @@ func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
 	}
 
 	// This is fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleRegisterPartyQuest handles the RegisterPartyQuest action.
+// Validates party state and produces a REGISTER command to atlas-party-quests.
+// On success, the step is marked complete immediately (fire-and-forget).
+// On failure, a failed status event is emitted with an appropriate error code.
+func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RegisterPartyQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"quest_id":       payload.QuestId,
+		"world_id":       payload.WorldId,
+		"channel_id":     payload.ChannelId,
+		"map_id":         payload.MapId,
+	}).Debug("Registering party quest")
+
+	err := h.partyQuestP.RegisterPartyQuest(payload.CharacterId, payload.WorldId, payload.ChannelId, payload.MapId, payload.QuestId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to register party quest.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+			"quest_id":       payload.QuestId,
+			"error_code":     errorCode,
+		}).Warn("Party quest registration failed - emitting failure event")
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   payload.CharacterId,
+				"error_code":     errorCode,
+			}).Error("Failed to emit saga failed event for party quest registration")
+		}
+
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
 	return nil

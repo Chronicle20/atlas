@@ -123,7 +123,7 @@ func (p *ProcessorImpl) Register(mb *message.Buffer) func(questId string, partyI
 		case "party":
 			return p.registerParty(mb, def, questId, partyId, channelId, characters)
 		case "individual":
-			return p.registerIndividual(mb, def, questId, characters[0].WorldId, channelId, mapId, characters[0])
+			return p.registerIndividual(mb, def, questId, characters[0].WorldId(), channelId, mapId, characters[0])
 		default:
 			return p.registerParty(mb, def, questId, partyId, channelId, characters)
 		}
@@ -145,20 +145,16 @@ func (p *ProcessorImpl) registerParty(mb *message.Buffer, def definition.Model, 
 		}
 		characters = make([]CharacterEntry, 0, len(members))
 		for _, m := range members {
-			characters = append(characters, CharacterEntry{
-				CharacterId: m.Id(),
-				WorldId:     m.WorldId(),
-				ChannelId:   m.ChannelId(),
-			})
+			characters = append(characters, NewCharacterEntry(m.Id(), m.WorldId(), m.ChannelId()))
 		}
 	}
 
-	worldId := characters[0].WorldId
+	worldId := characters[0].WorldId()
 	if channelId == 0 {
-		channelId = characters[0].ChannelId
+		channelId = characters[0].ChannelId()
 	}
 
-	inst := NewBuilder().
+	inst, err := NewBuilder().
 		SetTenantId(p.t.Id()).
 		SetDefinitionId(def.Id()).
 		SetQuestId(questId).
@@ -168,6 +164,9 @@ func (p *ProcessorImpl) registerParty(mb *message.Buffer, def definition.Model, 
 		SetAffinityId(partyId).
 		SetCharacters(characters).
 		Build()
+	if err != nil {
+		return Model{}, err
+	}
 
 	inst = inst.SetState(StateRegistering)
 	inst = GetRegistry().Create(p.t, inst)
@@ -175,7 +174,7 @@ func (p *ProcessorImpl) registerParty(mb *message.Buffer, def definition.Model, 
 	p.l.Infof("PQ instance [%s] created for quest [%s], party [%d], characters: %d.",
 		inst.Id(), questId, partyId, len(characters))
 
-	err := mb.Put(pq.EnvEventStatusTopic, instanceCreatedEventProvider(worldId, inst.Id(), questId, partyId, channelId))
+	err = mb.Put(pq.EnvEventStatusTopic, instanceCreatedEventProvider(worldId, inst.Id(), questId, partyId, channelId))
 	if err != nil {
 		return Model{}, err
 	}
@@ -203,9 +202,9 @@ func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Mo
 	}
 
 	// Resolve affinity for this character.
-	affinityId, err := p.resolveAffinity(reg.Affinity(), character.CharacterId)
+	affinityId, err := p.resolveAffinity(reg.Affinity(), character.CharacterId())
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to resolve affinity [%s] for character [%d].", reg.Affinity(), character.CharacterId)
+		p.l.WithError(err).Errorf("Failed to resolve affinity [%s] for character [%d].", reg.Affinity(), character.CharacterId())
 		return Model{}, err
 	}
 
@@ -214,8 +213,8 @@ func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Mo
 	if found {
 		// Check for duplicate character.
 		for _, c := range existing.Characters() {
-			if c.CharacterId == character.CharacterId {
-				p.l.Infof("Character [%d] already registered in PQ instance [%s].", character.CharacterId, existing.Id())
+			if c.CharacterId() == character.CharacterId() {
+				p.l.Infof("Character [%d] already registered in PQ instance [%s].", character.CharacterId(), existing.Id())
 				return existing, nil
 			}
 		}
@@ -228,9 +227,9 @@ func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Mo
 		}
 
 		p.l.Infof("Character [%d] joined registering PQ instance [%s] for quest [%s].",
-			character.CharacterId, existing.Id(), questId)
+			character.CharacterId(), existing.Id(), questId)
 
-		err = mb.Put(pq.EnvEventStatusTopic, characterRegisteredEventProvider(worldId, existing.Id(), questId, character.CharacterId))
+		err = mb.Put(pq.EnvEventStatusTopic, characterRegisteredEventProvider(worldId, existing.Id(), questId, character.CharacterId()))
 		if err != nil {
 			return Model{}, err
 		}
@@ -239,7 +238,7 @@ func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Mo
 	}
 
 	// No existing instance — create a new one.
-	inst := NewBuilder().
+	inst, err := NewBuilder().
 		SetTenantId(p.t.Id()).
 		SetDefinitionId(def.Id()).
 		SetQuestId(questId).
@@ -249,6 +248,9 @@ func (p *ProcessorImpl) registerIndividual(mb *message.Buffer, def definition.Mo
 		SetAffinityId(affinityId).
 		SetCharacters([]CharacterEntry{character}).
 		Build()
+	if err != nil {
+		return Model{}, err
+	}
 
 	inst = inst.SetState(StateRegistering)
 	inst = GetRegistry().Create(p.t, inst)
@@ -346,7 +348,7 @@ func (p *ProcessorImpl) Start(mb *message.Buffer) func(instanceId uuid.UUID) err
 		// Generate initial stage state
 		ss := NewStageState()
 		if stg.Type() == stage.TypeCombinationPuzzle {
-			ss.Combination = generateCombination(stg.Properties())
+			ss = ss.WithCombination(generateCombination(stg.Properties()))
 		}
 
 		// Update instance state
@@ -368,9 +370,9 @@ func (p *ProcessorImpl) Start(mb *message.Buffer) func(instanceId uuid.UUID) err
 		if len(stg.MapIds()) > 0 {
 			targetMapId := _map.Id(stg.MapIds()[0])
 			for _, c := range inst.Characters() {
-				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId, c.ChannelId, c.CharacterId, targetMapId))
+				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
 				if err != nil {
-					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId, targetMapId)
+					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId(), targetMapId)
 				}
 			}
 		}
@@ -461,7 +463,7 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 		// Generate new stage state
 		ss := NewStageState()
 		if nextStage.Type() == stage.TypeCombinationPuzzle {
-			ss.Combination = generateCombination(nextStage.Properties())
+			ss = ss.WithCombination(generateCombination(nextStage.Properties()))
 		}
 
 		// Update instance
@@ -482,9 +484,9 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 		if len(nextStage.MapIds()) > 0 {
 			targetMapId := _map.Id(nextStage.MapIds()[0])
 			for _, c := range inst.Characters() {
-				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId, c.ChannelId, c.CharacterId, targetMapId))
+				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
 				if err != nil {
-					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId, targetMapId)
+					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId(), targetMapId)
 				}
 			}
 		}
@@ -531,7 +533,7 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 			if len(lastStage.MapIds()) > 0 {
 				targetMapId := _map.Id(lastStage.MapIds()[0])
 				for _, c := range inst.Characters() {
-					_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId, c.ChannelId, c.CharacterId, targetMapId))
+					_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
 				}
 			}
 			return nil
@@ -578,10 +580,10 @@ func (p *ProcessorImpl) UpdateStageState(instanceId uuid.UUID, itemCounts map[ui
 	_, err := GetRegistry().Update(p.t, instanceId, func(m Model) Model {
 		ss := m.StageState()
 		for k, v := range itemCounts {
-			ss.ItemCounts[k] += v
+			ss = ss.WithItemCount(k, v)
 		}
 		for k, v := range monsterKills {
-			ss.MonsterKills[k] += v
+			ss = ss.WithMonsterKill(k, v)
 		}
 		return m.SetStageState(ss)
 	})
@@ -610,9 +612,9 @@ func (p *ProcessorImpl) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, r
 
 		// Warp all characters to exit map
 		for _, c := range inst.Characters() {
-			err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId, c.ChannelId, c.CharacterId, exitMap))
+			err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), exitMap))
 			if err != nil {
-				p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", c.CharacterId)
+				p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", c.CharacterId())
 			}
 		}
 
@@ -653,7 +655,7 @@ func (p *ProcessorImpl) TickGlobalTimer(mb *message.Buffer) error {
 		}
 
 		elapsed := now.Sub(inst.StartedAt())
-		if elapsed.Milliseconds() >= int64(def.Duration()) {
+		if int64(elapsed.Seconds()) >= int64(def.Duration()) {
 			p.l.Infof("PQ instance [%s] global timer expired.", inst.Id())
 			_, _ = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
 				return m.SetState(StateFailed)
@@ -694,7 +696,7 @@ func (p *ProcessorImpl) TickStageTimer(mb *message.Buffer) error {
 		}
 
 		elapsed := now.Sub(inst.StageStartedAt())
-		if elapsed.Milliseconds() >= int64(stg.Duration()) {
+		if int64(elapsed.Seconds()) >= int64(stg.Duration()) {
 			p.l.Infof("PQ instance [%s] stage [%d] timer expired.", inst.Id(), stageIdx)
 			// Auto-advance or fail depending on stage type
 			_ = p.StageAdvance(mb)(inst.Id())
@@ -736,7 +738,7 @@ func (p *ProcessorImpl) TickBonusTimer(mb *message.Buffer) error {
 		}
 
 		elapsed := now.Sub(inst.StageStartedAt())
-		if elapsed.Milliseconds() >= int64(stg.Duration()) {
+		if int64(elapsed.Seconds()) >= int64(stg.Duration()) {
 			p.l.Infof("PQ instance [%s] bonus stage timer expired.", inst.Id())
 			_ = p.Destroy(mb)(inst.Id(), "bonus_expired")
 		}
@@ -768,7 +770,7 @@ func (p *ProcessorImpl) TickRegistrationTimer(mb *message.Buffer) error {
 		}
 
 		elapsed := now.Sub(inst.RegisteredAt())
-		if elapsed.Milliseconds() >= reg.Duration() {
+		if int64(elapsed.Seconds()) >= reg.Duration() {
 			p.l.Infof("PQ instance [%s] registration window expired, starting.", inst.Id())
 			_ = p.Start(mb)(inst.Id())
 		}
@@ -811,9 +813,9 @@ func evaluateCondition(c condition.Model, ss StageState) bool {
 
 	switch c.Type() {
 	case "item":
-		actual = ss.ItemCounts[c.ReferenceId()]
+		actual = ss.ItemCounts()[c.ReferenceId()]
 	case "monster_kill":
-		actual = ss.MonsterKills[c.ReferenceId()]
+		actual = ss.MonsterKills()[c.ReferenceId()]
 	default:
 		return true
 	}

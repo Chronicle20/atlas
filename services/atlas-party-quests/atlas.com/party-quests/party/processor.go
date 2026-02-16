@@ -41,8 +41,7 @@ func (p *ProcessorImpl) ByIdProvider(partyId uint32) model.Provider[Model] {
 		if err != nil {
 			return Model{}, err
 		}
-		pa.members = ms
-		return pa, nil
+		return pa.SetMembers(ms), nil
 	}
 }
 

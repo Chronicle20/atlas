@@ -88,9 +88,9 @@ func Transform(m Model) (RestModel, error) {
 	chars := make([]CharacterEntryRestModel, 0, len(m.Characters()))
 	for _, c := range m.Characters() {
 		chars = append(chars, CharacterEntryRestModel{
-			CharacterId: c.CharacterId,
-			WorldId:     c.WorldId,
-			ChannelId:   c.ChannelId,
+			CharacterId: c.CharacterId(),
+			WorldId:     c.WorldId(),
+			ChannelId:   c.ChannelId(),
 		})
 	}
 
@@ -110,11 +110,11 @@ func Transform(m Model) (RestModel, error) {
 		RegisteredAt:      m.RegisteredAt(),
 		FieldInstances:    m.FieldInstances(),
 		StageState: StageStateRestModel{
-			ItemCounts:   ss.ItemCounts,
-			MonsterKills: ss.MonsterKills,
-			Combination:  ss.Combination,
-			Attempts:     ss.Attempts,
-			CustomData:   ss.CustomData,
+			ItemCounts:   ss.ItemCounts(),
+			MonsterKills: ss.MonsterKills(),
+			Combination:  ss.Combination(),
+			Attempts:     ss.Attempts(),
+			CustomData:   ss.CustomData(),
 		},
 	}, nil
 }

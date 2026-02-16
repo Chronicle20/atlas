@@ -222,7 +222,7 @@ any         -> destroyed (Destroy removes from registry)
 
 - In-memory storage keyed by `tenant.Model` and `uuid.UUID`
 - Maintains a character-to-instance index for O(1) lookups
-- Supports `Create`, `Get`, `GetByCharacter`, `GetByMap`, `GetAll`, `Update`, `Remove`, `Clear`
+- Supports `Create`, `Get`, `GetByCharacter`, `GetAll`, `Update`, `Remove`, `Clear`
 
 ---
 

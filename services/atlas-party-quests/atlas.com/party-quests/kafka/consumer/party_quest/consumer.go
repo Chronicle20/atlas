@@ -46,11 +46,7 @@ func handleRegisterCommand(db *gorm.DB) message.Handler[pq.Command[pq.RegisterCo
 			c.CharacterId, c.Body.QuestId, c.Body.PartyId)
 
 		characters := []instance.CharacterEntry{
-			{
-				CharacterId: c.CharacterId,
-				WorldId:     c.WorldId,
-				ChannelId:   c.Body.ChannelId,
-			},
+			instance.NewCharacterEntry(c.CharacterId, c.WorldId, c.Body.ChannelId),
 		}
 
 		_, _ = instance.NewProcessor(l, ctx, db).RegisterAndEmit(c.Body.QuestId, c.Body.PartyId, c.Body.ChannelId, c.Body.MapId, characters)

@@ -11,9 +11,14 @@ type Model struct {
 	members  []MemberModel
 }
 
-func (m Model) Id() uint32            { return m.id }
-func (m Model) LeaderId() uint32      { return m.leaderId }
+func (m Model) Id() uint32             { return m.id }
+func (m Model) LeaderId() uint32       { return m.leaderId }
 func (m Model) Members() []MemberModel { return m.members }
+
+func (m Model) SetMembers(members []MemberModel) Model {
+	m.members = members
+	return m
+}
 
 type MemberModel struct {
 	id        uint32

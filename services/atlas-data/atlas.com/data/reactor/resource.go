@@ -4,6 +4,7 @@ import (
 	"atlas-data/rest"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -36,10 +37,32 @@ func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			}
 
 			query := r.URL.Query()
+
+			searchQuery := query.Get("search")
+			if searchQuery != "" {
+				results = filterReactors(results, searchQuery, 50)
+			}
+
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
+}
+
+func filterReactors(reactors []RestModel, search string, limit int) []RestModel {
+	searchLower := strings.ToLower(search)
+	results := make([]RestModel, 0)
+	for _, reactor := range reactors {
+		if strings.HasPrefix(strconv.Itoa(int(reactor.Id)), search) {
+			results = append(results, reactor)
+		} else if strings.Contains(strings.ToLower(reactor.Name), searchLower) {
+			results = append(results, reactor)
+		}
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results
 }
 
 func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

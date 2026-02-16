@@ -107,12 +107,15 @@ func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[M
 
 func (p *ProcessorImpl) CreateAndEmit(leaderId uint32) (Model, error) {
 	var party Model
+	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var err error
-		party, err = p.Create(buf)(leaderId)
-		return err
+		party, domainErr = p.Create(buf)(leaderId)
+		return nil
 	})
-	return party, err
+	if err != nil {
+		return party, err
+	}
+	return party, domainErr
 }
 
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(leaderId uint32) (Model, error) {
@@ -184,12 +187,15 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(leaderId uint32) (Model,
 
 func (p *ProcessorImpl) JoinAndEmit(partyId uint32, characterId uint32) (Model, error) {
 	var party Model
+	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var err error
-		party, err = p.Join(buf)(partyId, characterId)
-		return err
+		party, domainErr = p.Join(buf)(partyId, characterId)
+		return nil
 	})
-	return party, err
+	if err != nil {
+		return party, err
+	}
+	return party, domainErr
 }
 
 func (p *ProcessorImpl) Join(mb *message.Buffer) func(partyId uint32, characterId uint32) (Model, error) {
@@ -273,12 +279,15 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(partyId uint32, characterI
 
 func (p *ProcessorImpl) ExpelAndEmit(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
 	var party Model
+	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var err error
-		party, err = p.Expel(buf)(actorId, partyId, characterId)
-		return err
+		party, domainErr = p.Expel(buf)(actorId, partyId, characterId)
+		return nil
 	})
-	return party, err
+	if err != nil {
+		return party, err
+	}
+	return party, domainErr
 }
 
 func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
@@ -373,12 +382,15 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 
 func (p *ProcessorImpl) LeaveAndEmit(partyId uint32, characterId uint32) (Model, error) {
 	var party Model
+	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var err error
-		party, err = p.Leave(buf)(partyId, characterId)
-		return err
+		party, domainErr = p.Leave(buf)(partyId, characterId)
+		return nil
 	})
-	return party, err
+	if err != nil {
+		return party, err
+	}
+	return party, domainErr
 }
 
 func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, characterId uint32) (Model, error) {
@@ -475,12 +487,15 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 
 func (p *ProcessorImpl) ChangeLeaderAndEmit(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
 	var party Model
+	var domainErr error
 	err := message.Emit(p.p)(func(buf *message.Buffer) error {
-		var err error
-		party, err = p.ChangeLeader(buf)(actorId, partyId, characterId)
-		return err
+		party, domainErr = p.ChangeLeader(buf)(actorId, partyId, characterId)
+		return nil
 	})
-	return party, err
+	if err != nil {
+		return party, err
+	}
+	return party, domainErr
 }
 
 func (p *ProcessorImpl) ChangeLeader(mb *message.Buffer) func(actorId uint32, partyId uint32, characterId uint32) (Model, error) {
@@ -564,9 +579,15 @@ func (p *ProcessorImpl) ChangeLeader(mb *message.Buffer) func(actorId uint32, pa
 }
 
 func (p *ProcessorImpl) RequestInviteAndEmit(actorId uint32, characterId uint32) error {
-	return message.Emit(p.p)(func(buf *message.Buffer) error {
-		return p.RequestInvite(buf)(actorId, characterId)
+	var domainErr error
+	err := message.Emit(p.p)(func(buf *message.Buffer) error {
+		domainErr = p.RequestInvite(buf)(actorId, characterId)
+		return nil
 	})
+	if err != nil {
+		return err
+	}
+	return domainErr
 }
 
 func (p *ProcessorImpl) RequestInvite(mb *message.Buffer) func(actorId uint32, characterId uint32) error {

@@ -156,13 +156,13 @@ export const getColumns = ({tenant, onRefresh, banStatuses, banStatusLoading, on
         {
             id: "actions",
             cell: ({ row }) => {
-                return <AccountActions account={row.original} tenant={tenant} onRefresh={onRefresh} />
+                return <AccountActions account={row.original} tenant={tenant} onRefresh={onRefresh} banStatuses={banStatuses} onBanAccount={onBanAccount} onRemoveBan={onRemoveBan} />
             },
         }
     ]
 };
 
-function AccountActions({ account, tenant, onRefresh }: { account: Account; tenant: Tenant | null; onRefresh?: (() => void) | undefined }) {
+function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount, onRemoveBan }: { account: Account; tenant: Tenant | null; onRefresh?: (() => void) | undefined; banStatuses: Map<string, CheckBanAttributes>; onBanAccount?: ((account: Account) => void) | undefined; onRemoveBan?: ((account: Account) => void) | undefined }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 

@@ -121,6 +121,15 @@ type RegisterPartyQuestPayload struct {
 	QuestId     string     `json:"questId"` // Party quest definition ID (e.g., "henesys_pq")
 }
 
+// WarpPartyQuestMembersToMapPayload represents the payload required to warp all party quest members to a map.
+type WarpPartyQuestMembersToMapPayload struct {
+	CharacterId uint32     `json:"characterId"` // Character initiating the warp (must be in a party)
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`    // Destination map ID
+	PortalId    uint32     `json:"portalId"` // Destination portal ID
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -178,7 +187,8 @@ const (
 	StartInstanceTransport Action = "start_instance_transport"
 
 	// Party quest actions
-	RegisterPartyQuest Action = "register_party_quest"
+	RegisterPartyQuest             Action = "register_party_quest"
+	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
-import { columns } from "./columns";
+import { columns, hiddenColumns } from "./columns";
 import { Map, Search, Loader2 } from "lucide-react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 
@@ -129,6 +129,7 @@ function MapsPageContent() {
             data={maps}
             error={null}
             onRefresh={handleSearch}
+            initialVisibilityState={hiddenColumns}
             emptyState={{
               title: "No maps found",
               description: "Try a different search term.",

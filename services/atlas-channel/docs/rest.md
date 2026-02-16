@@ -199,8 +199,32 @@ Base URL: `BASE_SERVICE_URL` + DATA root
 #### GET /skills/{skillId}
 - Parameters: skillId (uint32)
 - Request Model: None
-- Response Model: `RestModel` - Skill data
+- Response Model: `RestModel` - Skill data with effects array. Each effect contains stat modifiers, resource costs, duration, cooldown, monster status effects, cure lists, and statups.
 - Error Conditions: 404 if skill not found
+
+#### GET /maps/{mapId}/portals?name={name}
+- Parameters: mapId, name (string)
+- Request Model: None
+- Response Model: `[]RestModel` - Portals matching name in map
+- Error Conditions: None
+
+#### GET /quests/{questId}
+- Parameters: questId (uint32)
+- Request Model: None
+- Response Model: `RestModel` - Quest definition with start/end requirements and actions
+- Error Conditions: 404 if quest not found
+
+#### GET /quests
+- Parameters: None
+- Request Model: None
+- Response Model: `[]RestModel` - All quest definitions
+- Error Conditions: None
+
+#### GET /quests/auto-start
+- Parameters: None
+- Request Model: None
+- Response Model: `[]RestModel` - Quests with autoStart enabled
+- Error Conditions: None
 
 ---
 
@@ -308,14 +332,14 @@ Base URL: `BASE_SERVICE_URL` + MESSENGERS root
 ### MONSTERS
 Base URL: `BASE_SERVICE_URL` + MONSTERS root
 
-#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters
-- Parameters: worldId, channelId, mapId
+#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/monsters
+- Parameters: worldId, channelId, mapId, instanceId (uuid)
 - Request Model: None
-- Response Model: `[]RestModel` - Monsters in map
+- Response Model: `[]RestModel` - Monsters in field instance
 - Error Conditions: None
 
-#### GET /worlds/{worldId}/channels/{channelId}/maps/{mapId}/monsters/{uniqueId}
-- Parameters: worldId, channelId, mapId, uniqueId (uint32)
+#### GET /monsters/{uniqueId}
+- Parameters: uniqueId (uint32)
 - Request Model: None
 - Response Model: `RestModel` - Monster by unique ID
 - Error Conditions: 404 if not found

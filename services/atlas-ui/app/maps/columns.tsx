@@ -4,24 +4,31 @@ import { ColumnDef } from "@tanstack/react-table";
 import type { MapData } from "@/services/api/maps.service";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+export const hiddenColumns = ["id"];
 
 export const columns: ColumnDef<MapData>[] = [
   {
     accessorKey: "id",
     header: "ID",
-    cell: ({ row }) => (
-      <Link href={`/maps/${row.original.id}`} className="font-mono text-primary hover:underline">
-        {row.original.id}
-      </Link>
-    ),
   },
   {
     accessorKey: "attributes.name",
     header: "Name",
     cell: ({ row }) => (
-      <Link href={`/maps/${row.original.id}`} className="font-medium hover:underline">
-        {row.original.attributes.name}
-      </Link>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link href={`/maps/${row.original.id}`}>
+              <Badge variant="secondary">{row.original.attributes.name}</Badge>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent copyable>
+            <p>{row.original.id}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     ),
   },
   {

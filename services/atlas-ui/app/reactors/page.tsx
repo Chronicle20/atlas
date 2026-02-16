@@ -155,7 +155,7 @@ function ReactorsPageContent() {
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>Reactor ID</TableHead>
+                      <TableHead>Template</TableHead>
                       <TableHead>Name</TableHead>
                     </TableRow>
                   </TableHeader>

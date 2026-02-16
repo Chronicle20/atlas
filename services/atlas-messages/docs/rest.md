@@ -96,6 +96,42 @@ Returns array of character references (IDs only).
 
 ---
 
+### atlas-rates
+
+#### GET /worlds/{worldId}/channels/{channelId}/characters/{characterId}/rates
+
+Retrieves rates and rate factors for a character.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| worldId | byte | path | World identifier |
+| channelId | byte | path | Channel identifier |
+| characterId | uint32 | path | Character ID |
+
+**Response Model**
+
+Resource type: `rates`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
+| factors | []Factor | Rate factor breakdowns |
+
+#### Factor
+
+| Field | Type | Description |
+|-------|------|-------------|
+| source | string | Factor source identifier |
+| rateType | string | Rate type (exp, meso, item_drop, quest_exp) |
+| multiplier | float64 | Multiplier value |
+
+---
+
 ### atlas-data
 
 #### GET /data/maps/{mapId}
@@ -153,7 +189,7 @@ Resource type: `statistics`
 
 #### GET /data/skills/{skillId}
 
-Retrieves skill data.
+Retrieves skill data by ID.
 
 **Parameters**
 
@@ -167,7 +203,22 @@ Resource type: `skills`
 
 | Field | Type | Description |
 |-------|------|-------------|
+| name | string | Skill name |
 | action | bool | Has action animation |
 | element | string | Element type |
 | animationTime | uint32 | Animation duration |
 | effects | []effect | Skill effects per level |
+
+#### GET /data/skills?name={name}
+
+Retrieves skills matching a name.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| name | string | query | Skill name (URL-encoded) |
+
+**Response Model**
+
+Array of skills matching the name. Same resource type and fields as GET /data/skills/{skillId}.

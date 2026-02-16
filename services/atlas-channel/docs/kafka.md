@@ -78,8 +78,9 @@
 
 ### EVENT_TOPIC_CHARACTER_CHAT
 - Direction: Event
-- Message Type: Chat events
-- Purpose: Receives character chat messages for broadcast
+- Message Type: `ChatEvent[GeneralChatBody]`, `ChatEvent[MultiChatBody]`, `ChatEvent[WhisperChatBody]`, `ChatEvent[MessengerChatBody]`, `ChatEvent[PetChatBody]`, `ChatEvent[PinkTextChatBody]`
+- Envelope: `ChatEvent[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), ActorId (uint32), Message (string), Type (string), Body (E)
+- Purpose: Receives character chat messages for broadcast. GENERAL broadcasts to map sessions (with BalloonOnly flag). BUDDY/PARTY/GUILD/ALLIANCE (multi-chat types) deliver to specified recipients. WHISPER delivers to target character. MESSENGER delivers to messenger room recipients. PET broadcasts pet chat to map sessions. PINK_TEXT delivers to specified recipients.
 
 ### EVENT_TOPIC_DROP_STATUS
 - Direction: Event
@@ -88,8 +89,9 @@
 
 ### EVENT_TOPIC_MONSTER_STATUS
 - Direction: Event
-- Message Type: Monster status events
-- Purpose: Receives monster spawn/death/damage events
+- Message Type: `StatusEvent[StatusEventCreatedBody]`, `StatusEvent[StatusEventDestroyedBody]`, `StatusEvent[StatusEventDamagedBody]`, `StatusEvent[StatusEventKilledBody]`, `StatusEvent[StatusEventStartControlBody]`, `StatusEvent[StatusEventStopControlBody]`, `StatusEvent[StatusEffectAppliedBody]`, `StatusEvent[StatusEffectExpiredBody]`, `StatusEvent[StatusEffectCancelledBody]`, `StatusEvent[StatusEventDamageReflectedBody]`
+- Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), UniqueId (uint32), MonsterId (uint32), Type (string), Body (E)
+- Purpose: Receives monster lifecycle and status events. CREATED spawns monster visually. DESTROYED/KILLED despawn monster. START_CONTROL/STOP_CONTROL manage monster controller assignment. DAMAGED shows HP bar (boss=map-wide, else party-only). STATUS_APPLIED sends MonsterStatSet packet. STATUS_EXPIRED/STATUS_CANCELLED send MonsterStatReset packet. DAMAGE_REFLECTED applies reflected damage to character HP.
 
 ### EVENT_TOPIC_FAME_STATUS
 - Direction: Event
@@ -118,8 +120,9 @@
 
 ### EVENT_TOPIC_TRANSPORT_STATUS
 - Direction: Event
-- Message Type: Transport status events
-- Purpose: Receives transport route state changes
+- Message Type: `StatusEvent[ArrivedStatusEventBody]`, `StatusEvent[DepartedStatusEventBody]`
+- Envelope: `StatusEvent[E]` with fields: RouteId (uuid.UUID), Type (string), Body (E)
+- Purpose: Receives transport route state changes. ARRIVED/DEPARTED indicate route arrival at or departure from a map.
 
 ### EVENT_TOPIC_QUEST_STATUS
 - Direction: Event
@@ -135,6 +138,30 @@
 - Direction: Event
 - Message Type: `StatusEvent[StatusEventCompletedBody]`, `StatusEvent[StatusEventFailedBody]`
 - Purpose: Receives saga transaction completion and failure events
+
+### EVENT_TOPIC_CHARACTER_BUFF_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[AppliedStatusEventBody]`, `StatusEvent[ExpiredStatusEventBody]`
+- Envelope: `StatusEvent[E]` with fields: WorldId (world.Id), CharacterId (uint32), Type (string), Body (E)
+- Purpose: Receives character buff applied and expired events. APPLIED sends buff give packet to character and foreign buff packet to map. EXPIRED sends buff cancel packet to character and foreign cancel to map. Body contains SourceId (int32), Level (byte), Duration (int32), Changes ([]StatChange with Type string and Amount int32), CreatedAt, ExpiresAt.
+
+### EVENT_TOPIC_SKILL_STATUS
+- Direction: Event
+- Message Type: `StatusEvent[StatusEventCreatedBody]`, `StatusEvent[StatusEventUpdatedBody]`, `StatusEvent[StatusEventCooldownAppliedBody]`, `StatusEvent[StatusEventCooldownExpiredBody]`
+- Envelope: `StatusEvent[E]` with fields: CharacterId (uint32), SkillId (uint32), Type (string), Body (E)
+- Purpose: Receives skill lifecycle events. CREATED/UPDATED send skill change packets to character. COOLDOWN_APPLIED sends cooldown start packet. COOLDOWN_EXPIRED sends cooldown end packet.
+
+### EVENT_TOPIC_INSTANCE_TRANSPORT
+- Direction: Event
+- Message Type: `Event[TransitEnteredEventBody]`
+- Envelope: `Event[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), CharacterId (uint32), Type (string), Body (E)
+- Purpose: Receives instance transport events. TRANSIT_ENTERED sends Clock packet and optional ScriptProgress message to character. Body contains RouteId (uuid.UUID), InstanceId (uuid.UUID), ChannelId (channel.Id), DurationSeconds (uint32), Message (string).
+
+### COMMAND_TOPIC_SYSTEM_MESSAGE
+- Direction: Command (inbound)
+- Message Type: `Command[SendMessageBody]`, `Command[PlayPortalSoundBody]`, `Command[ShowInfoBody]`, `Command[ShowInfoTextBody]`, `Command[UpdateAreaInfoBody]`, `Command[ShowHintBody]`, `Command[ShowGuideHintBody]`, `Command[ShowIntroBody]`, `Command[FieldEffectBody]`, `Command[UiLockBody]`, `Command[UiDisableBody]`
+- Envelope: `Command[E]` with fields: TransactionId (uuid.UUID), WorldId (world.Id), ChannelId (channel.Id), CharacterId (uint32), Type (string), Body (E)
+- Purpose: Receives system message commands from other services. SEND_MESSAGE displays notices/popups/pink/blue text. PLAY_PORTAL_SOUND plays portal sound effect. SHOW_INFO/SHOW_INFO_TEXT display info paths or text. UPDATE_AREA_INFO updates area-specific info. SHOW_HINT displays hint overlay. SHOW_GUIDE_HINT displays guide hint. SHOW_INTRO displays intro sequence. FIELD_EFFECT triggers field visual effect. UI_LOCK/UI_DISABLE control UI state.
 
 ---
 
@@ -183,8 +210,8 @@
 
 ### COMMAND_TOPIC_PORTAL
 - Direction: Command
-- Message Type: `Command[EnterBody]`
-- Purpose: Issues portal entry commands
+- Message Type: `Command[EnterBody]`, `WarpCommand`
+- Purpose: Issues portal commands. ENTER triggers portal entry by portal ID. WARP triggers direct map warp by target map ID.
 
 ### COMMAND_TOPIC_EXPRESSION
 - Direction: Command
@@ -193,8 +220,8 @@
 
 ### COMMAND_TOPIC_CHARACTER_CHAT
 - Direction: Command
-- Message Type: Chat commands
-- Purpose: Issues character chat commands
+- Message Type: `Command[GeneralChatBody]`, `Command[MultiChatBody]`, `Command[WhisperChatBody]`, `Command[MessengerChatBody]`, `Command[PetChatBody]`
+- Purpose: Issues character chat commands. GENERAL (field-scoped with BalloonOnly flag), BUDDY/PARTY/GUILD/ALLIANCE (multi-chat with Recipients list), WHISPER (with RecipientName), MESSENGER (with Recipients list), PET (with OwnerId, PetSlot, Type, Action, Balloon)
 
 ### COMMAND_TOPIC_BUDDY_LIST
 - Direction: Command
@@ -223,8 +250,8 @@
 
 ### COMMAND_TOPIC_FAME
 - Direction: Command
-- Message Type: Fame commands
-- Purpose: Issues fame change commands
+- Message Type: `Command[RequestChangeFameBody]`
+- Purpose: Issues fame change commands. REQUEST_CHANGE carries CharacterId, WorldId at envelope level with ChannelId, MapId, Instance, TargetId, Amount in body.
 
 ### COMMAND_TOPIC_CHAIR
 - Direction: Command
@@ -243,8 +270,9 @@
 
 ### COMMAND_TOPIC_MONSTER
 - Direction: Command
-- Message Type: Monster commands
-- Purpose: Issues monster damage/death commands
+- Message Type: `Command[DamageCommandBody]`, `Command[UseSkillCommandBody]`, `Command[ApplyStatusCommandBody]`, `Command[CancelStatusCommandBody]`
+- Envelope: `Command[E]` with fields: WorldId (world.Id), ChannelId (channel.Id), MapId (_map.Id), Instance (uuid.UUID), MonsterId (uint32), Type (string), Body (E)
+- Purpose: Issues monster commands. DAMAGE applies damage (CharacterId, Damage, AttackType). USE_SKILL triggers monster skill usage (CharacterId, SkillId, SkillLevel). APPLY_STATUS applies debuffs (SourceType, SourceCharacterId, SourceSkillId, SourceSkillLevel, Statuses map, Duration, TickInterval). CANCEL_STATUS removes status effects (StatusTypes list).
 
 ### COMMAND_TOPIC_NPC
 - Direction: Command
@@ -263,8 +291,8 @@
 
 ### COMMAND_TOPIC_SKILL
 - Direction: Command
-- Message Type: Skill commands
-- Purpose: Issues skill use commands
+- Message Type: Skill commands, `Command[SetCooldownBody]`
+- Purpose: Issues skill use commands. SET_COOLDOWN sets cooldown timer for a skill (SkillId, Cooldown).
 
 ### COMMAND_TOPIC_CHARACTER_BUFF
 - Direction: Command
@@ -278,8 +306,8 @@
 
 ### COMMAND_TOPIC_CONSUMABLE
 - Direction: Command
-- Message Type: Consumable commands
-- Purpose: Issues consumable item use commands
+- Message Type: `Command[RequestItemConsumeBody]`, `Command[RequestScrollBody]`
+- Purpose: Issues consumable item use commands. REQUEST_ITEM_CONSUME uses a consumable item (Source, ItemId, Quantity). REQUEST_SCROLL applies a scroll to equipment (ScrollSlot, EquipSlot, WhiteScroll, LegendarySpirit).
 
 ### COMMAND_TOPIC_CASH_SHOP
 - Direction: Command
@@ -293,8 +321,8 @@
 
 ### COMMAND_TOPIC_INVITE
 - Direction: Command
-- Message Type: Invite commands
-- Purpose: Issues invite accept/reject commands
+- Message Type: `Command[AcceptBody]`, `Command[RejectBody]`
+- Purpose: Issues invite accept/reject commands. ACCEPT carries ReferenceId and TargetId. REJECT carries OriginatorId and TargetId. Commands are world-scoped (WorldId and InviteType at envelope level).
 
 ### COMMAND_TOPIC_QUEST_CONVERSATION
 - Direction: Command
@@ -305,11 +333,6 @@
 - Direction: Command
 - Message Type: Channel status commands
 - Purpose: Issues channel heartbeat and status commands
-
-### COMMAND_TOPIC_SYSTEM_MESSAGE
-- Direction: Command
-- Message Type: System message commands
-- Purpose: Issues system message broadcast commands
 
 ### COMMAND_TOPIC_SAGA
 - Direction: Command
@@ -338,6 +361,9 @@ Storage-specific compartment event envelope with WorldId, AccountId, CharacterId
 
 ### Command
 Generic command envelope with type discriminator and typed body. Used for all outbound commands.
+
+### ChatEvent
+Chat event envelope with field context (WorldId, ChannelId, MapId, Instance), ActorId, Message, type discriminator, and typed body. Used for character chat events.
 
 ### RewardWonEvent
 Flat event (not envelope-wrapped) for gachapon reward notifications, containing character, item, and gachapon details.

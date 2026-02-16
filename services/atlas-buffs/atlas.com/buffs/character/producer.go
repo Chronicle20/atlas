@@ -5,6 +5,7 @@ import (
 	character2 "atlas-buffs/kafka/message/character"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
@@ -33,6 +34,20 @@ func appliedStatusEventProvider(worldId world.Id, characterId uint32, fromId uin
 			Changes:   statups,
 			CreatedAt: createdAt,
 			ExpiresAt: expiresAt,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func changeHPCommandProvider(worldId world.Id, channelId channel.Id, characterId uint32, amount int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.CharacterCommand[character2.ChangeHPCommandBody]{
+		CharacterId: characterId,
+		WorldId:     worldId,
+		Type:        character2.CommandChangeHP,
+		Body: character2.ChangeHPCommandBody{
+			ChannelId: channelId,
+			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

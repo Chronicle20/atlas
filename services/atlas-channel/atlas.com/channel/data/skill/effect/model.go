@@ -88,3 +88,11 @@ func (m Model) ItemConsume() uint32 {
 func (m Model) ItemConsumeAmount() uint32 {
 	return m.itemConNo
 }
+
+func (m Model) MonsterStatus() map[string]uint32 {
+	return m.monsterStatus
+}
+
+func (m Model) CureAbnormalStatuses() []string {
+	return m.cureAbnormalStatuses
+}

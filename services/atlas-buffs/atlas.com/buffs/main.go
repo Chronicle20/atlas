@@ -52,6 +52,7 @@ func main() {
 	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewExpiration(l, 10000))
+	go tasks.Register(tasks.NewPoisonTick(l, 1000))
 
 	server.New(l).
 		WithContext(tdm.Context()).

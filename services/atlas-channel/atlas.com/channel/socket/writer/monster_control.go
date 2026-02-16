@@ -46,6 +46,8 @@ func ControlMonsterBody(l logrus.FieldLogger, t tenant.Model) func(m monster.Mod
 				w.WriteByte(5)
 				w.WriteInt(m.MonsterId())
 				mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), model.MonsterAppearTypeRegen, m.Team())
+				stat := buildMonsterTemporaryStat(l, t, m)
+				mem.SetTemporaryStat(stat)
 				mem.Encode(l, t, options)(w)
 				return w.Bytes()
 			}

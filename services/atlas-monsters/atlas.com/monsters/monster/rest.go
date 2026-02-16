@@ -11,23 +11,31 @@ import (
 )
 
 type RestModel struct {
-	Id                 string        `json:"-"`
-	WorldId            world.Id      `json:"worldId"`
-	ChannelId          channel.Id   `json:"channelId"`
-	MapId              _map.Id       `json:"mapId"`
-	Instance           uuid.UUID     `json:"instance"`
-	MonsterId          uint32        `json:"monsterId"`
-	ControlCharacterId uint32        `json:"controlCharacterId"`
-	X                  int16         `json:"x"`
-	Y                  int16         `json:"y"`
-	Fh                 int16         `json:"fh"`
-	Stance             byte          `json:"stance"`
-	Team               int8          `json:"team"`
-	MaxHp              uint32        `json:"maxHp"`
-	Hp                 uint32        `json:"hp"`
-	MaxMp              uint32        `json:"maxMp"`
-	Mp                 uint32        `json:"mp"`
-	DamageEntries      []DamageEntry `json:"damageEntries"`
+	Id                 string              `json:"-"`
+	WorldId            world.Id            `json:"worldId"`
+	ChannelId          channel.Id          `json:"channelId"`
+	MapId              _map.Id             `json:"mapId"`
+	Instance           uuid.UUID           `json:"instance"`
+	MonsterId          uint32              `json:"monsterId"`
+	ControlCharacterId uint32              `json:"controlCharacterId"`
+	X                  int16               `json:"x"`
+	Y                  int16               `json:"y"`
+	Fh                 int16               `json:"fh"`
+	Stance             byte                `json:"stance"`
+	Team               int8                `json:"team"`
+	MaxHp              uint32              `json:"maxHp"`
+	Hp                 uint32              `json:"hp"`
+	MaxMp              uint32              `json:"maxMp"`
+	Mp                 uint32              `json:"mp"`
+	DamageEntries      []DamageEntry       `json:"damageEntries"`
+	StatusEffects      []StatusEffectEntry `json:"statusEffects"`
+}
+
+type StatusEffectEntry struct {
+	SourceSkillId    uint32           `json:"sourceSkillId"`
+	SourceSkillLevel uint32           `json:"sourceSkillLevel"`
+	Statuses         map[string]int32 `json:"statuses"`
+	ExpiresAt        int64            `json:"expiresAt"`
 }
 
 type DamageEntry struct {
@@ -54,6 +62,16 @@ func Transform(m Model) (RestModel, error) {
 		return RestModel{}, err
 	}
 
+	ses := make([]StatusEffectEntry, 0, len(m.statusEffects))
+	for _, se := range m.statusEffects {
+		ses = append(ses, StatusEffectEntry{
+			SourceSkillId:    se.sourceSkillId,
+			SourceSkillLevel: se.sourceSkillLevel,
+			Statuses:         se.statuses,
+			ExpiresAt:        se.expiresAt.UnixMilli(),
+		})
+	}
+
 	return RestModel{
 		Id:                 strconv.Itoa(int(m.UniqueId())),
 		WorldId:            m.worldId,
@@ -72,6 +90,7 @@ func Transform(m Model) (RestModel, error) {
 		MaxMp:              m.maxMp,
 		Mp:                 m.mp,
 		DamageEntries:      des,
+		StatusEffects:      ses,
 	}, nil
 }
 

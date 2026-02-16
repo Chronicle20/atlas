@@ -29,6 +29,7 @@ Document types:
 - HAIR
 - ITEM_STRING
 - MAP
+- MOB_SKILL
 - MONSTER
 - NPC
 - PET

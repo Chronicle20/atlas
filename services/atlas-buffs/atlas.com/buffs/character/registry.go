@@ -5,7 +5,9 @@ import (
 	"atlas-buffs/buff/stat"
 	"errors"
 	"sync"
+	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
 )
@@ -13,9 +15,10 @@ import (
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	lock         sync.Mutex
-	characterReg map[tenant.Model]map[uint32]Model
-	tenantLock   map[tenant.Model]*sync.RWMutex
+	lock            sync.Mutex
+	characterReg    map[tenant.Model]map[uint32]Model
+	tenantLock      map[tenant.Model]*sync.RWMutex
+	poisonTickState map[tenant.Model]map[uint32]time.Time
 }
 
 var registry *Registry
@@ -26,6 +29,7 @@ func GetRegistry() *Registry {
 		registry = &Registry{}
 		registry.characterReg = make(map[tenant.Model]map[uint32]Model)
 		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+		registry.poisonTickState = make(map[tenant.Model]map[uint32]time.Time)
 	})
 	return registry
 }
@@ -51,7 +55,7 @@ func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *syn
 	return cm, cml
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId world.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
+func (r *Registry) Apply(t tenant.Model, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
 	b, err := buff.NewBuff(sourceId, level, duration, changes)
 	if err != nil {
 		return buff.Model{}, err
@@ -68,9 +72,12 @@ func (r *Registry) Apply(t tenant.Model, worldId world.Id, characterId uint32, s
 		m = Model{
 			tenant:      t,
 			worldId:     worldId,
+			channelId:   channelId,
 			characterId: characterId,
 			buffs:       make(map[int32]buff.Model),
 		}
+	} else {
+		m.channelId = channelId
 	}
 	m.buffs[sourceId] = b
 
@@ -189,10 +196,92 @@ func (r *Registry) CancelAll(t tenant.Model, characterId uint32) []buff.Model {
 	return res
 }
 
+func (r *Registry) HasImmunity(t tenant.Model, characterId uint32) bool {
+	cm, cml := r.getOrCreateTenantMaps(t)
+
+	cml.RLock()
+	defer cml.RUnlock()
+
+	m, ok := cm[characterId]
+	if !ok {
+		return false
+	}
+	return hasImmunityBuff(m)
+}
+
+type PoisonTickEntry struct {
+	Tenant      tenant.Model
+	WorldId     world.Id
+	ChannelId   channel.Id
+	CharacterId uint32
+	Amount      int32
+}
+
+func (r *Registry) GetPoisonCharacters(t tenant.Model) []PoisonTickEntry {
+	cm, cml := r.getOrCreateTenantMaps(t)
+
+	cml.RLock()
+	defer cml.RUnlock()
+
+	var results []PoisonTickEntry
+	for _, m := range cm {
+		for _, b := range m.buffs {
+			if b.Expired() {
+				continue
+			}
+			for _, c := range b.Changes() {
+				if c.Type() == "POISON" {
+					results = append(results, PoisonTickEntry{
+						Tenant:      t,
+						WorldId:     m.worldId,
+						ChannelId:   m.channelId,
+						CharacterId: m.characterId,
+						Amount:      c.Amount(),
+					})
+					break
+				}
+			}
+		}
+	}
+	return results
+}
+
+func (r *Registry) GetLastPoisonTick(t tenant.Model, characterId uint32) (time.Time, bool) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if tm, ok := r.poisonTickState[t]; ok {
+		if lt, ok := tm[characterId]; ok {
+			return lt, true
+		}
+	}
+	return time.Time{}, false
+}
+
+func (r *Registry) UpdatePoisonTick(t tenant.Model, characterId uint32, at time.Time) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if _, ok := r.poisonTickState[t]; !ok {
+		r.poisonTickState[t] = make(map[uint32]time.Time)
+	}
+	r.poisonTickState[t][characterId] = at
+}
+
+func (r *Registry) ClearPoisonTick(t tenant.Model, characterId uint32) {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if tm, ok := r.poisonTickState[t]; ok {
+		delete(tm, characterId)
+	}
+}
+
 // ResetForTesting clears all registry state. Only for use in tests.
 func (r *Registry) ResetForTesting() {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	r.characterReg = make(map[tenant.Model]map[uint32]Model)
 	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+	r.poisonTickState = make(map[tenant.Model]map[uint32]time.Time)
 }

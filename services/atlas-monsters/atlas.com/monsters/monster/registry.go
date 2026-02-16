@@ -2,11 +2,12 @@ package monster
 
 import (
 	"errors"
-
 	"sync"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 )
 
 type Registry struct {
@@ -238,6 +239,107 @@ func (r *Registry) GetMonsters() map[tenant.Model][]Model {
 		mons[key.Tenant] = val
 	}
 	return mons
+}
+
+func (r *Registry) ApplyStatusEffect(t tenant.Model, uniqueId uint32, effect StatusEffect) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.ApplyStatus(effect)
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) CancelStatusEffect(t tenant.Model, uniqueId uint32, effectId uuid.UUID) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.CancelStatus(effectId)
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) CancelStatusEffectByType(t tenant.Model, uniqueId uint32, statusType string) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.CancelStatusByType(statusType)
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) CancelAllStatusEffects(t tenant.Model, uniqueId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.CancelAllStatuses()
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) DeductMp(t tenant.Model, uniqueId uint32, amount uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		m := val.DeductMp(amount)
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) UpdateStatusEffectLastTick(t tenant.Model, uniqueId uint32, effectId uuid.UUID, tickTime time.Time) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	if val, ok := r.monsterReg[monKey]; ok {
+		updated := make([]StatusEffect, 0, len(val.statusEffects))
+		for _, se := range val.statusEffects {
+			if se.EffectId() == effectId {
+				se = se.WithLastTick(tickTime)
+			}
+			updated = append(updated, se)
+		}
+		m := Clone(val).Build()
+		m.statusEffects = updated
+		r.monsterReg[monKey] = m
+		return m, nil
+	}
+	return Model{}, errors.New("monster not found")
+}
+
+func (r *Registry) UpdateMonster(t tenant.Model, uniqueId uint32, m Model) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
+
+	r.monsterLock.Lock()
+	defer r.monsterLock.Unlock()
+
+	r.monsterReg[monKey] = m
 }
 
 func (r *Registry) Clear() {

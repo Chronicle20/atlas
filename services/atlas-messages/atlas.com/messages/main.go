@@ -7,8 +7,10 @@ import (
 	"atlas-messages/command/character/inventory"
 	"atlas-messages/command/character/skill"
 	"atlas-messages/command/consumable"
+	"atlas-messages/command/disease"
 	"atlas-messages/command/help"
 	"atlas-messages/command/map"
+	"atlas-messages/command/monster"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
 	"atlas-messages/service"
@@ -45,6 +47,9 @@ func main() {
 	command.Registry().Add(skill.ResetSkillCommandProducer)
 	command.Registry().Add(buff.BuffCommandProducer)
 	command.Registry().Add(consumable.ConsumeCommandProducer)
+	command.Registry().Add(monster.MobStatusCommandProducer)
+	command.Registry().Add(monster.MobClearCommandProducer)
+	command.Registry().Add(disease.DiseaseCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

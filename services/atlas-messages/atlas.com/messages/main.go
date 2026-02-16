@@ -11,6 +11,7 @@ import (
 	"atlas-messages/command/help"
 	"atlas-messages/command/map"
 	"atlas-messages/command/monster"
+	party_quest "atlas-messages/command/party_quest"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
 	"atlas-messages/service"
@@ -50,6 +51,8 @@ func main() {
 	command.Registry().Add(monster.MobStatusCommandProducer)
 	command.Registry().Add(monster.MobClearCommandProducer)
 	command.Registry().Add(disease.DiseaseCommandProducer)
+	command.Registry().Add(party_quest.PQRegisterCommandProducer)
+	command.Registry().Add(party_quest.PQStageCommandProducer)
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)

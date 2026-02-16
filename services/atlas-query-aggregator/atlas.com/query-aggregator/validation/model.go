@@ -48,6 +48,9 @@ const (
 	MaxHpCondition                  ConditionType = "maxHp"
 	BuffCondition                   ConditionType = "buff"
 	ExcessSPCondition               ConditionType = "excessSp"
+	PartyIdCondition                ConditionType = "partyId"
+	PartyLeaderCondition            ConditionType = "partyLeader"
+	PartySizeCondition              ConditionType = "partySize"
 )
 
 // Operator represents the comparison operator in a condition
@@ -126,7 +129,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -516,6 +519,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		}
 		actualValue = int(character.RemainingSp()) - expectedSp
 		description = fmt.Sprintf("Excess SP (base level %d) %s %d", baseLevel, c.operator, c.value)
+	case PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
+		// Party validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Party validation requires ValidationContext"),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case BuddyCapacityCondition:
 		// Buddy capacity requires context - return error state
 		return ConditionResult{
@@ -801,6 +814,27 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 			actualValue = 0
 		}
 		description = fmt.Sprintf("Buff %d Active %s %d", c.referenceId, c.operator, c.value)
+
+	case PartyIdCondition:
+		partyModel := ctx.Party()
+		actualValue = int(partyModel.Id())
+		description = fmt.Sprintf("Party ID %s %d", c.operator, c.value)
+
+	case PartyLeaderCondition:
+		partyModel := ctx.Party()
+		if partyModel.Id() == 0 {
+			actualValue = 0
+		} else if partyModel.LeaderId() == character.Id() {
+			actualValue = 1
+		} else {
+			actualValue = 0
+		}
+		description = fmt.Sprintf("Party Leader %s %d", c.operator, c.value)
+
+	case PartySizeCondition:
+		partyModel := ctx.Party()
+		actualValue = partyModel.MemberCount()
+		description = fmt.Sprintf("Party Size %s %d", c.operator, c.value)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

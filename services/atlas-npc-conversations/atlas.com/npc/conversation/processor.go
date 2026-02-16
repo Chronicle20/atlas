@@ -480,6 +480,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case TransportActionType:
 		// Process transport action state
 		return p.processTransportActionState(ctx, state)
+	case PartyQuestActionType:
+		// Process party quest action state
+		return p.processPartyQuestActionState(ctx, state)
 	case GachaponActionType:
 		// Process gachapon action state
 		return p.processGachaponActionState(ctx, state)
@@ -807,6 +810,71 @@ func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, sta
 	// When saga completes/fails, the saga status consumer will resume the conversation
 	// On success, the character will be warped and conversation ends naturally
 	// On failure, we route to the appropriate error state
+	return state.Id(), nil
+}
+
+// processPartyQuestActionState processes a party quest registration action state
+// Creates a saga to register a party for a party quest and waits for completion
+func (p *ProcessorImpl) processPartyQuestActionState(ctx ConversationContext, state StateModel) (string, error) {
+	partyQuestAction := state.PartyQuestAction()
+	if partyQuestAction == nil {
+		return "", errors.New("partyQuestAction is nil")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"quest_id":     partyQuestAction.QuestId(),
+		"character_id": ctx.CharacterId(),
+		"npc_id":       ctx.NpcId(),
+	}).Debug("Processing party quest action state")
+
+	// Create a new saga ID
+	sagaId := uuid.New()
+
+	// Build the saga with a single register_party_quest step
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_party_quest", ctx.NpcId()))
+
+	// Add the register party quest step
+	pqPayload := saga.RegisterPartyQuestPayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+		ChannelId:   ctx.Field().ChannelId(),
+		MapId:       ctx.Field().MapId(),
+		QuestId:     partyQuestAction.QuestId(),
+	}
+	sagaBuilder.AddStep("register_party_quest", saga.Pending, saga.RegisterPartyQuest, pqPayload)
+
+	// Build and execute saga
+	s := sagaBuilder.Build()
+
+	// Send saga to orchestrator
+	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create party quest saga")
+		return partyQuestAction.FailureState(), nil
+	}
+
+	// Store saga ID and party quest action failure states in context for later resumption
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["partyQuestAction_failureState"] = partyQuestAction.FailureState()
+	ctx.Context()["partyQuestAction_notInPartyState"] = partyQuestAction.NotInPartyState()
+	ctx.Context()["partyQuestAction_notLeaderState"] = partyQuestAction.NotLeaderState()
+
+	// Update conversation context in registry
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+		"quest_id":       partyQuestAction.QuestId(),
+	}).Debug("Party quest saga created, conversation waiting for completion")
+
+	// Return current state ID to keep conversation in "waiting" state
+	// When saga completes, party-quests service warps the party and conversation ends
+	// When saga fails, we route to the appropriate error state
 	return state.Id(), nil
 }
 

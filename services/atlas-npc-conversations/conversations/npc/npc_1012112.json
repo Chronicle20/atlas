@@ -1,0 +1,249 @@
+{
+  "npcId": 1012112,
+  "startState": "checkMap",
+  "states": [
+    {
+      "id": "checkMap",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "100000200" }
+            ],
+            "nextState": "pqEntranceMenu"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "910010100" }
+            ],
+            "nextState": "afterGrowlieAskReturn"
+          },
+          {
+            "conditions": [
+              { "type": "mapId", "operator": "=", "value": "910010400" }
+            ],
+            "nextState": "pqExitAskReturn"
+          },
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "pqEntranceMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "#e#b<Party Quest: Primrose Hill>\r\n#k#n\r\n\r\nI'm Tory. Inside here is a beautiful hill where the primrose blooms. There's a tiger that lives in the hill, Growlie, and he seems to be looking for something to eat. Would you like to head over to the hill of primrose and join forces with your party members to help Growlie out?#b",
+        "choices": [
+          {
+            "text": "I want to participate in the party quest.",
+            "nextState": "startPartyQuest"
+          },
+          {
+            "text": "I would like to hear more details.",
+            "nextState": "pqDetails"
+          },
+          {
+            "text": "I would like to redeem an instance hat.",
+            "nextState": "askRedeemHat"
+          },
+          {
+            "text": "Exit",
+            "nextState": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "startPartyQuest",
+      "type": "partyQuestAction",
+      "partyQuestAction": {
+        "questId": "henesys_pq",
+        "failureState": "pqFailed",
+        "notInPartyState": "pqNotInParty",
+        "notLeaderState": "pqNotLeader"
+      }
+    },
+    {
+      "id": "pqNotInParty",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Hi there! I'm Tory. This place is covered with mysterious aura of the full moon, and no one person can enter here by him/herself.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "pqNotLeader",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "If you'd like to enter here, the leader of your party will have to talk to me. Talk to your party leader about this.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "pqFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You cannot start this party quest yet, because either your party is not in the range size, some of your party members are not eligible to attempt it or they are not in this map. If you're having trouble finding party members, try Party Search.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "pqDetails",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "#e#b<Party Quest: Primrose Hill>#k#n\r\nCollect primrose seeds from the flowers at the bottom part of the map and drop them by the platforms above the stage. Primrose seed color must match to grow the seeds, so test until you find the correct combination. When all the seeds have been planted, that is, starting second part of the mission, scout the Moon Bunny while it prepares Rice Cakes for the hungry Growlie. Once Growlie becomes satisfied, your mission is complete.",
+        "choices": [
+          { "text": "Ok", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "askRedeemHat",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to exchange #b20 #b#t4001101##k for the instance-designed hat?",
+        "choices": [
+          { "text": "Yes", "nextState": "checkHatMaterials" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "checkHatMaterials",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {
+            "conditions": [
+              { "type": "item", "operator": "<", "value": "20", "referenceId": "4001101" }
+            ],
+            "nextState": "notEnoughSeeds"
+          },
+          {
+            "conditions": [
+              { "type": "item", "operator": ">=", "value": "20", "referenceId": "4001101" },
+              { "type": "inventorySpace", "operator": ">=", "value": "20", "referenceId": "1002798" }
+            ],
+            "nextState": "performHatExchange"
+          },
+          {
+            "conditions": [],
+            "nextState": "notEnoughSeeds"
+          }
+        ]
+      }
+    },
+    {
+      "id": "performHatExchange",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "destroy_item",
+            "params": { "itemId": "4001101", "quantity": "20" }
+          },
+          {
+            "type": "award_item",
+            "params": { "itemId": "1002798", "quantity": "20" }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": "hatExchangeSuccess"
+          }
+        ]
+      }
+    },
+    {
+      "id": "hatExchangeSuccess",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Here it is. Enjoy!",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "notEnoughSeeds",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "You don't have enough #t4001101# to buy it yet!",
+        "choices": [
+          { "text": "Next", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "afterGrowlieAskReturn",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "Thank you for aiding in the effort of feeding the Growlie. As a matter of fact, your team has already been rewarded for reaching this far. With this problem now solved, there is another issue happening right now, if you are interested check #bTommy#k there for the info. So, are you returning straight to Henesys now?",
+        "choices": [
+          { "text": "Yes", "nextState": "warpToHenesysPark" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "pqExitAskReturn",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So, are you returning to Henesys now?",
+        "choices": [
+          { "text": "Yes", "nextState": "warpToHenesysPark" },
+          { "text": "No", "nextState": null },
+          { "text": "Exit", "nextState": null }
+        ]
+      }
+    },
+    {
+      "id": "warpToHenesysPark",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {
+            "type": "warp_to_map",
+            "params": { "mapId": "100000200", "portalId": "0" }
+          }
+        ],
+        "outcomes": [
+          {
+            "conditions": [],
+            "nextState": null
+          }
+        ]
+      }
+    }
+  ]
+}

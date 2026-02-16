@@ -38,6 +38,7 @@ const (
 	CraftActionType        StateType = "craftAction"
 	TransportActionType    StateType = "transportAction"
 	GachaponActionType     StateType = "gachaponAction"
+	PartyQuestActionType   StateType = "partyQuestAction"
 	ListSelectionType StateType = "listSelection"
 	AskNumberType     StateType = "askNumber"
 	AskStyleType                     StateType = "askStyle"
@@ -46,14 +47,15 @@ const (
 
 // StateModel represents a state in a conversation
 type StateModel struct {
-	id              string
-	stateType       StateType
-	dialogue        *DialogueModel
-	genericAction   *GenericActionModel
-	craftAction     *CraftActionModel
-	transportAction *TransportActionModel
-	gachaponAction  *GachaponActionModel
-	listSelection   *ListSelectionModel
+	id               string
+	stateType        StateType
+	dialogue         *DialogueModel
+	genericAction    *GenericActionModel
+	craftAction      *CraftActionModel
+	transportAction  *TransportActionModel
+	gachaponAction   *GachaponActionModel
+	partyQuestAction *PartyQuestActionModel
+	listSelection    *ListSelectionModel
 	askNumber       *AskNumberModel
 	askStyle        *AskStyleModel
 	askSlideMenu    *AskSlideMenuModel
@@ -94,6 +96,11 @@ func (s StateModel) GachaponAction() *GachaponActionModel {
 	return s.gachaponAction
 }
 
+// PartyQuestAction returns the party quest action model (if type is partyQuestAction)
+func (s StateModel) PartyQuestAction() *PartyQuestActionModel {
+	return s.partyQuestAction
+}
+
 // ListSelection returns the list selection model (if type is listSelection)
 func (s StateModel) ListSelection() *ListSelectionModel {
 	return s.listSelection
@@ -116,14 +123,15 @@ func (s StateModel) AskSlideMenu() *AskSlideMenuModel {
 
 // StateBuilder is a builder for StateModel
 type StateBuilder struct {
-	id              string
-	stateType       StateType
-	dialogue        *DialogueModel
-	genericAction   *GenericActionModel
-	craftAction     *CraftActionModel
-	transportAction *TransportActionModel
-	gachaponAction  *GachaponActionModel
-	listSelection   *ListSelectionModel
+	id               string
+	stateType        StateType
+	dialogue         *DialogueModel
+	genericAction    *GenericActionModel
+	craftAction      *CraftActionModel
+	transportAction  *TransportActionModel
+	gachaponAction   *GachaponActionModel
+	partyQuestAction *PartyQuestActionModel
+	listSelection    *ListSelectionModel
 	askNumber       *AskNumberModel
 	askStyle        *AskStyleModel
 	askSlideMenu    *AskSlideMenuModel
@@ -147,6 +155,8 @@ func (b *StateBuilder) SetDialogue(dialogue *DialogueModel) *StateBuilder {
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -161,6 +171,8 @@ func (b *StateBuilder) SetGenericAction(genericAction *GenericActionModel) *Stat
 	b.genericAction = genericAction
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -175,6 +187,8 @@ func (b *StateBuilder) SetCraftAction(craftAction *CraftActionModel) *StateBuild
 	b.genericAction = nil
 	b.craftAction = craftAction
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -189,6 +203,8 @@ func (b *StateBuilder) SetTransportAction(transportAction *TransportActionModel)
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = transportAction
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -204,6 +220,23 @@ func (b *StateBuilder) SetGachaponAction(gachaponAction *GachaponActionModel) *S
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = gachaponAction
+	b.partyQuestAction = nil
+	b.listSelection = nil
+	b.askNumber = nil
+	b.askStyle = nil
+	b.askSlideMenu = nil
+	return b
+}
+
+// SetPartyQuestAction sets the party quest action model
+func (b *StateBuilder) SetPartyQuestAction(partyQuestAction *PartyQuestActionModel) *StateBuilder {
+	b.stateType = PartyQuestActionType
+	b.dialogue = nil
+	b.genericAction = nil
+	b.craftAction = nil
+	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = partyQuestAction
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -219,6 +252,7 @@ func (b *StateBuilder) SetListSelection(listSelection *ListSelectionModel) *Stat
 	b.craftAction = nil
 	b.transportAction = nil
 	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = listSelection
 	b.askNumber = nil
 	b.askStyle = nil
@@ -233,6 +267,8 @@ func (b *StateBuilder) SetAskNumber(askNumber *AskNumberModel) *StateBuilder {
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = askNumber
 	b.askStyle = nil
@@ -247,6 +283,8 @@ func (b *StateBuilder) SetAskStyle(askStyle *AskStyleModel) *StateBuilder {
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = askStyle
@@ -261,6 +299,8 @@ func (b *StateBuilder) SetAskSlideMenu(askSlideMenu *AskSlideMenuModel) *StateBu
 	b.genericAction = nil
 	b.craftAction = nil
 	b.transportAction = nil
+	b.gachaponAction = nil
+	b.partyQuestAction = nil
 	b.listSelection = nil
 	b.askNumber = nil
 	b.askStyle = nil
@@ -295,6 +335,10 @@ func (b *StateBuilder) Build() (StateModel, error) {
 		if b.gachaponAction == nil {
 			return StateModel{}, errors.New("gachaponAction is required for gachaponAction state")
 		}
+	case PartyQuestActionType:
+		if b.partyQuestAction == nil {
+			return StateModel{}, errors.New("partyQuestAction is required for partyQuestAction state")
+		}
 	case ListSelectionType:
 		if b.listSelection == nil {
 			return StateModel{}, errors.New("listSelection is required for listSelection state")
@@ -316,17 +360,18 @@ func (b *StateBuilder) Build() (StateModel, error) {
 	}
 
 	return StateModel{
-		id:              b.id,
-		stateType:       b.stateType,
-		dialogue:        b.dialogue,
-		genericAction:   b.genericAction,
-		craftAction:     b.craftAction,
-		transportAction: b.transportAction,
-		gachaponAction:  b.gachaponAction,
-		listSelection:   b.listSelection,
-		askNumber:       b.askNumber,
-		askStyle:        b.askStyle,
-		askSlideMenu:    b.askSlideMenu,
+		id:               b.id,
+		stateType:        b.stateType,
+		dialogue:         b.dialogue,
+		genericAction:    b.genericAction,
+		craftAction:      b.craftAction,
+		transportAction:  b.transportAction,
+		gachaponAction:   b.gachaponAction,
+		partyQuestAction: b.partyQuestAction,
+		listSelection:    b.listSelection,
+		askNumber:        b.askNumber,
+		askStyle:         b.askStyle,
+		askSlideMenu:     b.askSlideMenu,
 	}, nil
 }
 
@@ -1313,6 +1358,78 @@ func (b *GachaponActionBuilder) Build() (*GachaponActionModel, error) {
 		gachaponId:   b.gachaponId,
 		ticketItemId: b.ticketItemId,
 		failureState: b.failureState,
+	}, nil
+}
+
+// PartyQuestActionModel represents a party quest registration action state
+type PartyQuestActionModel struct {
+	questId         string // Party quest definition ID (e.g., "henesys_pq")
+	failureState    string // General failure state (fallback)
+	notInPartyState string // State when character has no party
+	notLeaderState  string // State when character isn't party leader
+}
+
+func (p PartyQuestActionModel) QuestId() string {
+	return p.questId
+}
+
+func (p PartyQuestActionModel) FailureState() string {
+	return p.failureState
+}
+
+func (p PartyQuestActionModel) NotInPartyState() string {
+	return p.notInPartyState
+}
+
+func (p PartyQuestActionModel) NotLeaderState() string {
+	return p.notLeaderState
+}
+
+// PartyQuestActionBuilder builds PartyQuestActionModel
+type PartyQuestActionBuilder struct {
+	questId         string
+	failureState    string
+	notInPartyState string
+	notLeaderState  string
+}
+
+func NewPartyQuestActionBuilder() *PartyQuestActionBuilder {
+	return &PartyQuestActionBuilder{}
+}
+
+func (b *PartyQuestActionBuilder) SetQuestId(questId string) *PartyQuestActionBuilder {
+	b.questId = questId
+	return b
+}
+
+func (b *PartyQuestActionBuilder) SetFailureState(failureState string) *PartyQuestActionBuilder {
+	b.failureState = failureState
+	return b
+}
+
+func (b *PartyQuestActionBuilder) SetNotInPartyState(notInPartyState string) *PartyQuestActionBuilder {
+	b.notInPartyState = notInPartyState
+	return b
+}
+
+func (b *PartyQuestActionBuilder) SetNotLeaderState(notLeaderState string) *PartyQuestActionBuilder {
+	b.notLeaderState = notLeaderState
+	return b
+}
+
+func (b *PartyQuestActionBuilder) Build() (*PartyQuestActionModel, error) {
+	if b.questId == "" {
+		return nil, errors.New("questId is required")
+	}
+	if b.failureState == "" {
+		return nil, errors.New("failureState is required")
+	}
+
+	return &PartyQuestActionModel{
+		questId:         b.questId,
+		failureState:    b.failureState,
+		notInPartyState: b.notInPartyState,
+		notLeaderState:  b.notLeaderState,
 	}, nil
 }
 

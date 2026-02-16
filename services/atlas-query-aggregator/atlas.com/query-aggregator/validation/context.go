@@ -7,6 +7,7 @@ import (
 	"atlas-query-aggregator/item"
 	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/quest"
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
@@ -28,12 +29,14 @@ type ValidationContext struct {
 	skills     map[uint32]skill.Model
 	marriage   marriage.Model
 	buddyList  buddy.Model
+	party      party.Model
 	petCount   int
 	mapP       npcMap.Processor
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
 	buffP      buff.Processor
+	partyP     party.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -52,6 +55,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		transportP: nil,
 		skillP:     nil,
 		buffP:      nil,
+		partyP:     nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -71,6 +75,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
 		buffP:      buff.NewProcessor(l, ctx),
+		partyP:     party.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -160,6 +165,11 @@ func (ctx ValidationContext) PetCount() int {
 	return ctx.petCount
 }
 
+// Party returns the party model
+func (ctx ValidationContext) Party() party.Model {
+	return ctx.party
+}
+
 // ItemProcessor returns the item processor for querying item data
 // Returns nil if not available (graceful degradation)
 func (ctx ValidationContext) ItemProcessor() item.Processor {
@@ -226,12 +236,14 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  ctx.buddyList,
+		party:      ctx.party,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
 		buffP:      ctx.buffP,
+		partyP:     ctx.partyP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -251,12 +263,14 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		skills:     newSkills,
 		marriage:   ctx.marriage,
 		buddyList:  ctx.buddyList,
+		party:      ctx.party,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
 		buffP:      ctx.buffP,
+		partyP:     ctx.partyP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -270,12 +284,14 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		skills:     ctx.skills,
 		marriage:   marriageModel,
 		buddyList:  ctx.buddyList,
+		party:      ctx.party,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
 		buffP:      ctx.buffP,
+		partyP:     ctx.partyP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -289,12 +305,14 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  buddyListModel,
+		party:      ctx.party,
 		petCount:   ctx.petCount,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
 		buffP:      ctx.buffP,
+		partyP:     ctx.partyP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -308,12 +326,14 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		skills:     ctx.skills,
 		marriage:   ctx.marriage,
 		buddyList:  ctx.buddyList,
+		party:      ctx.party,
 		petCount:   count,
 		mapP:       ctx.mapP,
 		itemP:      ctx.itemP,
 		transportP: ctx.transportP,
 		skillP:     ctx.skillP,
 		buffP:      ctx.buffP,
+		partyP:     ctx.partyP,
 		l:          ctx.l,
 		ctx:        ctx.ctx,
 	}
@@ -326,12 +346,14 @@ type ValidationContextBuilder struct {
 	skills     map[uint32]skill.Model
 	marriage   marriage.Model
 	buddyList  buddy.Model
+	party      party.Model
 	petCount   int
 	mapP       npcMap.Processor
 	itemP      item.Processor
 	transportP transport.Processor
 	skillP     skill.Processor
 	buffP      buff.Processor
+	partyP     party.Processor
 	l          logrus.FieldLogger
 	ctx        context.Context
 }
@@ -350,6 +372,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		transportP: nil,
 		skillP:     nil,
 		buffP:      nil,
+		partyP:     nil,
 		l:          nil,
 		ctx:        nil,
 	}
@@ -369,6 +392,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		transportP: transport.NewProcessor(l, ctx),
 		skillP:     skill.NewProcessor(l, ctx),
 		buffP:      buff.NewProcessor(l, ctx),
+		partyP:     party.NewProcessor(l, ctx),
 		l:          l,
 		ctx:        ctx,
 	}
@@ -404,6 +428,12 @@ func (b *ValidationContextBuilder) SetBuddyList(buddyListModel buddy.Model) *Val
 	return b
 }
 
+// SetParty sets the party data for the context being built
+func (b *ValidationContextBuilder) SetParty(partyModel party.Model) *ValidationContextBuilder {
+	b.party = partyModel
+	return b
+}
+
 // SetPetCount sets the pet count for the context being built
 func (b *ValidationContextBuilder) SetPetCount(count int) *ValidationContextBuilder {
 	b.petCount = count
@@ -418,12 +448,14 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		skills:     b.skills,
 		marriage:   b.marriage,
 		buddyList:  b.buddyList,
+		party:      b.party,
 		petCount:   b.petCount,
 		mapP:       b.mapP,
 		itemP:      b.itemP,
 		transportP: b.transportP,
 		skillP:     b.skillP,
 		buffP:      b.buffP,
+		partyP:     b.partyP,
 		l:          b.l,
 		ctx:        b.ctx,
 	}
@@ -442,6 +474,7 @@ type ContextBuilderProvider struct {
 	marriageProvider  func(uint32) model.Provider[marriage.Model]
 	buddyProvider     func(uint32) model.Provider[buddy.Model]
 	petCountProvider  func(uint32) model.Provider[int]
+	partyProvider     func(uint32) model.Provider[party.Model]
 	l                 logrus.FieldLogger
 	ctx               context.Context
 }
@@ -453,6 +486,7 @@ func NewContextBuilderProvider(
 	marriageProvider func(uint32) model.Provider[marriage.Model],
 	buddyProvider func(uint32) model.Provider[buddy.Model],
 	petCountProvider func(uint32) model.Provider[int],
+	partyProvider func(uint32) model.Provider[party.Model],
 	l logrus.FieldLogger,
 	ctx context.Context,
 ) *ContextBuilderProvider {
@@ -462,6 +496,7 @@ func NewContextBuilderProvider(
 		marriageProvider:  marriageProvider,
 		buddyProvider:     buddyProvider,
 		petCountProvider:  petCountProvider,
+		partyProvider:     partyProvider,
 		l:                 l,
 		ctx:               ctx,
 	}
@@ -524,6 +559,17 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 				builder.SetPetCount(petCount)
 			}
 			// If not found, builder already has default pet count of 0
+		}
+
+		// Get party data if available (not found is not an error - character may have no party)
+		if p.partyProvider != nil {
+			partyModel, err := p.partyProvider(characterId)()
+			if err != nil {
+				// Party errors are non-fatal - character simply has no party
+				p.l.WithError(err).Debugf("Failed to get party data for character %d, treating as no party", characterId)
+			} else {
+				builder.SetParty(partyModel)
+			}
 		}
 
 		return builder.Build(), nil

@@ -1,0 +1,11 @@
+meta {
+  name: Get Instance By Character
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/party-quests/instances/character/{{characterId}}
+  body: none
+  auth: inherit
+}

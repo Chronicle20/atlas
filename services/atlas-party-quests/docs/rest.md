@@ -130,13 +130,3 @@ Returns the active instance containing the specified character.
   - `400` — Invalid character ID format
   - `404` — No instance found for character
 
-### GET /api/party-quests/instances/{instanceId}/stage
-
-Returns the current stage information for an instance.
-
-- **Parameters**: `instanceId` (path, UUID)
-- **Request model**: None
-- **Response model**: `instance.RestModel` (JSON:API resource type: `instances`)
-- **Error conditions**:
-  - `400` — Invalid UUID format
-  - `404` — Instance not found

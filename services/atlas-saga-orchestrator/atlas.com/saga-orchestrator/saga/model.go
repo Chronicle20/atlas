@@ -479,6 +479,9 @@ const (
 	// Gachapon actions
 	SelectGachaponReward    Action = "select_gachapon_reward"     // Select a random reward from a gachapon machine
 	EmitGachaponWin         Action = "emit_gachapon_win"          // Emit gachapon win event for announcements (uncommon/rare only)
+
+	// Party quest actions
+	RegisterPartyQuest      Action = "register_party_quest"       // Register a party for a party quest via atlas-party-quests
 )
 
 // Step represents a single step within a saga.
@@ -1240,6 +1243,15 @@ type EmitGachaponWinPayload struct {
 	GachaponName string   `json:"gachaponName"` // Gachapon display name
 }
 
+// RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
+type RegisterPartyQuestPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId initiating the registration
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // MapId where the registration NPC is
+	QuestId     string     `json:"questId"`     // Party quest definition ID (e.g., "henesys_pq")
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1646,6 +1658,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case EmitGachaponWin:
 		var payload EmitGachaponWinPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RegisterPartyQuest:
+		var payload RegisterPartyQuestPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

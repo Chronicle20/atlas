@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/validation"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 )
@@ -111,6 +112,15 @@ type StartInstanceTransportPayload struct {
 	RouteName   string     `json:"routeName"` // Route name (resolved to UUID at runtime by saga-orchestrator)
 }
 
+// RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
+type RegisterPartyQuestPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	QuestId     string     `json:"questId"` // Party quest definition ID (e.g., "henesys_pq")
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -166,6 +176,9 @@ const (
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"
+
+	// Party quest actions
+	RegisterPartyQuest Action = "register_party_quest"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

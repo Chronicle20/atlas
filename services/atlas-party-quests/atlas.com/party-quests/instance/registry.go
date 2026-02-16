@@ -10,12 +10,15 @@ import (
 
 var ErrNotFound = errors.New("instance not found")
 
+type tenantData struct {
+	lock                sync.RWMutex
+	instances           map[uuid.UUID]Model
+	characterToInstance map[uint32]uuid.UUID
+}
+
 type Registry struct {
-	lock       sync.Mutex
-	instances  map[tenant.Model]map[uuid.UUID]Model
-	tenantLock map[tenant.Model]*sync.RWMutex
-	// Character-to-instance index for O(1) lookups
-	characterToInstance map[tenant.Model]map[uint32]uuid.UUID
+	lock    sync.Mutex
+	tenants map[tenant.Model]*tenantData
 }
 
 var registry *Registry
@@ -24,100 +27,82 @@ var once sync.Once
 func GetRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{
-			instances:           make(map[tenant.Model]map[uuid.UUID]Model),
-			tenantLock:          make(map[tenant.Model]*sync.RWMutex),
-			characterToInstance: make(map[tenant.Model]map[uint32]uuid.UUID),
+			tenants: make(map[tenant.Model]*tenantData),
 		}
 	})
 	return registry
 }
 
-func (r *Registry) ensureTenant(t tenant.Model) *sync.RWMutex {
-	if tl, ok := r.tenantLock[t]; ok {
-		return tl
-	}
+func (r *Registry) ensureTenant(t tenant.Model) *tenantData {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-	if tl, ok := r.tenantLock[t]; ok {
-		return tl
+	if td, ok := r.tenants[t]; ok {
+		return td
 	}
-	tl := &sync.RWMutex{}
-	r.instances[t] = make(map[uuid.UUID]Model)
-	r.tenantLock[t] = tl
-	r.characterToInstance[t] = make(map[uint32]uuid.UUID)
-	return tl
+	td := &tenantData{
+		instances:           make(map[uuid.UUID]Model),
+		characterToInstance: make(map[uint32]uuid.UUID),
+	}
+	r.tenants[t] = td
+	return td
 }
 
 func (r *Registry) Create(t tenant.Model, m Model) Model {
-	tl := r.ensureTenant(t)
-	tl.Lock()
-	defer tl.Unlock()
+	td := r.ensureTenant(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	r.instances[t][m.Id()] = m
+	td.instances[m.Id()] = m
 
 	for _, c := range m.Characters() {
-		r.characterToInstance[t][c.CharacterId] = m.Id()
+		td.characterToInstance[c.CharacterId()] = m.Id()
 	}
 
 	return m
 }
 
 func (r *Registry) Get(t tenant.Model, instanceId uuid.UUID) (Model, error) {
-	tl := r.ensureTenant(t)
-	tl.RLock()
-	defer tl.RUnlock()
+	td := r.ensureTenant(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
 
-	if m, ok := r.instances[t][instanceId]; ok {
+	if m, ok := td.instances[instanceId]; ok {
 		return m, nil
 	}
 	return Model{}, ErrNotFound
 }
 
 func (r *Registry) GetByCharacter(t tenant.Model, characterId uint32) (Model, error) {
-	tl := r.ensureTenant(t)
-	tl.RLock()
-	defer tl.RUnlock()
+	td := r.ensureTenant(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
 
-	if instanceId, ok := r.characterToInstance[t][characterId]; ok {
-		if m, ok := r.instances[t][instanceId]; ok {
+	if instanceId, ok := td.characterToInstance[characterId]; ok {
+		if m, ok := td.instances[instanceId]; ok {
 			return m, nil
 		}
 	}
 	return Model{}, ErrNotFound
 }
 
-func (r *Registry) GetByMap(t tenant.Model, mapId uint32) []Model {
-	tl := r.ensureTenant(t)
-	tl.RLock()
-	defer tl.RUnlock()
-
-	var results []Model
-	for _, m := range r.instances[t] {
-		// Check if any character in this instance is associated with a map
-		// The actual map tracking is done at a higher level via definitions/stages
-		results = append(results, m)
-	}
-	return results
-}
-
 func (r *Registry) GetAll(t tenant.Model) []Model {
-	tl := r.ensureTenant(t)
-	tl.RLock()
-	defer tl.RUnlock()
+	td := r.ensureTenant(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
 
-	results := make([]Model, 0, len(r.instances[t]))
-	for _, m := range r.instances[t] {
+	results := make([]Model, 0, len(td.instances))
+	for _, m := range td.instances {
 		results = append(results, m)
 	}
 	return results
 }
 
 func (r *Registry) Update(t tenant.Model, instanceId uuid.UUID, updaters ...func(m Model) Model) (Model, error) {
-	tl := r.ensureTenant(t)
-	tl.Lock()
-	defer tl.Unlock()
+	td := r.ensureTenant(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	oldModel, ok := r.instances[t][instanceId]
+	oldModel, ok := td.instances[instanceId]
 	if !ok {
 		return Model{}, ErrNotFound
 	}
@@ -128,54 +113,60 @@ func (r *Registry) Update(t tenant.Model, instanceId uuid.UUID, updaters ...func
 	}
 
 	// Update character index
-	r.updateCharacterIndex(t, oldModel, newModel)
+	updateCharacterIndex(td, oldModel, newModel)
 
-	r.instances[t][instanceId] = newModel
+	td.instances[instanceId] = newModel
 	return newModel, nil
 }
 
 func (r *Registry) Remove(t tenant.Model, instanceId uuid.UUID) {
-	tl := r.ensureTenant(t)
-	tl.Lock()
-	defer tl.Unlock()
+	td := r.ensureTenant(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	if m, ok := r.instances[t][instanceId]; ok {
+	if m, ok := td.instances[instanceId]; ok {
 		for _, c := range m.Characters() {
-			delete(r.characterToInstance[t], c.CharacterId)
+			delete(td.characterToInstance, c.CharacterId())
 		}
-		delete(r.instances[t], instanceId)
+		delete(td.instances, instanceId)
 	}
 }
 
 func (r *Registry) Clear(t tenant.Model) {
-	tl := r.ensureTenant(t)
-	tl.Lock()
-	defer tl.Unlock()
+	td := r.ensureTenant(t)
+	td.lock.Lock()
+	defer td.lock.Unlock()
 
-	r.instances[t] = make(map[uuid.UUID]Model)
-	r.characterToInstance[t] = make(map[uint32]uuid.UUID)
+	td.instances = make(map[uuid.UUID]Model)
+	td.characterToInstance = make(map[uint32]uuid.UUID)
 }
 
-func (r *Registry) updateCharacterIndex(t tenant.Model, oldModel, newModel Model) {
+func (r *Registry) ResetForTesting() {
+	r.lock.Lock()
+	defer r.lock.Unlock()
+	r.tenants = make(map[tenant.Model]*tenantData)
+}
+
+func updateCharacterIndex(td *tenantData, oldModel, newModel Model) {
 	oldChars := make(map[uint32]bool)
 	for _, c := range oldModel.Characters() {
-		oldChars[c.CharacterId] = true
+		oldChars[c.CharacterId()] = true
 	}
 
 	newChars := make(map[uint32]bool)
 	for _, c := range newModel.Characters() {
-		newChars[c.CharacterId] = true
+		newChars[c.CharacterId()] = true
 	}
 
 	for cid := range oldChars {
 		if !newChars[cid] {
-			delete(r.characterToInstance[t], cid)
+			delete(td.characterToInstance, cid)
 		}
 	}
 
 	for cid := range newChars {
 		if !oldChars[cid] {
-			r.characterToInstance[t][cid] = newModel.Id()
+			td.characterToInstance[cid] = newModel.Id()
 		}
 	}
 }

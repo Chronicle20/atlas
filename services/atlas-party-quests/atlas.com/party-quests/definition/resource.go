@@ -197,18 +197,8 @@ func SeedDefinitionsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) h
 
 func ValidateDefinitionsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		models, errs := LoadDefinitionFiles()
-
-		var results []ValidationResult
-		for _, e := range errs {
-			results = append(results, ValidationResult{
-				Valid:   false,
-				Errors:  []string{e.Error()},
-			})
-		}
-		for _, rm := range models {
-			results = append(results, Validate(rm))
-		}
+		p := NewProcessor(d.Logger(), r.Context(), d.DB())
+		results := p.ValidateDefinitions()
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)

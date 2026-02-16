@@ -16,8 +16,11 @@ func MonsterStatSetBody(l logrus.FieldLogger, t tenant.Model) func(uniqueId uint
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
 			stat.Encode(l, t, options)(w)
-			w.WriteByte(byte(0))
-			w.WriteInt(0)
+			w.WriteInt16(0) // tDelay
+			w.WriteByte(0)  // m_nCalcDamageStatIndex
+			if stat.IsMovementAffectingStat(t) {
+				w.WriteByte(0) // bStat
+			}
 			return w.Bytes()
 		}
 	}
@@ -28,8 +31,11 @@ func MonsterStatResetBody(l logrus.FieldLogger, t tenant.Model) func(uniqueId ui
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
 			stat.Encode(l, t, options)(w)
-			w.WriteByte(byte(0))
-			w.WriteInt(0)
+			w.WriteInt16(0) // tDelay
+			w.WriteByte(0)  // m_nCalcDamageStatIndex
+			if stat.IsMovementAffectingStat(t) {
+				w.WriteByte(0) // bStat
+			}
 			return w.Bytes()
 		}
 	}

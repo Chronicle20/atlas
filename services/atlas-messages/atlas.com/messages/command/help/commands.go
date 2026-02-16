@@ -6,7 +6,6 @@ import (
 	"atlas-messages/message"
 	"context"
 	"regexp"
-	"strings"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
@@ -54,8 +53,13 @@ func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch c
 					mp := message.NewProcessor(l, ctx)
 
 					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
-					helpText := strings.Join(commandSyntaxList, "\r\n")
-					return mp.IssuePinkText(f, 0, helpText, []uint32{c.Id()})
+					for _, text := range commandSyntaxList {
+						err := mp.IssuePinkText(f, 0, text, []uint32{c.Id()})
+						if err != nil {
+							return err
+						}
+					}
+					return nil
 				}
 			}, true
 		}

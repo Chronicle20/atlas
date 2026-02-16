@@ -21,6 +21,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/party-quests/instances", registerHandler("get_all_instances", GetAllInstancesHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/party-quests/instances/{instanceId}", registerHandler("get_instance", GetInstanceHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/party-quests/instances/character/{characterId}", registerHandler("get_instance_by_character", GetInstanceByCharacterHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/party-quests/instances/character/{characterId}/timer", registerHandler("get_timer_by_character", GetTimerByCharacterHandler)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -83,6 +84,27 @@ func GetInstanceByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
+		}
+	})
+}
+
+func GetTimerByCharacterHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			duration, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetTimerByCharacter(characterId)
+			if err != nil {
+				w.WriteHeader(http.StatusNotFound)
+				return
+			}
+
+			rm := TimerRestModel{
+				Id:       characterId,
+				Duration: duration,
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[TimerRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rm)
 		}
 	})
 }

@@ -34,6 +34,7 @@ type ProcessorMock struct {
 	GracefulShutdownAndEmitFunc func() error
 	GetByIdFunc               func(instanceId uuid.UUID) (instance.Model, error)
 	GetByCharacterFunc        func(characterId uint32) (instance.Model, error)
+	GetTimerByCharacterFunc   func(characterId uint32) (uint64, error)
 	GetAllFunc                func() []instance.Model
 }
 
@@ -212,6 +213,13 @@ func (m *ProcessorMock) GetByCharacter(characterId uint32) (instance.Model, erro
 		return m.GetByCharacterFunc(characterId)
 	}
 	return instance.Model{}, nil
+}
+
+func (m *ProcessorMock) GetTimerByCharacter(characterId uint32) (uint64, error) {
+	if m.GetTimerByCharacterFunc != nil {
+		return m.GetTimerByCharacterFunc(characterId)
+	}
+	return 0, nil
 }
 
 func (m *ProcessorMock) GetAll() []instance.Model {

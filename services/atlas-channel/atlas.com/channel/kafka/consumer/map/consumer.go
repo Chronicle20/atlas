@@ -14,6 +14,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/party"
+	"atlas-channel/party_quest"
 	"atlas-channel/reactor"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -222,6 +223,17 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				} else {
 					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false))(s)
 				}
+			}()
+
+			go func() {
+				timer, terr := party_quest.NewProcessor(l, ctx).GetTimerByCharacterId(s.CharacterId())
+				if terr != nil {
+					return
+				}
+				if timer.Duration() <= 0 {
+					return
+				}
+				_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(l, t)(timer.Duration()))(s)
 			}()
 			return nil
 		}

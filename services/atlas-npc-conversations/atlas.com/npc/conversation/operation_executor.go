@@ -2056,6 +2056,40 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
 
+	case "warp_party_quest_members_to_map":
+		// Format: warp_party_quest_members_to_map
+		// Params: mapId (uint32, required), portalId (uint32, optional, default 0)
+		// Resolves the party for the character and warps all party members to the destination map.
+		var mapIdInt = 0
+		mapIdValue, exists := operation.Params()["mapId"]
+		if exists {
+			var err error
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		var portalIdInt = 0
+		portalIdValue, exists := operation.Params()["portalId"]
+		if exists {
+			var err error
+			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.WarpPartyQuestMembersToMapPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       _map.Id(mapIdInt),
+			PortalId:    uint32(portalIdInt),
+		}
+
+		return stepId, saga.Pending, saga.WarpPartyQuestMembersToMap, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

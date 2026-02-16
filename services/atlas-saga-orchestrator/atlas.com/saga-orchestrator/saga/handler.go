@@ -788,6 +788,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleEmitGachaponWin, true
 	case RegisterPartyQuest:
 		return h.handleRegisterPartyQuest, true
+	case WarpPartyQuestMembersToMap:
+		return h.handleWarpPartyQuestMembersToMap, true
 	}
 	return nil, false
 }
@@ -2441,6 +2443,65 @@ func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
 		}
 
 		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleWarpPartyQuestMembersToMap handles the WarpPartyQuestMembersToMap action.
+// Resolves the party members for the initiating character and warps all of them to the destination map.
+func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(WarpPartyQuestMembersToMapPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"map_id":         payload.MapId,
+		"portal_id":      payload.PortalId,
+	}).Debug("Warping party quest members to map")
+
+	members, err := h.partyQuestP.GetPartyMembers(payload.CharacterId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to resolve party members for warp.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).Error("Failed to emit saga failed event for warp party quest members")
+		}
+
+		return err
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).Build()
+	portalProvider := model.FixedProvider(payload.PortalId)
+
+	for _, member := range members {
+		warpErr := h.charP.WarpToPortalAndEmit(s.TransactionId(), member.Id, f, portalProvider)
+		if warpErr != nil {
+			h.l.WithError(warpErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"member_id":      member.Id,
+				"map_id":         payload.MapId,
+			}).Warn("Failed to warp party member")
+		}
 	}
 
 	// Fire-and-forget - mark as complete immediately

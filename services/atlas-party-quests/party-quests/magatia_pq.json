@@ -4,7 +4,7 @@
   "fieldLock": "instance",
   "duration": 2700,
   "registration": {
-    "type": "npc",
+    "type": "party",
     "mode": "instant",
     "duration": 0,
     "mapId": 261000011

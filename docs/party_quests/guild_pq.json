@@ -29,7 +29,8 @@
       "type": "individual",
       "mode": "timed",
       "duration": "180000",
-      "mapId": "101030104"
+      "mapId": "101030104",
+      "affinity": "guild"
     },
     "exit": "990001100",
     "stages": [

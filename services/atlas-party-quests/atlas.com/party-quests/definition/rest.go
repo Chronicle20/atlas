@@ -17,6 +17,7 @@ type RegistrationRestModel struct {
 	Mode     string `json:"mode"`
 	Duration int64  `json:"duration"`
 	MapId    uint32 `json:"mapId"`
+	Affinity string `json:"affinity,omitempty"`
 }
 
 type EventTriggerRestModel struct {
@@ -139,6 +140,7 @@ func Transform(m Model) (RestModel, error) {
 			Mode:     reg.Mode(),
 			Duration: reg.Duration(),
 			MapId:    reg.MapId(),
+			Affinity: reg.Affinity(),
 		},
 		StartRequirements: startReqs,
 		StartEvents:       startEvents,
@@ -217,6 +219,7 @@ func Extract(r RestModel) (Model, error) {
 			mode:     r.Registration.Mode,
 			duration: r.Registration.Duration,
 			mapId:    r.Registration.MapId,
+			affinity: r.Registration.Affinity,
 		}).
 		SetStartRequirements(startReqs).
 		SetStartEvents(startEvents).

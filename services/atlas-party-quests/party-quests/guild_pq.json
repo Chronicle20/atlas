@@ -4,10 +4,11 @@
   "fieldLock": "channel",
   "duration": 5400,
   "registration": {
-    "type": "npc",
+    "type": "individual",
     "mode": "timed",
     "duration": 180,
-    "mapId": 101030104
+    "mapId": 101030104,
+    "affinity": "guild"
   },
   "startRequirements": [
     {

@@ -15,12 +15,14 @@ type Registration struct {
 	mode     string
 	duration int64
 	mapId    uint32
+	affinity string
 }
 
-func (r Registration) Type() string  { return r.regType }
-func (r Registration) Mode() string  { return r.mode }
+func (r Registration) Type() string    { return r.regType }
+func (r Registration) Mode() string    { return r.mode }
 func (r Registration) Duration() int64 { return r.duration }
-func (r Registration) MapId() uint32 { return r.mapId }
+func (r Registration) MapId() uint32   { return r.mapId }
+func (r Registration) Affinity() string { return r.affinity }
 
 type EventTrigger struct {
 	triggerType string

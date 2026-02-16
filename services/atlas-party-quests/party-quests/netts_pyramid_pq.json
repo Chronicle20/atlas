@@ -4,7 +4,7 @@
   "fieldLock": "channel",
   "duration": 0,
   "registration": {
-    "type": "npc",
+    "type": "party",
     "mode": "instant",
     "duration": 0,
     "mapId": 926010000

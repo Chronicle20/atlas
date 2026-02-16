@@ -57,6 +57,7 @@ type Model struct {
 	registeredAt      time.Time
 	fieldInstances    []uuid.UUID
 	stageState        StageState
+	affinityId        uint32
 }
 
 func (m Model) Id() uuid.UUID                  { return m.id }
@@ -74,6 +75,7 @@ func (m Model) StageStartedAt() time.Time      { return m.stageStartedAt }
 func (m Model) RegisteredAt() time.Time        { return m.registeredAt }
 func (m Model) FieldInstances() []uuid.UUID    { return m.fieldInstances }
 func (m Model) StageState() StageState         { return m.stageState }
+func (m Model) AffinityId() uint32             { return m.affinityId }
 
 func (m Model) SetState(s State) Model {
 	m.state = s
@@ -102,6 +104,11 @@ func (m Model) SetFieldInstances(fis []uuid.UUID) Model {
 
 func (m Model) SetStageState(ss StageState) Model {
 	m.stageState = ss
+	return m
+}
+
+func (m Model) SetAffinityId(id uint32) Model {
+	m.affinityId = id
 	return m
 }
 
@@ -137,6 +144,7 @@ type Builder struct {
 	registeredAt      time.Time
 	fieldInstances    []uuid.UUID
 	stageState        StageState
+	affinityId        uint32
 }
 
 func NewBuilder() *Builder {
@@ -159,6 +167,7 @@ func (b *Builder) SetWorldId(wid world.Id) *Builder        { b.worldId = wid; re
 func (b *Builder) SetChannelId(cid channel.Id) *Builder    { b.channelId = cid; return b }
 func (b *Builder) SetPartyId(pid uint32) *Builder          { b.partyId = pid; return b }
 func (b *Builder) SetCharacters(c []CharacterEntry) *Builder { b.characters = c; return b }
+func (b *Builder) SetAffinityId(id uint32) *Builder           { b.affinityId = id; return b }
 
 func (b *Builder) Build() Model {
 	return Model{
@@ -177,5 +186,6 @@ func (b *Builder) Build() Model {
 		registeredAt:      b.registeredAt,
 		fieldInstances:    b.fieldInstances,
 		stageState:        b.stageState,
+		affinityId:        b.affinityId,
 	}
 }

@@ -88,7 +88,10 @@ type StartedEventBody struct {
 }
 
 type StageClearedEventBody struct {
-	StageIndex uint32 `json:"stageIndex"`
+	StageIndex     uint32      `json:"stageIndex"`
+	ChannelId      channel.Id  `json:"channelId"`
+	MapIds         []uint32    `json:"mapIds"`
+	FieldInstances []uuid.UUID `json:"fieldInstances"`
 }
 
 type StageAdvancedEventBody struct {

@@ -426,7 +426,7 @@ func (p *ProcessorImpl) StageClearAttempt(mb *message.Buffer) func(instanceId uu
 		p.l.Infof("PQ instance [%s] stage [%d] cleared.", instanceId, stageIdx)
 
 		// Emit STAGE_CLEARED event
-		return mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx))
+		return mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), inst.FieldInstances()))
 	}
 }
 

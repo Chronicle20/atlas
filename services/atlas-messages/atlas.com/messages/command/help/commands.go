@@ -29,6 +29,9 @@ var commandSyntaxList = []string{
 	"@buff <target> <skillName> [duration] - Apply a buff by name",
 	"@buff <target> #<skillId> [duration] - Apply a buff by ID",
 	"@consume <target> <itemId> - Apply consumable item effects",
+	"@mobstatus <skillId|skillName> [level] - Execute mob skill on all monsters in map",
+	"@mobclear [statusType] - Clear statuses from all monsters in map",
+	"@disease <target> <diseaseType> [value] [duration] - Apply a disease effect",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {

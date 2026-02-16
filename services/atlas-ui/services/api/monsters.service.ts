@@ -22,6 +22,17 @@ class MonstersService extends BaseService {
     const monster = await this.getById<MonsterData>(id);
     return monster.attributes.name;
   }
+
+  async searchMonsters(query: string, tenant: Tenant, options?: QueryOptions): Promise<MonsterData[]> {
+    api.setTenant(tenant);
+    const searchOptions: QueryOptions = {
+      ...options,
+      search: query,
+      useCache: false,
+    };
+    const monsters = await this.getAll<MonsterData>(searchOptions);
+    return monsters.sort((a, b) => parseInt(a.id) - parseInt(b.id));
+  }
 }
 
 export const monstersService = new MonstersService();

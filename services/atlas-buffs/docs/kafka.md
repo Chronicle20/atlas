@@ -11,6 +11,7 @@
 | Topic Environment Variable | Description |
 |---------------------------|-------------|
 | EVENT_TOPIC_CHARACTER_BUFF_STATUS | Buff status events |
+| COMMAND_TOPIC_CHARACTER | Character commands (poison damage) |
 
 ## Message Types
 
@@ -22,8 +23,10 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 
 | Field | Type |
 |-------|------|
-| WorldId | byte |
-| ChannelId | byte |
+| WorldId | world.Id |
+| ChannelId | channel.Id |
+| MapId | _map.Id |
+| Instance | uuid.UUID |
 | CharacterId | uint32 |
 | Type | string |
 | Body | varies |
@@ -42,6 +45,7 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 |-------|------|
 | FromId | uint32 |
 | SourceId | int32 |
+| Level | byte |
 | Duration | int32 |
 | Changes | []StatChange |
 
@@ -62,6 +66,30 @@ Empty body.
 | Type | string |
 | Amount | int32 |
 
+#### CharacterCommand
+
+Produced to COMMAND_TOPIC_CHARACTER. Generic envelope with typed body.
+
+| Field | Type |
+|-------|------|
+| CharacterId | uint32 |
+| WorldId | world.Id |
+| Type | string |
+| Body | varies |
+
+##### Character Command Types
+
+| Type | Body Type | Description |
+|------|-----------|-------------|
+| CHANGE_HP | ChangeHPCommandBody | Apply poison damage to character |
+
+##### ChangeHPCommandBody
+
+| Field | Type |
+|-------|------|
+| ChannelId | channel.Id |
+| Amount | int16 |
+
 ### Events
 
 #### StatusEvent
@@ -70,7 +98,7 @@ Produced to EVENT_TOPIC_CHARACTER_BUFF_STATUS. Generic envelope with typed body.
 
 | Field | Type |
 |-------|------|
-| WorldId | byte |
+| WorldId | world.Id |
 | CharacterId | uint32 |
 | Type | string |
 | Body | varies |
@@ -88,6 +116,7 @@ Produced to EVENT_TOPIC_CHARACTER_BUFF_STATUS. Generic envelope with typed body.
 |-------|------|
 | FromId | uint32 |
 | SourceId | int32 |
+| Level | byte |
 | Duration | int32 |
 | Changes | []StatChange |
 | CreatedAt | time.Time |
@@ -98,6 +127,7 @@ Produced to EVENT_TOPIC_CHARACTER_BUFF_STATUS. Generic envelope with typed body.
 | Field | Type |
 |-------|------|
 | SourceId | int32 |
+| Level | byte |
 | Duration | int32 |
 | Changes | []StatChange |
 | CreatedAt | time.Time |
@@ -107,3 +137,4 @@ Produced to EVENT_TOPIC_CHARACTER_BUFF_STATUS. Generic envelope with typed body.
 
 - Commands are processed with persistent configuration
 - Headers required: span (tracing), tenant
+- Buff status events and character HP commands are emitted atomically via message buffer

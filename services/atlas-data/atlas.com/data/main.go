@@ -16,6 +16,7 @@ import (
 	data2 "atlas-data/kafka/consumer/data"
 	"atlas-data/logger"
 	_map "atlas-data/map"
+	"atlas-data/mobskill"
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/pet"
@@ -94,6 +95,7 @@ func main() {
 		AddRouteInitializer(npc.InitResource(db)(GetServer())).
 		AddRouteInitializer(face.InitResource(db)(GetServer())).
 		AddRouteInitializer(hair.InitResource(db)(GetServer())).
+		AddRouteInitializer(mobskill.InitResource(db)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

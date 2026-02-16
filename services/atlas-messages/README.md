@@ -5,26 +5,30 @@ Atlas Messages is a service that handles character messages and commands in the 
 ## External Dependencies
 
 - Kafka (message streaming)
-- Jaeger (distributed tracing)
+- OpenTelemetry (distributed tracing via OTLP/gRPC)
 - atlas-character service (REST API)
 - atlas-skills service (REST API)
 - atlas-data service (REST API for maps, equipables, skills)
 - atlas-maps service (REST API)
+- atlas-rates service (REST API)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| `JAEGER_HOST` | Jaeger host:port for distributed tracing |
+| `TRACE_ENDPOINT` | OpenTelemetry collector endpoint (host:port) |
 | `LOG_LEVEL` | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | `BASE_SERVICE_URL` | Base URL for REST API calls (scheme://host:port/api/) |
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers (host:port) |
 | `COMMAND_TOPIC_CHARACTER_CHAT` | Kafka topic for receiving chat commands |
 | `EVENT_TOPIC_CHARACTER_CHAT` | Kafka topic for emitting chat events |
 | `COMMAND_TOPIC_SAGA` | Kafka topic for emitting saga commands |
+| `COMMAND_TOPIC_CHARACTER_BUFF` | Kafka topic for emitting buff commands |
+| `COMMAND_TOPIC_MONSTER` | Kafka topic for emitting monster commands |
 
 ## Documentation
 
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
 - [REST](docs/rest.md)
+- [Storage](docs/storage.md)

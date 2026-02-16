@@ -22,6 +22,9 @@ import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
 import { Package } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
+import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
 
 export default function ItemDetailPage() {
   const { activeTenant } = useTenant();
@@ -77,7 +80,32 @@ export default function ItemDetailPage() {
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
       <div className="flex items-center gap-2">
-        <Package className="h-6 w-6" />
+        {activeTenant ? (
+          <Image
+            src={getAssetIconUrl(
+              activeTenant.id,
+              activeTenant.attributes.region,
+              activeTenant.attributes.majorVersion,
+              activeTenant.attributes.minorVersion,
+              'item',
+              parseInt(itemId),
+            )}
+            alt={itemName || itemId}
+            width={40}
+            height={40}
+            unoptimized={shouldUnoptimizeImageSrc(getAssetIconUrl(
+              activeTenant.id,
+              activeTenant.attributes.region,
+              activeTenant.attributes.majorVersion,
+              activeTenant.attributes.minorVersion,
+              'item',
+              parseInt(itemId),
+            ))}
+            className="object-contain"
+          />
+        ) : (
+          <Package className="h-6 w-6" />
+        )}
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-bold tracking-tight">{itemName || itemId}</h2>
@@ -99,7 +127,7 @@ export default function ItemDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <InfoField label="Item ID" value={itemId} mono />
+            <InfoField label="Template" value={itemId} mono />
             <InfoField label="Name" value={itemName || "Unknown"} />
             <InfoField label="Type" value={itemType} />
           </div>

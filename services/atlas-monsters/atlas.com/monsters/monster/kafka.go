@@ -11,12 +11,16 @@ import (
 const (
 	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
-	EventMonsterStatusCreated      = "CREATED"
-	EventMonsterStatusDestroyed    = "DESTROYED"
-	EventMonsterStatusStartControl = "START_CONTROL"
-	EventMonsterStatusStopControl  = "STOP_CONTROL"
-	EventMonsterStatusDamaged      = "DAMAGED"
-	EventMonsterStatusKilled       = "KILLED"
+	EventMonsterStatusCreated         = "CREATED"
+	EventMonsterStatusDestroyed       = "DESTROYED"
+	EventMonsterStatusStartControl    = "START_CONTROL"
+	EventMonsterStatusStopControl     = "STOP_CONTROL"
+	EventMonsterStatusDamaged         = "DAMAGED"
+	EventMonsterStatusKilled          = "KILLED"
+	EventMonsterStatusEffectApplied   = "STATUS_APPLIED"
+	EventMonsterStatusEffectExpired   = "STATUS_EXPIRED"
+	EventMonsterStatusEffectCancelled = "STATUS_CANCELLED"
+	EventMonsterStatusDamageReflected = "DAMAGE_REFLECTED"
 )
 
 type statusEvent[E any] struct {
@@ -68,6 +72,7 @@ type statusEventDamagedBody struct {
 	X             int16         `json:"x"`
 	Y             int16         `json:"y"`
 	ActorId       uint32        `json:"actorId"`
+	Boss          bool          `json:"boss"`
 	DamageEntries []damageEntry `json:"damageEntries"`
 }
 
@@ -75,10 +80,37 @@ type statusEventKilledBody struct {
 	X             int16         `json:"x"`
 	Y             int16         `json:"y"`
 	ActorId       uint32        `json:"actorId"`
+	Boss          bool          `json:"boss"`
 	DamageEntries []damageEntry `json:"damageEntries"`
 }
 
 type damageEntry struct {
 	CharacterId uint32 `json:"characterId"`
 	Damage      uint32 `json:"damage"`
+}
+
+type statusEffectAppliedBody struct {
+	EffectId          string           `json:"effectId"`
+	SourceType        string           `json:"sourceType"`
+	SourceCharacterId uint32           `json:"sourceCharacterId"`
+	SourceSkillId     uint32           `json:"sourceSkillId"`
+	SourceSkillLevel  uint32           `json:"sourceSkillLevel"`
+	Statuses          map[string]int32 `json:"statuses"`
+	Duration          uint32           `json:"duration"`
+}
+
+type statusEffectExpiredBody struct {
+	EffectId   string           `json:"effectId"`
+	Statuses   map[string]int32 `json:"statuses"`
+}
+
+type statusEffectCancelledBody struct {
+	EffectId   string           `json:"effectId"`
+	Statuses   map[string]int32 `json:"statuses"`
+}
+
+type statusEventDamageReflectedBody struct {
+	CharacterId   uint32 `json:"characterId"`
+	ReflectDamage uint32 `json:"reflectDamage"`
+	ReflectType   string `json:"reflectType"`
 }

@@ -77,3 +77,20 @@ type ExpiredStatusEventBody struct {
 	CreatedAt time.Time    `json:"createdAt"`
 	ExpiresAt time.Time    `json:"expiresAt"`
 }
+
+const (
+	EnvCommandTopicCharacter = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeHP          = "CHANGE_HP"
+)
+
+type CharacterCommand[E any] struct {
+	CharacterId uint32   `json:"characterId"`
+	WorldId     world.Id `json:"worldId"`
+	Type        string   `json:"type"`
+	Body        E        `json:"body"`
+}
+
+type ChangeHPCommandBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	Amount    int16      `json:"amount"`
+}

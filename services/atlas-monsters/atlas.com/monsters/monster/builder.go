@@ -10,6 +10,8 @@ import (
 // Clone creates a ModelBuilder initialized from an existing Model.
 // This centralizes field copying for immutable model mutations.
 func Clone(m Model) *ModelBuilder {
+	effects := make([]StatusEffect, len(m.statusEffects))
+	copy(effects, m.statusEffects)
 	return &ModelBuilder{
 		uniqueId:           m.uniqueId,
 		worldId:            m.worldId,
@@ -28,6 +30,7 @@ func Clone(m Model) *ModelBuilder {
 		stance:             m.stance,
 		team:               m.team,
 		damageEntries:      m.damageEntries,
+		statusEffects:      effects,
 	}
 }
 
@@ -50,6 +53,7 @@ type ModelBuilder struct {
 	stance             byte
 	team               int8
 	damageEntries      []entry
+	statusEffects      []StatusEffect
 }
 
 // SetX sets the X coordinate.
@@ -82,12 +86,75 @@ func (b *ModelBuilder) SetControlCharacterId(id uint32) *ModelBuilder {
 	return b
 }
 
+// SetMp sets the current mana points.
+func (b *ModelBuilder) SetMp(mp uint32) *ModelBuilder {
+	b.mp = mp
+	return b
+}
+
 // AddDamageEntry appends a damage entry to the damage tracking list.
 func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelBuilder {
 	b.damageEntries = append(b.damageEntries, entry{
 		CharacterId: characterId,
 		Damage:      damage,
 	})
+	return b
+}
+
+// AddStatusEffect adds a status effect, replacing any existing effect with overlapping status types.
+// Exception: VENOM stacks up to 3 times.
+func (b *ModelBuilder) AddStatusEffect(effect StatusEffect) *ModelBuilder {
+	for statusType := range effect.Statuses() {
+		if statusType == "VENOM" {
+			venomCount := 0
+			for _, se := range b.statusEffects {
+				if se.HasStatus("VENOM") {
+					venomCount++
+				}
+			}
+			if venomCount >= 3 {
+				// At max stacks, replace the oldest
+				for i, se := range b.statusEffects {
+					if se.HasStatus("VENOM") {
+						b.statusEffects = append(b.statusEffects[:i], b.statusEffects[i+1:]...)
+						break
+					}
+				}
+			}
+		} else {
+			b.RemoveStatusEffectByType(statusType)
+		}
+	}
+	b.statusEffects = append(b.statusEffects, effect)
+	return b
+}
+
+// RemoveStatusEffect removes a status effect by its ID.
+func (b *ModelBuilder) RemoveStatusEffect(effectId uuid.UUID) *ModelBuilder {
+	for i, se := range b.statusEffects {
+		if se.EffectId() == effectId {
+			b.statusEffects = append(b.statusEffects[:i], b.statusEffects[i+1:]...)
+			return b
+		}
+	}
+	return b
+}
+
+// RemoveStatusEffectByType removes all status effects that contain the given status type.
+func (b *ModelBuilder) RemoveStatusEffectByType(statusType string) *ModelBuilder {
+	filtered := make([]StatusEffect, 0, len(b.statusEffects))
+	for _, se := range b.statusEffects {
+		if !se.HasStatus(statusType) {
+			filtered = append(filtered, se)
+		}
+	}
+	b.statusEffects = filtered
+	return b
+}
+
+// ClearStatusEffects removes all status effects.
+func (b *ModelBuilder) ClearStatusEffects() *ModelBuilder {
+	b.statusEffects = make([]StatusEffect, 0)
 	return b
 }
 
@@ -111,5 +178,6 @@ func (b *ModelBuilder) Build() Model {
 		stance:             b.stance,
 		team:               b.team,
 		damageEntries:      b.damageEntries,
+		statusEffects:      b.statusEffects,
 	}
 }

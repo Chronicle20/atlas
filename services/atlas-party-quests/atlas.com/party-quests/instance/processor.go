@@ -62,6 +62,7 @@ type Processor interface {
 
 	GetById(instanceId uuid.UUID) (Model, error)
 	GetByCharacter(characterId uint32) (Model, error)
+	GetTimerByCharacter(characterId uint32) (uint64, error)
 	GetAll() []Model
 }
 
@@ -89,6 +90,50 @@ func (p *ProcessorImpl) GetById(instanceId uuid.UUID) (Model, error) {
 
 func (p *ProcessorImpl) GetByCharacter(characterId uint32) (Model, error) {
 	return GetRegistry().GetByCharacter(p.t, characterId)
+}
+
+func (p *ProcessorImpl) GetTimerByCharacter(characterId uint32) (uint64, error) {
+	inst, err := GetRegistry().GetByCharacter(p.t, characterId)
+	if err != nil {
+		return 0, err
+	}
+
+	if inst.State() != StateActive {
+		return 0, errors.New("instance not active")
+	}
+
+	def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+	if err != nil {
+		return 0, err
+	}
+
+	now := time.Now()
+
+	// Stage timer takes precedence over global timer.
+	stageIdx := inst.CurrentStageIndex()
+	if int(stageIdx) < len(def.Stages()) {
+		stg := def.Stages()[stageIdx]
+		if stg.Duration() > 0 {
+			elapsed := now.Sub(inst.StageStartedAt())
+			remaining := int64(stg.Duration()) - int64(elapsed.Seconds())
+			if remaining < 0 {
+				remaining = 0
+			}
+			return uint64(remaining), nil
+		}
+	}
+
+	// Fall back to global timer.
+	if def.Duration() > 0 {
+		elapsed := now.Sub(inst.StartedAt())
+		remaining := int64(def.Duration()) - int64(elapsed.Seconds())
+		if remaining < 0 {
+			remaining = 0
+		}
+		return uint64(remaining), nil
+	}
+
+	return 0, errors.New("no timer configured")
 }
 
 func (p *ProcessorImpl) GetAll() []Model {

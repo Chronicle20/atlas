@@ -78,8 +78,19 @@ func (r *RestModel) SetID(idStr string) error {
 }
 
 func Extract(rm RestModel) (Model, error) {
+	skills := make([]Skill, 0, len(rm.Skills))
+	for _, s := range rm.Skills {
+		skills = append(skills, Skill{Id: s.Id, Level: s.Level})
+	}
 	return Model{
-		hp: rm.Hp,
-		mp: rm.Mp,
+		hp:             rm.Hp,
+		mp:             rm.Mp,
+		boss:           rm.Boss,
+		undead:         rm.Undead,
+		resistances:    rm.Resistances,
+		animationTimes: rm.AnimationTimes,
+		skills:         skills,
+		revives:        rm.Revives,
+		banish:         Banish{Message: rm.Banish.Message, MapId: rm.Banish.MapId, PortalName: rm.Banish.PortalName},
 	}, nil
 }

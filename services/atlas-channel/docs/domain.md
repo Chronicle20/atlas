@@ -288,16 +288,18 @@ Provides queries for characters present in a map. Coordinates session lookups fo
 ## Monster
 
 ### Responsibility
-Represents spawned monsters in a map.
+Represents spawned monsters in a map. Provides monster data retrieval, damage application, skill usage, and status effect management.
 
 ### Core Models
-- `Model` - Contains uniqueId, monsterId, worldId, channelId, mapId, hp, maxHp, mp, position (x, y, fh), stance, team, controlCharacterId
+- `Model` - Contains field (field.Model), uniqueId (uint32), monsterId (uint32), maxHp (uint32), hp (uint32), mp (uint32), controlCharacterId (uint32), x (int16), y (int16), fh (int16), stance (byte), team (int8). Delegates WorldId(), ChannelId(), MapId(), Instance() to embedded field.Model. Controlled() returns true when controlCharacterId != 0.
+- `modelBuilder` - Constructor requires uniqueId, field, monsterId. Validates uniqueId > 0 (`ErrInvalidUniqueId`).
 
 ### Invariants
-- Monster must exist in a valid map
+- uniqueId must be greater than 0
+- Monster field identity delegated to embedded field.Model
 
 ### Processors
-- `Processor` - Iterates monsters in map
+- `Processor` - GetById (fetches monster by uniqueId via REST from MONSTERS service), InMapModelProvider/ForEachInMap/GetInMap (retrieves and iterates monsters in a field), Damage (emits DAMAGE command), UseSkill (emits USE_SKILL command), ApplyStatus (emits APPLY_STATUS command), CancelStatus (emits CANCEL_STATUS command)
 
 ---
 
@@ -491,3 +493,212 @@ Handles distributed transaction orchestration for multi-step operations.
 
 ### Processors
 - `Processor` - Manages saga state and compensation
+
+---
+
+## Movement
+
+### Responsibility
+Handles entity movement processing for characters, NPCs, pets, and monsters. Folds movement elements into final position/stance summaries and broadcasts results to map sessions.
+
+### Core Models
+- `summary` - Accumulated movement result containing X (int16), Y (int16), Stance (byte)
+- Movement type constants: TypeNormal, TypeTeleport, TypeStartFallDown, TypeFlyingBlock, TypeJump, TypeStatChange
+
+### Invariants
+- ForMonster validates that the monster's worldId/channelId/mapId matches the field; rejects movement on mismatch
+
+### Processors
+- `Processor` - ForCharacter (broadcasts character movement to map sessions, emits character movement command), ForNPC (sends NPC action to controller session), ForPet (broadcasts pet movement to map sessions, emits pet movement command), ForMonster (validates map consistency, sends movement ACK to controller, broadcasts to map sessions, emits monster movement command; triggers monster UseSkill when skillId > 0)
+
+---
+
+## Respawn
+
+### Responsibility
+Handles character death and respawn logic. Orchestrates experience loss calculation, protective item detection, and multi-step saga creation for the respawn sequence.
+
+### Invariants
+- Beginners lose no experience on death
+- Maps with NoExpLossOnDeath field limit prevent experience loss
+- Protective items (Safety Charm in Cash, Easter Basket or ProtectOnDeath in ETC) prevent experience loss
+- Experience loss in towns: 1% of current experience
+- Experience loss outside towns with luck < 50: 10%
+- Experience loss outside towns with luck >= 50: 5%
+- Wheel of Fortune keeps character in current map on death; otherwise warps to map's returnMapId
+
+### Processors
+- `Processor` (interface) - Respawn(ch, characterId, currentMapId) orchestrates death penalty via saga with conditional steps: consume_wheel_of_fortune (if used), consume_protective_item (if present), set_hp (always, sets HP to 50), deduct_experience (if loss > 0), cancel_all_buffs (always), warp_to_spawn (always, portalId 0)
+
+---
+
+## Portal
+
+### Responsibility
+Handles portal entry and warp commands for map transitions.
+
+### Processors
+- `Processor` (interface) - Enter(f, portalName, characterId) looks up portal by name in map data and emits ENTER command. Warp(f, characterId, targetMapId) emits WARP command with target map ID.
+
+---
+
+## Fame
+
+### Responsibility
+Handles fame change requests between characters.
+
+### Processors
+- `Processor` - RequestChange(f, characterId, targetId, amount) emits fame change command
+
+---
+
+## Consumable
+
+### Responsibility
+Handles item consumption and scroll use requests.
+
+### Processors
+- `Processor` - RequestItemConsume(f, characterId, itemId, source, updateTime) emits item consume command. RequestScrollUse(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime) emits scroll use command.
+
+---
+
+## Invite
+
+### Responsibility
+Handles invite accept and reject operations for party and guild invitations. Invites are world-scoped, not field-scoped.
+
+### Processors
+- `Processor` - Accept(actorId, worldId, inviteType, referenceId) emits accept invite command. Reject(actorId, worldId, inviteType, originatorId) emits reject invite command.
+
+---
+
+## Character Expression
+
+### Responsibility
+Handles character expression (emote) changes.
+
+### Processors
+- `Processor` (interface) - Change(characterId, f, expression) emits expression command
+
+---
+
+## Message
+
+### Responsibility
+Handles chat message production across multiple chat types. Provides type-specific methods that delegate to the appropriate Kafka command structure.
+
+### Processors
+- `Processor` (interface) - GeneralChat (field-scoped, with balloonOnly flag), BuddyChat/PartyChat/GuildChat/AllianceChat (delegate to MultiChat with type string), MultiChat (with recipients list), WhisperChat (with recipientName), MessengerChat (with recipients list), PetChat (with ownerId, petSlot, type, action, balloon)
+
+---
+
+## Kite
+
+### Responsibility
+Represents kite/balloon display items in the game world.
+
+### Core Models
+- `Model` - Contains id (uint32), templateId (uint32), message (string), name (string), x (int16), y (int16), ft (int16, accessed via Type() getter)
+
+### Processors
+None. Model-only domain.
+
+---
+
+## Data/Skill
+
+### Responsibility
+Provides static skill data retrieval from the DATA service, including skill metadata and level-indexed effect lookup.
+
+### Core Models
+- `Model` - Contains id (uint32), action (bool), element (string), animationTime (uint32), effects ([]effect.Model)
+
+### Invariants
+- GetEffect returns empty model when level is 0
+- GetEffect indexes effects at level-1; returns error if level exceeds effects array length
+
+### Processors
+- `Processor` (interface) - GetById(skillId) fetches skill data via REST. GetEffect(skillId, level) fetches skill then returns effect at level-1 index. SetCooldownCommandProvider emits SET_COOLDOWN command to COMMAND_TOPIC_SKILL.
+
+---
+
+## Data/Skill Effect
+
+### Responsibility
+Represents a single skill effect level with stat modifications, resource costs, monster status effects, and cure information.
+
+### Core Models
+- `Model` - Contains stat modifiers (weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, speed, jump as int16), resource fields (hp, mp as uint16, hpr, mpr as float64), rate fields (mhprRate, mmprRate as uint16, mhpR, mmpR as byte), mob skill fields (mobSkill, mobSkillLevel as uint16), combat fields (damage, attackCount as uint32, fixDamage as int32, bulletCount, bulletConsume as uint16), cost fields (hpCon, mpCon as uint16, moneyCon as uint32, itemCon as uint32, itemConNo as uint32), timing fields (duration as int32, cooldown as uint32), targeting fields (target as uint32, mobCount as uint32), effect fields (morphId, ghost, fatigue, berserk, booster as uint32, prop as float64, barrier as int32, moveTo as int32, cp, nuffSkill as uint32), flags (overtime, repeatEffect, skill as bool, mapProtection as byte), position (x, y as int16), collections (cureAbnormalStatuses as []string, statups as []statup.Model, monsterStatus as map[string]uint32)
+- Public getters: StatUps(), HPConsume(), MPConsume(), Duration(), Cooldown(), ItemConsume(), ItemConsumeAmount(), MonsterStatus(), CureAbnormalStatuses()
+
+---
+
+## Data/Map
+
+### Responsibility
+Provides static map metadata from the DATA service including return map, field limits, and town status.
+
+### Core Models
+- `Model` - Contains clock (bool), returnMapId (_map.Id), fieldLimit (uint32), town (bool). Derived method: NoExpLossOnDeath() delegates to _map.NoExpLossOnDeath(fieldLimit).
+
+### Processors
+- `Processor` (interface) - GetById(mapId) fetches map metadata via REST
+
+---
+
+## Data/Portal
+
+### Responsibility
+Provides static portal data lookup from the DATA service by map and portal name.
+
+### Core Models
+- `Model` - Contains id (uint32), name (string), target (string), portalType (uint8), x (int16), y (int16), targetMapId (_map.Id), scriptName (string). Only Id() has a public getter.
+
+### Processors
+- `Processor` (interface) - InMapByNameModelProvider(mapId, name) returns portal slice provider. GetInMapByName(mapId, name) returns first matching portal.
+
+---
+
+## Data/NPC
+
+### Responsibility
+Provides static NPC positional data from the DATA service for map-spawned NPC instances.
+
+### Core Models
+- `Model` - Contains id (uint32), template (uint32), x (int16), cy (int16), f (uint32), fh (uint16), rx0 (int16), rx1 (int16)
+
+### Processors
+- `Processor` - ForEachInMap(mapId, operator) iterates NPCs in parallel. InMapModelProvider(mapId) returns NPC slice provider. InMapByObjectIdModelProvider(mapId, objectId) filters by object ID. GetInMapByObjectId(mapId, objectId) returns first match.
+
+---
+
+## Data/NPC Template
+
+### Responsibility
+Provides NPC template metadata from the DATA service including storage-related configuration.
+
+### Core Models
+- `Model` - Contains id (uint32), name (string), trunkPut (int32), trunkGet (int32), storebank (bool)
+
+### Processors
+- `Processor` (interface) - GetById(npcId) fetches NPC template via REST
+
+---
+
+## Data/Quest
+
+### Responsibility
+Provides static quest definition data from the DATA service including requirements, actions, and rewards.
+
+### Core Models
+- `Model` - Contains id (uint32), name (string), parent (string), area (uint32), order (uint32), autoStart (bool), autoPreComplete (bool), autoComplete (bool), timeLimit (uint32), timeLimit2 (uint32), selectedMob (bool), summary (string), demandSummary (string), rewardSummary (string), startRequirements (RequirementsModel), endRequirements (RequirementsModel), startActions (ActionsModel), endActions (ActionsModel)
+- `RequirementsModel` - Contains npcId (uint32), levelMin (uint16), levelMax (uint16), fameMin (int16), mesoMin (uint32), mesoMax (uint32), jobs ([]uint16), quests ([]QuestRequirementModel), items ([]ItemRequirementModel), mobs ([]MobRequirementModel), fieldEnter ([]uint32), pet ([]uint32), petTamenessMin (uint16), dayOfWeek ([]string), start (string), end (string), interval (uint32), startScript (string), endScript (string), infoNumber (uint32), normalAutoStart (bool), completionCount (uint32)
+- `ActionsModel` - Contains npcId (uint32), exp (int32), money (int32), fame (int16), items ([]ItemRewardModel), skills ([]SkillRewardModel), nextQuest (uint32), buffItemId (uint32), interval (uint32), levelMin (uint16)
+- `QuestRequirementModel` - Contains id (uint32), state (uint8)
+- `ItemRequirementModel` - Contains id (uint32), count (int32)
+- `MobRequirementModel` - Contains id (uint32), count (uint32)
+- `ItemRewardModel` - Contains id (uint32), count (int32), job (int32), gender (int8), prop (int32), period (uint32), dateExpire (string), variable (uint32)
+- `SkillRewardModel` - Contains id (uint32), level (int32), masterLevel (int32), jobs ([]uint16)
+
+### Processors
+- `Processor` (interface) - GetById(questId) fetches single quest. GetAll() fetches all quests. GetAutoStart() fetches quests with autoStart enabled. ByIdProvider(questId) returns quest model provider.

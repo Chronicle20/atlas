@@ -24,6 +24,7 @@ Array of Buff resources.
 |-------|------|----------|
 | Id | string | (resource id) |
 | SourceId | int32 | sourceId |
+| Level | byte | level |
 | Duration | int32 | duration |
 | Changes | []StatChange | changes |
 | CreatedAt | time.Time | createdAt |
@@ -37,6 +38,8 @@ Resource type: `buffs`
 |-------|------|----------|
 | Type | string | type |
 | Amount | int32 | amount |
+
+Resource type: `stats`
 
 #### Error Conditions
 

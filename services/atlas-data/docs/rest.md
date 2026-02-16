@@ -764,6 +764,73 @@ Returns a specific setup item.
 
 ---
 
+### GET /api/data/mob-skills
+
+Returns all mob skills.
+
+#### Response Model
+
+- 200: Array of mob-skills resources
+
+---
+
+### GET /api/data/mob-skills/{skillId}
+
+Returns all mob skills for a specific skill type.
+
+#### Parameters
+
+- skillId (path): Mob skill type ID
+
+#### Response Model
+
+- 200: Array of mob-skills resources filtered by skill ID
+- 400: Bad Request (invalid skillId)
+
+---
+
+### GET /api/data/mob-skills/{skillId}/{level}
+
+Returns a specific mob skill by skill type and level.
+
+#### Parameters
+
+- skillId (path): Mob skill type ID
+- level (path): Mob skill level
+
+#### Response Model
+
+```json
+{
+  "data": {
+    "type": "mob-skills",
+    "id": "120-1",
+    "attributes": {
+      "mp_con": 0,
+      "duration": 0,
+      "hp": 100,
+      "x": 0,
+      "y": 0,
+      "prop": 100,
+      "interval": 0,
+      "count": 1,
+      "limit": 0,
+      "lt_x": 0,
+      "lt_y": 0,
+      "rb_x": 0,
+      "rb_y": 0,
+      "summon_effect": 0,
+      "summons": []
+    }
+  }
+}
+```
+
+- 404: Not found
+- 400: Bad Request (invalid skillId or level)
+
+---
+
 ### GET /api/data/skills
 
 Searches skills by name.

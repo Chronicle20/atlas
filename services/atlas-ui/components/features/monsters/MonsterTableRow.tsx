@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { TableCell, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { useMobData } from "@/lib/hooks/useMobData";
 import type { MapMonsterData } from "@/services/api/map-entities.service";
@@ -26,14 +28,19 @@ export function MonsterTableRow({ monster }: MonsterTableRowProps) {
         />
       </TableCell>
       <TableCell>
-        <Link
-          href={`/monsters/${monster.attributes.template}`}
-          className="font-mono text-primary hover:underline"
-        >
-          {monster.attributes.template}
-        </Link>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href={`/monsters/${monster.attributes.template}`}>
+                <Badge variant="secondary">{name ?? "\u2014"}</Badge>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent copyable>
+              <p>{monster.attributes.template}</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </TableCell>
-      <TableCell>{name ?? "—"}</TableCell>
       <TableCell className="font-mono">
         ({monster.attributes.x}, {monster.attributes.y})
       </TableCell>

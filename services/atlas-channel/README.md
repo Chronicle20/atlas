@@ -22,7 +22,7 @@ The channel service acts as the primary interface between game clients and the b
   - CHANNELS - Channel registration
   - CHARACTERS - Character data
   - CONFIGURATIONS - Service and tenant configuration
-  - DATA - Static game data (maps, NPCs, skills)
+  - DATA - Static game data (maps, NPCs, skills, portals, quests)
   - DROPS - Drop state
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS
@@ -57,6 +57,7 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_ASSET_STATUS | Asset status events |
 | EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Cash shop compartment status events |
 | EVENT_TOPIC_CASH_SHOP_STATUS | Cash shop status events |
+| EVENT_TOPIC_CHARACTER_BUFF_STATUS | Character buff status events |
 | EVENT_TOPIC_CHAIR_STATUS | Chair status events |
 | EVENT_TOPIC_CHALKBOARD_STATUS | Chalkboard status events |
 | EVENT_TOPIC_CHARACTER_CHAT | Character chat events |
@@ -76,6 +77,7 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_REACTOR_STATUS | Reactor status events |
 | EVENT_TOPIC_SAGA_STATUS | Saga status events |
 | EVENT_TOPIC_SESSION_STATUS | Session status events |
+| EVENT_TOPIC_SKILL_STATUS | Skill status events |
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status events |
 | EVENT_TOPIC_STORAGE_STATUS | Storage status events |
 | EVENT_TOPIC_TRANSPORT_STATUS | Transport status events |

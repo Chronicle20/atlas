@@ -15,6 +15,7 @@ type SkillUsageInfo struct {
 	castY                     int16
 	spiritJavelinItemId       uint32
 	affectedPartyMemberBitmap uint8
+	affectedMobIds            []uint32
 	delay                     uint16
 }
 
@@ -37,12 +38,11 @@ func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[stri
 				m.delay = r.ReadUint16()
 			}
 		}
-		var mobs []uint32
-		if isMobAffectingBuff(skill.Id(m.skillId)) {
+			if isMobAffectingBuff(skill.Id(m.skillId)) {
 			nMobCount := r.ReadByte()
-			mobs = make([]uint32, 0)
+			m.affectedMobIds = make([]uint32, 0, nMobCount)
 			for range nMobCount {
-				mobs = append(mobs, r.ReadUint32())
+				m.affectedMobIds = append(m.affectedMobIds, r.ReadUint32())
 			}
 			m.delay = r.ReadUint16()
 		}
@@ -59,6 +59,14 @@ func (m *SkillUsageInfo) SkillLevel() byte {
 
 func (m *SkillUsageInfo) AffectedPartyMemberBitmap() byte {
 	return m.affectedPartyMemberBitmap
+}
+
+func (m *SkillUsageInfo) AffectedMobIds() []uint32 {
+	return m.affectedMobIds
+}
+
+func (m *SkillUsageInfo) Delay() uint16 {
+	return m.delay
 }
 
 func isMobAffectingBuff(skillId skill.Id) bool {

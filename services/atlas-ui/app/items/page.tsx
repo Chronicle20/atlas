@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -157,7 +158,6 @@ function ItemsPageContent() {
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>Item ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Type</TableHead>
                     </TableRow>
@@ -189,14 +189,18 @@ function ItemsPageContent() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Link href={`/items/${item.id}`} className="font-mono text-primary hover:underline">
-                            {item.id}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <Link href={`/items/${item.id}`} className="font-medium hover:underline">
-                            {item.name}
-                          </Link>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link href={`/items/${item.id}`}>
+                                  <Badge variant="secondary">{item.name}</Badge>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent copyable>
+                                <p>{item.id}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className={getItemTypeBadgeVariant(item.type)}>

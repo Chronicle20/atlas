@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -273,7 +274,6 @@ function NpcsPageContent() {
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-10">Icon</TableHead>
-                      <TableHead>NPC ID</TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead className="w-20">Shop</TableHead>
                       <TableHead className="w-28">Conversation</TableHead>
@@ -304,14 +304,18 @@ function NpcsPageContent() {
                             />
                           </TableCell>
                           <TableCell>
-                            <Link href={`/npcs/${npc.id}`} className="font-mono text-primary hover:underline">
-                              {npc.id}
-                            </Link>
-                          </TableCell>
-                          <TableCell>
-                            <Link href={`/npcs/${npc.id}`} className="font-medium hover:underline">
-                              {npc.name}
-                            </Link>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Link href={`/npcs/${npc.id}`}>
+                                    <Badge variant="secondary">{npc.name}</Badge>
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent copyable>
+                                  <p>{npc.id}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                           </TableCell>
                           <TableCell>
                             {statusLoading ? (

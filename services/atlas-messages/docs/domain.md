@@ -63,6 +63,7 @@ A command consists of a Producer function that matches message patterns and retu
 | HelpCommandProducer | `@help` | Displays available commands |
 | WarpCommandProducer | `@warp <target> <mapId>` | Warps character(s) to a map |
 | WhereAmICommandProducer | `@query map` | Displays current map ID |
+| RatesCommandProducer | `@query rates` | Displays current rates (exp, meso, drop) with factor breakdowns |
 | AwardExperienceCommandProducer | `@award <target> experience <amount>` | Awards experience points |
 | AwardLevelCommandProducer | `@award <target> <amount> level` | Awards levels |
 | AwardMesoCommandProducer | `@award <target> meso <amount>` | Awards mesos |
@@ -71,6 +72,11 @@ A command consists of a Producer function that matches message patterns and retu
 | ChangeJobCommandProducer | `@change <target> job <jobId>` | Changes character job |
 | MaxSkillCommandProducer | `@skill max <skillId>` | Maximizes skill level |
 | ResetSkillCommandProducer | `@skill reset <skillId>` | Resets skill to level 0 |
+| BuffCommandProducer | `@buff <target> <skillName\|#skillId> [duration]` | Applies a buff by skill name or ID |
+| ConsumeCommandProducer | `@consume <target> <itemId>` | Applies consumable item effects |
+| MobStatusCommandProducer | `@mobstatus <skillId\|skillName> [level]` | Executes mob skill on all monsters in map |
+| MobClearCommandProducer | `@mobclear [statusType]` | Clears statuses from all monsters in map |
+| DiseaseCommandProducer | `@disease <target> <diseaseType> [value] [duration]` | Applies a disease effect to character(s) |
 
 Target values:
 - `me` - The command issuer
@@ -191,6 +197,7 @@ Builds and submits saga transactions for command execution. Commands produce sag
 | ChangeJob | ChangeJobPayload | Changes character job |
 | CreateSkill | CreateSkillPayload | Creates a skill for character |
 | UpdateSkill | UpdateSkillPayload | Updates a character skill |
+| ApplyConsumableEffect | ApplyConsumableEffectPayload | Applies consumable item effects to character |
 
 ### Invariants
 
@@ -206,6 +213,59 @@ Builds and submits saga transactions for command execution. Commands produce sag
 | Method | Responsibility |
 |--------|---------------|
 | Create | Submits a saga for processing via Kafka |
+
+---
+
+## Buff
+
+### Responsibility
+
+Applies skill buff effects to characters. Retrieves skill effect data, builds stat changes, and emits buff commands via Kafka.
+
+### Processors
+
+#### BuffProcessor
+
+| Method | Responsibility |
+|--------|---------------|
+| Apply | Applies a buff to a character by skill ID and level; resolves skill effect data and emits buff command |
+
+---
+
+## Rate
+
+### Responsibility
+
+Retrieves experience, meso, drop, and quest experience rates for characters, including factor breakdowns.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character ID |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
+| factors | []Factor | Rate factor breakdowns |
+
+#### Factor
+
+| Field | Type | Description |
+|-------|------|-------------|
+| source | string | Factor source identifier |
+| rateType | string | Rate type (exp, meso, item_drop, quest_exp) |
+| multiplier | float64 | Multiplier value |
+
+### Processors
+
+#### RateProcessor
+
+| Method | Responsibility |
+|--------|---------------|
+| GetByCharacter | Retrieves rates and factors for a character |
 
 ---
 
@@ -252,6 +312,7 @@ Provides read-only access to game data for validation.
 | Method | Responsibility |
 |--------|---------------|
 | GetById | Retrieves skill data by ID |
+| GetByName | Retrieves skills matching a name |
 | GetEffect | Retrieves skill effect for a specific level |
 
 #### MapProcessor (data)

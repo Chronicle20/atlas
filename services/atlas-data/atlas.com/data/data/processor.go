@@ -12,6 +12,7 @@ import (
 	"atlas-data/item"
 	"atlas-data/kafka/producer"
 	_map "atlas-data/map"
+	"atlas-data/mobskill"
 	"atlas-data/monster"
 	"atlas-data/npc"
 	"atlas-data/pet"
@@ -48,9 +49,10 @@ const (
 	WorkerNPC               = "NPC"
 	WorkerFace              = "FACE"
 	WorkerHair              = "HAIR"
+	WorkerMobSkill          = "MOB_SKILL"
 )
 
-var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair}
+var Workers = []string{WorkerMap, WorkerMonster, WorkerCharacter, WorkerReactor, WorkerSkill, WorkerPet, WorkerConsume, WorkerCash, WorkerCommodity, WorkerEtc, WorkerSetup, WorkerCharacterCreation, WorkerQuest, WorkerNPC, WorkerFace, WorkerHair, WorkerMobSkill}
 
 func ProcessData(l logrus.FieldLogger) func(ctx context.Context) error {
 	return func(ctx context.Context) error {
@@ -176,6 +178,8 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Face"), face.RegisterFace(db))()
 				} else if name == WorkerHair {
 					err = RegisterAllData(l)(ctx)(path, filepath.Join("Character.wz", "Hair"), hair.RegisterHair(db))()
+				} else if name == WorkerMobSkill {
+					err = RegisterFileData(l)(ctx)(path, filepath.Join("Skill.wz", "MobSkill.img.xml"), mobskill.RegisterMobSkill(db))()
 				}
 				if err != nil {
 					l.WithError(err).Errorf("Worker [%s] failed with error.", name)

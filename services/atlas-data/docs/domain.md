@@ -80,6 +80,9 @@ Represents setup items with price, slot max, recovery HP, trade block, not sale,
 #### Skill
 Represents skill data with name, action status, element type, animation time, and skill effects including stat modifiers, durations, targets, and special properties.
 
+#### Mob Skill
+Represents monster skill data with skill ID, level, MP cost, duration, HP threshold, position (x, y), probability, interval, count, limit, bounding box (lt, rb), summon effect, and summon monster IDs. Identified by composite key of skill ID and level.
+
 ### Processors
 
 Each data type has a processor responsible for:
@@ -106,3 +109,4 @@ Processors include:
 - `reactor.RegisterReactor`
 - `setup.RegisterSetup`
 - `skill.RegisterSkill`
+- `mobskill.RegisterMobSkill`

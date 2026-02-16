@@ -138,6 +138,14 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
 	}()
+	if skillId > 0 {
+		go func() {
+			err := monster.NewProcessor(p.l, p.ctx).UseSkill(f, objectId, characterId, uint16(skillId), uint16(skillLevel))
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to issue use skill command for monster [%d].", objectId)
+			}
+		}()
+	}
 	return nil
 }
 

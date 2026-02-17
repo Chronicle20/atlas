@@ -40,6 +40,11 @@ type Processor interface {
 	// GatherAndEmit gathers a drop and emits a Kafka message
 	GatherAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) (Model, error)
 
+	// Consume removes a drop consumed by a game mechanic (e.g., item-reactor trigger)
+	Consume(mb *message.Buffer) func(field field.Model, dropId uint32) error
+	// ConsumeAndEmit removes a drop consumed by a game mechanic and emits a Kafka message
+	ConsumeAndEmit(field field.Model, dropId uint32) error
+
 	// Expire expires a drop
 	Expire(mb *message.Buffer) model.Operator[Model]
 	// ExpireAndEmit expires a drop and emits a Kafka message
@@ -193,6 +198,31 @@ func (p *ProcessorImpl) GatherAndEmit(transactionId uuid.UUID, field field.Model
 		return err
 	})
 	return result, err
+}
+
+// Consume removes a drop consumed by a game mechanic
+func (p *ProcessorImpl) Consume(msgBuf *message.Buffer) func(field field.Model, dropId uint32) error {
+	return func(field field.Model, dropId uint32) error {
+		d, err := GetRegistry().RemoveDrop(dropId)
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to consume drop [%d].", dropId)
+			return err
+		}
+		if d.Id() == 0 {
+			return nil
+		}
+		p.l.Debugf("Consuming drop [%d].", dropId)
+		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, consumedEventStatusProvider(d.TransactionId(), field, dropId))
+		return nil
+	}
+}
+
+// ConsumeAndEmit removes a drop consumed by a game mechanic and emits a Kafka message
+func (p *ProcessorImpl) ConsumeAndEmit(field field.Model, dropId uint32) error {
+	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
+	return message.Emit(producerProvider)(func(mb *message.Buffer) error {
+		return p.Consume(mb)(field, dropId)
+	})
 }
 
 // Expire expires a drop

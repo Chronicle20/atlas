@@ -17,6 +17,7 @@ const (
 	StatusEventTypePickedUp           = "PICKED_UP"
 	StatusEventTypeReserved           = "RESERVED"
 	StatusEventTypeReservationFailure = "RESERVATION_FAILURE"
+	StatusEventTypeConsumed           = "CONSUMED"
 )
 
 // Command topic and type constants
@@ -27,6 +28,7 @@ const (
 	CommandTypeRequestReservation = "REQUEST_RESERVATION"
 	CommandTypeCancelReservation  = "CANCEL_RESERVATION"
 	CommandTypeRequestPickUp      = "REQUEST_PICK_UP"
+	CommandTypeConsume            = "CONSUME"
 )
 
 // EquipmentData carries inline equipment statistics for drops
@@ -172,4 +174,13 @@ type CommandCancelReservationBody struct {
 type CommandRequestPickUpBody struct {
 	DropId      uint32 `json:"dropId"`
 	CharacterId uint32 `json:"characterId"`
+}
+
+// CommandConsumeBody is the body for CONSUME commands
+type CommandConsumeBody struct {
+	DropId uint32 `json:"dropId"`
+}
+
+// StatusEventConsumedBody is the body for CONSUMED status events
+type StatusEventConsumedBody struct {
 }

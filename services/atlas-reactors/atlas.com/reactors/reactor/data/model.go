@@ -20,3 +20,11 @@ func (m Model) Name() string {
 func (m Model) StateInfo() map[int8][]state.Model {
 	return m.stateInfo
 }
+
+func (m Model) TL() point.Model {
+	return m.tl
+}
+
+func (m Model) BR() point.Model {
+	return m.br
+}

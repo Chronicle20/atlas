@@ -1,6 +1,7 @@
 package main
 
 import (
+	drop2 "atlas-reactors/kafka/consumer/drop"
 	reactor2 "atlas-reactors/kafka/consumer/reactor"
 	"atlas-reactors/logger"
 	"atlas-reactors/reactor"
@@ -50,6 +51,8 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	reactor2.InitConsumers(l)(cmf)(consumerGroupId)
 	reactor2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	drop2.InitConsumers(l)(cmf)(consumerGroupId)
+	drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewCooldownCleanup(l))
 

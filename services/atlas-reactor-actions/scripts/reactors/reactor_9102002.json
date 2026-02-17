@@ -1,0 +1,16 @@
+{
+  "reactorId": "9102002",
+  "description": "Primrose Hill - drops Brown, Purple Primrose Seeds",
+  "hitRules": [],
+  "actRules": [
+    {
+      "id": "drop_items",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "drop_items"
+        }
+      ]
+    }
+  ]
+}

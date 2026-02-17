@@ -68,6 +68,7 @@
           "referenceId": 4001101
         }
       ],
+      "clearActions": ["destroy_monsters"],
       "rewards": [
         {
           "type": "experience",

@@ -12,6 +12,7 @@ type RestModel struct {
 	Type            string                 `json:"type"`
 	Duration        uint64                 `json:"duration"`
 	ClearConditions []condition.RestModel   `json:"clearConditions"`
+	ClearActions    []string               `json:"clearActions,omitempty"`
 	Rewards         []reward.RestModel      `json:"rewards"`
 	WarpType        string                 `json:"warpType"`
 	Properties      map[string]any         `json:"properties,omitempty"`
@@ -43,6 +44,7 @@ func Transform(m Model) (RestModel, error) {
 		Type:            m.Type(),
 		Duration:        m.Duration(),
 		ClearConditions: conditions,
+		ClearActions:    m.ClearActions(),
 		Rewards:         rewards,
 		WarpType:        m.WarpType(),
 		Properties:      m.Properties(),
@@ -75,6 +77,7 @@ func Extract(r RestModel) (Model, error) {
 		SetType(r.Type).
 		SetDuration(r.Duration).
 		SetClearConditions(conditions).
+		SetClearActions(r.ClearActions).
 		SetRewards(rewards).
 		SetWarpType(r.WarpType).
 		SetProperties(r.Properties).

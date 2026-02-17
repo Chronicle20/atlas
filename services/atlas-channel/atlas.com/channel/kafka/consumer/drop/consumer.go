@@ -38,6 +38,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreated(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventExpired(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventPickedUp(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventConsumed(sc, wp))))
 			}
 		}
 	}
@@ -86,6 +87,23 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy drop [%d] for characters in map [%d].", e.DropId, e.MapId)
+		}
+	}
+}
+
+func handleStatusEventConsumed(sc server.Model, wp writer.Producer) message.Handler[drop2.StatusEvent[drop2.ConsumedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e drop2.StatusEvent[drop2.ConsumedStatusEventBody]) {
+		if e.Type != drop2.StatusEventTypeConsumed {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, uuid.Nil), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExplode, 0, -1)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to destroy consumed drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 		}
 	}
 }

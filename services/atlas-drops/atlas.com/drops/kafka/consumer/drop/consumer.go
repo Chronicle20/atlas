@@ -33,6 +33,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReservation)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelReservation)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestPickUp)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsume)))
 	}
 }
 
@@ -126,4 +127,12 @@ func handleRequestPickUp(l logrus.FieldLogger, ctx context.Context, c messageDro
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 	_, _ = drop.NewProcessor(l, ctx).GatherAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId)
+}
+
+func handleConsume(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandConsumeBody]) {
+	if c.Type != messageDropKafka.CommandTypeConsume {
+		return
+	}
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	_ = drop.NewProcessor(l, ctx).ConsumeAndEmit(f, c.Body.DropId)
 }

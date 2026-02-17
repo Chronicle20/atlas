@@ -118,6 +118,21 @@ func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d M
 	return producer.SingleMessageProvider(key, value)
 }
 
+func consumedEventStatusProvider(transactionId uuid.UUID, field field.Model, dropId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(dropId))
+	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventConsumedBody]{
+		TransactionId: transactionId,
+		WorldId:       field.WorldId(),
+		ChannelId:     field.ChannelId(),
+		MapId:         field.MapId(),
+		Instance:      field.Instance(),
+		DropId:        dropId,
+		Type:          messageDropKafka.StatusEventTypeConsumed,
+		Body:          messageDropKafka.StatusEventConsumedBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func reservationFailureEventStatusProvider(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservationFailureBody]{

@@ -64,6 +64,8 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 
 func Teardown(l logrus.FieldLogger) func() {
 	return func() {
+		CancelAllPendingActivations()
+
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-reactors").Start(context.Background(), "teardown")
 		defer span.End()
 
@@ -100,6 +102,7 @@ func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Model] {
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
+			CancelPendingActivation(m.Id())
 			t := tenant.MustFromContext(ctx)
 			mk := NewMapKey(m.Field())
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())

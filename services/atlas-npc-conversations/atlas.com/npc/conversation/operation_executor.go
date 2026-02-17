@@ -2056,6 +2056,16 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
 
+	case "leave_party_quest":
+		// Format: leave_party_quest
+		// No params required - removes the character from their active party quest.
+		payload := saga.LeavePartyQuestPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+		}
+
+		return stepId, saga.Pending, saga.LeavePartyQuest, payload, nil
+
 	case "warp_party_quest_members_to_map":
 		// Format: warp_party_quest_members_to_map
 		// Params: mapId (uint32, required), portalId (uint32, optional, default 0)

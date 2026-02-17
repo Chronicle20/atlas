@@ -19,6 +19,8 @@ type ProcessorMock struct {
 	StageAdvanceAndEmitFunc   func(instanceId uuid.UUID) error
 	ForfeitFunc               func(mb *message.Buffer) func(instanceId uuid.UUID) error
 	ForfeitAndEmitFunc        func(instanceId uuid.UUID) error
+	LeaveFunc                 func(mb *message.Buffer) func(characterId uint32, reason string) error
+	LeaveAndEmitFunc          func(characterId uint32, reason string) error
 	UpdateStageStateFunc      func(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
 	DestroyFunc               func(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
 	DestroyAndEmitFunc        func(instanceId uuid.UUID, reason string) error
@@ -106,6 +108,20 @@ func (m *ProcessorMock) Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) e
 func (m *ProcessorMock) ForfeitAndEmit(instanceId uuid.UUID) error {
 	if m.ForfeitAndEmitFunc != nil {
 		return m.ForfeitAndEmitFunc(instanceId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) Leave(mb *message.Buffer) func(characterId uint32, reason string) error {
+	if m.LeaveFunc != nil {
+		return m.LeaveFunc(mb)
+	}
+	return func(uint32, string) error { return nil }
+}
+
+func (m *ProcessorMock) LeaveAndEmit(characterId uint32, reason string) error {
+	if m.LeaveAndEmitFunc != nil {
+		return m.LeaveAndEmitFunc(characterId, reason)
 	}
 	return nil
 }

@@ -130,6 +130,12 @@ type WarpPartyQuestMembersToMapPayload struct {
 	PortalId    uint32     `json:"portalId"` // Destination portal ID
 }
 
+// LeavePartyQuestPayload represents the payload required to remove a character from their active party quest.
+type LeavePartyQuestPayload struct {
+	CharacterId uint32   `json:"characterId"`
+	WorldId     world.Id `json:"worldId"`
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -187,8 +193,9 @@ const (
 	StartInstanceTransport Action = "start_instance_transport"
 
 	// Party quest actions
-	RegisterPartyQuest             Action = "register_party_quest"
-	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"
+	RegisterPartyQuest         Action = "register_party_quest"
+	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
+	LeavePartyQuest            Action = "leave_party_quest"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

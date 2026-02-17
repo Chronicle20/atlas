@@ -32,6 +32,7 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStageClearAttemptCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStageAdvanceCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeaveCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStageStateCommand(db))))
 	}
 }
@@ -94,6 +95,17 @@ func handleForfeitCommand(db *gorm.DB) message.Handler[pq.Command[pq.ForfeitComm
 
 		l.Debugf("Handling FORFEIT command for instance [%s].", c.Body.InstanceId)
 		_ = instance.NewProcessor(l, ctx, db).ForfeitAndEmit(c.Body.InstanceId)
+	}
+}
+
+func handleLeaveCommand(db *gorm.DB) message.Handler[pq.Command[pq.LeaveCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pq.Command[pq.LeaveCommandBody]) {
+		if c.Type != pq.CommandTypeLeave {
+			return
+		}
+
+		l.Debugf("Handling LEAVE command from character [%d].", c.CharacterId)
+		_ = instance.NewProcessor(l, ctx, db).LeaveAndEmit(c.CharacterId, "voluntary")
 	}
 }
 

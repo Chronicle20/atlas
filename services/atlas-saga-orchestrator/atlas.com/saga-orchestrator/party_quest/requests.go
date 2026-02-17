@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	EnvCommandTopic  = "COMMAND_TOPIC_PARTY_QUEST"
+	EnvCommandTopic    = "COMMAND_TOPIC_PARTY_QUEST"
 	CommandTypeRegister = "REGISTER"
+	CommandTypeLeave    = "LEAVE"
 )
 
 func getBaseRequest() string {
@@ -197,4 +198,8 @@ type RegisterCommandBody struct {
 	PartyId   uint32     `json:"partyId,omitempty"`
 	ChannelId channel.Id `json:"channelId"`
 	MapId     uint32     `json:"mapId"`
+}
+
+// LeaveCommandBody represents the body of a LEAVE command
+type LeaveCommandBody struct {
 }

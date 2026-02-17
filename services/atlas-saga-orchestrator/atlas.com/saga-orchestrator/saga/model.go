@@ -482,6 +482,7 @@ const (
 
 	// Party quest actions
 	RegisterPartyQuest             Action = "register_party_quest"                // Register a party for a party quest via atlas-party-quests
+	LeavePartyQuest                Action = "leave_party_quest"                   // Remove a character from their active party quest
 	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"     // Warp all party quest members to a map
 )
 
@@ -1253,6 +1254,12 @@ type RegisterPartyQuestPayload struct {
 	QuestId     string     `json:"questId"`     // Party quest definition ID (e.g., "henesys_pq")
 }
 
+// LeavePartyQuestPayload represents the payload required to remove a character from their active party quest.
+type LeavePartyQuestPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId of the character leaving
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
 // WarpPartyQuestMembersToMapPayload represents the payload required to warp all party quest members to a map.
 type WarpPartyQuestMembersToMapPayload struct {
 	CharacterId uint32     `json:"characterId"` // Character initiating the warp (must be in a party)
@@ -1680,6 +1687,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case WarpPartyQuestMembersToMap:
 		var payload WarpPartyQuestMembersToMapPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case LeavePartyQuest:
+		var payload LeavePartyQuestPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

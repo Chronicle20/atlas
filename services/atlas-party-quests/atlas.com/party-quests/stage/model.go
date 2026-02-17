@@ -23,6 +23,7 @@ type Model struct {
 	stageType       string
 	duration        uint64
 	clearConditions []condition.Model
+	clearActions    []string
 	rewards         []reward.Model
 	warpType        string
 	properties      map[string]any
@@ -34,6 +35,7 @@ func (m Model) MapIds() []uint32                    { return m.mapIds }
 func (m Model) Type() string                        { return m.stageType }
 func (m Model) Duration() uint64                    { return m.duration }
 func (m Model) ClearConditions() []condition.Model  { return m.clearConditions }
+func (m Model) ClearActions() []string              { return m.clearActions }
 func (m Model) Rewards() []reward.Model             { return m.rewards }
 func (m Model) WarpType() string                    { return m.warpType }
 func (m Model) Properties() map[string]any          { return m.properties }

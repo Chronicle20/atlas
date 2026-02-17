@@ -8,6 +8,7 @@ import (
 	"atlas-party-quests/kafka/message"
 	pq "atlas-party-quests/kafka/message/party_quest"
 	"atlas-party-quests/kafka/producer"
+	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
 	"atlas-party-quests/stage"
 	"context"
@@ -472,8 +473,36 @@ func (p *ProcessorImpl) StageClearAttempt(mb *message.Buffer) func(instanceId uu
 
 		p.l.Infof("PQ instance [%s] stage [%d] cleared.", instanceId, stageIdx)
 
+		// Execute clear actions
+		p.executeClearActions(stg, inst)
+
 		// Emit STAGE_CLEARED event
 		return mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), inst.FieldInstances()))
+	}
+}
+
+func (p *ProcessorImpl) executeClearActions(stg stage.Model, inst Model) {
+	for _, action := range stg.ClearActions() {
+		switch action {
+		case "destroy_monsters":
+			p.destroyMonstersInStage(stg, inst)
+		default:
+			p.l.Warnf("Unknown clear action [%s] for stage [%d].", action, stg.Index())
+		}
+	}
+}
+
+func (p *ProcessorImpl) destroyMonstersInStage(stg stage.Model, inst Model) {
+	mp := monster.NewProcessor(p.l, p.ctx)
+	for i, mid := range stg.MapIds() {
+		fieldInstance := uuid.Nil
+		if i < len(inst.FieldInstances()) {
+			fieldInstance = inst.FieldInstances()[i]
+		}
+		err := mp.DestroyInField(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance)
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to destroy monsters in map [%d] instance [%s].", mid, fieldInstance)
+		}
 	}
 }
 

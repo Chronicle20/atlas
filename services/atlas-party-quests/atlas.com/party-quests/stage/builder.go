@@ -13,6 +13,7 @@ type Builder struct {
 	stageType       string
 	duration        uint64
 	clearConditions []condition.Model
+	clearActions    []string
 	rewards         []reward.Model
 	warpType        string
 	properties      map[string]any
@@ -22,6 +23,7 @@ func NewBuilder() *Builder {
 	return &Builder{
 		mapIds:          make([]uint32, 0),
 		clearConditions: make([]condition.Model, 0),
+		clearActions:    make([]string, 0),
 		rewards:         make([]reward.Model, 0),
 		properties:      make(map[string]any),
 	}
@@ -57,6 +59,11 @@ func (b *Builder) SetClearConditions(conditions []condition.Model) *Builder {
 	return b
 }
 
+func (b *Builder) SetClearActions(actions []string) *Builder {
+	b.clearActions = actions
+	return b
+}
+
 func (b *Builder) SetRewards(rewards []reward.Model) *Builder {
 	b.rewards = rewards
 	return b
@@ -83,6 +90,7 @@ func (b *Builder) Build() (Model, error) {
 		stageType:       b.stageType,
 		duration:        b.duration,
 		clearConditions: b.clearConditions,
+		clearActions:    b.clearActions,
 		rewards:         b.rewards,
 		warpType:        b.warpType,
 		properties:      b.properties,

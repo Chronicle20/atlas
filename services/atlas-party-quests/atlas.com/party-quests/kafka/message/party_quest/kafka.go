@@ -14,6 +14,7 @@ const (
 	CommandTypeStageClearAttempt = "STAGE_CLEAR_ATTEMPT"
 	CommandTypeStageAdvance     = "STAGE_ADVANCE"
 	CommandTypeForfeit          = "FORFEIT"
+	CommandTypeLeave            = "LEAVE"
 	CommandTypeUpdateStageState = "UPDATE_STAGE_STATE"
 
 	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
@@ -26,6 +27,7 @@ const (
 	EventTypeCompleted          = "COMPLETED"
 	EventTypeFailed             = "FAILED"
 	EventTypeCharacterRegistered = "CHARACTER_REGISTERED"
+	EventTypeCharacterLeft       = "CHARACTER_LEFT"
 	EventTypeInstanceDestroyed   = "INSTANCE_DESTROYED"
 )
 
@@ -57,6 +59,9 @@ type StageAdvanceCommandBody struct {
 
 type ForfeitCommandBody struct {
 	InstanceId uuid.UUID `json:"instanceId"`
+}
+
+type LeaveCommandBody struct {
 }
 
 type UpdateStageStateCommandBody struct {
@@ -108,6 +113,12 @@ type FailedEventBody struct {
 
 type CharacterRegisteredEventBody struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type CharacterLeftEventBody struct {
+	CharacterId uint32     `json:"characterId"`
+	ChannelId   channel.Id `json:"channelId"`
+	Reason      string     `json:"reason"`
 }
 
 type InstanceDestroyedEventBody struct {

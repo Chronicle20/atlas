@@ -41,6 +41,9 @@ type Processor interface {
 	Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) error
 	ForfeitAndEmit(instanceId uuid.UUID) error
 
+	Leave(mb *message.Buffer) func(characterId uint32, reason string) error
+	LeaveAndEmit(characterId uint32, reason string) error
+
 	UpdateStageState(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
 
 	Destroy(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
@@ -647,6 +650,75 @@ func (p *ProcessorImpl) Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) e
 		}
 
 		return p.Destroy(mb)(instanceId, "forfeit")
+	}
+}
+
+func (p *ProcessorImpl) LeaveAndEmit(characterId uint32, reason string) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.Leave(buf)(characterId, reason)
+	})
+}
+
+func (p *ProcessorImpl) Leave(mb *message.Buffer) func(characterId uint32, reason string) error {
+	return func(characterId uint32, reason string) error {
+		inst, err := GetRegistry().GetByCharacter(p.t, characterId)
+		if err != nil {
+			return err
+		}
+
+		if inst.State() != StateActive && inst.State() != StateClearing {
+			return errors.New("instance not in a leavable state")
+		}
+
+		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to load definition for instance [%s], using exit map 0.", inst.Id())
+		}
+
+		exitMap := _map.Id(def.Exit())
+
+		// Find the character entry for warp details.
+		var ce CharacterEntry
+		for _, c := range inst.Characters() {
+			if c.CharacterId() == characterId {
+				ce = c
+				break
+			}
+		}
+
+		// Remove character from instance.
+		_, err = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+			return m.RemoveCharacter(characterId)
+		})
+		if err != nil {
+			return err
+		}
+
+		// Warp the leaving character to exit map.
+		err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(ce.WorldId(), ce.ChannelId(), characterId, exitMap))
+		if err != nil {
+			p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", characterId)
+		}
+
+		p.l.Infof("Character [%d] left PQ instance [%s]. Reason: %s.", characterId, inst.Id(), reason)
+
+		// Emit CHARACTER_LEFT event.
+		err = mb.Put(pq.EnvEventStatusTopic, characterLeftEventProvider(inst.WorldId(), inst.Id(), inst.QuestId(), characterId, ce.ChannelId(), reason))
+		if err != nil {
+			return err
+		}
+
+		// If no characters remain, destroy the instance.
+		updated, err := GetRegistry().Get(p.t, inst.Id())
+		if err != nil {
+			return err
+		}
+		if len(updated.Characters()) == 0 {
+			p.l.Infof("PQ instance [%s] has no remaining characters, destroying.", inst.Id())
+			return p.Destroy(mb)(inst.Id(), "empty")
+		}
+
+		return nil
 	}
 }
 

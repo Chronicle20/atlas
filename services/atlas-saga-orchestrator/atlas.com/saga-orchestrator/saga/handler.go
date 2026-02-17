@@ -135,6 +135,7 @@ type Handler interface {
 	handleSelectGachaponReward(s Saga, st Step[any]) error
 	handleEmitGachaponWin(s Saga, st Step[any]) error
 	handleRegisterPartyQuest(s Saga, st Step[any]) error
+	handleLeavePartyQuest(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -790,6 +791,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleRegisterPartyQuest, true
 	case WarpPartyQuestMembersToMap:
 		return h.handleWarpPartyQuestMembersToMap, true
+	case LeavePartyQuest:
+		return h.handleLeavePartyQuest, true
 	}
 	return nil, false
 }
@@ -2502,6 +2505,34 @@ func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) err
 				"map_id":         payload.MapId,
 			}).Warn("Failed to warp party member")
 		}
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleLeavePartyQuest handles the LeavePartyQuest action.
+// Produces a LEAVE command to atlas-party-quests to remove the character from their active PQ.
+// Fire-and-forget - mark as complete immediately.
+func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(LeavePartyQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"world_id":       payload.WorldId,
+	}).Debug("Leaving party quest")
+
+	err := h.partyQuestP.LeavePartyQuest(payload.CharacterId, payload.WorldId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to leave party quest.")
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+		return err
 	}
 
 	// Fire-and-forget - mark as complete immediately

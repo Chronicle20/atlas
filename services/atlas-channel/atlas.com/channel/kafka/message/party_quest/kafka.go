@@ -9,7 +9,8 @@ import (
 const (
 	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
 
-	EventTypeStageCleared = "STAGE_CLEARED"
+	EventTypeStageCleared  = "STAGE_CLEARED"
+	EventTypeCharacterLeft = "CHARACTER_LEFT"
 )
 
 type StatusEvent[E any] struct {
@@ -25,4 +26,10 @@ type StageClearedEventBody struct {
 	ChannelId      channel.Id  `json:"channelId"`
 	MapIds         []uint32    `json:"mapIds"`
 	FieldInstances []uuid.UUID `json:"fieldInstances"`
+}
+
+type CharacterLeftEventBody struct {
+	CharacterId uint32     `json:"characterId"`
+	ChannelId   channel.Id `json:"channelId"`
+	Reason      string     `json:"reason"`
 }

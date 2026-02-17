@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				var t string
 				t, _ = topic.EnvProvider(l)(pq.EnvEventStatusTopic)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStageCleared(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterLeft(sc, wp))))
 			}
 		}
 	}
@@ -74,5 +75,30 @@ func announceStageCleared(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return err
 		}
 		return session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectSoundBody(l)("Party1/Clear"))(s)
+	}
+}
+
+func handleCharacterLeft(sc server.Model, wp writer.Producer) message.Handler[pq.StatusEvent[pq.CharacterLeftEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e pq.StatusEvent[pq.CharacterLeftEventBody]) {
+		if e.Type != pq.EventTypeCharacterLeft {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.Body.ChannelId) {
+			return
+		}
+
+		l.Debugf("Character [%d] left party quest [%s] instance [%s]. Reason: %s.", e.Body.CharacterId, e.QuestId, e.InstanceId, e.Body.Reason)
+
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announceCharacterLeft(l, ctx, wp))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce PQ departure to character [%d].", e.Body.CharacterId)
+		}
+	}
+}
+
+func announceCharacterLeft(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) model.Operator[session.Model] {
+	return func(s session.Model) error {
+		return session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l)("", "", "You have left the party quest."))(s)
 	}
 }

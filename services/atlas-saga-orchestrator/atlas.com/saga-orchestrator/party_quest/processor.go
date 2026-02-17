@@ -49,6 +49,7 @@ func GetErrorCode(err error) string {
 type Processor interface {
 	RegisterPartyQuest(characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, questId string) error
 	GetPartyMembers(characterId uint32) ([]MemberRestModel, error)
+	LeavePartyQuest(characterId uint32, worldId world.Id) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -236,6 +237,29 @@ func validateStartRequirements(requirements []ConditionRestModel, members []Memb
 		}
 	}
 	return nil
+}
+
+// LeavePartyQuest produces a LEAVE command to atlas-party-quests to remove the character from their active PQ.
+func (p *ProcessorImpl) LeavePartyQuest(characterId uint32, worldId world.Id) error {
+	p.l.WithFields(logrus.Fields{
+		"character_id": characterId,
+		"world_id":     worldId,
+	}).Debug("Producing LEAVE command for party quest")
+
+	return p.produceLeaveCommand(characterId, worldId)
+}
+
+// produceLeaveCommand produces a LEAVE command to the party quest command topic
+func (p *ProcessorImpl) produceLeaveCommand(characterId uint32, worldId world.Id) error {
+	key := producer.CreateKey(int(characterId))
+	value := &Command[LeaveCommandBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        CommandTypeLeave,
+		Body:        LeaveCommandBody{},
+	}
+	mp := producer.SingleMessageProvider(key, value)
+	return produceToCommandTopic(p.l, p.ctx)(mp)
 }
 
 // compareUint32 evaluates: actual <operator> expected

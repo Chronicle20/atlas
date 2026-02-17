@@ -13,7 +13,7 @@
     {
       "type": "party_size",
       "operator": "gte",
-      "value": 3,
+      "value": 1,
       "referenceId": 0
     },
     {

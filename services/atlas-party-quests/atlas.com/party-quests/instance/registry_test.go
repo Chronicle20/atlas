@@ -228,6 +228,71 @@ func TestRegistry_ConcurrentAccess(t *testing.T) {
 	wg.Wait()
 }
 
+func TestRegistry_LeaveWorkflow(t *testing.T) {
+	r := GetRegistry()
+	r.ResetForTesting()
+	ten := testTenant(t)
+
+	chars := []CharacterEntry{
+		NewCharacterEntry(11000, 0, 0),
+		NewCharacterEntry(11001, 0, 0),
+		NewCharacterEntry(11002, 0, 0),
+	}
+	m := testModel(chars...)
+	m = m.SetState(StateActive)
+	r.Create(ten, m)
+
+	// Leave: remove one character
+	updated, err := r.Update(ten, m.Id(), func(m Model) Model {
+		return m.RemoveCharacter(11001)
+	})
+	require.NoError(t, err)
+	assert.Len(t, updated.Characters(), 2)
+
+	// Removed character should not be in index
+	_, err = r.GetByCharacter(ten, 11001)
+	assert.ErrorIs(t, err, ErrNotFound)
+
+	// Remaining characters should still resolve
+	got, err := r.GetByCharacter(ten, 11000)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got.Id())
+
+	got, err = r.GetByCharacter(ten, 11002)
+	require.NoError(t, err)
+	assert.Equal(t, m.Id(), got.Id())
+}
+
+func TestRegistry_LeaveLastCharacter(t *testing.T) {
+	r := GetRegistry()
+	r.ResetForTesting()
+	ten := testTenant(t)
+
+	m := testModel(NewCharacterEntry(12000, 0, 0))
+	m = m.SetState(StateActive)
+	r.Create(ten, m)
+
+	// Remove the only character
+	updated, err := r.Update(ten, m.Id(), func(m Model) Model {
+		return m.RemoveCharacter(12000)
+	})
+	require.NoError(t, err)
+	assert.Len(t, updated.Characters(), 0)
+
+	// Character index should be cleaned up
+	_, err = r.GetByCharacter(ten, 12000)
+	assert.ErrorIs(t, err, ErrNotFound)
+
+	// Instance still exists (Destroy is separate)
+	_, err = r.Get(ten, m.Id())
+	require.NoError(t, err)
+
+	// Simulate Destroy after empty check
+	r.Remove(ten, m.Id())
+	_, err = r.Get(ten, m.Id())
+	assert.ErrorIs(t, err, ErrNotFound)
+}
+
 func TestRegistry_ConcurrentMultipleTenants(t *testing.T) {
 	r := GetRegistry()
 	r.ResetForTesting()

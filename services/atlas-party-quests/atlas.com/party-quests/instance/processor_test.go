@@ -143,6 +143,36 @@ func TestEvaluateClearConditions(t *testing.T) {
 	})
 }
 
+func TestRemoveCharacter(t *testing.T) {
+	chars := []CharacterEntry{
+		NewCharacterEntry(100, 0, 0),
+		NewCharacterEntry(200, 0, 0),
+		NewCharacterEntry(300, 0, 0),
+	}
+
+	t.Run("remove_middle", func(t *testing.T) {
+		m := testModel(chars...).SetState(StateActive)
+		m = m.RemoveCharacter(200)
+		assert.Len(t, m.Characters(), 2)
+		assert.Equal(t, uint32(100), m.Characters()[0].CharacterId())
+		assert.Equal(t, uint32(300), m.Characters()[1].CharacterId())
+	})
+
+	t.Run("remove_nonexistent", func(t *testing.T) {
+		m := testModel(chars...).SetState(StateActive)
+		m = m.RemoveCharacter(999)
+		assert.Len(t, m.Characters(), 3)
+	})
+
+	t.Run("remove_all", func(t *testing.T) {
+		m := testModel(chars...).SetState(StateActive)
+		m = m.RemoveCharacter(100)
+		m = m.RemoveCharacter(200)
+		m = m.RemoveCharacter(300)
+		assert.Len(t, m.Characters(), 0)
+	})
+}
+
 func TestGenerateCombination(t *testing.T) {
 	t.Run("default_properties", func(t *testing.T) {
 		combo := generateCombination(map[string]any{})

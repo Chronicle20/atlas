@@ -208,6 +208,9 @@
               "itemId": "4001101",
               "quantity": "10"
             }
+          },
+          {
+            "type": "stage_clear_attempt_pq"
           }
         ],
         "outcomes": [

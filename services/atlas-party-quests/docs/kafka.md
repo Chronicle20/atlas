@@ -5,6 +5,8 @@
 | Topic | Env Variable | Direction |
 |---|---|---|
 | Party Quest Commands | `COMMAND_TOPIC_PARTY_QUEST` | Command |
+| Character Status Events | `EVENT_TOPIC_CHARACTER_STATUS` | Event |
+| Monster Status Events | `EVENT_TOPIC_MONSTER_STATUS` | Event |
 
 ## Topics Produced
 
@@ -12,6 +14,9 @@
 |---|---|---|
 | Party Quest Status Events | `EVENT_TOPIC_PARTY_QUEST_STATUS` | Event |
 | Character Commands | `COMMAND_TOPIC_CHARACTER` | Command |
+| Reactor Commands | `COMMAND_TOPIC_REACTOR` | Command |
+| System Message Commands | `COMMAND_TOPIC_SYSTEM_MESSAGE` | Command |
+| Map Commands | `COMMAND_TOPIC_MAP` | Command |
 
 ## Message Types
 
@@ -58,7 +63,7 @@ Body:
 
 **Command[StageAdvanceCommandBody]** — `STAGE_ADVANCE`
 
-Advances the instance to the next stage.
+Force-completes the current stage (bypasses condition evaluation) and advances.
 
 ```
 WorldId     world.Id
@@ -80,6 +85,17 @@ Body:
   InstanceId uuid.UUID
 ```
 
+**Command[LeaveCommandBody]** — `LEAVE`
+
+Removes the sending character from their active instance.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "LEAVE"
+Body:       (empty)
+```
+
 **Command[UpdateStageStateCommandBody]** — `UPDATE_STAGE_STATE`
 
 Updates item counts and monster kills for the current stage.
@@ -92,6 +108,119 @@ Body:
   InstanceId   uuid.UUID
   ItemCounts   map[uint32]uint32 (optional)
   MonsterKills map[uint32]uint32 (optional)
+```
+
+**Command[UpdateCustomDataCommandBody]** — `UPDATE_CUSTOM_DATA`
+
+Sets and increments custom data keys in the current stage state.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "UPDATE_CUSTOM_DATA"
+Body:
+  InstanceId uuid.UUID
+  Updates    map[string]string (optional)
+  Increments []string (optional)
+```
+
+**Command[BroadcastMessageCommandBody]** — `BROADCAST_MESSAGE`
+
+Sends a system message to all characters in the instance.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "BROADCAST_MESSAGE"
+Body:
+  InstanceId  uuid.UUID
+  MessageType string
+  Message     string
+```
+
+**Command[EnterBonusCommandBody]** — `ENTER_BONUS`
+
+Transitions a completed instance into the bonus stage.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "ENTER_BONUS"
+Body:
+  InstanceId uuid.UUID
+```
+
+### Events Consumed
+
+**StatusEvent[StatusEventLogoutBody]** — `LOGOUT` (from Character Status Events topic)
+
+Triggers automatic leave for the character from their active PQ instance.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "LOGOUT"
+Body:
+  ChannelId channel.Id
+  MapId     map.Id
+  Instance  uuid.UUID
+```
+
+**StatusEvent[DamagedBody]** — `DAMAGED` (from Monster Status Events topic)
+
+Triggers friendly monster damaged handling if the monster matches a PQ instance's friendly monster configuration.
+
+```
+WorldId   world.Id
+ChannelId channel.Id
+MapId     map.Id
+Instance  uuid.UUID
+UniqueId  uint32
+MonsterId uint32
+Type      "DAMAGED"
+Body:
+  X             int16
+  Y             int16
+  ObserverId    uint32
+  ActorId       uint32
+  Boss          bool
+  DamageEntries []DamageEntry
+```
+
+**StatusEvent[KilledBody]** — `KILLED` (from Monster Status Events topic)
+
+Triggers friendly monster killed handling if the monster matches a PQ instance's friendly monster configuration.
+
+```
+WorldId   world.Id
+ChannelId channel.Id
+MapId     map.Id
+Instance  uuid.UUID
+UniqueId  uint32
+MonsterId uint32
+Type      "KILLED"
+Body:
+  X             int16
+  Y             int16
+  ActorId       uint32
+  Boss          bool
+  DamageEntries []DamageEntry
+```
+
+**StatusEvent[FriendlyDropBody]** — `FRIENDLY_DROP` (from Monster Status Events topic)
+
+Triggers friendly monster drop handling if the monster matches a PQ instance's friendly monster configuration.
+
+```
+WorldId   world.Id
+ChannelId channel.Id
+MapId     map.Id
+Instance  uuid.UUID
+UniqueId  uint32
+MonsterId uint32
+Type      "FRIENDLY_DROP"
+Body:
+  ItemCount uint32
 ```
 
 ### Events Produced
@@ -189,6 +318,30 @@ Body:
   CharacterId uint32
 ```
 
+**StatusEvent[CharacterLeftEventBody]** — `CHARACTER_LEFT`
+
+```
+WorldId    world.Id
+InstanceId uuid.UUID
+QuestId    string
+Type       "CHARACTER_LEFT"
+Body:
+  CharacterId uint32
+  ChannelId   channel.Id
+  Reason      string
+```
+
+**StatusEvent[BonusEnteredEventBody]** — `BONUS_ENTERED`
+
+```
+WorldId    world.Id
+InstanceId uuid.UUID
+QuestId    string
+Type       "BONUS_ENTERED"
+Body:
+  MapId uint32
+```
+
 **StatusEvent[InstanceDestroyedEventBody]** — `INSTANCE_DESTROYED`
 
 ```
@@ -216,8 +369,65 @@ Body:
   PortalId  uint32
 ```
 
+**Command[AwardExperienceCommandBody]** — `AWARD_EXPERIENCE` (to Character Commands topic)
+
+Awards experience to a character.
+
+```
+WorldId     world.Id
+CharacterId uint32
+Type        "AWARD_EXPERIENCE"
+Body:
+  ChannelId     channel.Id
+  Distributions []ExperienceDistributions
+```
+
+**Command[DestroyInFieldCommandBody]** — `DESTROY_IN_FIELD` (to Reactor Commands topic)
+
+Destroys all reactors in a field instance.
+
+```
+WorldId   world.Id
+ChannelId channel.Id
+MapId     map.Id
+Instance  uuid.UUID
+Type      "DESTROY_IN_FIELD"
+Body:     (empty)
+```
+
+**Command[SendMessageBody]** — `SEND_MESSAGE` (to System Message Commands topic)
+
+Sends a system message to a character.
+
+```
+TransactionId uuid.UUID
+WorldId       world.Id
+ChannelId     channel.Id
+CharacterId   uint32
+Type          "SEND_MESSAGE"
+Body:
+  MessageType string
+  Message     string
+```
+
+**Command[WeatherStartCommandBody]** — `WEATHER_START` (to Map Commands topic)
+
+Starts a weather effect in a field instance.
+
+```
+WorldId   world.Id
+ChannelId channel.Id
+MapId     map.Id
+Instance  uuid.UUID
+Type      "WEATHER_START"
+Body:
+  ItemId     uint32
+  Message    string
+  DurationMs uint32
+```
+
 ## Transaction Semantics
 
 All processor methods that emit messages use `message.Buffer` for batching. Messages are collected during processing and flushed atomically via `message.Emit(producer)`. This ensures that all Kafka messages for a single operation are produced together or not at all.
 
-Required headers: `span` (tracing), `tenant` (multi-tenancy). Set via `SpanHeaderDecorator` and `TenantHeaderDecorator`.
+Required headers: `span` (tracing), `tenant` (multi-tenancy). Set via `SpanHeaderParser` and `TenantHeaderParser`.

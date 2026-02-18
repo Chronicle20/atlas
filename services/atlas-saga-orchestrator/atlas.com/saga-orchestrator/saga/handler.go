@@ -17,6 +17,7 @@ import (
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
 	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
@@ -144,6 +145,7 @@ type Handler interface {
 	handleBroadcastPqMessage(s Saga, st Step[any]) error
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
 	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
+	handleFieldEffectWeather(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -174,6 +176,7 @@ type HandlerImpl struct {
 	gachaponP       gachapon.Processor
 	partyQuestP     party_quest.Processor
 	reactorP        reactor.Processor
+	mapCommandP     map_command.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -204,6 +207,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		gachaponP:       gachapon.NewProcessor(l, ctx),
 		partyQuestP:     party_quest.NewProcessor(l, ctx),
 		reactorP:        reactor.NewProcessor(l, ctx),
+		mapCommandP:     map_command.NewProcessor(l, ctx),
 	}
 }
 
@@ -844,6 +848,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleStageClearAttemptPq, true
 	case EnterPartyQuestBonus:
 		return h.handleEnterPartyQuestBonus, true
+	case FieldEffectWeather:
+		return h.handleFieldEffectWeather, true
 	}
 	return nil, false
 }
@@ -2765,5 +2771,34 @@ func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
 	// Fire-and-forget - mark as complete immediately
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
+	return nil
+}
+
+// handleFieldEffectWeather handles the FieldEffectWeather action.
+// Produces a WEATHER_START command to COMMAND_TOPIC_MAP.
+func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(FieldEffectWeatherPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"map_id":         payload.MapId,
+		"item_id":        payload.ItemId,
+	}).Debug("Showing field effect weather")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	durationMs := payload.Duration * 1000
+	err := h.mapCommandP.FieldEffectWeather(s.TransactionId(), f, payload.ItemId, payload.Message, durationMs)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show field effect weather.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 	return nil
 }

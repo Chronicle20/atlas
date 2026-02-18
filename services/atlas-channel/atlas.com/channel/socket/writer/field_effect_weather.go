@@ -13,16 +13,16 @@ func FieldEffectWeatherStartBody(l logrus.FieldLogger) func(itemId uint32, messa
 	}
 }
 
-func FieldEffectWeatherEndBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return FieldEffectWeatherBody(l)(false, 0, "")
+func FieldEffectWeatherEndBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {
+	return func(itemId uint32) BodyProducer {
+		return FieldEffectWeatherBody(l)(false, itemId, "")
 	}
 }
 
 func FieldEffectWeatherBody(l logrus.FieldLogger) func(active bool, itemId uint32, message string) BodyProducer {
 	return func(active bool, itemId uint32, message string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteBool(active)
+			w.WriteBool(!active)
 			w.WriteInt(itemId)
 			if active {
 				w.WriteAsciiString(message)

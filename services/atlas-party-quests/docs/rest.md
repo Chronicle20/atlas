@@ -130,3 +130,25 @@ Returns the active instance containing the specified character.
   - `400` — Invalid character ID format
   - `404` — No instance found for character
 
+### GET /api/party-quests/instances/character/{characterId}/timer
+
+Returns the remaining timer duration for the character's active instance.
+
+- **Parameters**: `characterId` (path, uint32)
+- **Request model**: None
+- **Response model**: `instance.TimerRestModel` (JSON:API resource type: `timers`)
+  - `duration` — `uint64`, remaining seconds
+- **Error conditions**:
+  - `400` — Invalid character ID format
+  - `404` — No instance found for character or no timer configured
+
+### GET /api/party-quests/instances/field/{fieldInstance}
+
+Returns the active instance associated with the specified field instance UUID.
+
+- **Parameters**: `fieldInstance` (path, UUID)
+- **Request model**: None
+- **Response model**: `instance.RestModel` (JSON:API resource type: `instances`)
+- **Error conditions**:
+  - `400` — Invalid UUID format
+  - `404` — No instance found for field instance

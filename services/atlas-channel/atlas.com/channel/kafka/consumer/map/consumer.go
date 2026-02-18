@@ -20,6 +20,7 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"atlas-channel/transport/route"
+	"atlas-channel/weather"
 	"context"
 	"time"
 
@@ -50,6 +51,8 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				t, _ = topic.EnvProvider(l)(_map3.EnvEventTopicMapStatus)()
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp))))
 				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherStart(sc, wp))))
+				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherEnd(sc, wp))))
 			}
 		}
 	}
@@ -235,6 +238,14 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				}
 				_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(l, t)(timer.Duration()))(s)
 			}()
+
+			go func() {
+				we, werr := weather.NewProcessor(l, ctx).GetActive(f)
+				if werr != nil {
+					return
+				}
+				_ = session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(l)(we.ItemId, we.Message))(s)
+			}()
 			return nil
 		}
 	}
@@ -367,6 +378,44 @@ func spawnChairsForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 					return session.Announce(l)(ctx)(wp)(writer.CharacterShowChair)(writer.CharacterShowChairBody(c.CharacterId(), c.Id()))(s)
 				}
 			}
+		}
+	}
+}
+
+func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.WeatherStart]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.WeatherStart]) {
+		if e.Type != _map3.EventTopicMapStatusTypeWeatherStart {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Weather started in map [%d] instance [%s] with item [%d].", e.MapId, e.Instance, e.Body.ItemId)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(l)(e.Body.ItemId, e.Body.Message)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
+		}
+	}
+}
+
+func handleStatusEventWeatherEnd(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.WeatherEnd]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.WeatherEnd]) {
+		if e.Type != _map3.EventTopicMapStatusTypeWeatherEnd {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("Weather ended in map [%d] instance [%s].", e.MapId, e.Instance)
+		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherEndBody(l)(e.Body.ItemId)))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to broadcast weather end to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
 	}
 }

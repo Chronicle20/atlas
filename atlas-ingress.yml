@@ -225,6 +225,10 @@ data:
           proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
         }
 
+        location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/weather(/.*)?$ {
+          proxy_pass http://atlas-maps.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/monsters(/.*)?$ {
           proxy_pass http://atlas-monsters.atlas.svc.cluster.local:8080;
         }

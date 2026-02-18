@@ -77,6 +77,7 @@ This service makes REST calls to:
 | COMMAND_TOPIC_PARTY_QUEST | Party quest commands |
 | COMMAND_TOPIC_REACTOR | Reactor commands |
 | COMMAND_TOPIC_DROP | Drop spawn commands |
+| COMMAND_TOPIC_MAP | Map commands |
 | EVENT_TOPIC_SAGA_STATUS | Saga status output |
 | EVENT_TOPIC_ASSET_STATUS | Asset status input |
 | EVENT_TOPIC_BUDDY_LIST_STATUS | Buddy list status input |

@@ -8,14 +8,14 @@ A RESTful service that provides composite character state validation in the Atla
 - **Inventory Service** (`INVENTORY` environment variable): Item quantities and equipment data
 - **Quest Service** (`QUESTS` environment variable): Quest status and progress
 - **Marriage Service** (`MARRIAGE` environment variable): Marriage gift data
-- **Buddy Service** (`BUDDY` environment variable): Buddy list capacity
+- **Buddy Service** (`BUDDIES` environment variable): Buddy list capacity
 - **Pet Service** (`PETS` environment variable): Pet count data
 - **Skill Service** (`SKILLS` environment variable): Skill levels
 - **Buff Service** (`BUFFS` environment variable): Active buff data
 - **Map Service** (`MAPS` environment variable): Map player counts
-- **Transport Service** (`TRANSPORT` environment variable): Transport route availability
+- **Transport Service** (`TRANSPORTS` environment variable): Transport route availability
 - **Guild Service** (`GUILDS` environment variable): Guild membership data
-- **Item Service** (`ITEMS` environment variable): Item slot information
+- **Data Service** (`DATA` environment variable): Item slot information
 - **Party Service** (`PARTIES` environment variable): Party membership data
 - **Party Quest Service** (`PARTY_QUESTS` environment variable): Party quest instance data
 - **OpenTelemetry Collector** (`TRACE_ENDPOINT` environment variable): Distributed tracing (via OTLP/gRPC)

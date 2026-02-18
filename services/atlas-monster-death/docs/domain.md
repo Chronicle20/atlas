@@ -51,7 +51,7 @@ Distributes experience to characters who damaged the monster.
 
 - Builds damage distribution from damage entries
 - Filters characters to those still present in the map
-- Calculates experience per damage as (monsterExperience * 20) / monsterHP
+- Calculates experience per damage as monsterExperience / monsterHP
 - Retrieves character rate multipliers and applies exp rate
 - Calculates personal ratio and standard deviation threshold
 - Awards experience to each character based on their damage contribution
@@ -233,6 +233,28 @@ Represents base equipment statistics retrieved from the data service. Used to ge
 #### GetById
 
 Retrieves base equipment statistics by item ID from the data service.
+
+---
+
+## Party
+
+### Responsibility
+
+Represents party membership retrieved from external service for drop ownership assignment.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Party identifier |
+
+### Processors
+
+#### GetByMemberId
+
+Retrieves the party a character belongs to by querying with the character's ID. Returns the first matching party.
 
 ---
 

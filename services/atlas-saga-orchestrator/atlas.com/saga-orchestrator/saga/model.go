@@ -491,6 +491,9 @@ const (
 	BroadcastPqMessage  Action = "broadcast_pq_message"    // Broadcast a message to party quest members
 	StageClearAttemptPq    Action = "stage_clear_attempt_pq"     // Attempt to clear the current PQ stage
 	EnterPartyQuestBonus   Action = "enter_party_quest_bonus"   // Enter the bonus stage of a party quest
+
+	// Field effect actions
+	FieldEffectWeather Action = "field_effect_weather" // Show weather effect to all characters in a field
 )
 
 // Step represents a single step within a saga.
@@ -1317,6 +1320,18 @@ type EnterPartyQuestBonusPayload struct {
 	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
 }
 
+// FieldEffectWeatherPayload represents the payload for showing a weather effect to all
+// characters in a field. Produces a WEATHER_START command to COMMAND_TOPIC_MAP.
+type FieldEffectWeatherPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+	ItemId    uint32     `json:"itemId"`    // Cash shop weather item ID
+	Message   string     `json:"message"`   // Weather message text
+	Duration  uint32     `json:"duration"`  // Duration in seconds
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1771,6 +1786,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case EnterPartyQuestBonus:
 		var payload EnterPartyQuestBonusPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case FieldEffectWeather:
+		var payload FieldEffectWeatherPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

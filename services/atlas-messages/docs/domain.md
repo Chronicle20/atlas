@@ -78,7 +78,9 @@ A command consists of a Producer function that matches message patterns and retu
 | MobClearCommandProducer | `@mobclear [statusType]` | Clears statuses from all monsters in map |
 | DiseaseCommandProducer | `@disease <target> <diseaseType> [value] [duration]` | Applies a disease effect to character(s) |
 | PQRegisterCommandProducer | `@pq register <questId>` | Registers character for a party quest |
+| MobKillAllCommandProducer | `@mob kill all` | Kills all monsters in the current map |
 | PQStageCommandProducer | `@pq stage` | Force-advances the current party quest stage |
+| WeatherCommandProducer | `@weather <itemId> <message>` | Triggers a weather effect in the current field (30s) |
 
 Target values:
 - `me` - The command issuer

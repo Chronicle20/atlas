@@ -125,6 +125,7 @@ Executes reactor script operations via saga orchestration.
 - `update_pq_state`: Updates party quest custom data via saga; params: `updates` (comma-separated key=value pairs), `increments` (comma-separated key names to increment); queries atlas-party-quests for the character's PQ instance
 - `hit_reactor`: Hits another reactor by name via saga; params: `reactorName`
 - `broadcast_pq_message`: Broadcasts a message to all PQ members via saga; params: `message`, `type` (defaults to PINK_TEXT); queries atlas-party-quests for the character's PQ instance
+- `stage_clear_attempt`: Triggers a stage clear attempt on the character's party quest instance via saga; queries atlas-party-quests for the character's PQ instance
 
 ## Builders
 

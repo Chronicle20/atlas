@@ -33,6 +33,7 @@ var commandSyntaxList = []string{
 	"@disease <target> <diseaseType> [value] [duration] - Apply a disease effect",
 	"@pq register <questId> - Register for a party quest",
 	"@pq stage - Force-advance the current party quest stage",
+	"@weather <itemId> <message> - Trigger a weather effect in the current field (30s)",
 }
 
 func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {

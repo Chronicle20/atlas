@@ -41,9 +41,10 @@
 | Cash Shop Compartment Commands | COMMAND_TOPIC_CASH_COMPARTMENT | Command | Cash shop compartment operations (ACCEPT, RELEASE) |
 | Portal Commands | COMMAND_TOPIC_PORTAL | Command | Portal blocking operations (BLOCK, UNBLOCK) |
 | Buff Commands | COMMAND_TOPIC_CHARACTER_BUFF | Command | Buff operations (CANCEL_ALL) |
-| Party Quest Commands | COMMAND_TOPIC_PARTY_QUEST | Command | Party quest operations (REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE) |
+| Party Quest Commands | COMMAND_TOPIC_PARTY_QUEST | Command | Party quest operations (REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE, STAGE_CLEAR_ATTEMPT, ENTER_BONUS) |
 | Reactor Commands | COMMAND_TOPIC_REACTOR | Command | Reactor operations (HIT) |
 | Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
+| Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
 
 ## Message Types
@@ -363,7 +364,7 @@ Command[E]
   body: E
 ```
 
-Command types: REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE
+Command types: REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE, STAGE_CLEAR_ATTEMPT, ENTER_BONUS
 
 #### REGISTER Body
 
@@ -398,6 +399,20 @@ BroadcastMessageCommandBody
   instanceId: uuid.UUID
   messageType: string
   message: string
+```
+
+#### STAGE_CLEAR_ATTEMPT Body
+
+```
+StageClearAttemptCommandBody
+  instanceId: uuid.UUID
+```
+
+#### ENTER_BONUS Body
+
+```
+EnterBonusCommandBody
+  instanceId: uuid.UUID
 ```
 
 ### Reactor Command
@@ -462,6 +477,32 @@ CommandSpawnBody
   mod: byte
 ```
 
+### Map Command
+
+Produced to perform map-level operations.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: WEATHER_START
+
+#### WEATHER_START Body
+
+```
+WeatherStartCommandBody
+  itemId: uint32
+  message: string
+  durationMs: uint32
+```
+
 ### Gachapon Reward Won Event
 
 Produced when a gachapon reward is won (uncommon/rare tier only).
@@ -484,9 +525,10 @@ RewardWonEvent
 - Step completion is tracked by consuming status events with matching transactionId
 - Status events without matching transactionId are ignored (saga not found in cache)
 - Failed status events trigger step failure and compensation
-- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message) complete immediately after command emission
+- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
 - REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns
-- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message) produce commands and complete immediately
+- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus) produce commands and complete immediately
+- Terminal failure actions (register_party_quest, warp_party_quest_members_to_map, enter_party_quest_bonus) remove the saga from cache and emit a FAILED event on error, with no compensation
 - Asset CREATED and QUANTITY_CHANGED events carry `assetId` as step result data for downstream steps
 
 ## Ordering

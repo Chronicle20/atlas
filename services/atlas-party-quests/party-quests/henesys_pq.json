@@ -60,7 +60,12 @@
       "warpType": "none",
       "properties": {
         "seedItems": [4001095, 4001096, 4001097, 4001098, 4001099, 4001100],
-        "reactors": [9108000, 9108001, 9108002, 9108003, 9108004, 9108005]
+        "reactors": [9108000, 9108001, 9108002, 9108003, 9108004, 9108005],
+        "weather": {
+          "itemId": 5120016,
+          "message": "Plant the Primrose Seed around the moon! The Moon Bunnies will start pounding the mill.",
+          "duration": 5
+        }
       }
     },
     {
@@ -105,6 +110,11 @@
           "onDrop": {
             "messageTemplate": "The Moon Bunny made rice cake number {count}."
           }
+        },
+        "weather": {
+          "itemId": 5120016,
+          "message": "Protect the Moon Bunny that's pounding the mill, and gather up 10 Moon Bunny's Rice Cakes!",
+          "duration": 5
         }
       }
     }

@@ -12,6 +12,7 @@ import (
 	"atlas-party-quests/kafka/producer"
 	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
+	"atlas-party-quests/reward"
 	"atlas-party-quests/stage"
 	"context"
 	"errors"
@@ -149,14 +150,9 @@ func (p *ProcessorImpl) GetTimerByCharacter(characterId uint32) (uint64, error) 
 		return 0, errors.New("no bonus timer configured")
 	}
 
-	// Completed state: return remaining completion timeout.
+	// Completed state: no player-facing timer. Completion timeout is internal only.
 	if inst.State() == StateCompleted {
-		elapsed := now.Sub(inst.StageStartedAt())
-		remaining := int64(completionTimeout) - int64(elapsed.Seconds())
-		if remaining < 0 {
-			remaining = 0
-		}
-		return uint64(remaining), nil
+		return 0, nil
 	}
 
 	if inst.State() != StateActive {
@@ -532,6 +528,9 @@ func (p *ProcessorImpl) StageClearAttempt(mb *message.Buffer) func(instanceId uu
 		// Execute clear actions
 		p.executeClearActions(stg, inst)
 
+		// Distribute stage rewards
+		p.emitExperienceRewards(mb, inst, stg.Rewards())
+
 		// Emit STAGE_CLEARED event
 		err = mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), []uuid.UUID{inst.Id()}))
 		if err != nil {
@@ -550,6 +549,26 @@ func (p *ProcessorImpl) executeClearActions(stg stage.Model, inst Model) {
 			p.destroyMonstersInStage(stg, inst)
 		default:
 			p.l.Warnf("Unknown clear action [%s] for stage [%d].", action, stg.Index())
+		}
+	}
+}
+
+func (p *ProcessorImpl) emitExperienceRewards(mb *message.Buffer, inst Model, rewards []reward.Model) {
+	for _, r := range rewards {
+		if r.Type() != "experience" || r.Amount() == 0 {
+			continue
+		}
+		distributions := []character2.ExperienceDistributions{
+			{
+				ExperienceType: character2.ExperienceDistributionTypeChat,
+				Amount:         r.Amount(),
+			},
+		}
+		for _, c := range inst.Characters() {
+			err := mb.Put(character2.EnvCommandTopic, awardExperienceProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), distributions))
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to award experience to character [%d].", c.CharacterId())
+			}
 		}
 	}
 }
@@ -683,6 +702,9 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 	}
 
 	p.l.Infof("PQ instance [%s] completed.", inst.Id())
+
+	// Distribute completion rewards
+	p.emitExperienceRewards(mb, inst, def.Rewards())
 
 	// Emit COMPLETED event
 	err = mb.Put(pq.EnvEventStatusTopic, completedEventProvider(inst.WorldId(), inst.Id(), inst.QuestId()))

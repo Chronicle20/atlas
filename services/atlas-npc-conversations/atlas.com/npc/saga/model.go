@@ -141,6 +141,12 @@ type StageClearAttemptPqPayload struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
+// EnterPartyQuestBonusPayload represents the payload for entering the bonus stage of a party quest.
+type EnterPartyQuestBonusPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating bonus entry
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -202,6 +208,7 @@ const (
 	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
 	LeavePartyQuest            Action = "leave_party_quest"
 	StageClearAttemptPq        Action = "stage_clear_attempt_pq"
+	EnterPartyQuestBonus       Action = "enter_party_quest_bonus"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

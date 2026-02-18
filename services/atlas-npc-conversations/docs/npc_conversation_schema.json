@@ -39,6 +39,7 @@
               "craftAction",
               "transportAction",
               "partyQuestAction",
+              "partyQuestBonusAction",
               "listSelection",
               "askNumber",
               "askStyle",
@@ -322,6 +323,19 @@
               "notLeaderState": {
                 "type": "string",
                 "description": "State to transition to when character is not the party leader"
+              }
+            }
+          },
+          "partyQuestBonusAction": {
+            "type": "object",
+            "description": "Party quest bonus action state configuration. Used for entering the bonus stage of a party quest via saga-orchestrator. Creates a saga to produce an ENTER_BONUS command to atlas-party-quests.",
+            "required": [
+              "failureState"
+            ],
+            "properties": {
+              "failureState": {
+                "type": "string",
+                "description": "Failure state ID (fallback when bonus entry fails)"
               }
             }
           },

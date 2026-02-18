@@ -24,7 +24,8 @@ const (
 	ErrorCodePartySizeFailed    = "PQ_PARTY_SIZE"
 	ErrorCodeLevelMinFailed     = "PQ_LEVEL_MIN"
 	ErrorCodeLevelMaxFailed     = "PQ_LEVEL_MAX"
-	ErrorCodeDefinitionNotFound = "PQ_DEFINITION_NOT_FOUND"
+	ErrorCodeDefinitionNotFound   = "PQ_DEFINITION_NOT_FOUND"
+	ErrorCodeBonusNotAvailable    = "PQ_BONUS_NOT_AVAILABLE"
 )
 
 // PartyQuestError represents an error from the party quest registration with an error code
@@ -55,6 +56,7 @@ type Processor interface {
 	BroadcastMessage(instanceId uuid.UUID, messageType string, message string) error
 	StageClearAttempt(instanceId uuid.UUID) error
 	StageClearAttemptByCharacter(characterId uint32) error
+	EnterBonusByCharacter(characterId uint32, worldId world.Id) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -351,6 +353,37 @@ func (p *ProcessorImpl) StageClearAttemptByCharacter(characterId uint32) error {
 	}).Debug("Resolved PQ instance for stage clear attempt")
 
 	return p.StageClearAttempt(inst.Id)
+}
+
+// EnterBonusByCharacter looks up the PQ instance by character and produces an ENTER_BONUS command.
+func (p *ProcessorImpl) EnterBonusByCharacter(characterId uint32, worldId world.Id) error {
+	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(characterId), ExtractInstance)()
+	if err != nil {
+		return PartyQuestError{
+			Code:    ErrorCodeBonusNotAvailable,
+			Message: fmt.Sprintf("failed to get PQ instance for character %d: %s", characterId, err.Error()),
+		}
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"character_id": characterId,
+		"instance_id":  inst.Id.String(),
+	}).Debug("Producing ENTER_BONUS command for party quest")
+
+	return p.produceEnterBonusCommand(inst.Id)
+}
+
+// produceEnterBonusCommand produces an ENTER_BONUS command to the party quest command topic
+func (p *ProcessorImpl) produceEnterBonusCommand(instanceId uuid.UUID) error {
+	key := producer.CreateKey(int(instanceId.ID()))
+	value := &Command[EnterBonusCommandBody]{
+		Type: CommandTypeEnterBonus,
+		Body: EnterBonusCommandBody{
+			InstanceId: instanceId,
+		},
+	}
+	mp := producer.SingleMessageProvider(key, value)
+	return produceToCommandTopic(p.l, p.ctx)(mp)
 }
 
 // compareUint32 evaluates: actual <operator> expected

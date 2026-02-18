@@ -17,8 +17,9 @@ type RestStateModel struct {
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
 	GachaponAction   *RestGachaponActionModel   `json:"gachaponAction,omitempty"`   // Gachapon action model (if type is gachaponAction)
-	PartyQuestAction *RestPartyQuestActionModel `json:"partyQuestAction,omitempty"` // Party quest action model (if type is partyQuestAction)
-	ListSelection    *RestListSelectionModel    `json:"listSelection,omitempty"`    // List selection model (if type is listSelection)
+	PartyQuestAction      *RestPartyQuestActionModel      `json:"partyQuestAction,omitempty"`      // Party quest action model (if type is partyQuestAction)
+	PartyQuestBonusAction *RestPartyQuestBonusActionModel `json:"partyQuestBonusAction,omitempty"` // Party quest bonus action model (if type is partyQuestBonusAction)
+	ListSelection         *RestListSelectionModel         `json:"listSelection,omitempty"`         // List selection model (if type is listSelection)
 	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
 	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
@@ -151,6 +152,11 @@ type RestPartyQuestActionModel struct {
 	FailureState    string `json:"failureState"`               // General failure state ID
 	NotInPartyState string `json:"notInPartyState,omitempty"`  // State when character has no party
 	NotLeaderState  string `json:"notLeaderState,omitempty"`   // State when character isn't party leader
+}
+
+// RestPartyQuestBonusActionModel represents the REST model for party quest bonus action states
+type RestPartyQuestBonusActionModel struct {
+	FailureState string `json:"failureState"` // Failure state ID
 }
 
 // RestListSelectionModel represents the REST model for list selection states
@@ -299,6 +305,12 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if partyQuestAction != nil {
 			restPartyQuestAction := TransformPartyQuestAction(*partyQuestAction)
 			restState.PartyQuestAction = &restPartyQuestAction
+		}
+	case PartyQuestBonusActionType:
+		partyQuestBonusAction := m.PartyQuestBonusAction()
+		if partyQuestBonusAction != nil {
+			restPartyQuestBonusAction := TransformPartyQuestBonusAction(*partyQuestBonusAction)
+			restState.PartyQuestBonusAction = &restPartyQuestBonusAction
 		}
 	case ListSelectionType:
 		listSelection := m.ListSelection()
@@ -560,6 +572,15 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetPartyQuestAction(partyQuestAction)
+	case PartyQuestBonusActionType:
+		if r.PartyQuestBonusAction == nil {
+			return StateModel{}, fmt.Errorf("partyQuestBonusAction is required for partyQuestBonusAction state")
+		}
+		partyQuestBonusAction, err := ExtractPartyQuestBonusAction(*r.PartyQuestBonusAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetPartyQuestBonusAction(partyQuestBonusAction)
 	case ListSelectionType:
 		if r.ListSelection == nil {
 			return StateModel{}, fmt.Errorf("listSelection is required for listSelection state")
@@ -769,6 +790,18 @@ func ExtractPartyQuestAction(r RestPartyQuestActionModel) (*PartyQuestActionMode
 		SetFailureState(r.FailureState).
 		SetNotInPartyState(r.NotInPartyState).
 		SetNotLeaderState(r.NotLeaderState).
+		Build()
+}
+
+func TransformPartyQuestBonusAction(m PartyQuestBonusActionModel) RestPartyQuestBonusActionModel {
+	return RestPartyQuestBonusActionModel{
+		FailureState: m.FailureState(),
+	}
+}
+
+func ExtractPartyQuestBonusAction(r RestPartyQuestBonusActionModel) (*PartyQuestBonusActionModel, error) {
+	return NewPartyQuestBonusActionBuilder().
+		SetFailureState(r.FailureState).
 		Build()
 }
 

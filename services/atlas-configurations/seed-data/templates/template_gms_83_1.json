@@ -789,6 +789,11 @@
         }
       },
       {
+        "opCode": "0xC0",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
         "opCode": "0xC5",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",

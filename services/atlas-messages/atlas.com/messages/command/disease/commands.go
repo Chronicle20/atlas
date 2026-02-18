@@ -13,7 +13,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -33,11 +32,12 @@ var validDiseases = map[string]string{
 	"STOP_PORTION": "STOP_PORTION",
 }
 
-func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func DiseaseCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@disease\s+(\w+)\s+(\w+)(?:\s+(-?\d+))?(?:\s+(\d+))?$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) < 3 {

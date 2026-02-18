@@ -43,7 +43,7 @@ func handleStatusEventLogout() func(l logrus.FieldLogger, ctx context.Context, e
 			e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.MapId)
 
 		// Clean up projection
-		cleanupProjection(l, e.CharacterId)
+		cleanupProjection(l, ctx, e.CharacterId)
 	}
 }
 
@@ -57,7 +57,7 @@ func handleStatusEventChannelChanged() func(l logrus.FieldLogger, ctx context.Co
 			e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldChannelId)
 
 		// Clean up projection
-		cleanupProjection(l, e.CharacterId)
+		cleanupProjection(l, ctx, e.CharacterId)
 	}
 }
 
@@ -71,17 +71,17 @@ func handleStatusEventMapChanged() func(l logrus.FieldLogger, ctx context.Contex
 			e.CharacterId, e.WorldId, e.Body.ChannelId, e.Body.OldMapId, e.Body.TargetMapId)
 
 		// Clean up projection on map change as well
-		cleanupProjection(l, e.CharacterId)
+		cleanupProjection(l, ctx, e.CharacterId)
 	}
 }
 
-func cleanupProjection(l logrus.FieldLogger, characterId uint32) {
+func cleanupProjection(l logrus.FieldLogger, ctx context.Context, characterId uint32) {
 	// Remove NPC context from cache (legacy)
 	cache := storage.GetNpcContextCache()
 	cache.Remove(characterId)
 
 	// Delete the projection
-	projection.GetManager().Delete(characterId)
+	projection.GetManager().Delete(ctx, characterId)
 
 	l.Debugf("Cleaned up projection and NPC context for character [%d]", characterId)
 }

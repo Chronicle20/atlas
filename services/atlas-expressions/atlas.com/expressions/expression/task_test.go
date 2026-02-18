@@ -5,9 +5,18 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
+
+func setupTaskTest(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
 
 func TestNewRevertTask(t *testing.T) {
 	logger, _ := test.NewNullLogger()
@@ -45,101 +54,81 @@ func TestRevertTask_SleepTime_DifferentIntervals(t *testing.T) {
 }
 
 func TestRevertTask_Run_NoExpiredExpressions(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
+	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
 	task := NewRevertTask(logger, 100*time.Millisecond)
 
 	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 
-	// Add a non-expired expression
+	now := time.Now()
+	GetRegistry().SetNowFunc(func() time.Time { return now })
+
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	r.add(ten, 1000, f, 5)
+	GetRegistry().add(ctx, 1000, f, 5)
 
 	// Run should not panic and expression should still exist
 	task.Run()
 
-	// Verify expression still exists (not expired yet)
-	_, found := r.get(ten, 1000)
+	_, found := GetRegistry().get(ctx, 1000)
 	assert.True(t, found)
 }
 
 func TestRevertTask_Run_WithExpiredExpressions(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
+	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
 	task := NewRevertTask(logger, 100*time.Millisecond)
 
 	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 
-	// Add an expression
+	now := time.Now()
+	GetRegistry().SetNowFunc(func() time.Time { return now })
+
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	r.add(ten, 1000, f, 5)
+	GetRegistry().add(ctx, 1000, f, 5)
 
-	// Manually expire it
-	r.lock.Lock()
-	r.tenantLock[ten].Lock()
-	if m, ok := r.expressionReg[ten][1000]; ok {
-		expired := Model{
-			tenant:      m.tenant,
-			characterId: m.characterId,
-			field:       m.field,
-			expression:  m.expression,
-			expiration:  time.Now().Add(-1 * time.Second),
-		}
-		r.expressionReg[ten][1000] = expired
-	}
-	r.tenantLock[ten].Unlock()
-	r.lock.Unlock()
+	// Advance clock past TTL
+	GetRegistry().SetNowFunc(func() time.Time { return now.Add(6 * time.Second) })
 
-	// Run should process expired expression
 	task.Run()
 
 	// Verify expression was removed
-	_, found := r.get(ten, 1000)
+	_, found := GetRegistry().get(ctx, 1000)
 	assert.False(t, found)
 }
 
 func TestRevertTask_Run_MixedExpiredAndNonExpired(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
+	setupTaskTest(t)
 
 	logger, _ := test.NewNullLogger()
 	task := NewRevertTask(logger, 100*time.Millisecond)
 
 	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 
-	// Add expressions
+	now := time.Now()
+	GetRegistry().SetNowFunc(func() time.Time { return now })
+
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	r.add(ten, 1000, f, 5)
-	r.add(ten, 2000, f, 10)
+	GetRegistry().add(ctx, 1000, f, 5)
 
-	// Manually expire only one
-	r.lock.Lock()
-	r.tenantLock[ten].Lock()
-	if m, ok := r.expressionReg[ten][1000]; ok {
-		expired := Model{
-			tenant:      m.tenant,
-			characterId: m.characterId,
-			field:       m.field,
-			expression:  m.expression,
-			expiration:  time.Now().Add(-1 * time.Second),
-		}
-		r.expressionReg[ten][1000] = expired
-	}
-	r.tenantLock[ten].Unlock()
-	r.lock.Unlock()
+	// Add second expression 3 seconds later
+	GetRegistry().SetNowFunc(func() time.Time { return now.Add(3 * time.Second) })
+	GetRegistry().add(ctx, 2000, f, 10)
 
-	// Run
+	// Advance to 6 seconds - first expired, second not
+	GetRegistry().SetNowFunc(func() time.Time { return now.Add(6 * time.Second) })
+
 	task.Run()
 
 	// Verify expired was removed
-	_, found1 := r.get(ten, 1000)
+	_, found1 := GetRegistry().get(ctx, 1000)
 	assert.False(t, found1)
 
 	// Verify non-expired still exists
-	_, found2 := r.get(ten, 2000)
+	_, found2 := GetRegistry().get(ctx, 2000)
 	assert.True(t, found2)
 }

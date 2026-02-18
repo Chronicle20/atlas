@@ -84,22 +84,14 @@ func GetInstanceRouteStatusHandler(d *rest.HandlerDependency, c *rest.HandlerCon
 	return rest.ParseRouteId(d.Logger(), func(routeId uuid.UUID) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
 			ir := getInstanceRegistry()
-			key := RouteKey{TenantId: uuid.Nil, RouteId: routeId}
+			instances := ir.GetInstancesByRoute(uuid.Nil, routeId)
 
-			var statuses []InstanceStatusRestModel
-			ir.mu.RLock()
-			if instances, ok := ir.byRoute[key]; ok {
-				for _, inst := range instances {
-					s, err := TransformInstanceStatus(inst)
-					if err == nil {
-						statuses = append(statuses, s)
-					}
+			statuses := make([]InstanceStatusRestModel, 0)
+			for _, inst := range instances {
+				s, err := TransformInstanceStatus(inst)
+				if err == nil {
+					statuses = append(statuses, s)
 				}
-			}
-			ir.mu.RUnlock()
-
-			if statuses == nil {
-				statuses = []InstanceStatusRestModel{}
 			}
 
 			query := r.URL.Query()

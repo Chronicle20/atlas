@@ -1,87 +1,77 @@
 package channel
 
 import (
-	"sync"
+	"context"
+	"fmt"
+	"strconv"
+	"strings"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-
-	"github.com/google/uuid"
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	mu    sync.RWMutex
-	store map[uuid.UUID][]channel.Model
+	client *goredis.Client
 }
 
-var (
-	instance *Registry
-	once     sync.Once
-)
+var registry *Registry
 
-// GetRegistry returns the global singleton instance
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{client: client}
+}
+
 func getRegistry() *Registry {
-	once.Do(func() {
-		instance = &Registry{
-			store: make(map[uuid.UUID][]channel.Model),
-		}
-	})
-	return instance
+	return registry
 }
 
-// Add adds a model to the given tenant's list
-func (r *Registry) Add(tenantId uuid.UUID, model channel.Model) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	// Check if the model already exists for this tenant
-	models, ok := r.store[tenantId]
-	if ok {
-		for _, m := range models {
-			// If a model with the same worldId and id already exists, don't add it again
-			if m.WorldId() == model.WorldId() && m.Id() == model.Id() {
-				return
-			}
-		}
-	}
-
-	r.store[tenantId] = append(r.store[tenantId], model)
+func channelSetKey(t tenant.Model) string {
+	return fmt.Sprintf("transport:channels:%s", atlas.TenantKey(t))
 }
 
-// Remove removes a model by its ID from the given tenant's list
-func (r *Registry) Remove(tenantId uuid.UUID, ch channel.Model) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	models, ok := r.store[tenantId]
-	if !ok {
-		return
-	}
-
-	filtered := models[:0]
-	for _, m := range models {
-		if m.WorldId() != ch.WorldId() || m.Id() != ch.Id() {
-			filtered = append(filtered, m)
-		}
-	}
-	if len(filtered) == 0 {
-		delete(r.store, tenantId)
-	} else {
-		r.store[tenantId] = filtered
-	}
+func channelMember(ch channelConstant.Model) string {
+	return fmt.Sprintf("%d:%d", ch.WorldId(), ch.Id())
 }
 
-// GetAll returns a copy of all models for a given tenant
-func (r *Registry) GetAll(tenantId uuid.UUID) []channel.Model {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
+func parseChannelMember(member string) (channelConstant.Model, bool) {
+	parts := strings.SplitN(member, ":", 2)
+	if len(parts) != 2 {
+		return channelConstant.Model{}, false
+	}
+	worldId, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return channelConstant.Model{}, false
+	}
+	channelId, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return channelConstant.Model{}, false
+	}
+	return channelConstant.NewModel(world.Id(worldId), channelConstant.Id(channelId)), true
+}
 
-	models, ok := r.store[tenantId]
-	if !ok {
+func (r *Registry) Add(ctx context.Context, model channelConstant.Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.client.SAdd(ctx, channelSetKey(t), channelMember(model)).Err()
+}
+
+func (r *Registry) Remove(ctx context.Context, ch channelConstant.Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.client.SRem(ctx, channelSetKey(t), channelMember(ch)).Err()
+}
+
+func (r *Registry) GetAll(ctx context.Context) []channelConstant.Model {
+	t := tenant.MustFromContext(ctx)
+	members, err := r.client.SMembers(ctx, channelSetKey(t)).Result()
+	if err != nil {
 		return nil
 	}
-
-	// Return a copy to prevent external modification
-	copyModels := make([]channel.Model, len(models))
-	copy(copyModels, models)
-	return copyModels
+	results := make([]channelConstant.Model, 0, len(members))
+	for _, m := range members {
+		if ch, ok := parseChannelMember(m); ok {
+			results = append(results, ch)
+		}
+	}
+	return results
 }

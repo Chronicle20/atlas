@@ -7,17 +7,32 @@ import (
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
 	"context"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
+
+func TestMain(m *testing.M) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	compartment.InitReservationRegistry(rc)
+	compartment.InitLockRegistry(rc)
+	os.Exit(m.Run())
+}
 
 func testDatabase(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})

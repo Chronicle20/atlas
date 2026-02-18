@@ -1,79 +1,113 @@
 package invite
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
+var ErrNotFound = errors.New("not found")
+
+const tenantTrackerKey = "invite:active-tenants"
+
 type Registry struct {
-	lock           sync.RWMutex
-	tenantInviteId map[tenant.Model]uint32
-	inviteReg      map[tenant.Model]map[uint32]map[string][]Model
-	tenantLock     map[tenant.Model]*sync.RWMutex
+	invites         *atlas.TenantRegistry[uint32, Model]
+	idGen           *atlas.IDGenerator
+	targetTypeIndex *atlas.Index       // "{targetId}:{inviteType}" → inviteId strings
+	targetIndex     *atlas.Uint32Index // targetId → inviteIds
+	originatorIndex *atlas.Uint32Index // originatorId → inviteIds
+	client          *goredis.Client
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		invites: atlas.NewTenantRegistry[uint32, Model](client, "invite", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		idGen:           atlas.NewIDGenerator(client, "invite"),
+		targetTypeIndex: atlas.NewIndex(client, "invite", "target-type"),
+		targetIndex:     atlas.NewUint32Index(client, "invite", "target"),
+		originatorIndex: atlas.NewUint32Index(client, "invite", "originator"),
+		client:          client,
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.tenantInviteId = make(map[tenant.Model]uint32)
-		registry.inviteReg = make(map[tenant.Model]map[uint32]map[string][]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
 	return registry
 }
 
-// getOrCreateTenantLock safely retrieves or creates the per-tenant lock.
-// This method ensures thread-safe access to the tenantLock map.
-func (r *Registry) getOrCreateTenantLock(t tenant.Model) *sync.RWMutex {
-	// First try with read lock (fast path for existing tenants)
-	r.lock.RLock()
-	if tl, ok := r.tenantLock[t]; ok {
-		r.lock.RUnlock()
-		return tl
+func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
+	data, err := json.Marshal(&t)
+	if err != nil {
+		return
 	}
-	r.lock.RUnlock()
-
-	// Upgrade to write lock to create new tenant structures
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	// Double-check after acquiring write lock (another goroutine may have created it)
-	if tl, ok := r.tenantLock[t]; ok {
-		return tl
-	}
-
-	// Create new tenant structures
-	tl := &sync.RWMutex{}
-	r.inviteReg[t] = make(map[uint32]map[string][]Model)
-	r.tenantLock[t] = tl
-	return tl
+	r.client.SAdd(ctx, tenantTrackerKey, string(data))
 }
 
-func (r *Registry) Create(t tenant.Model, originatorId uint32, worldId world.Id, targetId uint32, inviteType string, referenceId uint32) Model {
-	var inviteId uint32
+func (r *Registry) GetActiveTenants() []tenant.Model {
+	ctx := context.Background()
+	members, err := r.client.SMembers(ctx, tenantTrackerKey).Result()
+	if err != nil {
+		return nil
+	}
+	var tenants []tenant.Model
+	for _, m := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(m), &t); err != nil {
+			continue
+		}
+		tenants = append(tenants, t)
+	}
+	return tenants
+}
 
-	// Get next invite ID while holding write lock
-	r.lock.Lock()
-	if id, ok := r.tenantInviteId[t]; ok {
-		inviteId = id + 1
-	} else {
-		inviteId = StartInviteId
-		// Initialize tenant structures if not exists
-		if _, ok := r.tenantLock[t]; !ok {
-			r.inviteReg[t] = make(map[uint32]map[string][]Model)
-			r.tenantLock[t] = &sync.RWMutex{}
+func targetTypeKey(targetId uint32, inviteType string) string {
+	return fmt.Sprintf("%d:%s", targetId, inviteType)
+}
+
+func inviteIdStr(id uint32) string {
+	return strconv.FormatUint(uint64(id), 10)
+}
+
+func parseInviteId(s string) (uint32, error) {
+	v, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, err
+	}
+	return uint32(v), nil
+}
+
+func (r *Registry) Create(ctx context.Context, originatorId uint32, worldId world.Id, targetId uint32, inviteType string, referenceId uint32) Model {
+	t := tenant.MustFromContext(ctx)
+
+	// Check dedup by referenceId within the (target, type) bucket
+	ttKey := targetTypeKey(targetId, inviteType)
+	ids, _ := r.targetTypeIndex.Lookup(ctx, t, ttKey)
+	for _, idStr := range ids {
+		invId, err := parseInviteId(idStr)
+		if err != nil {
+			continue
+		}
+		existing, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		if existing.ReferenceId() == referenceId {
+			return existing
 		}
 	}
-	r.tenantInviteId[t] = inviteId
-	tenantLock := r.tenantLock[t]
-	r.lock.Unlock()
+
+	inviteId, _ := r.idGen.NextID(ctx, t)
 
 	m, err := NewBuilder().
 		SetTenant(t).
@@ -86,200 +120,156 @@ func (r *Registry) Create(t tenant.Model, originatorId uint32, worldId world.Id,
 		SetAge(time.Now()).
 		Build()
 	if err != nil {
-		// This should never happen as the registry generates valid IDs
-		// and callers should provide valid parameters
 		panic("invite.Registry.Create: builder validation failed: " + err.Error())
 	}
 
-	tenantLock.Lock()
-	defer tenantLock.Unlock()
+	_ = r.invites.Put(ctx, t, inviteId, m)
+	_ = r.targetTypeIndex.Add(ctx, t, ttKey, inviteIdStr(inviteId))
+	_ = r.targetIndex.Add(ctx, t, targetId, inviteId)
+	_ = r.originatorIndex.Add(ctx, t, originatorId, inviteId)
+	r.trackTenant(ctx, t)
 
-	// Access tenant registry safely (we have the tenant lock)
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	if _, ok := tenReg[targetId]; !ok {
-		tenReg[targetId] = make(map[string][]Model)
-	}
-
-	if _, ok := tenReg[targetId][inviteType]; !ok {
-		tenReg[targetId][inviteType] = make([]Model, 0)
-	}
-
-	for _, i := range tenReg[targetId][inviteType] {
-		if i.ReferenceId() == referenceId {
-			return i
-		}
-	}
-	tenReg[targetId][inviteType] = append(tenReg[targetId][inviteType], m)
 	return m
 }
 
-func (r *Registry) GetByOriginator(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) (Model, error) {
-	tl := r.getOrCreateTenantLock(t)
+func (r *Registry) GetByOriginator(ctx context.Context, actorId uint32, inviteType string, originatorId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
 
-	tl.RLock()
-	defer tl.RUnlock()
-
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	if charReg, ok := tenReg[actorId]; ok {
-		if invReg, ok := charReg[inviteType]; ok {
-			for _, i := range invReg {
-				if i.OriginatorId() == originatorId {
-					return i, nil
-				}
-			}
+	ttKey := targetTypeKey(actorId, inviteType)
+	ids, _ := r.targetTypeIndex.Lookup(ctx, t, ttKey)
+	for _, idStr := range ids {
+		invId, err := parseInviteId(idStr)
+		if err != nil {
+			continue
+		}
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		if m.OriginatorId() == originatorId {
+			return m, nil
 		}
 	}
-	return Model{}, errors.New("not found")
+	return Model{}, ErrNotFound
 }
 
-func (r *Registry) GetByReference(t tenant.Model, actorId uint32, inviteType string, referenceId uint32) (Model, error) {
-	tl := r.getOrCreateTenantLock(t)
+func (r *Registry) GetByReference(ctx context.Context, actorId uint32, inviteType string, referenceId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
 
-	tl.RLock()
-	defer tl.RUnlock()
-
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	if charReg, ok := tenReg[actorId]; ok {
-		if invReg, ok := charReg[inviteType]; ok {
-			for _, i := range invReg {
-				if i.ReferenceId() == referenceId {
-					return i, nil
-				}
-			}
+	ttKey := targetTypeKey(actorId, inviteType)
+	ids, _ := r.targetTypeIndex.Lookup(ctx, t, ttKey)
+	for _, idStr := range ids {
+		invId, err := parseInviteId(idStr)
+		if err != nil {
+			continue
+		}
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		if m.ReferenceId() == referenceId {
+			return m, nil
 		}
 	}
-	return Model{}, errors.New("not found")
+	return Model{}, ErrNotFound
 }
 
-func (r *Registry) GetForCharacter(t tenant.Model, characterId uint32) ([]Model, error) {
-	tl := r.getOrCreateTenantLock(t)
+func (r *Registry) GetForCharacter(ctx context.Context, characterId uint32) ([]Model, error) {
+	t := tenant.MustFromContext(ctx)
 
-	tl.RLock()
-	defer tl.RUnlock()
-
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	var results = make([]Model, 0)
-	if charReg, ok := tenReg[characterId]; ok {
-		for _, v := range charReg {
-			results = append(results, v...)
+	inviteIds, _ := r.targetIndex.Lookup(ctx, t, characterId)
+	results := make([]Model, 0)
+	for _, invId := range inviteIds {
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
 		}
+		results = append(results, m)
 	}
 	return results, nil
 }
 
-func (r *Registry) Delete(t tenant.Model, actorId uint32, inviteType string, originatorId uint32) error {
-	tl := r.getOrCreateTenantLock(t)
+func (r *Registry) Delete(ctx context.Context, actorId uint32, inviteType string, originatorId uint32) error {
+	t := tenant.MustFromContext(ctx)
 
-	tl.Lock()
-	defer tl.Unlock()
-
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	if charReg, ok := tenReg[actorId]; ok {
-		if invReg, ok := charReg[inviteType]; ok {
-			var found = false
-			var remain = make([]Model, 0)
-			for _, i := range invReg {
-				if i.OriginatorId() != originatorId {
-					remain = append(remain, i)
-				} else {
-					found = true
-				}
-			}
-			tenReg[actorId][inviteType] = remain
-			if found {
-				return nil
-			}
+	ttKey := targetTypeKey(actorId, inviteType)
+	ids, _ := r.targetTypeIndex.Lookup(ctx, t, ttKey)
+	for _, idStr := range ids {
+		invId, err := parseInviteId(idStr)
+		if err != nil {
+			continue
+		}
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		if m.OriginatorId() == originatorId {
+			r.removeInvite(ctx, t, m)
+			return nil
 		}
 	}
-	return errors.New("not found")
+	return ErrNotFound
 }
 
-func (r *Registry) DeleteForCharacter(t tenant.Model, characterId uint32) []Model {
-	tl := r.getOrCreateTenantLock(t)
+func (r *Registry) DeleteForCharacter(ctx context.Context, characterId uint32) []Model {
+	t := tenant.MustFromContext(ctx)
 
-	tl.Lock()
-	defer tl.Unlock()
+	removed := make([]Model, 0)
+	seen := make(map[uint32]bool)
 
-	r.lock.RLock()
-	tenReg := r.inviteReg[t]
-	r.lock.RUnlock()
-
-	var removed = make([]Model, 0)
-
-	// Remove all invites targeting this character.
-	if charReg, ok := tenReg[characterId]; ok {
-		for _, is := range charReg {
-			removed = append(removed, is...)
+	// Remove all invites targeting this character
+	targetInviteIds, _ := r.targetIndex.Lookup(ctx, t, characterId)
+	for _, invId := range targetInviteIds {
+		if seen[invId] {
+			continue
 		}
-		delete(tenReg, characterId)
+		seen[invId] = true
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		removed = append(removed, m)
+		r.removeInvite(ctx, t, m)
 	}
 
-	// Remove all invites originated by this character from other targets.
-	for targetId, charReg := range tenReg {
-		for inviteType, is := range charReg {
-			var remain = make([]Model, 0)
-			for _, i := range is {
-				if i.OriginatorId() == characterId {
-					removed = append(removed, i)
-				} else {
-					remain = append(remain, i)
-				}
-			}
-			tenReg[targetId][inviteType] = remain
+	// Remove all invites originated by this character
+	originatorInviteIds, _ := r.originatorIndex.Lookup(ctx, t, characterId)
+	for _, invId := range originatorInviteIds {
+		if seen[invId] {
+			continue
 		}
+		seen[invId] = true
+		m, err := r.invites.Get(ctx, t, invId)
+		if err != nil {
+			continue
+		}
+		removed = append(removed, m)
+		r.removeInvite(ctx, t, m)
 	}
 
 	return removed
 }
 
-func (r *Registry) GetExpired(timeout time.Duration) ([]Model, error) {
-	var results = make([]Model, 0)
+func (r *Registry) GetExpired(ctx context.Context, timeout time.Duration) []Model {
+	t := tenant.MustFromContext(ctx)
 
-	// Get a snapshot of tenant keys while holding read lock
-	r.lock.RLock()
-	tenants := make([]tenant.Model, 0, len(r.inviteReg))
-	for k := range r.inviteReg {
-		tenants = append(tenants, k)
+	all, err := r.invites.GetAllValues(ctx, t)
+	if err != nil {
+		return nil
 	}
-	r.lock.RUnlock()
 
-	// Process each tenant
-	for _, t := range tenants {
-		r.lock.RLock()
-		tl, ok := r.tenantLock[t]
-		tenReg := r.inviteReg[t]
-		r.lock.RUnlock()
-
-		if !ok || tenReg == nil {
-			continue
+	results := make([]Model, 0)
+	for _, m := range all {
+		if m.Expired(timeout) {
+			results = append(results, m)
 		}
-
-		tl.RLock()
-		for _, cir := range tenReg {
-			for _, is := range cir {
-				for _, i := range is {
-					if i.Expired(timeout) {
-						results = append(results, i)
-					}
-				}
-			}
-		}
-		tl.RUnlock()
 	}
-	return results, nil
+	return results
+}
+
+func (r *Registry) removeInvite(ctx context.Context, t tenant.Model, m Model) {
+	_ = r.invites.Remove(ctx, t, m.Id())
+	_ = r.targetTypeIndex.Remove(ctx, t, targetTypeKey(m.TargetId(), m.Type()), inviteIdStr(m.Id()))
+	_ = r.targetIndex.Remove(ctx, t, m.TargetId(), m.Id())
+	_ = r.originatorIndex.Remove(ctx, t, m.OriginatorId(), m.Id())
 }

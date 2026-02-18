@@ -2,6 +2,7 @@ package main
 
 import (
 	chair2 "atlas-chairs/chair"
+	character2 "atlas-chairs/character"
 	"atlas-chairs/kafka/consumer/chair"
 	"atlas-chairs/kafka/consumer/character"
 	"atlas-chairs/logger"
@@ -10,6 +11,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -39,6 +41,10 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	chair2.InitRegistry(rc)
+	character2.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

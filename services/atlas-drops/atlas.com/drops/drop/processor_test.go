@@ -10,10 +10,19 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
+
+func setupProcessorTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+}
 
 func createTestContext(t *testing.T) (context.Context, tenant.Model) {
 	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -41,7 +50,7 @@ func TestNewProcessor_CreatesProperly(t *testing.T) {
 }
 
 func TestProcessor_SpawnForCharacter_CreatesDropAndBuffersMessage(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -85,7 +94,7 @@ func TestProcessor_SpawnForCharacter_CreatesDropAndBuffersMessage(t *testing.T) 
 }
 
 func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -120,7 +129,7 @@ func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
 }
 
 func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -150,7 +159,7 @@ func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T)
 }
 
 func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -186,7 +195,7 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 }
 
 func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -224,7 +233,7 @@ func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
 }
 
 func TestProcessor_Expire_RemovesDropAndBuffersMessage(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -255,7 +264,7 @@ func TestProcessor_Expire_RemovesDropAndBuffersMessage(t *testing.T) {
 }
 
 func TestProcessor_GetById_ReturnsCorrectDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -282,7 +291,7 @@ func TestProcessor_GetById_ReturnsCorrectDrop(t *testing.T) {
 }
 
 func TestProcessor_GetById_NonExistent(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -295,7 +304,7 @@ func TestProcessor_GetById_NonExistent(t *testing.T) {
 }
 
 func TestProcessor_GetForMap_ReturnsFilteredDrops(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -332,7 +341,7 @@ func TestProcessor_GetForMap_ReturnsFilteredDrops(t *testing.T) {
 }
 
 func TestProcessor_ByIdProvider_WorksWithModelProvider(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -355,7 +364,7 @@ func TestProcessor_ByIdProvider_WorksWithModelProvider(t *testing.T) {
 }
 
 func TestProcessor_ForMapProvider_WorksWithSliceProvider(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -381,7 +390,7 @@ func TestProcessor_ForMapProvider_WorksWithSliceProvider(t *testing.T) {
 }
 
 func TestAllProvider_ReturnsAllDrops(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -410,7 +419,7 @@ func TestAllProvider_ReturnsAllDrops(t *testing.T) {
 }
 
 func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -436,7 +445,7 @@ func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
 }
 
 func TestProcessor_MultipleOperationsSequence(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -587,7 +596,7 @@ func TestReservationFailureEventStatusProvider_ReturnsValidMessages(t *testing.T
 }
 
 func TestProcessor_Gather_NonExistentDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -608,7 +617,7 @@ func TestProcessor_Gather_NonExistentDrop(t *testing.T) {
 }
 
 func TestProcessor_Expire_NonExistentDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -631,7 +640,7 @@ func TestProcessor_Expire_NonExistentDrop(t *testing.T) {
 }
 
 func TestProcessor_GetForMap_EmptyMap(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -648,7 +657,7 @@ func TestProcessor_GetForMap_EmptyMap(t *testing.T) {
 }
 
 func TestProcessor_Reserve_NonExistentDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -670,7 +679,7 @@ func TestProcessor_Reserve_NonExistentDrop(t *testing.T) {
 }
 
 func TestProcessor_CancelReservation_NonExistentDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -693,7 +702,7 @@ func TestProcessor_CancelReservation_NonExistentDrop(t *testing.T) {
 }
 
 func TestProcessor_Gather_WithMesoDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -721,7 +730,7 @@ func TestProcessor_Gather_WithMesoDrop(t *testing.T) {
 }
 
 func TestProcessor_ByIdProvider_NonExistent(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -735,7 +744,7 @@ func TestProcessor_ByIdProvider_NonExistent(t *testing.T) {
 }
 
 func TestProcessor_ForMapProvider_EmptyMap(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, _ := createTestContext(t)
 	l := createTestLogger()
 
@@ -753,7 +762,7 @@ func TestProcessor_ForMapProvider_EmptyMap(t *testing.T) {
 }
 
 func TestAllProvider_EmptyRegistry(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 
 	drops, err := AllProvider()
 	if err != nil {
@@ -765,7 +774,7 @@ func TestAllProvider_EmptyRegistry(t *testing.T) {
 }
 
 func TestProcessor_Gather_WithItemDrop(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -796,7 +805,7 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 }
 
 func TestProcessor_GetForMap_FiltersInstancesCorrectly(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 

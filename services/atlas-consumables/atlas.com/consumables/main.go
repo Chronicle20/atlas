@@ -5,10 +5,12 @@ import (
 	"atlas-consumables/kafka/consumer/compartment"
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/logger"
+	mapCharacter "atlas-consumables/map/character"
 	"atlas-consumables/service"
 	"atlas-consumables/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 )
 
 const serviceName = "atlas-consumables"
@@ -17,6 +19,9 @@ const consumerGroupId = "Consumables Service"
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	mapCharacter.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

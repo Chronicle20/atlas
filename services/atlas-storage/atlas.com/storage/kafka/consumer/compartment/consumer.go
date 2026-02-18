@@ -85,7 +85,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 
 // updateProjectionOnAccept updates the projection when an asset is accepted into storage
 func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
-	proj, ok := projection.GetManager().Get(characterId)
+	proj, ok := projection.GetManager().Get(ctx, characterId)
 	if !ok {
 		return // No projection exists, nothing to update
 	}
@@ -100,7 +100,7 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 	}
 
 	// Update only the operated compartment with filtered assets
-	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
+	projection.GetManager().Update(ctx, characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
 		filtered := make([]asset.Model, 0)
@@ -119,7 +119,7 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 
 // updateProjectionOnRelease updates the projection when an asset is released from storage
 func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
-	proj, ok := projection.GetManager().Get(characterId)
+	proj, ok := projection.GetManager().Get(ctx, characterId)
 	if !ok {
 		return // No projection exists, nothing to update
 	}
@@ -134,7 +134,7 @@ func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *go
 	}
 
 	// Update only the operated compartment with filtered assets
-	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
+	projection.GetManager().Update(ctx, characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
 		filtered := make([]asset.Model, 0)

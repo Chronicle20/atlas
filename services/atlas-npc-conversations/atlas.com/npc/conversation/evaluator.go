@@ -42,7 +42,7 @@ func (e *EvaluatorImpl) EvaluateCondition(characterId uint32, condition Conditio
 	e.l.Debugf("Evaluating condition [%s] for character [%d]", condition.Type(), characterId)
 
 	// Get the conversation context
-	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 	if err != nil {
 		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
 		return false, err

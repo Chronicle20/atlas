@@ -9,74 +9,67 @@ import (
 	"atlas-rates/rate"
 	"context"
 	"fmt"
-	"sync"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
-// initializedCharacters tracks which characters have been initialized to avoid re-processing
-var initializedCharacters = struct {
-	sync.RWMutex
-	m map[tenant.Model]map[uint32]bool
-}{m: make(map[tenant.Model]map[uint32]bool)}
+// initializedRegistry tracks which characters have been initialized using Redis
+type initializedRegistry struct {
+	reg *atlas.TenantRegistry[uint32, bool]
+}
+
+var initialized *initializedRegistry
+
+// InitInitializedRegistry initializes the initialized tracker with a Redis client
+func InitInitializedRegistry(client *goredis.Client) {
+	initialized = &initializedRegistry{
+		reg: atlas.NewTenantRegistry[uint32, bool](client, "rates-init", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+	}
+}
 
 // IsInitialized checks if a character has been initialized
-func IsInitialized(t tenant.Model, characterId uint32) bool {
-	initializedCharacters.RLock()
-	defer initializedCharacters.RUnlock()
-
-	if chars, ok := initializedCharacters.m[t]; ok {
-		return chars[characterId]
+func IsInitialized(ctx context.Context, characterId uint32) bool {
+	t := tenant.MustFromContext(ctx)
+	v, err := initialized.reg.Get(ctx, t, characterId)
+	if err != nil {
+		return false
 	}
-	return false
+	return v
 }
 
 // MarkInitialized marks a character as initialized
-func MarkInitialized(t tenant.Model, characterId uint32) {
-	initializedCharacters.Lock()
-	defer initializedCharacters.Unlock()
-
-	if _, ok := initializedCharacters.m[t]; !ok {
-		initializedCharacters.m[t] = make(map[uint32]bool)
-	}
-	initializedCharacters.m[t][characterId] = true
+func MarkInitialized(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = initialized.reg.Put(ctx, t, characterId, true)
 }
 
 // ClearInitialized clears the initialization state for a character (e.g., on logout)
-func ClearInitialized(t tenant.Model, characterId uint32) {
-	initializedCharacters.Lock()
-	defer initializedCharacters.Unlock()
-
-	if chars, ok := initializedCharacters.m[t]; ok {
-		delete(chars, characterId)
-	}
-}
-
-// ResetInitializedForTesting clears all initialization state (testing only)
-func ResetInitializedForTesting() {
-	initializedCharacters.Lock()
-	defer initializedCharacters.Unlock()
-	initializedCharacters.m = make(map[tenant.Model]map[uint32]bool)
+func ClearInitialized(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = initialized.reg.Remove(ctx, t, characterId)
 }
 
 // InitializeCharacterRates queries inventory and buffs to initialize rate tracking for a character
 // This is called lazily when rates are queried or on map change events
 // worldId and channelId are optional (pass 0 if not available) - used for buff factor registration
 func InitializeCharacterRates(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) {
-	t := tenant.MustFromContext(ctx)
-
 	// Check if already initialized
-	if IsInitialized(t, characterId) {
+	if IsInitialized(ctx, characterId) {
 		return
 	}
 
 	l.Debugf("Initializing rate tracking for character [%d].", characterId)
 
 	// Mark as initialized before processing to prevent duplicate processing
-	MarkInitialized(t, characterId)
+	MarkInitialized(ctx, characterId)
 
 	p := NewProcessor(l, ctx)
 
@@ -212,8 +205,6 @@ func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterI
 		return
 	}
 
-	t := tenant.MustFromContext(ctx)
-
 	for _, b := range activeBuffs {
 		// Check if buff has expired (belt-and-suspenders check)
 		if !b.ExpiresAt.IsZero() && time.Now().After(b.ExpiresAt) {
@@ -242,7 +233,7 @@ func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterI
 
 			// Add the factor to the registry
 			f := rate.NewFactor(source, rateType, multiplier)
-			GetRegistry().AddFactor(t, ch, characterId, f)
+			GetRegistry().AddFactor(ctx, ch, characterId, f)
 		}
 	}
 }

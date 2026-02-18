@@ -7,32 +7,31 @@ import (
 	"testing"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-func setupProcessor(t *testing.T) (channel.Processor, tenant.Model, func()) {
+func setupProcessor(t *testing.T) (channel.Processor, context.Context, func()) {
 	t.Helper()
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
 	processor := channel.NewProcessor(logger, ctx)
-	tenant := test.CreateMockTenant(tenantId)
 
 	cleanup := func() {
 		// Clean up registered channels for this tenant
-		servers := channel.GetChannelRegistry().ChannelServers(tenant)
+		servers := channel.GetChannelRegistry().ChannelServers(ctx)
 		for _, s := range servers {
 			ch := channel2.NewModel(s.WorldId(), s.ChannelId())
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, ch)
+			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(ctx, ch)
 		}
 	}
 
-	return processor, tenant, cleanup
+	return processor, ctx, cleanup
 }
 
 func TestNewProcessor(t *testing.T) {
@@ -307,6 +306,7 @@ func TestByWorldFilter(t *testing.T) {
 }
 
 func TestProcessorTenantIsolation(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	// Create two different tenants
@@ -342,18 +342,12 @@ func TestProcessorTenantIsolation(t *testing.T) {
 	if len(channels2) > 0 && channels2[0].Id() != ch2.Id() {
 		t.Error("Tenant 2 should see their own channel")
 	}
-
-	// Cleanup
-	tenant1 := test.CreateMockTenant(tenant1Id)
-	tenant2 := test.CreateMockTenant(tenant2Id)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant1, ch)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant2, ch)
 }
 
 func TestNewProcessor_ExtractsTenantFromContext(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
-	// Test that NewProcessor works with a valid context
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 
@@ -364,18 +358,14 @@ func TestNewProcessor_ExtractsTenantFromContext(t *testing.T) {
 
 	// Register and verify it works
 	ch := channel2.NewModel(1, 0)
-	m, err := processor.Register(ch, "192.168.1.1", 8080, 0, 100)
+	_, err := processor.Register(ch, "192.168.1.1", 8080, 0, 100)
 	if err != nil {
 		t.Fatalf("Register() unexpected error: %v", err)
 	}
-
-	// Cleanup
-	tenant := test.CreateMockTenant(tenantId)
-	mch := channel2.NewModel(m.WorldId(), m.ChannelId())
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, mch)
 }
 
 func TestNewProcessor_PanicsWithoutTenant(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	defer func() {

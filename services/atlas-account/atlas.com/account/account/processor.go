@@ -115,18 +115,21 @@ func (p *ProcessorImpl) LoggedInTenantProvider() ([]Model, error) {
 }
 
 // allTenants Retrieves all tenants with accounts associated.
-var allTenants = model.FixedProvider(Get().Tenants())
+var allTenants model.Provider[[]tenant.Model] = func() ([]tenant.Model, error) {
+	return GetRegistry().Tenants(context.Background()), nil
+}
 
-func decorateState(tenant tenant.Model) model.Transformer[Model, Model] {
+func decorateState(t tenant.Model) model.Transformer[Model, Model] {
 	return func(m Model) (Model, error) {
-		st := Get().MaximalState(AccountKey{Tenant: tenant, AccountId: m.Id()})
+		ctx := tenant.WithContext(context.Background(), t)
+		st := GetRegistry().MaximalState(ctx, AccountKey{Tenant: t, AccountId: m.Id()})
 		m.state = st
 		return m, nil
 	}
 }
 
 func GetInTransition(timeout time.Duration) ([]AccountKey, error) {
-	return model.FixedProvider(Get().GetExpiredInTransition(timeout))()
+	return model.FixedProvider(GetRegistry().GetExpiredInTransition(context.Background(), timeout))()
 }
 
 func (p *ProcessorImpl) GetOrCreate(mb *message.Buffer) func(name string, password string, automaticRegister bool) (Model, error) {
@@ -248,7 +251,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 			return err
 		}
 
-		Get().Terminate(AccountKey{Tenant: p.t, AccountId: accountId})
+		GetRegistry().Terminate(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId})
 
 		p.l.Infof("Deleted account [%d] [%s].", a.Id(), a.Name())
 		return mb.Put(account2.EnvEventTopicStatus, deletedEventProvider()(a.Id(), a.Name()))
@@ -266,7 +269,7 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(sessionId uuid.UUID) func
 
 				ak := AccountKey{Tenant: p.t, AccountId: accountId}
 				sk := ServiceKey{SessionId: sessionId, Service: Service(issuer)}
-				err = Get().Login(ak, sk)
+				err = GetRegistry().Login(p.ctx, ak, sk)
 				if err != nil {
 					return err
 				}
@@ -293,12 +296,12 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(sessionId uuid.UUID) fun
 				}
 
 				if sessionId == uuid.Nil {
-					ok := Get().Terminate(AccountKey{Tenant: p.t, AccountId: accountId})
+					ok := GetRegistry().Terminate(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId})
 					if !ok {
 						return errors.New("error while logging out")
 					}
 				} else {
-					ok := Get().Logout(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+					ok := GetRegistry().Logout(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 					if !ok {
 						return errors.New("error while logging out")
 					}
@@ -410,7 +413,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 		}
 
 		p.l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
-		for k, v := range Get().GetStates(AccountKey{Tenant: p.t, AccountId: accountId}) {
+		for k, v := range GetRegistry().GetStates(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}) {
 			p.l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
 		}
 		if a.State() == StateNotLoggedIn {
@@ -433,7 +436,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateLoggedIn), params))
 		}
 		if state == StateTransition {
-			err = Get().Transition(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+			err = GetRegistry().Transition(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 			if err == nil {
 				p.l.Debugf("State transition triggered a transition.")
 			}

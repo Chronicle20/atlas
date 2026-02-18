@@ -71,28 +71,28 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 func (p *ProcessorImpl) AddTenant(routes []RouteModel) {
 	p.l.Debugf("Adding [%d] instance routes for tenant [%s].", len(routes), p.t.Id())
-	getRouteRegistry().AddTenant(p.t, routes)
+	getRouteRegistry().AddTenant(p.ctx, routes)
 }
 
 func (p *ProcessorImpl) ClearTenant() int {
 	p.l.Debugf("Clearing instance routes for tenant [%s].", p.t.Id())
-	return getRouteRegistry().ClearTenant(p.t)
+	return getRouteRegistry().ClearTenant(p.ctx)
 }
 
 func (p *ProcessorImpl) GetRoutes() []RouteModel {
-	return getRouteRegistry().GetRoutes(p.t)
+	return getRouteRegistry().GetRoutes(p.ctx)
 }
 
 func (p *ProcessorImpl) GetRoute(id uuid.UUID) (RouteModel, bool) {
-	return getRouteRegistry().GetRoute(p.t, id)
+	return getRouteRegistry().GetRoute(p.ctx, id)
 }
 
 func (p *ProcessorImpl) IsTransitMap(mapId _map.Id) bool {
-	return getRouteRegistry().IsTransitMap(p.t, mapId)
+	return getRouteRegistry().IsTransitMap(p.ctx, mapId)
 }
 
 func (p *ProcessorImpl) GetRouteByTransitMap(mapId _map.Id) (RouteModel, error) {
-	return getRouteRegistry().GetRouteByTransitMap(p.t, mapId)
+	return getRouteRegistry().GetRouteByTransitMap(p.ctx, mapId)
 }
 
 func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint32, routeId uuid.UUID, f field.Model) error {
@@ -105,7 +105,7 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 		}
 
 		// Get route
-		route, ok := getRouteRegistry().GetRoute(p.t, routeId)
+		route, ok := getRouteRegistry().GetRoute(p.ctx, routeId)
 		if !ok {
 			return errors.New("instance route not found")
 		}
@@ -121,11 +121,11 @@ func (p *ProcessorImpl) StartTransport(mb *message.Buffer) func(characterId uint
 			WorldId:     f.WorldId(),
 			ChannelId:   f.ChannelId(),
 		}
-		ir.AddCharacter(inst.InstanceId(), entry)
+		_, count := ir.AddCharacter(inst.InstanceId(), entry)
 		cr.Add(characterId, inst.InstanceId())
 
 		p.l.Infof("Character [%d] boarding instance [%s] for route [%s] (%s). Characters: %d/%d.",
-			characterId, inst.InstanceId(), route.Name(), route.Id(), inst.CharacterCount(), route.Capacity())
+			characterId, inst.InstanceId(), route.Name(), route.Id(), count, route.Capacity())
 
 		// Emit CHANGE_MAP command to transit map with instance
 		err := mb.Put(character2EnvCommandTopic, warpToTransitMapProvider(f, characterId, route.TransitMapIds()[0], inst.InstanceId()))
@@ -146,7 +146,7 @@ func (p *ProcessorImpl) StartTransportAndEmit(characterId uint32, routeId uuid.U
 
 func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint32, mapId _map.Id, instance uuid.UUID, worldId world.Id, channelId channel.Id) error {
 	return func(characterId uint32, mapId _map.Id, instanceId uuid.UUID, worldId world.Id, channelId channel.Id) error {
-		isTransit := getRouteRegistry().IsTransitMap(p.t, mapId)
+		isTransit := getRouteRegistry().IsTransitMap(p.ctx, mapId)
 		cr := getCharacterRegistry()
 		charInstanceId, inTransport := cr.GetInstanceForCharacter(characterId)
 
@@ -192,7 +192,7 @@ func (p *ProcessorImpl) HandleMapEnter(mb *message.Buffer) func(characterId uint
 			return nil
 		}
 
-		route, ok := getRouteRegistry().GetRoute(p.t, inst.RouteId())
+		route, ok := getRouteRegistry().GetRoute(p.ctx, inst.RouteId())
 		if !ok {
 			return nil
 		}
@@ -282,12 +282,12 @@ func (p *ProcessorImpl) HandleLogoutAndEmit(characterId uint32, worldId world.Id
 
 func (p *ProcessorImpl) HandleLogin(mb *message.Buffer) func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error {
 	return func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error {
-		if !getRouteRegistry().IsTransitMap(p.t, mapId) {
+		if !getRouteRegistry().IsTransitMap(p.ctx, mapId) {
 			return nil // Not a transit map, nothing to do
 		}
 
 		// Character logged in on a transit map — crash recovery. Find a route that uses this transit map.
-		route, err := getRouteRegistry().GetRouteByTransitMap(p.t, mapId)
+		route, err := getRouteRegistry().GetRouteByTransitMap(p.ctx, mapId)
 		if err != nil {
 			return nil
 		}
@@ -335,7 +335,7 @@ func (p *ProcessorImpl) TickArrival(mb *message.Buffer) error {
 			continue
 		}
 
-		route, ok := getRouteRegistry().GetRoute(p.t, inst.RouteId())
+		route, ok := getRouteRegistry().GetRoute(p.ctx, inst.RouteId())
 		if !ok {
 			p.l.Warnf("Route [%s] not found for arriving instance [%s], releasing.", inst.RouteId(), inst.InstanceId())
 			ir.ReleaseInstance(inst.InstanceId())
@@ -374,7 +374,7 @@ func (p *ProcessorImpl) TickStuckTimeout(mb *message.Buffer) error {
 	cr := getCharacterRegistry()
 	now := time.Now()
 
-	routes := getRouteRegistry().GetRoutes(p.t)
+	routes := getRouteRegistry().GetRoutes(p.ctx)
 	for _, route := range routes {
 		maxLifetime := route.MaxLifetime()
 		for _, inst := range ir.GetStuck(now, maxLifetime) {
@@ -410,7 +410,7 @@ func (p *ProcessorImpl) GracefulShutdown(mb *message.Buffer) error {
 			continue
 		}
 
-		route, ok := getRouteRegistry().GetRoute(p.t, inst.RouteId())
+		route, ok := getRouteRegistry().GetRoute(p.ctx, inst.RouteId())
 		if !ok {
 			ir.ReleaseInstance(inst.InstanceId())
 			continue

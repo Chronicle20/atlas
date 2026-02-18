@@ -1,17 +1,21 @@
 package character
 
 import (
-	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 )
+
+func setupProcessorTest(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
 
 func testLogger() logrus.FieldLogger {
 	l := logrus.New()
@@ -19,203 +23,112 @@ func testLogger() logrus.FieldLogger {
 	return l
 }
 
-func testContext() context.Context {
-	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	return tenant.WithContext(context.Background(), t)
-}
-
 func TestProcessor_Enter(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
 	characterId := uint32(20001)
-	worldId := world.Id(1)
-	channelId := channel.Id(2)
-	mapId := _map.Id(100000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Clean up
-	r.RemoveCharacter(characterId)
-
-	f := field.NewBuilder(worldId, channelId, mapId).Build()
 	p.Enter(f, characterId)
 
-	mk, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("character should be registered after Enter")
-	}
-
-	if mk.Field.WorldId() != worldId {
-		t.Errorf("expected WorldId %d, got %d", worldId, mk.Field.WorldId())
-	}
-	if mk.Field.ChannelId() != channelId {
-		t.Errorf("expected ChannelId %d, got %d", channelId, mk.Field.ChannelId())
-	}
-	if mk.Field.MapId() != mapId {
-		t.Errorf("expected MapId %d, got %d", mapId, mk.Field.MapId())
-	}
-
-	// Clean up
-	r.RemoveCharacter(characterId)
+	result, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
+	assert.Equal(t, f.WorldId(), result.WorldId())
+	assert.Equal(t, f.ChannelId(), result.ChannelId())
+	assert.Equal(t, f.MapId(), result.MapId())
 }
 
 func TestProcessor_Exit(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
 	characterId := uint32(20002)
-	worldId := world.Id(1)
-	channelId := channel.Id(2)
-	mapId := _map.Id(100000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Setup: enter first
-	f := field.NewBuilder(worldId, channelId, mapId).Build()
 	p.Enter(f, characterId)
 
-	// Verify character exists
-	_, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("character should exist before Exit")
-	}
+	_, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
 
-	// Exit
 	p.Exit(f, characterId)
 
-	// Verify character is gone
-	_, ok = r.GetMap(characterId)
-	if ok {
-		t.Error("character should not exist after Exit")
-	}
+	_, ok = GetRegistry().GetMap(ctx, characterId)
+	assert.False(t, ok)
 }
 
 func TestProcessor_GetMap(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
 	characterId := uint32(20003)
-	worldId := world.Id(1)
-	channelId := channel.Id(2)
-	mapId := _map.Id(100000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Clean up
-	r.RemoveCharacter(characterId)
-
-	// Enter
-	f := field.NewBuilder(worldId, channelId, mapId).Build()
 	p.Enter(f, characterId)
 
-	// Get map via processor
 	m, err := p.GetMap(characterId)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if m.WorldId() != worldId {
-		t.Errorf("expected WorldId %d, got %d", worldId, m.WorldId())
-	}
-	if m.ChannelId() != channelId {
-		t.Errorf("expected ChannelId %d, got %d", channelId, m.ChannelId())
-	}
-	if m.MapId() != mapId {
-		t.Errorf("expected MapId %d, got %d", mapId, m.MapId())
-	}
-
-	// Clean up
-	r.RemoveCharacter(characterId)
+	assert.NoError(t, err)
+	assert.Equal(t, f.WorldId(), m.WorldId())
+	assert.Equal(t, f.ChannelId(), m.ChannelId())
+	assert.Equal(t, f.MapId(), m.MapId())
 }
 
 func TestProcessor_GetMap_NotFound(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
-	characterId := uint32(99999998)
-
-	// Ensure doesn't exist
-	r.RemoveCharacter(characterId)
-
-	_, err := p.GetMap(characterId)
-	if err == nil {
-		t.Error("expected error for non-existent character")
-	}
+	_, err := p.GetMap(99999998)
+	assert.Error(t, err)
 }
 
 func TestProcessor_TransitionMap(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
 	characterId := uint32(20004)
-	worldId := world.Id(1)
-	channelId := channel.Id(2)
-	oldMapId := _map.Id(100000000)
-	newMapId := _map.Id(200000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Clean up
-	r.RemoveCharacter(characterId)
-
-	// Enter old map
-	f := field.NewBuilder(worldId, channelId, oldMapId).Build()
 	p.Enter(f, characterId)
 
-	// Transition to new map
-	f = f.Clone().SetMapId(newMapId).Build()
-	p.TransitionMap(f, characterId)
+	newF := f.Clone().SetMapId(200000000).Build()
+	p.TransitionMap(newF, characterId)
 
-	// Verify new location
-	mk, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("character should exist after transition")
-	}
-
-	if mk.Field.MapId() != newMapId {
-		t.Errorf("expected MapId %d, got %d", newMapId, mk.Field.MapId())
-	}
-
-	// Clean up
-	r.RemoveCharacter(characterId)
+	result, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
+	assert.Equal(t, newF.MapId(), result.MapId())
 }
 
 func TestProcessor_TransitionChannel(t *testing.T) {
+	setupProcessorTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 	l := testLogger()
-	ctx := testContext()
 	p := NewProcessor(l, ctx)
-	r := getRegistry()
 
 	characterId := uint32(20005)
-	worldId := world.Id(1)
-	oldChannelId := channel.Id(1)
-	newChannelId := channel.Id(2)
-	mapId := _map.Id(100000000)
+	f := field.NewBuilder(1, 1, 100000000).Build()
 
-	// Clean up
-	r.RemoveCharacter(characterId)
-
-	// Enter with old channel
-	f := field.NewBuilder(worldId, oldChannelId, mapId).Build()
 	p.Enter(f, characterId)
 
-	// Transition channel
-	f = f.Clone().SetChannelId(newChannelId).Build()
-	p.TransitionChannel(f, characterId)
+	newF := f.Clone().SetChannelId(2).Build()
+	p.TransitionChannel(newF, characterId)
 
-	// Verify new channel
-	mk, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("character should exist after channel transition")
-	}
-
-	if mk.Field.ChannelId() != newChannelId {
-		t.Errorf("expected ChannelId %d, got %d", newChannelId, mk.Field.ChannelId())
-	}
-
-	// Clean up
-	r.RemoveCharacter(characterId)
+	result, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
+	assert.Equal(t, newF.ChannelId(), result.ChannelId())
 }

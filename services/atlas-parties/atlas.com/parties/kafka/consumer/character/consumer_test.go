@@ -11,34 +11,40 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 // Test setup helpers
-func setupEventHandlerTest() (logrus.FieldLogger, context.Context, tenant.Model) {
+func setupEventHandlerTest(t *testing.T) (logrus.FieldLogger, context.Context) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	character.InitRegistry(rc)
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
-	
+
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := tenant.WithContext(context.Background(), ten)
-	
-	return logger, ctx, ten
+
+	return logger, ctx
 }
 
 // Helper to create a character for testing
-func createTestCharacter(ten tenant.Model, characterId uint32, partyId uint32, level byte, jobId job.Id) character.Model {
+func createTestCharacter(ctx context.Context, characterId uint32, partyId uint32, level byte, jobId job.Id) character.Model {
 	registry := character.GetRegistry()
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
-	char := registry.Create(ten, f, characterId, "TestChar", level, jobId, 0)
-	
+	char := registry.Create(ctx, f, characterId, "TestChar", level, jobId, 0)
+
 	if partyId != 0 {
-		char = registry.Update(ten, characterId, func(m character.Model) character.Model {
+		char = registry.Update(ctx, characterId, func(m character.Model) character.Model {
 			return m.JoinParty(partyId)
 		})
 	}
-	
+
 	return char
 }
 
@@ -97,13 +103,13 @@ func TestHandleStatusEventLevelChanged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger, ctx, ten := setupEventHandlerTest()
-			
+			logger, ctx := setupEventHandlerTest(t)
+
 			// Setup character if needed
 			if tc.characterId != 999 {
-				createTestCharacter(ten, tc.characterId, tc.partyId, tc.oldLevel, job.Id(100))
+				createTestCharacter(ctx, tc.characterId, tc.partyId, tc.oldLevel, job.Id(100))
 			}
-			
+
 			// Create event
 			event := StatusEvent[LevelChangedStatusEventBody]{
 				TransactionId: uuid.New(),
@@ -116,20 +122,20 @@ func TestHandleStatusEventLevelChanged(t *testing.T) {
 					Current:   tc.newLevel,
 				},
 			}
-			
+
 			// Track if processor was called by checking character level
 			var initialLevel byte
 			if tc.characterId != 999 {
-				char, _ := character.GetRegistry().Get(ten, tc.characterId)
+				char, _ := character.GetRegistry().Get(ctx, tc.characterId)
 				initialLevel = char.Level()
 			}
-			
+
 			// Execute handler
 			handleStatusEventLevelChanged(logger, ctx, event)
-			
+
 			// Verify results
 			if tc.expectProcessed && tc.characterId != 999 {
-				char, err := character.GetRegistry().Get(ten, tc.characterId)
+				char, err := character.GetRegistry().Get(ctx, tc.characterId)
 				if tc.eventType == StatusEventTypeLevelChanged {
 					if !tc.expectError {
 						assert.NoError(t, err)
@@ -141,10 +147,10 @@ func TestHandleStatusEventLevelChanged(t *testing.T) {
 					assert.Equal(t, initialLevel, char.Level(), "Character level should not change for wrong event type")
 				}
 			}
-			
+
 			// Cleanup
 			if tc.characterId != 999 {
-				character.GetRegistry().Delete(ten, tc.characterId)
+				character.GetRegistry().Delete(ctx, tc.characterId)
 			}
 		})
 	}
@@ -205,13 +211,13 @@ func TestHandleStatusEventJobChanged(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			logger, ctx, ten := setupEventHandlerTest()
-			
+			logger, ctx := setupEventHandlerTest(t)
+
 			// Setup character if needed
 			if tc.characterId != 888 {
-				createTestCharacter(ten, tc.characterId, tc.partyId, 10, tc.oldJobId)
+				createTestCharacter(ctx, tc.characterId, tc.partyId, 10, tc.oldJobId)
 			}
-			
+
 			// Create event
 			event := StatusEvent[JobChangedStatusEventBody]{
 				TransactionId: uuid.New(),
@@ -223,20 +229,20 @@ func TestHandleStatusEventJobChanged(t *testing.T) {
 					JobId:     tc.newJobId,
 				},
 			}
-			
+
 			// Track if processor was called by checking character job
 			var initialJobId job.Id
 			if tc.characterId != 888 {
-				char, _ := character.GetRegistry().Get(ten, tc.characterId)
+				char, _ := character.GetRegistry().Get(ctx, tc.characterId)
 				initialJobId = char.JobId()
 			}
-			
+
 			// Execute handler
 			handleStatusEventJobChanged(logger, ctx, event)
-			
+
 			// Verify results
 			if tc.expectProcessed && tc.characterId != 888 {
-				char, err := character.GetRegistry().Get(ten, tc.characterId)
+				char, err := character.GetRegistry().Get(ctx, tc.characterId)
 				if tc.eventType == StatusEventTypeJobChanged {
 					if !tc.expectError {
 						assert.NoError(t, err)
@@ -248,22 +254,22 @@ func TestHandleStatusEventJobChanged(t *testing.T) {
 					assert.Equal(t, initialJobId, char.JobId(), "Character job should not change for wrong event type")
 				}
 			}
-			
+
 			// Cleanup
 			if tc.characterId != 888 {
-				character.GetRegistry().Delete(ten, tc.characterId)
+				character.GetRegistry().Delete(ctx, tc.characterId)
 			}
 		})
 	}
 }
 
 func TestEventTypeFiltering(t *testing.T) {
-	logger, ctx, ten := setupEventHandlerTest()
+	logger, ctx := setupEventHandlerTest(t)
 	characterId := uint32(300)
-	
+
 	// Setup character
-	createTestCharacter(ten, characterId, 100, 5, job.Id(100))
-	
+	createTestCharacter(ctx, characterId, 100, 5, job.Id(100))
+
 	tests := []struct {
 		name        string
 		handler     func()
@@ -286,7 +292,7 @@ func TestEventTypeFiltering(t *testing.T) {
 				}
 				handleStatusEventLevelChanged(logger, ctx, event)
 			},
-			expectLevel: 5,         // unchanged
+			expectLevel: 5,           // unchanged
 			expectJobId: job.Id(100), // unchanged
 		},
 		{
@@ -304,36 +310,36 @@ func TestEventTypeFiltering(t *testing.T) {
 				}
 				handleStatusEventJobChanged(logger, ctx, event)
 			},
-			expectLevel: 5,         // unchanged
+			expectLevel: 5,           // unchanged
 			expectJobId: job.Id(100), // unchanged
 		},
 	}
-	
+
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			// Execute handler
 			tc.handler()
-			
+
 			// Verify no changes
-			char, err := character.GetRegistry().Get(ten, characterId)
+			char, err := character.GetRegistry().Get(ctx, characterId)
 			assert.NoError(t, err)
 			assert.Equal(t, tc.expectLevel, char.Level())
 			assert.Equal(t, tc.expectJobId, char.JobId())
 		})
 	}
-	
+
 	// Cleanup
-	character.GetRegistry().Delete(ten, characterId)
+	character.GetRegistry().Delete(ctx, characterId)
 }
 
 func TestEventHandlersLogMessages(t *testing.T) {
 	// Test that handlers produce appropriate log messages for debugging
-	logger, ctx, ten := setupEventHandlerTest()
+	logger, ctx := setupEventHandlerTest(t)
 	characterId := uint32(400)
-	
+
 	// Setup character
-	createTestCharacter(ten, characterId, 100, 5, job.Id(100))
-	
+	createTestCharacter(ctx, characterId, 100, 5, job.Id(100))
+
 	t.Run("level handler logs processing messages", func(t *testing.T) {
 		event := StatusEvent[LevelChangedStatusEventBody]{
 			TransactionId: uuid.New(),
@@ -346,13 +352,13 @@ func TestEventHandlersLogMessages(t *testing.T) {
 				Current:   15,
 			},
 		}
-		
+
 		// Should not panic and complete processing
 		assert.NotPanics(t, func() {
 			handleStatusEventLevelChanged(logger, ctx, event)
 		})
 	})
-	
+
 	t.Run("job handler logs processing messages", func(t *testing.T) {
 		event := StatusEvent[JobChangedStatusEventBody]{
 			TransactionId: uuid.New(),
@@ -364,13 +370,13 @@ func TestEventHandlersLogMessages(t *testing.T) {
 				JobId:     job.Id(300),
 			},
 		}
-		
-		// Should not panic and complete processing  
+
+		// Should not panic and complete processing
 		assert.NotPanics(t, func() {
 			handleStatusEventJobChanged(logger, ctx, event)
 		})
 	})
-	
+
 	// Cleanup
-	character.GetRegistry().Delete(ten, characterId)
+	character.GetRegistry().Delete(ctx, characterId)
 }

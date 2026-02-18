@@ -9,26 +9,32 @@ import (
 
 	channel3 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/alicebob/miniredis/v2"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	channel.InitRegistry(rc)
+}
+
 func TestHandleEventStatus_ChannelStarted(t *testing.T) {
-	// Create a unique tenant for this test
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
 	assert.NoError(t, err)
 
-	// Create context with tenant
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
-	// Create logger
 	l := logrus.New()
-	l.SetOutput(&bytes.Buffer{}) // Suppress output during tests
+	l.SetOutput(&bytes.Buffer{})
 
-	// Create the event
 	event := channel2.StatusEvent{
 		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
@@ -37,10 +43,8 @@ func TestHandleEventStatus_ChannelStarted(t *testing.T) {
 		Port:      8484,
 	}
 
-	// Call the handler
 	handleEventStatus(l, ctx, event)
 
-	// Verify the channel was registered
 	processor := channel.NewProcessor(l, ctx)
 	channels := processor.GetAll()
 
@@ -52,19 +56,16 @@ func TestHandleEventStatus_ChannelStarted(t *testing.T) {
 }
 
 func TestHandleEventStatus_ChannelShutdown(t *testing.T) {
-	// Create a unique tenant for this test
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
 	assert.NoError(t, err)
 
-	// Create context with tenant
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
-	// Create logger
 	l := logrus.New()
-	l.SetOutput(&bytes.Buffer{}) // Suppress output during tests
+	l.SetOutput(&bytes.Buffer{})
 
-	// First, register a channel
 	startEvent := channel2.StatusEvent{
 		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
@@ -74,12 +75,10 @@ func TestHandleEventStatus_ChannelShutdown(t *testing.T) {
 	}
 	handleEventStatus(l, ctx, startEvent)
 
-	// Verify it was registered
 	processor := channel.NewProcessor(l, ctx)
 	channels := processor.GetAll()
 	assert.Len(t, channels, 1, "Should have one channel registered")
 
-	// Now send shutdown event
 	shutdownEvent := channel2.StatusEvent{
 		Type:      channel3.StatusTypeShutdown,
 		WorldId:   0,
@@ -89,27 +88,23 @@ func TestHandleEventStatus_ChannelShutdown(t *testing.T) {
 	}
 	handleEventStatus(l, ctx, shutdownEvent)
 
-	// Verify the channel was unregistered
 	channels = processor.GetAll()
 	assert.Len(t, channels, 0, "Should have no channels registered after shutdown")
 }
 
 func TestHandleEventStatus_UnknownEventType(t *testing.T) {
-	// Create a unique tenant for this test
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
 	assert.NoError(t, err)
 
-	// Create context with tenant
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
-	// Create a buffer to capture log output
 	var logBuffer bytes.Buffer
 	l := logrus.New()
 	l.SetOutput(&logBuffer)
 	l.SetLevel(logrus.ErrorLevel)
 
-	// Create an event with unknown type
 	event := channel2.StatusEvent{
 		Type:      "UNKNOWN_TYPE",
 		WorldId:   0,
@@ -118,33 +113,27 @@ func TestHandleEventStatus_UnknownEventType(t *testing.T) {
 		Port:      8484,
 	}
 
-	// Call the handler
 	handleEventStatus(l, ctx, event)
 
-	// Verify error was logged
 	logOutput := logBuffer.String()
 	assert.Contains(t, logOutput, "Unhandled event status", "Should log error for unknown event type")
 
-	// Verify no channel was registered
 	processor := channel.NewProcessor(l, ctx)
 	channels := processor.GetAll()
 	assert.Len(t, channels, 0, "Should have no channels registered for unknown event type")
 }
 
 func TestHandleEventStatus_MultipleChannels(t *testing.T) {
-	// Create a unique tenant for this test
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
 	assert.NoError(t, err)
 
-	// Create context with tenant
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
-	// Create logger
 	l := logrus.New()
-	l.SetOutput(&bytes.Buffer{}) // Suppress output during tests
+	l.SetOutput(&bytes.Buffer{})
 
-	// Register multiple channels
 	events := []channel2.StatusEvent{
 		{Type: channel3.StatusTypeStarted, WorldId: 0, ChannelId: 1, IpAddress: "127.0.0.1", Port: 8484},
 		{Type: channel3.StatusTypeStarted, WorldId: 0, ChannelId: 2, IpAddress: "127.0.0.1", Port: 8485},
@@ -155,26 +144,22 @@ func TestHandleEventStatus_MultipleChannels(t *testing.T) {
 		handleEventStatus(l, ctx, event)
 	}
 
-	// Verify all channels were registered
 	processor := channel.NewProcessor(l, ctx)
 	channels := processor.GetAll()
 	assert.Len(t, channels, 3, "Should have three channels registered")
 }
 
 func TestHandleEventStatus_DuplicateChannelIgnored(t *testing.T) {
-	// Create a unique tenant for this test
+	setupTestRegistry(t)
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
 	assert.NoError(t, err)
 
-	// Create context with tenant
 	ctx := tenant.WithContext(context.Background(), tenantModel)
 
-	// Create logger
 	l := logrus.New()
-	l.SetOutput(&bytes.Buffer{}) // Suppress output during tests
+	l.SetOutput(&bytes.Buffer{})
 
-	// Register the same channel twice
 	event := channel2.StatusEvent{
 		Type:      channel3.StatusTypeStarted,
 		WorldId:   0,
@@ -186,7 +171,6 @@ func TestHandleEventStatus_DuplicateChannelIgnored(t *testing.T) {
 	handleEventStatus(l, ctx, event)
 	handleEventStatus(l, ctx, event)
 
-	// Verify only one channel is registered
 	processor := channel.NewProcessor(l, ctx)
 	channels := processor.GetAll()
 	assert.Len(t, channels, 1, "Should have only one channel registered despite duplicate events")

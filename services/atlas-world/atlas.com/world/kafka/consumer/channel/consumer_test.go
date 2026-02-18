@@ -8,13 +8,19 @@ import (
 	"testing"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
 func setupTest(t *testing.T) (logrus.FieldLogger, *logtest.Hook, func()) {
 	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	channel.InitRegistry(rc)
+
 	logger, hook := logtest.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
@@ -31,7 +37,6 @@ func TestHandleEventStatus_Started(t *testing.T) {
 
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
-	tenant := test.CreateMockTenant(tenantId)
 
 	event := message.StatusEvent{
 		Type:            channel2.StatusTypeStarted,
@@ -48,7 +53,7 @@ func TestHandleEventStatus_Started(t *testing.T) {
 
 	// Verify channel was registered
 	registry := channel.GetChannelRegistry()
-	ch, err := registry.ChannelServer(tenant, channel2.NewModel(1, 0))
+	ch, err := registry.ChannelServer(ctx, channel2.NewModel(1, 0))
 	if err != nil {
 		t.Fatalf("Channel should have been registered, got error: %v", err)
 	}
@@ -71,9 +76,6 @@ func TestHandleEventStatus_Started(t *testing.T) {
 	if ch.MaxCapacity() != 100 {
 		t.Errorf("ch.MaxCapacity() = %d, want 100", ch.MaxCapacity())
 	}
-
-	// Cleanup
-	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 0))
 }
 
 func TestHandleEventStatus_Shutdown(t *testing.T) {
@@ -82,7 +84,6 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
-	tenant := test.CreateMockTenant(tenantId)
 
 	// First register a channel
 	channelProcessor := channel.NewProcessor(logger, ctx)
@@ -93,7 +94,7 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 
 	// Verify it exists
 	registry := channel.GetChannelRegistry()
-	_, err = registry.ChannelServer(tenant, channel2.NewModel(2, 1))
+	_, err = registry.ChannelServer(ctx, channel2.NewModel(2, 1))
 	if err != nil {
 		t.Fatalf("Channel should exist before shutdown event")
 	}
@@ -110,7 +111,7 @@ func TestHandleEventStatus_Shutdown(t *testing.T) {
 	consumer.HandleEventStatusForTest(logger, ctx, event)
 
 	// Verify channel was unregistered
-	_, err = registry.ChannelServer(tenant, channel2.NewModel(2, 1))
+	_, err = registry.ChannelServer(ctx, channel2.NewModel(2, 1))
 	if err == nil {
 		t.Error("Channel should have been unregistered")
 	}
@@ -151,7 +152,6 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
-	tenant := test.CreateMockTenant(tenantId)
 
 	// Register first channel
 	event1 := message.StatusEvent{
@@ -177,15 +177,11 @@ func TestHandleEventStatus_MultipleStarted(t *testing.T) {
 
 	// Verify both channels exist
 	registry := channel.GetChannelRegistry()
-	channels := registry.ChannelServers(tenant)
+	channels := registry.ChannelServers(ctx)
 
 	if len(channels) != 2 {
 		t.Errorf("len(channels) = %d, want 2", len(channels))
 	}
-
-	// Cleanup
-	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 0))
-	_ = registry.RemoveByWorldAndChannel(tenant, channel2.NewModel(1, 1))
 }
 
 func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
@@ -194,7 +190,6 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
-	tenant := test.CreateMockTenant(tenantId)
 
 	// Start channel
 	startEvent := message.StatusEvent{
@@ -209,7 +204,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 
 	// Verify exists
 	registry := channel.GetChannelRegistry()
-	_, err := registry.ChannelServer(tenant, channel2.NewModel(3, 0))
+	_, err := registry.ChannelServer(ctx, channel2.NewModel(3, 0))
 	if err != nil {
 		t.Fatal("Channel should exist after start event")
 	}
@@ -225,7 +220,7 @@ func TestHandleEventStatus_StartedThenShutdown(t *testing.T) {
 	consumer.HandleEventStatusForTest(logger, ctx, shutdownEvent)
 
 	// Verify removed
-	_, err = registry.ChannelServer(tenant, channel2.NewModel(3, 0))
+	_, err = registry.ChannelServer(ctx, channel2.NewModel(3, 0))
 	if err == nil {
 		t.Error("Channel should be removed after shutdown event")
 	}

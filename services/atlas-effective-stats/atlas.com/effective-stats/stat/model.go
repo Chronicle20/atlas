@@ -1,5 +1,7 @@
 package stat
 
+import "encoding/json"
+
 // Type identifies which stat the bonus affects
 type Type string
 
@@ -94,6 +96,37 @@ func NewFullBonus(source string, statType Type, amount int32, multiplier float64
 	}
 }
 
+func (b Bonus) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Source     string  `json:"source"`
+		StatType   Type    `json:"statType"`
+		Amount     int32   `json:"amount"`
+		Multiplier float64 `json:"multiplier"`
+	}{
+		Source:     b.source,
+		StatType:   b.statType,
+		Amount:     b.amount,
+		Multiplier: b.multiplier,
+	})
+}
+
+func (b *Bonus) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Source     string  `json:"source"`
+		StatType   Type    `json:"statType"`
+		Amount     int32   `json:"amount"`
+		Multiplier float64 `json:"multiplier"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	b.source = aux.Source
+	b.statType = aux.StatType
+	b.amount = aux.Amount
+	b.multiplier = aux.Multiplier
+	return nil
+}
+
 // Computed holds all computed effective stats for a character
 type Computed struct {
 	strength      uint32
@@ -166,6 +199,68 @@ func (c Computed) Speed() uint32 {
 
 func (c Computed) Jump() uint32 {
 	return c.jump
+}
+
+func (c Computed) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Strength      uint32 `json:"strength"`
+		Dexterity     uint32 `json:"dexterity"`
+		Luck          uint32 `json:"luck"`
+		Intelligence  uint32 `json:"intelligence"`
+		MaxHp         uint32 `json:"maxHp"`
+		MaxMp         uint32 `json:"maxMp"`
+		WeaponAttack  uint32 `json:"weaponAttack"`
+		WeaponDefense uint32 `json:"weaponDefense"`
+		MagicAttack   uint32 `json:"magicAttack"`
+		MagicDefense  uint32 `json:"magicDefense"`
+		Accuracy      uint32 `json:"accuracy"`
+		Avoidability  uint32 `json:"avoidability"`
+		Speed         uint32 `json:"speed"`
+		Jump          uint32 `json:"jump"`
+	}{
+		Strength: c.strength, Dexterity: c.dexterity, Luck: c.luck, Intelligence: c.intelligence,
+		MaxHp: c.maxHp, MaxMp: c.maxMp,
+		WeaponAttack: c.weaponAttack, WeaponDefense: c.weaponDefense,
+		MagicAttack: c.magicAttack, MagicDefense: c.magicDefense,
+		Accuracy: c.accuracy, Avoidability: c.avoidability, Speed: c.speed, Jump: c.jump,
+	})
+}
+
+func (c *Computed) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Strength      uint32 `json:"strength"`
+		Dexterity     uint32 `json:"dexterity"`
+		Luck          uint32 `json:"luck"`
+		Intelligence  uint32 `json:"intelligence"`
+		MaxHp         uint32 `json:"maxHp"`
+		MaxMp         uint32 `json:"maxMp"`
+		WeaponAttack  uint32 `json:"weaponAttack"`
+		WeaponDefense uint32 `json:"weaponDefense"`
+		MagicAttack   uint32 `json:"magicAttack"`
+		MagicDefense  uint32 `json:"magicDefense"`
+		Accuracy      uint32 `json:"accuracy"`
+		Avoidability  uint32 `json:"avoidability"`
+		Speed         uint32 `json:"speed"`
+		Jump          uint32 `json:"jump"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	c.strength = aux.Strength
+	c.dexterity = aux.Dexterity
+	c.luck = aux.Luck
+	c.intelligence = aux.Intelligence
+	c.maxHp = aux.MaxHp
+	c.maxMp = aux.MaxMp
+	c.weaponAttack = aux.WeaponAttack
+	c.weaponDefense = aux.WeaponDefense
+	c.magicAttack = aux.MagicAttack
+	c.magicDefense = aux.MagicDefense
+	c.accuracy = aux.Accuracy
+	c.avoidability = aux.Avoidability
+	c.speed = aux.Speed
+	c.jump = aux.Jump
+	return nil
 }
 
 // GetStat returns the computed value for a specific stat type
@@ -273,6 +368,41 @@ func NewBase(strength, dexterity, luck, intelligence, maxHp, maxMp uint16) Base 
 		maxHp:        maxHp,
 		maxMp:        maxMp,
 	}
+}
+
+func (b Base) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Strength     uint16 `json:"strength"`
+		Dexterity    uint16 `json:"dexterity"`
+		Luck         uint16 `json:"luck"`
+		Intelligence uint16 `json:"intelligence"`
+		MaxHp        uint16 `json:"maxHp"`
+		MaxMp        uint16 `json:"maxMp"`
+	}{
+		Strength: b.strength, Dexterity: b.dexterity, Luck: b.luck,
+		Intelligence: b.intelligence, MaxHp: b.maxHp, MaxMp: b.maxMp,
+	})
+}
+
+func (b *Base) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Strength     uint16 `json:"strength"`
+		Dexterity    uint16 `json:"dexterity"`
+		Luck         uint16 `json:"luck"`
+		Intelligence uint16 `json:"intelligence"`
+		MaxHp        uint16 `json:"maxHp"`
+		MaxMp        uint16 `json:"maxMp"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	b.strength = aux.Strength
+	b.dexterity = aux.Dexterity
+	b.luck = aux.Luck
+	b.intelligence = aux.Intelligence
+	b.maxHp = aux.MaxHp
+	b.maxMp = aux.MaxMp
+	return nil
 }
 
 // MapBuffStatType maps buff stat type strings to Type and indicates if it's a multiplier.

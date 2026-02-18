@@ -29,7 +29,7 @@ func (t *Timeout) Run() {
 	defer span.End()
 
 	t.l.Debugf("Executing %s task.", HungerTask)
-	cids, err := character.GetLoggedIn()()
+	cids, err := character.GetLoggedIn(sctx)()
 	if err != nil {
 		return
 	}

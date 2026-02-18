@@ -10,12 +10,21 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
 // Test setup helpers
+
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+}
 
 func setupTestLogger() logrus.FieldLogger {
 	logger := logrus.New()
@@ -45,17 +54,6 @@ func createTestReactor(t tenant.Model, worldId world.Id, channelId channel.Id, m
 	return m
 }
 
-// cleanupRegistry removes all reactors for a tenant
-func cleanupRegistry(t tenant.Model) {
-	registry := GetRegistry()
-	all := registry.GetAll()
-	if reactors, ok := all[t]; ok {
-		for _, r := range reactors {
-			registry.Remove(t, r.Id())
-		}
-	}
-}
-
 // TestGetById tests the GetById processor function
 func TestGetById(t *testing.T) {
 	tests := []struct {
@@ -82,10 +80,10 @@ func TestGetById(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
 			l := setupTestLogger()
 			ten := setupTestTenant()
 			ctx := setupTestContext(ten)
-			defer cleanupRegistry(ten)
 
 			reactorId := tc.setup(ten)
 
@@ -160,10 +158,10 @@ func TestGetInField(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			setupTestRegistry(t)
 			l := setupTestLogger()
 			ten := setupTestTenant()
 			ctx := setupTestContext(ten)
-			defer cleanupRegistry(ten)
 
 			tc.setup(ten)
 
@@ -185,6 +183,7 @@ func TestGetInField(t *testing.T) {
 
 // TestGetInField_MultiTenant verifies tenant isolation
 func TestGetInField_MultiTenant(t *testing.T) {
+	setupTestRegistry(t)
 	l := setupTestLogger()
 
 	// Setup two different tenants
@@ -193,9 +192,6 @@ func TestGetInField_MultiTenant(t *testing.T) {
 
 	ctx1 := setupTestContext(tenant1)
 	ctx2 := setupTestContext(tenant2)
-
-	defer cleanupRegistry(tenant1)
-	defer cleanupRegistry(tenant2)
 
 	// Create reactors for each tenant in same map
 	createTestReactor(tenant1, 1, 1, 100000, 2000001, "tenant1-reactor")
@@ -217,8 +213,8 @@ func TestGetInField_MultiTenant(t *testing.T) {
 
 // TestRegistry_Create tests direct registry creation
 func TestRegistry_Create(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000)).Build()
 	builder := NewModelBuilder(ten, f, 2000000, "test-reactor").
@@ -245,8 +241,8 @@ func TestRegistry_Create(t *testing.T) {
 
 // TestRegistry_Get tests direct registry get
 func TestRegistry_Get(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	// Create a reactor
 	created := createTestReactor(ten, 1, 1, 100000, 2000000, "test-reactor")
@@ -261,6 +257,7 @@ func TestRegistry_Get(t *testing.T) {
 
 // TestRegistry_Get_NotFound tests registry get with non-existent ID
 func TestRegistry_Get_NotFound(t *testing.T) {
+	setupTestRegistry(t)
 	_, err := GetRegistry().Get(999999999)
 
 	assert.Error(t, err)
@@ -269,8 +266,8 @@ func TestRegistry_Get_NotFound(t *testing.T) {
 
 // TestRegistry_Remove tests direct registry removal
 func TestRegistry_Remove(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	// Create a reactor
 	created := createTestReactor(ten, 1, 1, 100000, 2000000, "test-reactor")
@@ -289,8 +286,8 @@ func TestRegistry_Remove(t *testing.T) {
 
 // TestRegistry_GetInField tests direct registry map queries
 func TestRegistry_GetInField(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	// Create multiple reactors in same map
 	createTestReactor(ten, 1, 1, 100000, 2000001, "reactor-1")
@@ -304,11 +301,9 @@ func TestRegistry_GetInField(t *testing.T) {
 
 // TestRegistry_GetAll tests direct registry get all
 func TestRegistry_GetAll(t *testing.T) {
+	setupTestRegistry(t)
 	tenant1 := setupTestTenant()
 	tenant2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
-
-	defer cleanupRegistry(tenant1)
-	defer cleanupRegistry(tenant2)
 
 	// Create reactors for different tenants
 	createTestReactor(tenant1, 1, 1, 100000, 2000001, "tenant1-reactor-1")
@@ -323,8 +318,8 @@ func TestRegistry_GetAll(t *testing.T) {
 
 // TestRegistry_Remove_FromMapIndex verifies removal updates map index
 func TestRegistry_Remove_FromMapIndex(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	// Create two reactors in same map
 	reactor1 := createTestReactor(ten, 1, 1, 100000, 2000001, "reactor-1")
@@ -347,8 +342,8 @@ func TestRegistry_Remove_FromMapIndex(t *testing.T) {
 
 // TestRegistry_UniqueIds verifies ID generation produces unique IDs
 func TestRegistry_UniqueIds(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant()
-	defer cleanupRegistry(ten)
 
 	ids := make(map[uint32]bool)
 

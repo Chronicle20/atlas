@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -36,7 +35,6 @@ func handleStatusEventLogout(l logrus.FieldLogger, ctx context.Context, event ch
 		return
 	}
 
-	t := tenant.MustFromContext(ctx)
 	l.Debugf("Character [%d] has logged out. Clearing blocked portals.", event.CharacterId)
-	blocked.GetCache().ClearForCharacter(t.Id(), event.CharacterId)
+	blocked.GetRegistry().ClearForCharacter(ctx, event.CharacterId)
 }

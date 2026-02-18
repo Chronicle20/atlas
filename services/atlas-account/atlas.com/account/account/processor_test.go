@@ -12,6 +12,7 @@ import (
 )
 
 func TestCreate(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -37,6 +38,7 @@ func TestCreate(t *testing.T) {
 }
 
 func TestGetById(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -64,6 +66,7 @@ func TestGetById(t *testing.T) {
 }
 
 func TestGetByIdNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -77,6 +80,7 @@ func TestGetByIdNotFound(t *testing.T) {
 }
 
 func TestGetByName(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -105,6 +109,7 @@ func TestGetByName(t *testing.T) {
 }
 
 func TestGetByNameNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -118,6 +123,7 @@ func TestGetByNameNotFound(t *testing.T) {
 }
 
 func TestUpdatePin(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -145,6 +151,7 @@ func TestUpdatePin(t *testing.T) {
 }
 
 func TestUpdatePic(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -172,6 +179,7 @@ func TestUpdatePic(t *testing.T) {
 }
 
 func TestUpdateTOS(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -199,6 +207,7 @@ func TestUpdateTOS(t *testing.T) {
 }
 
 func TestUpdateGender(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -226,6 +235,7 @@ func TestUpdateGender(t *testing.T) {
 }
 
 func TestUpdateNoChanges(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -251,6 +261,7 @@ func TestUpdateNoChanges(t *testing.T) {
 }
 
 func TestUpdateNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -268,6 +279,7 @@ func TestUpdateNotFound(t *testing.T) {
 }
 
 func TestGetByTenant(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -290,6 +302,7 @@ func TestGetByTenant(t *testing.T) {
 }
 
 func TestGetByTenantEmpty(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -307,6 +320,7 @@ func TestGetByTenantEmpty(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -341,6 +355,7 @@ func TestDelete(t *testing.T) {
 }
 
 func TestDeleteNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -360,6 +375,7 @@ func TestDeleteNotFound(t *testing.T) {
 }
 
 func TestDeleteLoggedIn(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()
@@ -375,7 +391,7 @@ func TestDeleteLoggedIn(t *testing.T) {
 	// Simulate login by adding to registry
 	ak := AccountKey{Tenant: st, AccountId: created.Id()}
 	sk := ServiceKey{Service: ServiceLogin}
-	_ = Get().Login(ak, sk)
+	_ = GetRegistry().Login(tctx, ak, sk)
 
 	// Attempt to delete should fail
 	p := NewProcessor(l, tctx, db)
@@ -391,10 +407,11 @@ func TestDeleteLoggedIn(t *testing.T) {
 	}
 
 	// Clean up: logout the account
-	Get().Terminate(ak)
+	GetRegistry().Terminate(tctx, ak)
 }
 
 func TestDeleteMultipleAccounts(t *testing.T) {
+	setupTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	db := setupTestDatabase(t)
 	st := sampleTenant()

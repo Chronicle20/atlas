@@ -128,7 +128,7 @@ func handleShowStorageCommand(db *gorm.DB) kafkaMessage.Handler[message.ShowStor
 		}
 
 		// Store projection in manager
-		projection.GetManager().Create(c.CharacterId, proj)
+		projection.GetManager().Create(ctx, c.CharacterId, proj)
 
 		l.Debugf("Created projection for character [%d] with storage [%s], capacity [%d], mesos [%d]",
 			c.CharacterId, proj.StorageId(), proj.Capacity(), proj.Mesos())
@@ -155,7 +155,7 @@ func handleCloseStorageCommand() kafkaMessage.Handler[message.CloseStorageComman
 		cache.Remove(c.CharacterId)
 
 		// Delete the projection
-		projection.GetManager().Delete(c.CharacterId)
+		projection.GetManager().Delete(ctx, c.CharacterId)
 
 		l.Debugf("Removed projection and NPC context for character [%d]", c.CharacterId)
 	}

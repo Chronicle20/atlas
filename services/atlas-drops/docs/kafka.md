@@ -168,6 +168,24 @@ Requests to pick up a drop.
 }
 ```
 
+#### CONSUME
+
+Consumes a drop via a game mechanic (e.g., item-reactor trigger), removing it from the map.
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "CONSUME",
+  "body": {
+    "dropId": 0
+  }
+}
+```
+
 ### Events (Produced)
 
 #### CREATED
@@ -311,6 +329,23 @@ Emitted when a drop reservation fails.
   "body": {
     "characterId": 0
   }
+}
+```
+
+#### CONSUMED
+
+Emitted when a drop is consumed by a game mechanic.
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "dropId": 0,
+  "type": "CONSUMED",
+  "body": {}
 }
 ```
 

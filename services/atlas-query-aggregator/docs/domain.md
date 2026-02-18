@@ -57,6 +57,10 @@ Represents a validation condition.
 | maxHp | Maximum HP |
 | buff | Active buff status |
 | excessSp | Excess SP beyond expected for job tier |
+| partyId | Party membership ID |
+| partyLeader | Party leader status |
+| partySize | Party member count |
+| pqCustomData | Party quest custom data value by key |
 
 ### Operator
 
@@ -111,6 +115,9 @@ Aggregated data context for validation. Supports lazy loading of external data v
 | transportP | transport.Processor | Lazy-loaded transport route queries |
 | skillP | skill.Processor | Lazy-loaded skill level queries |
 | buffP | buff.Processor | Lazy-loaded buff status queries |
+| party | party.Model | Party data |
+| partyP | party.Processor | Lazy-loaded party queries |
+| partyQuestP | party_quest.Processor | Lazy-loaded party quest instance queries |
 
 ## Invariants
 
@@ -125,7 +132,8 @@ Aggregated data context for validation. Supports lazy loading of external data v
 - Buff conditions require a referenceId (source ID)
 - Inventory space conditions require a referenceId (item ID)
 - ExcessSP conditions require a referenceId (base level for job tier)
-- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace) return failure when evaluated without a ValidationContext
+- PQ custom data conditions require a step (custom data key)
+- Context-dependent conditions (questStatus, questProgress, marriageGifts, buddyCapacity, petCount, mapCapacity, transportAvailable, skillLevel, buff, inventorySpace, partyId, partyLeader, partySize, pqCustomData) return failure when evaluated without a ValidationContext
 - A single failing condition causes the entire ValidationResult to fail
 
 ## State Transitions
@@ -142,7 +150,7 @@ Handles validation logic by aggregating data from external services.
 |--------|-------------|
 | ValidateStructured | Validates conditions against a character by ID. Automatically detects whether a ValidationContext is needed and builds one if required. |
 | ValidateWithContext | Validates conditions using a pre-built ValidationContext |
-| GetValidationContextProvider | Returns a provider that builds a ValidationContext by fetching character, quest, marriage, buddy, and pet data |
+| GetValidationContextProvider | Returns a provider that builds a ValidationContext by fetching character, quest, marriage, buddy, pet, and party data |
 
 ### Inventory Space Calculation
 
@@ -715,3 +723,58 @@ Provides item metadata (slot max) for inventory space calculations. Uses a singl
 | Method | Description |
 |--------|-------------|
 | GetSlotMax | Returns maximum stack size for an item. Checks cache first, then fetches from the data service based on item type. Equipment always returns 1. Values capped at 1000. Falls back to defaults on error. |
+
+---
+
+# Party Domain
+
+## Responsibility
+
+Represents party data retrieved from the Party service.
+
+## Core Models
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Party ID (0 if not in party) |
+| leaderId | uint32 | Leader character ID |
+| members | []uint32 | Member character IDs |
+
+The model provides a `MemberCount()` method that returns the number of members.
+
+## Processors
+
+### Processor
+
+| Method | Description |
+|--------|-------------|
+| GetPartyByCharacter | Returns the party for a character. Returns zero-value model if not in a party. |
+
+---
+
+# Party Quest Domain
+
+## Responsibility
+
+Represents party quest instance data retrieved from the Party Quest service. Used to validate PQ custom data conditions.
+
+## Core Models
+
+### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Instance ID |
+| customData | map[string]string | Custom data key-value pairs |
+
+The model provides `GetCustomDataValue(key)` for string values and `GetCustomDataInt(key)` for integer values (returns 0 if not found or not numeric).
+
+## Processors
+
+### Processor
+
+| Method | Description |
+|--------|-------------|
+| GetInstanceByCharacter | Returns the active PQ instance for a character. Returns zero-value model if no active PQ. |

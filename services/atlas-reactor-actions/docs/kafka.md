@@ -87,6 +87,9 @@ Saga commands are produced using the `atlas-script-core/saga` package. The servi
 - `SpawnReactorDrops`: Spawn item drops at reactor location
 - `SpawnMonster`: Spawn monsters at reactor location
 - `SendMessage`: Send message to character
+- `UpdatePqCustomData`: Update party quest custom data (key=value updates and key increments)
+- `HitReactor`: Hit another reactor by name in the same field
+- `BroadcastPqMessage`: Broadcast a message to all party quest members
 
 ## Transaction Semantics
 

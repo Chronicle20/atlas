@@ -16,13 +16,15 @@ A RESTful service that provides composite character state validation in the Atla
 - **Transport Service** (`TRANSPORT` environment variable): Transport route availability
 - **Guild Service** (`GUILDS` environment variable): Guild membership data
 - **Item Service** (`ITEMS` environment variable): Item slot information
-- **Jaeger** (`JAEGER_HOST` environment variable): Distributed tracing
+- **Party Service** (`PARTIES` environment variable): Party membership data
+- **Party Quest Service** (`PARTY_QUESTS` environment variable): Party quest instance data
+- **OpenTelemetry Collector** (`TRACE_ENDPOINT` environment variable): Distributed tracing (via OTLP/gRPC)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| `JAEGER_HOST` | Jaeger host:port for tracing |
+| `TRACE_ENDPOINT` | OpenTelemetry collector gRPC endpoint |
 | `LOG_LEVEL` | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | `REST_PORT` | HTTP server port |
 

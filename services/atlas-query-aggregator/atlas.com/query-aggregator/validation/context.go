@@ -8,6 +8,7 @@ import (
 	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
 	"atlas-query-aggregator/party"
+	"atlas-query-aggregator/party_quest"
 	"atlas-query-aggregator/quest"
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
@@ -24,60 +25,63 @@ import (
 
 // ValidationContext provides all the data needed for validation
 type ValidationContext struct {
-	character  character.Model
-	quests     map[uint32]quest.Model
-	skills     map[uint32]skill.Model
-	marriage   marriage.Model
-	buddyList  buddy.Model
-	party      party.Model
-	petCount   int
-	mapP       npcMap.Processor
-	itemP      item.Processor
-	transportP transport.Processor
-	skillP     skill.Processor
-	buffP      buff.Processor
-	partyP     party.Processor
-	l          logrus.FieldLogger
-	ctx        context.Context
+	character   character.Model
+	quests      map[uint32]quest.Model
+	skills      map[uint32]skill.Model
+	marriage    marriage.Model
+	buddyList   buddy.Model
+	party       party.Model
+	petCount    int
+	mapP        npcMap.Processor
+	itemP       item.Processor
+	transportP  transport.Processor
+	skillP      skill.Processor
+	buffP       buff.Processor
+	partyP      party.Processor
+	partyQuestP party_quest.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
 }
 
 // NewValidationContext creates a new validation context with the provided character
 func NewValidationContext(char character.Model) ValidationContext {
 	return ValidationContext{
-		character:  char,
-		quests:     make(map[uint32]quest.Model),
-		skills:     make(map[uint32]skill.Model),
-		marriage:   marriage.NewModel(char.Id(), false),
-		buddyList:  buddy.NewModel(char.Id(), 0),
-		petCount:   0,
-		mapP:       nil,
-		itemP:      nil,
-		transportP: nil,
-		skillP:     nil,
-		buffP:      nil,
-		partyP:     nil,
-		l:          nil,
-		ctx:        nil,
+		character:   char,
+		quests:      make(map[uint32]quest.Model),
+		skills:      make(map[uint32]skill.Model),
+		marriage:    marriage.NewModel(char.Id(), false),
+		buddyList:   buddy.NewModel(char.Id(), 0),
+		petCount:    0,
+		mapP:        nil,
+		itemP:       nil,
+		transportP:  nil,
+		skillP:      nil,
+		buffP:       nil,
+		partyP:      nil,
+		partyQuestP: nil,
+		l:           nil,
+		ctx:         nil,
 	}
 }
 
 // NewValidationContextWithLogger creates a new validation context with logger and context for map queries
 func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, ctx context.Context) ValidationContext {
 	return ValidationContext{
-		character:  char,
-		quests:     make(map[uint32]quest.Model),
-		skills:     make(map[uint32]skill.Model),
-		marriage:   marriage.NewModel(char.Id(), false),
-		buddyList:  buddy.NewModel(char.Id(), 0),
-		petCount:   0,
-		mapP:       npcMap.NewProcessor(l, ctx),
-		itemP:      item.NewProcessor(l, ctx),
-		transportP: transport.NewProcessor(l, ctx),
-		skillP:     skill.NewProcessor(l, ctx),
-		buffP:      buff.NewProcessor(l, ctx),
-		partyP:     party.NewProcessor(l, ctx),
-		l:          l,
-		ctx:        ctx,
+		character:   char,
+		quests:      make(map[uint32]quest.Model),
+		skills:      make(map[uint32]skill.Model),
+		marriage:    marriage.NewModel(char.Id(), false),
+		buddyList:   buddy.NewModel(char.Id(), 0),
+		petCount:    0,
+		mapP:        npcMap.NewProcessor(l, ctx),
+		itemP:       item.NewProcessor(l, ctx),
+		transportP:  transport.NewProcessor(l, ctx),
+		skillP:      skill.NewProcessor(l, ctx),
+		buffP:       buff.NewProcessor(l, ctx),
+		partyP:      party.NewProcessor(l, ctx),
+		partyQuestP: party_quest.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
 	}
 }
 
@@ -170,6 +174,26 @@ func (ctx ValidationContext) Party() party.Model {
 	return ctx.party
 }
 
+// PartyQuest returns the party quest instance for the character via lazy loading
+func (ctx ValidationContext) PartyQuest() party_quest.Model {
+	if ctx.partyQuestP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Party quest processor not available, returning empty model")
+		}
+		return party_quest.Model{}
+	}
+
+	pqModel, err := ctx.partyQuestP.GetInstanceByCharacter(ctx.character.Id())()
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Debugf("Failed to get party quest for character %d", ctx.character.Id())
+		}
+		return party_quest.Model{}
+	}
+
+	return pqModel
+}
+
 // ItemProcessor returns the item processor for querying item data
 // Returns nil if not available (graceful degradation)
 func (ctx ValidationContext) ItemProcessor() item.Processor {
@@ -231,21 +255,22 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 	newQuests[questModel.QuestId()] = questModel
 
 	return ValidationContext{
-		character:  ctx.character,
-		quests:     newQuests,
-		skills:     ctx.skills,
-		marriage:   ctx.marriage,
-		buddyList:  ctx.buddyList,
-		party:      ctx.party,
-		petCount:   ctx.petCount,
-		mapP:       ctx.mapP,
-		itemP:      ctx.itemP,
-		transportP: ctx.transportP,
-		skillP:     ctx.skillP,
-		buffP:      ctx.buffP,
-		partyP:     ctx.partyP,
-		l:          ctx.l,
-		ctx:        ctx.ctx,
+		character:   ctx.character,
+		quests:      newQuests,
+		skills:      ctx.skills,
+		marriage:    ctx.marriage,
+		buddyList:   ctx.buddyList,
+		party:       ctx.party,
+		petCount:    ctx.petCount,
+		mapP:        ctx.mapP,
+		itemP:       ctx.itemP,
+		transportP:  ctx.transportP,
+		skillP:      ctx.skillP,
+		buffP:       ctx.buffP,
+		partyP:      ctx.partyP,
+		partyQuestP: ctx.partyQuestP,
+		l:           ctx.l,
+		ctx:         ctx.ctx,
 	}
 }
 
@@ -258,143 +283,150 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 	newSkills[skillModel.Id()] = skillModel
 
 	return ValidationContext{
-		character:  ctx.character,
-		quests:     ctx.quests,
-		skills:     newSkills,
-		marriage:   ctx.marriage,
-		buddyList:  ctx.buddyList,
-		party:      ctx.party,
-		petCount:   ctx.petCount,
-		mapP:       ctx.mapP,
-		itemP:      ctx.itemP,
-		transportP: ctx.transportP,
-		skillP:     ctx.skillP,
-		buffP:      ctx.buffP,
-		partyP:     ctx.partyP,
-		l:          ctx.l,
-		ctx:        ctx.ctx,
+		character:   ctx.character,
+		quests:      ctx.quests,
+		skills:      newSkills,
+		marriage:    ctx.marriage,
+		buddyList:   ctx.buddyList,
+		party:       ctx.party,
+		petCount:    ctx.petCount,
+		mapP:        ctx.mapP,
+		itemP:       ctx.itemP,
+		transportP:  ctx.transportP,
+		skillP:      ctx.skillP,
+		buffP:       ctx.buffP,
+		partyP:      ctx.partyP,
+		partyQuestP: ctx.partyQuestP,
+		l:           ctx.l,
+		ctx:         ctx.ctx,
 	}
 }
 
 // WithMarriage adds marriage data to the context
 func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) ValidationContext {
 	return ValidationContext{
-		character:  ctx.character,
-		quests:     ctx.quests,
-		skills:     ctx.skills,
-		marriage:   marriageModel,
-		buddyList:  ctx.buddyList,
-		party:      ctx.party,
-		petCount:   ctx.petCount,
-		mapP:       ctx.mapP,
-		itemP:      ctx.itemP,
-		transportP: ctx.transportP,
-		skillP:     ctx.skillP,
-		buffP:      ctx.buffP,
-		partyP:     ctx.partyP,
-		l:          ctx.l,
-		ctx:        ctx.ctx,
+		character:   ctx.character,
+		quests:      ctx.quests,
+		skills:      ctx.skills,
+		marriage:    marriageModel,
+		buddyList:   ctx.buddyList,
+		party:       ctx.party,
+		petCount:    ctx.petCount,
+		mapP:        ctx.mapP,
+		itemP:       ctx.itemP,
+		transportP:  ctx.transportP,
+		skillP:      ctx.skillP,
+		buffP:       ctx.buffP,
+		partyP:      ctx.partyP,
+		partyQuestP: ctx.partyQuestP,
+		l:           ctx.l,
+		ctx:         ctx.ctx,
 	}
 }
 
 // WithBuddyList adds buddy list data to the context
 func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) ValidationContext {
 	return ValidationContext{
-		character:  ctx.character,
-		quests:     ctx.quests,
-		skills:     ctx.skills,
-		marriage:   ctx.marriage,
-		buddyList:  buddyListModel,
-		party:      ctx.party,
-		petCount:   ctx.petCount,
-		mapP:       ctx.mapP,
-		itemP:      ctx.itemP,
-		transportP: ctx.transportP,
-		skillP:     ctx.skillP,
-		buffP:      ctx.buffP,
-		partyP:     ctx.partyP,
-		l:          ctx.l,
-		ctx:        ctx.ctx,
+		character:   ctx.character,
+		quests:      ctx.quests,
+		skills:      ctx.skills,
+		marriage:    ctx.marriage,
+		buddyList:   buddyListModel,
+		party:       ctx.party,
+		petCount:    ctx.petCount,
+		mapP:        ctx.mapP,
+		itemP:       ctx.itemP,
+		transportP:  ctx.transportP,
+		skillP:      ctx.skillP,
+		buffP:       ctx.buffP,
+		partyP:      ctx.partyP,
+		partyQuestP: ctx.partyQuestP,
+		l:           ctx.l,
+		ctx:         ctx.ctx,
 	}
 }
 
 // WithPetCount sets the pet count in the context
 func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 	return ValidationContext{
-		character:  ctx.character,
-		quests:     ctx.quests,
-		skills:     ctx.skills,
-		marriage:   ctx.marriage,
-		buddyList:  ctx.buddyList,
-		party:      ctx.party,
-		petCount:   count,
-		mapP:       ctx.mapP,
-		itemP:      ctx.itemP,
-		transportP: ctx.transportP,
-		skillP:     ctx.skillP,
-		buffP:      ctx.buffP,
-		partyP:     ctx.partyP,
-		l:          ctx.l,
-		ctx:        ctx.ctx,
+		character:   ctx.character,
+		quests:      ctx.quests,
+		skills:      ctx.skills,
+		marriage:    ctx.marriage,
+		buddyList:   ctx.buddyList,
+		party:       ctx.party,
+		petCount:    count,
+		mapP:        ctx.mapP,
+		itemP:       ctx.itemP,
+		transportP:  ctx.transportP,
+		skillP:      ctx.skillP,
+		buffP:       ctx.buffP,
+		partyP:      ctx.partyP,
+		partyQuestP: ctx.partyQuestP,
+		l:           ctx.l,
+		ctx:         ctx.ctx,
 	}
 }
 
 // ValidationContextBuilder provides a builder pattern for creating validation contexts
 type ValidationContextBuilder struct {
-	character  character.Model
-	quests     map[uint32]quest.Model
-	skills     map[uint32]skill.Model
-	marriage   marriage.Model
-	buddyList  buddy.Model
-	party      party.Model
-	petCount   int
-	mapP       npcMap.Processor
-	itemP      item.Processor
-	transportP transport.Processor
-	skillP     skill.Processor
-	buffP      buff.Processor
-	partyP     party.Processor
-	l          logrus.FieldLogger
-	ctx        context.Context
+	character   character.Model
+	quests      map[uint32]quest.Model
+	skills      map[uint32]skill.Model
+	marriage    marriage.Model
+	buddyList   buddy.Model
+	party       party.Model
+	petCount    int
+	mapP        npcMap.Processor
+	itemP       item.Processor
+	transportP  transport.Processor
+	skillP      skill.Processor
+	buffP       buff.Processor
+	partyP      party.Processor
+	partyQuestP party_quest.Processor
+	l           logrus.FieldLogger
+	ctx         context.Context
 }
 
 // NewValidationContextBuilder creates a new validation context builder
 func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder {
 	return &ValidationContextBuilder{
-		character:  char,
-		quests:     make(map[uint32]quest.Model),
-		skills:     make(map[uint32]skill.Model),
-		marriage:   marriage.NewModel(char.Id(), false),
-		buddyList:  buddy.NewModel(char.Id(), 0),
-		petCount:   0,
-		mapP:       nil,
-		itemP:      nil,
-		transportP: nil,
-		skillP:     nil,
-		buffP:      nil,
-		partyP:     nil,
-		l:          nil,
-		ctx:        nil,
+		character:   char,
+		quests:      make(map[uint32]quest.Model),
+		skills:      make(map[uint32]skill.Model),
+		marriage:    marriage.NewModel(char.Id(), false),
+		buddyList:   buddy.NewModel(char.Id(), 0),
+		petCount:    0,
+		mapP:        nil,
+		itemP:       nil,
+		transportP:  nil,
+		skillP:      nil,
+		buffP:       nil,
+		partyP:      nil,
+		partyQuestP: nil,
+		l:           nil,
+		ctx:         nil,
 	}
 }
 
 // NewValidationContextBuilderWithLogger creates a new validation context builder with logger and context
 func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldLogger, ctx context.Context) *ValidationContextBuilder {
 	return &ValidationContextBuilder{
-		character:  char,
-		quests:     make(map[uint32]quest.Model),
-		skills:     make(map[uint32]skill.Model),
-		marriage:   marriage.NewModel(char.Id(), false),
-		buddyList:  buddy.NewModel(char.Id(), 0),
-		petCount:   0,
-		mapP:       npcMap.NewProcessor(l, ctx),
-		itemP:      item.NewProcessor(l, ctx),
-		transportP: transport.NewProcessor(l, ctx),
-		skillP:     skill.NewProcessor(l, ctx),
-		buffP:      buff.NewProcessor(l, ctx),
-		partyP:     party.NewProcessor(l, ctx),
-		l:          l,
-		ctx:        ctx,
+		character:   char,
+		quests:      make(map[uint32]quest.Model),
+		skills:      make(map[uint32]skill.Model),
+		marriage:    marriage.NewModel(char.Id(), false),
+		buddyList:   buddy.NewModel(char.Id(), 0),
+		petCount:    0,
+		mapP:        npcMap.NewProcessor(l, ctx),
+		itemP:       item.NewProcessor(l, ctx),
+		transportP:  transport.NewProcessor(l, ctx),
+		skillP:      skill.NewProcessor(l, ctx),
+		buffP:       buff.NewProcessor(l, ctx),
+		partyP:      party.NewProcessor(l, ctx),
+		partyQuestP: party_quest.NewProcessor(l, ctx),
+		l:           l,
+		ctx:         ctx,
 	}
 }
 
@@ -443,21 +475,22 @@ func (b *ValidationContextBuilder) SetPetCount(count int) *ValidationContextBuil
 // Build creates a validation context from the builder
 func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
-		character:  b.character,
-		quests:     b.quests,
-		skills:     b.skills,
-		marriage:   b.marriage,
-		buddyList:  b.buddyList,
-		party:      b.party,
-		petCount:   b.petCount,
-		mapP:       b.mapP,
-		itemP:      b.itemP,
-		transportP: b.transportP,
-		skillP:     b.skillP,
-		buffP:      b.buffP,
-		partyP:     b.partyP,
-		l:          b.l,
-		ctx:        b.ctx,
+		character:   b.character,
+		quests:      b.quests,
+		skills:      b.skills,
+		marriage:    b.marriage,
+		buddyList:   b.buddyList,
+		party:       b.party,
+		petCount:    b.petCount,
+		mapP:        b.mapP,
+		itemP:       b.itemP,
+		transportP:  b.transportP,
+		skillP:      b.skillP,
+		buffP:       b.buffP,
+		partyP:      b.partyP,
+		partyQuestP: b.partyQuestP,
+		l:           b.l,
+		ctx:         b.ctx,
 	}
 }
 

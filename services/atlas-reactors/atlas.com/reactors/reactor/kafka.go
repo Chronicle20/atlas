@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	EnvCommandTopic   = "COMMAND_TOPIC_REACTOR"
-	CommandTypeCreate = "CREATE"
-	CommandTypeHit    = "HIT"
+	EnvCommandTopic          = "COMMAND_TOPIC_REACTOR"
+	CommandTypeCreate        = "CREATE"
+	CommandTypeHit           = "HIT"
+	CommandTypeClearCooldowns = "CLEAR_COOLDOWNS"
 )
 
 type Command[E any] struct {
@@ -40,6 +41,9 @@ type HitCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	Stance      uint16 `json:"stance"`
 	SkillId     uint32 `json:"skillId"`
+}
+
+type ClearCooldownsCommandBody struct {
 }
 
 // Reactor Actions topic and commands

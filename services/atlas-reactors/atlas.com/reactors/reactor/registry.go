@@ -303,6 +303,22 @@ func (r *registry) ClearCooldown(t tenant.Model, mk MapKey, classification uint3
 	delete(r.cooldowns[t][mk], rk)
 }
 
+func (r *registry) ClearAllCooldownsForMap(t tenant.Model, mk MapKey) {
+	r.getMapLock(t, mk).Lock()
+	defer r.getMapLock(t, mk).Unlock()
+
+	r.lock.Lock()
+	defer r.lock.Unlock()
+
+	if _, ok := r.cooldowns[t]; !ok {
+		return
+	}
+	delete(r.cooldowns[t], mk)
+	if len(r.cooldowns[t]) == 0 {
+		delete(r.cooldowns, t)
+	}
+}
+
 func (r *registry) CleanupExpiredCooldowns() {
 	r.lock.Lock()
 	defer r.lock.Unlock()

@@ -84,6 +84,35 @@ func (s StageState) WithMonsterKill(id uint32, delta uint32) StageState {
 	return s
 }
 
+func (s StageState) WithCustomData(key string, value any) StageState {
+	data := make(map[string]any, len(s.customData))
+	for k, v := range s.customData {
+		data[k] = v
+	}
+	data[key] = value
+	s.customData = data
+	return s
+}
+
+func (s StageState) IncrementCustomData(key string) StageState {
+	data := make(map[string]any, len(s.customData))
+	for k, v := range s.customData {
+		data[k] = v
+	}
+	current := 0
+	if v, ok := data[key]; ok {
+		switch n := v.(type) {
+		case float64:
+			current = int(n)
+		case int:
+			current = n
+		}
+	}
+	data[key] = current + 1
+	s.customData = data
+	return s
+}
+
 type Model struct {
 	id                uuid.UUID
 	tenantId          uuid.UUID

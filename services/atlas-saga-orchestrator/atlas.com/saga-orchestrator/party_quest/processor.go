@@ -9,6 +9,7 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/google/uuid"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -50,6 +51,8 @@ type Processor interface {
 	RegisterPartyQuest(characterId uint32, worldId world.Id, channelId channel.Id, mapId _map.Id, questId string) error
 	GetPartyMembers(characterId uint32) ([]MemberRestModel, error)
 	LeavePartyQuest(characterId uint32, worldId world.Id) error
+	UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error
+	BroadcastMessage(instanceId uuid.UUID, messageType string, message string) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -257,6 +260,55 @@ func (p *ProcessorImpl) produceLeaveCommand(characterId uint32, worldId world.Id
 		CharacterId: characterId,
 		Type:        CommandTypeLeave,
 		Body:        LeaveCommandBody{},
+	}
+	mp := producer.SingleMessageProvider(key, value)
+	return produceToCommandTopic(p.l, p.ctx)(mp)
+}
+
+// UpdateCustomData produces an UPDATE_CUSTOM_DATA command to atlas-party-quests.
+func (p *ProcessorImpl) UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error {
+	p.l.WithFields(logrus.Fields{
+		"instance_id": instanceId.String(),
+	}).Debug("Producing UPDATE_CUSTOM_DATA command for party quest")
+
+	return p.produceUpdateCustomDataCommand(instanceId, updates, increments)
+}
+
+// produceUpdateCustomDataCommand produces an UPDATE_CUSTOM_DATA command to the party quest command topic
+func (p *ProcessorImpl) produceUpdateCustomDataCommand(instanceId uuid.UUID, updates map[string]string, increments []string) error {
+	key := producer.CreateKey(int(instanceId.ID()))
+	value := &Command[UpdateCustomDataCommandBody]{
+		Type: CommandTypeUpdateCustomData,
+		Body: UpdateCustomDataCommandBody{
+			InstanceId: instanceId,
+			Updates:    updates,
+			Increments: increments,
+		},
+	}
+	mp := producer.SingleMessageProvider(key, value)
+	return produceToCommandTopic(p.l, p.ctx)(mp)
+}
+
+// BroadcastMessage produces a BROADCAST_MESSAGE command to atlas-party-quests.
+func (p *ProcessorImpl) BroadcastMessage(instanceId uuid.UUID, messageType string, message string) error {
+	p.l.WithFields(logrus.Fields{
+		"instance_id":  instanceId.String(),
+		"message_type": messageType,
+	}).Debug("Producing BROADCAST_MESSAGE command for party quest")
+
+	return p.produceBroadcastMessageCommand(instanceId, messageType, message)
+}
+
+// produceBroadcastMessageCommand produces a BROADCAST_MESSAGE command to the party quest command topic
+func (p *ProcessorImpl) produceBroadcastMessageCommand(instanceId uuid.UUID, messageType string, message string) error {
+	key := producer.CreateKey(int(instanceId.ID()))
+	value := &Command[BroadcastMessageCommandBody]{
+		Type: CommandTypeBroadcastMessage,
+		Body: BroadcastMessageCommandBody{
+			InstanceId:  instanceId,
+			MessageType: messageType,
+			Message:     message,
+		},
 	}
 	mp := producer.SingleMessageProvider(key, value)
 	return produceToCommandTopic(p.l, p.ctx)(mp)

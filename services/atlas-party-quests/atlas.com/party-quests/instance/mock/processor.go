@@ -22,6 +22,10 @@ type ProcessorMock struct {
 	LeaveFunc                 func(mb *message.Buffer) func(characterId uint32, reason string) error
 	LeaveAndEmitFunc          func(characterId uint32, reason string) error
 	UpdateStageStateFunc      func(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
+	UpdateCustomDataFunc      func(instanceId uuid.UUID, updates map[string]string, increments []string) error
+	BroadcastMessageFunc      func(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
+	BroadcastMessageAndEmitFunc func(instanceId uuid.UUID, messageType string, msg string) error
+	GetByFieldInstanceFunc    func(fieldInstance uuid.UUID) (instance.Model, error)
 	DestroyFunc               func(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
 	DestroyAndEmitFunc        func(instanceId uuid.UUID, reason string) error
 	TickGlobalTimerFunc       func(mb *message.Buffer) error
@@ -131,6 +135,34 @@ func (m *ProcessorMock) UpdateStageState(instanceId uuid.UUID, itemCounts map[ui
 		return m.UpdateStageStateFunc(instanceId, itemCounts, monsterKills)
 	}
 	return nil
+}
+
+func (m *ProcessorMock) UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error {
+	if m.UpdateCustomDataFunc != nil {
+		return m.UpdateCustomDataFunc(instanceId, updates, increments)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) BroadcastMessage(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error {
+	if m.BroadcastMessageFunc != nil {
+		return m.BroadcastMessageFunc(mb)
+	}
+	return func(uuid.UUID, string, string) error { return nil }
+}
+
+func (m *ProcessorMock) BroadcastMessageAndEmit(instanceId uuid.UUID, messageType string, msg string) error {
+	if m.BroadcastMessageAndEmitFunc != nil {
+		return m.BroadcastMessageAndEmitFunc(instanceId, messageType, msg)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) GetByFieldInstance(fieldInstance uuid.UUID) (instance.Model, error) {
+	if m.GetByFieldInstanceFunc != nil {
+		return m.GetByFieldInstanceFunc(fieldInstance)
+	}
+	return instance.Model{}, nil
 }
 
 func (m *ProcessorMock) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error {

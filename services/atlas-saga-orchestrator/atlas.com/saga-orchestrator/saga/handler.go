@@ -24,6 +24,7 @@ import (
 	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/rates"
+	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -65,6 +66,7 @@ type Handler interface {
 	WithSavedLocationProcessor(saved_location.Processor) Handler
 	WithGachaponProcessor(gachapon.Processor) Handler
 	WithPartyQuestProcessor(party_quest.Processor) Handler
+	WithReactorProcessor(reactor.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -136,6 +138,9 @@ type Handler interface {
 	handleEmitGachaponWin(s Saga, st Step[any]) error
 	handleRegisterPartyQuest(s Saga, st Step[any]) error
 	handleLeavePartyQuest(s Saga, st Step[any]) error
+	handleUpdatePqCustomData(s Saga, st Step[any]) error
+	handleHitReactor(s Saga, st Step[any]) error
+	handleBroadcastPqMessage(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -165,6 +170,7 @@ type HandlerImpl struct {
 	savedLocationP  saved_location.Processor
 	gachaponP       gachapon.Processor
 	partyQuestP     party_quest.Processor
+	reactorP        reactor.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -194,6 +200,7 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		savedLocationP:  saved_location.NewProcessor(l, ctx),
 		gachaponP:       gachapon.NewProcessor(l, ctx),
 		partyQuestP:     party_quest.NewProcessor(l, ctx),
+		reactorP:        reactor.NewProcessor(l, ctx),
 	}
 }
 
@@ -647,6 +654,37 @@ func (h *HandlerImpl) WithPartyQuestProcessor(partyQuestP party_quest.Processor)
 		savedLocationP: h.savedLocationP,
 		gachaponP:      h.gachaponP,
 		partyQuestP:    partyQuestP,
+		reactorP:       h.reactorP,
+	}
+}
+
+func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: h.savedLocationP,
+		gachaponP:      h.gachaponP,
+		partyQuestP:    h.partyQuestP,
+		reactorP:       reactorP,
 	}
 }
 
@@ -793,6 +831,12 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleWarpPartyQuestMembersToMap, true
 	case LeavePartyQuest:
 		return h.handleLeavePartyQuest, true
+	case UpdatePqCustomData:
+		return h.handleUpdatePqCustomData, true
+	case HitReactor:
+		return h.handleHitReactor, true
+	case BroadcastPqMessage:
+		return h.handleBroadcastPqMessage, true
 	}
 	return nil, false
 }
@@ -2532,6 +2576,90 @@ func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to leave party quest.")
 		GetCache().Remove(h.t.Id(), s.TransactionId())
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleUpdatePqCustomData handles the UpdatePqCustomData action.
+// Produces an UPDATE_CUSTOM_DATA command to atlas-party-quests.
+func (h *HandlerImpl) handleUpdatePqCustomData(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(UpdatePqCustomDataPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"instance_id":    payload.InstanceId.String(),
+	}).Debug("Updating party quest custom data")
+
+	err := h.partyQuestP.UpdateCustomData(payload.InstanceId, payload.Updates, payload.Increments)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to update party quest custom data.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleHitReactor handles the HitReactor action.
+// Resolves a reactor by name via atlas-reactors REST API, then produces a HIT command.
+func (h *HandlerImpl) handleHitReactor(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(HitReactorPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"reactor_name":   payload.ReactorName,
+		"world_id":       payload.WorldId,
+		"channel_id":     payload.ChannelId,
+		"map_id":         payload.MapId,
+		"instance":       payload.Instance.String(),
+	}).Debug("Hitting reactor by name")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	err := h.reactorP.HitReactorByName(f, payload.CharacterId, payload.ReactorName)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Unable to hit reactor by name [%s].", payload.ReactorName))
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleBroadcastPqMessage handles the BroadcastPqMessage action.
+// Produces a BROADCAST_MESSAGE command to atlas-party-quests.
+func (h *HandlerImpl) handleBroadcastPqMessage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(BroadcastPqMessagePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"instance_id":    payload.InstanceId.String(),
+		"message_type":   payload.MessageType,
+	}).Debug("Broadcasting message to party quest members")
+
+	err := h.partyQuestP.BroadcastMessage(payload.InstanceId, payload.MessageType, payload.Message)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to broadcast party quest message.")
 		return err
 	}
 

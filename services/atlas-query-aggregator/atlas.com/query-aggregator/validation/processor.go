@@ -82,7 +82,7 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 			}
 
 			// Check if this condition requires context-based evaluation
-			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition || condition.conditionType == PartyIdCondition || condition.conditionType == PartyLeaderCondition || condition.conditionType == PartySizeCondition {
+			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition || condition.conditionType == PartyIdCondition || condition.conditionType == PartyLeaderCondition || condition.conditionType == PartySizeCondition || condition.conditionType == PqCustomDataCondition {
 				needsContext = true
 			}
 		}

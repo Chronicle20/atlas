@@ -85,6 +85,21 @@ func (r *Registry) GetByCharacter(t tenant.Model, characterId uint32) (Model, er
 	return Model{}, ErrNotFound
 }
 
+func (r *Registry) GetByFieldInstance(t tenant.Model, fieldInstance uuid.UUID) (Model, error) {
+	td := r.ensureTenant(t)
+	td.lock.RLock()
+	defer td.lock.RUnlock()
+
+	for _, m := range td.instances {
+		for _, fi := range m.FieldInstances() {
+			if fi == fieldInstance {
+				return m, nil
+			}
+		}
+	}
+	return Model{}, ErrNotFound
+}
+
 func (r *Registry) GetAll(t tenant.Model) []Model {
 	td := r.ensureTenant(t)
 	td.lock.RLock()

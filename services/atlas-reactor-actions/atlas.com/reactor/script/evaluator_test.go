@@ -1,6 +1,7 @@
 package script
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Chronicle20/atlas-script-core/condition"
@@ -227,7 +228,7 @@ func TestConditionEvaluator_EvaluateCondition(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluator := NewConditionEvaluator(logger)
+			evaluator := NewConditionEvaluator(logger, context.Background())
 
 			cond, _ := condition.NewBuilder().
 				SetType(tt.condType).
@@ -235,7 +236,7 @@ func TestConditionEvaluator_EvaluateCondition(t *testing.T) {
 				SetValue(tt.value).
 				Build()
 
-			got, err := evaluator.EvaluateCondition(tt.reactorState, cond)
+			got, err := evaluator.EvaluateCondition(tt.reactorState, 0, cond)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("EvaluateCondition() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -319,7 +320,7 @@ func TestConditionEvaluator_EvaluateRule(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			evaluator := NewConditionEvaluator(logger)
+			evaluator := NewConditionEvaluator(logger, context.Background())
 
 			rb := NewRuleBuilder().SetId("test_rule")
 			for _, c := range tt.conditions {
@@ -332,7 +333,7 @@ func TestConditionEvaluator_EvaluateRule(t *testing.T) {
 			}
 			rule := rb.Build()
 
-			got, err := evaluator.EvaluateRule(tt.reactorState, rule)
+			got, err := evaluator.EvaluateRule(tt.reactorState, 0, rule)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("EvaluateRule() error = %v, wantErr %v", err, tt.wantErr)
 				return

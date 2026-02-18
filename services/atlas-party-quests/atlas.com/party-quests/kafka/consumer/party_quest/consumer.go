@@ -34,6 +34,8 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeaveCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStageStateCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateCustomDataCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleBroadcastMessageCommand(db))))
 	}
 }
 
@@ -117,5 +119,27 @@ func handleUpdateStageStateCommand(db *gorm.DB) message.Handler[pq.Command[pq.Up
 
 		l.Debugf("Handling UPDATE_STAGE_STATE command for instance [%s].", c.Body.InstanceId)
 		_ = instance.NewProcessor(l, ctx, db).UpdateStageState(c.Body.InstanceId, c.Body.ItemCounts, c.Body.MonsterKills)
+	}
+}
+
+func handleUpdateCustomDataCommand(db *gorm.DB) message.Handler[pq.Command[pq.UpdateCustomDataCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pq.Command[pq.UpdateCustomDataCommandBody]) {
+		if c.Type != pq.CommandTypeUpdateCustomData {
+			return
+		}
+
+		l.Debugf("Handling UPDATE_CUSTOM_DATA command for instance [%s].", c.Body.InstanceId)
+		_ = instance.NewProcessor(l, ctx, db).UpdateCustomData(c.Body.InstanceId, c.Body.Updates, c.Body.Increments)
+	}
+}
+
+func handleBroadcastMessageCommand(db *gorm.DB) message.Handler[pq.Command[pq.BroadcastMessageCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pq.Command[pq.BroadcastMessageCommandBody]) {
+		if c.Type != pq.CommandTypeBroadcastMessage {
+			return
+		}
+
+		l.Debugf("Handling BROADCAST_MESSAGE command for instance [%s].", c.Body.InstanceId)
+		_ = instance.NewProcessor(l, ctx, db).BroadcastMessageAndEmit(c.Body.InstanceId, c.Body.MessageType, c.Body.Message)
 	}
 }

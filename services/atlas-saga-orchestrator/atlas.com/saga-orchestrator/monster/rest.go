@@ -54,6 +54,11 @@ func (r SpawnResponseRestModel) GetID() string {
 	return r.Id
 }
 
+func (r *SpawnResponseRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
 // SpawnRequest contains the parameters needed to spawn a monster.
 type SpawnRequest struct {
 	WorldId   world.Id

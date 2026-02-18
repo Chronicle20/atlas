@@ -3,6 +3,8 @@ package instance
 import (
 	character2 "atlas-party-quests/kafka/message/character"
 	pq "atlas-party-quests/kafka/message/party_quest"
+	reactorMessage "atlas-party-quests/kafka/message/reactor"
+	"atlas-party-quests/kafka/message/system_message"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -161,6 +163,35 @@ func characterLeftEventProvider(worldId world.Id, instanceId uuid.UUID, questId 
 			ChannelId:   channelId,
 			Reason:      reason,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func sendMessageProvider(worldId world.Id, channelId channel.Id, characterId uint32, messageType string, msg string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &system_message.Command[system_message.SendMessageBody]{
+		TransactionId: uuid.Nil,
+		WorldId:       worldId,
+		ChannelId:     channelId,
+		CharacterId:   characterId,
+		Type:          system_message.CommandSendMessage,
+		Body: system_message.SendMessageBody{
+			MessageType: messageType,
+			Message:     msg,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func clearReactorCooldownsProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &reactorMessage.Command[reactorMessage.ClearCooldownsCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Instance:  instance,
+		Type:      reactorMessage.CommandTypeClearCooldowns,
+		Body:      reactorMessage.ClearCooldownsCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

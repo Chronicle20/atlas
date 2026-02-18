@@ -15,7 +15,9 @@ const (
 	CommandTypeStageAdvance     = "STAGE_ADVANCE"
 	CommandTypeForfeit          = "FORFEIT"
 	CommandTypeLeave            = "LEAVE"
-	CommandTypeUpdateStageState = "UPDATE_STAGE_STATE"
+	CommandTypeUpdateStageState  = "UPDATE_STAGE_STATE"
+	CommandTypeUpdateCustomData = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage = "BROADCAST_MESSAGE"
 
 	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
 
@@ -68,6 +70,18 @@ type UpdateStageStateCommandBody struct {
 	InstanceId   uuid.UUID         `json:"instanceId"`
 	ItemCounts   map[uint32]uint32 `json:"itemCounts,omitempty"`
 	MonsterKills map[uint32]uint32 `json:"monsterKills,omitempty"`
+}
+
+type UpdateCustomDataCommandBody struct {
+	InstanceId uuid.UUID         `json:"instanceId"`
+	Updates    map[string]string `json:"updates,omitempty"`
+	Increments []string          `json:"increments,omitempty"`
+}
+
+type BroadcastMessageCommandBody struct {
+	InstanceId  uuid.UUID `json:"instanceId"`
+	MessageType string    `json:"messageType"`
+	Message     string    `json:"message"`
 }
 
 type StatusEvent[E any] struct {

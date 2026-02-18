@@ -153,6 +153,20 @@ func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.Handle
 	}
 }
 
+type FieldInstanceHandler func(fieldInstance uuid.UUID) http.HandlerFunc
+
+func ParseFieldInstance(l logrus.FieldLogger, next FieldInstanceHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fieldInstance, err := uuid.Parse(mux.Vars(r)["fieldInstance"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse fieldInstance from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(fieldInstance)(w, r)
+	}
+}
+
 type MapIdHandler func(mapId uint32) http.HandlerFunc
 
 func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {

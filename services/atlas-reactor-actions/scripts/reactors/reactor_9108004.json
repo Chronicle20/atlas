@@ -1,0 +1,65 @@
+{
+  "reactorId": "9108004",
+  "description": "Henesys PQ Seed Reactor - increments stage counter, hits fullmoon reactor. At stage 6, broadcasts message and spawns Moon Bunny.",
+  "hitRules": [],
+  "actRules": [
+    {
+      "id": "stage_6_spawn_bunny",
+      "conditions": [
+        {
+          "type": "pq_custom_data",
+          "operator": "=",
+          "value": "5",
+          "step": "stage"
+        }
+      ],
+      "operations": [
+        {
+          "type": "update_pq_state",
+          "params": {
+            "increments": "stage"
+          }
+        },
+        {
+          "type": "hit_reactor",
+          "params": {
+            "reactorName": "fullmoon"
+          }
+        },
+        {
+          "type": "broadcast_pq_message",
+          "params": {
+            "type": "BLUE_TEXT",
+            "message": "Protect the Moon Bunny!!!"
+          }
+        },
+        {
+          "type": "spawn_monster",
+          "params": {
+            "monsterId": "9300061",
+            "x": "-183",
+            "y": "-433"
+          }
+        }
+      ]
+    },
+    {
+      "id": "increment_stage",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "update_pq_state",
+          "params": {
+            "increments": "stage"
+          }
+        },
+        {
+          "type": "hit_reactor",
+          "params": {
+            "reactorName": "fullmoon"
+          }
+        }
+      ]
+    }
+  ]
+}

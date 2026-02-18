@@ -114,6 +114,17 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 							return
 						}
 
+						// Filter by name if query parameter provided.
+						if name := r.URL.Query().Get("name"); name != "" {
+							filtered := make([]Model, 0)
+							for _, m := range ms {
+								if m.Name() == name {
+									filtered = append(filtered, m)
+								}
+							}
+							ms = filtered
+						}
+
 						res, err := model.SliceMap(Transform)(model.FixedProvider(ms))()()
 						if err != nil {
 							d.Logger().WithError(err).Errorf("Creating REST model.")

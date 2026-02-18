@@ -51,6 +51,7 @@ const (
 	PartyIdCondition                ConditionType = "partyId"
 	PartyLeaderCondition            ConditionType = "partyLeader"
 	PartySizeCondition              ConditionType = "partySize"
+	PqCustomDataCondition           ConditionType = "pqCustomData"
 )
 
 // Operator represents the comparison operator in a condition
@@ -129,7 +130,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -283,6 +284,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId (base level) is required for excessSp conditions")
 		}
+	case PqCustomDataCondition:
+		if input.Step == "" {
+			b.err = fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
+		}
 	}
 
 	return b
@@ -355,6 +360,11 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 	case ExcessSPCondition:
 		if b.referenceId == nil {
 			b.err = fmt.Errorf("referenceId (base level) is required for excessSp conditions")
+			return b
+		}
+	case PqCustomDataCondition:
+		if b.step == "" {
+			b.err = fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
 			return b
 		}
 	}
@@ -524,6 +534,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 		return ConditionResult{
 			Passed:      false,
 			Description: fmt.Sprintf("Party validation requires ValidationContext"),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
+	case PqCustomDataCondition:
+		// PQ custom data validation requires context - return error state
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("PQ Custom Data validation requires ValidationContext"),
 			Type:        c.conditionType,
 			Operator:    c.operator,
 			Value:       c.value,
@@ -835,6 +855,11 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		partyModel := ctx.Party()
 		actualValue = partyModel.MemberCount()
 		description = fmt.Sprintf("Party Size %s %d", c.operator, c.value)
+
+	case PqCustomDataCondition:
+		pqModel := ctx.PartyQuest()
+		actualValue = pqModel.GetCustomDataInt(c.step)
+		description = fmt.Sprintf("PQ Custom Data '%s' %s %d", c.step, c.operator, c.value)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

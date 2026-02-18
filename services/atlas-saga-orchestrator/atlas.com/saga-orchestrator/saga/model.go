@@ -484,6 +484,11 @@ const (
 	RegisterPartyQuest             Action = "register_party_quest"                // Register a party for a party quest via atlas-party-quests
 	LeavePartyQuest                Action = "leave_party_quest"                   // Remove a character from their active party quest
 	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"     // Warp all party quest members to a map
+
+	// Party quest reactor orchestration actions
+	UpdatePqCustomData Action = "update_pq_custom_data"  // Update custom data on a party quest instance
+	HitReactor         Action = "hit_reactor"             // Programmatically hit a reactor by name
+	BroadcastPqMessage Action = "broadcast_pq_message"    // Broadcast a message to party quest members
 )
 
 // Step represents a single step within a saga.
@@ -1269,6 +1274,34 @@ type WarpPartyQuestMembersToMapPayload struct {
 	PortalId    uint32     `json:"portalId"`    // Destination portal ID
 }
 
+// UpdatePqCustomDataPayload represents the payload for updating party quest custom data.
+// This produces an UPDATE_CUSTOM_DATA command to atlas-party-quests.
+type UpdatePqCustomDataPayload struct {
+	InstanceId uuid.UUID         `json:"instanceId"`           // Party quest instance ID
+	Updates    map[string]string `json:"updates,omitempty"`    // Key-value pairs to set
+	Increments []string          `json:"increments,omitempty"` // Keys to increment
+}
+
+// HitReactorPayload represents the payload for programmatically hitting a reactor by name.
+// The saga-orchestrator resolves the reactor name to an ID via atlas-reactors REST API,
+// then produces a HIT command to COMMAND_TOPIC_REACTOR.
+type HitReactorPayload struct {
+	WorldId     world.Id   `json:"worldId"`     // WorldId of the reactor's field
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId of the reactor's field
+	MapId       _map.Id    `json:"mapId"`       // MapId of the reactor's field
+	Instance    uuid.UUID  `json:"instance"`    // Instance UUID of the reactor's field
+	CharacterId uint32     `json:"characterId"` // CharacterId triggering the hit
+	ReactorName string     `json:"reactorName"` // Reactor name to resolve via REST
+}
+
+// BroadcastPqMessagePayload represents the payload for broadcasting a message to PQ members.
+// This produces a BROADCAST_MESSAGE command to atlas-party-quests.
+type BroadcastPqMessagePayload struct {
+	InstanceId  uuid.UUID `json:"instanceId"`  // Party quest instance ID
+	MessageType string    `json:"messageType"` // Message type (e.g., "PINK_TEXT")
+	Message     string    `json:"message"`     // Message text
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1693,6 +1726,24 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case LeavePartyQuest:
 		var payload LeavePartyQuestPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case UpdatePqCustomData:
+		var payload UpdatePqCustomDataPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case HitReactor:
+		var payload HitReactorPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case BroadcastPqMessage:
+		var payload BroadcastPqMessagePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -7,14 +7,17 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 const (
-	EnvCommandTopic    = "COMMAND_TOPIC_PARTY_QUEST"
-	CommandTypeRegister = "REGISTER"
-	CommandTypeLeave    = "LEAVE"
+	EnvCommandTopic              = "COMMAND_TOPIC_PARTY_QUEST"
+	CommandTypeRegister          = "REGISTER"
+	CommandTypeLeave             = "LEAVE"
+	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
 )
 
 func getBaseRequest() string {
@@ -202,4 +205,18 @@ type RegisterCommandBody struct {
 
 // LeaveCommandBody represents the body of a LEAVE command
 type LeaveCommandBody struct {
+}
+
+// UpdateCustomDataCommandBody represents the body of an UPDATE_CUSTOM_DATA command
+type UpdateCustomDataCommandBody struct {
+	InstanceId uuid.UUID         `json:"instanceId"`
+	Updates    map[string]string `json:"updates,omitempty"`
+	Increments []string          `json:"increments,omitempty"`
+}
+
+// BroadcastMessageCommandBody represents the body of a BROADCAST_MESSAGE command
+type BroadcastMessageCommandBody struct {
+	InstanceId  uuid.UUID `json:"instanceId"`
+	MessageType string    `json:"messageType"`
+	Message     string    `json:"message"`
 }

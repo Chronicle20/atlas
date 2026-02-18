@@ -7,6 +7,8 @@ import (
 	character2 "atlas-party-quests/kafka/message/character"
 	"atlas-party-quests/kafka/message"
 	pq "atlas-party-quests/kafka/message/party_quest"
+	reactorMessage "atlas-party-quests/kafka/message/reactor"
+	systemMessage "atlas-party-quests/kafka/message/system_message"
 	"atlas-party-quests/kafka/producer"
 	"atlas-party-quests/monster"
 	"atlas-party-quests/party"
@@ -45,6 +47,12 @@ type Processor interface {
 	LeaveAndEmit(characterId uint32, reason string) error
 
 	UpdateStageState(instanceId uuid.UUID, itemCounts map[uint32]uint32, monsterKills map[uint32]uint32) error
+	UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error
+
+	BroadcastMessage(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
+	BroadcastMessageAndEmit(instanceId uuid.UUID, messageType string, msg string) error
+
+	GetByFieldInstance(fieldInstance uuid.UUID) (Model, error)
 
 	Destroy(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
 	DestroyAndEmit(instanceId uuid.UUID, reason string) error
@@ -495,6 +503,19 @@ func (p *ProcessorImpl) executeClearActions(stg stage.Model, inst Model) {
 	}
 }
 
+func (p *ProcessorImpl) emitClearReactorCooldowns(mb *message.Buffer, inst Model, mapIds []uint32) {
+	for i, mid := range mapIds {
+		fieldInstance := uuid.Nil
+		if i < len(inst.FieldInstances()) {
+			fieldInstance = inst.FieldInstances()[i]
+		}
+		err := mb.Put(reactorMessage.EnvCommandTopic, clearReactorCooldownsProvider(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance))
+		if err != nil {
+			p.l.WithError(err).Warnf("Failed to emit clear reactor cooldowns for map [%d] instance [%s].", mid, fieldInstance)
+		}
+	}
+}
+
 func (p *ProcessorImpl) destroyMonstersInStage(stg stage.Model, inst Model) {
 	mp := monster.NewProcessor(p.l, p.ctx)
 	for i, mid := range stg.MapIds() {
@@ -527,7 +548,13 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 			return err
 		}
 
-		nextStageIdx := inst.CurrentStageIndex() + 1
+		currentStageIdx := inst.CurrentStageIndex()
+		nextStageIdx := currentStageIdx + 1
+
+		// Destroy monsters in the current stage maps before advancing
+		if int(currentStageIdx) < len(def.Stages()) {
+			p.destroyMonstersInStage(def.Stages()[currentStageIdx], inst)
+		}
 
 		// Check if PQ is complete (no more stages)
 		if int(nextStageIdx) >= len(def.Stages()) {
@@ -557,8 +584,9 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 
 		p.l.Infof("PQ instance [%s] advanced to stage [%d].", instanceId, nextStageIdx)
 
-		// Warp characters to new stage maps
-		if len(nextStage.MapIds()) > 0 {
+		// Warp characters to new stage maps (skip if current stage warpType is "none")
+		currentStage := def.Stages()[currentStageIdx]
+		if currentStage.WarpType() != "none" && len(nextStage.MapIds()) > 0 {
 			targetMapId := _map.Id(nextStage.MapIds()[0])
 			for _, c := range inst.Characters() {
 				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
@@ -587,6 +615,12 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 	err = mb.Put(pq.EnvEventStatusTopic, completedEventProvider(inst.WorldId(), inst.Id(), inst.QuestId()))
 	if err != nil {
 		return err
+	}
+
+	// Clear reactor cooldowns for current stage maps
+	stageIdx := inst.CurrentStageIndex()
+	if int(stageIdx) < len(def.Stages()) {
+		p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
 	}
 
 	// Check for bonus stage
@@ -647,6 +681,15 @@ func (p *ProcessorImpl) Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) e
 		err = mb.Put(pq.EnvEventStatusTopic, failedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), "forfeit"))
 		if err != nil {
 			return err
+		}
+
+		// Clear reactor cooldowns for current stage maps
+		def, defErr := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+		if defErr == nil {
+			stageIdx := inst.CurrentStageIndex()
+			if int(stageIdx) < len(def.Stages()) {
+				p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+			}
 		}
 
 		return p.Destroy(mb)(instanceId, "forfeit")
@@ -736,6 +779,49 @@ func (p *ProcessorImpl) UpdateStageState(instanceId uuid.UUID, itemCounts map[ui
 	return err
 }
 
+func (p *ProcessorImpl) UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error {
+	_, err := GetRegistry().Update(p.t, instanceId, func(m Model) Model {
+		ss := m.StageState()
+		for k, v := range updates {
+			ss = ss.WithCustomData(k, v)
+		}
+		for _, k := range increments {
+			ss = ss.IncrementCustomData(k)
+		}
+		return m.SetStageState(ss)
+	})
+	return err
+}
+
+func (p *ProcessorImpl) BroadcastMessageAndEmit(instanceId uuid.UUID, messageType string, msg string) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.BroadcastMessage(buf)(instanceId, messageType, msg)
+	})
+}
+
+func (p *ProcessorImpl) BroadcastMessage(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error {
+	return func(instanceId uuid.UUID, messageType string, msg string) error {
+		inst, err := GetRegistry().Get(p.t, instanceId)
+		if err != nil {
+			return err
+		}
+
+		for _, c := range inst.Characters() {
+			err = mb.Put(systemMessage.EnvCommandTopic, sendMessageProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), messageType, msg))
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to send message to character [%d].", c.CharacterId())
+			}
+		}
+
+		p.l.Infof("Broadcast message to [%d] characters in PQ instance [%s]: %s", len(inst.Characters()), instanceId, msg)
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) GetByFieldInstance(fieldInstance uuid.UUID) (Model, error) {
+	return GetRegistry().GetByFieldInstance(p.t, fieldInstance)
+}
+
 func (p *ProcessorImpl) DestroyAndEmit(instanceId uuid.UUID, reason string) error {
 	return message.Emit(p.p)(func(buf *message.Buffer) error {
 		return p.Destroy(buf)(instanceId, reason)
@@ -752,6 +838,13 @@ func (p *ProcessorImpl) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, r
 		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to load definition for instance [%s], using exit map 0.", instanceId)
+		}
+
+		// Destroy monsters and clear reactor cooldowns in the current stage maps
+		stageIdx := inst.CurrentStageIndex()
+		if int(stageIdx) < len(def.Stages()) {
+			p.destroyMonstersInStage(def.Stages()[stageIdx], inst)
+			p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
 		}
 
 		exitMap := _map.Id(def.Exit())
@@ -807,6 +900,10 @@ func (p *ProcessorImpl) TickGlobalTimer(mb *message.Buffer) error {
 				return m.SetState(StateFailed)
 			})
 			_ = mb.Put(pq.EnvEventStatusTopic, failedEventProvider(inst.WorldId(), inst.Id(), inst.QuestId(), "time_expired"))
+			stageIdx := inst.CurrentStageIndex()
+			if int(stageIdx) < len(def.Stages()) {
+				p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+			}
 			_ = p.Destroy(mb)(inst.Id(), "time_expired")
 		}
 	}

@@ -489,7 +489,8 @@ const (
 	UpdatePqCustomData  Action = "update_pq_custom_data"  // Update custom data on a party quest instance
 	HitReactor          Action = "hit_reactor"             // Programmatically hit a reactor by name
 	BroadcastPqMessage  Action = "broadcast_pq_message"    // Broadcast a message to party quest members
-	StageClearAttemptPq Action = "stage_clear_attempt_pq"  // Attempt to clear the current PQ stage
+	StageClearAttemptPq    Action = "stage_clear_attempt_pq"     // Attempt to clear the current PQ stage
+	EnterPartyQuestBonus   Action = "enter_party_quest_bonus"   // Enter the bonus stage of a party quest
 )
 
 // Step represents a single step within a saga.
@@ -1310,6 +1311,12 @@ type StageClearAttemptPqPayload struct {
 	CharacterId uint32    `json:"characterId,omitempty"` // Character ID for instance lookup (used by NPC conversations)
 }
 
+// EnterPartyQuestBonusPayload represents the payload for entering the bonus stage of a party quest.
+type EnterPartyQuestBonusPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating bonus entry
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1758,6 +1765,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case StageClearAttemptPq:
 		var payload StageClearAttemptPqPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EnterPartyQuestBonus:
+		var payload EnterPartyQuestBonusPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

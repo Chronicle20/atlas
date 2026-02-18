@@ -85,6 +85,16 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			return
 		}
 
+		// Check if this is a party quest bonus action (bonus entered, end conversation)
+		if _, isPartyQuestBonus := conversationCtx.Context()["partyQuestBonusAction_failureState"]; isPartyQuestBonus {
+			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Party quest bonus action completed - bonus entered, ending conversation")
+			delete(conversationCtx.Context(), "partyQuestBonusAction_failureState")
+			conversationCtx = conversationCtx.ClearPendingSaga()
+			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
+			return
+		}
+
 		// Check if this is a gachapon action (item awarded, end conversation)
 		if _, isGachapon := conversationCtx.Context()["gachaponAction_failureState"]; isGachapon {
 			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Gachapon action completed - item awarded, ending conversation")
@@ -193,6 +203,9 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 		delete(conversationCtx.Context(), "partyQuestAction_notInPartyState")
 		delete(conversationCtx.Context(), "partyQuestAction_notLeaderState")
 
+		// Clean up temporary context values (party quest bonus action)
+		delete(conversationCtx.Context(), "partyQuestBonusAction_failureState")
+
 		// Update the context in registry
 		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
 
@@ -216,6 +229,13 @@ func resolveFailureState(ctx conversation.ConversationContext, errorCode string,
 		}
 	case "PQ_NOT_LEADER":
 		if state, exists := ctx.Context()["partyQuestAction_notLeaderState"]; exists && state != "" {
+			return state
+		}
+	}
+
+	// Check for party quest bonus action failure state (before general PQ check)
+	if errorCode != "" && len(errorCode) > 3 && errorCode[:3] == "PQ_" {
+		if state, exists := ctx.Context()["partyQuestBonusAction_failureState"]; exists && state != "" {
 			return state
 		}
 	}

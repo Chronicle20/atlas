@@ -143,6 +143,7 @@ type Handler interface {
 	handleHitReactor(s Saga, st Step[any]) error
 	handleBroadcastPqMessage(s Saga, st Step[any]) error
 	handleStageClearAttemptPq(s Saga, st Step[any]) error
+	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -841,6 +842,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleBroadcastPqMessage, true
 	case StageClearAttemptPq:
 		return h.handleStageClearAttemptPq, true
+	case EnterPartyQuestBonus:
+		return h.handleEnterPartyQuestBonus, true
 	}
 	return nil, false
 }
@@ -2702,6 +2705,60 @@ func (h *HandlerImpl) handleStageClearAttemptPq(s Saga, st Step[any]) error {
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to attempt party quest stage clear.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleEnterPartyQuestBonus handles the EnterPartyQuestBonus action.
+// Looks up the PQ instance by character and produces an ENTER_BONUS command to atlas-party-quests.
+func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EnterPartyQuestBonusPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"world_id":       payload.WorldId,
+	}).Debug("Entering party quest bonus stage")
+
+	err := h.partyQuestP.EnterBonusByCharacter(payload.CharacterId, payload.WorldId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to enter party quest bonus stage.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+			"error_code":     errorCode,
+		}).Warn("Party quest bonus entry failed - emitting failure event")
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   payload.CharacterId,
+				"error_code":     errorCode,
+			}).Error("Failed to emit saga failed event for party quest bonus entry")
+		}
+
 		return err
 	}
 

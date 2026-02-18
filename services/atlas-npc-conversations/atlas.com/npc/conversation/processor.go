@@ -483,6 +483,9 @@ func (p *ProcessorImpl) processState(ctx ConversationContext, state StateModel) 
 	case PartyQuestActionType:
 		// Process party quest action state
 		return p.processPartyQuestActionState(ctx, state)
+	case PartyQuestBonusActionType:
+		// Process party quest bonus action state
+		return p.processPartyQuestBonusActionState(ctx, state)
 	case GachaponActionType:
 		// Process gachapon action state
 		return p.processGachaponActionState(ctx, state)
@@ -875,6 +878,64 @@ func (p *ProcessorImpl) processPartyQuestActionState(ctx ConversationContext, st
 	// Return current state ID to keep conversation in "waiting" state
 	// When saga completes, party-quests service warps the party and conversation ends
 	// When saga fails, we route to the appropriate error state
+	return state.Id(), nil
+}
+
+// processPartyQuestBonusActionState processes a party quest bonus entry action state
+// Creates a saga to enter the bonus stage of a party quest and waits for completion
+func (p *ProcessorImpl) processPartyQuestBonusActionState(ctx ConversationContext, state StateModel) (string, error) {
+	bonusAction := state.PartyQuestBonusAction()
+	if bonusAction == nil {
+		return "", errors.New("partyQuestBonusAction is nil")
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"character_id": ctx.CharacterId(),
+		"npc_id":       ctx.NpcId(),
+	}).Debug("Processing party quest bonus action state")
+
+	// Create a new saga ID
+	sagaId := uuid.New()
+
+	// Build the saga with a single enter_party_quest_bonus step
+	sagaBuilder := saga.NewBuilder().
+		SetTransactionId(sagaId).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy(fmt.Sprintf("NPC_%d_pq_bonus", ctx.NpcId()))
+
+	// Add the enter party quest bonus step
+	bonusPayload := saga.EnterPartyQuestBonusPayload{
+		CharacterId: ctx.CharacterId(),
+		WorldId:     ctx.Field().WorldId(),
+	}
+	sagaBuilder.AddStep("enter_party_quest_bonus", saga.Pending, saga.EnterPartyQuestBonus, bonusPayload)
+
+	// Build and execute saga
+	s := sagaBuilder.Build()
+
+	// Send saga to orchestrator
+	err := saga.NewProcessor(p.l, p.ctx).Create(s)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to create party quest bonus saga")
+		return bonusAction.FailureState(), nil
+	}
+
+	// Store saga ID and bonus action failure state in context for later resumption
+	ctx = ctx.SetPendingSagaId(sagaId)
+	ctx.Context()["partyQuestBonusAction_failureState"] = bonusAction.FailureState()
+
+	// Update conversation context in registry
+	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": sagaId.String(),
+		"character_id":   ctx.CharacterId(),
+		"npc_id":         ctx.NpcId(),
+	}).Debug("Party quest bonus saga created, conversation waiting for completion")
+
+	// Return current state ID to keep conversation in "waiting" state
+	// When saga completes, party-quests service warps the party to bonus and conversation ends
+	// When saga fails, we route to the failure state
 	return state.Id(), nil
 }
 

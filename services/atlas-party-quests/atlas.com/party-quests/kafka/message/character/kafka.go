@@ -8,11 +8,14 @@ import (
 )
 
 const (
-	EnvCommandTopic           = "COMMAND_TOPIC_CHARACTER"
-	CommandCharacterChangeMap = "CHANGE_MAP"
+	EnvCommandTopic            = "COMMAND_TOPIC_CHARACTER"
+	CommandCharacterChangeMap  = "CHANGE_MAP"
+	CommandAwardExperience     = "AWARD_EXPERIENCE"
 
 	EnvEventTopicCharacterStatus = "EVENT_TOPIC_CHARACTER_STATUS"
 	StatusEventTypeLogout        = "LOGOUT"
+
+	ExperienceDistributionTypeChat = "CHAT"
 )
 
 type Command[E any] struct {
@@ -27,6 +30,17 @@ type ChangeMapBody struct {
 	MapId     _map.Id    `json:"mapId"`
 	Instance  uuid.UUID  `json:"instance"`
 	PortalId  uint32     `json:"portalId"`
+}
+
+type AwardExperienceCommandBody struct {
+	ChannelId     channel.Id                `json:"channelId"`
+	Distributions []ExperienceDistributions `json:"distributions"`
+}
+
+type ExperienceDistributions struct {
+	ExperienceType string `json:"experienceType"`
+	Amount         uint32 `json:"amount"`
+	Attr1          uint32 `json:"attr1"`
 }
 
 type StatusEvent[E any] struct {

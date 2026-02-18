@@ -106,20 +106,24 @@
     },
     {
       "id": "warpTeamToBonus",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [
+      "type": "partyQuestBonusAction",
+      "partyQuestBonusAction": {
+        "failureState": "bonusFailed"
+      }
+    },
+    {
+      "id": "bonusFailed",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "It seems the bonus stage isn't available right now. You can try talking to me again later.",
+        "choices": [
           {
-            "type": "warp_party_quest_members_to_map",
-            "params": {
-              "mapId": "910010200",
-              "portalId": "0"
-            }
-          }
-        ],
-        "outcomes": [
+            "text": "Ok",
+            "nextState": null
+          },
           {
-            "conditions": [],
+            "text": "Exit",
             "nextState": null
           }
         ]

@@ -19,6 +19,7 @@ const (
 	CommandTypeUpdateCustomData   = "UPDATE_CUSTOM_DATA"
 	CommandTypeBroadcastMessage   = "BROADCAST_MESSAGE"
 	CommandTypeStageClearAttempt  = "STAGE_CLEAR_ATTEMPT"
+	CommandTypeEnterBonus        = "ENTER_BONUS"
 )
 
 func getBaseRequest() string {
@@ -255,5 +256,10 @@ type BroadcastMessageCommandBody struct {
 
 // StageClearAttemptCommandBody represents the body of a STAGE_CLEAR_ATTEMPT command
 type StageClearAttemptCommandBody struct {
+	InstanceId uuid.UUID `json:"instanceId"`
+}
+
+// EnterBonusCommandBody represents the body of an ENTER_BONUS command
+type EnterBonusCommandBody struct {
 	InstanceId uuid.UUID `json:"instanceId"`
 }

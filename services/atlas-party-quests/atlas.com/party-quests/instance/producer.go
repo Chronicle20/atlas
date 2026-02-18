@@ -35,6 +35,20 @@ func warpCharacterProvider(worldId world.Id, channelId channel.Id, characterId u
 	return changeMapProvider(worldId, channelId, characterId, mapId, instance, 0)
 }
 
+func awardExperienceProvider(worldId world.Id, channelId channel.Id, characterId uint32, distributions []character2.ExperienceDistributions) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.AwardExperienceCommandBody]{
+		WorldId:     worldId,
+		CharacterId: characterId,
+		Type:        character2.CommandAwardExperience,
+		Body: character2.AwardExperienceCommandBody{
+			ChannelId:     channelId,
+			Distributions: distributions,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func instanceCreatedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, partyId uint32, channelId channel.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(partyId))
 	value := &pq.StatusEvent[pq.InstanceCreatedEventBody]{

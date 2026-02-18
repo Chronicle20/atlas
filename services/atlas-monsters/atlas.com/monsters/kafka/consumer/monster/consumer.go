@@ -29,6 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageFriendlyCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelStatusCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUseSkillCommand)))
@@ -48,6 +49,15 @@ func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[da
 
 	p := monster.NewProcessor(l, ctx)
 	p.Damage(c.MonsterId, c.Body.CharacterId, c.Body.Damage, c.Body.AttackType)
+}
+
+func handleDamageFriendlyCommand(l logrus.FieldLogger, ctx context.Context, c command[damageFriendlyCommandBody]) {
+	if c.Type != CommandTypeDamageFriendly {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	p.DamageFriendly(c.MonsterId, c.Body.AttackerUniqueId, c.Body.ObserverUniqueId)
 }
 
 func handleApplyStatusCommand(l logrus.FieldLogger, ctx context.Context, c command[applyStatusCommandBody]) {

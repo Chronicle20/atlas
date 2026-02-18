@@ -67,6 +67,7 @@ func main() {
 
 	tasks.Register(l, tdm.Context())(monster.NewRegistryAudit(l, time.Second*30))
 	tasks.Register(l, tdm.Context())(monster.NewStatusExpirationTask(l, tdm.Context(), time.Second))
+	tasks.Register(l, tdm.Context())(monster.NewDropTimerTask(l, tdm.Context(), time.Second))
 
 	tdm.TeardownFunc(monster.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

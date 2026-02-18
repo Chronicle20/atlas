@@ -132,25 +132,33 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 		announcer := session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m))
 
 		// Boss monsters: broadcast HP bar to all characters in the map
-		if e.Body.Boss {
-			f := sc.Field(e.MapId, e.Instance)
-			err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
-		} else {
-			var idProvider = model2.FixedProvider([]uint32{e.Body.ActorId})
+		f := sc.Field(e.MapId, e.Instance)
+		go func() {
+			if e.Body.Boss {
+				err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, announcer)
+			} else {
+				var idProvider = model2.FixedProvider([]uint32{e.Body.ActorId})
 
-			p, err2 := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
-			if err2 == nil {
-				f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-				mimf := party.MemberInMap(f)
-				mp := party.FilteredMemberProvider(mimf)(model2.FixedProvider(p))
-				idProvider = party.MemberToMemberIdMapper(mp)
+				p, err2 := party.NewProcessor(l, ctx).GetByMemberId(e.Body.ActorId)
+				if err2 == nil {
+					f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+					mimf := party.MemberInMap(f)
+					mp := party.FilteredMemberProvider(mimf)(model2.FixedProvider(p))
+					idProvider = party.MemberToMemberIdMapper(mp)
+				}
+
+				err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
 			}
-
-			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(idProvider, announcer)
-		}
-		if err != nil {
-			l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
-		}
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce monster [%d] health.", e.UniqueId)
+			}
+		}()
+		go func() {
+			err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
+				de := e.Body.DamageEntries[len(e.Body.DamageEntries)-1]
+				return session.Announce(l)(ctx)(wp)(writer.MonsterDamage)(writer.MonsterDamageBody(m, writer.DamageTypeUnk3, uint32(de.Damage)))(s)
+			})
+		}()
 	}
 }
 

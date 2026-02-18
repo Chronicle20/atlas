@@ -606,7 +606,7 @@ func (p *ProcessorImpl) spawnFriendlyMonster(mb *message.Buffer, stg stage.Model
 	}
 
 	if cfg.spawnMessage != "" {
-		_ = p.BroadcastMessage(mb)(inst.Id(), "BLUE_TEXT", cfg.spawnMessage)
+		_ = p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.spawnMessage)
 	}
 
 	p.l.Infof("Spawned friendly monster [%d] for PQ instance [%s] in field [%s].", cfg.monsterId, inst.Id(), f.Id())

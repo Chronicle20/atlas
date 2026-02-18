@@ -406,6 +406,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[handler.PongHandle] = handler.PongHandleFunc
+	handlerMap[handler.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	return handlerMap
 }
 

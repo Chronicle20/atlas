@@ -48,6 +48,7 @@ func main() {
 	command.Registry().Add(skill.ResetSkillCommandProducer)
 	command.Registry().Add(buff.BuffCommandProducer)
 	command.Registry().Add(consumable.ConsumeCommandProducer)
+	command.Registry().Add(monster.MobKillAllCommandProducer)
 	command.Registry().Add(monster.MobStatusCommandProducer)
 	command.Registry().Add(monster.MobClearCommandProducer)
 	command.Registry().Add(disease.DiseaseCommandProducer)

@@ -16,6 +16,7 @@ const (
 	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
+	CommandTypeDestroyField      = "DESTROY_FIELD"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -58,6 +59,8 @@ type useSkillFieldCommandBody struct {
 	SkillId    uint16 `json:"skillId"`
 	SkillLevel uint16 `json:"skillLevel"`
 }
+
+type destroyFieldCommandBody struct{}
 
 type movementCommand struct {
 	WorldId    world.Id   `json:"worldId"`

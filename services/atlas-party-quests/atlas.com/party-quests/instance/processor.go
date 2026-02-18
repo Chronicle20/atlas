@@ -66,6 +66,9 @@ type Processor interface {
 
 	GetByFieldInstance(fieldInstance uuid.UUID) (Model, error)
 
+	EnterBonus(mb *message.Buffer) func(instanceId uuid.UUID) error
+	EnterBonusAndEmit(instanceId uuid.UUID) error
+
 	Destroy(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
 	DestroyAndEmit(instanceId uuid.UUID, reason string) error
 
@@ -77,6 +80,9 @@ type Processor interface {
 
 	TickBonusTimer(mb *message.Buffer) error
 	TickBonusTimerAndEmit() error
+
+	TickCompletionTimer(mb *message.Buffer) error
+	TickCompletionTimerAndEmit() error
 
 	TickRegistrationTimer(mb *message.Buffer) error
 	TickRegistrationTimerAndEmit() error
@@ -122,16 +128,40 @@ func (p *ProcessorImpl) GetTimerByCharacter(characterId uint32) (uint64, error) 
 		return 0, err
 	}
 
-	if inst.State() != StateActive {
-		return 0, errors.New("instance not active")
-	}
-
 	def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
 	if err != nil {
 		return 0, err
 	}
 
 	now := time.Now()
+
+	// Bonus state: return remaining bonus time.
+	if inst.State() == StateBonus {
+		bonus := def.Bonus()
+		if bonus != nil && bonus.Duration() > 0 {
+			elapsed := now.Sub(inst.StageStartedAt())
+			remaining := int64(bonus.Duration()) - int64(elapsed.Seconds())
+			if remaining < 0 {
+				remaining = 0
+			}
+			return uint64(remaining), nil
+		}
+		return 0, errors.New("no bonus timer configured")
+	}
+
+	// Completed state: return remaining completion timeout.
+	if inst.State() == StateCompleted {
+		elapsed := now.Sub(inst.StageStartedAt())
+		remaining := int64(completionTimeout) - int64(elapsed.Seconds())
+		if remaining < 0 {
+			remaining = 0
+		}
+		return uint64(remaining), nil
+	}
+
+	if inst.State() != StateActive {
+		return 0, errors.New("instance not active")
+	}
 
 	// Stage timer takes precedence over global timer.
 	stageIdx := inst.CurrentStageIndex()
@@ -666,36 +696,93 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 		p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 	}
 
-	// Check for bonus stage
-	lastStageIdx := len(def.Stages()) - 1
-	if lastStageIdx >= 0 {
-		lastStage := def.Stages()[lastStageIdx]
-		if lastStage.Type() == stage.TypeBonus {
-			// Enter bonus stage instead of destroying
-			now := time.Now()
-			_, err = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
-				return m.
-					SetState(StateActive).
-					SetCurrentStageIndex(uint32(lastStageIdx)).
-					SetStageStartedAt(now).
-					SetStageState(NewStageState())
-			})
-			if err != nil {
-				return err
-			}
+	bonus := def.Bonus()
+	if bonus == nil {
+		// No bonus configured, destroy instance.
+		return p.Destroy(mb)(inst.Id(), "completed")
+	}
 
-			if len(lastStage.MapIds()) > 0 {
-				targetMapId := _map.Id(lastStage.MapIds()[0])
-				for _, c := range inst.Characters() {
-					_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
-				}
+	switch bonus.Entry() {
+	case definition.BonusEntryAuto:
+		// Auto-enter bonus immediately.
+		return p.enterBonusInternal(mb, inst, def)
+
+	case definition.BonusEntryManual:
+		// Warp to completion map if configured.
+		if bonus.CompletionMapId() != 0 {
+			targetMapId := _map.Id(bonus.CompletionMapId())
+			for _, c := range inst.Characters() {
+				_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
 			}
-			return nil
+		}
+		// Remain in StateCompleted. NPC/portal calls EnterBonus or Leave.
+		// Track when completion phase began for timeout.
+		_, err = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+			return m.SetStageStartedAt(time.Now())
+		})
+		return err
+
+	default:
+		return p.Destroy(mb)(inst.Id(), "completed")
+	}
+}
+
+func (p *ProcessorImpl) EnterBonusAndEmit(instanceId uuid.UUID) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.EnterBonus(buf)(instanceId)
+	})
+}
+
+func (p *ProcessorImpl) EnterBonus(mb *message.Buffer) func(instanceId uuid.UUID) error {
+	return func(instanceId uuid.UUID) error {
+		inst, err := GetRegistry().Get(p.t, instanceId)
+		if err != nil {
+			return err
+		}
+
+		if inst.State() != StateCompleted {
+			return errors.New("instance not in completed state, cannot enter bonus")
+		}
+
+		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+		if err != nil {
+			return err
+		}
+
+		if def.Bonus() == nil {
+			return errors.New("definition has no bonus configured")
+		}
+
+		return p.enterBonusInternal(mb, inst, def)
+	}
+}
+
+func (p *ProcessorImpl) enterBonusInternal(mb *message.Buffer, inst Model, def definition.Model) error {
+	bonus := def.Bonus()
+	now := time.Now()
+
+	_, err := GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+		return m.
+			SetState(StateBonus).
+			SetStageStartedAt(now).
+			SetStageState(NewStageState())
+	})
+	if err != nil {
+		return err
+	}
+
+	p.l.Infof("PQ instance [%s] entered bonus stage.", inst.Id())
+
+	// Warp characters to bonus map.
+	if bonus.MapId() != 0 {
+		targetMapId := _map.Id(bonus.MapId())
+		for _, c := range inst.Characters() {
+			_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
 		}
 	}
 
-	// No bonus stage, destroy instance
-	return p.Destroy(mb)(inst.Id(), "completed")
+	// Emit BONUS_ENTERED event.
+	return mb.Put(pq.EnvEventStatusTopic, bonusEnteredEventProvider(inst.WorldId(), inst.Id(), inst.QuestId(), bonus.MapId()))
 }
 
 func (p *ProcessorImpl) ForfeitAndEmit(instanceId uuid.UUID) error {
@@ -752,7 +839,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(characterId uint32, reaso
 			return err
 		}
 
-		if inst.State() != StateActive && inst.State() != StateClearing {
+		if inst.State() != StateActive && inst.State() != StateClearing && inst.State() != StateCompleted && inst.State() != StateBonus {
 			return errors.New("instance not in a leavable state")
 		}
 
@@ -890,6 +977,11 @@ func (p *ProcessorImpl) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, r
 			p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 		}
 
+		// Clean up bonus map if in bonus state.
+		if inst.State() == StateBonus && def.Bonus() != nil && def.Bonus().MapId() != 0 {
+			p.emitDestroyReactorsInField(mb, inst, []uint32{def.Bonus().MapId()})
+		}
+
 		exitMap := _map.Id(def.Exit())
 
 		// Warp all characters to exit map
@@ -1000,7 +1092,7 @@ func (p *ProcessorImpl) TickBonusTimerAndEmit() error {
 func (p *ProcessorImpl) TickBonusTimer(mb *message.Buffer) error {
 	now := time.Now()
 	for _, inst := range GetRegistry().GetAll(p.t) {
-		if inst.State() != StateActive {
+		if inst.State() != StateBonus {
 			continue
 		}
 
@@ -1009,24 +1101,39 @@ func (p *ProcessorImpl) TickBonusTimer(mb *message.Buffer) error {
 			continue
 		}
 
-		stageIdx := inst.CurrentStageIndex()
-		if int(stageIdx) >= len(def.Stages()) {
-			continue
-		}
-
-		stg := def.Stages()[stageIdx]
-		if stg.Type() != stage.TypeBonus {
-			continue
-		}
-
-		if stg.Duration() == 0 {
+		bonus := def.Bonus()
+		if bonus == nil || bonus.Duration() == 0 {
 			continue
 		}
 
 		elapsed := now.Sub(inst.StageStartedAt())
-		if int64(elapsed.Seconds()) >= int64(stg.Duration()) {
-			p.l.Infof("PQ instance [%s] bonus stage timer expired.", inst.Id())
+		if int64(elapsed.Seconds()) >= int64(bonus.Duration()) {
+			p.l.Infof("PQ instance [%s] bonus timer expired.", inst.Id())
 			_ = p.Destroy(mb)(inst.Id(), "bonus_expired")
+		}
+	}
+	return nil
+}
+
+const completionTimeout = 120 // seconds
+
+func (p *ProcessorImpl) TickCompletionTimerAndEmit() error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.TickCompletionTimer(buf)
+	})
+}
+
+func (p *ProcessorImpl) TickCompletionTimer(mb *message.Buffer) error {
+	now := time.Now()
+	for _, inst := range GetRegistry().GetAll(p.t) {
+		if inst.State() != StateCompleted {
+			continue
+		}
+
+		elapsed := now.Sub(inst.StageStartedAt())
+		if int64(elapsed.Seconds()) >= completionTimeout {
+			p.l.Infof("PQ instance [%s] completion timer expired, destroying.", inst.Id())
+			_ = p.Destroy(mb)(inst.Id(), "completion_expired")
 		}
 	}
 	return nil

@@ -38,6 +38,14 @@
   ],
   "failRequirements": [],
   "exit": 920011200,
+  "bonus": {
+    "mapId": 920011100,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "boxReactors": [2002014]
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -246,19 +254,6 @@
         "strangeSeedId": 4001053,
         "evenStrangerSeedId": 4001054,
         "grassOfLifeId": 4001055
-      }
-    },
-    {
-      "index": 9,
-      "name": "Bonus Stage",
-      "mapIds": [920011100],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "boxReactors": [2002014]
       }
     }
   ],

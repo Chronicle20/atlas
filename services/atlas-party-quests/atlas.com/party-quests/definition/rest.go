@@ -20,6 +20,14 @@ type RegistrationRestModel struct {
 	Affinity string `json:"affinity,omitempty"`
 }
 
+type BonusRestModel struct {
+	MapId           uint32         `json:"mapId"`
+	Duration        uint64         `json:"duration"`
+	Entry           string         `json:"entry"`
+	CompletionMapId uint32         `json:"completionMapId,omitempty"`
+	Properties      map[string]any `json:"properties,omitempty"`
+}
+
 type EventTriggerRestModel struct {
 	Type   string `json:"type"`
 	Target string `json:"target"`
@@ -37,6 +45,7 @@ type RestModel struct {
 	StartEvents       []EventTriggerRestModel  `json:"startEvents"`
 	FailRequirements  []condition.RestModel    `json:"failRequirements"`
 	Exit              uint32                  `json:"exit"`
+	Bonus             *BonusRestModel          `json:"bonus,omitempty"`
 	Stages            []stage.RestModel        `json:"stages"`
 	Rewards           []reward.RestModel       `json:"rewards"`
 }
@@ -128,6 +137,17 @@ func Transform(m Model) (RestModel, error) {
 		rewards = append(rewards, rr)
 	}
 
+	var bonusRest *BonusRestModel
+	if m.Bonus() != nil {
+		bonusRest = &BonusRestModel{
+			MapId:           m.Bonus().MapId(),
+			Duration:        m.Bonus().Duration(),
+			Entry:           string(m.Bonus().Entry()),
+			CompletionMapId: m.Bonus().CompletionMapId(),
+			Properties:      m.Bonus().Properties(),
+		}
+	}
+
 	reg := m.Registration()
 	return RestModel{
 		Id:      m.Id(),
@@ -146,6 +166,7 @@ func Transform(m Model) (RestModel, error) {
 		StartEvents:       startEvents,
 		FailRequirements:  failReqs,
 		Exit:              m.Exit(),
+		Bonus:             bonusRest,
 		Stages:            stages,
 		Rewards:           rewards,
 	}, nil
@@ -204,6 +225,17 @@ func Extract(r RestModel) (Model, error) {
 		rewards = append(rewards, rew)
 	}
 
+	var bonus *Bonus
+	if r.Bonus != nil {
+		bonus = &Bonus{
+			mapId:           r.Bonus.MapId,
+			duration:        r.Bonus.Duration,
+			entry:           BonusEntry(r.Bonus.Entry),
+			completionMapId: r.Bonus.CompletionMapId,
+			properties:      r.Bonus.Properties,
+		}
+	}
+
 	builder := NewBuilder()
 	if r.Id != uuid.Nil {
 		builder.SetId(r.Id)
@@ -225,6 +257,7 @@ func Extract(r RestModel) (Model, error) {
 		SetStartEvents(startEvents).
 		SetFailRequirements(failReqs).
 		SetExit(r.Exit).
+		SetBonus(bonus).
 		SetStages(stages).
 		SetRewards(rewards).
 		Build()

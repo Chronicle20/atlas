@@ -38,6 +38,15 @@
   ],
   "failRequirements": [],
   "exit": 922010000,
+  "bonus": {
+    "mapId": 922011000,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "npcId": 2040045,
+      "reactors": [2202004]
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -260,20 +269,6 @@
         "triggerMonster": 9300006,
         "triggerReactor": 2201003,
         "keyItemId": 4001023
-      }
-    },
-    {
-      "index": 9,
-      "name": "Bonus Stage",
-      "mapIds": [922011000],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "npcId": 2040045,
-        "reactors": [2202004]
       }
     }
   ],

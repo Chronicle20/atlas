@@ -38,6 +38,14 @@
   ],
   "failRequirements": [],
   "exit": 103000890,
+  "bonus": {
+    "mapId": 103000805,
+    "duration": 0,
+    "entry": "manual",
+    "properties": {
+      "npcId": 9020002
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -200,19 +208,6 @@
         "npcId": 9020001,
         "bossMonsters": [9300002, 9300000, 9300003],
         "passItemId": 4001008
-      }
-    },
-    {
-      "index": 5,
-      "name": "Bonus Stage",
-      "mapIds": [103000805],
-      "type": "bonus",
-      "duration": 0,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "npcId": 9020002
       }
     }
   ],

@@ -18,6 +18,7 @@ const (
 	CommandTypeUpdateStageState  = "UPDATE_STAGE_STATE"
 	CommandTypeUpdateCustomData = "UPDATE_CUSTOM_DATA"
 	CommandTypeBroadcastMessage = "BROADCAST_MESSAGE"
+	CommandTypeEnterBonus       = "ENTER_BONUS"
 
 	EnvEventStatusTopic = "EVENT_TOPIC_PARTY_QUEST_STATUS"
 
@@ -30,6 +31,7 @@ const (
 	EventTypeFailed             = "FAILED"
 	EventTypeCharacterRegistered = "CHARACTER_REGISTERED"
 	EventTypeCharacterLeft       = "CHARACTER_LEFT"
+	EventTypeBonusEntered        = "BONUS_ENTERED"
 	EventTypeInstanceDestroyed   = "INSTANCE_DESTROYED"
 )
 
@@ -84,6 +86,10 @@ type BroadcastMessageCommandBody struct {
 	Message     string    `json:"message"`
 }
 
+type EnterBonusCommandBody struct {
+	InstanceId uuid.UUID `json:"instanceId"`
+}
+
 type StatusEvent[E any] struct {
 	WorldId    world.Id  `json:"worldId"`
 	InstanceId uuid.UUID `json:"instanceId"`
@@ -133,6 +139,10 @@ type CharacterLeftEventBody struct {
 	CharacterId uint32     `json:"characterId"`
 	ChannelId   channel.Id `json:"channelId"`
 	Reason      string     `json:"reason"`
+}
+
+type BonusEnteredEventBody struct {
+	MapId uint32 `json:"mapId"`
 }
 
 type InstanceDestroyedEventBody struct {

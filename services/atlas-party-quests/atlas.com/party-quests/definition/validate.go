@@ -44,24 +44,45 @@ var validStageTypes = map[string]bool{
 	stage.TypeReactorTrigger:     true,
 	stage.TypeWarpPuzzle:         true,
 	stage.TypeSequenceMemoryGame: true,
-	stage.TypeBonus:              true,
 	stage.TypeBoss:               true,
 }
 
-var validConditionTypes = map[string]bool{
-	"item_count":   true,
-	"monster_kill": true,
-	"party_size":   true,
-	"level_min":    true,
-	"level_max":    true,
+var validBonusEntryModes = map[string]bool{
+	"auto":   true,
+	"manual": true,
 }
 
-var validOperators = map[string]bool{
+var validRequirementConditionTypes = map[string]bool{
+	"party_size": true,
+	"level_min":  true,
+	"level_max":  true,
+}
+
+var validRequirementOperators = map[string]bool{
 	"eq":  true,
 	"gte": true,
 	"lte": true,
 	"gt":  true,
 	"lt":  true,
+}
+
+var validClearConditionTypes = map[string]bool{
+	"item":         true,
+	"item_count":   true,
+	"monster_kill": true,
+	"custom_data":  true,
+}
+
+var validClearOperators = map[string]bool{
+	">=": true,
+	"<=": true,
+	"=":  true,
+	">":  true,
+	"<":  true,
+}
+
+var validClearActions = map[string]bool{
+	"destroy_monsters": true,
 }
 
 var validRewardTypes = map[string]bool{
@@ -94,8 +115,9 @@ func Validate(rm RestModel) ValidationResult {
 	}
 
 	validateRegistration(&result, rm.Registration)
-	validateConditionModels(&result, rm.StartRequirements, "startRequirements")
-	validateConditionModels(&result, rm.FailRequirements, "failRequirements")
+	validateRequirementConditions(&result, rm.StartRequirements, "startRequirements")
+	validateRequirementConditions(&result, rm.FailRequirements, "failRequirements")
+	validateBonus(&result, rm.Bonus)
 	validateStages(&result, rm.Stages)
 	validateRewardModels(&result, rm.Rewards, "rewards")
 
@@ -121,12 +143,26 @@ func validateRegistration(result *ValidationResult, reg RegistrationRestModel) {
 	}
 }
 
-func validateConditionModels(result *ValidationResult, conditions []condition.RestModel, context string) {
+func validateBonus(result *ValidationResult, bonus *BonusRestModel) {
+	if bonus == nil {
+		return
+	}
+	if bonus.MapId == 0 {
+		result.addError("bonus.mapId is required")
+	}
+	if bonus.Entry == "" {
+		result.addError("bonus.entry is required (auto or manual)")
+	} else if !validBonusEntryModes[bonus.Entry] {
+		result.addError(fmt.Sprintf("bonus.entry has invalid value %q, must be one of: auto, manual", bonus.Entry))
+	}
+}
+
+func validateRequirementConditions(result *ValidationResult, conditions []condition.RestModel, context string) {
 	for i, c := range conditions {
-		if !validConditionTypes[c.Type] {
+		if !validRequirementConditionTypes[c.Type] {
 			result.addError(fmt.Sprintf("%s[%d] has invalid type %q", context, i, c.Type))
 		}
-		if !validOperators[c.Operator] {
+		if !validRequirementOperators[c.Operator] {
 			result.addError(fmt.Sprintf("%s[%d] has invalid operator %q", context, i, c.Operator))
 		}
 	}
@@ -155,11 +191,17 @@ func validateStages(result *ValidationResult, stages []stage.RestModel) {
 		}
 
 		for j, c := range s.ClearConditions {
-			if !validConditionTypes[c.Type] {
+			if !validClearConditionTypes[c.Type] {
 				result.addError(fmt.Sprintf("stage[%d].clearConditions[%d] has invalid type %q", i, j, c.Type))
 			}
-			if !validOperators[c.Operator] {
+			if !validClearOperators[c.Operator] {
 				result.addError(fmt.Sprintf("stage[%d].clearConditions[%d] has invalid operator %q", i, j, c.Operator))
+			}
+		}
+
+		for j, a := range s.ClearActions {
+			if !validClearActions[a] {
+				result.addError(fmt.Sprintf("stage[%d].clearActions[%d] has invalid action %q", i, j, a))
 			}
 		}
 

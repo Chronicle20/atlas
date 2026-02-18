@@ -38,6 +38,15 @@
   ],
   "failRequirements": [],
   "exit": 910320000,
+  "bonus": {
+    "mapId": 910320010,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "monsters": [9700020],
+      "collectItemId": 2022615
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -101,20 +110,6 @@
       "properties": {
         "npcId": 1052115,
         "gradeBased": true
-      }
-    },
-    {
-      "index": 4,
-      "name": "Bonus Stage",
-      "mapIds": [910320010],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "monsters": [9700020],
-        "collectItemId": 2022615
       }
     }
   ],

@@ -32,6 +32,15 @@
   ],
   "failRequirements": [],
   "exit": 910010300,
+  "bonus": {
+    "mapId": 910010200,
+    "duration": 300,
+    "entry": "manual",
+    "completionMapId": 910010100,
+    "properties": {
+      "npcId": 1012113
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -97,19 +106,6 @@
             "messageTemplate": "The Moon Bunny made rice cake number {count}."
           }
         }
-      }
-    },
-    {
-      "index": 2,
-      "name": "Bonus Stage",
-      "mapIds": [910010200],
-      "type": "bonus",
-      "duration": 0,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "npcId": 1012113
       }
     }
   ],

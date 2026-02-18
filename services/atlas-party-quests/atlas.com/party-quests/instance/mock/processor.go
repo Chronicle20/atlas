@@ -45,6 +45,10 @@ type ProcessorMock struct {
 	TickRegistrationTimerAndEmitFunc func() error
 	GracefulShutdownFunc      func(mb *message.Buffer) error
 	GracefulShutdownAndEmitFunc func() error
+	EnterBonusFunc            func(mb *message.Buffer) func(instanceId uuid.UUID) error
+	EnterBonusAndEmitFunc     func(instanceId uuid.UUID) error
+	TickCompletionTimerFunc   func(mb *message.Buffer) error
+	TickCompletionTimerAndEmitFunc func() error
 	GetByIdFunc               func(instanceId uuid.UUID) (instance.Model, error)
 	GetByCharacterFunc        func(characterId uint32) (instance.Model, error)
 	GetTimerByCharacterFunc   func(characterId uint32) (uint64, error)
@@ -294,6 +298,34 @@ func (m *ProcessorMock) GracefulShutdown(mb *message.Buffer) error {
 func (m *ProcessorMock) GracefulShutdownAndEmit() error {
 	if m.GracefulShutdownAndEmitFunc != nil {
 		return m.GracefulShutdownAndEmitFunc()
+	}
+	return nil
+}
+
+func (m *ProcessorMock) EnterBonus(mb *message.Buffer) func(instanceId uuid.UUID) error {
+	if m.EnterBonusFunc != nil {
+		return m.EnterBonusFunc(mb)
+	}
+	return func(uuid.UUID) error { return nil }
+}
+
+func (m *ProcessorMock) EnterBonusAndEmit(instanceId uuid.UUID) error {
+	if m.EnterBonusAndEmitFunc != nil {
+		return m.EnterBonusAndEmitFunc(instanceId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) TickCompletionTimer(mb *message.Buffer) error {
+	if m.TickCompletionTimerFunc != nil {
+		return m.TickCompletionTimerFunc(mb)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) TickCompletionTimerAndEmit() error {
+	if m.TickCompletionTimerAndEmitFunc != nil {
+		return m.TickCompletionTimerAndEmitFunc()
 	}
 	return nil
 }

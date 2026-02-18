@@ -32,6 +32,19 @@
   ],
   "failRequirements": [],
   "exit": 926010000,
+  "bonus": {
+    "mapId": 926010010,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "bonusMonsters": {
+        "easy": {"monsterId": 9700019, "count": 30},
+        "medium": {"monsterId": 9700019, "count": 40},
+        "hard": {"monsterId": 9700019, "count": 50},
+        "hell": {"monsterId": 9700029, "count": 50}
+      }
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -156,24 +169,6 @@
       "properties": {
         "npcId": 2103013,
         "gradeBased": true
-      }
-    },
-    {
-      "index": 6,
-      "name": "Bonus Stage",
-      "mapIds": [926010010],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "bonusMonsters": {
-          "easy": {"monsterId": 9700019, "count": 30},
-          "medium": {"monsterId": 9700019, "count": 40},
-          "hard": {"monsterId": 9700019, "count": 50},
-          "hell": {"monsterId": 9700029, "count": 50}
-        }
       }
     }
   ],

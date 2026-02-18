@@ -335,6 +335,7 @@ func produceWriters() []string {
 		writer.MonsterStatSet,
 		writer.MonsterStatReset,
 		writer.MonsterDamage,
+		writer.FieldEffectWeather,
 	}
 }
 

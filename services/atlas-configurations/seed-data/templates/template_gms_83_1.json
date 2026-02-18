@@ -1460,6 +1460,10 @@
         }
       },
       {
+        "opCode": "0x8E",
+        "writer": "FieldEffectWeather"
+      },
+      {
         "opCode": "0x93",
         "writer": "Clock"
       },

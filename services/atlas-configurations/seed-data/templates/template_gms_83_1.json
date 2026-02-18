@@ -2010,6 +2010,10 @@
         "writer": "MonsterStatReset"
       },
       {
+        "opCode": "0xF6",
+        "writer": "MonsterDamage"
+      },
+      {
         "opCode": "0xFA",
         "writer": "MonsterHealth"
       },

@@ -64,6 +64,23 @@ func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []
 	return producer.SingleMessageProvider(key, value)
 }
 
+func DamageFriendlyCommandProvider(f field.Model, attackedUniqueId uint32, observerUniqueId uint32, attackerUniqueId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(attackedUniqueId))
+	value := &monster2.Command[monster2.DamageFriendlyCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: attackedUniqueId,
+		Type:      monster2.CommandTypeDamageFriendly,
+		Body: monster2.DamageFriendlyCommandBody{
+			AttackerUniqueId: attackerUniqueId,
+			ObserverUniqueId: observerUniqueId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func DamageCommandProvider(f field.Model, monsterId uint32, characterId uint32, damage uint32, attackType byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.DamageCommandBody]{

@@ -334,6 +334,7 @@ func produceWriters() []string {
 		writer.UiDisable,
 		writer.MonsterStatSet,
 		writer.MonsterStatReset,
+		writer.MonsterDamage,
 	}
 }
 

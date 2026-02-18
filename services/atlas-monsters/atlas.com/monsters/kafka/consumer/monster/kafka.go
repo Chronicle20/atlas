@@ -8,11 +8,12 @@ import (
 )
 
 const (
-	EnvCommandTopic             = "COMMAND_TOPIC_MONSTER"
-	CommandTypeDamage           = "DAMAGE"
-	CommandTypeApplyStatus      = "APPLY_STATUS"
-	CommandTypeCancelStatus     = "CANCEL_STATUS"
-	CommandTypeUseSkill         = "USE_SKILL"
+	EnvCommandTopic              = "COMMAND_TOPIC_MONSTER"
+	CommandTypeDamage            = "DAMAGE"
+	CommandTypeDamageFriendly    = "DAMAGE_FRIENDLY"
+	CommandTypeApplyStatus       = "APPLY_STATUS"
+	CommandTypeCancelStatus      = "CANCEL_STATUS"
+	CommandTypeUseSkill          = "USE_SKILL"
 	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
@@ -27,6 +28,11 @@ type command[E any] struct {
 	MonsterId uint32     `json:"monsterId"`
 	Type      string     `json:"type"`
 	Body      E          `json:"body"`
+}
+
+type damageFriendlyCommandBody struct {
+	ObserverUniqueId uint32 `json:"observerUniqueId"`
+	AttackerUniqueId uint32 `json:"attackerUniqueId"`
 }
 
 type damageCommandBody struct {

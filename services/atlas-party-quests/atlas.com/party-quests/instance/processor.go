@@ -439,7 +439,7 @@ func (p *ProcessorImpl) Start(mb *message.Buffer) func(instanceId uuid.UUID) err
 		if len(stg.MapIds()) > 0 {
 			targetMapId := _map.Id(stg.MapIds()[0])
 			for _, c := range inst.Characters() {
-				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
+				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId(), targetMapId)
 				}
@@ -503,7 +503,7 @@ func (p *ProcessorImpl) StageClearAttempt(mb *message.Buffer) func(instanceId uu
 		p.executeClearActions(stg, inst)
 
 		// Emit STAGE_CLEARED event
-		err = mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), inst.FieldInstances()))
+		err = mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), []uuid.UUID{inst.Id()}))
 		if err != nil {
 			return err
 		}
@@ -525,14 +525,10 @@ func (p *ProcessorImpl) executeClearActions(stg stage.Model, inst Model) {
 }
 
 func (p *ProcessorImpl) emitDestroyReactorsInField(mb *message.Buffer, inst Model, mapIds []uint32) {
-	for i, mid := range mapIds {
-		fieldInstance := uuid.Nil
-		if i < len(inst.FieldInstances()) {
-			fieldInstance = inst.FieldInstances()[i]
-		}
-		err := mb.Put(reactorMessage.EnvCommandTopic, destroyReactorsInFieldProvider(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance))
+	for _, mid := range mapIds {
+		err := mb.Put(reactorMessage.EnvCommandTopic, destroyReactorsInFieldProvider(inst.WorldId(), inst.ChannelId(), _map.Id(mid), inst.Id()))
 		if err != nil {
-			p.l.WithError(err).Warnf("Failed to emit destroy reactors for map [%d] instance [%s].", mid, fieldInstance)
+			p.l.WithError(err).Warnf("Failed to emit destroy reactors for map [%d] instance [%s].", mid, inst.Id())
 		}
 	}
 }
@@ -548,7 +544,7 @@ func (p *ProcessorImpl) spawnFriendlyMonster(mb *message.Buffer, stg stage.Model
 	}
 
 	targetMapId := _map.Id(stg.MapIds()[0])
-	f := field.NewBuilder(inst.WorldId(), inst.ChannelId(), targetMapId).Build()
+	f := field.NewBuilder(inst.WorldId(), inst.ChannelId(), targetMapId).SetInstance(inst.Id()).Build()
 
 	mp := monster.NewProcessor(p.l, p.ctx)
 	err := mp.SpawnInField(f, cfg.monsterId, cfg.x, cfg.y, cfg.fh)
@@ -566,14 +562,10 @@ func (p *ProcessorImpl) spawnFriendlyMonster(mb *message.Buffer, stg stage.Model
 
 func (p *ProcessorImpl) destroyMonstersInStage(stg stage.Model, inst Model) {
 	mp := monster.NewProcessor(p.l, p.ctx)
-	for i, mid := range stg.MapIds() {
-		fieldInstance := uuid.Nil
-		if i < len(inst.FieldInstances()) {
-			fieldInstance = inst.FieldInstances()[i]
-		}
-		err := mp.DestroyInField(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance)
+	for _, mid := range stg.MapIds() {
+		err := mp.DestroyInField(inst.WorldId(), inst.ChannelId(), _map.Id(mid), inst.Id())
 		if err != nil {
-			p.l.WithError(err).Warnf("Failed to destroy monsters in map [%d] instance [%s].", mid, fieldInstance)
+			p.l.WithError(err).Warnf("Failed to destroy monsters in map [%d] instance [%s].", mid, inst.Id())
 		}
 	}
 }
@@ -637,7 +629,7 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 		if currentStage.WarpType() != "none" && len(nextStage.MapIds()) > 0 {
 			targetMapId := _map.Id(nextStage.MapIds()[0])
 			for _, c := range inst.Characters() {
-				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
+				err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
 				if err != nil {
 					p.l.WithError(err).Errorf("Failed to warp character [%d] to map [%d].", c.CharacterId(), targetMapId)
 				}
@@ -695,7 +687,7 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 			if len(lastStage.MapIds()) > 0 {
 				targetMapId := _map.Id(lastStage.MapIds()[0])
 				for _, c := range inst.Characters() {
-					_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId))
+					_ = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), targetMapId, inst.Id()))
 				}
 			}
 			return nil
@@ -789,7 +781,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(characterId uint32, reaso
 		}
 
 		// Warp the leaving character to exit map.
-		err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(ce.WorldId(), ce.ChannelId(), characterId, exitMap))
+		err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(ce.WorldId(), ce.ChannelId(), characterId, exitMap, uuid.Nil))
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", characterId)
 		}
@@ -902,7 +894,7 @@ func (p *ProcessorImpl) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, r
 
 		// Warp all characters to exit map
 		for _, c := range inst.Characters() {
-			err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), exitMap))
+			err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(c.WorldId(), c.ChannelId(), c.CharacterId(), exitMap, uuid.Nil))
 			if err != nil {
 				p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", c.CharacterId())
 			}
@@ -1165,6 +1157,9 @@ func (p *ProcessorImpl) getFriendlyMonsterConfig(f field.Model, monsterId uint32
 			continue
 		}
 		if inst.WorldId() != f.WorldId() || inst.ChannelId() != f.ChannelId() {
+			continue
+		}
+		if f.Instance() != inst.Id() {
 			continue
 		}
 

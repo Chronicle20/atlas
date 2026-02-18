@@ -31,8 +31,8 @@ func changeMapProvider(worldId world.Id, channelId channel.Id, characterId uint3
 	return producer.SingleMessageProvider(key, value)
 }
 
-func warpCharacterProvider(worldId world.Id, channelId channel.Id, characterId uint32, mapId _map.Id) model.Provider[[]kafka.Message] {
-	return changeMapProvider(worldId, channelId, characterId, mapId, uuid.Nil, 0)
+func warpCharacterProvider(worldId world.Id, channelId channel.Id, characterId uint32, mapId _map.Id, instance uuid.UUID) model.Provider[[]kafka.Message] {
+	return changeMapProvider(worldId, channelId, characterId, mapId, instance, 0)
 }
 
 func instanceCreatedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, partyId uint32, channelId channel.Id) model.Provider[[]kafka.Message] {

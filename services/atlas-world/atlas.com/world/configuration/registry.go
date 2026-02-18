@@ -62,6 +62,7 @@ func initializeRatesFromConfig(l logrus.FieldLogger, tenantId uuid.UUID, tc tena
 		return
 	}
 
+	ctx := tenant2.WithContext(context.Background(), t)
 	for worldId, wc := range tc.Worlds {
 		rates := rate.NewModel()
 		rates = rates.WithRate(rate.TypeExp, wc.GetExpRate())
@@ -69,7 +70,7 @@ func initializeRatesFromConfig(l logrus.FieldLogger, tenantId uuid.UUID, tc tena
 		rates = rates.WithRate(rate.TypeItemDrop, wc.GetItemDropRate())
 		rates = rates.WithRate(rate.TypeQuestExp, wc.GetQuestExpRate())
 
-		rate.GetRegistry().InitWorldRates(t, world.Id(worldId), rates)
+		rate.GetRegistry().InitWorldRates(ctx, world.Id(worldId), rates)
 		l.Infof("Initialized world [%d] rates from config: exp=%.2f, meso=%.2f, drop=%.2f, quest=%.2f",
 			worldId, wc.GetExpRate(), wc.GetMesoRate(), wc.GetItemDropRate(), wc.GetQuestExpRate())
 	}

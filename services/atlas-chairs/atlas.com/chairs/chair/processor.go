@@ -32,7 +32,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	m, ok := GetRegistry().Get(characterId)
+	m, ok := GetRegistry().Get(p.ctx, characterId)
 	if !ok {
 		return Model{}, errors.New("not found")
 	}
@@ -91,7 +91,7 @@ func (p *ProcessorImpl) Set(field field.Model, chairType string, chairId uint32,
 		chairType: chairType,
 	}
 
-	GetRegistry().Set(characterId, c)
+	GetRegistry().Set(p.ctx, characterId, c)
 	return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvEventTopicStatus)(statusEventUsedProvider(field, chairType, chairId, characterId))
 }
 
@@ -102,7 +102,7 @@ func (p *ProcessorImpl) Clear(field field.Model, characterId uint32) error {
 		p.l.WithError(err).Errorf("Failed to get chair for character [%d].", characterId)
 		return err
 	}
-	existed := GetRegistry().Clear(characterId)
+	existed := GetRegistry().Clear(p.ctx, characterId)
 	if existed {
 		return producer.ProviderImpl(p.l)(p.ctx)(chair2.EnvEventTopicStatus)(statusEventCancelledProvider(field, c.Type(), c.Id(), characterId))
 	}

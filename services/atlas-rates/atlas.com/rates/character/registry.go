@@ -2,157 +2,116 @@ package character
 
 import (
 	"atlas-rates/rate"
+	"context"
 	"errors"
-	"sync"
+	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 var ErrNotFound = errors.New("not found")
 
-// Registry is the singleton in-memory cache for character rates
+// Registry is the Redis-backed cache for character rates
 type Registry struct {
-	lock         sync.Mutex
-	characterReg map[tenant.Model]map[uint32]Model
-	tenantLock   map[tenant.Model]*sync.RWMutex
+	characters *atlas.TenantRegistry[uint32, Model]
 }
 
 var registry *Registry
-var once sync.Once
 
 // GetRegistry returns the singleton registry instance
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
 	return registry
 }
 
-// getOrCreateTenantMaps returns the character map and lock for a tenant,
-// creating them if they don't exist. This method is thread-safe.
-func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *sync.RWMutex) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	cm, ok := r.characterReg[t]
-	if !ok {
-		cm = make(map[uint32]Model)
-		r.characterReg[t] = cm
+// InitRegistry initializes the registry with a Redis client
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		characters: atlas.NewTenantRegistry[uint32, Model](client, "rates", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
 	}
-
-	cml, ok := r.tenantLock[t]
-	if !ok {
-		cml = &sync.RWMutex{}
-		r.tenantLock[t] = cml
-	}
-
-	return cm, cml
 }
 
 // Get retrieves a character's rate model
-func (r *Registry) Get(t tenant.Model, characterId uint32) (Model, error) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
-
-	if m, ok := cm[characterId]; ok {
-		return m, nil
+func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
+		if errors.Is(err, atlas.ErrNotFound) {
+			return Model{}, ErrNotFound
+		}
+		return Model{}, err
 	}
-	return Model{}, ErrNotFound
+	return m, nil
 }
 
 // GetOrCreate retrieves a character's rate model, creating one if it doesn't exist
-func (r *Registry) GetOrCreate(t tenant.Model, ch channel.Model, characterId uint32) Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	if m, ok := cm[characterId]; ok {
+func (r *Registry) GetOrCreate(ctx context.Context, ch channel.Model, characterId uint32) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err == nil {
 		return m
 	}
-
-	m := NewModel(t, ch, characterId)
-	cm[characterId] = m
+	m = NewModel(t, ch, characterId)
+	_ = r.characters.Put(ctx, t, characterId, m)
 	return m
 }
 
 // Update replaces a character's rate model
-func (r *Registry) Update(t tenant.Model, m Model) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	cm[m.characterId] = m
+func (r *Registry) Update(ctx context.Context, m Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.characters.Put(ctx, t, m.characterId, m)
 }
 
 // AddFactor adds or updates a rate factor for a character
-func (r *Registry) AddFactor(t tenant.Model, ch channel.Model, characterId uint32, f rate.Factor) Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	var m Model
-	var ok bool
-	if m, ok = cm[characterId]; !ok {
+func (r *Registry) AddFactor(ctx context.Context, ch channel.Model, characterId uint32, f rate.Factor) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		m = NewModel(t, ch, characterId)
 	}
-
 	m = m.WithFactor(f)
-	cm[characterId] = m
+	_ = r.characters.Put(ctx, t, characterId, m)
 	return m
 }
 
 // RemoveFactor removes a specific rate factor for a character
-func (r *Registry) RemoveFactor(t tenant.Model, characterId uint32, source string, rateType rate.Type) (Model, error) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	m, ok := cm[characterId]
-	if !ok {
+func (r *Registry) RemoveFactor(ctx context.Context, characterId uint32, source string, rateType rate.Type) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		return Model{}, ErrNotFound
 	}
-
 	m = m.WithoutFactor(source, rateType)
-	cm[characterId] = m
+	_ = r.characters.Put(ctx, t, characterId, m)
 	return m, nil
 }
 
 // RemoveFactorsBySource removes all factors from a specific source for a character
-func (r *Registry) RemoveFactorsBySource(t tenant.Model, characterId uint32, source string) (Model, error) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	m, ok := cm[characterId]
-	if !ok {
+func (r *Registry) RemoveFactorsBySource(ctx context.Context, characterId uint32, source string) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		return Model{}, ErrNotFound
 	}
-
 	m = m.WithoutFactorsBySource(source)
-	cm[characterId] = m
+	_ = r.characters.Put(ctx, t, characterId, m)
 	return m, nil
 }
 
 // GetAllForWorld returns all characters in a specific world
-func (r *Registry) GetAllForWorld(t tenant.Model, worldId world.Id) []Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
-
+func (r *Registry) GetAllForWorld(ctx context.Context, worldId world.Id) []Model {
+	t := tenant.MustFromContext(ctx)
+	models, err := r.characters.GetAllValues(ctx, t)
+	if err != nil {
+		return nil
+	}
 	result := make([]Model, 0)
-	for _, m := range cm {
+	for _, m := range models {
 		if m.worldId == worldId {
 			result = append(result, m)
 		}
@@ -161,36 +120,26 @@ func (r *Registry) GetAllForWorld(t tenant.Model, worldId world.Id) []Model {
 }
 
 // UpdateWorldRate updates the world rate factor for all characters in that world
-func (r *Registry) UpdateWorldRate(t tenant.Model, worldId world.Id, rateType rate.Type, multiplier float64) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
+func (r *Registry) UpdateWorldRate(ctx context.Context, worldId world.Id, rateType rate.Type, multiplier float64) {
+	t := tenant.MustFromContext(ctx)
+	models, err := r.characters.GetAllValues(ctx, t)
+	if err != nil {
+		return
+	}
 
 	source := "world"
 	f := rate.NewFactor(source, rateType, multiplier)
 
-	for id, m := range cm {
+	for _, m := range models {
 		if m.worldId == worldId {
-			cm[id] = m.WithFactor(f)
+			m = m.WithFactor(f)
+			_ = r.characters.Put(ctx, t, m.characterId, m)
 		}
 	}
 }
 
 // Delete removes a character from the registry
-func (r *Registry) Delete(t tenant.Model, characterId uint32) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	delete(cm, characterId)
-}
-
-// ResetForTesting clears all registry state (testing only)
-func (r *Registry) ResetForTesting() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.characterReg = make(map[tenant.Model]map[uint32]Model)
-	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+func (r *Registry) Delete(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.characters.Remove(ctx, t, characterId)
 }

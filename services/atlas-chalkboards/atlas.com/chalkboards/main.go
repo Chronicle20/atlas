@@ -2,6 +2,7 @@ package main
 
 import (
 	"atlas-chalkboards/chalkboard"
+	character2 "atlas-chalkboards/character"
 	chalkboard2 "atlas-chalkboards/kafka/consumer/chalkboard"
 	"atlas-chalkboards/kafka/consumer/character"
 	"atlas-chalkboards/logger"
@@ -10,6 +11,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -39,6 +41,10 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	chalkboard.InitRegistry(rc)
+	character2.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

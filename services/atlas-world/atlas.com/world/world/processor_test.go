@@ -10,34 +10,43 @@ import (
 
 	channelConstant "github.com/Chronicle20/atlas-constants/channel"
 	worldConstant "github.com/Chronicle20/atlas-constants/world"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
-func setupProcessor(t *testing.T) (world.Processor, func()) {
+func setupWorldTestRegistry(t *testing.T) {
 	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	channel.InitRegistry(rc)
+}
+
+func setupProcessor(t *testing.T) (world.Processor, context.Context, func()) {
+	t.Helper()
+	setupWorldTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
 	logger.SetLevel(logrus.DebugLevel)
 
 	processor := world.NewProcessor(logger, ctx)
-	tenant := test.CreateMockTenant(tenantId)
 
 	cleanup := func() {
 		// Clean up any registered channels
-		servers := channel.GetChannelRegistry().ChannelServers(tenant)
+		servers := channel.GetChannelRegistry().ChannelServers(ctx)
 		for _, s := range servers {
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
+			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(ctx, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 		}
 	}
 
-	return processor, cleanup
+	return processor, ctx, cleanup
 }
 
 func TestNewProcessor(t *testing.T) {
-	processor, cleanup := setupProcessor(t)
+	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
 	if processor == nil {
@@ -46,6 +55,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestNewProcessor_PanicsWithoutTenant(t *testing.T) {
+	setupWorldTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	defer func() {
@@ -59,6 +69,7 @@ func TestNewProcessor_PanicsWithoutTenant(t *testing.T) {
 }
 
 func TestChannelDecorator_WithChannels(t *testing.T) {
+	setupWorldTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
@@ -82,15 +93,10 @@ func TestChannelDecorator_WithChannels(t *testing.T) {
 	if len(decorated.Channels()) != 2 {
 		t.Errorf("len(decorated.Channels()) = %d, want 2", len(decorated.Channels()))
 	}
-
-	// Cleanup
-	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
 }
 
 func TestChannelDecorator_NoChannels(t *testing.T) {
-	processor, cleanup := setupProcessor(t)
+	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
 	// Create a world model
@@ -112,6 +118,7 @@ func TestChannelDecorator_NoChannels(t *testing.T) {
 }
 
 func TestChannelDecorator_PreservesOtherFields(t *testing.T) {
+	setupWorldTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
@@ -162,10 +169,6 @@ func TestChannelDecorator_PreservesOtherFields(t *testing.T) {
 	if len(decorated.Channels()) != 1 {
 		t.Errorf("len(decorated.Channels()) = %d, want 1", len(decorated.Channels()))
 	}
-
-	// Cleanup
-	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(2, 0))
 }
 
 func TestGetFlag(t *testing.T) {
@@ -224,7 +227,7 @@ func TestStatusConstants(t *testing.T) {
 }
 
 func TestAllWorldProvider_NoChannels(t *testing.T) {
-	processor, cleanup := setupProcessor(t)
+	processor, _, cleanup := setupProcessor(t)
 	defer cleanup()
 
 	// When no channels are registered, no worlds should be returned
@@ -238,6 +241,7 @@ func TestAllWorldProvider_NoChannels(t *testing.T) {
 }
 
 func TestMapDistinctWorldId(t *testing.T) {
+	setupWorldTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
@@ -252,8 +256,7 @@ func TestMapDistinctWorldId(t *testing.T) {
 	_, _ = channelProcessor.Register(channelConstant.NewModel(3, 1), "192.168.1.5", 8084, 0, 100)
 
 	// Get all channels
-	tenant := test.CreateMockTenant(tenantId)
-	channels := channel.GetChannelRegistry().ChannelServers(tenant)
+	channels := channel.GetChannelRegistry().ChannelServers(ctx)
 
 	// Count distinct world IDs
 	worldIds := make(map[worldConstant.Id]bool)
@@ -264,16 +267,10 @@ func TestMapDistinctWorldId(t *testing.T) {
 	if len(worldIds) != 3 {
 		t.Errorf("Expected 3 distinct world IDs, got %d", len(worldIds))
 	}
-
-	// Cleanup
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(2, 0))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(3, 0))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(3, 1))
 }
 
 func TestProcessorWithMultipleChannels(t *testing.T) {
+	setupWorldTestRegistry(t)
 	tenantId := uuid.New()
 	ctx := test.CreateTestContextWithTenant(tenantId)
 	logger, _ := logtest.NewNullLogger()
@@ -309,12 +306,6 @@ func TestProcessorWithMultipleChannels(t *testing.T) {
 	if !foundChannels[0] || !foundChannels[1] || !foundChannels[2] {
 		t.Error("Not all channels were found in decorated world")
 	}
-
-	// Cleanup
-	tenant := test.CreateMockTenant(tenantId)
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 0))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 1))
-	_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(0, 2))
 }
 
 func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId worldConstant.Id, channelId channelConstant.Id) {
@@ -332,6 +323,6 @@ func createTestChannelInRegistry(t *testing.T, tenantId uuid.UUID, worldId world
 		t.Fatalf("Failed to create test channel: %v", err)
 	}
 
-	tenant := test.CreateMockTenant(tenantId)
-	channel.GetChannelRegistry().Register(tenant, ch)
+	ctx := test.CreateTestContextWithTenant(tenantId)
+	channel.GetChannelRegistry().Register(ctx, ch)
 }

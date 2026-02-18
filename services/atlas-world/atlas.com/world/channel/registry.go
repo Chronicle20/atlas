@@ -1,126 +1,103 @@
 package channel
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	channelConstant "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-type tenantData struct {
-	lock     sync.RWMutex
-	channels map[world.Id]map[channel.Id]Model
-}
+const tenantSetKey = "channel:tenants"
 
 type Registry struct {
-	lock    sync.RWMutex
-	tenants map[tenant.Model]*tenantData
+	channels *atlas.TenantRegistry[string, Model]
+	client   *goredis.Client
 }
 
 var channelRegistry *Registry
-var once sync.Once
 
 var ErrChannelNotFound = errors.New("channel not found")
 
+func compositeKey(worldId world.Id, channelId channelConstant.Id) string {
+	return fmt.Sprintf("%d:%d", worldId, channelId)
+}
+
+func InitRegistry(client *goredis.Client) {
+	channelRegistry = &Registry{
+		channels: atlas.NewTenantRegistry[string, Model](client, "channel", func(k string) string { return k }),
+		client:   client,
+	}
+}
+
 func GetChannelRegistry() *Registry {
-	once.Do(func() {
-		channelRegistry = &Registry{
-			tenants: make(map[tenant.Model]*tenantData),
-		}
-	})
 	return channelRegistry
 }
 
-func (r *Registry) getTenantData(t tenant.Model) *tenantData {
-	// Try read lock first for existing tenant
-	r.lock.RLock()
-	if td, ok := r.tenants[t]; ok {
-		r.lock.RUnlock()
-		return td
-	}
-	r.lock.RUnlock()
-
-	// Need write lock to create new tenant
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	// Double-check after acquiring write lock
-	if td, ok := r.tenants[t]; ok {
-		return td
-	}
-
-	td := &tenantData{
-		channels: make(map[world.Id]map[channel.Id]Model),
-	}
-	r.tenants[t] = td
-	return td
-}
-
-func (r *Registry) Register(t tenant.Model, m Model) Model {
-	td := r.getTenantData(t)
-	td.lock.Lock()
-	defer td.lock.Unlock()
-
-	if _, ok := td.channels[m.WorldId()]; !ok {
-		td.channels[m.WorldId()] = make(map[channel.Id]Model)
-	}
-	td.channels[m.WorldId()][m.channelId] = m
+func (r *Registry) Register(ctx context.Context, m Model) Model {
+	t := tenant.MustFromContext(ctx)
+	key := compositeKey(m.worldId, m.channelId)
+	_ = r.channels.Put(ctx, t, key, m)
+	r.trackTenant(ctx, t)
 	return m
 }
 
-func (r *Registry) ChannelServers(t tenant.Model) []Model {
-	td := r.getTenantData(t)
-	td.lock.RLock()
-	defer td.lock.RUnlock()
-
-	results := make([]Model, 0)
-	for _, w := range td.channels {
-		for _, c := range w {
-			results = append(results, c)
-		}
+func (r *Registry) ChannelServers(ctx context.Context) []Model {
+	t := tenant.MustFromContext(ctx)
+	vals, err := r.channels.GetAllValues(ctx, t)
+	if err != nil {
+		return nil
 	}
-	return results
+	return vals
 }
 
-func (r *Registry) ChannelServer(t tenant.Model, ch channel.Model) (Model, error) {
-	td := r.getTenantData(t)
-	td.lock.RLock()
-	defer td.lock.RUnlock()
-
-	var ok bool
-	var result Model
-	if _, ok = td.channels[ch.WorldId()]; !ok {
-		return result, ErrChannelNotFound
+func (r *Registry) ChannelServer(ctx context.Context, ch channelConstant.Model) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	key := compositeKey(ch.WorldId(), ch.Id())
+	m, err := r.channels.Get(ctx, t, key)
+	if err != nil {
+		return Model{}, ErrChannelNotFound
 	}
-	if result, ok = td.channels[ch.WorldId()][ch.Id()]; !ok {
-		return result, ErrChannelNotFound
-	}
-	return result, nil
+	return m, nil
 }
 
-func (r *Registry) RemoveByWorldAndChannel(t tenant.Model, ch channel.Model) error {
-	td := r.getTenantData(t)
-	td.lock.Lock()
-	defer td.lock.Unlock()
-
-	if _, ok := td.channels[ch.WorldId()]; !ok {
+func (r *Registry) RemoveByWorldAndChannel(ctx context.Context, ch channelConstant.Model) error {
+	t := tenant.MustFromContext(ctx)
+	key := compositeKey(ch.WorldId(), ch.Id())
+	exists, _ := r.channels.Exists(ctx, t, key)
+	if !exists {
 		return ErrChannelNotFound
 	}
-	if _, ok := td.channels[ch.WorldId()][ch.Id()]; !ok {
-		return ErrChannelNotFound
-	}
-	delete(td.channels[ch.WorldId()], ch.Id())
+	_ = r.channels.Remove(ctx, t, key)
 	return nil
 }
 
 func (r *Registry) Tenants() []tenant.Model {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
+	ctx := context.Background()
+	members, err := r.client.SMembers(ctx, tenantSetKey).Result()
+	if err != nil {
+		return nil
+	}
 	results := make([]tenant.Model, 0)
-	for t := range r.tenants {
+	for _, data := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(data), &t); err != nil {
+			continue
+		}
 		results = append(results, t)
 	}
 	return results
+}
+
+func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
+	data, err := json.Marshal(&t)
+	if err != nil {
+		return
+	}
+	_ = r.client.SAdd(ctx, tenantSetKey, string(data)).Err()
 }

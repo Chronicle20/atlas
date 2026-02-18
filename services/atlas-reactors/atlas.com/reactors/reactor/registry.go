@@ -1,31 +1,43 @@
 package reactor
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-type registry struct {
-	reactors    map[uint32]*Model
-	mapReactors map[tenant.Model]map[MapKey][]uint32
-	mapLocks    map[tenant.Model]map[MapKey]*sync.Mutex
-	tenantLock  map[tenant.Model]*sync.RWMutex
-	cooldowns   map[tenant.Model]map[MapKey]map[ReactorKey]time.Time
-	lock        sync.RWMutex
+const (
+	nextIdKey      = "reactors:next_id"
+	allReactorsKey = "reactors:all"
+	minId          = uint32(1000000001)
+	maxId          = uint32(2000000000)
+)
+
+type Registry struct {
+	client *goredis.Client
 }
 
-var once sync.Once
-var reg *registry
+var reg *Registry
 
-var runningId = uint32(1000000001)
+func InitRegistry(client *goredis.Client) {
+	reg = &Registry{client: client}
+	client.SetNX(context.Background(), nextIdKey, minId-1, 0)
+}
+
+func GetRegistry() *Registry {
+	return reg
+}
 
 type MapKey struct {
 	worldId   world.Id
@@ -43,284 +55,187 @@ func NewMapKey(f field.Model) MapKey {
 	}
 }
 
-type ReactorKey struct {
-	Classification uint32
-	X              int16
-	Y              int16
+func reactorKey(id uint32) string {
+	return fmt.Sprintf("reactor:%d", id)
 }
 
-func GetRegistry() *registry {
-	once.Do(func() {
-		reg = &registry{
-			reactors:    make(map[uint32]*Model),
-			mapReactors: make(map[tenant.Model]map[MapKey][]uint32),
-			mapLocks:    make(map[tenant.Model]map[MapKey]*sync.Mutex),
-			cooldowns:   make(map[tenant.Model]map[MapKey]map[ReactorKey]time.Time),
-			lock:        sync.RWMutex{},
-		}
-	})
-	return reg
+func reactorIdStr(id uint32) string {
+	return fmt.Sprintf("%d", id)
 }
 
-func (r *registry) Get(id uint32) (Model, error) {
-	r.lock.RLock()
-	if val, ok := r.reactors[id]; ok {
-		r.lock.RUnlock()
-		return *val, nil
-	} else {
-		r.lock.RUnlock()
+func mapSetKey(t tenant.Model, mk MapKey) string {
+	return fmt.Sprintf("reactors:map:%s:%d:%d:%d:%s", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String())
+}
+
+func cooldownKey(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) string {
+	return fmt.Sprintf("reactor:cd:%s:%d:%d:%d:%s:%d:%d:%d", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String(), classification, x, y)
+}
+
+var incrScript = goredis.NewScript(`
+local id = redis.call('INCR', KEYS[1])
+if id > tonumber(ARGV[1]) then
+    redis.call('SET', KEYS[1], ARGV[2])
+    return tonumber(ARGV[2])
+end
+return id
+`)
+
+func (r *Registry) getNextId() uint32 {
+	result, err := incrScript.Run(context.Background(), r.client, []string{nextIdKey}, maxId, minId).Int64()
+	if err != nil {
+		return minId
+	}
+	return uint32(result)
+}
+
+func (r *Registry) store(id uint32, m Model) error {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return r.client.Set(context.Background(), reactorKey(id), data, 0).Err()
+}
+
+func (r *Registry) load(id uint32) (Model, bool) {
+	data, err := r.client.Get(context.Background(), reactorKey(id)).Bytes()
+	if err != nil {
+		return Model{}, false
+	}
+	var m Model
+	if err := json.Unmarshal(data, &m); err != nil {
+		return Model{}, false
+	}
+	return m, true
+}
+
+func (r *Registry) Get(id uint32) (Model, error) {
+	m, ok := r.load(id)
+	if !ok {
 		return Model{}, errors.New("unable to locate reactor")
 	}
-}
-
-type Filter func(*Model) bool
-
-func (r *registry) GetAll() map[tenant.Model][]Model {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	res := make(map[tenant.Model][]Model)
-
-	for _, m := range r.reactors {
-		var val []Model
-		var ok bool
-		if val, ok = res[m.Tenant()]; !ok {
-			val = make([]Model, 0)
-		}
-		val = append(val, *m)
-		res[m.Tenant()] = val
-	}
-	return res
-}
-
-func (r *registry) GetInField(t tenant.Model, f field.Model) []Model {
-	mk := NewMapKey(f)
-
-	r.getMapLock(t, mk).Lock()
-	defer r.getMapLock(t, mk).Unlock()
-
-	result := make([]Model, 0)
-
-	if _, ok := r.mapReactors[t]; !ok {
-		return result
-	}
-
-	for _, x := range r.mapReactors[t][mk] {
-		result = append(result, *r.reactors[x])
-	}
-
-	return result
-}
-
-func (r *registry) getMapLock(t tenant.Model, key MapKey) *sync.Mutex {
-	var res *sync.Mutex
-	r.lock.Lock()
-	if _, ok := r.mapLocks[t]; !ok {
-		r.mapLocks[t] = make(map[MapKey]*sync.Mutex)
-		r.mapReactors[t] = make(map[MapKey][]uint32)
-	}
-	if _, ok := r.mapLocks[t][key]; !ok {
-		r.mapLocks[t][key] = &sync.Mutex{}
-		r.mapReactors[t] = make(map[MapKey][]uint32)
-	}
-	res = r.mapLocks[t][key]
-	r.lock.Unlock()
-	return res
-}
-
-func (r *registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
-	r.lock.Lock()
-	id := r.getNextId()
-	m, err := b.SetId(id).UpdateTime().Build()
-	if err != nil {
-		r.lock.Unlock()
-		return Model{}, err
-	}
-	r.reactors[id] = &m
-	r.lock.Unlock()
-
-	mk := NewMapKey(m.Field())
-	r.getMapLock(t, mk).Lock()
-	defer r.getMapLock(t, mk).Unlock()
-
-	r.mapReactors[t][mk] = append(r.mapReactors[t][mk], m.Id())
 	return m, nil
 }
 
-func (r *registry) Update(id uint32, modifier func(*ModelBuilder)) (Model, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *Registry) GetAll() map[tenant.Model][]Model {
+	members, err := r.client.SMembers(context.Background(), allReactorsKey).Result()
+	if err != nil {
+		return make(map[tenant.Model][]Model)
+	}
 
-	if val, ok := r.reactors[id]; ok {
-		b := NewFromModel(*val)
-		modifier(b)
-		b.UpdateTime()
-		m, err := b.Build()
+	res := make(map[tenant.Model][]Model)
+	for _, member := range members {
+		id, err := strconv.ParseUint(member, 10, 32)
 		if err != nil {
-			return Model{}, err
+			continue
 		}
-		r.reactors[id] = &m
-		return m, nil
+		if m, ok := r.load(uint32(id)); ok {
+			res[m.Tenant()] = append(res[m.Tenant()], m)
+		}
 	}
-	return Model{}, errors.New("unable to locate reactor")
+	return res
 }
 
-func (r *registry) getNextId() uint32 {
-	ids := existingIds(r.reactors)
+func (r *Registry) GetInField(t tenant.Model, f field.Model) []Model {
+	mk := NewMapKey(f)
+	key := mapSetKey(t, mk)
 
-	var currentId = runningId
-	for contains(ids, currentId) {
-		currentId = currentId + 1
-		if currentId > 2000000000 {
-			currentId = 1000000001
-		}
-		runningId = currentId
+	members, err := r.client.SMembers(context.Background(), key).Result()
+	if err != nil {
+		return make([]Model, 0)
 	}
-	return runningId
+
+	result := make([]Model, 0, len(members))
+	for _, member := range members {
+		id, err := strconv.ParseUint(member, 10, 32)
+		if err != nil {
+			continue
+		}
+		if m, ok := r.load(uint32(id)); ok {
+			result = append(result, m)
+		}
+	}
+	return result
 }
 
-//func (r *registry) Destroy(id uint32) (Model, error) {
-//	return r.Update(id, setDestroyed(), updateTime())
-//}
+func (r *Registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
+	id := r.getNextId()
+	m, err := b.SetId(id).UpdateTime().Build()
+	if err != nil {
+		return Model{}, err
+	}
 
-func (r *registry) Remove(t tenant.Model, id uint32) {
-	r.lock.Lock()
-	val, ok := r.reactors[id]
+	if err := r.store(id, m); err != nil {
+		return Model{}, err
+	}
+
+	mk := NewMapKey(m.Field())
+	idStr := reactorIdStr(id)
+	pipe := r.client.Pipeline()
+	pipe.SAdd(context.Background(), allReactorsKey, idStr)
+	pipe.SAdd(context.Background(), mapSetKey(t, mk), idStr)
+	_, _ = pipe.Exec(context.Background())
+
+	return m, nil
+}
+
+func (r *Registry) Update(id uint32, modifier func(*ModelBuilder)) (Model, error) {
+	m, ok := r.load(id)
+	if !ok {
+		return Model{}, errors.New("unable to locate reactor")
+	}
+
+	b := NewFromModel(m)
+	modifier(b)
+	b.UpdateTime()
+	updated, err := b.Build()
+	if err != nil {
+		return Model{}, err
+	}
+
+	if err := r.store(id, updated); err != nil {
+		return Model{}, err
+	}
+	return updated, nil
+}
+
+func (r *Registry) Remove(t tenant.Model, id uint32) {
+	m, ok := r.load(id)
 	if !ok {
 		return
 	}
-	delete(r.reactors, id)
 
-	r.lock.Unlock()
+	mk := NewMapKey(m.Field())
+	idStr := reactorIdStr(id)
 
-	mk := NewMapKey(val.Field())
-	r.getMapLock(t, mk).Lock()
-	if _, ok := r.mapReactors[t][mk]; ok {
-		index := indexOf(id, r.mapReactors[t][mk])
-		if index >= 0 && index < len(r.mapReactors[t][mk]) {
-			r.mapReactors[t][mk] = remove(r.mapReactors[t][mk], index)
-		}
-	}
-	r.getMapLock(t, mk).Unlock()
+	pipe := r.client.Pipeline()
+	pipe.Del(context.Background(), reactorKey(id))
+	pipe.SRem(context.Background(), allReactorsKey, idStr)
+	pipe.SRem(context.Background(), mapSetKey(t, mk), idStr)
+	_, _ = pipe.Exec(context.Background())
 }
 
-func existingIds(existing map[uint32]*Model) []uint32 {
-	var ids []uint32
-	for _, x := range existing {
-		ids = append(ids, x.Id())
-	}
-	return ids
-}
-
-func contains(ids []uint32, id uint32) bool {
-	for _, element := range ids {
-		if element == id {
-			return true
-		}
-	}
-	return false
-}
-
-func indexOf(id uint32, data []uint32) int {
-	for k, v := range data {
-		if id == v {
-			return k
-		}
-	}
-	return -1 //not found.
-}
-
-func remove(s []uint32, i int) []uint32 {
-	s[i] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-
-func (r *registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {
+func (r *Registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {
 	if delay == 0 {
 		return
 	}
-
-	eligibleAt := time.Now().Add(time.Millisecond * time.Duration(delay))
-	rk := ReactorKey{Classification: classification, X: x, Y: y}
-
-	r.getMapLock(t, mk).Lock()
-	defer r.getMapLock(t, mk).Unlock()
-
-	r.lock.Lock()
-	if _, ok := r.cooldowns[t]; !ok {
-		r.cooldowns[t] = make(map[MapKey]map[ReactorKey]time.Time)
-	}
-	if _, ok := r.cooldowns[t][mk]; !ok {
-		r.cooldowns[t][mk] = make(map[ReactorKey]time.Time)
-	}
-	r.lock.Unlock()
-
-	r.cooldowns[t][mk][rk] = eligibleAt
+	key := cooldownKey(t, mk, classification, x, y)
+	r.client.Set(context.Background(), key, "1", time.Millisecond*time.Duration(delay))
 }
 
-func (r *registry) IsOnCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) bool {
-	rk := ReactorKey{Classification: classification, X: x, Y: y}
-
-	r.getMapLock(t, mk).Lock()
-	defer r.getMapLock(t, mk).Unlock()
-
-	r.lock.RLock()
-	if _, ok := r.cooldowns[t]; !ok {
-		r.lock.RUnlock()
+func (r *Registry) IsOnCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) bool {
+	key := cooldownKey(t, mk, classification, x, y)
+	exists, err := r.client.Exists(context.Background(), key).Result()
+	if err != nil {
 		return false
 	}
-	if _, ok := r.cooldowns[t][mk]; !ok {
-		r.lock.RUnlock()
-		return false
-	}
-	r.lock.RUnlock()
-
-	eligibleAt, ok := r.cooldowns[t][mk][rk]
-	if !ok {
-		return false
-	}
-
-	return time.Now().Before(eligibleAt)
+	return exists > 0
 }
 
-func (r *registry) ClearCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) {
-	rk := ReactorKey{Classification: classification, X: x, Y: y}
-
-	r.getMapLock(t, mk).Lock()
-	defer r.getMapLock(t, mk).Unlock()
-
-	r.lock.RLock()
-	if _, ok := r.cooldowns[t]; !ok {
-		r.lock.RUnlock()
-		return
-	}
-	if _, ok := r.cooldowns[t][mk]; !ok {
-		r.lock.RUnlock()
-		return
-	}
-	r.lock.RUnlock()
-
-	delete(r.cooldowns[t][mk], rk)
+func (r *Registry) ClearCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) {
+	key := cooldownKey(t, mk, classification, x, y)
+	r.client.Del(context.Background(), key)
 }
 
-func (r *registry) CleanupExpiredCooldowns() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	now := time.Now()
-	for t, maps := range r.cooldowns {
-		for mk, reactors := range maps {
-			for rk, eligibleAt := range reactors {
-				if now.After(eligibleAt) {
-					delete(r.cooldowns[t][mk], rk)
-				}
-			}
-			if len(r.cooldowns[t][mk]) == 0 {
-				delete(r.cooldowns[t], mk)
-			}
-		}
-		if len(r.cooldowns[t]) == 0 {
-			delete(r.cooldowns, t)
-		}
-	}
+func (r *Registry) CleanupExpiredCooldowns() {
+	// No-op: Redis TTL handles expiration automatically
 }

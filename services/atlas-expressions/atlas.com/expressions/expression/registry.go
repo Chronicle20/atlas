@@ -1,113 +1,109 @@
 package expression
 
 import (
-	"sync"
+	"context"
+	"encoding/json"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
+const defaultTTL = 5 * time.Second
+
 type Registry struct {
-	lock          sync.Mutex
-	expressionReg map[tenant.Model]map[uint32]Model
-	tenantLock    map[tenant.Model]*sync.RWMutex
+	reg       *atlas.TTLRegistry[uint32, Model]
+	client    *goredis.Client
+	tenantKey string
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTTLRegistry[uint32, Model](client, "expression", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}, defaultTTL),
+		client:    client,
+		tenantKey: "atlas:expression:_tenants",
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.expressionReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
 	return registry
 }
 
-// getOrCreateTenantMaps returns the expression map and lock for a tenant,
-// creating them if they don't exist. This method is thread-safe.
-func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *sync.RWMutex) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	em, ok := r.expressionReg[t]
-	if !ok {
-		em = make(map[uint32]Model)
-		r.expressionReg[t] = em
-	}
-
-	tl, ok := r.tenantLock[t]
-	if !ok {
-		tl = &sync.RWMutex{}
-		r.tenantLock[t] = tl
-	}
-
-	return em, tl
-}
-
-func (r *Registry) add(t tenant.Model, characterId uint32, field field.Model, expression uint32) Model {
-	em, tl := r.getOrCreateTenantMaps(t)
-
-	tl.Lock()
-	defer tl.Unlock()
-
-	expiration := time.Now().Add(time.Second * time.Duration(5))
+func (r *Registry) add(ctx context.Context, characterId uint32, f field.Model, expression uint32) Model {
+	t := tenant.MustFromContext(ctx)
+	expiration := time.Now().Add(defaultTTL)
 
 	e := NewModelBuilder(t).
 		SetCharacterId(characterId).
-		SetLocation(field).
+		SetLocation(f).
 		SetExpression(expression).
 		SetExpiration(expiration).
 		MustBuild()
 
-	em[characterId] = e
+	_ = r.reg.Put(ctx, t, characterId, e)
+	r.trackTenant(ctx, t)
 	return e
 }
 
-func (r *Registry) popExpired() []Model {
-	var results = make([]Model, 0)
-	now := time.Now()
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	for t, cm := range r.expressionReg {
-		r.tenantLock[t].Lock()
-		for id, m := range cm {
-			if now.Sub(m.Expiration()) > 0 {
-				results = append(results, m)
-				delete(r.expressionReg[t], id)
-			}
+func (r *Registry) get(ctx context.Context, characterId uint32) (Model, bool) {
+	t := tenant.MustFromContext(ctx)
+	v, err := r.reg.Get(ctx, t, characterId)
+	if err != nil {
+		return Model{}, false
+	}
+	return v, true
+}
+
+func (r *Registry) clear(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Remove(ctx, t, characterId)
+}
+
+func (r *Registry) popExpired(ctx context.Context) []Model {
+	tenants := r.getTrackedTenants(ctx)
+	var results []Model
+	for _, t := range tenants {
+		expired, err := r.reg.PopExpired(ctx, t)
+		if err != nil {
+			continue
 		}
-		r.tenantLock[t].Unlock()
+		results = append(results, expired...)
 	}
 	return results
 }
 
-func (r *Registry) clear(t tenant.Model, characterId uint32) {
-	em, tl := r.getOrCreateTenantMaps(t)
-
-	tl.Lock()
-	defer tl.Unlock()
-	delete(em, characterId)
-}
-
-// get retrieves an expression for a character. Returns the model and true if found.
-func (r *Registry) get(t tenant.Model, characterId uint32) (Model, bool) {
-	em, tl := r.getOrCreateTenantMaps(t)
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if m, ok := em[characterId]; ok {
-		return m, true
+func (r *Registry) trackTenant(ctx context.Context, t tenant.Model) {
+	data, err := json.Marshal(&t)
+	if err != nil {
+		return
 	}
-	return Model{}, false
+	r.client.SAdd(ctx, r.tenantKey, string(data))
 }
 
-// ResetForTesting clears all registry state. Only for use in tests.
-func (r *Registry) ResetForTesting() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.expressionReg = make(map[tenant.Model]map[uint32]Model)
-	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
+func (r *Registry) getTrackedTenants(ctx context.Context) []tenant.Model {
+	members, err := r.client.SMembers(ctx, r.tenantKey).Result()
+	if err != nil {
+		return nil
+	}
+	var tenants []tenant.Model
+	for _, m := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(m), &t); err != nil {
+			continue
+		}
+		tenants = append(tenants, t)
+	}
+	return tenants
+}
+
+// SetNowFunc overrides the clock function for testing.
+func (r *Registry) SetNowFunc(fn func() time.Time) {
+	r.reg.SetNowFunc(fn)
 }

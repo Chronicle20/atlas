@@ -9,6 +9,7 @@ data:
   BOOTSTRAP_SERVERS: "kafka-broker.kafka.svc.cluster.local:9093"
   DB_HOST: "postgres.home"
   DB_PORT: "5432"
+  REDIS_URL: "atlas-redis.atlas.svc.cluster.local:6379"
   REST_PORT: "8080"
   TRACE_ENDPOINT: "192.168.23.237:4317"
   # Command Topics

@@ -54,16 +54,18 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-func GetLoggedIn() model.Provider[map[uint32]MapKey] {
-	return model.FixedProvider(getRegistry().GetLoggedIn())
+func GetLoggedIn(ctx context.Context) model.Provider[map[uint32]MapKey] {
+	return func() (map[uint32]MapKey, error) {
+		return GetRegistry().GetLoggedIn(ctx)
+	}
 }
 
 func (p *ProcessorImpl) Enter(field field.Model, characterId uint32) {
-	getRegistry().AddCharacter(characterId, MapKey{Tenant: p.t, Field: field})
+	GetRegistry().AddCharacter(p.ctx, characterId, field)
 }
 
 func (p *ProcessorImpl) Exit(_ field.Model, characterId uint32) {
-	getRegistry().RemoveCharacter(characterId)
+	GetRegistry().RemoveCharacter(p.ctx, characterId)
 }
 
 func (p *ProcessorImpl) TransitionMap(field field.Model, characterId uint32, oldMapId _map.Id) {

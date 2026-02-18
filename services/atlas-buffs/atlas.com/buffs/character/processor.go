@@ -26,29 +26,27 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		t:   tenant.MustFromContext(ctx),
 	}
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	return GetRegistry().Get(p.t, characterId)
+	return GetRegistry().Get(p.ctx, characterId)
 }
 
 func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) error {
-	if isDiseaseChange(changes) && GetRegistry().HasImmunity(p.t, characterId) {
+	if isDiseaseChange(changes) && GetRegistry().HasImmunity(p.ctx, characterId) {
 		p.l.Debugf("Character [%d] is immune to disease, skipping apply.", characterId)
 		return nil
 	}
 
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		b, err := GetRegistry().Apply(p.t, worldId, channelId, characterId, sourceId, level, duration, changes)
+		b, err := GetRegistry().Apply(p.ctx, worldId, channelId, characterId, sourceId, level, duration, changes)
 		if err != nil {
 			return err
 		}
@@ -57,7 +55,7 @@ func (p *ProcessorImpl) Apply(worldId world.Id, channelId channel.Id, characterI
 }
 
 func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId int32) error {
-	b, err := GetRegistry().Cancel(p.t, characterId, sourceId)
+	b, err := GetRegistry().Cancel(p.ctx, characterId, sourceId)
 	if errors.Is(err, ErrNotFound) {
 		return nil
 	}
@@ -67,7 +65,7 @@ func (p *ProcessorImpl) Cancel(worldId world.Id, characterId uint32, sourceId in
 }
 
 func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
-	buffs := GetRegistry().CancelAll(p.t, characterId)
+	buffs := GetRegistry().CancelAll(p.ctx, characterId)
 	if len(buffs) == 0 {
 		return nil
 	}
@@ -83,8 +81,8 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 
 func (p *ProcessorImpl) ExpireBuffs() error {
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
-		for _, c := range GetRegistry().GetCharacters(p.t) {
-			ebs := GetRegistry().GetExpired(p.t, c.Id())
+		for _, c := range GetRegistry().GetCharacters(p.ctx) {
+			ebs := GetRegistry().GetExpired(p.ctx, c.Id())
 			for _, eb := range ebs {
 				p.l.Debugf("Expired buff for character [%d] from [%d].", c.Id(), eb.SourceId())
 				if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(c.WorldId(), c.Id(), eb.SourceId(), eb.Level(), eb.Duration(), eb.Changes(), eb.CreatedAt(), eb.ExpiresAt())); err != nil {
@@ -97,7 +95,7 @@ func (p *ProcessorImpl) ExpireBuffs() error {
 }
 
 func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {
-	ts, err := GetRegistry().GetTenants()
+	ts, err := GetRegistry().GetTenants(ctx)
 	if err != nil {
 		return err
 	}
@@ -114,12 +112,12 @@ func ExpireBuffs(l logrus.FieldLogger, ctx context.Context) error {
 }
 
 func (p *ProcessorImpl) ProcessPoisonTicks() error {
-	entries := GetRegistry().GetPoisonCharacters(p.t)
+	entries := GetRegistry().GetPoisonCharacters(p.ctx)
 	now := time.Now()
 
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, entry := range entries {
-			lastTick, hasTicked := GetRegistry().GetLastPoisonTick(p.t, entry.CharacterId)
+			lastTick, hasTicked := GetRegistry().GetLastPoisonTick(p.ctx, entry.CharacterId)
 			if hasTicked && now.Sub(lastTick) < time.Second {
 				continue
 			}
@@ -135,14 +133,14 @@ func (p *ProcessorImpl) ProcessPoisonTicks() error {
 				return err
 			}
 
-			GetRegistry().UpdatePoisonTick(p.t, entry.CharacterId, now)
+			GetRegistry().UpdatePoisonTick(p.ctx, entry.CharacterId, now)
 		}
 		return nil
 	})
 }
 
 func ProcessPoisonTicks(l logrus.FieldLogger, ctx context.Context) error {
-	ts, err := GetRegistry().GetTenants()
+	ts, err := GetRegistry().GetTenants(ctx)
 	if err != nil {
 		return err
 	}

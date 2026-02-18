@@ -1,6 +1,7 @@
 package account
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Chronicle20/atlas-tenant"
@@ -8,197 +9,203 @@ import (
 )
 
 func TestCoordinator(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	_ = ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
 	var err error
-	if c.IsLoggedIn(ak) {
+	if GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return false. not logged in yet")
 	}
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
-	c.Logout(ak, s1)
-	if c.IsLoggedIn(ak) {
+	GetRegistry().Logout(ctx, ak, s1)
+	if GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return false. not logged in yet")
 	}
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
-	err = c.Transition(ak, s1)
+	err = GetRegistry().Transition(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
-	err = c.Login(ak, s2)
+	err = GetRegistry().Login(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
-	c.Logout(ak, s1)
-	if !c.IsLoggedIn(ak) {
+	GetRegistry().Logout(ctx, ak, s1)
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
 }
 
 func TestHappyPath(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
 	var err error
 
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s1)
+	err = GetRegistry().Transition(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s1)
-	err = c.Login(ak, s2)
+	GetRegistry().Logout(ctx, ak, s1)
+	err = GetRegistry().Login(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
 }
 
 func TestUnhappyPath(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
 	var err error
 
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s1)
+	err = GetRegistry().Transition(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Login(ak, s2)
+	err = GetRegistry().Login(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s1)
-	if !c.IsLoggedIn(ak) {
+	GetRegistry().Logout(ctx, ak, s1)
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
 }
 
 func TestChangeChannelHappy(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	s3 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
 	var err error
 
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s1)
+	err = GetRegistry().Transition(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s1)
+	GetRegistry().Logout(ctx, ak, s1)
 
-	err = c.Login(ak, s2)
+	err = GetRegistry().Login(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s2)
+	err = GetRegistry().Transition(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s2)
-	err = c.Login(ak, s3)
+	GetRegistry().Logout(ctx, ak, s2)
+	err = GetRegistry().Login(ctx, ak, s3)
 	if err != nil {
 		t.Error(err)
 	}
-	if !c.IsLoggedIn(ak) {
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
 }
 
 func TestChangeChannelUnhappy(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 	s2 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 	s3 := ServiceKey{SessionId: uuid.New(), Service: ServiceChannel}
 
 	var err error
 
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s1)
+	err = GetRegistry().Transition(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s1)
-	err = c.Login(ak, s2)
+	GetRegistry().Logout(ctx, ak, s1)
+	err = GetRegistry().Login(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Transition(ak, s2)
+	err = GetRegistry().Transition(ctx, ak, s2)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Login(ak, s3)
+	err = GetRegistry().Login(ctx, ak, s3)
 	if err != nil {
 		t.Error(err)
 	}
-	c.Logout(ak, s2)
-	if !c.IsLoggedIn(ak) {
+	GetRegistry().Logout(ctx, ak, s2)
+	if !GetRegistry().IsLoggedIn(ctx, ak) {
 		t.Error("IsLoggedIn should return true")
 	}
 }
 
 func TestDoubleLogin(t *testing.T) {
-	c := Get()
-	tenant, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	ak := AccountKey{Tenant: tenant, AccountId: 1}
+	setupTestRegistry(t)
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	ak := AccountKey{Tenant: ten, AccountId: 1}
 	s1 := ServiceKey{SessionId: uuid.New(), Service: ServiceLogin}
 
 	var err error
 
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err != nil {
 		t.Error(err)
 	}
-	err = c.Login(ak, s1)
+	err = GetRegistry().Login(ctx, ak, s1)
 	if err == nil {
 		t.Errorf("double login should return an error")
 	}

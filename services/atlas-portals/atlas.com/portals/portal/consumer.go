@@ -11,7 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -56,16 +55,14 @@ func handleBlockCommand(l logrus.FieldLogger, ctx context.Context, command comma
 	if command.Type != CommandTypeBlock {
 		return
 	}
-	t := tenant.MustFromContext(ctx)
 	l.Debugf("Received command to block portal [%d] in map [%d] for character [%d].", command.PortalId, command.MapId, command.Body.CharacterId)
-	blocked.GetCache().Block(t.Id(), command.Body.CharacterId, command.MapId, command.PortalId)
+	blocked.GetRegistry().Block(ctx, command.Body.CharacterId, command.MapId, command.PortalId)
 }
 
 func handleUnblockCommand(l logrus.FieldLogger, ctx context.Context, command commandEvent[unblockBody]) {
 	if command.Type != CommandTypeUnblock {
 		return
 	}
-	t := tenant.MustFromContext(ctx)
 	l.Debugf("Received command to unblock portal [%d] in map [%d] for character [%d].", command.PortalId, command.MapId, command.Body.CharacterId)
-	blocked.GetCache().Unblock(t.Id(), command.Body.CharacterId, command.MapId, command.PortalId)
+	blocked.GetRegistry().Unblock(ctx, command.Body.CharacterId, command.MapId, command.PortalId)
 }

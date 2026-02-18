@@ -1,6 +1,7 @@
 package session
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -47,4 +48,41 @@ func (m Model) WorldId() world.Id {
 
 func (m Model) ChannelId() channel.Id {
 	return m.channelId
+}
+
+type jsonModel struct {
+	Tenant      *tenant.Model `json:"tenant"`
+	CharacterId uint32        `json:"characterId"`
+	WorldId     world.Id      `json:"worldId"`
+	ChannelId   channel.Id    `json:"channelId"`
+	State       State         `json:"state"`
+	Age         time.Time     `json:"age"`
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	t := m.tenant
+	return json.Marshal(jsonModel{
+		Tenant:      &t,
+		CharacterId: m.characterId,
+		WorldId:     m.worldId,
+		ChannelId:   m.channelId,
+		State:       m.state,
+		Age:         m.age,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var j jsonModel
+	if err := json.Unmarshal(data, &j); err != nil {
+		return err
+	}
+	if j.Tenant != nil {
+		m.tenant = *j.Tenant
+	}
+	m.characterId = j.CharacterId
+	m.worldId = j.WorldId
+	m.channelId = j.ChannelId
+	m.state = j.State
+	m.age = j.Age
+	return nil
 }

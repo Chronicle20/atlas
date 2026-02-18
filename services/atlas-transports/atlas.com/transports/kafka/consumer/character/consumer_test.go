@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-transports/instance"
 	character2 "atlas-transports/kafka/message/character"
 	"atlas-transports/transport"
 	"bytes"
@@ -9,11 +10,23 @@ import (
 	"time"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/alicebob/miniredis/v2"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
+
+func setupCharacterTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	instance.InitCharacterRegistry(rc)
+	instance.InitInstanceRegistry(rc)
+	instance.InitRouteRegistry(rc)
+	transport.InitRouteRegistry(rc)
+}
 
 func TestHandleEventStatus_NonLogoutEventIgnored(t *testing.T) {
 	// Create a unique tenant for this test
@@ -50,6 +63,7 @@ func TestHandleEventStatus_NonLogoutEventIgnored(t *testing.T) {
 }
 
 func TestHandleEventStatus_LogoutFromNonTransportMap(t *testing.T) {
+	setupCharacterTestRegistry(t)
 	// Create a unique tenant for this test
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
@@ -85,6 +99,7 @@ func TestHandleEventStatus_LogoutFromNonTransportMap(t *testing.T) {
 }
 
 func TestHandleEventStatus_LogoutFromTransportMap(t *testing.T) {
+	setupCharacterTestRegistry(t)
 	// Create a unique tenant for this test
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
@@ -139,6 +154,7 @@ func TestHandleEventStatus_LogoutFromTransportMap(t *testing.T) {
 }
 
 func TestHandleEventStatus_LogoutFromEnRouteMap(t *testing.T) {
+	setupCharacterTestRegistry(t)
 	// Create a unique tenant for this test
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)
@@ -193,6 +209,7 @@ func TestHandleEventStatus_LogoutFromEnRouteMap(t *testing.T) {
 }
 
 func TestHandleEventStatus_MultipleEventTypes(t *testing.T) {
+	setupCharacterTestRegistry(t)
 	// Create a unique tenant for this test
 	tenantId := uuid.New()
 	tenantModel, err := tenant.Register(tenantId, "GMS", 83, 1)

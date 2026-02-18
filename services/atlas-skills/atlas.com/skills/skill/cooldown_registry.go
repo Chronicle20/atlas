@@ -1,133 +1,86 @@
 package skill
 
 import (
-	"errors"
-	"sync"
+	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-var ErrNotFound = errors.New("not found")
-
 type Registry struct {
-	lock         sync.Mutex
-	characterReg map[tenant.Model]map[uint32]map[uint32]time.Time
-	tenantLock   map[tenant.Model]*sync.RWMutex
+	reg    *atlas.TenantRegistry[string, time.Time]
+	client *goredis.Client
 }
 
 var registry *Registry
-var once sync.Once
 
-func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterReg = make(map[tenant.Model]map[uint32]map[uint32]time.Time)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
-	return registry
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTenantRegistry[string, time.Time](client, "cooldown", func(k string) string {
+			return k
+		}),
+		client: client,
+	}
 }
 
-func (r *Registry) Apply(t tenant.Model, characterId uint32, skillId uint32, cooldown uint32) error {
-	r.lock.Lock()
+func GetRegistry() *Registry { return registry }
 
-	var cm map[uint32]map[uint32]time.Time
-	var cml *sync.RWMutex
-	var ok bool
-	if cm, ok = r.characterReg[t]; ok {
-		cml = r.tenantLock[t]
-	} else {
-		cm = make(map[uint32]map[uint32]time.Time)
-		cml = &sync.RWMutex{}
+func compositeKey(characterId, skillId uint32) string {
+	return fmt.Sprintf("%d:%d", characterId, skillId)
+}
+
+func (r *Registry) tenantSetKey() string {
+	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+}
+
+func (r *Registry) Apply(ctx context.Context, characterId uint32, skillId uint32, cooldown uint32) error {
+	t := tenant.MustFromContext(ctx)
+	expiresAt := time.Now().Add(time.Duration(cooldown) * time.Second)
+	err := r.reg.Put(ctx, t, compositeKey(characterId, skillId), expiresAt)
+	if err != nil {
+		return err
 	}
-	r.characterReg[t] = cm
-	r.tenantLock[t] = cml
-	r.lock.Unlock()
-
-	cml.Lock()
-
-	if _, ok = r.characterReg[t][characterId]; !ok {
-		r.characterReg[t][characterId] = make(map[uint32]time.Time)
-	}
-	r.characterReg[t][characterId][skillId] = time.Now().Add(time.Duration(cooldown) * time.Second)
-
-	cml.Unlock()
+	tb, _ := json.Marshal(&t)
+	r.client.SAdd(ctx, r.tenantSetKey(), tb)
 	return nil
 }
 
-func (r *Registry) Get(t tenant.Model, characterId uint32, skillId uint32) (time.Time, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]map[uint32]time.Time)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if _, ok = r.characterReg[t][characterId]; !ok {
-		return time.Time{}, ErrNotFound
-	}
-	var cooldownExpiresAt time.Time
-	if cooldownExpiresAt, ok = r.characterReg[t][characterId][skillId]; !ok {
-		return time.Time{}, ErrNotFound
-	}
-
-	return cooldownExpiresAt, nil
+func (r *Registry) Get(ctx context.Context, characterId uint32, skillId uint32) (time.Time, error) {
+	t := tenant.MustFromContext(ctx)
+	return r.reg.Get(ctx, t, compositeKey(characterId, skillId))
 }
 
-func (r *Registry) ClearAll(t tenant.Model, characterId uint32) error {
-	r.lock.Lock()
+func (r *Registry) ClearAll(ctx context.Context, characterId uint32) error {
+	t := tenant.MustFromContext(ctx)
+	charPrefix := strconv.FormatUint(uint64(characterId), 10) + ":"
+	pattern := fmt.Sprintf("atlas:%s:%s:%s*", r.reg.Namespace(), atlas.TenantKey(t), charPrefix)
 
-	var cm map[uint32]map[uint32]time.Time
-	var cml *sync.RWMutex
-	var ok bool
-	if cm, ok = r.characterReg[t]; ok {
-		cml = r.tenantLock[t]
-	} else {
-		cm = make(map[uint32]map[uint32]time.Time)
-		cml = &sync.RWMutex{}
+	var cursor uint64
+	for {
+		keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return err
+		}
+		if len(keys) > 0 {
+			r.client.Del(ctx, keys...)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
 	}
-	r.characterReg[t] = cm
-	r.tenantLock[t] = cml
-	r.lock.Unlock()
-
-	cml.Lock()
-
-	delete(r.characterReg[t], characterId)
-
-	cml.Unlock()
 	return nil
 }
 
-func (r *Registry) Clear(t tenant.Model, characterId uint32, skillId uint32) error {
-	r.lock.Lock()
-
-	var cm map[uint32]map[uint32]time.Time
-	var cml *sync.RWMutex
-	var ok bool
-	if cm, ok = r.characterReg[t]; ok {
-		cml = r.tenantLock[t]
-	} else {
-		cm = make(map[uint32]map[uint32]time.Time)
-		cml = &sync.RWMutex{}
-	}
-	r.characterReg[t] = cm
-	r.tenantLock[t] = cml
-	r.lock.Unlock()
-
-	cml.Lock()
-
-	if _, ok = r.characterReg[t][characterId]; !ok {
-		r.characterReg[t][characterId] = make(map[uint32]time.Time)
-	}
-	delete(r.characterReg[t][characterId], skillId)
-
-	cml.Unlock()
-	return nil
+func (r *Registry) Clear(ctx context.Context, characterId uint32, skillId uint32) error {
+	t := tenant.MustFromContext(ctx)
+	return r.reg.Remove(ctx, t, compositeKey(characterId, skillId))
 }
 
 type CooldownHolder struct {
@@ -153,24 +106,74 @@ func (h CooldownHolder) SkillId() uint32 {
 	return h.skillId
 }
 
-func (r *Registry) GetAll() []CooldownHolder {
-	r.lock.Lock()
-	defer r.lock.Unlock()
+func (r *Registry) GetAll(ctx context.Context) []CooldownHolder {
+	result := make([]CooldownHolder, 0)
 
-	res := make([]CooldownHolder, 0)
-	for t := range r.characterReg {
-		r.tenantLock[t].RLock()
-		for c := range r.characterReg[t] {
-			for sid, cet := range r.characterReg[t][c] {
-				res = append(res, CooldownHolder{
-					tenant:            t,
-					characterId:       c,
-					skillId:           sid,
-					cooldownExpiresAt: cet,
-				})
+	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	if err != nil {
+		return result
+	}
+
+	for _, m := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(m), &t); err != nil {
+			continue
+		}
+
+		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
+		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+		var cursor uint64
+		for {
+			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()
+			if err != nil {
+				break
+			}
+			if len(keys) > 0 {
+				pipe := r.client.Pipeline()
+				cmds := make([]*goredis.StringCmd, len(keys))
+				for i, k := range keys {
+					cmds[i] = pipe.Get(ctx, k)
+				}
+				_, _ = pipe.Exec(ctx)
+
+				for i, cmd := range cmds {
+					data, err := cmd.Bytes()
+					if err != nil {
+						continue
+					}
+					keySuffix := strings.TrimPrefix(keys[i], prefix)
+					if strings.HasPrefix(keySuffix, "_") {
+						continue
+					}
+					parts := strings.SplitN(keySuffix, ":", 2)
+					if len(parts) != 2 {
+						continue
+					}
+					charId, err := strconv.ParseUint(parts[0], 10, 32)
+					if err != nil {
+						continue
+					}
+					sId, err := strconv.ParseUint(parts[1], 10, 32)
+					if err != nil {
+						continue
+					}
+					var expiresAt time.Time
+					if err := json.Unmarshal(data, &expiresAt); err != nil {
+						continue
+					}
+					result = append(result, CooldownHolder{
+						tenant:            t,
+						characterId:       uint32(charId),
+						skillId:           uint32(sId),
+						cooldownExpiresAt: expiresAt,
+					})
+				}
+			}
+			cursor = next
+			if cursor == 0 {
+				break
 			}
 		}
-		r.tenantLock[t].RUnlock()
 	}
-	return res
+	return result
 }

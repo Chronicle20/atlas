@@ -8,10 +8,19 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
+
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
 
 func createTestContext() (logrus.FieldLogger, context.Context, tenant.Model) {
 	l, _ := test.NewNullLogger()
@@ -22,14 +31,14 @@ func createTestContext() (logrus.FieldLogger, context.Context, tenant.Model) {
 
 func setupProcessorTest(t *testing.T) (Processor, logrus.FieldLogger, context.Context, tenant.Model) {
 	t.Helper()
-	GetRegistry().ResetForTesting()
+	setupTestRegistry(t)
 	l, ctx, ten := createTestContext()
 	p := NewProcessor(l, ctx)
 	return p, l, ctx, ten
 }
 
 func TestProcessor_AddBonus(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	ch := channel.NewModel(1, 2)
 	err := p.AddBonus(ch, 12345, "test:1", stat.TypeStrength, 20)
@@ -37,7 +46,7 @@ func TestProcessor_AddBonus(t *testing.T) {
 		t.Fatalf("AddBonus() error = %v", err)
 	}
 
-	m, err := GetRegistry().Get(ten, 12345)
+	m, err := GetRegistry().Get(ctx, 12345)
 	if err != nil {
 		t.Fatalf("Registry.Get() error = %v", err)
 	}
@@ -64,7 +73,7 @@ func TestProcessor_AddBonus(t *testing.T) {
 }
 
 func TestProcessor_AddMultiplierBonus(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// First set base stats
 	base := stat.NewBase(100, 50, 50, 50, 5000, 3000)
@@ -77,7 +86,7 @@ func TestProcessor_AddMultiplierBonus(t *testing.T) {
 		t.Fatalf("AddMultiplierBonus() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	// 100 * 1.10 = 110
 	if m.Computed().Strength() != 110 {
@@ -86,7 +95,7 @@ func TestProcessor_AddMultiplierBonus(t *testing.T) {
 }
 
 func TestProcessor_RemoveBonus(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Add bonus first
 	ch := channel.NewModel(1, 2)
@@ -98,7 +107,7 @@ func TestProcessor_RemoveBonus(t *testing.T) {
 		t.Fatalf("RemoveBonus() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 	if len(m.Bonuses()) != 0 {
 		t.Errorf("Bonuses count = %v, want 0", len(m.Bonuses()))
 	}
@@ -115,7 +124,7 @@ func TestProcessor_RemoveBonus_NotFound(t *testing.T) {
 }
 
 func TestProcessor_RemoveBonusesBySource(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Add multiple bonuses from same source
 	ch := channel.NewModel(1, 2)
@@ -129,7 +138,7 @@ func TestProcessor_RemoveBonusesBySource(t *testing.T) {
 		t.Fatalf("RemoveBonusesBySource() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 	bonuses := m.Bonuses()
 
 	// Should only have buff bonus left
@@ -142,7 +151,7 @@ func TestProcessor_RemoveBonusesBySource(t *testing.T) {
 }
 
 func TestProcessor_SetBaseStats(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
@@ -151,7 +160,7 @@ func TestProcessor_SetBaseStats(t *testing.T) {
 		t.Fatalf("SetBaseStats() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	if m.BaseStats().Strength() != 100 {
 		t.Errorf("BaseStats Strength = %v, want 100", m.BaseStats().Strength())
@@ -162,7 +171,7 @@ func TestProcessor_SetBaseStats(t *testing.T) {
 }
 
 func TestProcessor_AddEquipmentBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
@@ -175,7 +184,7 @@ func TestProcessor_AddEquipmentBonuses(t *testing.T) {
 		t.Fatalf("AddEquipmentBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 	allBonuses := m.Bonuses()
 
 	if len(allBonuses) != 2 {
@@ -199,7 +208,7 @@ func TestProcessor_AddEquipmentBonuses(t *testing.T) {
 }
 
 func TestProcessor_RemoveEquipmentBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
@@ -212,14 +221,14 @@ func TestProcessor_RemoveEquipmentBonuses(t *testing.T) {
 		t.Fatalf("RemoveEquipmentBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 	if len(m.Bonuses()) != 0 {
 		t.Errorf("Bonuses count = %v, want 0", len(m.Bonuses()))
 	}
 }
 
 func TestProcessor_AddBuffBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Set base stats first
 	ch := channel.NewModel(1, 2)
@@ -235,7 +244,7 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 		t.Fatalf("AddBuffBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	// 5000 * 1.60 = 8000
 	if m.Computed().MaxHp() != 8000 {
@@ -244,7 +253,7 @@ func TestProcessor_AddBuffBonuses(t *testing.T) {
 }
 
 func TestProcessor_RemoveBuffBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 50, 50, 50, 5000, 3000)
@@ -260,7 +269,7 @@ func TestProcessor_RemoveBuffBonuses(t *testing.T) {
 		t.Fatalf("RemoveBuffBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	// Back to base stats
 	if m.Computed().MaxHp() != 5000 {
@@ -269,7 +278,7 @@ func TestProcessor_RemoveBuffBonuses(t *testing.T) {
 }
 
 func TestProcessor_AddPassiveBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeWeaponAttack, 20),
@@ -281,7 +290,7 @@ func TestProcessor_AddPassiveBonuses(t *testing.T) {
 		t.Fatalf("AddPassiveBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	// Check source
 	allBonuses := m.Bonuses()
@@ -298,7 +307,7 @@ func TestProcessor_AddPassiveBonuses(t *testing.T) {
 }
 
 func TestProcessor_RemovePassiveBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeWeaponAttack, 20),
@@ -311,14 +320,14 @@ func TestProcessor_RemovePassiveBonuses(t *testing.T) {
 		t.Fatalf("RemovePassiveBonuses() error = %v", err)
 	}
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 	if len(m.Bonuses()) != 0 {
 		t.Errorf("Bonuses count = %v, want 0", len(m.Bonuses()))
 	}
 }
 
 func TestProcessor_RemoveCharacter(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Add some data for the character
 	ch := channel.NewModel(1, 2)
@@ -328,20 +337,21 @@ func TestProcessor_RemoveCharacter(t *testing.T) {
 	p.RemoveCharacter(12345)
 
 	// Character should no longer exist
-	_, err := GetRegistry().Get(ten, 12345)
+	_, err := GetRegistry().Get(ctx, 12345)
 	if !errors.Is(err, ErrNotFound) {
 		t.Errorf("Get() error = %v, want ErrNotFound", err)
 	}
 }
 
 func TestProcessor_GetEffectiveStats_PreInitialized(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Pre-populate the registry (simulating initialized character)
 	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
+	ten := tenant.MustFromContext(ctx)
 	m := NewModel(ten, ch, 12345).WithBaseStats(base).Recompute().WithInitialized()
-	GetRegistry().Update(ten, m)
+	GetRegistry().Update(ctx, m)
 
 	// Now GetEffectiveStats should return without calling external services
 	computed, bonuses, err := p.GetEffectiveStats(ch, 12345)
@@ -361,14 +371,15 @@ func TestProcessor_GetEffectiveStats_PreInitialized(t *testing.T) {
 }
 
 func TestProcessor_GetEffectiveStats_WithBonuses(t *testing.T) {
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 
 	// Pre-populate with base stats and bonuses
 	ch := channel.NewModel(1, 2)
 	base := stat.NewBase(100, 80, 60, 40, 5000, 3000)
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 15)
+	ten := tenant.MustFromContext(ctx)
 	m := NewModel(ten, ch, 12345).WithBaseStats(base).WithBonus(b).Recompute().WithInitialized()
-	GetRegistry().Update(ten, m)
+	GetRegistry().Update(ctx, m)
 
 	computed, bonuses, err := p.GetEffectiveStats(ch, 12345)
 	if err != nil {
@@ -389,7 +400,7 @@ func TestProcessor_GetEffectiveStats_WithBonuses(t *testing.T) {
 
 func TestProcessor_MixedBonuses(t *testing.T) {
 	// Test the complete effective stats formula with mixed flat and multiplier bonuses
-	p, _, _, ten := setupProcessorTest(t)
+	p, _, ctx, _ := setupProcessorTest(t)
 	ch := channel.NewModel(1, 2)
 
 	// Set base stats
@@ -410,7 +421,7 @@ func TestProcessor_MixedBonuses(t *testing.T) {
 	}
 	_ = p.AddBuffBonuses(ch, 12345, 2311003, buffBonuses)
 
-	m, _ := GetRegistry().Get(ten, 12345)
+	m, _ := GetRegistry().Get(ctx, 12345)
 
 	// Strength: (50 + 15) * 1.10 = 65 * 1.10 = 71.5 -> 71
 	if m.Computed().Strength() != 71 {

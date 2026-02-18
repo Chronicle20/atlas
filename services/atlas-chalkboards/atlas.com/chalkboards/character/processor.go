@@ -33,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) InMapProvider(f field.Model) model.Provider[[]uint32] {
-	cids := getRegistry().GetInMap(MapKey{Tenant: p.t, WorldId: f.WorldId(), ChannelId: f.ChannelId(), MapId: f.MapId()})
+	cids := getRegistry().GetInMap(p.ctx, MapKey{Tenant: p.t, Field: f})
 	return model.FixedProvider(cids)
 }
 
@@ -42,11 +42,11 @@ func (p *ProcessorImpl) GetCharactersInMap(f field.Model) ([]uint32, error) {
 }
 
 func (p *ProcessorImpl) Enter(f field.Model, characterId uint32) {
-	getRegistry().AddCharacter(MapKey{Tenant: p.t, WorldId: f.WorldId(), ChannelId: f.ChannelId(), MapId: f.MapId()}, characterId)
+	getRegistry().AddCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId)
 }
 
 func (p *ProcessorImpl) Exit(f field.Model, characterId uint32) {
-	getRegistry().RemoveCharacter(MapKey{Tenant: p.t, WorldId: f.WorldId(), ChannelId: f.ChannelId(), MapId: f.MapId()}, characterId)
+	getRegistry().RemoveCharacter(p.ctx, MapKey{Tenant: p.t, Field: f}, characterId)
 }
 
 func (p *ProcessorImpl) TransitionMap(of field.Model, nf field.Model, characterId uint32) {

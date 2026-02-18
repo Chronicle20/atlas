@@ -1,71 +1,61 @@
 package action
 
 import (
-	"sync"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // PendingAction represents a pending portal action awaiting saga completion
 type PendingAction struct {
-	CharacterId    uint32
-	WorldId        world.Id
-	ChannelId      channel.Id
-	FailureMessage string // Message to display on failure
+	CharacterId    uint32     `json:"characterId"`
+	WorldId        world.Id   `json:"worldId"`
+	ChannelId      channel.Id `json:"channelId"`
+	FailureMessage string     `json:"failureMessage"`
 }
 
 // Registry tracks pending portal actions by saga ID
 type Registry struct {
-	lock sync.RWMutex
-	// tenantId → sagaId → pending action
-	registry map[uuid.UUID]map[uuid.UUID]PendingAction
+	reg *atlas.TenantRegistry[uuid.UUID, PendingAction]
 }
 
-var registryOnce sync.Once
-var registryInstance *Registry
+var registry *Registry
 
-// GetRegistry returns the singleton registry instance
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTenantRegistry[uuid.UUID, PendingAction](client, "portal-action", func(k uuid.UUID) string {
+			return k.String()
+		}),
+	}
+}
+
 func GetRegistry() *Registry {
-	registryOnce.Do(func() {
-		registryInstance = &Registry{
-			registry: make(map[uuid.UUID]map[uuid.UUID]PendingAction),
-		}
-	})
-	return registryInstance
+	return registry
 }
 
 // Add registers a pending action for a saga
-func (r *Registry) Add(tenantId, sagaId uuid.UUID, action PendingAction) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if _, ok := r.registry[tenantId]; !ok {
-		r.registry[tenantId] = make(map[uuid.UUID]PendingAction)
-	}
-	r.registry[tenantId][sagaId] = action
+func (r *Registry) Add(ctx context.Context, sagaId uuid.UUID, a PendingAction) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Put(ctx, t, sagaId, a)
 }
 
 // Get retrieves a pending action by saga ID
-func (r *Registry) Get(tenantId, sagaId uuid.UUID) (PendingAction, bool) {
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	if tenantRegistry, ok := r.registry[tenantId]; ok {
-		if action, ok := tenantRegistry[sagaId]; ok {
-			return action, true
-		}
+func (r *Registry) Get(ctx context.Context, sagaId uuid.UUID) (PendingAction, bool) {
+	t := tenant.MustFromContext(ctx)
+	v, err := r.reg.Get(ctx, t, sagaId)
+	if err != nil {
+		return PendingAction{}, false
 	}
-	return PendingAction{}, false
+	return v, true
 }
 
 // Remove removes a pending action by saga ID
-func (r *Registry) Remove(tenantId, sagaId uuid.UUID) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if tenantRegistry, ok := r.registry[tenantId]; ok {
-		delete(tenantRegistry, sagaId)
-	}
+func (r *Registry) Remove(ctx context.Context, sagaId uuid.UUID) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Remove(ctx, t, sagaId)
 }

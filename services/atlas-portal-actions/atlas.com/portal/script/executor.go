@@ -13,7 +13,6 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/Chronicle20/atlas-script-core/saga"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -445,8 +444,7 @@ func (e *OperationExecutor) executeStartInstanceTransport(f field.Model, charact
 	sagaId := uuid.New()
 
 	// Register pending action for saga failure handling
-	t := tenant.MustFromContext(e.ctx)
-	action.GetRegistry().Add(t.Id(), sagaId, action.PendingAction{
+	action.GetRegistry().Add(e.ctx, sagaId, action.PendingAction{
 		CharacterId:    characterId,
 		WorldId:        f.WorldId(),
 		ChannelId:      f.ChannelId(),

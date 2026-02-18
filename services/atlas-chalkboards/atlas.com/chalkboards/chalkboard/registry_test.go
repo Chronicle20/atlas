@@ -1,37 +1,47 @@
 package chalkboard
 
 import (
+	"context"
 	"sync"
 	"testing"
 
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-func newTestTenant() tenant.Model {
-	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	return t
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
+
+func testCtx() context.Context {
+	st, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	return tenant.WithContext(context.Background(), st)
 }
 
 func TestRegistryGetNonExistent(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
-	_, ok := r.Get(ten, 12345)
+	_, ok := getRegistry().Get(ctx, 12345)
 	if ok {
 		t.Error("Expected Get to return false for non-existent key")
 	}
 }
 
 func TestRegistrySetAndGet(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 	characterId := uint32(12345)
 	message := "Hello, World!"
 
-	r.Set(ten, characterId, message)
+	getRegistry().Set(ctx, characterId, message)
 
-	got, ok := r.Get(ten, characterId)
+	got, ok := getRegistry().Get(ctx, characterId)
 	if !ok {
 		t.Fatal("Expected Get to return true for existing key")
 	}
@@ -41,43 +51,45 @@ func TestRegistrySetAndGet(t *testing.T) {
 }
 
 func TestRegistryClear(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 	characterId := uint32(12345)
 
-	r.Set(ten, characterId, "test message")
+	getRegistry().Set(ctx, characterId, "test message")
 
-	cleared := r.Clear(ten, characterId)
+	cleared := getRegistry().Clear(ctx, characterId)
 	if !cleared {
 		t.Error("Expected Clear to return true for existing key")
 	}
 
-	_, ok := r.Get(ten, characterId)
+	_, ok := getRegistry().Get(ctx, characterId)
 	if ok {
 		t.Error("Expected Get to return false after Clear")
 	}
 }
 
 func TestRegistryClearNonExistent(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
-	cleared := r.Clear(ten, 99999)
+	cleared := getRegistry().Clear(ctx, 99999)
 	if cleared {
 		t.Error("Expected Clear to return false for non-existent key")
 	}
 }
 
 func TestRegistryTenantIsolation(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
+	setupTestRegistry(t)
 	tenant1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tenant2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
+	ctx1 := tenant.WithContext(context.Background(), tenant1)
+	ctx2 := tenant.WithContext(context.Background(), tenant2)
 	characterId := uint32(12345)
 
-	r.Set(tenant1, characterId, "tenant1 message")
-	r.Set(tenant2, characterId, "tenant2 message")
+	getRegistry().Set(ctx1, characterId, "tenant1 message")
+	getRegistry().Set(ctx2, characterId, "tenant2 message")
 
-	msg1, ok1 := r.Get(tenant1, characterId)
+	msg1, ok1 := getRegistry().Get(ctx1, characterId)
 	if !ok1 {
 		t.Fatal("Expected Get to return true for tenant1")
 	}
@@ -85,7 +97,7 @@ func TestRegistryTenantIsolation(t *testing.T) {
 		t.Errorf("Expected tenant1 message, got %q", msg1)
 	}
 
-	msg2, ok2 := r.Get(tenant2, characterId)
+	msg2, ok2 := getRegistry().Get(ctx2, characterId)
 	if !ok2 {
 		t.Fatal("Expected Get to return true for tenant2")
 	}
@@ -93,14 +105,14 @@ func TestRegistryTenantIsolation(t *testing.T) {
 		t.Errorf("Expected tenant2 message, got %q", msg2)
 	}
 
-	r.Clear(tenant1, characterId)
+	getRegistry().Clear(ctx1, characterId)
 
-	_, ok1After := r.Get(tenant1, characterId)
+	_, ok1After := getRegistry().Get(ctx1, characterId)
 	if ok1After {
 		t.Error("Expected tenant1 data to be cleared")
 	}
 
-	msg2After, ok2After := r.Get(tenant2, characterId)
+	msg2After, ok2After := getRegistry().Get(ctx2, characterId)
 	if !ok2After {
 		t.Error("Expected tenant2 data to still exist after clearing tenant1")
 	}
@@ -110,8 +122,8 @@ func TestRegistryTenantIsolation(t *testing.T) {
 }
 
 func TestRegistryConcurrentAccess(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
 	var wg sync.WaitGroup
 	numGoroutines := 100
@@ -121,9 +133,9 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 		go func(id int) {
 			defer wg.Done()
 			characterId := uint32(id)
-			r.Set(ten, characterId, "message")
-			r.Get(ten, characterId)
-			r.Clear(ten, characterId)
+			getRegistry().Set(ctx, characterId, "message")
+			getRegistry().Get(ctx, characterId)
+			getRegistry().Clear(ctx, characterId)
 		}(i)
 	}
 
@@ -131,14 +143,14 @@ func TestRegistryConcurrentAccess(t *testing.T) {
 }
 
 func TestRegistryOverwrite(t *testing.T) {
-	r := &Registry{characterRegister: make(map[ChalkboardKey]string)}
-	ten := newTestTenant()
+	setupTestRegistry(t)
+	ctx := testCtx()
 	characterId := uint32(12345)
 
-	r.Set(ten, characterId, "first message")
-	r.Set(ten, characterId, "second message")
+	getRegistry().Set(ctx, characterId, "first message")
+	getRegistry().Set(ctx, characterId, "second message")
 
-	got, ok := r.Get(ten, characterId)
+	got, ok := getRegistry().Get(ctx, characterId)
 	if !ok {
 		t.Fatal("Expected Get to return true")
 	}

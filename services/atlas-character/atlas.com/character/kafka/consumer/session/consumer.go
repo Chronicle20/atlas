@@ -14,7 +14,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -45,15 +44,14 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			return
 		}
 
-		t := tenant.MustFromContext(ctx)
 		hp := history.NewProcessor(l, ctx, db)
 
 		ch := channel.NewModel(e.WorldId, e.ChannelId)
 		if e.Type == session2.EventSessionStatusTypeCreated {
-			cs, err := session.GetRegistry().Get(t, e.CharacterId)
+			cs, err := session.GetRegistry().Get(ctx, e.CharacterId)
 			if err != nil || cs.State() == session.StateLoggedOut {
 				l.Debugf("Processing a session status event of [%s] which will trigger a login.", e.Type)
-				err = session.GetRegistry().Add(t, e.CharacterId, ch, session.StateLoggedIn)
+				err = session.GetRegistry().Add(ctx, e.CharacterId, ch, session.StateLoggedIn)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] already logged in. Eating event.", e.CharacterId)
 					return
@@ -72,7 +70,7 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 				return
 			} else if cs.State() == session.StateTransition {
 				l.Debugf("Processing a session status event of [%s] which will trigger a change channel.", e.Type)
-				err = session.GetRegistry().Set(t, e.CharacterId, ch, session.StateLoggedIn)
+				err = session.GetRegistry().Set(ctx, e.CharacterId, ch, session.StateLoggedIn)
 
 				// End previous session and start new one for channel change
 				_ = hp.EndSession(e.CharacterId)
@@ -89,7 +87,7 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			return
 		}
 		if e.Type == session2.EventSessionStatusTypeDestroyed {
-			cs, err := session.GetRegistry().Get(t, e.CharacterId)
+			cs, err := session.GetRegistry().Get(ctx, e.CharacterId)
 			if err != nil {
 				l.Debugf("Processing a session status event of [%s]. Session already destroyed.", e.Type)
 				return
@@ -97,7 +95,7 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 			if cs.State() == session.StateLoggedIn {
 				l.Debugf("Processing a session status event of [%s] which will trigger a transition state. Either it will be culled (logout), or updated (change channel) later.", e.Type)
 				och := channel.NewModel(cs.WorldId(), cs.ChannelId())
-				_ = session.GetRegistry().Set(t, cs.CharacterId(), och, session.StateTransition)
+				_ = session.GetRegistry().Set(ctx, cs.CharacterId(), och, session.StateTransition)
 			}
 			return
 		}

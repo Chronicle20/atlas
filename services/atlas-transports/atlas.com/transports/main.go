@@ -1,6 +1,7 @@
 package main
 
 import (
+	channel2 "atlas-transports/channel"
 	"atlas-transports/instance"
 	instanceConfig "atlas-transports/instance/config"
 	"atlas-transports/kafka/consumer/channel"
@@ -18,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas-tenant"
 )
@@ -50,6 +52,13 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	channel2.InitRegistry(rc)
+	instance.InitCharacterRegistry(rc)
+	instance.InitInstanceRegistry(rc)
+	instance.InitRouteRegistry(rc)
+	transport.InitRouteRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

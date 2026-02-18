@@ -5,7 +5,9 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -14,15 +16,15 @@ func testTenant() tenant.Model {
 	return t
 }
 
-func resetProcessorRegistry() {
-	r := GetRegistry()
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.characterRegister = make(map[uint32]Model)
+func setupProcessorTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
 }
 
 func TestGetById_Success(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -32,7 +34,7 @@ func TestGetById_Success(t *testing.T) {
 	chairType := "FIXED"
 
 	// Set up registry directly
-	GetRegistry().Set(characterId, Model{id: chairId, chairType: chairType})
+	GetRegistry().Set(tctx, characterId, Model{id: chairId, chairType: chairType})
 
 	// Test GetById
 	p := NewProcessor(l, tctx)
@@ -52,7 +54,7 @@ func TestGetById_Success(t *testing.T) {
 }
 
 func TestGetById_NotFound(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -68,7 +70,7 @@ func TestGetById_NotFound(t *testing.T) {
 }
 
 func TestGetById_MultipleCharacters(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -85,7 +87,7 @@ func TestGetById_MultipleCharacters(t *testing.T) {
 	}
 
 	for _, c := range chars {
-		GetRegistry().Set(c.characterId, Model{id: c.chairId, chairType: c.chairType})
+		GetRegistry().Set(tctx, c.characterId, Model{id: c.chairId, chairType: c.chairType})
 	}
 
 	p := NewProcessor(l, tctx)
@@ -107,7 +109,7 @@ func TestGetById_MultipleCharacters(t *testing.T) {
 }
 
 func TestGetById_AfterClear(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -115,8 +117,8 @@ func TestGetById_AfterClear(t *testing.T) {
 	characterId := uint32(12345)
 
 	// Set up then clear
-	GetRegistry().Set(characterId, Model{id: 1, chairType: "FIXED"})
-	GetRegistry().Clear(characterId)
+	GetRegistry().Set(tctx, characterId, Model{id: 1, chairType: "FIXED"})
+	GetRegistry().Clear(tctx, characterId)
 
 	p := NewProcessor(l, tctx)
 	_, err := p.GetById(characterId)
@@ -125,24 +127,6 @@ func TestGetById_AfterClear(t *testing.T) {
 		t.Fatal("Expected error after clear, got nil")
 	}
 }
-
-// Note: Set and Clear methods have external dependencies (Kafka producer, external map service)
-// that would require mocking for full unit test coverage.
-//
-// To properly test Set():
-// - Mock the Kafka producer (producer.ProviderImpl)
-// - Mock the data/map processor (_map2.NewProcessor)
-//
-// To properly test Clear():
-// - Mock the Kafka producer (producer.ProviderImpl)
-//
-// For now, these methods are tested indirectly through:
-// 1. Integration tests at the service level
-// 2. Registry tests that verify the state management
-//
-// The processor logic that can be unit tested (GetById) is covered above.
-// The validation logic in Set (chair existence, item category checks) would
-// require dependency injection to mock properly.
 
 func TestModel_Accessors(t *testing.T) {
 	chairId := uint32(42)

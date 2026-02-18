@@ -207,7 +207,7 @@ func (p *ProcessorImpl) RequestCreate(mb *message.Buffer) func(characterId uint3
 						return errors.New("party member in guild")
 					}
 
-					err = coordinator.GetRegistry().Initiate(p.t, field.Channel(), name, characterId, members)
+					err = coordinator.GetRegistry().Initiate(p.ctx, field.Channel(), name, characterId, members)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to initialize a guild creation coordinator.")
 						_ = mb.Put(guild2.EnvStatusEventTopic, statusEventErrorProvider(field.WorldId(), characterId, CreateError, transactionId))
@@ -308,7 +308,7 @@ func (p *ProcessorImpl) CreationAgreementResponse(mb *message.Buffer) func(chara
 	return func(characterId uint32) func(agreed bool) func(transactionId uuid.UUID) error {
 		return func(agreed bool) func(transactionId uuid.UUID) error {
 			return func(transactionId uuid.UUID) error {
-				gc, err := coordinator.GetRegistry().Respond(p.t, characterId, agreed)
+				gc, err := coordinator.GetRegistry().Respond(p.ctx, characterId, agreed)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to record character [%d] guild creation agreement [%t].", characterId, agreed)
 					return err

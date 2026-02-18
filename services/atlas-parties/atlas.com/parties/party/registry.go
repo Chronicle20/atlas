@@ -1,122 +1,72 @@
 package party
 
 import (
-	"sync"
+	"context"
+	"strconv"
 
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	lock          sync.Mutex
-	tenantPartyId map[tenant.Model]uint32
-
-	partyReg   map[tenant.Model]map[uint32]Model
-	tenantLock map[tenant.Model]*sync.RWMutex
-
-	// Efficient character-to-party mapping for fast lookups
-	characterToParty map[tenant.Model]map[uint32]uint32
+	parties        *atlas.TenantRegistry[uint32, Model]
+	idGen          *atlas.IDGenerator
+	characterIndex *atlas.Uint32Index
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		parties: atlas.NewTenantRegistry[uint32, Model](client, "party", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		idGen:          atlas.NewIDGenerator(client, "party"),
+		characterIndex: atlas.NewUint32Index(client, "party", "char-party"),
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.tenantPartyId = make(map[tenant.Model]uint32)
-		registry.partyReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-		registry.characterToParty = make(map[tenant.Model]map[uint32]uint32)
-	})
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, leaderId uint32) Model {
-	var partyId uint32
-	var partyReg map[uint32]Model
-	var tenantLock *sync.RWMutex
-	var charToParty map[uint32]uint32
-	var ok bool
-
-	r.lock.Lock()
-	if partyId, ok = r.tenantPartyId[t]; ok {
-		partyId += 1
-		partyReg = r.partyReg[t]
-		tenantLock = r.tenantLock[t]
-		charToParty = r.characterToParty[t]
-	} else {
-		partyId = StartPartyId
-		partyReg = make(map[uint32]Model)
-		tenantLock = &sync.RWMutex{}
-		charToParty = make(map[uint32]uint32)
-	}
-	r.tenantPartyId[t] = partyId
-	r.partyReg[t] = partyReg
-	r.tenantLock[t] = tenantLock
-	r.characterToParty[t] = charToParty
-	r.lock.Unlock()
+func (r *Registry) Create(ctx context.Context, leaderId uint32) Model {
+	t := tenant.MustFromContext(ctx)
+	partyId, _ := r.idGen.NextID(ctx, t)
 
 	m := Model{
 		tenantId: t.Id(),
 		id:       partyId,
 		leaderId: leaderId,
-		members:  make([]uint32, 0),
+		members:  []uint32{leaderId},
 	}
-	m.members = append(m.members, leaderId)
-
-	tenantLock.Lock()
-	partyReg[partyId] = m
-	charToParty[leaderId] = partyId
-	tenantLock.Unlock()
+	_ = r.parties.Put(ctx, t, partyId, m)
+	_ = r.characterIndex.Add(ctx, t, leaderId, partyId)
 	return m
 }
 
-func (r *Registry) GetAll(t tenant.Model) []Model {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.partyReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.characterToParty[t] = make(map[uint32]uint32)
-		r.lock.Unlock()
+func (r *Registry) GetAll(ctx context.Context) []Model {
+	t := tenant.MustFromContext(ctx)
+	vals, err := r.parties.GetAllValues(ctx, t)
+	if err != nil {
+		return make([]Model, 0)
 	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	var res = make([]Model, 0)
-	for _, v := range r.partyReg[t] {
-		res = append(res, v)
-	}
-	return res
+	return vals
 }
 
-func (r *Registry) Get(t tenant.Model, partyId uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.partyReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.characterToParty[t] = make(map[uint32]uint32)
-		r.lock.Unlock()
-	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if m, ok := r.partyReg[t][partyId]; ok {
-		return m, nil
-	}
-	return Model{}, ErrNotFound
+func (r *Registry) Get(ctx context.Context, partyId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	return r.parties.Get(ctx, t, partyId)
 }
 
-func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) Model) (Model, error) {
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
+func (r *Registry) Update(ctx context.Context, id uint32, updaters ...func(m Model) Model) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	oldModel, err := r.parties.Get(ctx, t, id)
+	if err != nil {
+		return Model{}, err
+	}
 
-	oldModel := r.partyReg[t][id]
 	newModel := oldModel
 	for _, updater := range updaters {
 		newModel = updater(newModel)
@@ -126,75 +76,48 @@ func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) M
 		return Model{}, ErrAtCapacity
 	}
 
-	// Update character-to-party mapping for membership changes
-	r.updateCharacterToPartyMapping(t, oldModel, newModel)
-
-	r.partyReg[t][id] = newModel
+	r.updateCharacterIndex(ctx, t, oldModel, newModel)
+	_ = r.parties.Put(ctx, t, id, newModel)
 	return newModel, nil
 }
 
-func (r *Registry) Remove(t tenant.Model, partyId uint32) {
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-
-	// Remove character-to-party mappings for all members
-	if party, ok := r.partyReg[t][partyId]; ok {
+func (r *Registry) Remove(ctx context.Context, partyId uint32) {
+	t := tenant.MustFromContext(ctx)
+	party, err := r.parties.Get(ctx, t, partyId)
+	if err == nil {
 		for _, memberId := range party.members {
-			delete(r.characterToParty[t], memberId)
+			_ = r.characterIndex.Remove(ctx, t, memberId, partyId)
 		}
 	}
-
-	delete(r.partyReg[t], partyId)
+	_ = r.parties.Remove(ctx, t, partyId)
 }
 
-// Helper method to update character-to-party mapping when membership changes
-func (r *Registry) updateCharacterToPartyMapping(t tenant.Model, oldModel, newModel Model) {
-	// Create sets of old and new members for efficient comparison
+func (r *Registry) updateCharacterIndex(ctx context.Context, t tenant.Model, oldModel, newModel Model) {
 	oldMembers := make(map[uint32]bool)
 	for _, memberId := range oldModel.members {
 		oldMembers[memberId] = true
 	}
-
 	newMembers := make(map[uint32]bool)
 	for _, memberId := range newModel.members {
 		newMembers[memberId] = true
 	}
-
-	// Remove mapping for members who left
 	for memberId := range oldMembers {
 		if !newMembers[memberId] {
-			delete(r.characterToParty[t], memberId)
+			_ = r.characterIndex.Remove(ctx, t, memberId, oldModel.id)
 		}
 	}
-
-	// Add mapping for new members
 	for memberId := range newMembers {
 		if !oldMembers[memberId] {
-			r.characterToParty[t][memberId] = newModel.id
+			_ = r.characterIndex.Add(ctx, t, memberId, newModel.id)
 		}
 	}
 }
 
-// Efficient character-to-party lookup using O(1) mapping with caching
-func (r *Registry) GetPartyByCharacter(t tenant.Model, characterId uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.partyReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.characterToParty[t] = make(map[uint32]uint32)
-		r.lock.Unlock()
+func (r *Registry) GetPartyByCharacter(ctx context.Context, characterId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	partyId, err := r.characterIndex.LookupOne(ctx, t, characterId)
+	if err != nil {
+		return Model{}, ErrNotFound
 	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if partyId, ok := r.characterToParty[t][characterId]; ok {
-		if party, ok := r.partyReg[t][partyId]; ok {
-			return party, nil
-		}
-	}
-
-	return Model{}, ErrNotFound
+	return r.parties.Get(ctx, t, partyId)
 }

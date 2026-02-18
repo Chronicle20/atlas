@@ -26,7 +26,7 @@ func NewTransitionTimeout(l logrus.FieldLogger, db *gorm.DB, interval time.Durat
 }
 
 func (t *Timeout) Run() {
-	_, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), TimeoutTask)
+	sctx, span := otel.GetTracerProvider().Tracer("atlas-account").Start(context.Background(), TimeoutTask)
 	defer span.End()
 
 	as, err := GetInTransition(t.timeout)
@@ -37,7 +37,7 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing timeout task.")
 	for _, a := range as {
 		t.l.Infof("Account [%d] was stuck in transition and will be set to logged out.", a.AccountId)
-		Get().ExpireTransition(a, t.timeout)
+		GetRegistry().ExpireTransition(sctx, a, t.timeout)
 	}
 }
 

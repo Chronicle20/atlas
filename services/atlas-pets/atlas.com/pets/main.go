@@ -1,6 +1,7 @@
 package main
 
 import (
+	charReg "atlas-pets/character"
 	"atlas-pets/database"
 	"atlas-pets/kafka/consumer/asset"
 	"atlas-pets/kafka/consumer/character"
@@ -15,6 +16,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -44,6 +46,9 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	charReg.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

@@ -4,7 +4,6 @@ import (
 	"atlas-rates/data/cash"
 	"atlas-rates/data/equipment"
 	"atlas-rates/rate"
-	"context"
 	"testing"
 	"time"
 
@@ -16,19 +15,6 @@ import (
 func createTestTenantForTracker() tenant.Model {
 	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	return t
-}
-
-func resetItemTracker() {
-	GetItemTracker().ResetForTesting()
-}
-
-func TestItemTrackerSingleton(t *testing.T) {
-	tracker1 := GetItemTracker()
-	tracker2 := GetItemTracker()
-
-	if tracker1 != tracker2 {
-		t.Error("GetItemTracker() does not return singleton")
-	}
 }
 
 func TestTrackedItem_BonusExp_NotCoupon(t *testing.T) {
@@ -191,20 +177,21 @@ func TestTrackedItem_IsExpired(t *testing.T) {
 }
 
 func TestItemTrackerTrackItem(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 
 	item := TrackedItem{
-		TemplateId:   1002357,
-		ItemType:     ItemTypeBonusExp,
-		AcquiredAt:   time.Now(),
-		RateType:     rate.TypeExp,
+		TemplateId:    1002357,
+		ItemType:      ItemTypeBonusExp,
+		AcquiredAt:    time.Now(),
+		RateType:      rate.TypeExp,
 		BonusExpTiers: []equipment.BonusExpTier{{IncExpR: 10, TermStart: 0}},
 	}
 
-	GetItemTracker().TrackItem(ten, 12345, item)
+	GetItemTracker().TrackItem(ctx, 12345, item)
 
-	retrieved, found := GetItemTracker().GetTrackedItem(ten, 12345, 1002357)
+	retrieved, found := GetItemTracker().GetTrackedItem(ctx, 12345, 1002357)
 	if !found {
 		t.Fatal("TrackItem did not store the item")
 	}
@@ -214,8 +201,9 @@ func TestItemTrackerTrackItem(t *testing.T) {
 }
 
 func TestItemTrackerUntrackItem(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 
 	item := TrackedItem{
 		TemplateId: 1002357,
@@ -224,36 +212,37 @@ func TestItemTrackerUntrackItem(t *testing.T) {
 		RateType:   rate.TypeExp,
 	}
 
-	GetItemTracker().TrackItem(ten, 12345, item)
-	GetItemTracker().UntrackItem(ten, 12345, 1002357)
+	GetItemTracker().TrackItem(ctx, 12345, item)
+	GetItemTracker().UntrackItem(ctx, 12345, 1002357)
 
-	_, found := GetItemTracker().GetTrackedItem(ten, 12345, 1002357)
+	_, found := GetItemTracker().GetTrackedItem(ctx, 12345, 1002357)
 	if found {
 		t.Error("UntrackItem did not remove the item")
 	}
 }
 
 func TestItemTrackerGetAllTrackedItems(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 
 	item1 := TrackedItem{TemplateId: 1001, ItemType: ItemTypeBonusExp, AcquiredAt: time.Now()}
 	item2 := TrackedItem{TemplateId: 1002, ItemType: ItemTypeCoupon, AcquiredAt: time.Now()}
 
-	GetItemTracker().TrackItem(ten, 12345, item1)
-	GetItemTracker().TrackItem(ten, 12345, item2)
+	GetItemTracker().TrackItem(ctx, 12345, item1)
+	GetItemTracker().TrackItem(ctx, 12345, item2)
 
-	items := GetItemTracker().GetAllTrackedItems(ten, 12345)
+	items := GetItemTracker().GetAllTrackedItems(ctx, 12345)
 	if len(items) != 2 {
 		t.Errorf("GetAllTrackedItems() returned %v items, want 2", len(items))
 	}
 }
 
 func TestItemTrackerComputeItemRateFactors_Coupon(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 	l, _ := test.NewNullLogger()
-	ctx := tenant.WithContext(context.Background(), ten)
 
 	// Track an active coupon with 2x rate
 	item := TrackedItem{
@@ -264,9 +253,9 @@ func TestItemTrackerComputeItemRateFactors_Coupon(t *testing.T) {
 		BaseRate:     2.0,
 		DurationMins: 60, // 60 minutes, still active
 	}
-	GetItemTracker().TrackItem(ten, 12345, item)
+	GetItemTracker().TrackItem(ctx, 12345, item)
 
-	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, ten, 12345)
+	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, 12345)
 
 	if len(factors) != 1 {
 		t.Fatalf("ComputeItemRateFactors() returned %v factors, want 1", len(factors))
@@ -281,10 +270,10 @@ func TestItemTrackerComputeItemRateFactors_Coupon(t *testing.T) {
 }
 
 func TestItemTrackerComputeItemRateFactors_Filters1x(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 	l, _ := test.NewNullLogger()
-	ctx := tenant.WithContext(context.Background(), ten)
 
 	// Track an expired coupon (multiplier will be 1.0)
 	item := TrackedItem{
@@ -295,9 +284,9 @@ func TestItemTrackerComputeItemRateFactors_Filters1x(t *testing.T) {
 		BaseRate:     2.0,
 		DurationMins: 60, // Expired
 	}
-	GetItemTracker().TrackItem(ten, 12345, item)
+	GetItemTracker().TrackItem(ctx, 12345, item)
 
-	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, ten, 12345)
+	factors := GetItemTracker().ComputeItemRateFactors(l, ctx, 12345)
 
 	// Should not include the 1.0 multiplier factor
 	if len(factors) != 0 {
@@ -306,8 +295,9 @@ func TestItemTrackerComputeItemRateFactors_Filters1x(t *testing.T) {
 }
 
 func TestItemTrackerCleanupExpiredItems(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 	ten := createTestTenantForTracker()
+	ctx := createTestCtx(ten)
 
 	// Track an expired coupon
 	expired := TrackedItem{
@@ -338,11 +328,11 @@ func TestItemTrackerCleanupExpiredItems(t *testing.T) {
 		BonusExpTiers: []equipment.BonusExpTier{{IncExpR: 10, TermStart: 0}},
 	}
 
-	GetItemTracker().TrackItem(ten, 12345, expired)
-	GetItemTracker().TrackItem(ten, 12345, active)
-	GetItemTracker().TrackItem(ten, 12345, bonusExp)
+	GetItemTracker().TrackItem(ctx, 12345, expired)
+	GetItemTracker().TrackItem(ctx, 12345, active)
+	GetItemTracker().TrackItem(ctx, 12345, bonusExp)
 
-	removed := GetItemTracker().CleanupExpiredItems(ten, 12345)
+	removed := GetItemTracker().CleanupExpiredItems(ctx, 12345)
 
 	if len(removed) != 1 {
 		t.Errorf("CleanupExpiredItems() removed %v items, want 1", len(removed))
@@ -352,26 +342,28 @@ func TestItemTrackerCleanupExpiredItems(t *testing.T) {
 	}
 
 	// Verify the remaining items
-	items := GetItemTracker().GetAllTrackedItems(ten, 12345)
+	items := GetItemTracker().GetAllTrackedItems(ctx, 12345)
 	if len(items) != 2 {
 		t.Errorf("Remaining items = %v, want 2", len(items))
 	}
 }
 
 func TestItemTrackerTenantIsolation(t *testing.T) {
-	resetItemTracker()
+	setupTestRegistries(t)
 
 	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	t2, _ := tenant.Create(uuid.New(), "KMS", 1, 2)
+	ctx1 := createTestCtx(t1)
+	ctx2 := createTestCtx(t2)
 
 	item1 := TrackedItem{TemplateId: 1001, ItemType: ItemTypeBonusExp, AcquiredAt: time.Now()}
 	item2 := TrackedItem{TemplateId: 2002, ItemType: ItemTypeBonusExp, AcquiredAt: time.Now()}
 
-	GetItemTracker().TrackItem(t1, 12345, item1)
-	GetItemTracker().TrackItem(t2, 12345, item2)
+	GetItemTracker().TrackItem(ctx1, 12345, item1)
+	GetItemTracker().TrackItem(ctx2, 12345, item2)
 
-	items1 := GetItemTracker().GetAllTrackedItems(t1, 12345)
-	items2 := GetItemTracker().GetAllTrackedItems(t2, 12345)
+	items1 := GetItemTracker().GetAllTrackedItems(ctx1, 12345)
+	items2 := GetItemTracker().GetAllTrackedItems(ctx2, 12345)
 
 	if len(items1) != 1 || items1[0].TemplateId != 1001 {
 		t.Errorf("Tenant 1 items incorrect")

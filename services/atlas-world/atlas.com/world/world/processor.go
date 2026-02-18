@@ -52,7 +52,7 @@ func (p *ProcessorImpl) ChannelDecorator(m Model) Model {
 }
 
 func (p *ProcessorImpl) AllWorldProvider(decorators ...model.Decorator[Model]) model.Provider[[]Model] {
-	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
+	worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.ctx))
 	return model.SliceMap[world.Id, Model](func(wid world.Id) (Model, error) {
 		return p.ByWorldIdProvider(decorators...)(wid)()
 	})(model.FixedProvider[[]world.Id](worldIds))(model.ParallelMap())
@@ -64,7 +64,7 @@ func (p *ProcessorImpl) GetWorlds(decorators ...model.Decorator[Model]) ([]Model
 
 func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) func(worldId world.Id) model.Provider[Model] {
 	return func(worldId world.Id) model.Provider[Model] {
-		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.t))
+		worldIds := mapDistinctWorldId(channel.GetChannelRegistry().ChannelServers(p.ctx))
 		var exists = false
 		for _, wid := range worldIds {
 			if wid == worldId {
@@ -86,7 +86,7 @@ func (p *ProcessorImpl) ByWorldIdProvider(decorators ...model.Decorator[Model]) 
 		wc := c.Worlds[worldId]
 
 		// Get current rates from registry (may have been updated at runtime)
-		rates := rate.GetRegistry().GetWorldRates(p.t, worldId)
+		rates := rate.GetRegistry().GetWorldRates(p.ctx, worldId)
 
 		m, err := NewModelBuilder().
 			SetId(worldId).

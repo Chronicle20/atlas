@@ -1,6 +1,7 @@
 package expression
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -17,6 +18,41 @@ type Model struct {
 	field       field.Model
 	expression  uint32
 	expiration  time.Time
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&struct {
+		Tenant      tenant.Model `json:"tenant"`
+		CharacterId uint32       `json:"characterId"`
+		Field       field.Model  `json:"field"`
+		Expression  uint32       `json:"expression"`
+		Expiration  time.Time    `json:"expiration"`
+	}{
+		Tenant:      m.tenant,
+		CharacterId: m.characterId,
+		Field:       m.field,
+		Expression:  m.expression,
+		Expiration:  m.expiration,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	t := &struct {
+		Tenant      tenant.Model `json:"tenant"`
+		CharacterId uint32       `json:"characterId"`
+		Field       field.Model  `json:"field"`
+		Expression  uint32       `json:"expression"`
+		Expiration  time.Time    `json:"expiration"`
+	}{}
+	if err := json.Unmarshal(data, t); err != nil {
+		return err
+	}
+	m.tenant = t.Tenant
+	m.characterId = t.CharacterId
+	m.field = t.Field
+	m.expression = t.Expression
+	m.expiration = t.Expiration
+	return nil
 }
 
 func (m Model) Expiration() time.Time {

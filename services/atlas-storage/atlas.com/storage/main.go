@@ -15,6 +15,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 	"gorm.io/gorm"
 )
@@ -54,6 +55,10 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	storage.InitNpcContextCache(rc)
+	projection.InitManager(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

@@ -11,6 +11,7 @@ import (
 )
 
 func TestNewProcessor(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -21,6 +22,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestNewProcessor_ExtractsTenant(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -32,6 +34,7 @@ func TestNewProcessor_ExtractsTenant(t *testing.T) {
 }
 
 func TestNewProcessor_PanicsOnMissingTenant(t *testing.T) {
+	setupTestRegistry(t)
 	ctx := context.Background() // No tenant in context
 	l := setupTestLogger(t)
 
@@ -41,6 +44,7 @@ func TestNewProcessor_PanicsOnMissingTenant(t *testing.T) {
 }
 
 func TestProcessor_GetByCharacterId_Empty(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -54,13 +58,14 @@ func TestProcessor_GetByCharacterId_Empty(t *testing.T) {
 }
 
 func TestProcessor_GetByCharacterId_ReturnsInvites(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
 	// Create some invites directly in registry
-	GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
-	GetRegistry().Create(ten, 1002, 1, 2001, "PARTY", 5002)
+	GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
+	GetRegistry().Create(ctx, 1002, 1, 2001, "PARTY", 5002)
 
 	p := NewProcessor(l, ctx)
 
@@ -71,11 +76,12 @@ func TestProcessor_GetByCharacterId_ReturnsInvites(t *testing.T) {
 }
 
 func TestProcessor_ByCharacterIdProvider(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
-	GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	p := NewProcessor(l, ctx)
 	provider := p.ByCharacterIdProvider(2001)
@@ -87,6 +93,7 @@ func TestProcessor_ByCharacterIdProvider(t *testing.T) {
 }
 
 func TestProcessor_Create(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -110,6 +117,7 @@ func TestProcessor_Create(t *testing.T) {
 }
 
 func TestProcessor_CreateAndEmit(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -136,12 +144,13 @@ func TestProcessor_CreateAndEmit(t *testing.T) {
 }
 
 func TestProcessor_Accept(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
 	// Create an invite first
-	created := GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	created := GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	p := NewProcessor(l, ctx)
 	mb := message.NewBuffer()
@@ -153,7 +162,7 @@ func TestProcessor_Accept(t *testing.T) {
 	assert.Equal(t, created.Id(), m.Id())
 
 	// Verify invite was deleted from registry
-	_, err = GetRegistry().GetByReference(ten, 2001, "BUDDY", 5001)
+	_, err = GetRegistry().GetByReference(ctx, 2001, "BUDDY", 5001)
 	assert.Error(t, err)
 
 	// Verify message was buffered
@@ -162,6 +171,7 @@ func TestProcessor_Accept(t *testing.T) {
 }
 
 func TestProcessor_Accept_NotFound(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -176,13 +186,14 @@ func TestProcessor_Accept_NotFound(t *testing.T) {
 }
 
 func TestProcessor_AcceptAndEmit(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 	mockProducer := mock.NewProducerMock()
 
 	// Create an invite first
-	created := GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	created := GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	p := &ProcessorImpl{
 		l:   l,
@@ -200,12 +211,13 @@ func TestProcessor_AcceptAndEmit(t *testing.T) {
 }
 
 func TestProcessor_Reject(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
 	// Create an invite first
-	created := GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	created := GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	p := NewProcessor(l, ctx)
 	mb := message.NewBuffer()
@@ -217,7 +229,7 @@ func TestProcessor_Reject(t *testing.T) {
 	assert.Equal(t, created.Id(), m.Id())
 
 	// Verify invite was deleted from registry
-	_, err = GetRegistry().GetByOriginator(ten, 2001, "BUDDY", 1001)
+	_, err = GetRegistry().GetByOriginator(ctx, 2001, "BUDDY", 1001)
 	assert.Error(t, err)
 
 	// Verify message was buffered
@@ -226,6 +238,7 @@ func TestProcessor_Reject(t *testing.T) {
 }
 
 func TestProcessor_Reject_NotFound(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -240,13 +253,14 @@ func TestProcessor_Reject_NotFound(t *testing.T) {
 }
 
 func TestProcessor_RejectAndEmit(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 	mockProducer := mock.NewProducerMock()
 
 	// Create an invite first
-	created := GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	created := GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	p := &ProcessorImpl{
 		l:   l,
@@ -268,6 +282,7 @@ func TestProcessor_Create_MultipleInviteTypes(t *testing.T) {
 
 	for _, inviteType := range inviteTypes {
 		t.Run(inviteType, func(t *testing.T) {
+			setupTestRegistry(t)
 			ten := setupTestTenant(t)
 			ctx := setupTestContext(t, ten)
 			l := setupTestLogger(t)
@@ -285,6 +300,7 @@ func TestProcessor_Create_MultipleInviteTypes(t *testing.T) {
 }
 
 func TestProcessor_TenantIsolation(t *testing.T) {
+	setupTestRegistry(t)
 	ten1 := setupTestTenant(t)
 	ten2 := setupTestTenant(t)
 	ctx1 := setupTestContext(t, ten1)

@@ -1,6 +1,7 @@
 package main
 
 import (
+	character2 "atlas-messengers/character"
 	"atlas-messengers/kafka/consumer/character"
 	"atlas-messengers/kafka/consumer/invite"
 	messenger2 "atlas-messengers/kafka/consumer/messenger"
@@ -11,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -42,6 +44,10 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	messenger.InitRegistry(rc)
+	character2.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

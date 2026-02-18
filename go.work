@@ -4,6 +4,7 @@ use (
 	./libs/atlas-constants
 	./libs/atlas-kafka
 	./libs/atlas-model
+	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-script-core
 	./libs/atlas-socket

@@ -14,49 +14,54 @@ func createTestTenantForInitializer() tenant.Model {
 }
 
 func TestIsInitialized_False(t *testing.T) {
-	ResetInitializedForTesting()
+	setupTestRegistries(t)
 	ten := createTestTenantForInitializer()
+	ctx := createTestCtx(ten)
 
-	if IsInitialized(ten, 12345) {
+	if IsInitialized(ctx, 12345) {
 		t.Error("IsInitialized() = true for uninitialized character")
 	}
 }
 
 func TestMarkInitialized(t *testing.T) {
-	ResetInitializedForTesting()
+	setupTestRegistries(t)
 	ten := createTestTenantForInitializer()
+	ctx := createTestCtx(ten)
 
-	MarkInitialized(ten, 12345)
+	MarkInitialized(ctx, 12345)
 
-	if !IsInitialized(ten, 12345) {
+	if !IsInitialized(ctx, 12345) {
 		t.Error("IsInitialized() = false after MarkInitialized()")
 	}
 }
 
 func TestClearInitialized(t *testing.T) {
-	ResetInitializedForTesting()
+	setupTestRegistries(t)
 	ten := createTestTenantForInitializer()
+	ctx := createTestCtx(ten)
 
-	MarkInitialized(ten, 12345)
-	ClearInitialized(ten, 12345)
+	MarkInitialized(ctx, 12345)
+	ClearInitialized(ctx, 12345)
 
-	if IsInitialized(ten, 12345) {
+	if IsInitialized(ctx, 12345) {
 		t.Error("IsInitialized() = true after ClearInitialized()")
 	}
 }
 
 func TestInitializedTenantIsolation(t *testing.T) {
-	ResetInitializedForTesting()
+	setupTestRegistries(t)
 
 	t1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	t2, _ := tenant.Create(uuid.New(), "KMS", 1, 2)
+	ctx1 := createTestCtx(t1)
+	ctx2 := createTestCtx(t2)
 
-	MarkInitialized(t1, 12345)
+	MarkInitialized(ctx1, 12345)
 
-	if !IsInitialized(t1, 12345) {
+	if !IsInitialized(ctx1, 12345) {
 		t.Error("IsInitialized(t1) = false, want true")
 	}
-	if IsInitialized(t2, 12345) {
+	if IsInitialized(ctx2, 12345) {
 		t.Error("IsInitialized(t2) = true, want false (tenant isolation)")
 	}
 }

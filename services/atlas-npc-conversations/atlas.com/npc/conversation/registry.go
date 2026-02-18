@@ -1,109 +1,88 @@
 package conversation
 
 import (
+	"context"
 	"errors"
-	"sync"
+	"strconv"
 
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	lock       sync.RWMutex
-	registry   map[tenant.Model]map[uint32]ConversationContext
-	tenantLock map[tenant.Model]*sync.RWMutex
+	conversations *atlas.TenantRegistry[uint32, ConversationContext]
+	sagaIndex     *atlas.TenantRegistry[uuid.UUID, uint32]
 }
 
-var once sync.Once
 var registry *Registry
 
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		conversations: atlas.NewTenantRegistry[uint32, ConversationContext](client, "npc-conversation", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		sagaIndex: atlas.NewTenantRegistry[uuid.UUID, uint32](client, "npc-conversation-saga", func(k uuid.UUID) string {
+			return k.String()
+		}),
+	}
+}
+
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = initRegistry()
-	})
 	return registry
 }
 
-func initRegistry() *Registry {
-	s := &Registry{
-		lock:       sync.RWMutex{},
-		registry:   make(map[tenant.Model]map[uint32]ConversationContext),
-		tenantLock: make(map[tenant.Model]*sync.RWMutex),
+func (s *Registry) GetPreviousContext(ctx context.Context, characterId uint32) (ConversationContext, error) {
+	t := tenant.MustFromContext(ctx)
+	val, err := s.conversations.Get(ctx, t, characterId)
+	if err != nil {
+		return ConversationContext{}, errors.New("unable to previous context")
 	}
-	return s
+	return val, nil
 }
 
-func (s *Registry) GetPreviousContext(t tenant.Model, characterId uint32) (ConversationContext, error) {
-	s.lock.Lock()
-	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]ConversationContext)
-		s.tenantLock[t] = &sync.RWMutex{}
+func (s *Registry) SetContext(ctx context.Context, characterId uint32, cc ConversationContext) {
+	t := tenant.MustFromContext(ctx)
+	_ = s.conversations.Put(ctx, t, characterId, cc)
+	if cc.PendingSagaId() != nil {
+		_ = s.sagaIndex.Put(ctx, t, *cc.PendingSagaId(), characterId)
 	}
-	tl := s.tenantLock[t]
-	s.lock.Unlock()
-
-	tl.RLock()
-	if val, ok := s.registry[t][characterId]; ok {
-		tl.RUnlock()
-		return val, nil
-	}
-	tl.RUnlock()
-	return ConversationContext{}, errors.New("unable to previous context")
 }
 
-func (s *Registry) SetContext(t tenant.Model, characterId uint32, ctx ConversationContext) {
-	s.lock.Lock()
-	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]ConversationContext)
-		s.tenantLock[t] = &sync.RWMutex{}
+func (s *Registry) ClearContext(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	old, err := s.conversations.Get(ctx, t, characterId)
+	if err == nil && old.PendingSagaId() != nil {
+		_ = s.sagaIndex.Remove(ctx, t, *old.PendingSagaId())
 	}
-	tl := s.tenantLock[t]
-	s.lock.Unlock()
-
-	tl.Lock()
-	s.registry[t][characterId] = ctx
-	tl.Unlock()
+	_ = s.conversations.Remove(ctx, t, characterId)
 }
 
-func (s *Registry) ClearContext(t tenant.Model, characterId uint32) {
-	s.lock.Lock()
-	if _, ok := s.registry[t]; !ok {
-		s.registry[t] = make(map[uint32]ConversationContext)
-		s.tenantLock[t] = &sync.RWMutex{}
-	}
-	tl := s.tenantLock[t]
-	s.lock.Unlock()
-
-	tl.Lock()
-	delete(s.registry[t], characterId)
-	tl.Unlock()
-}
-
-// UpdateContext updates an existing conversation context (alias for SetContext)
-func (s *Registry) UpdateContext(t tenant.Model, characterId uint32, ctx ConversationContext) {
-	s.SetContext(t, characterId, ctx)
-}
-
-// GetContextBySagaId finds a conversation context by saga ID
-func (s *Registry) GetContextBySagaId(t tenant.Model, sagaId uuid.UUID) (ConversationContext, error) {
-	s.lock.RLock()
-	tenantRegistry, ok := s.registry[t]
-	if !ok {
-		s.lock.RUnlock()
-		return ConversationContext{}, errors.New("no conversations found for tenant")
-	}
-	tl := s.tenantLock[t]
-	s.lock.RUnlock()
-
-	tl.RLock()
-	defer tl.RUnlock()
-
-	// Search through all conversations for this tenant to find one with matching saga ID
-	for _, ctx := range tenantRegistry {
-		if ctx.PendingSagaId() != nil && *ctx.PendingSagaId() == sagaId {
-			return ctx, nil
+func (s *Registry) UpdateContext(ctx context.Context, characterId uint32, cc ConversationContext) {
+	t := tenant.MustFromContext(ctx)
+	old, err := s.conversations.Get(ctx, t, characterId)
+	if err == nil && old.PendingSagaId() != nil {
+		if cc.PendingSagaId() == nil || *cc.PendingSagaId() != *old.PendingSagaId() {
+			_ = s.sagaIndex.Remove(ctx, t, *old.PendingSagaId())
 		}
 	}
+	_ = s.conversations.Put(ctx, t, characterId, cc)
+	if cc.PendingSagaId() != nil {
+		_ = s.sagaIndex.Put(ctx, t, *cc.PendingSagaId(), characterId)
+	}
+}
 
-	return ConversationContext{}, errors.New("no conversation found for saga ID")
+func (s *Registry) GetContextBySagaId(ctx context.Context, sagaId uuid.UUID) (ConversationContext, error) {
+	t := tenant.MustFromContext(ctx)
+	characterId, err := s.sagaIndex.Get(ctx, t, sagaId)
+	if err != nil {
+		return ConversationContext{}, errors.New("no conversation found for saga ID")
+	}
+	cc, err := s.conversations.Get(ctx, t, characterId)
+	if err != nil {
+		_ = s.sagaIndex.Remove(ctx, t, sagaId)
+		return ConversationContext{}, errors.New("conversation context not found for character")
+	}
+	return cc, nil
 }

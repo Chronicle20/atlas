@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-buffs/buff"
+	"encoding/json"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -35,4 +36,35 @@ func (m Model) WorldId() world.Id {
 
 func (m Model) ChannelId() channel.Id {
 	return m.channelId
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		WorldId     world.Id             `json:"worldId"`
+		ChannelId   channel.Id           `json:"channelId"`
+		CharacterId uint32               `json:"characterId"`
+		Buffs       map[int32]buff.Model `json:"buffs"`
+	}{
+		WorldId:     m.worldId,
+		ChannelId:   m.channelId,
+		CharacterId: m.characterId,
+		Buffs:       m.buffs,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		WorldId     world.Id             `json:"worldId"`
+		ChannelId   channel.Id           `json:"channelId"`
+		CharacterId uint32               `json:"characterId"`
+		Buffs       map[int32]buff.Model `json:"buffs"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.worldId = aux.WorldId
+	m.channelId = aux.ChannelId
+	m.characterId = aux.CharacterId
+	m.buffs = aux.Buffs
+	return nil
 }

@@ -9,7 +9,9 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -22,15 +24,15 @@ func testField(worldId world.Id, channelId channel.Id, mapId _map.Id) field.Mode
 	return field.NewBuilder(worldId, channelId, mapId).Build()
 }
 
-func resetProcessorRegistry() {
-	r := getRegistry()
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.characterRegister = make(map[MapKey][]uint32)
+func setupProcessorTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
 }
 
 func TestInMapProvider(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -39,8 +41,8 @@ func TestInMapProvider(t *testing.T) {
 
 	// Add characters directly to registry
 	key := MapKey{Tenant: st, Field: field.NewBuilder(0, 1, 100000000).Build()}
-	getRegistry().AddCharacter(key, 100)
-	getRegistry().AddCharacter(key, 200)
+	getRegistry().AddCharacter(tctx, key, 100)
+	getRegistry().AddCharacter(tctx, key, 200)
 
 	// Get via processor
 	p := NewProcessor(l, tctx)
@@ -55,7 +57,7 @@ func TestInMapProvider(t *testing.T) {
 }
 
 func TestGetCharactersInMap(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -64,7 +66,7 @@ func TestGetCharactersInMap(t *testing.T) {
 
 	// Add characters
 	key := MapKey{Tenant: st, Field: field.NewBuilder(0, 1, 100000000).Build()}
-	getRegistry().AddCharacter(key, 100)
+	getRegistry().AddCharacter(tctx, key, 100)
 
 	p := NewProcessor(l, tctx)
 	chars, err := p.GetCharactersInMap(f)
@@ -78,7 +80,7 @@ func TestGetCharactersInMap(t *testing.T) {
 }
 
 func TestEnter(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -104,7 +106,7 @@ func TestEnter(t *testing.T) {
 }
 
 func TestExit(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -132,7 +134,7 @@ func TestExit(t *testing.T) {
 }
 
 func TestTransitionMap(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -173,7 +175,7 @@ func TestTransitionMap(t *testing.T) {
 }
 
 func TestTransitionChannel(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)
@@ -210,7 +212,7 @@ func TestTransitionChannel(t *testing.T) {
 }
 
 func TestTenantIsolation(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 
 	tenant1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -242,7 +244,7 @@ func TestTenantIsolation(t *testing.T) {
 }
 
 func TestMultipleCharactersInMap(t *testing.T) {
-	resetProcessorRegistry()
+	setupProcessorTestRegistry(t)
 	l, _ := test.NewNullLogger()
 	st := testTenant()
 	tctx := tenant.WithContext(context.Background(), st)

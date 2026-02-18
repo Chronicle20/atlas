@@ -270,7 +270,7 @@ func (p *ProcessorImpl) Enter(mb *message.Buffer) func(characterId uint32) func(
 				p.l.WithError(err).Errorf("Cannot locate shop [%d] character [%d] is attempting to enter.", npcId, characterId)
 				return err
 			}
-			getRegistry().AddCharacter(p.t.Id(), characterId, npcId)
+			GetRegistry().AddCharacter(p.ctx, characterId, npcId)
 			return mb.Put(shops.EnvStatusEventTopic, enteredEventProvider(characterId, npcId))
 		}
 	}
@@ -283,8 +283,8 @@ func (p *ProcessorImpl) ExitAndEmit(characterId uint32) error {
 func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Character [%d] attempting to exit shop.", characterId)
-		_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
-		getRegistry().RemoveCharacter(p.t.Id(), characterId)
+		_, inShop := GetRegistry().GetShop(p.ctx, characterId)
+		GetRegistry().RemoveCharacter(p.ctx, characterId)
 		if inShop {
 			return mb.Put(shops.EnvStatusEventTopic, exitedEventProvider(characterId))
 		}
@@ -293,7 +293,7 @@ func (p *ProcessorImpl) Exit(mb *message.Buffer) func(characterId uint32) error 
 }
 
 func (p *ProcessorImpl) GetCharactersInShop(shopId uint32) []uint32 {
-	return getRegistry().GetCharactersInShop(p.t.Id(), shopId)
+	return GetRegistry().GetCharactersInShop(p.ctx, shopId)
 }
 
 func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
@@ -369,7 +369,7 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 		return func(slot uint16, itemTemplateId uint32, quantity uint32, discountPrice uint32) error {
 			p.l.Debugf("Character [%d] attempting to buy item [%d] from slot [%d].", characterId, itemTemplateId, slot)
 
-			shopId, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			shopId, inShop := GetRegistry().GetShop(p.ctx, characterId)
 			if !inShop {
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
@@ -444,7 +444,7 @@ func (p *ProcessorImpl) Sell(mb *message.Buffer) func(characterId uint32) func(s
 		return func(slot int16, itemTemplateId uint32, quantity uint32) error {
 			p.l.Debugf("Character [%d] attempting to sell [%d] item [%d] from slot [%d].", characterId, quantity, itemTemplateId, slot)
 
-			_, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			_, inShop := GetRegistry().GetShop(p.ctx, characterId)
 			if !inShop {
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
@@ -534,7 +534,7 @@ func (p *ProcessorImpl) Recharge(mb *message.Buffer) func(characterId uint32) fu
 		return func(slot uint16) error {
 			p.l.Debugf("Character [%d] attempting to recharge item from slot [%d].", characterId, slot)
 
-			shopId, inShop := getRegistry().GetShop(p.t.Id(), characterId)
+			shopId, inShop := GetRegistry().GetShop(p.ctx, characterId)
 			if !inShop {
 				p.l.Errorf("Character [%d] is not in a shop.", characterId)
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))

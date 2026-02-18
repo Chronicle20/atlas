@@ -1,6 +1,7 @@
 package main
 
 import (
+	partyChar "atlas-parties/character"
 	"atlas-parties/kafka/consumer/character"
 	"atlas-parties/kafka/consumer/invite"
 	party2 "atlas-parties/kafka/consumer/party"
@@ -11,6 +12,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -42,6 +44,10 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	party.InitRegistry(rc)
+	partyChar.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

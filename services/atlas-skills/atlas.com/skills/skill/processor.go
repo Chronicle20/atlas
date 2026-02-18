@@ -183,7 +183,7 @@ func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id,
 func (p *ProcessorImpl) SetCooldown(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, cooldown uint32) (Model, error) {
 		p.l.Debugf("Applying cooldown of [%d] for character [%d] skill [%d].", cooldown, characterId, skillId)
-		err := GetRegistry().Apply(p.t, characterId, skillId, cooldown)
+		err := GetRegistry().Apply(p.ctx, characterId, skillId, cooldown)
 		if err != nil {
 			return Model{}, err
 		}
@@ -212,10 +212,10 @@ func (p *ProcessorImpl) SetCooldownAndEmit(transactionId uuid.UUID, worldId worl
 
 // ExpireCooldowns expires all cooldowns that have passed their expiration time
 func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context) {
-	for _, s := range GetRegistry().GetAll() {
+	for _, s := range GetRegistry().GetAll(ctx) {
 		if s.CooldownExpiresAt().Before(time.Now()) {
 			tctx := tenant.WithContext(ctx, s.Tenant())
-			_ = GetRegistry().Clear(s.Tenant(), s.CharacterId(), s.SkillId())
+			_ = GetRegistry().Clear(tctx, s.CharacterId(), s.SkillId())
 			// Use zero values for transactionId and worldId since this is a background expiration
 			_ = producer.ProviderImpl(l)(tctx)(skill2.EnvStatusEventTopic)(statusEventCooldownExpiredProvider(uuid.Nil, world.Id(0), s.CharacterId(), s.SkillId()))
 		}
@@ -224,7 +224,7 @@ func ExpireCooldowns(l logrus.FieldLogger, ctx context.Context) {
 
 // ClearAll clears all cooldowns for a character
 func (p *ProcessorImpl) ClearAll(characterId uint32) error {
-	return GetRegistry().ClearAll(p.t, characterId)
+	return GetRegistry().ClearAll(p.ctx, characterId)
 }
 
 // Delete deletes all skills for a character
@@ -237,7 +237,7 @@ func (p *ProcessorImpl) Delete(characterId uint32) error {
 // CooldownDecorator returns a decorator that adds cooldown information to a skill model
 func (p *ProcessorImpl) CooldownDecorator(characterId uint32) model.Decorator[Model] {
 	return func(m Model) Model {
-		ct, err := GetRegistry().Get(p.t, characterId, m.Id())
+		ct, err := GetRegistry().Get(p.ctx, characterId, m.Id())
 		if err != nil {
 			return m
 		}

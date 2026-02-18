@@ -1,83 +1,54 @@
 package rate
 
 import (
-	"sync"
+	"context"
+	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-type tenantData struct {
-	lock       sync.RWMutex
-	worldRates map[world.Id]Model
-}
-
 type Registry struct {
-	lock    sync.RWMutex
-	tenants map[tenant.Model]*tenantData
+	rates *atlas.TenantRegistry[world.Id, Model]
 }
 
-var rateRegistry *Registry
-var once sync.Once
+var registry *Registry
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		rates: atlas.NewTenantRegistry[world.Id, Model](client, "rate", func(id world.Id) string {
+			return fmt.Sprintf("%d", id)
+		}),
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		rateRegistry = &Registry{
-			tenants: make(map[tenant.Model]*tenantData),
-		}
-	})
-	return rateRegistry
+	return registry
 }
 
-func (r *Registry) getTenantData(t tenant.Model) *tenantData {
-	r.lock.RLock()
-	if td, ok := r.tenants[t]; ok {
-		r.lock.RUnlock()
-		return td
+func (r *Registry) GetWorldRates(ctx context.Context, worldId world.Id) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.rates.Get(ctx, t, worldId)
+	if err != nil {
+		return NewModel()
 	}
-	r.lock.RUnlock()
-
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if td, ok := r.tenants[t]; ok {
-		return td
-	}
-
-	td := &tenantData{
-		worldRates: make(map[world.Id]Model),
-	}
-	r.tenants[t] = td
-	return td
+	return m
 }
 
-func (r *Registry) GetWorldRates(t tenant.Model, worldId world.Id) Model {
-	td := r.getTenantData(t)
-	td.lock.RLock()
-	defer td.lock.RUnlock()
-
-	if rates, ok := td.worldRates[worldId]; ok {
-		return rates
+func (r *Registry) SetWorldRate(ctx context.Context, worldId world.Id, rateType Type, multiplier float64) Model {
+	t := tenant.MustFromContext(ctx)
+	current, err := r.rates.Get(ctx, t, worldId)
+	if err != nil {
+		current = NewModel()
 	}
-	return NewModel()
+	current = current.WithRate(rateType, multiplier)
+	_ = r.rates.Put(ctx, t, worldId, current)
+	return current
 }
 
-func (r *Registry) SetWorldRate(t tenant.Model, worldId world.Id, rateType Type, multiplier float64) Model {
-	td := r.getTenantData(t)
-	td.lock.Lock()
-	defer td.lock.Unlock()
-
-	if _, ok := td.worldRates[worldId]; !ok {
-		td.worldRates[worldId] = NewModel()
-	}
-	td.worldRates[worldId] = td.worldRates[worldId].WithRate(rateType, multiplier)
-	return td.worldRates[worldId]
-}
-
-func (r *Registry) InitWorldRates(t tenant.Model, worldId world.Id, rates Model) {
-	td := r.getTenantData(t)
-	td.lock.Lock()
-	defer td.lock.Unlock()
-
-	td.worldRates[worldId] = rates
+func (r *Registry) InitWorldRates(ctx context.Context, worldId world.Id, rates Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.rates.Put(ctx, t, worldId, rates)
 }

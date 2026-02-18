@@ -1,50 +1,75 @@
 package compartment
 
 import (
+	"context"
 	"fmt"
-	"sync"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
+	goredis "github.com/redis/go-redis/v9"
 )
 
+const (
+	lockTTL     = 30 * time.Second
+	lockRetry   = 50 * time.Millisecond
+	lockTimeout = 10 * time.Second
+)
+
+// DistributedMutex provides Lock/Unlock semantics backed by Redis.
+// It is returned by lockRegistry.Get and is compatible with call sites
+// that previously used *sync.RWMutex (Lock/Unlock only — RLock/RUnlock are not used).
+type DistributedMutex struct {
+	client *goredis.Client
+	key    string
+	value  string
+}
+
+var unlockScript = goredis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+    return redis.call("DEL", KEYS[1])
+end
+return 0
+`)
+
+func (m *DistributedMutex) Lock() {
+	m.value = fmt.Sprintf("%d", time.Now().UnixNano())
+	deadline := time.Now().Add(lockTimeout)
+	for time.Now().Before(deadline) {
+		ok, err := m.client.SetNX(context.Background(), m.key, m.value, lockTTL).Result()
+		if err == nil && ok {
+			return
+		}
+		time.Sleep(lockRetry)
+	}
+	// Fallback: force acquire if timeout exceeded (prevents deadlock from crashed holders)
+	m.client.Set(context.Background(), m.key, m.value, lockTTL)
+}
+
+func (m *DistributedMutex) Unlock() {
+	unlockScript.Run(context.Background(), m.client, []string{m.key}, m.value)
+}
+
 type lockRegistry struct {
-	locks sync.Map
+	client *goredis.Client
 }
 
 var lr *lockRegistry
-var once sync.Once
+
+func InitLockRegistry(client *goredis.Client) {
+	lr = &lockRegistry{client: client}
+}
 
 func LockRegistry() *lockRegistry {
-	if lr == nil {
-		once.Do(func() {
-			lr = &lockRegistry{}
-		})
-	}
 	return lr
 }
 
-// lockKey is a helper function to generate a unique key for each inventory lock
-func lockKey(characterID uint32, inventoryType inventory.Type) string {
-	return fmt.Sprintf("%d:%d", characterID, inventoryType)
+func invLockKey(characterId uint32, inventoryType inventory.Type) string {
+	return fmt.Sprintf("invlock:%d:%d", characterId, inventoryType)
 }
 
-func (r *lockRegistry) Get(characterId uint32, inventoryType inventory.Type) *sync.RWMutex {
-	key := lockKey(characterId, inventoryType)
-	val, _ := r.locks.LoadOrStore(key, &sync.RWMutex{})
-	if mtx, ok := val.(*sync.RWMutex); ok {
-		return mtx
-	}
-	mtx := &sync.RWMutex{}
-	r.locks.Store(key, mtx)
-	return mtx
-}
-
-func (r *lockRegistry) Delete(characterId uint32, inventoryType inventory.Type) {
-	r.locks.Delete(lockKey(characterId, inventoryType))
-}
-
-func (r *lockRegistry) DeleteForCharacter(characterId uint32) {
-	for _, t := range inventory.Types {
-		r.locks.Delete(lockKey(characterId, t))
+func (r *lockRegistry) Get(characterId uint32, inventoryType inventory.Type) *DistributedMutex {
+	return &DistributedMutex{
+		client: r.client,
+		key:    invLockKey(characterId, inventoryType),
 	}
 }

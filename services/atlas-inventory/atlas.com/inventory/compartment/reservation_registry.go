@@ -1,38 +1,22 @@
 package compartment
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type ReservationRequest struct {
 	Slot     int16
 	ItemId   uint32
 	Quantity int16
-}
-
-type ReservationKey struct {
-	tenant        tenant.Model
-	characterId   uint32
-	inventoryType inventory.Type
-	slot          int16
-}
-
-func (k ReservationKey) CharacterId() uint32 {
-	return k.characterId
-}
-
-func (k ReservationKey) Tenant() tenant.Model {
-	return k.tenant
-}
-
-func NewReservationKey(tenant tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) ReservationKey {
-	return ReservationKey{tenant: tenant, characterId: characterId, inventoryType: inventoryType, slot: slot}
 }
 
 type Reservation struct {
@@ -50,30 +34,78 @@ func (r Reservation) Quantity() uint32 { return r.quantity }
 
 func (r Reservation) Expiry() time.Time { return r.expiry }
 
-type ReservationRegistry struct {
-	lock         sync.RWMutex
-	reservations map[ReservationKey][]Reservation
+type reservationJSON struct {
+	Id       uuid.UUID `json:"id"`
+	ItemId   uint32    `json:"itemId"`
+	Quantity uint32    `json:"quantity"`
+	Expiry   time.Time `json:"expiry"`
 }
 
-var (
-	instance        *ReservationRegistry
-	reservationOnce sync.Once
-)
+type ReservationRegistry struct {
+	client *goredis.Client
+}
+
+var resReg *ReservationRegistry
+
+func InitReservationRegistry(client *goredis.Client) {
+	resReg = &ReservationRegistry{client: client}
+}
 
 func GetReservationRegistry() *ReservationRegistry {
-	reservationOnce.Do(func() {
-		instance = &ReservationRegistry{
-			reservations: make(map[ReservationKey][]Reservation),
+	return resReg
+}
+
+func reservationKey(t tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) string {
+	return fmt.Sprintf("reservation:%s:%d:%d:%d", t.Id().String(), characterId, inventoryType, slot)
+}
+
+func (r *ReservationRegistry) loadReservations(key string) []Reservation {
+	data, err := r.client.Get(context.Background(), key).Bytes()
+	if err != nil {
+		return nil
+	}
+	var items []reservationJSON
+	if err := json.Unmarshal(data, &items); err != nil {
+		return nil
+	}
+	now := time.Now()
+	result := make([]Reservation, 0, len(items))
+	for _, item := range items {
+		if item.Expiry.After(now) {
+			result = append(result, Reservation{
+				id:       item.Id,
+				itemId:   item.ItemId,
+				quantity: item.Quantity,
+				expiry:   item.Expiry,
+			})
 		}
-	})
-	return instance
+	}
+	return result
+}
+
+func (r *ReservationRegistry) storeReservations(key string, reservations []Reservation) {
+	if len(reservations) == 0 {
+		r.client.Del(context.Background(), key)
+		return
+	}
+	items := make([]reservationJSON, 0, len(reservations))
+	for _, res := range reservations {
+		items = append(items, reservationJSON{
+			Id:       res.id,
+			ItemId:   res.itemId,
+			Quantity: res.quantity,
+			Expiry:   res.expiry,
+		})
+	}
+	data, err := json.Marshal(items)
+	if err != nil {
+		return
+	}
+	r.client.Set(context.Background(), key, data, 0)
 }
 
 func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16, itemId uint32, quantity uint32, expiry time.Duration) (Reservation, error) {
-	key := ReservationKey{t, characterId, inventoryType, slot}
-
-	r.lock.Lock()
-	defer r.lock.Unlock()
+	key := reservationKey(t, characterId, inventoryType, slot)
 
 	res := Reservation{
 		id:       transactionId,
@@ -82,85 +114,59 @@ func (r *ReservationRegistry) AddReservation(t tenant.Model, transactionId uuid.
 		expiry:   time.Now().Add(expiry),
 	}
 
-	r.reservations[key] = append(r.reservations[key], res)
+	existing := r.loadReservations(key)
+	existing = append(existing, res)
+	r.storeReservations(key, existing)
 
 	return res, nil
 }
 
 func (r *ReservationRegistry) RemoveReservation(t tenant.Model, transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) (Reservation, error) {
-	key := ReservationKey{t, characterId, inventoryType, slot}
+	key := reservationKey(t, characterId, inventoryType, slot)
 
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	reservations, exists := r.reservations[key]
-	if !exists {
+	existing := r.loadReservations(key)
+	if len(existing) == 0 {
 		return Reservation{}, errors.New("does not exist")
 	}
 
 	var removed Reservation
-	newReservations := make([]Reservation, 0, len(reservations))
-	for _, res := range reservations {
+	found := false
+	newReservations := make([]Reservation, 0, len(existing))
+	for _, res := range existing {
 		if res.Id() != transactionId {
 			newReservations = append(newReservations, res)
 		} else {
 			removed = res
+			found = true
 		}
 	}
 
-	if len(newReservations) > 0 {
-		r.reservations[key] = newReservations
-	} else {
-		delete(r.reservations, key)
+	if !found {
+		return Reservation{}, errors.New("does not exist")
 	}
+
+	r.storeReservations(key, newReservations)
 	return removed, nil
 }
 
 func (r *ReservationRegistry) SwapReservation(t tenant.Model, characterId uint32, inventoryType inventory.Type, oldSlot int16, newSlot int16) {
-	oldKey := NewReservationKey(t, characterId, inventoryType, oldSlot)
-	newKey := NewReservationKey(t, characterId, inventoryType, newSlot)
+	oldKey := reservationKey(t, characterId, inventoryType, oldSlot)
+	newKey := reservationKey(t, characterId, inventoryType, newSlot)
 
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	reservations1 := r.reservations[oldKey]
-	reservations2 := r.reservations[newKey]
+	reservations1 := r.loadReservations(oldKey)
+	reservations2 := r.loadReservations(newKey)
 
 	if len(reservations1) > 0 || len(reservations2) > 0 {
-		r.reservations[oldKey] = reservations2
-		r.reservations[newKey] = reservations1
-	}
-}
-
-func (r *ReservationRegistry) ExpireReservations() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	now := time.Now()
-	for key, reservations := range r.reservations {
-		newReservations := reservations[:0]
-		for _, res := range reservations {
-			if res.Expiry().After(now) {
-				newReservations = append(newReservations, res)
-			}
-		}
-
-		if len(newReservations) > 0 {
-			r.reservations[key] = newReservations
-		} else {
-			delete(r.reservations, key)
-		}
+		r.storeReservations(oldKey, reservations2)
+		r.storeReservations(newKey, reservations1)
 	}
 }
 
 func (r *ReservationRegistry) GetReservedQuantity(t tenant.Model, characterId uint32, inventoryType inventory.Type, slot int16) uint32 {
-	key := NewReservationKey(t, characterId, inventoryType, slot)
+	key := reservationKey(t, characterId, inventoryType, slot)
 
-	r.lock.RLock()
-	defer r.lock.RUnlock()
-
-	reservations, exists := r.reservations[key]
-	if !exists {
+	reservations := r.loadReservations(key)
+	if len(reservations) == 0 {
 		return 0
 	}
 
@@ -172,13 +178,3 @@ func (r *ReservationRegistry) GetReservedQuantity(t tenant.Model, characterId ui
 	return totalQuantity
 }
 
-func (r *ReservationRegistry) RemoveAllReservationsForCharacter(tenant tenant.Model, characterId uint32) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	for key := range r.reservations {
-		if key.Tenant() == tenant && key.CharacterId() == characterId {
-			delete(r.reservations, key)
-		}
-	}
-}

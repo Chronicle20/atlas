@@ -48,7 +48,7 @@
       "clearConditions": [
         {
           "type": "monster_kill",
-          "operator": "gte",
+          "operator": ">=",
           "value": 0,
           "referenceId": 9300172
         }
@@ -68,8 +68,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 4,
           "referenceId": 4001162
         }
@@ -104,8 +104,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 20,
           "referenceId": 4001169
         }
@@ -130,7 +130,7 @@
       "clearConditions": [
         {
           "type": "item_count",
-          "operator": "gte",
+          "operator": ">=",
           "value": 1,
           "referenceId": 4001163
         }

@@ -1306,7 +1306,8 @@ type BroadcastPqMessagePayload struct {
 // StageClearAttemptPqPayload represents the payload for attempting to clear the current PQ stage.
 // This produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
 type StageClearAttemptPqPayload struct {
-	InstanceId uuid.UUID `json:"instanceId"` // Party quest instance ID
+	InstanceId  uuid.UUID `json:"instanceId"`            // Party quest instance ID (used by reactor actions)
+	CharacterId uint32    `json:"characterId,omitempty"` // Character ID for instance lookup (used by NPC conversations)
 }
 
 // Custom UnmarshalJSON for Step[T] to handle the generics

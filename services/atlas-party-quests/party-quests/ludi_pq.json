@@ -47,8 +47,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 20,
           "referenceId": 4001022
         }
@@ -74,8 +74,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 15,
           "referenceId": 4001022
         }
@@ -101,8 +101,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 15,
           "referenceId": 4001022
         }
@@ -127,8 +127,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 6,
           "referenceId": 4001022
         }
@@ -154,8 +154,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 24,
           "referenceId": 4001022
         }
@@ -194,8 +194,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 3,
           "referenceId": 4001022
         }
@@ -241,8 +241,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 1,
           "referenceId": 4001023
         }

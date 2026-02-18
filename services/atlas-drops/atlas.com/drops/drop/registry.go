@@ -155,13 +155,17 @@ func (d *dropRegistry) CancelDropReservation(dropId uint32, characterId uint32) 
 	delete(d.dropReservations, dropId)
 }
 
-func (d *dropRegistry) ReserveDrop(dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+func (d *dropRegistry) ReserveDrop(dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
 	d.lockDrop(dropId)
 	defer d.unlockDrop(dropId)
 
 	drop, ok := d.getDrop(dropId)
 	if !ok {
 		return Model{}, errors.New("unable to locate drop")
+	}
+
+	if !drop.CanBeReservedBy(characterId, partyId) {
+		return Model{}, errors.New("drop is not available for this character")
 	}
 
 	if drop.Status() == StatusAvailable {

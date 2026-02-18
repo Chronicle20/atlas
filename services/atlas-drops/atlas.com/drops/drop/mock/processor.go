@@ -14,8 +14,8 @@ type ProcessorMock struct {
 	SpawnAndEmitFunc             func(mb *drop.ModelBuilder) (drop.Model, error)
 	SpawnForCharacterFunc        func(mb *message.Buffer) func(mb *drop.ModelBuilder) (drop.Model, error)
 	SpawnForCharacterAndEmitFunc func(mb *drop.ModelBuilder) (drop.Model, error)
-	ReserveFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (drop.Model, error)
-	ReserveAndEmitFunc           func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (drop.Model, error)
+	ReserveFunc                  func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error)
+	ReserveAndEmitFunc           func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error)
 	CancelReservationFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error
 	CancelReservationAndEmitFunc func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error
 	GatherFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) (drop.Model, error)
@@ -60,18 +60,18 @@ func (m *ProcessorMock) SpawnForCharacterAndEmit(mb *drop.ModelBuilder) (drop.Mo
 	return drop.Model{}, nil
 }
 
-func (m *ProcessorMock) Reserve(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (drop.Model, error) {
+func (m *ProcessorMock) Reserve(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error) {
 	if m.ReserveFunc != nil {
 		return m.ReserveFunc(mb)
 	}
-	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (drop.Model, error) {
+	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error) {
 		return drop.Model{}, nil
 	}
 }
 
-func (m *ProcessorMock) ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (drop.Model, error) {
+func (m *ProcessorMock) ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (drop.Model, error) {
 	if m.ReserveAndEmitFunc != nil {
-		return m.ReserveAndEmitFunc(transactionId, field, dropId, characterId, petSlot)
+		return m.ReserveAndEmitFunc(transactionId, field, dropId, characterId, partyId, petSlot)
 	}
 	return drop.Model{}, nil
 }

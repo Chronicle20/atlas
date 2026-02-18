@@ -61,20 +61,20 @@
       "duration": 360,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 20,
           "referenceId": 4001120
         },
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 20,
           "referenceId": 4001121
         },
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 20,
           "referenceId": 4001122
         }
@@ -132,8 +132,8 @@
       "duration": 360,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 4,
           "referenceId": 4001117
         }

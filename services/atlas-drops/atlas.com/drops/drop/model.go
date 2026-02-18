@@ -16,6 +16,8 @@ import (
 const (
 	StatusAvailable = "AVAILABLE"
 	StatusReserved  = "RESERVED"
+
+	OwnershipDuration = 15 * time.Second
 )
 
 type Model struct {
@@ -91,6 +93,25 @@ func (m Model) OwnerId() uint32 {
 
 func (m Model) OwnerPartyId() uint32 {
 	return m.ownerPartyId
+}
+
+func (m Model) CanBeReservedBy(characterId uint32, partyId uint32) bool {
+	if m.playerDrop {
+		return true
+	}
+	if m.ownerId == 0 && m.ownerPartyId == 0 {
+		return true
+	}
+	if time.Since(m.dropTime) >= OwnershipDuration {
+		return true
+	}
+	if m.ownerId != 0 && m.ownerId == characterId {
+		return true
+	}
+	if m.ownerPartyId != 0 && m.ownerPartyId == partyId {
+		return true
+	}
+	return false
 }
 
 func (m Model) DropTime() time.Time {

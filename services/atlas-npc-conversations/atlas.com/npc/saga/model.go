@@ -136,6 +136,11 @@ type LeavePartyQuestPayload struct {
 	WorldId     world.Id `json:"worldId"`
 }
 
+// StageClearAttemptPqPayload represents the payload required to attempt clearing the current PQ stage.
+type StageClearAttemptPqPayload struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -196,6 +201,7 @@ const (
 	RegisterPartyQuest         Action = "register_party_quest"
 	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
 	LeavePartyQuest            Action = "leave_party_quest"
+	StageClearAttemptPq        Action = "stage_clear_attempt_pq"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

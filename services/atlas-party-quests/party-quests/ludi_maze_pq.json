@@ -47,8 +47,8 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "item",
+          "operator": ">=",
           "value": 30,
           "referenceId": 4001106
         }

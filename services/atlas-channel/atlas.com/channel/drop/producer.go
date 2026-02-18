@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func RequestReservationCommandProvider(f field.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) model.Provider[[]kafka.Message] {
+func RequestReservationCommandProvider(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(dropId))
 	value := &drop2.Command[drop2.RequestReservationCommandBody]{
 		WorldId:   f.WorldId(),
@@ -20,6 +20,7 @@ func RequestReservationCommandProvider(f field.Model, dropId uint32, characterId
 		Body: drop2.RequestReservationCommandBody{
 			DropId:      dropId,
 			CharacterId: characterId,
+			PartyId:     partyId,
 			CharacterX:  characterX,
 			CharacterY:  characterY,
 			PetSlot:     petSlot,

@@ -4,8 +4,8 @@ import (
 	"atlas-party-quests/condition"
 	"atlas-party-quests/definition"
 	"atlas-party-quests/guild"
-	character2 "atlas-party-quests/kafka/message/character"
 	"atlas-party-quests/kafka/message"
+	character2 "atlas-party-quests/kafka/message/character"
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	systemMessage "atlas-party-quests/kafka/message/system_message"
@@ -558,7 +558,7 @@ func (p *ProcessorImpl) spawnFriendlyMonster(mb *message.Buffer, stg stage.Model
 	}
 
 	if cfg.spawnMessage != "" {
-		_ = p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.spawnMessage)
+		_ = p.BroadcastMessage(mb)(inst.Id(), "BLUE_TEXT", cfg.spawnMessage)
 	}
 
 	p.l.Infof("Spawned friendly monster [%d] for PQ instance [%s] in field [%s].", cfg.monsterId, inst.Id(), f.Id())
@@ -1235,7 +1235,7 @@ func (p *ProcessorImpl) HandleFriendlyMonsterDamaged(mb *message.Buffer) func(f 
 		}
 
 		if hitCount%cfg.damagedInterval == 0 {
-			return p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.damagedMessage)
+			return p.BroadcastMessage(mb)(inst.Id(), "BLUE_TEXT", cfg.damagedMessage)
 		}
 
 		return nil
@@ -1256,7 +1256,7 @@ func (p *ProcessorImpl) HandleFriendlyMonsterKilled(mb *message.Buffer) func(f f
 		}
 
 		if cfg.killedMessage != "" {
-			_ = p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.killedMessage)
+			_ = p.BroadcastMessage(mb)(inst.Id(), "BLUE_TEXT", cfg.killedMessage)
 		}
 
 		if cfg.killedAction == "fail" {
@@ -1322,7 +1322,7 @@ func (p *ProcessorImpl) HandleFriendlyMonsterDrop(mb *message.Buffer) func(f fie
 		}
 
 		msg := strings.ReplaceAll(cfg.dropTemplate, "{count}", fmt.Sprintf("%d", dropCount))
-		return p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", msg)
+		return p.BroadcastMessage(mb)(inst.Id(), "BLUE_TEXT", msg)
 	}
 }
 

@@ -87,6 +87,7 @@ func modelFromEntity(e entity) (Model, error) {
 		SetAp(e.AP).
 		SetSp(e.SP).
 		SetMapId(e.MapId).
+		SetInstance(e.Instance).
 		SetSpawnPoint(e.SpawnPoint).
 		SetGm(e.GM).
 		Build()

@@ -54,6 +54,7 @@ func loginEventProvider(transactionId uuid.UUID, characterId uint32, field field
 		Body: character2.StatusEventLoginBody{
 			ChannelId: field.ChannelId(),
 			MapId:     field.MapId(),
+			Instance:  field.Instance(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -69,6 +70,7 @@ func logoutEventProvider(transactionId uuid.UUID, characterId uint32, field fiel
 		Body: character2.StatusEventLogoutBody{
 			ChannelId: field.ChannelId(),
 			MapId:     field.MapId(),
+			Instance:  field.Instance(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -85,6 +87,7 @@ func changeChannelEventProvider(transactionId uuid.UUID, characterId uint32, old
 			ChannelId:    newField.ChannelId(),
 			OldChannelId: oldField.ChannelId(),
 			MapId:        newField.MapId(),
+			Instance:     newField.Instance(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

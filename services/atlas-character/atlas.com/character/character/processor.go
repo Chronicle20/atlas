@@ -324,7 +324,7 @@ func (p *ProcessorImpl) LoginAndEmit(transactionId uuid.UUID, characterId uint32
 func (p *ProcessorImpl) Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).Build()))
+			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).SetInstance(c.Instance()).Build()))
 		})
 	}
 }
@@ -338,7 +338,7 @@ func (p *ProcessorImpl) LogoutAndEmit(transactionId uuid.UUID, characterId uint3
 func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).Build()))
+			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).SetInstance(c.Instance()).Build()))
 		})
 	}
 }
@@ -352,8 +352,8 @@ func (p *ProcessorImpl) ChangeChannelAndEmit(transactionId uuid.UUID, characterI
 func (p *ProcessorImpl) ChangeChannel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error {
 	return func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error {
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			oldField := field.NewBuilder(c.WorldId(), oldChannelId, c.MapId()).Build()
-			newField := field.NewBuilder(currentChannel.WorldId(), currentChannel.Id(), c.MapId()).Build()
+			oldField := field.NewBuilder(c.WorldId(), oldChannelId, c.MapId()).SetInstance(c.Instance()).Build()
+			newField := field.NewBuilder(currentChannel.WorldId(), currentChannel.Id(), c.MapId()).SetInstance(c.Instance()).Build()
 			return mb.Put(character2.EnvEventTopicCharacterStatus, changeChannelEventProvider(transactionId, c.Id(), oldField, newField))
 		})
 	}
@@ -367,7 +367,7 @@ func (p *ProcessorImpl) ChangeMapAndEmit(transactionId uuid.UUID, characterId ui
 
 func (p *ProcessorImpl) ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-		cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()))(p.t.Id())
+		cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()), SetInstance(field.Instance()))(p.t.Id())
 		papf := p.positionAtPortal(field.MapId(), portalId)
 		amcf := announceMapChangedWithBuffer(mb)(transactionId, field, portalId)
 		return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
@@ -388,7 +388,7 @@ func (p *ProcessorImpl) positionAtPortal(mapId _map.Id, portalId uint32) model.O
 func announceMapChangedWithBuffer(mb *message.Buffer) func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
 	return func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
 		return func(c Model) error {
-			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).Build()
+			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).SetInstance(c.Instance()).Build()
 			return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, c.Id(), oldField, newField, portalId))
 		}
 	}
@@ -397,7 +397,7 @@ func announceMapChangedWithBuffer(mb *message.Buffer) func(transactionId uuid.UU
 func announceMapChanged(provider producer.Provider) func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
 	return func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
 		return func(c Model) error {
-			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).Build()
+			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).SetInstance(c.Instance()).Build()
 			return provider(character2.EnvEventTopicCharacterStatus)(mapChangedEventProvider(transactionId, c.Id(), oldField, newField, portalId))
 		}
 	}
@@ -1665,14 +1665,18 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 					updateFunc:  SetMapId(input.MapId),
 					shouldApply: true,
 					eventFunc: func() error {
-						// Create field models for old and new map locations
-						// Note: We need to get the current channel ID from the context or use a default
-						// For now, using channel ID 0 as a placeholder - this should be updated based on actual channel context
-						oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).Build()
+						oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).SetInstance(c.Instance()).Build()
 						newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
 						return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
 					},
 				})
+				if c.Instance() != uuid.Nil {
+					changes = append(changes, fieldChange{
+						updateFunc:  SetInstance(uuid.Nil),
+						shouldApply: true,
+						eventFunc:   func() error { return nil },
+					})
+				}
 			}
 
 			// If no updates are needed, return early

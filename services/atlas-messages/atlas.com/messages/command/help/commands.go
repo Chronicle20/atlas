@@ -28,6 +28,7 @@ var commandSyntaxList = []string{
 	"@buff <target> <skillName> [duration] - Apply a buff by name",
 	"@buff <target> #<skillId> [duration] - Apply a buff by ID",
 	"@consume <target> <itemId> - Apply consumable item effects",
+	"@mob kill all - Kill all monsters in the current map",
 	"@mobstatus <skillId|skillName> [level] - Execute mob skill on all monsters in map",
 	"@mobclear [statusType] - Clear statuses from all monsters in map",
 	"@disease <target> <diseaseType> [value] [duration] - Apply a disease effect",

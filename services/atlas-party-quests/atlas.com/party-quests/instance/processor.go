@@ -15,10 +15,13 @@ import (
 	"atlas-party-quests/stage"
 	"context"
 	"errors"
+	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
@@ -51,6 +54,15 @@ type Processor interface {
 
 	BroadcastMessage(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
 	BroadcastMessageAndEmit(instanceId uuid.UUID, messageType string, msg string) error
+
+	HandleFriendlyMonsterDamaged(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterDamagedAndEmit(f field.Model, monsterId uint32) error
+
+	HandleFriendlyMonsterKilled(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterKilledAndEmit(f field.Model, monsterId uint32) error
+
+	HandleFriendlyMonsterDrop(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error
+	HandleFriendlyMonsterDropAndEmit(f field.Model, monsterId uint32, itemCount uint32) error
 
 	GetByFieldInstance(fieldInstance uuid.UUID) (Model, error)
 
@@ -434,6 +446,9 @@ func (p *ProcessorImpl) Start(mb *message.Buffer) func(instanceId uuid.UUID) err
 			}
 		}
 
+		// Spawn friendly monster if configured for this stage
+		p.spawnFriendlyMonster(mb, stg, inst)
+
 		// Emit STARTED event
 		return mb.Put(pq.EnvEventStatusTopic, startedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), 0, stg.MapIds()))
 	}
@@ -488,7 +503,13 @@ func (p *ProcessorImpl) StageClearAttempt(mb *message.Buffer) func(instanceId uu
 		p.executeClearActions(stg, inst)
 
 		// Emit STAGE_CLEARED event
-		return mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), inst.FieldInstances()))
+		err = mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), inst.FieldInstances()))
+		if err != nil {
+			return err
+		}
+
+		// Auto-advance to the next stage
+		return p.StageAdvance(mb)(instanceId)
 	}
 }
 
@@ -514,6 +535,33 @@ func (p *ProcessorImpl) emitDestroyReactorsInField(mb *message.Buffer, inst Mode
 			p.l.WithError(err).Warnf("Failed to emit destroy reactors for map [%d] instance [%s].", mid, fieldInstance)
 		}
 	}
+}
+
+func (p *ProcessorImpl) spawnFriendlyMonster(mb *message.Buffer, stg stage.Model, inst Model) {
+	cfg, ok := extractFriendlyMonsterConfig(stg.Properties())
+	if !ok {
+		return
+	}
+
+	if len(stg.MapIds()) == 0 {
+		return
+	}
+
+	targetMapId := _map.Id(stg.MapIds()[0])
+	f := field.NewBuilder(inst.WorldId(), inst.ChannelId(), targetMapId).Build()
+
+	mp := monster.NewProcessor(p.l, p.ctx)
+	err := mp.SpawnInField(f, cfg.monsterId, cfg.x, cfg.y, cfg.fh)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to spawn friendly monster [%d] for PQ instance [%s].", cfg.monsterId, inst.Id())
+		return
+	}
+
+	if cfg.spawnMessage != "" {
+		_ = p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.spawnMessage)
+	}
+
+	p.l.Infof("Spawned friendly monster [%d] for PQ instance [%s] in field [%s].", cfg.monsterId, inst.Id(), f.Id())
 }
 
 func (p *ProcessorImpl) destroyMonstersInStage(stg stage.Model, inst Model) {
@@ -595,6 +643,9 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 				}
 			}
 		}
+
+		// Spawn friendly monster if configured for the new stage
+		p.spawnFriendlyMonster(mb, nextStage, inst)
 
 		// Emit STAGE_ADVANCED event
 		return mb.Put(pq.EnvEventStatusTopic, stageAdvancedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), nextStageIdx, nextStage.MapIds()))
@@ -1035,6 +1086,244 @@ func (p *ProcessorImpl) GracefulShutdown(mb *message.Buffer) error {
 	}
 	GetRegistry().Clear(p.t)
 	return nil
+}
+
+type friendlyMonsterConfig struct {
+	monsterId       uint32
+	x, y            int16
+	fh              int16
+	spawnMessage    string
+	damagedInterval uint32
+	damagedMessage  string
+	killedMessage   string
+	killedAction    string
+	dropTemplate    string
+}
+
+func extractFriendlyMonsterConfig(properties map[string]any) (friendlyMonsterConfig, bool) {
+	fm, ok := properties["friendlyMonster"]
+	if !ok {
+		return friendlyMonsterConfig{}, false
+	}
+
+	fmMap, ok := fm.(map[string]any)
+	if !ok {
+		return friendlyMonsterConfig{}, false
+	}
+
+	cfg := friendlyMonsterConfig{}
+
+	if v, ok := fmMap["monsterId"].(float64); ok {
+		cfg.monsterId = uint32(v)
+	} else {
+		return friendlyMonsterConfig{}, false
+	}
+
+	if v, ok := fmMap["x"].(float64); ok {
+		cfg.x = int16(v)
+	}
+	if v, ok := fmMap["y"].(float64); ok {
+		cfg.y = int16(v)
+	}
+	if v, ok := fmMap["fh"].(float64); ok {
+		cfg.fh = int16(v)
+	}
+	if v, ok := fmMap["spawnMessage"].(string); ok {
+		cfg.spawnMessage = v
+	}
+
+	if onDamaged, ok := fmMap["onDamaged"].(map[string]any); ok {
+		if v, ok := onDamaged["hitInterval"].(float64); ok {
+			cfg.damagedInterval = uint32(v)
+		}
+		if v, ok := onDamaged["message"].(string); ok {
+			cfg.damagedMessage = v
+		}
+	}
+
+	if onKilled, ok := fmMap["onKilled"].(map[string]any); ok {
+		if v, ok := onKilled["message"].(string); ok {
+			cfg.killedMessage = v
+		}
+		if v, ok := onKilled["action"].(string); ok {
+			cfg.killedAction = v
+		}
+	}
+
+	if onDrop, ok := fmMap["onDrop"].(map[string]any); ok {
+		if v, ok := onDrop["messageTemplate"].(string); ok {
+			cfg.dropTemplate = v
+		}
+	}
+
+	return cfg, true
+}
+
+func (p *ProcessorImpl) getFriendlyMonsterConfig(f field.Model, monsterId uint32) (Model, friendlyMonsterConfig, error) {
+	for _, inst := range GetRegistry().GetAll(p.t) {
+		if inst.State() != StateActive {
+			continue
+		}
+		if inst.WorldId() != f.WorldId() || inst.ChannelId() != f.ChannelId() {
+			continue
+		}
+
+		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+		if err != nil {
+			continue
+		}
+
+		stageIdx := inst.CurrentStageIndex()
+		if int(stageIdx) >= len(def.Stages()) {
+			continue
+		}
+
+		stg := def.Stages()[stageIdx]
+		for _, mid := range stg.MapIds() {
+			if _map.Id(mid) != f.MapId() {
+				continue
+			}
+
+			cfg, ok := extractFriendlyMonsterConfig(stg.Properties())
+			if !ok {
+				continue
+			}
+
+			if cfg.monsterId != monsterId {
+				continue
+			}
+
+			return inst, cfg, nil
+		}
+	}
+	return Model{}, friendlyMonsterConfig{}, errors.New("no active PQ instance with friendly monster config for this field")
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterDamagedAndEmit(f field.Model, monsterId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.HandleFriendlyMonsterDamaged(buf)(f, monsterId)
+	})
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterDamaged(mb *message.Buffer) func(f field.Model, monsterId uint32) error {
+	return func(f field.Model, monsterId uint32) error {
+		inst, cfg, err := p.getFriendlyMonsterConfig(f, monsterId)
+		if err != nil {
+			return err
+		}
+
+		// Increment hit counter.
+		updated, err := GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+			return m.SetStageState(m.StageState().IncrementCustomData("friendlyHitCount"))
+		})
+		if err != nil {
+			return err
+		}
+
+		if cfg.damagedInterval == 0 || cfg.damagedMessage == "" {
+			return nil
+		}
+
+		hitCount := uint32(0)
+		if v, ok := updated.StageState().CustomData()["friendlyHitCount"]; ok {
+			switch n := v.(type) {
+			case float64:
+				hitCount = uint32(n)
+			case int:
+				hitCount = uint32(n)
+			}
+		}
+
+		if hitCount%cfg.damagedInterval == 0 {
+			return p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.damagedMessage)
+		}
+
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterKilledAndEmit(f field.Model, monsterId uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.HandleFriendlyMonsterKilled(buf)(f, monsterId)
+	})
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterKilled(mb *message.Buffer) func(f field.Model, monsterId uint32) error {
+	return func(f field.Model, monsterId uint32) error {
+		inst, cfg, err := p.getFriendlyMonsterConfig(f, monsterId)
+		if err != nil {
+			return err
+		}
+
+		if cfg.killedMessage != "" {
+			_ = p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", cfg.killedMessage)
+		}
+
+		if cfg.killedAction == "fail" {
+			_, err = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+				return m.SetState(StateFailed)
+			})
+			if err != nil {
+				return err
+			}
+
+			p.l.Infof("PQ instance [%s] failed due to friendly monster [%d] killed.", inst.Id(), monsterId)
+
+			err = mb.Put(pq.EnvEventStatusTopic, failedEventProvider(inst.WorldId(), inst.Id(), inst.QuestId(), "friendly_monster_killed"))
+			if err != nil {
+				return err
+			}
+
+			return p.Destroy(mb)(inst.Id(), "friendly_monster_killed")
+		}
+
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterDropAndEmit(f field.Model, monsterId uint32, itemCount uint32) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.HandleFriendlyMonsterDrop(buf)(f, monsterId, itemCount)
+	})
+}
+
+func (p *ProcessorImpl) HandleFriendlyMonsterDrop(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error {
+	return func(f field.Model, monsterId uint32, itemCount uint32) error {
+		inst, cfg, err := p.getFriendlyMonsterConfig(f, monsterId)
+		if err != nil {
+			return err
+		}
+
+		if cfg.dropTemplate == "" {
+			return nil
+		}
+
+		// Increment drop counter by itemCount.
+		var updated Model
+		updated, err = GetRegistry().Update(p.t, inst.Id(), func(m Model) Model {
+			ss := m.StageState()
+			for i := uint32(0); i < itemCount; i++ {
+				ss = ss.IncrementCustomData("friendlyDropCount")
+			}
+			return m.SetStageState(ss)
+		})
+		if err != nil {
+			return err
+		}
+
+		dropCount := uint32(0)
+		if v, ok := updated.StageState().CustomData()["friendlyDropCount"]; ok {
+			switch n := v.(type) {
+			case float64:
+				dropCount = uint32(n)
+			case int:
+				dropCount = uint32(n)
+			}
+		}
+
+		msg := strings.ReplaceAll(cfg.dropTemplate, "{count}", fmt.Sprintf("%d", dropCount))
+		return p.BroadcastMessage(mb)(inst.Id(), "PINK_TEXT", msg)
+	}
 }
 
 func evaluateClearConditions(conditions []condition.Model, ss StageState) bool {

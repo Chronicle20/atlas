@@ -76,6 +76,9 @@ func (e *OperationExecutor) ExecuteOperation(rc ReactorContext, characterId uint
 	case "broadcast_pq_message":
 		return e.executeBroadcastPqMessage(rc, characterId, op)
 
+	case "stage_clear_attempt":
+		return e.executeStageClearAttempt(rc, characterId, op)
+
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
@@ -464,6 +467,30 @@ func (e *OperationExecutor) executeBroadcastPqMessage(rc ReactorContext, charact
 				InstanceId:  pqInstance.Id,
 				MessageType: messageType,
 				Message:     message,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeStageClearAttempt triggers a stage clear attempt on the character's party quest instance via saga orchestration
+func (e *OperationExecutor) executeStageClearAttempt(rc ReactorContext, characterId uint32, op operation.Model) error {
+	pqInstance, err := e.getPqInstanceByCharacter(characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
+	}
+
+	e.l.Debugf("Attempting stage clear: instance=%s, reactor=%s, character=%d", pqInstance.Id, rc.Classification, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-stage-clear").
+		AddStep(
+			fmt.Sprintf("stage-clear-%s-%d", rc.Classification, characterId),
+			saga.Pending,
+			saga.StageClearAttemptPq,
+			saga.StageClearAttemptPqPayload{
+				InstanceId: pqInstance.Id,
 			},
 		).Build()
 

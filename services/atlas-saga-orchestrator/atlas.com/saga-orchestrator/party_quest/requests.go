@@ -16,8 +16,9 @@ const (
 	EnvCommandTopic              = "COMMAND_TOPIC_PARTY_QUEST"
 	CommandTypeRegister          = "REGISTER"
 	CommandTypeLeave             = "LEAVE"
-	CommandTypeUpdateCustomData  = "UPDATE_CUSTOM_DATA"
-	CommandTypeBroadcastMessage  = "BROADCAST_MESSAGE"
+	CommandTypeUpdateCustomData   = "UPDATE_CUSTOM_DATA"
+	CommandTypeBroadcastMessage   = "BROADCAST_MESSAGE"
+	CommandTypeStageClearAttempt  = "STAGE_CLEAR_ATTEMPT"
 )
 
 func getBaseRequest() string {
@@ -219,4 +220,9 @@ type BroadcastMessageCommandBody struct {
 	InstanceId  uuid.UUID `json:"instanceId"`
 	MessageType string    `json:"messageType"`
 	Message     string    `json:"message"`
+}
+
+// StageClearAttemptCommandBody represents the body of a STAGE_CLEAR_ATTEMPT command
+type StageClearAttemptCommandBody struct {
+	InstanceId uuid.UUID `json:"instanceId"`
 }

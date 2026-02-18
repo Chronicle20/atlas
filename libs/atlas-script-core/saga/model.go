@@ -150,9 +150,10 @@ const (
 	EmitGachaponWin      Action = "emit_gachapon_win"
 
 	// Party quest reactor orchestration actions
-	UpdatePqCustomData Action = "update_pq_custom_data"
-	HitReactor         Action = "hit_reactor"
-	BroadcastPqMessage Action = "broadcast_pq_message"
+	UpdatePqCustomData   Action = "update_pq_custom_data"
+	HitReactor           Action = "hit_reactor"
+	BroadcastPqMessage   Action = "broadcast_pq_message"
+	StageClearAttemptPq  Action = "stage_clear_attempt_pq"
 )
 
 // Step represents a single step within a saga.
@@ -576,6 +577,11 @@ type BroadcastPqMessagePayload struct {
 	Message     string    `json:"message"`     // Message text
 }
 
+// StageClearAttemptPqPayload represents the payload for attempting to clear the current PQ stage.
+type StageClearAttemptPqPayload struct {
+	InstanceId uuid.UUID `json:"instanceId"` // Party quest instance ID
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	type Alias Step[T] // Alias to avoid recursion
@@ -859,6 +865,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.Payload = any(payload).(T)
 	case BroadcastPqMessage:
 		var payload BroadcastPqMessagePayload
+		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
+		}
+		s.Payload = any(payload).(T)
+	case StageClearAttemptPq:
+		var payload StageClearAttemptPqPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
 		}

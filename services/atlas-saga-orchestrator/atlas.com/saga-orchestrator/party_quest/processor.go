@@ -53,6 +53,7 @@ type Processor interface {
 	LeavePartyQuest(characterId uint32, worldId world.Id) error
 	UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error
 	BroadcastMessage(instanceId uuid.UUID, messageType string, message string) error
+	StageClearAttempt(instanceId uuid.UUID) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -308,6 +309,28 @@ func (p *ProcessorImpl) produceBroadcastMessageCommand(instanceId uuid.UUID, mes
 			InstanceId:  instanceId,
 			MessageType: messageType,
 			Message:     message,
+		},
+	}
+	mp := producer.SingleMessageProvider(key, value)
+	return produceToCommandTopic(p.l, p.ctx)(mp)
+}
+
+// StageClearAttempt produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
+func (p *ProcessorImpl) StageClearAttempt(instanceId uuid.UUID) error {
+	p.l.WithFields(logrus.Fields{
+		"instance_id": instanceId.String(),
+	}).Debug("Producing STAGE_CLEAR_ATTEMPT command for party quest")
+
+	return p.produceStageClearAttemptCommand(instanceId)
+}
+
+// produceStageClearAttemptCommand produces a STAGE_CLEAR_ATTEMPT command to the party quest command topic
+func (p *ProcessorImpl) produceStageClearAttemptCommand(instanceId uuid.UUID) error {
+	key := producer.CreateKey(int(instanceId.ID()))
+	value := &Command[StageClearAttemptCommandBody]{
+		Type: CommandTypeStageClearAttempt,
+		Body: StageClearAttemptCommandBody{
+			InstanceId: instanceId,
 		},
 	}
 	mp := producer.SingleMessageProvider(key, value)

@@ -21,6 +21,7 @@ const (
 	EventMonsterStatusEffectExpired   = "STATUS_EXPIRED"
 	EventMonsterStatusEffectCancelled = "STATUS_CANCELLED"
 	EventMonsterStatusDamageReflected = "DAMAGE_REFLECTED"
+	EventMonsterStatusFriendlyDrop    = "FRIENDLY_DROP"
 )
 
 type statusEvent[E any] struct {
@@ -114,4 +115,8 @@ type statusEventDamageReflectedBody struct {
 	CharacterId   uint32 `json:"characterId"`
 	ReflectDamage uint32 `json:"reflectDamage"`
 	ReflectType   string `json:"reflectType"`
+}
+
+type statusEventFriendlyDropBody struct {
+	ItemCount uint32 `json:"itemCount"`
 }

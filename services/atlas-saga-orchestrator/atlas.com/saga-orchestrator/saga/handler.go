@@ -141,6 +141,7 @@ type Handler interface {
 	handleUpdatePqCustomData(s Saga, st Step[any]) error
 	handleHitReactor(s Saga, st Step[any]) error
 	handleBroadcastPqMessage(s Saga, st Step[any]) error
+	handleStageClearAttemptPq(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -837,6 +838,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleHitReactor, true
 	case BroadcastPqMessage:
 		return h.handleBroadcastPqMessage, true
+	case StageClearAttemptPq:
+		return h.handleStageClearAttemptPq, true
 	}
 	return nil, false
 }
@@ -2660,6 +2663,31 @@ func (h *HandlerImpl) handleBroadcastPqMessage(s Saga, st Step[any]) error {
 	err := h.partyQuestP.BroadcastMessage(payload.InstanceId, payload.MessageType, payload.Message)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to broadcast party quest message.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleStageClearAttemptPq handles the StageClearAttemptPq action.
+// Produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
+func (h *HandlerImpl) handleStageClearAttemptPq(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StageClearAttemptPqPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"instance_id":    payload.InstanceId.String(),
+	}).Debug("Attempting to clear party quest stage")
+
+	err := h.partyQuestP.StageClearAttempt(payload.InstanceId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to attempt party quest stage clear.")
 		return err
 	}
 

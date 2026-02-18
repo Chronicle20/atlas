@@ -86,7 +86,7 @@ func handleStageAdvanceCommand(db *gorm.DB) message.Handler[pq.Command[pq.StageA
 		}
 
 		l.Debugf("Handling STAGE_ADVANCE command for instance [%s].", c.Body.InstanceId)
-		_ = instance.NewProcessor(l, ctx, db).StageAdvanceAndEmit(c.Body.InstanceId)
+		_ = instance.NewProcessor(l, ctx, db).ForceStageCompleteAndEmit(c.Body.InstanceId)
 	}
 }
 

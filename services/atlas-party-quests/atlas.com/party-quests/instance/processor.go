@@ -44,6 +44,9 @@ type Processor interface {
 	StageAdvance(mb *message.Buffer) func(instanceId uuid.UUID) error
 	StageAdvanceAndEmit(instanceId uuid.UUID) error
 
+	ForceStageComplete(mb *message.Buffer) func(instanceId uuid.UUID) error
+	ForceStageCompleteAndEmit(instanceId uuid.UUID) error
+
 	Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) error
 	ForfeitAndEmit(instanceId uuid.UUID) error
 
@@ -690,6 +693,56 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 
 		// Emit STAGE_ADVANCED event
 		return mb.Put(pq.EnvEventStatusTopic, stageAdvancedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), nextStageIdx, nextStage.MapIds()))
+	}
+}
+
+func (p *ProcessorImpl) ForceStageCompleteAndEmit(instanceId uuid.UUID) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return p.ForceStageComplete(buf)(instanceId)
+	})
+}
+
+func (p *ProcessorImpl) ForceStageComplete(mb *message.Buffer) func(instanceId uuid.UUID) error {
+	return func(instanceId uuid.UUID) error {
+		inst, err := GetRegistry().Get(p.t, instanceId)
+		if err != nil {
+			return err
+		}
+
+		if inst.State() != StateActive {
+			return errors.New("instance not active")
+		}
+
+		def, err := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
+		if err != nil {
+			return err
+		}
+
+		stageIdx := inst.CurrentStageIndex()
+		if int(stageIdx) >= len(def.Stages()) {
+			return errors.New("invalid stage index")
+		}
+
+		stg := def.Stages()[stageIdx]
+
+		_, err = GetRegistry().Update(p.t, instanceId, func(m Model) Model {
+			return m.SetState(StateClearing)
+		})
+		if err != nil {
+			return err
+		}
+
+		p.l.Infof("PQ instance [%s] stage [%d] force cleared.", instanceId, stageIdx)
+
+		p.executeClearActions(stg, inst)
+		p.emitExperienceRewards(mb, inst, stg.Rewards())
+
+		err = mb.Put(pq.EnvEventStatusTopic, stageClearedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), stageIdx, inst.ChannelId(), stg.MapIds(), []uuid.UUID{inst.Id()}))
+		if err != nil {
+			return err
+		}
+
+		return p.StageAdvance(mb)(instanceId)
 	}
 }
 

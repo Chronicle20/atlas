@@ -14,6 +14,7 @@
 | Saga Command | `COMMAND_TOPIC_SAGA` | Emits saga commands for orchestration |
 | Character Buff | `COMMAND_TOPIC_CHARACTER_BUFF` | Emits buff application commands |
 | Monster Command | `COMMAND_TOPIC_MONSTER` | Emits monster status effect commands |
+| Party Quest Command | `COMMAND_TOPIC_PARTY_QUEST` | Emits party quest commands |
 
 ## Message Types
 
@@ -205,11 +206,39 @@ Monster field command structure produced to `COMMAND_TOPIC_MONSTER`.
 | CANCEL_STATUS_FIELD | CancelStatusFieldBody | statusTypes ([]string) |
 | USE_SKILL_FIELD | UseSkillFieldBody | skillId (uint16), skillLevel (uint16) |
 
+#### PartyQuestCommand
+
+Party quest command structure produced to `COMMAND_TOPIC_PARTY_QUEST`.
+
+```json
+{
+  "worldId": 0,
+  "characterId": 12345,
+  "type": "REGISTER",
+  "body": {}
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| worldId | byte | World identifier |
+| characterId | uint32 | Character ID |
+| type | string | Command type |
+| body | object | Type-specific body |
+
+#### Party Quest Command Types
+
+| Type | Body Type | Body Fields |
+|------|-----------|-------------|
+| REGISTER | RegisterCommandBody | questId (string), partyId (uint32, optional), channelId (byte), mapId (uint32) |
+| STAGE_ADVANCE | StageAdvanceCommandBody | instanceId (uuid.UUID) |
+
 ## Transaction Semantics
 
 - Chat events are partitioned by actor ID for ordering
 - Saga commands are partitioned by transaction ID
 - Buff commands are partitioned by character ID
 - Monster commands are partitioned by map ID
+- Party quest commands are partitioned by character ID
 - Headers include span context for distributed tracing
 - Headers include tenant context for multi-tenancy

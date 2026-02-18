@@ -91,7 +91,7 @@ Represents a single action within a saga.
 | set_quest_progress | Sets quest progress info |
 | apply_consumable_effect | Applies consumable item effects |
 | cancel_consumable_effect | Cancels consumable item effects |
-| send_message | Sends a system message |
+| send_message | Sends a system message (synchronous) |
 | deposit_to_storage | Deposits to account storage |
 | update_storage_mesos | Updates storage mesos |
 | show_storage | Shows storage UI |
@@ -116,6 +116,8 @@ Represents a single action within a saga.
 | show_hint | Shows hint box (synchronous) |
 | show_guide_hint | Shows pre-defined guide hint by ID (synchronous) |
 | show_intro | Shows intro/direction effect (synchronous) |
+| field_effect | Shows field effect (synchronous) |
+| ui_lock | Locks/unlocks UI and disables/enables UI input (synchronous) |
 | block_portal | Blocks a portal for a character (synchronous) |
 | unblock_portal | Unblocks a portal for a character (synchronous) |
 | start_instance_transport | Starts an instance-based transport (synchronous, REST call) |
@@ -123,6 +125,12 @@ Represents a single action within a saga.
 | warp_to_saved_location | Warps character to a saved location and deletes it (synchronous, REST call) |
 | select_gachapon_reward | Selects a random reward from a gachapon machine (synchronous, REST call) |
 | emit_gachapon_win | Emits gachapon win event for announcements (synchronous) |
+| register_party_quest | Validates party requirements and registers a party quest (synchronous) |
+| leave_party_quest | Leaves a party quest (synchronous) |
+| warp_party_quest_members_to_map | Resolves party members and warps all to a map (synchronous) |
+| update_pq_custom_data | Updates party quest instance custom data (synchronous) |
+| hit_reactor | Resolves reactor by name and produces hit command (synchronous) |
+| broadcast_pq_message | Broadcasts message to party quest members (synchronous) |
 
 ### AssetData
 
@@ -229,7 +237,7 @@ Manages saga execution lifecycle.
 
 ### Handler
 
-Executes action-specific logic for each step type. Delegates to domain-specific processors (compartment, character, skill, guild, storage, cashshop, etc.).
+Executes action-specific logic for each step type. Delegates to domain-specific processors (compartment, character, skill, guild, storage, cashshop, party quest, reactor, etc.).
 
 | Method | Description |
 |--------|-------------|
@@ -330,6 +338,29 @@ Filters drops based on character's quest state.
 - Includes drops with questId matching a started quest
 - Excludes drops with questId not matching any started quest
 - On quest service error, excludes all quest-specific drops
+
+---
+
+# Reactor (Client)
+
+## Responsibility
+
+Resolves reactors by name via REST call to atlas-reactors and produces Kafka HIT commands to trigger reactor actions.
+
+## Core Models
+
+### ReactorRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Reactor identifier |
+| name | string | Reactor name for lookup |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| HitReactorByName | Looks up reactors by name in a field via REST, then produces a HIT command for each matching reactor |
 
 ---
 
@@ -682,3 +713,227 @@ A flat model representing a cash shop inventory asset.
 | AwardCurrencyAndEmit | Produces wallet ADJUST_CURRENCY command |
 | AcceptAndEmit | Produces cash shop compartment ACCEPT command |
 | ReleaseAndEmit | Produces cash shop compartment RELEASE command |
+
+---
+
+# Party Quest (Client)
+
+## Responsibility
+
+Validates party quest registration requirements and produces Kafka commands to the atlas-party-quests service for registration, leaving, custom data updates, and message broadcasting.
+
+## Core Models
+
+### PartyRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Party identifier |
+| leaderId | uint32 | Party leader character ID |
+
+### MemberRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Member character ID |
+| name | string | Character name |
+| level | uint32 | Character level |
+| jobId | uint32 | Character job ID |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
+| mapId | _map.Id | Current map ID |
+| online | bool | Online status |
+
+### DefinitionRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Party quest definition ID |
+| startRequirements | []ConditionRestModel | Start requirement conditions |
+
+### ConditionRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | Condition type (party_size, level_min, level_max) |
+| operator | string | Comparison operator |
+| value | uint32 | Condition value |
+| referenceId | uint32 | Reference identifier |
+
+### PartyQuestError
+
+Custom error type with an error code field.
+
+| Error Code | Description |
+|------------|-------------|
+| PQ_NOT_IN_PARTY | Character is not in a party |
+| PQ_NOT_LEADER | Character is not the party leader |
+| PQ_PARTY_SIZE | Party does not meet size requirements |
+| PQ_LEVEL_MIN | A member does not meet minimum level |
+| PQ_LEVEL_MAX | A member exceeds maximum level |
+| PQ_DEFINITION_NOT_FOUND | Party quest definition not found |
+| PQ_UNKNOWN | Unknown error |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| RegisterPartyQuest | Validates party state and requirements, then produces REGISTER command |
+| GetPartyMembers | Resolves character's party and returns all members |
+| LeavePartyQuest | Produces LEAVE command to remove character from active party quest |
+| UpdateCustomData | Produces UPDATE_CUSTOM_DATA command with updates and increment counters |
+| BroadcastMessage | Produces BROADCAST_MESSAGE command to all party quest participants |
+
+---
+
+# System Message (Client)
+
+## Responsibility
+
+Produces Kafka commands to the system message service for UI effects, hints, and messages within sagas.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| SendMessage | Produces SEND_MESSAGE command |
+| PlayPortalSound | Produces PLAY_PORTAL_SOUND command |
+| ShowInfo | Produces SHOW_INFO command |
+| ShowInfoText | Produces SHOW_INFO_TEXT command |
+| UpdateAreaInfo | Produces UPDATE_AREA_INFO command |
+| ShowHint | Produces SHOW_HINT command |
+| ShowGuideHint | Produces SHOW_GUIDE_HINT command |
+| ShowIntro | Produces SHOW_INTRO command |
+| FieldEffect | Produces FIELD_EFFECT command |
+| UiLock | Produces UI_LOCK command |
+| UiDisable | Produces UI_DISABLE command |
+
+---
+
+# Monster (Client)
+
+## Responsibility
+
+Spawns monsters via REST call to the monster service.
+
+## Core Models
+
+### SpawnInputRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| monsterId | uint32 | Monster template ID |
+| x | int16 | X coordinate |
+| y | int16 | Y coordinate |
+| fh | int16 | Foothold ID |
+| team | int8 | Team assignment |
+
+### SpawnResponseRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| uniqueId | uint32 | Spawned monster unique ID |
+| worldId | world.Id | World identifier |
+| channelId | channel.Id | Channel identifier |
+| mapId | _map.Id | Map identifier |
+| monsterId | uint32 | Monster template ID |
+| controlCharacterId | uint32 | Controlling character ID |
+| x | int16 | X coordinate |
+| y | int16 | Y coordinate |
+| fh | int16 | Foothold ID |
+| stance | uint16 | Monster stance |
+| team | int8 | Team assignment |
+| maxHp | uint32 | Maximum HP |
+| hp | uint32 | Current HP |
+| maxMp | uint32 | Maximum MP |
+| mp | uint32 | Current MP |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| SpawnMonster | Spawns a monster at the specified location via REST POST |
+
+---
+
+# Transport (Client)
+
+## Responsibility
+
+Starts instance-based transports via REST call to the transport service.
+
+## Core Models
+
+### TransportError
+
+| Field | Type | Description |
+|-------|------|-------------|
+| code | string | Error code |
+| message | string | Error message |
+
+Error codes: ErrorCodeCapacityFull, ErrorCodeAlreadyInTransit, ErrorCodeRouteNotFound, ErrorCodeServiceError.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| StartTransport | Starts an instance transport for a character via REST POST |
+
+---
+
+# Saved Location (Client)
+
+## Responsibility
+
+Saves and retrieves character locations via REST calls to the character service.
+
+## Core Models
+
+### RestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character identifier |
+| locationType | string | Location type identifier |
+| mapId | _map.Id | Map identifier |
+| portalId | uint32 | Portal identifier |
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| Put | Saves a location via REST PUT |
+| Get | Retrieves a saved location via REST GET |
+| Delete | Deletes a saved location via REST DELETE |
+
+---
+
+# Portal (Client)
+
+## Responsibility
+
+Produces Kafka commands to block and unblock portals for characters.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| BlockAndEmit | Produces BLOCK command and emits |
+| Block | Adds BLOCK command to message buffer |
+| UnblockAndEmit | Produces UNBLOCK command and emits |
+| Unblock | Adds UNBLOCK command to message buffer |
+
+---
+
+# Buff (Client)
+
+## Responsibility
+
+Produces Kafka commands to cancel character buffs.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| CancelAllAndEmit | Produces CANCEL_ALL command and emits |
+| CancelAll | Adds CANCEL_ALL command to message buffer |

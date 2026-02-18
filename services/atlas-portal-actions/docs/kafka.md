@@ -5,13 +5,13 @@
 | Environment Variable | Direction | Description |
 |---------------------|-----------|-------------|
 | COMMAND_TOPIC_PORTAL_ACTIONS | command | Portal entry commands |
+| EVENT_TOPIC_SAGA_STATUS | event | Saga completion and failure events |
 
 ## Topics Produced
 
 | Environment Variable | Direction | Description |
 |---------------------|-----------|-------------|
 | EVENT_TOPIC_CHARACTER_STATUS | event | Character status events (enable actions) |
-| COMMAND_TOPIC_CHARACTER | command | Character commands (change map) |
 | COMMAND_TOPIC_SAGA | command | Saga commands for operations |
 
 ## Message Types
@@ -25,6 +25,7 @@ Topic: `COMMAND_TOPIC_PORTAL_ACTIONS`
   "worldId": 0,
   "channelId": 1,
   "mapId": 100000000,
+  "instance": "00000000-0000-0000-0000-000000000000",
   "portalId": 0,
   "type": "ENTER",
   "body": {
@@ -39,10 +40,52 @@ Topic: `COMMAND_TOPIC_PORTAL_ACTIONS`
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid | Map instance identifier |
 | portalId | uint32 | Numeric portal identifier |
 | type | string | Command type (ENTER) |
 | body.characterId | uint32 | Character identifier |
 | body.portalName | string | Portal name for script lookup |
+
+### Saga Status Event - Completed (Consumed)
+
+Topic: `EVENT_TOPIC_SAGA_STATUS`
+
+```json
+{
+  "transactionId": "uuid",
+  "type": "COMPLETED",
+  "body": {}
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid | Saga transaction identifier |
+| type | string | Status event type (COMPLETED) |
+
+### Saga Status Event - Failed (Consumed)
+
+Topic: `EVENT_TOPIC_SAGA_STATUS`
+
+```json
+{
+  "transactionId": "uuid",
+  "type": "FAILED",
+  "body": {
+    "errorCode": "TRANSPORT_CAPACITY_FULL",
+    "reason": "string",
+    "failedStep": "string"
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid | Saga transaction identifier |
+| type | string | Status event type (FAILED) |
+| body.errorCode | string | Error code |
+| body.reason | string | Failure reason |
+| body.failedStep | string | Step that failed |
 
 ### Stat Changed Event (Produced)
 
@@ -68,40 +111,15 @@ Topic: `EVENT_TOPIC_CHARACTER_STATUS`
 | body.channelId | byte | Channel identifier |
 | body.exclRequestSent | bool | Enable character actions |
 
-### Change Map Command (Produced)
-
-Topic: `COMMAND_TOPIC_CHARACTER`
-
-```json
-{
-  "worldId": 0,
-  "characterId": 12345,
-  "type": "CHANGE_MAP",
-  "body": {
-    "channelId": 1,
-    "mapId": 200000000,
-    "portalId": 0
-  }
-}
-```
-
-| Field | Type | Description |
-|-------|------|-------------|
-| worldId | byte | World identifier |
-| characterId | uint32 | Character identifier |
-| type | string | Command type (CHANGE_MAP) |
-| body.channelId | byte | Channel identifier |
-| body.mapId | uint32 | Target map identifier |
-| body.portalId | uint32 | Target portal identifier |
-
 ### Saga Command (Produced)
 
 Topic: `COMMAND_TOPIC_SAGA`
 
-Saga messages are produced for operations including warp, play_portal_sound, drop_message, show_hint, block_portal, create_skill, and update_skill.
+Saga messages are produced for operations including warp, play_portal_sound, drop_message, show_hint, block_portal, create_skill, update_skill, start_instance_transport, apply_consumable_effect, cancel_consumable_effect, save_location, and warp_to_saved_location.
 
 ## Transaction Semantics
 
 - Portal entry commands are processed with tenant context from Kafka headers
 - Character actions are enabled after processing completes (success or failure)
 - Operations are executed via saga messages for coordination
+- For `start_instance_transport` operations, a pending action is registered in the action registry; saga completion removes the entry, and saga failure sends a failure message to the character before cleanup

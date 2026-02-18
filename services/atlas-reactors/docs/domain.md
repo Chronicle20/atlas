@@ -100,6 +100,7 @@ Composite key for reactor cooldown tracking.
 - Cooldown is recorded when a reactor is destroyed, based on its delay value
 - Cooldowns are cleared when a reactor is successfully created at that location
 - Item reactor activation type is identified by state event type 100
+- Reactors with state event type 100 or type 999 persist at their final state rather than being destroyed
 
 ## State Transitions
 
@@ -113,6 +114,8 @@ Reactors transition through states based on hits:
 A state is considered terminal when:
 - No events defined for that state
 - All events lead to states not defined in stateInfo
+
+Reactors that contain state event type 100 (item reactor) or type 999 persist at their final state. When such a reactor reaches a terminal state, it triggers but is not destroyed.
 
 ## Processors
 
@@ -148,14 +151,28 @@ Processes a hit on a reactor:
 1. Retrieves reactor from registry
 2. Emits HIT command to atlas-reactor-actions
 3. Evaluates state transitions based on current state and skill
-4. Updates state or triggers destruction if terminal
-5. Emits HIT status event
+4. If no state events exist or no matching transition, triggers and destroys
+5. If next state is not in state info or is terminal:
+   - If reactor persists at final state (type 100 or 999), updates state, triggers, and emits HIT status event without destroying
+   - Otherwise, triggers and destroys
+6. If next state has further transitions, updates state and emits HIT status event
+
+### Trigger
+
+Emits a TRIGGER command to atlas-reactor-actions without destroying the reactor.
 
 ### TriggerAndDestroy
 
 Triggers reactor script execution and destroys the reactor:
 1. Emits TRIGGER command to atlas-reactor-actions
 2. Calls Destroy processor
+
+### DestroyInField
+
+Destroys all reactors in a specific field (world/channel/map/instance combination):
+1. Retrieves all reactors in the field
+2. For each reactor: cancels pending item-reactor activation, removes from registry, emits DESTROYED status event
+3. Clears all cooldowns for that map/instance
 
 ### DestroyAll
 

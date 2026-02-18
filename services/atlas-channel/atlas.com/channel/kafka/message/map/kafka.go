@@ -11,6 +11,8 @@ const (
 	EnvEventTopicMapStatus                = "EVENT_TOPIC_MAP_STATUS"
 	EventTopicMapStatusTypeCharacterEnter = "CHARACTER_ENTER"
 	EventTopicMapStatusTypeCharacterExit  = "CHARACTER_EXIT"
+	EventTopicMapStatusTypeWeatherStart   = "WEATHER_START"
+	EventTopicMapStatusTypeWeatherEnd     = "WEATHER_END"
 )
 
 type StatusEvent[E any] struct {
@@ -29,4 +31,13 @@ type CharacterEnter struct {
 
 type CharacterExit struct {
 	CharacterId uint32 `json:"characterId"`
+}
+
+type WeatherStart struct {
+	ItemId  uint32 `json:"itemId"`
+	Message string `json:"message"`
+}
+
+type WeatherEnd struct {
+	ItemId uint32 `json:"itemId"`
 }

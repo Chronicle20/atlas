@@ -6,6 +6,7 @@ import (
 	"atlas-party-quests/guild"
 	"atlas-party-quests/kafka/message"
 	character2 "atlas-party-quests/kafka/message/character"
+	mapKafka "atlas-party-quests/kafka/message/map"
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	systemMessage "atlas-party-quests/kafka/message/system_message"
@@ -478,6 +479,9 @@ func (p *ProcessorImpl) Start(mb *message.Buffer) func(instanceId uuid.UUID) err
 		// Spawn friendly monster if configured for this stage
 		p.spawnFriendlyMonster(mb, stg, inst)
 
+		// Emit weather effect if configured for this stage
+		p.emitWeatherEffect(mb, stg, inst)
+
 		// Emit STARTED event
 		return mb.Put(pq.EnvEventStatusTopic, startedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), 0, stg.MapIds()))
 	}
@@ -690,6 +694,9 @@ func (p *ProcessorImpl) StageAdvance(mb *message.Buffer) func(instanceId uuid.UU
 
 		// Spawn friendly monster if configured for the new stage
 		p.spawnFriendlyMonster(mb, nextStage, inst)
+
+		// Emit weather effect if configured for the new stage
+		p.emitWeatherEffect(mb, nextStage, inst)
 
 		// Emit STAGE_ADVANCED event
 		return mb.Put(pq.EnvEventStatusTopic, stageAdvancedEventProvider(inst.WorldId(), instanceId, inst.QuestId(), nextStageIdx, nextStage.MapIds()))
@@ -1331,6 +1338,52 @@ func extractFriendlyMonsterConfig(properties map[string]any) (friendlyMonsterCon
 	}
 
 	return cfg, true
+}
+
+type weatherConfig struct {
+	itemId   uint32
+	message  string
+	duration uint32
+}
+
+func extractWeatherConfig(properties map[string]any) (weatherConfig, bool) {
+	w, ok := properties["weather"]
+	if !ok {
+		return weatherConfig{}, false
+	}
+	wMap, ok := w.(map[string]any)
+	if !ok {
+		return weatherConfig{}, false
+	}
+	itemId, ok := wMap["itemId"].(float64)
+	if !ok {
+		return weatherConfig{}, false
+	}
+	msg, ok := wMap["message"].(string)
+	if !ok {
+		return weatherConfig{}, false
+	}
+	dur, ok := wMap["duration"].(float64)
+	if !ok {
+		return weatherConfig{}, false
+	}
+	return weatherConfig{itemId: uint32(itemId), message: msg, duration: uint32(dur)}, true
+}
+
+func (p *ProcessorImpl) emitWeatherEffect(mb *message.Buffer, stg stage.Model, inst Model) {
+	cfg, ok := extractWeatherConfig(stg.Properties())
+	if !ok {
+		return
+	}
+	if len(stg.MapIds()) == 0 {
+		return
+	}
+	targetMapId := _map.Id(stg.MapIds()[0])
+	durationMs := cfg.duration * 1000
+	err := mb.Put(mapKafka.EnvCommandTopicMap, weatherStartCommandProvider(inst.WorldId(), inst.ChannelId(), targetMapId, inst.Id(), cfg.itemId, cfg.message, durationMs))
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to emit weather effect for PQ instance [%s].", inst.Id())
+	}
 }
 
 func (p *ProcessorImpl) getFriendlyMonsterConfig(f field.Model, monsterId uint32) (Model, friendlyMonsterConfig, error) {

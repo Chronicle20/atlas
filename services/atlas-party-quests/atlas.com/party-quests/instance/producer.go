@@ -2,6 +2,7 @@ package instance
 
 import (
 	character2 "atlas-party-quests/kafka/message/character"
+	mapKafka "atlas-party-quests/kafka/message/map"
 	pq "atlas-party-quests/kafka/message/party_quest"
 	reactorMessage "atlas-party-quests/kafka/message/reactor"
 	"atlas-party-quests/kafka/message/system_message"
@@ -232,6 +233,23 @@ func instanceDestroyedEventProvider(worldId world.Id, instanceId uuid.UUID, ques
 		QuestId:    questId,
 		Type:       pq.EventTypeInstanceDestroyed,
 		Body:       pq.InstanceDestroyedEventBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func weatherStartCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, itemId uint32, message string, durationMs uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := &mapKafka.Command[mapKafka.WeatherStartCommandBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Instance:  instance,
+		Type:      mapKafka.CommandTypeWeatherStart,
+		Body: mapKafka.WeatherStartCommandBody{
+			ItemId:     itemId,
+			Message:    message,
+			DurationMs: durationMs,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

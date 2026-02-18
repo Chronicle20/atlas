@@ -131,6 +131,9 @@ Represents a single action within a saga.
 | update_pq_custom_data | Updates party quest instance custom data (synchronous) |
 | hit_reactor | Resolves reactor by name and produces hit command (synchronous) |
 | broadcast_pq_message | Broadcasts message to party quest members (synchronous) |
+| stage_clear_attempt_pq | Attempts to clear the current PQ stage (synchronous) |
+| enter_party_quest_bonus | Enters the bonus stage of a party quest (synchronous, terminal failure) |
+| field_effect_weather | Shows weather effect to all characters in a field (synchronous) |
 
 ### AssetData
 
@@ -253,6 +256,9 @@ Performs compensation actions for failed steps.
 
 Compensation strategies by action type:
 - **ValidateCharacterState**: Terminal failure, no compensation; emits FAILED event
+- **RegisterPartyQuest**: Terminal failure; removes saga from cache and emits FAILED event with party quest error code
+- **WarpPartyQuestMembersToMap**: Terminal failure on member resolution error; removes saga from cache and emits FAILED event with party quest error code
+- **EnterPartyQuestBonus**: Terminal failure; removes saga from cache and emits FAILED event with party quest error code
 - **EquipAsset**: Reverses with UnequipAsset command
 - **UnequipAsset**: Reverses with EquipAsset command
 - **CreateCharacter**: No rollback available; acknowledges failure
@@ -737,11 +743,11 @@ Validates party quest registration requirements and produces Kafka commands to t
 |-------|------|-------------|
 | id | uint32 | Member character ID |
 | name | string | Character name |
-| level | uint32 | Character level |
-| jobId | uint32 | Character job ID |
+| level | byte | Character level |
+| jobId | uint16 | Character job ID |
 | worldId | world.Id | World identifier |
 | channelId | channel.Id | Channel identifier |
-| mapId | _map.Id | Current map ID |
+| mapId | uint32 | Current map ID |
 | online | bool | Online status |
 
 ### DefinitionRestModel
@@ -760,6 +766,12 @@ Validates party quest registration requirements and produces Kafka commands to t
 | value | uint32 | Condition value |
 | referenceId | uint32 | Reference identifier |
 
+### InstanceRestModel
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Party quest instance identifier |
+
 ### PartyQuestError
 
 Custom error type with an error code field.
@@ -772,6 +784,7 @@ Custom error type with an error code field.
 | PQ_LEVEL_MIN | A member does not meet minimum level |
 | PQ_LEVEL_MAX | A member exceeds maximum level |
 | PQ_DEFINITION_NOT_FOUND | Party quest definition not found |
+| PQ_BONUS_NOT_AVAILABLE | Party quest bonus stage not available |
 | PQ_UNKNOWN | Unknown error |
 
 ## Processors
@@ -783,6 +796,9 @@ Custom error type with an error code field.
 | LeavePartyQuest | Produces LEAVE command to remove character from active party quest |
 | UpdateCustomData | Produces UPDATE_CUSTOM_DATA command with updates and increment counters |
 | BroadcastMessage | Produces BROADCAST_MESSAGE command to all party quest participants |
+| StageClearAttempt | Produces STAGE_CLEAR_ATTEMPT command by instance ID |
+| StageClearAttemptByCharacter | Looks up PQ instance by character, then produces STAGE_CLEAR_ATTEMPT command |
+| EnterBonusByCharacter | Looks up PQ instance by character, then produces ENTER_BONUS command |
 
 ---
 
@@ -937,3 +953,17 @@ Produces Kafka commands to cancel character buffs.
 |--------|-------------|
 | CancelAllAndEmit | Produces CANCEL_ALL command and emits |
 | CancelAll | Adds CANCEL_ALL command to message buffer |
+
+---
+
+# Map Command (Client)
+
+## Responsibility
+
+Produces Kafka commands to the atlas-maps service for field-level operations within sagas.
+
+## Processors
+
+| Method | Description |
+|--------|-------------|
+| FieldEffectWeather | Produces WEATHER_START command to COMMAND_TOPIC_MAP |

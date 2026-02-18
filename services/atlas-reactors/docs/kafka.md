@@ -81,6 +81,21 @@ Emits commands to consume drops during item-reactor activation.
 | stance      | uint16 | Character stance         |
 | skillId     | uint32 | Skill used (0 if none)   |
 
+#### DESTROY_IN_FIELD Command
+
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "DESTROY_IN_FIELD"   |
+| body      | object    | DestroyInFieldCommandBody |
+
+**DestroyInFieldCommandBody:**
+
+Empty body.
+
 ### Events (Consumed)
 
 #### Drop CREATED Event

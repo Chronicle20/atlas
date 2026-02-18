@@ -123,6 +123,7 @@ Requests to reserve a drop for a character.
   "body": {
     "dropId": 0,
     "characterId": 0,
+    "partyId": 0,
     "characterX": 0,
     "characterY": 0,
     "petSlot": -1

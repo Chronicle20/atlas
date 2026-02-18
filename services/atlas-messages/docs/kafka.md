@@ -15,6 +15,7 @@
 | Character Buff | `COMMAND_TOPIC_CHARACTER_BUFF` | Emits buff application commands |
 | Monster Command | `COMMAND_TOPIC_MONSTER` | Emits monster status effect commands |
 | Party Quest Command | `COMMAND_TOPIC_PARTY_QUEST` | Emits party quest commands |
+| Map Command | `COMMAND_TOPIC_MAP` | Emits map commands |
 
 ## Message Types
 
@@ -205,6 +206,7 @@ Monster field command structure produced to `COMMAND_TOPIC_MONSTER`.
 | APPLY_STATUS_FIELD | ApplyStatusFieldBody | sourceType (string), sourceCharacterId (uint32), sourceSkillId (uint32), sourceSkillLevel (uint32), statuses (map[string]int32), duration (uint32), tickInterval (uint32) |
 | CANCEL_STATUS_FIELD | CancelStatusFieldBody | statusTypes ([]string) |
 | USE_SKILL_FIELD | UseSkillFieldBody | skillId (uint16), skillLevel (uint16) |
+| DESTROY_FIELD | DestroyFieldBody | (empty) |
 
 #### PartyQuestCommand
 
@@ -233,6 +235,38 @@ Party quest command structure produced to `COMMAND_TOPIC_PARTY_QUEST`.
 | REGISTER | RegisterCommandBody | questId (string), partyId (uint32, optional), channelId (byte), mapId (uint32) |
 | STAGE_ADVANCE | StageAdvanceCommandBody | instanceId (uuid.UUID) |
 
+#### MapCommand
+
+Map command structure produced to `COMMAND_TOPIC_MAP`.
+
+```json
+{
+  "transactionId": "uuid",
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 100000000,
+  "instance": "00000000-0000-0000-0000-000000000000",
+  "type": "WEATHER_START",
+  "body": {}
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid.UUID | Unique transaction identifier |
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
+| type | string | Command type |
+| body | object | Type-specific body |
+
+#### Map Command Types
+
+| Type | Body Type | Body Fields |
+|------|-----------|-------------|
+| WEATHER_START | WeatherStartCommandBody | itemId (uint32), message (string), durationMs (uint32) |
+
 ## Transaction Semantics
 
 - Chat events are partitioned by actor ID for ordering
@@ -240,5 +274,6 @@ Party quest command structure produced to `COMMAND_TOPIC_PARTY_QUEST`.
 - Buff commands are partitioned by character ID
 - Monster commands are partitioned by map ID
 - Party quest commands are partitioned by character ID
+- Map commands are partitioned by map ID
 - Headers include span context for distributed tracing
 - Headers include tenant context for multi-tenancy

@@ -496,11 +496,11 @@ Represents guild data retrieved from the Guild service.
 | name | string | Member name |
 | jobId | uint16 | Member job ID |
 | level | byte | Member level |
-| title | byte | Member title index |
+| rank | byte | Member rank |
 | online | bool | Online status |
-| allianceTitle | byte | Alliance title |
+| allianceRank | byte | Alliance rank |
 
-The guild model provides a `MemberRank(characterId)` method that returns a member's title (rank) value, or 0 if the character is not a member.
+The guild model provides a `MemberRank(characterId)` method that returns a member's rank value, or 0 if the character is not a member.
 
 ## Processors
 

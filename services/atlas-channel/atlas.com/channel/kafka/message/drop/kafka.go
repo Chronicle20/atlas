@@ -26,6 +26,7 @@ type Command[E any] struct {
 type RequestReservationCommandBody struct {
 	DropId      uint32 `json:"dropId"`
 	CharacterId uint32 `json:"characterId"`
+	PartyId     uint32 `json:"partyId"`
 	CharacterX  int16  `json:"characterX"`
 	CharacterY  int16  `json:"characterY"`
 	PetSlot     int8   `json:"petSlot"`
@@ -35,7 +36,8 @@ const (
 	EnvEventTopicDropStatus = "EVENT_TOPIC_DROP_STATUS"
 	StatusEventTypeCreated  = "CREATED"
 	StatusEventTypeExpired  = "EXPIRED"
-	StatusEventTypePickedUp = "PICKED_UP"
+	StatusEventTypePickedUp  = "PICKED_UP"
+	StatusEventTypeConsumed  = "CONSUMED"
 )
 
 type StatusEvent[E any] struct {
@@ -66,6 +68,9 @@ type CreatedStatusEventBody struct {
 }
 
 type ExpiredStatusEventBody struct {
+}
+
+type ConsumedStatusEventBody struct {
 }
 
 type PickedUpStatusEventBody struct {

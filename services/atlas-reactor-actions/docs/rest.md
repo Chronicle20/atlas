@@ -170,9 +170,18 @@ JSON:API resource for reactor scripts.
   "type": "reactor_state",
   "operator": "=",
   "value": "1",
-  "referenceId": ""
+  "referenceId": "",
+  "step": ""
 }
 ```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | Condition type (`reactor_state`, `pq_custom_data`) |
+| operator | string | Comparison operator (`=`, `!=`, `>`, `<`, `>=`, `<=`) |
+| value | string | Expected value |
+| referenceId | string | Reference identifier |
+| step | string | Custom data key name (used by `pq_custom_data` condition type) |
 
 ### Operation Structure
 
@@ -186,3 +195,31 @@ JSON:API resource for reactor scripts.
   }
 }
 ```
+
+---
+
+## External API Consumption
+
+The service makes REST API calls to the following services via `requests.RootUrl`.
+
+### atlas-party-quests
+
+#### GET /party-quests/instances/character/{characterId}
+
+Retrieves the party quest instance for a character. Used by `pq_custom_data` condition evaluation and by `update_pq_state`, `broadcast_pq_message` operation execution.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| characterId | uint32 | path | Character ID |
+
+**Response Model**
+
+Resource type: `instances`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Party quest instance ID |
+| stageState | object | Stage state data |
+| stageState.customData | map[string]any | Custom key-value data for the current stage |

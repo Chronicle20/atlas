@@ -1,0 +1,11 @@
+meta {
+  name: Get Instance
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/party-quests/instances/{{instanceId}}
+  body: none
+  auth: inherit
+}

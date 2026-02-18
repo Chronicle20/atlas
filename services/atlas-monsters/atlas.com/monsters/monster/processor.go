@@ -38,6 +38,7 @@ type Processor interface {
 	StopControl(m Model) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damage uint32, attackType byte)
+	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
 	Move(id uint32, x int16, y int16, stance byte) error
 	Destroy(uniqueId uint32) error
 	DestroyInField(f field.Model) error
@@ -121,6 +122,21 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
 		}
+	}
+
+	if ma.Friendly() && ma.DropPeriod() > 0 {
+		interval := time.Duration(ma.DropPeriod()/3) * time.Millisecond
+		p.l.Debugf("Registering friendly monster [%d] (template [%d]) with drop period [%s].", m.UniqueId(), m.MonsterId(), interval)
+		now := time.Now()
+		GetDropTimerRegistry().Register(p.t, m.UniqueId(), DropTimerEntry{
+			monsterId:    m.MonsterId(),
+			field:        f,
+			dropPeriod:   interval,
+			weaponAttack: ma.WeaponAttack(),
+			maxHp:        ma.Hp(),
+			lastDropAt:   now,
+			lastHitAt:    time.Time{},
+		})
 	}
 
 	p.l.Debugf("Created monster [%d] in field [%s]. Emitting Monster Status.", input.MonsterId, f.Id())
@@ -241,8 +257,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 	}
 
 	if s.Killed {
-		// Clear cooldowns on death
+		// Clear cooldowns and drop timer on death
 		GetCooldownRegistry().ClearCooldowns(id)
+		GetDropTimerRegistry().Unregister(p.t, id)
 
 		// Emit cancellation events for any active status effects before death
 		for _, se := range s.Monster.StatusEffects() {
@@ -285,10 +302,72 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 		}
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, isBoss, s.Monster.DamageSummary()))
+	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, s.CharacterId, isBoss, s.Monster.DamageSummary()))
 	if err != nil {
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 	}
+}
+
+// DamageFriendly applies damage from a hostile monster to a friendly monster and resets the drop timer.
+func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get friendly monster [%d].", uniqueId)
+		return
+	}
+	if !m.Alive() {
+		return
+	}
+
+	// Look up attacker info to calculate damage
+	attacker, err := GetMonsterRegistry().GetMonster(p.t, attackerUniqueId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get attacking monster [%d].", attackerUniqueId)
+		return
+	}
+
+	ma, err := information.GetById(p.l)(p.ctx)(attacker.MonsterId())
+	if err != nil {
+		p.l.WithError(err).Errorf("Unable to get information for attacking monster [%d].", attacker.MonsterId())
+		return
+	}
+
+	// Damage formula: rand.Intn(((maxHp/13 + PADamage*10))*2 + 500) / 10
+	base := int(ma.Hp()/13+ma.WeaponAttack()*10)*2 + 500
+	damage := uint32(rand.Intn(base) / 10)
+	if damage == 0 {
+		damage = 1
+	}
+
+	now := time.Now()
+	GetDropTimerRegistry().RecordHit(p.t, uniqueId, now)
+
+	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId)
+	if err != nil {
+		p.l.WithError(err).Errorf("Error applying friendly damage to monster [%d].", uniqueId)
+		return
+	}
+
+	if s.Killed {
+		GetCooldownRegistry().ClearCooldowns(uniqueId)
+		GetDropTimerRegistry().Unregister(p.t, uniqueId)
+
+		for _, se := range s.Monster.StatusEffects() {
+			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(s.Monster, se))
+		}
+
+		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, 0, false, s.Monster.DamageSummary()))
+		if err != nil {
+			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but unable to emit killed event.", s.Monster.UniqueId())
+		}
+		_, err = GetMonsterRegistry().RemoveMonster(p.t, s.Monster.UniqueId())
+		if err != nil {
+			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
+		}
+		return
+	}
+
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, s.Monster.DamageSummary()))
 }
 
 // spawnRevives spawns the revive/next-phase monsters when a monster dies
@@ -402,7 +481,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 		case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
 			p.executeStatBuff(m, sd, skillId, skillLevel)
 		case monster2.SkillCategoryHeal:
-			p.executeHeal(m, sd)
+			p.executeHeal(m, characterId, sd)
 		case monster2.SkillCategoryDebuff:
 			p.executeDebuff(m, sd, skillId, skillLevel)
 		case monster2.SkillCategorySummon:
@@ -444,7 +523,7 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId uint16, skillLevel u
 	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
 		p.executeStatBuff(m, sd, skillId, skillLevel)
 	case monster2.SkillCategoryHeal:
-		p.executeHeal(m, sd)
+		p.executeHeal(m, m.UniqueId(), sd)
 	case monster2.SkillCategoryDebuff:
 		p.executeDebuff(m, sd, skillId, skillLevel)
 	case monster2.SkillCategorySummon:
@@ -499,7 +578,7 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId uint
 }
 
 // executeHeal heals the monster (and nearby monsters for AoE)
-func (p *ProcessorImpl) executeHeal(m Model, sd mobskill.Model) {
+func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Model) {
 	healAmount := uint32(sd.X())
 
 	healMonster := func(targetId uint32) {
@@ -510,7 +589,7 @@ func (p *ProcessorImpl) executeHeal(m Model, sd mobskill.Model) {
 		healed := target.Heal(healAmount)
 		GetMonsterRegistry().UpdateMonster(p.t, targetId, healed)
 		// Emit a damaged event with 0 damage to trigger HP bar update
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, 0, false, healed.DamageSummary()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, healed.DamageSummary()))
 	}
 
 	healMonster(m.UniqueId())
@@ -656,6 +735,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
+	GetDropTimerRegistry().Unregister(p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.t, uniqueId)
 	if err != nil {
 		return err

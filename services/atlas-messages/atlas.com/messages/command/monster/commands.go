@@ -12,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	monster2 "github.com/Chronicle20/atlas-constants/monster"
 	"github.com/sirupsen/logrus"
@@ -28,9 +27,10 @@ var validStatuses = []string{
 	"SHOWDOWN", "NINJA_AMBUSH", "VENOM",
 }
 
-func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@mobstatus\s+(\S+)(?:\s+(\d+))?$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) < 2 {
@@ -82,9 +82,41 @@ func MobStatusCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 	}
 }
 
-func MobClearCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func MobKillAllCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
+			re := regexp.MustCompile(`^@mob kill all$`)
+			match := re.FindStringSubmatch(m)
+			if match == nil {
+				return nil, false
+			}
+
+			if !c.Gm() {
+				return nil, false
+			}
+
+			return func(l logrus.FieldLogger) func(ctx context.Context) error {
+				return func(ctx context.Context) error {
+					msgProc := message.NewProcessor(l, ctx)
+					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
+
+					err := producer.ProviderImpl(l)(ctx)(monster.EnvCommandTopic)(monster.DestroyFieldCommandProvider(ch.WorldId(), ch.Id(), c.MapId(), f.Instance()))
+					if err != nil {
+						return msgProc.IssuePinkText(f, 0, "Failed to kill all monsters.", []uint32{c.Id()})
+					}
+
+					return msgProc.IssuePinkText(f, 0, "Killed all monsters in map.", []uint32{c.Id()})
+				}
+			}, true
+		}
+	}
+}
+
+func MobClearCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@mobclear(?:\s+(\w+))?$`)
 			match := re.FindStringSubmatch(m)
 			if match == nil {

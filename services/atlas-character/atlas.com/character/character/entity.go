@@ -40,6 +40,7 @@ type entity struct {
 	AP                 uint16    `gorm:"not null;default=0"`
 	SP                 string    `gorm:"not null;default=0,0,0,0,0,0,0,0,0,0"`
 	MapId              _map.Id   `gorm:"not null;default=0"`
+	Instance           uuid.UUID `gorm:"type:uuid;not null;default:'00000000-0000-0000-0000-000000000000'"`
 	SpawnPoint         uint32    `gorm:"not null;default=0"`
 	GM                 int       `gorm:"not null;default=0"`
 	X                  int16     `gorm:"not null;default=0"`

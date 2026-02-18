@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Tracks character presence in maps, manages monster spawn points with cooldown enforcement, coordinates reactor spawning, and records character map visit history.
+Tracks character presence in maps, manages monster spawn points with cooldown enforcement, coordinates reactor spawning, manages map weather effects, and records character map visit history.
 
 ## Core Models
 
@@ -74,6 +74,25 @@ Reactor data from atlas-data service.
 | delay | uint32 | Delay value |
 | direction | byte | Direction |
 
+### FieldKey
+
+Composite key identifying a map instance for weather tracking.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Tenant | tenant.Model | Tenant identifier |
+| Field | field.Model | Field identifier (worldId, channelId, mapId, instance) |
+
+### WeatherEntry
+
+Active weather effect in a map.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| ItemId | uint32 | Weather item identifier |
+| Message | string | Weather message |
+| ExpiresAt | time.Time | Expiry time |
+
 ### Visit
 
 Character map visit record. Immutable.
@@ -94,6 +113,8 @@ Character map visit record. Immutable.
 - Reactor name cannot be empty
 - Reactor classification must be positive
 - Visit records are unique per tenant, character, and map (upsert via FirstOrCreate)
+- Weather entries are keyed by FieldKey (tenant + field)
+- Weather entries are automatically removed after ExpiresAt
 
 ## Processors
 
@@ -101,7 +122,7 @@ Character map visit record. Immutable.
 
 Coordinates character entry and exit from maps.
 
-- Enter: Registers character in map, records visit, triggers monster and reactor spawning, emits CHARACTER_ENTER event
+- Enter: Registers character in map, records visit, triggers monster and reactor spawning, emits CHARACTER_ENTER event. On first visit, emits onFirstUserEnter map action. On every entry, emits onUserEnter map action if configured.
 - EnterAndEmit: Executes Enter with Kafka emission
 - Exit: Removes character from map, emits CHARACTER_EXIT event
 - ExitAndEmit: Executes Exit with Kafka emission
@@ -146,6 +167,13 @@ Manages reactor spawning.
 - GetInMap: Gets reactors in map via REST
 - Spawn: Creates reactors that do not exist in map
 - SpawnAndEmit: Spawns reactors and emits Kafka messages
+
+### Weather Processor
+
+Manages in-memory weather effects per map instance.
+
+- Start: Registers a weather entry in the registry with an expiry time
+- GetActive: Returns the active weather entry for a map instance, if any
 
 ### Visit Processor
 

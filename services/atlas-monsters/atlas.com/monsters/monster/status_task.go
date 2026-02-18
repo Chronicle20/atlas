@@ -93,7 +93,7 @@ func (t *StatusExpirationTask) processDoTTick(ten tenant.Model, ctx context.Cont
 	_, _ = GetMonsterRegistry().UpdateStatusEffectLastTick(ten, m.UniqueId(), se.EffectId(), time.Now())
 
 	// Emit damaged event
-	_ = producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(ds.Monster, se.SourceCharacterId(), false, ds.Monster.DamageSummary()))
+	_ = producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(ds.Monster, se.SourceCharacterId(), se.SourceCharacterId(), false, ds.Monster.DamageSummary()))
 }
 
 func (t *StatusExpirationTask) calculatePoisonDamage(m Model, se StatusEffect) uint32 {

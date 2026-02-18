@@ -5,7 +5,7 @@ A microservice that manages item and meso drops within game maps. Drops are ephe
 ## External Dependencies
 
 - Kafka: Message broker for command consumption and event emission
-- Jaeger: Distributed tracing
+- OpenTelemetry Collector: Distributed tracing (via OTLP/gRPC)
 - atlas-configurations: External service for runtime configuration (REST)
 
 ## Runtime Configuration
@@ -13,7 +13,7 @@ A microservice that manages item and meso drops within game maps. Drops are ephe
 | Variable | Description |
 |----------|-------------|
 | BOOTSTRAP_SERVERS | Kafka bootstrap server address |
-| JAEGER_HOST | Jaeger tracing endpoint `[host]:[port]` |
+| TRACE_ENDPOINT | OpenTelemetry collector gRPC endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | HTTP server port |
 | SERVICE_ID | UUID identifying this service instance |

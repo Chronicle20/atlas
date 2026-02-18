@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 type RestModel struct {
@@ -34,8 +35,9 @@ type RestModel struct {
 	Face               uint32   `json:"face"`
 	Ap                 uint16   `json:"ap"`
 	Sp                 string   `json:"sp"`
-	MapId              _map.Id  `json:"mapId"`
-	SpawnPoint         uint32   `json:"spawnPoint"`
+	MapId              _map.Id   `json:"mapId"`
+	Instance           uuid.UUID `json:"instance"`
+	SpawnPoint         uint32    `json:"spawnPoint"`
 	Gm                 int      `json:"gm"`
 	X                  int16    `json:"x"`
 	Y                  int16    `json:"y"`
@@ -92,6 +94,7 @@ func Transform(m Model) (RestModel, error) {
 		Ap:                 m.AP(),
 		Sp:                 m.SPString(),
 		MapId:              m.MapId(),
+		Instance:           m.Instance(),
 		SpawnPoint:         m.SpawnPoint(),
 		Gm:                 m.GM(),
 		X:                  td.X(),
@@ -129,6 +132,7 @@ func Extract(m RestModel) (Model, error) {
 		SetAp(m.Ap).
 		SetSp(m.Sp).
 		SetMapId(m.MapId).
+		SetInstance(m.Instance).
 		SetSpawnPoint(m.SpawnPoint).
 		SetGm(m.Gm).
 		Build(), nil

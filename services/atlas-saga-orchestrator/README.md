@@ -7,7 +7,7 @@ The orchestrator receives saga commands via Kafka or REST, then executes each st
 ## External Dependencies
 
 - Kafka (message broker)
-- Jaeger (distributed tracing)
+- OpenTelemetry (distributed tracing)
 
 ## External Service Dependencies
 
@@ -20,17 +20,21 @@ This service makes REST calls to:
 - **Drop Information Service** (`DROP_INFORMATION`): Get reactor drop tables
 - **Data Service** (`DATA`): Calculate drop positions, foothold lookups, portal data, NPC data
 - **Cash Shop Service** (`CASHSHOP`): Retrieve cash shop compartments for step expansion
-- **Gachapon Service** (`GACHAPON`): Select random gachapon rewards and retrieve gachapon metadata
-- **Transport Service** (`TRANSPORTS`): Start instance-based transports
-- **Saved Location Service** (`SAVED_LOCATIONS`): Save and retrieve character locations
+- **Gachapon Service** (`GACHAPONS_URL`): Select random gachapon rewards and retrieve gachapon metadata
+- **Transport Service** (`TRANSPORTS_URL`): Start instance-based transports
+- **Character Service** (`CHARACTER_URL`): Save and retrieve character locations
 - **Monster Service** (`MONSTERS`): Spawn monsters via REST
+- **Parties Service** (`PARTIES`): Retrieve character party and members for party quest validation
+- **Party Quests Service** (`PARTY_QUESTS`): Retrieve party quest definitions and start requirements
+- **Query Aggregator Service** (`QUERY_AGGREGATOR`): Validate character state conditions
+- **Reactors Service** (`REACTORS`): Look up reactors by name for hit commands
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
 | BOOTSTRAP_SERVERS | Kafka bootstrap servers |
-| JAEGER_HOST_PORT | Jaeger host and port |
+| TRACE_ENDPOINT | OpenTelemetry collector endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | REST API server port |
 | RATES | Base URL for rate service |
@@ -40,9 +44,14 @@ This service makes REST calls to:
 | INVENTORY | Base URL for inventory service |
 | STORAGE | Base URL for storage service |
 | CASHSHOP | Base URL for cash shop service |
-| GACHAPON | Base URL for gachapon service |
-| TRANSPORTS | Base URL for transport service |
-| SAVED_LOCATIONS | Base URL for saved location service |
+| GACHAPONS_URL | Base URL for gachapon service |
+| TRANSPORTS_URL | Base URL for transport service |
+| CHARACTER_URL | Base URL for character service (saved locations) |
+| MONSTERS | Base URL for monster service |
+| PARTIES | Base URL for parties service |
+| PARTY_QUESTS | Base URL for party quests service |
+| QUERY_AGGREGATOR | Base URL for query aggregator service |
+| REACTORS | Base URL for reactors service |
 
 ### Kafka Topics
 
@@ -65,6 +74,10 @@ This service makes REST calls to:
 | COMMAND_TOPIC_CASH_COMPARTMENT | Cash shop compartment commands |
 | COMMAND_TOPIC_PORTAL | Portal commands |
 | COMMAND_TOPIC_CHARACTER_BUFF | Buff commands |
+| COMMAND_TOPIC_PARTY_QUEST | Party quest commands |
+| COMMAND_TOPIC_REACTOR | Reactor commands |
+| COMMAND_TOPIC_DROP | Drop spawn commands |
+| COMMAND_TOPIC_MAP | Map commands |
 | EVENT_TOPIC_SAGA_STATUS | Saga status output |
 | EVENT_TOPIC_ASSET_STATUS | Asset status input |
 | EVENT_TOPIC_BUDDY_LIST_STATUS | Buddy list status input |

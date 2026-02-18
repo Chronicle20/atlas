@@ -38,6 +38,7 @@ Immutable representation of a character.
 | ap | uint16 | Available AP |
 | sp | string | Available SP (comma-separated) |
 | mapId | map.Id | Current map |
+| instance | uuid.UUID | Map instance |
 | spawnPoint | uint32 | Spawn point ID |
 | gm | int | GM level |
 | skills | []skill.Model | Character skills |
@@ -116,8 +117,11 @@ Handles character operations.
 | RequestDistributeSp | Process SP distribution |
 | ChangeHP | Modify HP |
 | SetHP | Set HP to specific value |
+| ClampHP | Clamp HP to max value |
 | ChangeMP | Modify MP |
+| ClampMP | Clamp MP to max value |
 | DeductExperience | Deduct experience |
+| ResetStats | Reset character stats |
 | ProcessLevelChange | Apply level-up bonuses |
 | ProcessJobChange | Apply job-change bonuses |
 | Update | Update character properties |
@@ -169,6 +173,81 @@ Handles drop coordination.
 | CreateForMesos | Request meso drop creation |
 | RequestPickUp | Request drop pickup |
 | CancelReservation | Cancel drop reservation |
+
+---
+
+## Session History
+
+### Responsibility
+Records and queries character session history for playtime tracking.
+
+### Core Models
+
+#### Model
+Immutable representation of a session history entry.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint64 | History entry identifier |
+| characterId | uint32 | Character |
+| worldId | world.Id | World |
+| channelId | channel.Id | Channel |
+| loginTime | time.Time | Login timestamp |
+| logoutTime | *time.Time | Logout timestamp (null if active) |
+
+### Invariants
+- A character may have at most one active session (logoutTime is null)
+- loginTime is always set on creation
+- logoutTime is set when the session ends
+
+### Processors
+
+#### Processor
+Handles session history operations.
+
+| Operation | Description |
+|-----------|-------------|
+| StartSession | Create new session record |
+| EndSession | Close active session |
+| GetActiveSession | Get current active session |
+| GetSessionsSince | Get sessions since timestamp |
+| GetSessionsInRange | Get sessions in time range |
+| ComputePlaytimeSince | Compute total playtime since timestamp |
+| ComputePlaytimeInRange | Compute total playtime in range |
+
+---
+
+## Saved Location
+
+### Responsibility
+Manages saved map locations per character by location type.
+
+### Core Models
+
+#### Model
+Immutable representation of a saved location.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Location identifier |
+| characterId | uint32 | Character |
+| locationType | string | Type of saved location |
+| mapId | map.Id | Map |
+| portalId | uint32 | Portal |
+
+### Invariants
+- A character may have at most one saved location per location type
+
+### Processors
+
+#### Processor
+Handles saved location operations.
+
+| Operation | Description |
+|-----------|-------------|
+| Put | Upsert saved location |
+| Get | Get saved location by character and type |
+| Delete | Delete saved location by character and type |
 
 ---
 

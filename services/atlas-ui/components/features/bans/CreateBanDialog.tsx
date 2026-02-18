@@ -88,11 +88,11 @@ interface CreateBanDialogProps {
     onOpenChange: (open: boolean) => void;
     tenant: Tenant | null;
     onSuccess?: () => void;
-    /** Pre-fill values for creating ban from history */
+    /** Pre-fill values for creating ban from accounts or history */
     prefill?: {
         banType?: BanType;
         value?: string;
-    };
+    } | undefined;
 }
 
 export function CreateBanDialog({ open, onOpenChange, tenant, onSuccess, prefill }: CreateBanDialogProps) {

@@ -8,6 +8,12 @@ Environment variable: `COMMAND_TOPIC_REACTOR`
 
 Receives commands for reactor operations.
 
+### EVENT_TOPIC_DROP_STATUS
+
+Environment variable: `EVENT_TOPIC_DROP_STATUS`
+
+Receives drop status events. Consumed from last offset.
+
 ## Topics Produced
 
 ### EVENT_TOPIC_REACTOR_STATUS
@@ -22,19 +28,26 @@ Environment variable: `COMMAND_TOPIC_REACTOR_ACTIONS`
 
 Emits commands to atlas-reactor-actions for script execution.
 
+### COMMAND_TOPIC_DROP
+
+Environment variable: `COMMAND_TOPIC_DROP`
+
+Emits commands to consume drops during item-reactor activation.
+
 ## Message Types
 
 ### Commands (Consumed)
 
 #### CREATE Command
 
-| Field     | Type   | Description        |
-|-----------|--------|--------------------|
-| worldId   | byte   | World identifier   |
-| channelId | byte   | Channel identifier |
-| mapId     | uint32 | Map identifier     |
-| type      | string | "CREATE"           |
-| body      | object | CreateCommandBody  |
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "CREATE"             |
+| body      | object    | CreateCommandBody    |
 
 **CreateCommandBody:**
 
@@ -50,13 +63,14 @@ Emits commands to atlas-reactor-actions for script execution.
 
 #### HIT Command
 
-| Field     | Type   | Description       |
-|-----------|--------|-------------------|
-| worldId   | byte   | World identifier  |
-| channelId | byte   | Channel identifier|
-| mapId     | uint32 | Map identifier    |
-| type      | string | "HIT"             |
-| body      | object | HitCommandBody    |
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "HIT"                |
+| body      | object    | HitCommandBody       |
 
 **HitCommandBody:**
 
@@ -67,18 +81,62 @@ Emits commands to atlas-reactor-actions for script execution.
 | stance      | uint16 | Character stance         |
 | skillId     | uint32 | Skill used (0 if none)   |
 
+#### DESTROY_IN_FIELD Command
+
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "DESTROY_IN_FIELD"   |
+| body      | object    | DestroyInFieldCommandBody |
+
+**DestroyInFieldCommandBody:**
+
+Empty body.
+
+### Events (Consumed)
+
+#### Drop CREATED Event
+
+| Field         | Type      | Description          |
+|---------------|-----------|----------------------|
+| transactionId | uuid.UUID | Transaction ID       |
+| worldId       | byte      | World identifier     |
+| channelId     | byte      | Channel identifier   |
+| mapId         | uint32    | Map identifier       |
+| instance      | uuid.UUID | Instance identifier  |
+| dropId        | uint32    | Drop ID              |
+| type          | string    | "CREATED"            |
+| body          | object    | StatusEventCreatedBody |
+
+**StatusEventCreatedBody:**
+
+| Field      | Type   | Description                 |
+|------------|--------|-----------------------------|
+| itemId     | uint32 | Dropped item ID             |
+| quantity   | uint32 | Dropped item quantity       |
+| x          | int16  | Drop X coordinate           |
+| y          | int16  | Drop Y coordinate           |
+| ownerId    | uint32 | Character that dropped item |
+| playerDrop | bool   | Whether drop is player-initiated |
+
+Only player drops (playerDrop = true) are processed.
+
 ### Events (Produced)
 
 #### CREATED Event
 
-| Field     | Type   | Description            |
-|-----------|--------|------------------------|
-| worldId   | byte   | World identifier       |
-| channelId | byte   | Channel identifier     |
-| mapId     | uint32 | Map identifier         |
-| reactorId | uint32 | Reactor instance ID    |
-| type      | string | "CREATED"              |
-| body      | object | createdStatusEventBody |
+| Field     | Type      | Description            |
+|-----------|-----------|------------------------|
+| worldId   | byte      | World identifier       |
+| channelId | byte      | Channel identifier     |
+| mapId     | uint32    | Map identifier         |
+| instance  | uuid.UUID | Instance identifier    |
+| reactorId | uint32    | Reactor instance ID    |
+| type      | string    | "CREATED"              |
+| body      | object    | createdStatusEventBody |
 
 **createdStatusEventBody:**
 
@@ -96,14 +154,15 @@ Emits commands to atlas-reactor-actions for script execution.
 
 #### DESTROYED Event
 
-| Field     | Type   | Description              |
-|-----------|--------|--------------------------|
-| worldId   | byte   | World identifier         |
-| channelId | byte   | Channel identifier       |
-| mapId     | uint32 | Map identifier           |
-| reactorId | uint32 | Reactor instance ID      |
-| type      | string | "DESTROYED"              |
-| body      | object | destroyedStatusEventBody |
+| Field     | Type      | Description              |
+|-----------|-----------|--------------------------|
+| worldId   | byte      | World identifier         |
+| channelId | byte      | Channel identifier       |
+| mapId     | uint32    | Map identifier           |
+| instance  | uuid.UUID | Instance identifier      |
+| reactorId | uint32    | Reactor instance ID      |
+| type      | string    | "DESTROYED"              |
+| body      | object    | destroyedStatusEventBody |
 
 **destroyedStatusEventBody:**
 
@@ -115,14 +174,15 @@ Emits commands to atlas-reactor-actions for script execution.
 
 #### HIT Event
 
-| Field     | Type   | Description        |
-|-----------|--------|--------------------|
-| worldId   | byte   | World identifier   |
-| channelId | byte   | Channel identifier |
-| mapId     | uint32 | Map identifier     |
-| reactorId | uint32 | Reactor instance ID|
-| type      | string | "HIT"              |
-| body      | object | hitStatusEventBody |
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| reactorId | uint32    | Reactor instance ID  |
+| type      | string    | "HIT"                |
+| body      | object    | hitStatusEventBody   |
 
 **hitStatusEventBody:**
 
@@ -139,19 +199,20 @@ Emits commands to atlas-reactor-actions for script execution.
 
 #### HIT Command
 
-| Field          | Type   | Description                    |
-|----------------|--------|--------------------------------|
-| worldId        | byte   | World identifier               |
-| channelId      | byte   | Channel identifier             |
-| mapId          | uint32 | Map identifier                 |
-| reactorId      | uint32 | Reactor instance ID            |
-| classification | string | Reactor classification as string |
-| reactorName    | string | Reactor name                   |
-| reactorState   | int8   | Current reactor state          |
-| x              | int16  | X coordinate position          |
-| y              | int16  | Y coordinate position          |
-| type           | string | "HIT"                          |
-| body           | object | hitActionsBody                 |
+| Field          | Type      | Description                      |
+|----------------|-----------|----------------------------------|
+| worldId        | byte      | World identifier                 |
+| channelId      | byte      | Channel identifier               |
+| mapId          | uint32    | Map identifier                   |
+| instance       | uuid.UUID | Instance identifier              |
+| reactorId      | uint32    | Reactor instance ID              |
+| classification | string    | Reactor classification as string |
+| reactorName    | string    | Reactor name                     |
+| reactorState   | int8      | Current reactor state            |
+| x              | int16     | X coordinate position            |
+| y              | int16     | Y coordinate position            |
+| type           | string    | "HIT"                            |
+| body           | object    | hitActionsBody                   |
 
 **hitActionsBody:**
 
@@ -163,19 +224,20 @@ Emits commands to atlas-reactor-actions for script execution.
 
 #### TRIGGER Command
 
-| Field          | Type   | Description                    |
-|----------------|--------|--------------------------------|
-| worldId        | byte   | World identifier               |
-| channelId      | byte   | Channel identifier             |
-| mapId          | uint32 | Map identifier                 |
-| reactorId      | uint32 | Reactor instance ID            |
-| classification | string | Reactor classification as string |
-| reactorName    | string | Reactor name                   |
-| reactorState   | int8   | Current reactor state          |
-| x              | int16  | X coordinate position          |
-| y              | int16  | Y coordinate position          |
-| type           | string | "TRIGGER"                      |
-| body           | object | triggerActionsBody             |
+| Field          | Type      | Description                      |
+|----------------|-----------|----------------------------------|
+| worldId        | byte      | World identifier                 |
+| channelId      | byte      | Channel identifier               |
+| mapId          | uint32    | Map identifier                   |
+| instance       | uuid.UUID | Instance identifier              |
+| reactorId      | uint32    | Reactor instance ID              |
+| classification | string    | Reactor classification as string |
+| reactorName    | string    | Reactor name                     |
+| reactorState   | int8      | Current reactor state            |
+| x              | int16     | X coordinate position            |
+| y              | int16     | Y coordinate position            |
+| type           | string    | "TRIGGER"                        |
+| body           | object    | triggerActionsBody               |
 
 **triggerActionsBody:**
 
@@ -183,8 +245,28 @@ Emits commands to atlas-reactor-actions for script execution.
 |-------------|--------|--------------------------------|
 | characterId | uint32 | Character that triggered       |
 
+### Commands (Produced to drop service)
+
+#### CONSUME Command
+
+| Field     | Type      | Description          |
+|-----------|-----------|----------------------|
+| worldId   | byte      | World identifier     |
+| channelId | byte      | Channel identifier   |
+| mapId     | uint32    | Map identifier       |
+| instance  | uuid.UUID | Instance identifier  |
+| type      | string    | "CONSUME"            |
+| body      | object    | CommandConsumeBody   |
+
+**CommandConsumeBody:**
+
+| Field  | Type   | Description |
+|--------|--------|-------------|
+| dropId | uint32 | Drop ID     |
+
 ## Transaction Semantics
 
-- Commands are consumed with tenant header parsing
-- Message keys are based on mapId for CREATE commands and reactorId for status events
+- Commands are consumed with span and tenant header parsing
+- Drop status events are consumed from last offset with span and tenant header parsing
+- Message keys are based on mapId for CREATE and CONSUME commands, and reactorId for status events and reactor actions commands
 - Consumer group ID: "Reactors Service"

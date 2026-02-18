@@ -91,7 +91,7 @@ None.
 
 #### Condition Types
 
-The REST input validation layer accepts the following condition types. Additional types (buddyCapacity, petCount, mapCapacity, inventorySpace, transportAvailable, skillLevel, guildLeader, buff, excessSp) are supported by the internal condition builder but are rejected by the REST input validator with "unsupported condition type."
+The REST input validation layer accepts the following condition types. Additional types (buddyCapacity, petCount, mapCapacity, inventorySpace, transportAvailable, skillLevel, guildLeader, buff, excessSp, partyId, partyLeader, partySize, pqCustomData) are supported by the internal condition builder but are rejected by the REST input validator with "unsupported condition type."
 
 | Type | Description | referenceId |
 |------|-------------|-------------|

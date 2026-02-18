@@ -43,9 +43,7 @@ Context information for reactor operation execution.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| WorldId | world.Id | World identifier |
-| ChannelId | channel.Id | Channel identifier |
-| MapId | uint32 | Map identifier |
+| Field | field.Model | Field context (world, channel, map, instance) |
 | ReactorId | uint32 | Reactor instance identifier |
 | Classification | string | Reactor classification |
 | ReactorName | string | Reactor name |
@@ -99,11 +97,12 @@ Interface for reactor script processing.
 
 Evaluates conditions for reactor scripts.
 
-- `EvaluateCondition(reactorState int8, cond condition.Model) (bool, error)`
-- `EvaluateRule(reactorState int8, rule Rule) (bool, error)`
+- `EvaluateCondition(reactorState int8, characterId uint32, cond condition.Model) (bool, error)`
+- `EvaluateRule(reactorState int8, characterId uint32, rule Rule) (bool, error)`
 
 **Supported Condition Types:**
 - `reactor_state`: Compares reactor state value
+- `pq_custom_data`: Compares party quest custom data value; uses the condition's `step` field as the custom data key name; queries atlas-party-quests service for the character's PQ instance; missing key or non-numeric value is treated as 0
 
 **Supported Operators:**
 - `=`, `!=`, `>`, `<`, `>=`, `<=`
@@ -123,6 +122,10 @@ Executes reactor script operations via saga orchestration.
 - `move_environment`: Moves map environment object (not yet implemented)
 - `kill_all_monsters`: Kills all monsters in map (not yet implemented)
 - `drop_message`: Sends message to character via saga
+- `update_pq_state`: Updates party quest custom data via saga; params: `updates` (comma-separated key=value pairs), `increments` (comma-separated key names to increment); queries atlas-party-quests for the character's PQ instance
+- `hit_reactor`: Hits another reactor by name via saga; params: `reactorName`
+- `broadcast_pq_message`: Broadcasts a message to all PQ members via saga; params: `message`, `type` (defaults to PINK_TEXT); queries atlas-party-quests for the character's PQ instance
+- `stage_clear_attempt`: Triggers a stage clear attempt on the character's party quest instance via saga; queries atlas-party-quests for the character's PQ instance
 
 ## Builders
 

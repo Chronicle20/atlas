@@ -29,12 +29,14 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageFriendlyCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelStatusCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUseSkillCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelStatusFieldCommand)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUseSkillFieldCommand)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyFieldCommand)))
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicMovement)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand)))
 	}
@@ -47,6 +49,15 @@ func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[da
 
 	p := monster.NewProcessor(l, ctx)
 	p.Damage(c.MonsterId, c.Body.CharacterId, c.Body.Damage, c.Body.AttackType)
+}
+
+func handleDamageFriendlyCommand(l logrus.FieldLogger, ctx context.Context, c command[damageFriendlyCommandBody]) {
+	if c.Type != CommandTypeDamageFriendly {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	p.DamageFriendly(c.MonsterId, c.Body.AttackerUniqueId, c.Body.ObserverUniqueId)
 }
 
 func handleApplyStatusCommand(l logrus.FieldLogger, ctx context.Context, c command[applyStatusCommandBody]) {
@@ -162,6 +173,19 @@ func handleCancelStatusFieldCommand(l logrus.FieldLogger, ctx context.Context, c
 		} else {
 			_ = p.CancelStatusEffect(m.UniqueId(), c.Body.StatusTypes)
 		}
+	}
+}
+
+func handleDestroyFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[destroyFieldCommandBody]) {
+	if c.Type != CommandTypeDestroyField {
+		return
+	}
+
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
+	p := monster.NewProcessor(l, ctx)
+	err := p.DestroyInField(f)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to destroy monsters in field.")
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	_map "atlas-monster-death/map"
 	"atlas-monster-death/monster/drop"
 	"atlas-monster-death/monster/information"
+	"atlas-monster-death/party"
 	"atlas-monster-death/quest"
 	"atlas-monster-death/rates"
 	"context"
@@ -38,8 +39,14 @@ func CreateDrops(l logrus.FieldLogger) func(ctx context.Context) func(f field.Mo
 
 			ds = getSuccessfulDrops(ds, r.ItemDropRate())
 
+			var ownerPartyId uint32
+			p, perr := party.GetByMemberId(l)(ctx)(killerId)
+			if perr == nil {
+				ownerPartyId = p.Id()
+			}
+
 			for i, d := range ds {
-				_ = drop.Create(l)(ctx)(f, i+1, id, x, y, killerId, dropType, d, r.MesoRate())
+				_ = drop.Create(l)(ctx)(f, i+1, id, x, y, killerId, dropType, d, r.MesoRate(), ownerPartyId)
 			}
 			return nil
 		}

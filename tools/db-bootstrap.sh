@@ -79,6 +79,7 @@ DBS=(
   atlas-notes
   atlas-npc-conversations
   atlas-npc-shops
+  atlas-party-quests
   atlas-pets
   atlas-portal-actions
   atlas-quest

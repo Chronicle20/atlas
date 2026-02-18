@@ -1,0 +1,176 @@
+{
+  "questId": "netts_pyramid_pq",
+  "name": "Nett's Pyramid Party Quest",
+  "fieldLock": "channel",
+  "duration": 0,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 926010000
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 1,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 40,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "926010100"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 926010000,
+  "bonus": {
+    "mapId": 926010010,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "bonusMonsters": {
+        "easy": {"monsterId": 9700019, "count": 30},
+        "medium": {"monsterId": 9700019, "count": 40},
+        "hard": {"monsterId": 9700019, "count": 50},
+        "hell": {"monsterId": 9700029, "count": 50}
+      }
+    }
+  },
+  "stages": [
+    {
+      "index": 0,
+      "name": "Monster Killing 1",
+      "mapIds": [926010100, 926011100, 926012100, 926013100],
+      "type": "monster_killing",
+      "duration": 120,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2103013,
+        "actBarMechanic": true,
+        "difficultyMaps": {
+          "easy": 926010100,
+          "medium": 926011100,
+          "hard": 926012100,
+          "hell": 926013100
+        }
+      }
+    },
+    {
+      "index": 1,
+      "name": "Monster Killing 2",
+      "mapIds": [926010200, 926011200, 926012200, 926013200],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2103013,
+        "actBarMechanic": true,
+        "difficultyMaps": {
+          "easy": 926010200,
+          "medium": 926011200,
+          "hard": 926012200,
+          "hell": 926013200
+        }
+      }
+    },
+    {
+      "index": 2,
+      "name": "Monster Killing 3",
+      "mapIds": [926010300, 926011300, 926012300, 926013300],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2103013,
+        "actBarMechanic": true,
+        "difficultyMaps": {
+          "easy": 926010300,
+          "medium": 926011300,
+          "hard": 926012300,
+          "hell": 926013300
+        }
+      }
+    },
+    {
+      "index": 3,
+      "name": "Monster Killing 4",
+      "mapIds": [926010400, 926011400, 926012400, 926013400],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2103013,
+        "actBarMechanic": true,
+        "difficultyMaps": {
+          "easy": 926010400,
+          "medium": 926011400,
+          "hard": 926012400,
+          "hell": 926013400
+        }
+      }
+    },
+    {
+      "index": 4,
+      "name": "Monster Killing 5",
+      "mapIds": [926010500, 926011500, 926012500, 926013500],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2103013,
+        "actBarMechanic": true,
+        "difficultyMaps": {
+          "easy": 926010500,
+          "medium": 926011500,
+          "hard": 926012500,
+          "hell": 926013500
+        }
+      }
+    },
+    {
+      "index": 5,
+      "name": "Rewards",
+      "mapIds": [926020001],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "random_item",
+          "amount": 1,
+          "items": [
+            {"templateId": 4001322, "weight": 1, "quantity": 1},
+            {"templateId": 4001323, "weight": 1, "quantity": 1},
+            {"templateId": 4001324, "weight": 1, "quantity": 1},
+            {"templateId": 4001325, "weight": 1, "quantity": 1}
+          ]
+        }
+      ],
+      "warpType": "none",
+      "properties": {
+        "npcId": 2103013,
+        "gradeBased": true
+      }
+    }
+  ],
+  "rewards": []
+}

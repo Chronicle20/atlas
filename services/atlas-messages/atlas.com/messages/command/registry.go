@@ -5,7 +5,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
@@ -30,9 +30,9 @@ func (r *registry) Add(svs ...Producer) {
 	}
 }
 
-func (r *registry) Get(l logrus.FieldLogger, ctx context.Context, ch channel.Model, character character.Model, m string) (Executor, bool) {
+func (r *registry) Get(l logrus.FieldLogger, ctx context.Context, f field.Model, character character.Model, m string) (Executor, bool) {
 	for _, c := range r.commandRegistry {
-		e, found := c(l)(ctx)(ch, character, m)
+		e, found := c(l)(ctx)(f, character, m)
 		if found {
 			return e, found
 		}

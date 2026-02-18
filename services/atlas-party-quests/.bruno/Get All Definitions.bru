@@ -1,0 +1,11 @@
+meta {
+  name: Get All Definitions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/party-quests/definitions
+  body: none
+  auth: inherit
+}

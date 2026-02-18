@@ -1,0 +1,276 @@
+{
+  "questId": "ludi_pq",
+  "name": "Ludibrium Party Quest",
+  "fieldLock": "channel",
+  "duration": 3600,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 221024500
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "eq",
+      "value": 6,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 35,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 50,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "922010100"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 922010000,
+  "bonus": {
+    "mapId": 922011000,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "npcId": 2040045,
+      "reactors": [2202004]
+    }
+  },
+  "stages": [
+    {
+      "index": 0,
+      "name": "Ratz Coupon Collection",
+      "mapIds": [922010100],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 20,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 2700
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040036,
+        "collectItemId": 4001022,
+        "monsters": [9300005, 9300006]
+      }
+    },
+    {
+      "index": 1,
+      "name": "Box Coupon Collection",
+      "mapIds": [922010200, 922010201],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 15,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 3600
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040037,
+        "collectItemId": 4001022,
+        "reactors": [2200002, 2200003]
+      }
+    },
+    {
+      "index": 2,
+      "name": "Bloctopus Coupon Collection",
+      "mapIds": [922010300],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 15,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 3300
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040038,
+        "collectItemId": 4001022
+      }
+    },
+    {
+      "index": 3,
+      "name": "Darkness Monster Coupon Collection",
+      "mapIds": [922010400, 922010401, 922010402, 922010403, 922010404, 922010405],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 6,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 3300
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040039,
+        "collectItemId": 4001022,
+        "monsters": [9300008]
+      }
+    },
+    {
+      "index": 4,
+      "name": "Class Portal Coupon Collection",
+      "mapIds": [922010500, 922010501, 922010502, 922010503, 922010504, 922010505, 922010506],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 24,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 3770
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040040,
+        "collectItemId": 4001022,
+        "reactors": [2202003]
+      }
+    },
+    {
+      "index": 5,
+      "name": "Warp Combination Puzzle",
+      "mapIds": [922010600],
+      "type": "warp_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "combination": "133221333123111"
+      }
+    },
+    {
+      "index": 6,
+      "name": "Rombot Coupon Collection",
+      "mapIds": [922010700],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 3,
+          "referenceId": 4001022
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 4620
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040042,
+        "collectItemId": 4001022,
+        "monsters": [9300169, 9300170, 9300171, 9300010]
+      }
+    },
+    {
+      "index": 7,
+      "name": "Box Combination Puzzle",
+      "mapIds": [922010800],
+      "type": "combination_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 5040
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040043,
+        "combinationLength": 5,
+        "combinationRange": 10
+      }
+    },
+    {
+      "index": 8,
+      "name": "Boss Stage",
+      "mapIds": [922010900],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001023
+        }
+      ],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 5950
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2040044,
+        "bossMonsters": [9500330],
+        "triggerMonster": 9300006,
+        "triggerReactor": 2201003,
+        "keyItemId": 4001023
+      }
+    }
+  ],
+  "rewards": []
+}

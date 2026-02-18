@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
@@ -134,8 +134,8 @@ func TestConsumeCommandProducer_GmCheck(t *testing.T) {
 			char := createTestCharacter(12345, "TestPlayer", tc.isGm, 100000000)
 
 			producer := ConsumeCommandProducer(logger)
-			ch := channel2.NewModel(1, 1)
-			_, found := producer(ctx)(ch, char, tc.message)
+			f := field.NewBuilder(1, 1, 100000000).Build()
+			_, found := producer(ctx)(f, char, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v for GM=%v, got found=%v", tc.expectFound, tc.isGm, found)
@@ -174,8 +174,8 @@ func TestConsumeCommandProducer_NoMatchReturnsNil(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			ch := channel2.NewModel(1, 1)
-			executor, found := ConsumeCommandProducer(logger)(ctx)(ch, gmChar, tc.message)
+			f := field.NewBuilder(1, 1, 100000000).Build()
+			executor, found := ConsumeCommandProducer(logger)(ctx)(f, gmChar, tc.message)
 
 			if found {
 				t.Errorf("Expected found=false for message '%s', got found=true", tc.message)

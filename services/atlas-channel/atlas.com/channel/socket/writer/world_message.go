@@ -12,6 +12,7 @@ import (
 type WorldMessageMode string
 
 const (
+	// WorldMessage CWvsContext::OnBroadcastMsg
 	WorldMessage = "WorldMessage"
 
 	WorldMessageNotice           = WorldMessageMode("NOTICE")
@@ -98,7 +99,14 @@ func WorldMessagePinkTextBody(l logrus.FieldLogger) func(medal string, character
 func WorldMessageBlueTextBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
 	return func(medal string, characterName string, message string) BodyProducer {
 		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", NoOpOperator)
+		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(0))
+	}
+}
+
+func WorldMessageBlueTextWithItemBody(l logrus.FieldLogger) func(medal string, characterName string, message string, itemId uint32) BodyProducer {
+	return func(medal string, characterName string, message string, itemId uint32) BodyProducer {
+		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
+		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(itemId))
 	}
 }
 
@@ -141,6 +149,13 @@ func WorldMessageGachaponMegaphoneBody(l logrus.FieldLogger) func(medal string, 
 
 func NoOpOperator(_ *response.Writer) error {
 	return nil
+}
+
+func ItemIdOperator(itemId uint32) func(w *response.Writer) error {
+	return func(w *response.Writer) error {
+		w.WriteInt(itemId)
+		return nil
+	}
 }
 
 func SlotAsIntOperator(slot int16) model.Operator[*response.Writer] {

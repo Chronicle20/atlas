@@ -55,6 +55,11 @@ func (p *Processor) ApplyStatus(f field.Model, monsterId uint32, characterId uin
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ApplyStatusCommandProvider(f, monsterId, characterId, skillId, skillLevel, statuses, duration))
 }
 
+func (p *Processor) DamageFriendly(f field.Model, attackedUniqueId uint32, observerUniqueId, attackerUniqueId uint32) error {
+	p.l.Debugf("Monster [%d] attacking friendly monster [%d].", attackerUniqueId, attackedUniqueId)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageFriendlyCommandProvider(f, attackedUniqueId, observerUniqueId, attackerUniqueId))
+}
+
 func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []string) error {
 	p.l.Debugf("Cancelling status from monster [%d]. Types [%v].", monsterId, statusTypes)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes))

@@ -308,6 +308,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-party-quests",
+      "type": "go-service",
+      "path": "services/atlas-party-quests",
+      "module_path": "services/atlas-party-quests/atlas.com/party-quests",
+      "docker_image": "ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-pets",
       "type": "go-service",
       "path": "services/atlas-pets",

@@ -55,6 +55,7 @@ func FieldEffectObjectBody(l logrus.FieldLogger) func(name string) BodyProducer 
 	}
 }
 
+// FieldEffectScreenBody - path parameter is in relation to Map.wz/Effect.img
 func FieldEffectScreenBody(l logrus.FieldLogger) func(path string) BodyProducer {
 	return func(path string) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {

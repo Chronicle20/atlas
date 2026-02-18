@@ -87,7 +87,7 @@ func (c *inventoryCheckerImpl) HasItem(characterId uint32, itemId uint32) (bool,
 }
 
 // evaluateContextValue evaluates a context value, handling references to the conversation context
-// Supports both "{context.xxx}" and "context.xxx" formats
+// Supports both "{context.xxx}" and "context.xxx" formats, as well as embedded references like "-{context.cost}"
 func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramName string, value string) (string, error) {
 	// Get the conversation context
 	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
@@ -105,9 +105,22 @@ func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramNa
 
 	if isContextRef {
 		e.l.Debugf("Resolved context reference [%s] to [%s] for character [%d]", value, extractedValue, characterId)
+		return extractedValue, nil
 	}
 
-	return extractedValue, nil
+	// Not a direct context reference - try replacing embedded {context.xxx} placeholders
+	// This handles cases like "-{context.cost}" where the reference is part of a larger expression
+	replaced, err := scriptctx.ReplaceContextPlaceholders(extractedValue, ctx.Context())
+	if err != nil {
+		e.l.WithError(err).Errorf("Failed to replace context placeholders for parameter [%s]", paramName)
+		return "", err
+	}
+
+	if replaced != extractedValue {
+		e.l.Debugf("Replaced context placeholders [%s] to [%s] for character [%d]", value, replaced, characterId)
+	}
+
+	return replaced, nil
 }
 
 // getContextValue retrieves a value from the conversation context by key
@@ -2042,6 +2055,59 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.WarpToSavedLocation, payload, nil
+
+	case "leave_party_quest":
+		// Format: leave_party_quest
+		// No params required - removes the character from their active party quest.
+		payload := saga.LeavePartyQuestPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+		}
+
+		return stepId, saga.Pending, saga.LeavePartyQuest, payload, nil
+
+	case "warp_party_quest_members_to_map":
+		// Format: warp_party_quest_members_to_map
+		// Params: mapId (uint32, required), portalId (uint32, optional, default 0)
+		// Resolves the party for the character and warps all party members to the destination map.
+		var mapIdInt = 0
+		mapIdValue, exists := operation.Params()["mapId"]
+		if exists {
+			var err error
+			mapIdInt, err = e.evaluateContextValueAsInt(characterId, "mapId", mapIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		var portalIdInt = 0
+		portalIdValue, exists := operation.Params()["portalId"]
+		if exists {
+			var err error
+			portalIdInt, err = e.evaluateContextValueAsInt(characterId, "portalId", portalIdValue)
+			if err != nil {
+				return "", "", "", nil, err
+			}
+		}
+
+		payload := saga.WarpPartyQuestMembersToMapPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			MapId:       _map.Id(mapIdInt),
+			PortalId:    uint32(portalIdInt),
+		}
+
+		return stepId, saga.Pending, saga.WarpPartyQuestMembersToMap, payload, nil
+
+	case "stage_clear_attempt_pq":
+		// Format: stage_clear_attempt_pq
+		// No params required - attempts to clear the current PQ stage for the character's instance.
+		payload := saga.StageClearAttemptPqPayload{
+			CharacterId: characterId,
+		}
+
+		return stepId, saga.Pending, saga.StageClearAttemptPq, payload, nil
 
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())

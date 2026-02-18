@@ -15,6 +15,7 @@ const (
 	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
+	CommandTypeDestroyField      = "DESTROY_FIELD"
 )
 
 type FieldCommand[E any] struct {
@@ -74,6 +75,21 @@ func UseSkillFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId 
 			SkillId:    skillId,
 			SkillLevel: skillLevel,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+type DestroyFieldBody struct{}
+
+func DestroyFieldCommandProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(mapId))
+	value := FieldCommand[DestroyFieldBody]{
+		WorldId:   worldId,
+		ChannelId: channelId,
+		MapId:     mapId,
+		Instance:  instance,
+		Type:      CommandTypeDestroyField,
+		Body:      DestroyFieldBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

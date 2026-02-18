@@ -34,13 +34,17 @@
 | Pet Commands | COMMAND_TOPIC_PET | Command | Pet operations |
 | Quest Commands | COMMAND_TOPIC_QUEST | Command | Quest operations |
 | Consumable Commands | COMMAND_TOPIC_CONSUMABLE | Command | Consumable operations |
-| System Message Commands | COMMAND_TOPIC_SYSTEM_MESSAGE | Command | System message commands |
+| System Message Commands | COMMAND_TOPIC_SYSTEM_MESSAGE | Command | System message and UI effect operations |
 | Storage Commands | COMMAND_TOPIC_STORAGE | Command | Storage operations (DEPOSIT, WITHDRAW, UPDATE_MESOS, DEPOSIT_ROLLBACK, SHOW_STORAGE) |
 | Storage Compartment Commands | COMMAND_TOPIC_STORAGE_COMPARTMENT | Command | Storage compartment operations (ACCEPT, RELEASE) |
 | Wallet Commands | COMMAND_TOPIC_WALLET | Command | Cash shop wallet operations (ADJUST_CURRENCY) |
 | Cash Shop Compartment Commands | COMMAND_TOPIC_CASH_COMPARTMENT | Command | Cash shop compartment operations (ACCEPT, RELEASE) |
 | Portal Commands | COMMAND_TOPIC_PORTAL | Command | Portal blocking operations (BLOCK, UNBLOCK) |
 | Buff Commands | COMMAND_TOPIC_CHARACTER_BUFF | Command | Buff operations (CANCEL_ALL) |
+| Party Quest Commands | COMMAND_TOPIC_PARTY_QUEST | Command | Party quest operations (REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE, STAGE_CLEAR_ATTEMPT, ENTER_BONUS) |
+| Reactor Commands | COMMAND_TOPIC_REACTOR | Command | Reactor operations (HIT) |
+| Drop Commands | COMMAND_TOPIC_DROP | Command | Drop spawn operations (SPAWN) |
+| Map Commands | COMMAND_TOPIC_MAP | Command | Map operations (WEATHER_START) |
 | Gachapon Reward Won | EVENT_TOPIC_GACHAPON_REWARD_WON | Event | Gachapon reward win announcements |
 
 ## Message Types
@@ -298,6 +302,207 @@ StatusEvent[E]
 
 Status types: ACCEPTED, RELEASED, ERROR
 
+### System Message Command
+
+Produced to perform UI effect and message operations.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  worldId: world.Id
+  channelId: channel.Id
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: SEND_MESSAGE, PLAY_PORTAL_SOUND, SHOW_INFO, SHOW_INFO_TEXT, UPDATE_AREA_INFO, SHOW_HINT, SHOW_GUIDE_HINT, SHOW_INTRO, FIELD_EFFECT, UI_LOCK, UI_DISABLE
+
+### Portal Command
+
+Produced to perform portal blocking operations.
+
+```
+Command[E]
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  portalId: uint32
+  type: string
+  body: E
+```
+
+Command types: BLOCK, UNBLOCK
+
+### Buff Command
+
+Produced to perform buff operations.
+
+```
+Command[E]
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: CANCEL_ALL
+
+### Party Quest Command
+
+Produced to perform party quest operations.
+
+```
+Command[E]
+  worldId: world.Id
+  characterId: uint32
+  type: string
+  body: E
+```
+
+Command types: REGISTER, LEAVE, UPDATE_CUSTOM_DATA, BROADCAST_MESSAGE, STAGE_CLEAR_ATTEMPT, ENTER_BONUS
+
+#### REGISTER Body
+
+```
+RegisterCommandBody
+  questId: string
+  partyId: uint32
+  channelId: channel.Id
+  mapId: _map.Id
+```
+
+#### LEAVE Body
+
+```
+LeaveCommandBody
+  (empty)
+```
+
+#### UPDATE_CUSTOM_DATA Body
+
+```
+UpdateCustomDataCommandBody
+  instanceId: uuid.UUID
+  updates: map[string]string
+  increments: []string
+```
+
+#### BROADCAST_MESSAGE Body
+
+```
+BroadcastMessageCommandBody
+  instanceId: uuid.UUID
+  messageType: string
+  message: string
+```
+
+#### STAGE_CLEAR_ATTEMPT Body
+
+```
+StageClearAttemptCommandBody
+  instanceId: uuid.UUID
+```
+
+#### ENTER_BONUS Body
+
+```
+EnterBonusCommandBody
+  instanceId: uuid.UUID
+```
+
+### Reactor Command
+
+Produced to trigger reactor actions.
+
+```
+Command[E]
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: HIT
+
+#### HIT Body
+
+```
+HitCommandBody
+  reactorId: uint32
+  characterId: uint32
+  stance: uint16
+  skillId: uint32
+```
+
+### Drop Spawn Command
+
+Produced to spawn item and meso drops.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: SPAWN
+
+#### SPAWN Body
+
+```
+CommandSpawnBody
+  itemId: uint32
+  quantity: uint32
+  mesos: uint32
+  dropType: byte (1=spray, 2=immediate)
+  x: int16
+  y: int16
+  ownerId: uint32
+  ownerPartyId: uint32
+  dropperId: uint32
+  dropperX: int16
+  dropperY: int16
+  playerDrop: bool
+  mod: byte
+```
+
+### Map Command
+
+Produced to perform map-level operations.
+
+```
+Command[E]
+  transactionId: uuid.UUID
+  worldId: world.Id
+  channelId: channel.Id
+  mapId: _map.Id
+  instance: uuid.UUID
+  type: string
+  body: E
+```
+
+Command types: WEATHER_START
+
+#### WEATHER_START Body
+
+```
+WeatherStartCommandBody
+  itemId: uint32
+  message: string
+  durationMs: uint32
+```
+
 ### Gachapon Reward Won Event
 
 Produced when a gachapon reward is won (uncommon/rare tier only).
@@ -320,8 +525,10 @@ RewardWonEvent
 - Step completion is tracked by consuming status events with matching transactionId
 - Status events without matching transactionId are ignored (saga not found in cache)
 - Failed status events trigger step failure and compensation
-- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, block_portal, unblock_portal, emit_gachapon_win) complete immediately after command emission
-- REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward) complete after the REST call returns
+- Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
+- REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns
+- Fire-and-forget actions (register_party_quest, leave_party_quest, warp_party_quest_members_to_map, update_pq_custom_data, hit_reactor, broadcast_pq_message, stage_clear_attempt_pq, enter_party_quest_bonus) produce commands and complete immediately
+- Terminal failure actions (register_party_quest, warp_party_quest_members_to_map, enter_party_quest_bonus) remove the saga from cache and emit a FAILED event on error, with no compensation
 - Asset CREATED and QUANTITY_CHANGED events carry `assetId` as step result data for downstream steps
 
 ## Ordering

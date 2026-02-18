@@ -17,12 +17,15 @@ import (
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/kafka/producer"
+	"atlas-saga-orchestrator/map_command"
 	"atlas-saga-orchestrator/monster"
+	party_quest "atlas-saga-orchestrator/party_quest"
 	"atlas-saga-orchestrator/pet"
 	portalBlocking "atlas-saga-orchestrator/portal"
 	"atlas-saga-orchestrator/quest"
 	"atlas-saga-orchestrator/saved_location"
 	"atlas-saga-orchestrator/rates"
+	"atlas-saga-orchestrator/reactor"
 	reactorDrop "atlas-saga-orchestrator/reactor/drop"
 	"atlas-saga-orchestrator/skill"
 	"atlas-saga-orchestrator/storage"
@@ -38,6 +41,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -63,6 +67,8 @@ type Handler interface {
 	WithTransportProcessor(transport.Processor) Handler
 	WithSavedLocationProcessor(saved_location.Processor) Handler
 	WithGachaponProcessor(gachapon.Processor) Handler
+	WithPartyQuestProcessor(party_quest.Processor) Handler
+	WithReactorProcessor(reactor.Processor) Handler
 
 	GetHandler(action Action) (ActionHandler, bool)
 
@@ -132,6 +138,14 @@ type Handler interface {
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
 	handleSelectGachaponReward(s Saga, st Step[any]) error
 	handleEmitGachaponWin(s Saga, st Step[any]) error
+	handleRegisterPartyQuest(s Saga, st Step[any]) error
+	handleLeavePartyQuest(s Saga, st Step[any]) error
+	handleUpdatePqCustomData(s Saga, st Step[any]) error
+	handleHitReactor(s Saga, st Step[any]) error
+	handleBroadcastPqMessage(s Saga, st Step[any]) error
+	handleStageClearAttemptPq(s Saga, st Step[any]) error
+	handleEnterPartyQuestBonus(s Saga, st Step[any]) error
+	handleFieldEffectWeather(s Saga, st Step[any]) error
 }
 
 type HandlerImpl struct {
@@ -160,6 +174,9 @@ type HandlerImpl struct {
 	transportP      transport.Processor
 	savedLocationP  saved_location.Processor
 	gachaponP       gachapon.Processor
+	partyQuestP     party_quest.Processor
+	reactorP        reactor.Processor
+	mapCommandP     map_command.Processor
 }
 
 func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
@@ -188,6 +205,9 @@ func NewHandler(l logrus.FieldLogger, ctx context.Context) Handler {
 		transportP:      transport.NewProcessor(l, ctx),
 		savedLocationP:  saved_location.NewProcessor(l, ctx),
 		gachaponP:       gachapon.NewProcessor(l, ctx),
+		partyQuestP:     party_quest.NewProcessor(l, ctx),
+		reactorP:        reactor.NewProcessor(l, ctx),
+		mapCommandP:     map_command.NewProcessor(l, ctx),
 	}
 }
 
@@ -611,6 +631,67 @@ func (h *HandlerImpl) WithGachaponProcessor(gachaponP gachapon.Processor) Handle
 		transportP:     h.transportP,
 		savedLocationP: h.savedLocationP,
 		gachaponP:      gachaponP,
+		partyQuestP:    h.partyQuestP,
+	}
+}
+
+func (h *HandlerImpl) WithPartyQuestProcessor(partyQuestP party_quest.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: h.savedLocationP,
+		gachaponP:      h.gachaponP,
+		partyQuestP:    partyQuestP,
+		reactorP:       h.reactorP,
+	}
+}
+
+func (h *HandlerImpl) WithReactorProcessor(reactorP reactor.Processor) Handler {
+	return &HandlerImpl{
+		l:              h.l,
+		ctx:            h.ctx,
+		t:              h.t,
+		charP:          h.charP,
+		compP:          h.compP,
+		skillP:         h.skillP,
+		validP:         h.validP,
+		guildP:         h.guildP,
+		inviteP:        h.inviteP,
+		buddyListP:     h.buddyListP,
+		petP:           h.petP,
+		footholdP:      h.footholdP,
+		monsterP:       h.monsterP,
+		consumableP:    h.consumableP,
+		portalP:        h.portalP,
+		cashshopP:      h.cashshopP,
+		systemMessageP: h.systemMessageP,
+		questP:         h.questP,
+		storageP:       h.storageP,
+		buffP:          h.buffP,
+		transportP:     h.transportP,
+		savedLocationP: h.savedLocationP,
+		gachaponP:      h.gachaponP,
+		partyQuestP:    h.partyQuestP,
+		reactorP:       reactorP,
 	}
 }
 
@@ -751,6 +832,24 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleSelectGachaponReward, true
 	case EmitGachaponWin:
 		return h.handleEmitGachaponWin, true
+	case RegisterPartyQuest:
+		return h.handleRegisterPartyQuest, true
+	case WarpPartyQuestMembersToMap:
+		return h.handleWarpPartyQuestMembersToMap, true
+	case LeavePartyQuest:
+		return h.handleLeavePartyQuest, true
+	case UpdatePqCustomData:
+		return h.handleUpdatePqCustomData, true
+	case HitReactor:
+		return h.handleHitReactor, true
+	case BroadcastPqMessage:
+		return h.handleBroadcastPqMessage, true
+	case StageClearAttemptPq:
+		return h.handleStageClearAttemptPq, true
+	case EnterPartyQuestBonus:
+		return h.handleEnterPartyQuestBonus, true
+	case FieldEffectWeather:
+		return h.handleFieldEffectWeather, true
 	}
 	return nil, false
 }
@@ -2349,5 +2448,357 @@ func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
 	// This is fire-and-forget - mark as complete immediately
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 
+	return nil
+}
+
+// handleRegisterPartyQuest handles the RegisterPartyQuest action.
+// Validates party state and produces a REGISTER command to atlas-party-quests.
+// On success, the step is marked complete immediately (fire-and-forget).
+// On failure, a failed status event is emitted with an appropriate error code.
+func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RegisterPartyQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"quest_id":       payload.QuestId,
+		"world_id":       payload.WorldId,
+		"channel_id":     payload.ChannelId,
+		"map_id":         payload.MapId,
+	}).Debug("Registering party quest")
+
+	err := h.partyQuestP.RegisterPartyQuest(payload.CharacterId, payload.WorldId, payload.ChannelId, payload.MapId, payload.QuestId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to register party quest.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+			"quest_id":       payload.QuestId,
+			"error_code":     errorCode,
+		}).Warn("Party quest registration failed - emitting failure event")
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   payload.CharacterId,
+				"error_code":     errorCode,
+			}).Error("Failed to emit saga failed event for party quest registration")
+		}
+
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleWarpPartyQuestMembersToMap handles the WarpPartyQuestMembersToMap action.
+// Resolves the party members for the initiating character and warps all of them to the destination map.
+func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(WarpPartyQuestMembersToMapPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"map_id":         payload.MapId,
+		"portal_id":      payload.PortalId,
+	}).Debug("Warping party quest members to map")
+
+	members, err := h.partyQuestP.GetPartyMembers(payload.CharacterId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to resolve party members for warp.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).Error("Failed to emit saga failed event for warp party quest members")
+		}
+
+		return err
+	}
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).Build()
+	portalProvider := model.FixedProvider(payload.PortalId)
+
+	for _, member := range members {
+		warpErr := h.charP.WarpToPortalAndEmit(s.TransactionId(), member.Id, f, portalProvider)
+		if warpErr != nil {
+			h.l.WithError(warpErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"member_id":      member.Id,
+				"map_id":         payload.MapId,
+			}).Warn("Failed to warp party member")
+		}
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleLeavePartyQuest handles the LeavePartyQuest action.
+// Produces a LEAVE command to atlas-party-quests to remove the character from their active PQ.
+// Fire-and-forget - mark as complete immediately.
+func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(LeavePartyQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"world_id":       payload.WorldId,
+	}).Debug("Leaving party quest")
+
+	err := h.partyQuestP.LeavePartyQuest(payload.CharacterId, payload.WorldId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to leave party quest.")
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleUpdatePqCustomData handles the UpdatePqCustomData action.
+// Produces an UPDATE_CUSTOM_DATA command to atlas-party-quests.
+func (h *HandlerImpl) handleUpdatePqCustomData(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(UpdatePqCustomDataPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"instance_id":    payload.InstanceId.String(),
+	}).Debug("Updating party quest custom data")
+
+	err := h.partyQuestP.UpdateCustomData(payload.InstanceId, payload.Updates, payload.Increments)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to update party quest custom data.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleHitReactor handles the HitReactor action.
+// Resolves a reactor by name via atlas-reactors REST API, then produces a HIT command.
+func (h *HandlerImpl) handleHitReactor(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(HitReactorPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"reactor_name":   payload.ReactorName,
+		"world_id":       payload.WorldId,
+		"channel_id":     payload.ChannelId,
+		"map_id":         payload.MapId,
+		"instance":       payload.Instance.String(),
+	}).Debug("Hitting reactor by name")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	err := h.reactorP.HitReactorByName(f, payload.CharacterId, payload.ReactorName)
+	if err != nil {
+		h.logActionError(s, st, err, fmt.Sprintf("Unable to hit reactor by name [%s].", payload.ReactorName))
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleBroadcastPqMessage handles the BroadcastPqMessage action.
+// Produces a BROADCAST_MESSAGE command to atlas-party-quests.
+func (h *HandlerImpl) handleBroadcastPqMessage(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(BroadcastPqMessagePayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"instance_id":    payload.InstanceId.String(),
+		"message_type":   payload.MessageType,
+	}).Debug("Broadcasting message to party quest members")
+
+	err := h.partyQuestP.BroadcastMessage(payload.InstanceId, payload.MessageType, payload.Message)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to broadcast party quest message.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleStageClearAttemptPq handles the StageClearAttemptPq action.
+// Produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
+func (h *HandlerImpl) handleStageClearAttemptPq(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(StageClearAttemptPqPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	var err error
+	if payload.InstanceId != uuid.Nil {
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"instance_id":    payload.InstanceId.String(),
+		}).Debug("Attempting to clear party quest stage")
+
+		err = h.partyQuestP.StageClearAttempt(payload.InstanceId)
+	} else if payload.CharacterId != 0 {
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+		}).Debug("Attempting to clear party quest stage by character")
+
+		err = h.partyQuestP.StageClearAttemptByCharacter(payload.CharacterId)
+	} else {
+		return errors.New("StageClearAttemptPqPayload requires either instanceId or characterId")
+	}
+
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to attempt party quest stage clear.")
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleEnterPartyQuestBonus handles the EnterPartyQuestBonus action.
+// Looks up the PQ instance by character and produces an ENTER_BONUS command to atlas-party-quests.
+func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(EnterPartyQuestBonusPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   payload.CharacterId,
+		"world_id":       payload.WorldId,
+	}).Debug("Entering party quest bonus stage")
+
+	err := h.partyQuestP.EnterBonusByCharacter(payload.CharacterId, payload.WorldId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to enter party quest bonus stage.")
+
+		errorCode := party_quest.GetErrorCode(err)
+
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+			"error_code":     errorCode,
+		}).Warn("Party quest bonus entry failed - emitting failure event")
+
+		GetCache().Remove(h.t.Id(), s.TransactionId())
+
+		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
+			FailedStatusEventProvider(
+				s.TransactionId(),
+				payload.CharacterId,
+				string(s.SagaType()),
+				errorCode,
+				err.Error(),
+				st.StepId(),
+			))
+		if emitErr != nil {
+			h.l.WithError(emitErr).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"character_id":   payload.CharacterId,
+				"error_code":     errorCode,
+			}).Error("Failed to emit saga failed event for party quest bonus entry")
+		}
+
+		return err
+	}
+
+	// Fire-and-forget - mark as complete immediately
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
+
+	return nil
+}
+
+// handleFieldEffectWeather handles the FieldEffectWeather action.
+// Produces a WEATHER_START command to COMMAND_TOPIC_MAP.
+func (h *HandlerImpl) handleFieldEffectWeather(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(FieldEffectWeatherPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	h.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"map_id":         payload.MapId,
+		"item_id":        payload.ItemId,
+	}).Debug("Showing field effect weather")
+
+	f := field.NewBuilder(payload.WorldId, payload.ChannelId, payload.MapId).
+		SetInstance(payload.Instance).
+		Build()
+
+	durationMs := payload.Duration * 1000
+	err := h.mapCommandP.FieldEffectWeather(s.TransactionId(), f, payload.ItemId, payload.Message, durationMs)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to show field effect weather.")
+		return err
+	}
+
+	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
 	return nil
 }

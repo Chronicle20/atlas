@@ -80,6 +80,8 @@ collections:
     path: "..\\..\\services\\atlas-world\\.bruno"
   - name: "atlas-wz-extractor"
     path: "..\\..\\services\\atlas-wz-extractor\\.bruno"
+  - name: "atlas-party-quests"
+    path: "..\\..\\services\\atlas-party-quests\\.bruno"
 
 specs:
 

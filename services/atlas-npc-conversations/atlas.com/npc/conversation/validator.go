@@ -98,6 +98,10 @@ func (v *Validator) validateState(state StateModel, stateIds map[string]bool, re
 		v.validateTransportAction(state.Id(), state.TransportAction(), stateIds, result)
 	case GachaponActionType:
 		v.validateGachaponAction(state.Id(), state.GachaponAction(), stateIds, result)
+	case PartyQuestActionType:
+		v.validatePartyQuestAction(state.Id(), state.PartyQuestAction(), stateIds, result)
+	case PartyQuestBonusActionType:
+		v.validatePartyQuestBonusAction(state.Id(), state.PartyQuestBonusAction(), stateIds, result)
 	case ListSelectionType:
 		v.validateListSelection(state.Id(), state.ListSelection(), stateIds, result)
 	case AskNumberType:
@@ -292,6 +296,49 @@ func (v *Validator) validateGachaponAction(stateId string, action *GachaponActio
 	}
 }
 
+// validatePartyQuestAction validates a party quest action state
+func (v *Validator) validatePartyQuestAction(stateId string, action *PartyQuestActionModel, stateIds map[string]bool, result *ValidationResult) {
+	if action == nil {
+		result.addError(stateId, "partyQuestAction", "required", "Party quest action is required for partyQuestAction state")
+		return
+	}
+
+	if action.QuestId() == "" {
+		result.addError(stateId, "partyQuestAction.questId", "required", "Quest ID is required")
+	}
+
+	// Validate failure state reference (required)
+	if action.FailureState() == "" {
+		result.addError(stateId, "partyQuestAction.failureState", "required", "Failure state is required")
+	} else if !stateIds[action.FailureState()] {
+		result.addError(stateId, "partyQuestAction.failureState", "invalid_reference", fmt.Sprintf("Failure state '%s' does not exist", action.FailureState()))
+	}
+
+	// Validate optional state references (only if specified)
+	if action.NotInPartyState() != "" && !stateIds[action.NotInPartyState()] {
+		result.addError(stateId, "partyQuestAction.notInPartyState", "invalid_reference", fmt.Sprintf("Not in party state '%s' does not exist", action.NotInPartyState()))
+	}
+
+	if action.NotLeaderState() != "" && !stateIds[action.NotLeaderState()] {
+		result.addError(stateId, "partyQuestAction.notLeaderState", "invalid_reference", fmt.Sprintf("Not leader state '%s' does not exist", action.NotLeaderState()))
+	}
+}
+
+// validatePartyQuestBonusAction validates a party quest bonus action state
+func (v *Validator) validatePartyQuestBonusAction(stateId string, action *PartyQuestBonusActionModel, stateIds map[string]bool, result *ValidationResult) {
+	if action == nil {
+		result.addError(stateId, "partyQuestBonusAction", "required", "Party quest bonus action is required for partyQuestBonusAction state")
+		return
+	}
+
+	// Validate failure state reference (required)
+	if action.FailureState() == "" {
+		result.addError(stateId, "partyQuestBonusAction.failureState", "required", "Failure state is required")
+	} else if !stateIds[action.FailureState()] {
+		result.addError(stateId, "partyQuestBonusAction.failureState", "invalid_reference", fmt.Sprintf("Failure state '%s' does not exist", action.FailureState()))
+	}
+}
+
 // validateListSelection validates a list selection state
 func (v *Validator) validateListSelection(stateId string, listSelection *ListSelectionModel, stateIds map[string]bool, result *ValidationResult) {
 	if listSelection == nil {
@@ -452,6 +499,16 @@ func (v *Validator) findReachableStates(m NpcConversation) map[string]bool {
 			if action := state.GachaponAction(); action != nil {
 				visit(action.FailureState())
 			}
+		case PartyQuestActionType:
+			if action := state.PartyQuestAction(); action != nil {
+				visit(action.FailureState())
+				visit(action.NotInPartyState())
+				visit(action.NotLeaderState())
+			}
+		case PartyQuestBonusActionType:
+			if action := state.PartyQuestBonusAction(); action != nil {
+				visit(action.FailureState())
+			}
 		case ListSelectionType:
 			if listSelection := state.ListSelection(); listSelection != nil {
 				for _, choice := range listSelection.Choices() {
@@ -590,6 +647,14 @@ func (v *Validator) getNextStates(state StateModel) []string {
 		}
 	case GachaponActionType:
 		if action := state.GachaponAction(); action != nil {
+			nextStates = append(nextStates, action.FailureState())
+		}
+	case PartyQuestActionType:
+		if action := state.PartyQuestAction(); action != nil {
+			nextStates = append(nextStates, action.FailureState(), action.NotInPartyState(), action.NotLeaderState())
+		}
+	case PartyQuestBonusActionType:
+		if action := state.PartyQuestBonusAction(); action != nil {
 			nextStates = append(nextStates, action.FailureState())
 		}
 	case ListSelectionType:

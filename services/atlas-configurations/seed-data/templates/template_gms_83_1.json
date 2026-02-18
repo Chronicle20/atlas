@@ -789,6 +789,11 @@
         }
       },
       {
+        "opCode": "0xC0",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterDamageFriendlyHandle"
+      },
+      {
         "opCode": "0xC5",
         "validator": "LoggedInValidator",
         "handler": "NPCActionHandle",
@@ -1455,6 +1460,10 @@
         }
       },
       {
+        "opCode": "0x8E",
+        "writer": "FieldEffectWeather"
+      },
+      {
         "opCode": "0x93",
         "writer": "Clock"
       },
@@ -2003,6 +2012,10 @@
       {
         "opCode": "0xF3",
         "writer": "MonsterStatReset"
+      },
+      {
+        "opCode": "0xF6",
+        "writer": "MonsterDamage"
       },
       {
         "opCode": "0xFA",

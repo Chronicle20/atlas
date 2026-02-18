@@ -1,0 +1,16 @@
+{
+  "reactorId": "9102004",
+  "description": "Primrose Hill - drops Pink Primrose Seeds",
+  "hitRules": [],
+  "actRules": [
+    {
+      "id": "drop_items",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "drop_items"
+        }
+      ]
+    }
+  ]
+}

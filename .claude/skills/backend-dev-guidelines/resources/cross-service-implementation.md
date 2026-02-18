@@ -312,6 +312,7 @@ This prevents compilation errors during the transition.
 | Referencing context methods | ✅ Implement them BEFORE using |
 | Multiple services in git diff | ✅ Build ALL of them |
 | Operations using new types | ✅ Verify types exist first |
+| Creating REST model for cross-service call | ✅ Read producer's `rest.go` first, mirror all JSON:API interfaces |
 
 ---
 
@@ -450,7 +451,20 @@ myservice/
 
 ### Step 1: Create `rest.go`
 
-Define a `RestModel` struct implementing JSON:API interface methods:
+**🚨 CRITICAL: Read the producer's `rest.go` first!**
+
+Before writing your consumer REST model, **always read the producing service's `rest.go`** to understand:
+- What JSON:API interfaces it implements (relationships, references, etc.)
+- The exact `GetName()` return value
+- Whether it has to-many or to-one relationships
+
+The JSON:API library requires the consumer model to implement **all the same interfaces** as the producer, even if you don't need the relationship data. Missing interfaces cause runtime errors like:
+- `target must implement UnmarshalIdentifier interface` (missing `GetID`/`SetID`)
+- `does not implement UnmarshalToManyRelations` (missing `SetToManyReferenceIDs`)
+
+#### Simple Model (no relationships)
+
+For resources without relationships (e.g., quest status):
 
 ```go
 package status
@@ -468,10 +482,55 @@ func (r RestModel) GetName() string { return Resource }
 func (r RestModel) GetID() string   { return r.Id }
 ```
 
+#### Model with Relationships
+
+For resources that have to-many relationships (e.g., parties with members), you **must** implement the full relationship interface set. If you don't need the relationship data, use no-op stubs:
+
+```go
+package party
+
+// PartyRestModel - consumer only needs Id and LeaderId,
+// but the producer's model has a "members" to-many relationship
+type PartyRestModel struct {
+    Id       uint32 `json:"-"`
+    LeaderId uint32 `json:"leaderId"`
+}
+
+func (r PartyRestModel) GetID() string {
+    return strconv.FormatUint(uint64(r.Id), 10)
+}
+
+func (r *PartyRestModel) SetID(idStr string) error {
+    id, err := strconv.ParseUint(idStr, 10, 32)
+    if err != nil {
+        return err
+    }
+    r.Id = uint32(id)
+    return nil
+}
+
+func (r PartyRestModel) GetName() string { return "parties" }
+
+// Required relationship interfaces (no-op stubs - we don't need member data)
+func (r PartyRestModel) GetReferences() []jsonapi.Reference {
+    return []jsonapi.Reference{{Type: "members", Name: "members"}}
+}
+func (r PartyRestModel) GetReferencedIDs() []jsonapi.ReferenceID   { return nil }
+func (r PartyRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier { return nil }
+func (r *PartyRestModel) SetToOneReferenceID(_, _ string) error    { return nil }
+func (r *PartyRestModel) SetToManyReferenceIDs(_ string, _ []string) error { return nil }
+func (r *PartyRestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
+    return nil
+}
+```
+
+**Key rule:** The `GetReferences()` method must declare the same relationship names as the producer (e.g., `"members"`), but the setter methods can discard the data.
+
 **Key Points:**
 - `Id` field uses `json:"-"` tag (populated via SetID from JSON:API wrapper)
 - Other fields match the JSON response structure
 - Implement `GetName()` and `GetID()` for JSON:API compliance
+- **If the producer has relationships, implement all relationship interfaces**
 
 ### Step 2: Create `requests.go`
 

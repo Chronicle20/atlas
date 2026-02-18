@@ -52,6 +52,7 @@ None
         "ap": 0,
         "sp": "string",
         "mapId": 0,
+        "instance": "00000000-0000-0000-0000-000000000000",
         "spawnPoint": 0,
         "gm": 0,
         "x": 0,
@@ -292,4 +293,213 @@ None (204 No Content)
 | Status | Condition |
 |--------|-----------|
 | 400 | Invalid characterId format |
+| 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/sessions
+
+Retrieves session history for a character.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| since | query | string | no | Start time (unix timestamp or RFC3339). Defaults to 24 hours ago |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": [
+    {
+      "type": "sessions",
+      "id": "string",
+      "attributes": {
+        "characterId": 0,
+        "worldId": 0,
+        "channelId": 0,
+        "loginTime": "2006-01-02T15:04:05Z",
+        "logoutTime": "2006-01-02T15:04:05Z"
+      }
+    }
+  ]
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or since format |
+| 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/sessions/playtime
+
+Computes total playtime for a character.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| since | query | string | no | Start time (unix timestamp or RFC3339). Defaults to 24 hours ago |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "playtime",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "totalSeconds": 0,
+      "formattedTime": "00:00:00"
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or since format |
+| 500 | Database error |
+
+---
+
+### GET /characters/{characterId}/locations/{type}
+
+Retrieves a saved location by type.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| type | path | string | yes | Location type |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "saved-locations",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "locationType": "string",
+      "mapId": 0,
+      "portalId": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or missing type |
+| 404 | Location not found |
+| 500 | Database error |
+
+---
+
+### PUT /characters/{characterId}/locations/{type}
+
+Creates or updates a saved location.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| type | path | string | yes | Location type |
+
+#### Request Model
+```json
+{
+  "data": {
+    "type": "saved-locations",
+    "attributes": {
+      "mapId": 0,
+      "portalId": 0
+    }
+  }
+}
+```
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "saved-locations",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "locationType": "string",
+      "mapId": 0,
+      "portalId": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or missing type |
+| 500 | Database error |
+
+---
+
+### DELETE /characters/{characterId}/locations/{type}
+
+Deletes a saved location.
+
+#### Parameters
+
+| Name | Location | Type | Required | Description |
+|------|----------|------|----------|-------------|
+| characterId | path | uint32 | yes | Character ID |
+| type | path | string | yes | Location type |
+
+#### Request Model
+None
+
+#### Response Model
+```json
+{
+  "data": {
+    "type": "saved-locations",
+    "id": "string",
+    "attributes": {
+      "characterId": 0,
+      "locationType": "string",
+      "mapId": 0,
+      "portalId": 0
+    }
+  }
+}
+```
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid characterId or missing type |
+| 404 | Location not found |
 | 500 | Database error |

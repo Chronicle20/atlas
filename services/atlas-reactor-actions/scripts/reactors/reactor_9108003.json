@@ -1,0 +1,54 @@
+{
+  "reactorId": "9108003",
+  "description": "Henesys PQ Seed Reactor - increments stage counter, hits fullmoon reactor. At stage 6, triggers PQ stage clear attempt.",
+  "hitRules": [],
+  "actRules": [
+    {
+      "id": "stage_6_clear_attempt",
+      "conditions": [
+        {
+          "type": "pq_custom_data",
+          "operator": "=",
+          "value": "5",
+          "step": "stage"
+        }
+      ],
+      "operations": [
+        {
+          "type": "update_pq_state",
+          "params": {
+            "increments": "stage"
+          }
+        },
+        {
+          "type": "hit_reactor",
+          "params": {
+            "reactorName": "fullmoon"
+          }
+        },
+        {
+          "type": "stage_clear_attempt",
+          "params": {}
+        }
+      ]
+    },
+    {
+      "id": "increment_stage",
+      "conditions": [],
+      "operations": [
+        {
+          "type": "update_pq_state",
+          "params": {
+            "increments": "stage"
+          }
+        },
+        {
+          "type": "hit_reactor",
+          "params": {
+            "reactorName": "fullmoon"
+          }
+        }
+      ]
+    }
+  ]
+}

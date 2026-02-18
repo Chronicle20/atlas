@@ -49,11 +49,23 @@ Retrieves a monster by its unique ID.
           "characterId": 12345,
           "damage": 250
         }
+      ],
+      "statusEffects": [
+        {
+          "sourceSkillId": 0,
+          "sourceSkillLevel": 0,
+          "statuses": {
+            "STATUS_TYPE": 0
+          },
+          "expiresAt": 0
+        }
       ]
     }
   }
 }
 ```
+
+`expiresAt` is in Unix milliseconds.
 
 **Error Conditions:**
 
@@ -110,7 +122,8 @@ Retrieves all monsters in a map instance.
         "hp": 1000,
         "maxMp": 100,
         "mp": 100,
-        "damageEntries": []
+        "damageEntries": [],
+        "statusEffects": []
       }
     }
   ]

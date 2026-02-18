@@ -1,0 +1,191 @@
+{
+  "id": "amoria-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Amoria Party Quest",
+    "fieldLock": "channel",
+    "duration": "4500000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "6"
+      },
+      {
+        "type": "level",
+        "operator": ">=",
+        "value": "40"
+      },
+      {
+        "type": "married",
+        "operator": "=",
+        "value": "true"
+      },
+      {
+        "type": "item",
+        "operator": ">=",
+        "value": "1",
+        "referenceId": "4031592"
+      }
+    ],
+    "startEvents": [],
+    "failRequirements": [],
+    "registration": {
+      "type": "party",
+      "mode": "instant",
+      "duration": -1,
+      "mapId": "670010100"
+    },
+    "exit": "670011000",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Cloud Piece Collection",
+        "description": "Party speaks with Amos, who summons 3 portals. The correct portal is randomized. There are two portals for male and female characters, defeat the monsters. Have your party leader talk to The Glimmer Man. A magic fairy will be summoned, who drops the Wing Hammer (4031596). Use it (by dropping) to break the mirror in the middle of the stage. Which drops the Magik Mirror Shard to complete the stage.",
+        "mapId": ["670010200"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "1",
+            "referenceId": "4031595"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "2000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "1",
+        "name": "Heart Strings Combination Puzzle",
+        "description": "Party members (5) must occupy three ropes. If you do not get it, in seven attempts, monsters are spawned, and the combination is changed.",
+        "mapId": ["670010300", "670010301", "670010302"],
+        "type": "combination_puzzle",
+        "duration": 0,
+        "digits": "3",
+        "combination_reset": {
+          "type": "failed_attempts",
+          "amount": "7"
+        },
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "4000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "2",
+        "name": "Twister Switcher Combination Puzzle",
+        "description": "Party members (5) must occupy five platforms. An incorrect guess will summon monsters (Slimes and Crystal Boars) with a hint towards how many correct platforms exist (# of Slimes).",
+        "mapId": ["670010400"],
+        "type": "combination_puzzle",
+        "duration": 0,
+        "digits": "9",
+        "combination_reset": {
+          "type": "failed_attempts",
+          "amount": "7"
+        },
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "6000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "3",
+        "name": "Last Man Standing",
+        "description": "Collect 50 Cupid Code Pieces (4031597).",
+        "mapId": ["670010500"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "50",
+            "referenceId": "4031597"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "8000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "4",
+        "name": "Fluttering Hearts",
+        "description": "Party members run to the right, breaking gates along the way.",
+        "mapId": ["670010600"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "9000"
+          }
+        ],
+        "warp": {
+          "type": "npc"
+        }
+      },
+      {
+        "index": "5",
+        "name": "Boss Stage",
+        "description": "Kill all three phases of Geist Balrog to receive the Geist Fang (4031594).",
+        "mapId": ["670010700"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "1",
+            "referenceId": "4031594"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "11000"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "6",
+        "name": "Bonus",
+        "description": "The party quest has cleared, party members have a limited time to collect drops from boxes.",
+        "mapId": ["670010800"],
+        "type": "bonus",
+        "duration": 60000,
+        "warp": {
+          "type": "warp_out"
+        }
+      }
+    ]
+  }
+}

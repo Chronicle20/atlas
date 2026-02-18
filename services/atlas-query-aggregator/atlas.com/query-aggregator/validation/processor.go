@@ -5,6 +5,7 @@ import (
 	"atlas-query-aggregator/character"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/pet"
 	"atlas-query-aggregator/quest"
 	"context"
@@ -32,6 +33,7 @@ type ProcessorImpl struct {
 	marriageProcessor  marriage.Processor
 	buddyProcessor     buddy.Processor
 	petProcessor       pet.Processor
+	partyProcessor     party.Processor
 }
 
 // NewProcessor creates a new validation processor
@@ -45,6 +47,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		marriageProcessor:  marriage.NewProcessor(l, ctx),
 		buddyProcessor:     buddy.NewProcessor(l, ctx),
 		petProcessor:       pet.NewProcessor(l, ctx),
+		partyProcessor:     party.NewProcessor(l, ctx),
 	}
 }
 
@@ -79,7 +82,7 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 			}
 
 			// Check if this condition requires context-based evaluation
-			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition {
+			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition || condition.conditionType == PartyIdCondition || condition.conditionType == PartyLeaderCondition || condition.conditionType == PartySizeCondition || condition.conditionType == PqCustomDataCondition {
 				needsContext = true
 			}
 		}
@@ -188,6 +191,9 @@ func (p *ProcessorImpl) GetValidationContextProvider() ValidationContextProvider
 		},
 		func(characterId uint32) model.Provider[int] {
 			return p.petProcessor.GetSpawnedPetCount(characterId)
+		},
+		func(characterId uint32) model.Provider[party.Model] {
+			return p.partyProcessor.GetPartyByCharacter(characterId)
 		},
 		p.l,
 		p.ctx,

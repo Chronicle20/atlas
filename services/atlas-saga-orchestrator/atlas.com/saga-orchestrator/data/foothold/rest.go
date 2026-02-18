@@ -35,3 +35,7 @@ func (r FootholdRestModel) GetName() string {
 func (r FootholdRestModel) GetID() string {
 	return "0"
 }
+
+func (r *FootholdRestModel) SetID(_ string) error {
+	return nil
+}

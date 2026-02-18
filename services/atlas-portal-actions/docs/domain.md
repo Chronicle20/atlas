@@ -47,6 +47,17 @@ Represents the result of processing a portal script.
 | Operations | []operation.Model | Operations that were executed |
 | Error | error | Any error that occurred |
 
+### SeedResult
+
+Represents the result of a seed operation.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| DeletedCount | int | Number of scripts deleted |
+| CreatedCount | int | Number of scripts created |
+| FailedCount | int | Number of scripts that failed to load or create |
+| Errors | []string | Error messages for failed scripts |
+
 ## Invariants
 
 - Rules are evaluated in order; first matching rule wins
@@ -90,7 +101,19 @@ Executes operations via saga messages.
 | ExecuteOperation | Executes a single operation |
 | ExecuteOperations | Executes multiple operations |
 
+### Loader
+
+Loads portal scripts from JSON files on the filesystem. Maintains an in-memory cache keyed by portal ID with thread-safe access.
+
+| Method | Description |
+|--------|-------------|
+| LoadByPortalId | Loads a portal script by ID (cache-through) |
+| ClearCache | Clears the in-memory script cache |
+| Preload | Loads all scripts from directory into cache |
+
 ## Condition Types
+
+Condition types are defined by the `atlas-script-core/condition` library. The evaluator forwards conditions to the validation service for evaluation.
 
 | Type | Description |
 |------|-------------|
@@ -111,3 +134,108 @@ Executes operations via saga messages.
 | block_portal | Block portal for character | mapId, portalId |
 | create_skill | Create skill for character | skillId, level, masterLevel, expiration |
 | update_skill | Update skill for character | skillId, level, masterLevel, expiration |
+| start_instance_transport | Start instance-based transport | routeName, failureMessage |
+| apply_consumable_effect | Apply consumable effect (buff) | itemId |
+| cancel_consumable_effect | Cancel consumable effect (buff) | itemId |
+| save_location | Save character location | locationType, mapId, portalId |
+| warp_to_saved_location | Warp to previously saved location | locationType |
+
+---
+
+# Validation Domain
+
+## Responsibility
+
+The validation domain evaluates character state conditions by delegating to an external validation service via HTTP.
+
+## Core Models
+
+### ConditionInput
+
+Represents a condition to validate against character state.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| Type | string | Condition type |
+| Operator | string | Comparison operator |
+| Value | int | Comparison value |
+| ReferenceId | uint32 | Reference identifier |
+| Step | string | Quest step |
+| IncludeEquipped | bool | Include equipped items |
+
+### ValidationResult
+
+Represents the result of a validation.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| characterId | uint32 | Character that was validated |
+| passed | bool | Whether the validation passed |
+
+## Processors
+
+### Processor
+
+Validates character state via HTTP POST to the query aggregator service.
+
+| Method | Description |
+|--------|-------------|
+| ValidateCharacterState | Validates character state against conditions |
+
+---
+
+# Action Domain
+
+## Responsibility
+
+The action domain tracks pending portal actions that require saga completion. Used for operations like `start_instance_transport` where the result of the saga determines whether a failure message needs to be sent to the character.
+
+## Core Models
+
+### PendingAction
+
+Represents a pending portal action awaiting saga completion.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| CharacterId | uint32 | Character identifier |
+| WorldId | world.Id | World identifier |
+| ChannelId | channel.Id | Channel identifier |
+| FailureMessage | string | Message to display on saga failure |
+
+## Invariants
+
+- Registry is a singleton via `sync.Once`
+- Thread-safe via `sync.RWMutex`
+- Keyed by tenant ID and saga transaction ID
+- Entries are removed on saga completion or failure
+
+## Processors
+
+### Registry
+
+Thread-safe in-memory registry for pending actions.
+
+| Method | Description |
+|--------|-------------|
+| Add | Registers a pending action for a saga |
+| Get | Retrieves a pending action by saga ID |
+| Remove | Removes a pending action by saga ID |
+
+---
+
+# Saga Domain
+
+## Responsibility
+
+The saga domain produces saga command messages to the saga orchestrator and handles saga status events (completion and failure).
+
+## Processors
+
+### Processor
+
+Creates saga commands via Kafka.
+
+| Method | Description |
+|--------|-------------|
+| Create | Produces a saga command message |

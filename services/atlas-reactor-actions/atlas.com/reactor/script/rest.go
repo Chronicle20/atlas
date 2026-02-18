@@ -35,6 +35,7 @@ type RestConditionModel struct {
 	Operator    string `json:"operator"`
 	Value       string `json:"value"`
 	ReferenceId string `json:"referenceId,omitempty"`
+	Step        string `json:"step,omitempty"`
 }
 
 // RestOperationModel represents an operation in REST format
@@ -124,6 +125,7 @@ func transformRule(rule Rule) RestRuleModel {
 			Operator:    cond.Operator(),
 			Value:       cond.Value(),
 			ReferenceId: cond.ReferenceIdRaw(),
+			Step:        cond.Step(),
 		})
 	}
 
@@ -203,6 +205,10 @@ func extractCondition(r RestConditionModel) (condition.Model, error) {
 
 	if r.ReferenceId != "" {
 		builder.SetReferenceId(r.ReferenceId)
+	}
+
+	if r.Step != "" {
+		builder.SetStep(r.Step)
 	}
 
 	return builder.Build()

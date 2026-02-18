@@ -1,0 +1,171 @@
+{
+  "questId": "herb_town_pq",
+  "name": "Herb Town Pirate Party Quest",
+  "fieldLock": "channel",
+  "duration": 0,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 251010404
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 3,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 55,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 100,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "925100000"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 925100700,
+  "stages": [
+    {
+      "index": 0,
+      "name": "On the Way to the Pirate Ship",
+      "mapIds": [925100000],
+      "type": "monster_killing",
+      "duration": 360,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "killAll": true
+      }
+    },
+    {
+      "index": 1,
+      "name": "Through the Head of the Ship",
+      "mapIds": [925100100],
+      "type": "item_collection",
+      "duration": 360,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 20,
+          "referenceId": 4001120
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 20,
+          "referenceId": 4001121
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 20,
+          "referenceId": 4001122
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "waves": [
+          {"monsterId": 9300114, "itemId": 4001120, "count": 20},
+          {"monsterId": 9300115, "itemId": 4001121, "count": 20},
+          {"monsterId": 9300116, "itemId": 4001122, "count": 20}
+        ]
+      }
+    },
+    {
+      "index": 2,
+      "name": "Through the Deck I",
+      "mapIds": [925100200, 925100201, 925100202],
+      "type": "monster_killing",
+      "duration": 360,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "killAll": true,
+        "optionalMaps": [925100201, 925100202],
+        "optionalKeyItemId": 4031437,
+        "optionalTimerSeconds": 60
+      }
+    },
+    {
+      "index": 3,
+      "name": "Through the Deck II",
+      "mapIds": [925100300, 925100301, 925100302],
+      "type": "monster_killing",
+      "duration": 360,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "killAll": true,
+        "optionalMaps": [925100301, 925100302],
+        "optionalKeyItemId": 4031437,
+        "optionalTimerSeconds": 60
+      }
+    },
+    {
+      "index": 4,
+      "name": "Eliminate Pirates",
+      "mapIds": [925100400],
+      "type": "monster_killing",
+      "duration": 360,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001117
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "killAll": true,
+        "keyItemId": 4001117,
+        "doorReactors": [2519000, 2519001, 2519002, 2519003]
+      }
+    },
+    {
+      "index": 5,
+      "name": "Boss Stage",
+      "mapIds": [925100500],
+      "type": "boss",
+      "duration": 360,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 0
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2094002,
+        "difficultyBasedOnOptional": true
+      }
+    }
+  ],
+  "rewards": []
+}

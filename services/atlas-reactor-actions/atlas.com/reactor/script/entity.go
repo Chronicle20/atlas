@@ -47,6 +47,7 @@ type jsonCondition struct {
 	Operator    string `json:"operator"`
 	Value       string `json:"value"`
 	ReferenceId string `json:"referenceId,omitempty"`
+	Step        string `json:"step,omitempty"`
 }
 
 // jsonOperation represents an operation in JSON format
@@ -119,6 +120,10 @@ func convertJsonCondition(jc jsonCondition) (condition.Model, error) {
 		builder.SetReferenceId(jc.ReferenceId)
 	}
 
+	if jc.Step != "" {
+		builder.SetStep(jc.Step)
+	}
+
 	return builder.Build()
 }
 
@@ -177,6 +182,7 @@ func convertRuleToJson(rule Rule) jsonRule {
 			Operator:    cond.Operator(),
 			Value:       cond.Value(),
 			ReferenceId: cond.ReferenceIdRaw(),
+			Step:        cond.Step(),
 		})
 	}
 

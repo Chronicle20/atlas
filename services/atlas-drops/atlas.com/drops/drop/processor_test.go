@@ -104,7 +104,7 @@ func TestProcessor_Reserve_SuccessfulReservation(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, petSlot)
+	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -135,10 +135,10 @@ func TestProcessor_Reserve_FailedReservation_BuffersFailureMessage(t *testing.T)
 
 	reserveBuf1 := message.NewBuffer()
 	txId := uuid.New()
-	_, _ = p.Reserve(reserveBuf1)(txId, f, drop.Id(), uint32(11111), -1)
+	_, _ = p.Reserve(reserveBuf1)(txId, f, drop.Id(), uint32(11111), 0, -1)
 
 	reserveBuf2 := message.NewBuffer()
-	_, err := p.Reserve(reserveBuf2)(txId, f, drop.Id(), uint32(22222), -1)
+	_, err := p.Reserve(reserveBuf2)(txId, f, drop.Id(), uint32(22222), 0, -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving already reserved drop")
 	}
@@ -166,7 +166,7 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 	reserveBuf := message.NewBuffer()
 	txId := uuid.New()
 	characterId := uint32(12345)
-	_, _ = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, -1)
+	_, _ = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, 0, -1)
 
 	cancelBuf := message.NewBuffer()
 	err := p.CancelReservation(cancelBuf)(txId, f, drop.Id(), characterId)
@@ -425,7 +425,7 @@ func TestProcessor_Reserve_WithPetSlot(t *testing.T) {
 	txId := uuid.New()
 	petSlot := int8(2)
 
-	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(12345), petSlot)
+	reserved, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(12345), 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop with pet slot: %v", err)
 	}
@@ -458,7 +458,7 @@ func TestProcessor_MultipleOperationsSequence(t *testing.T) {
 	reserveBuf := message.NewBuffer()
 	txId := uuid.New()
 	characterId := uint32(12345)
-	_, err = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, -1)
+	_, err = p.Reserve(reserveBuf)(txId, f, drop.Id(), characterId, 0, -1)
 	if err != nil {
 		t.Fatalf("Step 2 failed - Reserve: %v", err)
 	}
@@ -562,7 +562,7 @@ func TestReservedEventStatusProvider_ReturnsValidMessages(t *testing.T) {
 		SetItem(1000000, 10).
 		SetOwner(99999, 0).
 		Build()
-	provider := reservedEventStatusProvider(txId, f, d)
+	provider := reservedEventStatusProvider(txId, f, d, uint32(55555))
 	messages, err := provider()
 	if err != nil {
 		t.Fatalf("reservedEventStatusProvider failed: %v", err)
@@ -657,7 +657,7 @@ func TestProcessor_Reserve_NonExistentDrop(t *testing.T) {
 	txId := uuid.New()
 
 	f := field.NewBuilder(1, 1, 100000000).Build()
-	_, err := p.Reserve(reserveBuf)(txId, f, 999999, uint32(12345), -1)
+	_, err := p.Reserve(reserveBuf)(txId, f, 999999, uint32(12345), 0, -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving non-existent drop")
 	}
@@ -792,6 +792,152 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 	}
 	if gathered.Quantity() != 5 {
 		t.Fatalf("Expected quantity 5, got %d", gathered.Quantity())
+	}
+}
+
+func TestProcessor_Reserve_OwnerCanReserve(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	spawnBuf := message.NewBuffer()
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(12345, 0)
+
+	drop, _ := p.Spawn(spawnBuf)(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(12345), 0, -1)
+	if err != nil {
+		t.Fatalf("Owner should be able to reserve their own drop: %v", err)
+	}
+}
+
+func TestProcessor_Reserve_NonOwnerRejectedDuringWindow(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	spawnBuf := message.NewBuffer()
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(12345, 0)
+
+	drop, _ := p.Spawn(spawnBuf)(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(99999), 0, -1)
+	if err == nil {
+		t.Fatal("Non-owner should not be able to reserve drop during ownership window")
+	}
+}
+
+func TestProcessor_Reserve_PartyMemberCanReserve(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	spawnBuf := message.NewBuffer()
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(12345, 500)
+
+	drop, _ := p.Spawn(spawnBuf)(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(99999), 500, -1)
+	if err != nil {
+		t.Fatalf("Party member should be able to reserve party drop: %v", err)
+	}
+}
+
+func TestProcessor_Reserve_FFAAfterTimeout(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	// Manually create a drop with dropTime in the past
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(12345, 0)
+	mb.dropTime = mb.dropTime.Add(-OwnershipDuration - 1)
+
+	drop, _ := GetRegistry().CreateDrop(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(99999), 0, -1)
+	if err != nil {
+		t.Fatalf("Any character should be able to reserve drop after ownership window: %v", err)
+	}
+}
+
+func TestProcessor_Reserve_PlayerDropIsFFA(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	spawnBuf := message.NewBuffer()
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(12345, 0).
+		SetPlayerDrop(true)
+
+	drop, _ := p.Spawn(spawnBuf)(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(99999), 0, -1)
+	if err != nil {
+		t.Fatalf("Player drops should be FFA: %v", err)
+	}
+}
+
+func TestProcessor_Reserve_FriendlyMobDropIsFFA(t *testing.T) {
+	resetRegistry()
+	ctx, ten := createTestContext(t)
+	l := createTestLogger()
+
+	p := NewProcessor(l, ctx)
+	spawnBuf := message.NewBuffer()
+
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 10).
+		SetOwner(0, 0)
+
+	drop, _ := p.Spawn(spawnBuf)(mb)
+
+	reserveBuf := message.NewBuffer()
+	txId := uuid.New()
+
+	_, err := p.Reserve(reserveBuf)(txId, f, drop.Id(), uint32(12345), 0, -1)
+	if err != nil {
+		t.Fatalf("Friendly mob drops (no owner) should be FFA: %v", err)
 	}
 }
 

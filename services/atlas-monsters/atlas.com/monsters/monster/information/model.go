@@ -5,6 +5,9 @@ type Model struct {
 	mp             uint32
 	boss           bool
 	undead         bool
+	friendly       bool
+	weaponAttack   uint32
+	dropPeriod     uint32
 	resistances    map[string]string
 	animationTimes map[string]uint32
 	skills         []Skill
@@ -57,6 +60,20 @@ func (m Model) Revives() []uint32 {
 
 func (m Model) Banish() Banish {
 	return m.banish
+}
+
+// IsImmuneToElement checks if the monster is immune to a given element.
+// Resistance values: "1"=immune, "2"=strong, "3"=normal, "4"=weak
+func (m Model) Friendly() bool {
+	return m.friendly
+}
+
+func (m Model) WeaponAttack() uint32 {
+	return m.weaponAttack
+}
+
+func (m Model) DropPeriod() uint32 {
+	return m.dropPeriod
 }
 
 // IsImmuneToElement checks if the monster is immune to a given element.

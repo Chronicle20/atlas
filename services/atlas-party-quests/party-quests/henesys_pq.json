@@ -1,0 +1,123 @@
+{
+  "questId": "henesys_pq",
+  "name": "Moon Bunny's Rice Cake Party Quest",
+  "fieldLock": "channel",
+  "duration": 600,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 100000200
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 1,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 10,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "910010000"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 910010300,
+  "bonus": {
+    "mapId": 910010200,
+    "duration": 300,
+    "entry": "manual",
+    "completionMapId": 910010100,
+    "properties": {
+      "npcId": 1012113
+    }
+  },
+  "stages": [
+    {
+      "index": 0,
+      "name": "Primrose Seed Collection",
+      "mapIds": [910010000],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "custom_data",
+          "operator": ">=",
+          "value": 6,
+          "referenceKey": "stage"
+        }
+      ],
+      "rewards": [],
+      "warpType": "none",
+      "properties": {
+        "seedItems": [4001095, 4001096, 4001097, 4001098, 4001099, 4001100],
+        "reactors": [9108000, 9108001, 9108002, 9108003, 9108004, 9108005],
+        "weather": {
+          "itemId": 5120016,
+          "message": "Plant the Primrose Seed around the moon! The Moon Bunnies will start pounding the mill.",
+          "duration": 5
+        }
+      }
+    },
+    {
+      "index": 1,
+      "name": "Rice Cake Collection",
+      "mapIds": [910010000],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "custom_data",
+          "operator": ">=",
+          "value": 10,
+          "referenceKey": "friendlyDropCount"
+        }
+      ],
+      "clearActions": ["destroy_monsters"],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 1600
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 1012114,
+        "collectItemId": 4001101,
+        "friendlyMonster": {
+          "monsterId": 9300061,
+          "x": -183,
+          "y": -433,
+          "fh": 7,
+          "spawnMessage": "Protect the Moon Bunny!",
+          "onDamaged": {
+            "hitInterval": 5,
+            "message": "The Moon Bunny is feeling sick. Please protect it so it can make delicious rice cakes."
+          },
+          "onKilled": {
+            "message": "Due to your failure to protect the Moon Bunny, you have been transported to the Exile Map.",
+            "action": "fail"
+          },
+          "onDrop": {
+            "messageTemplate": "The Moon Bunny made rice cake number {count}."
+          }
+        },
+        "weather": {
+          "itemId": 5120016,
+          "message": "Protect the Moon Bunny that's pounding the mill, and gather up 10 Moon Bunny's Rice Cakes!",
+          "duration": 5
+        }
+      }
+    }
+  ],
+  "rewards": []
+}

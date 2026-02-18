@@ -1,0 +1,207 @@
+{
+  "questId": "guild_pq",
+  "name": "Sharenian Guild Party Quest",
+  "fieldLock": "channel",
+  "duration": 5400,
+  "registration": {
+    "type": "individual",
+    "mode": "timed",
+    "duration": 180,
+    "mapId": 101030104,
+    "affinity": "guild"
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 6,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "990000100"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 990001100,
+  "bonus": {
+    "mapId": 990001000,
+    "duration": 40,
+    "entry": "auto",
+    "properties": {
+      "boxReactors": [9202012]
+    }
+  },
+  "stages": [
+    {
+      "index": 0,
+      "name": "Protector Rock Collection",
+      "mapIds": [990000100, 990000200],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "reactors": [9202000, 9202009],
+        "protectorRockId": 1032033
+      }
+    },
+    {
+      "index": 1,
+      "name": "Statue Sequence Memory",
+      "mapIds": [990000300, 990000301],
+      "type": "sequence_memory_game",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "sequences": 3,
+        "triggerReactor": 9208003
+      }
+    },
+    {
+      "index": 2,
+      "name": "Hall of the Knights",
+      "mapIds": [990000400, 990000401, 990000410, 990000420, 990000430, 990000431, 990000440],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 6,
+          "referenceId": 4001025
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "collectItemId": 4001025,
+        "gateReactor": 9208004
+      }
+    },
+    {
+      "index": 3,
+      "name": "Fountain of Wiseman",
+      "mapIds": [990000500, 990000501, 990000502],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001028
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001027
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001030
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001029
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9040006,
+        "triggerReactor": 9208013,
+        "requiredItems": [4001028, 4001027, 4001030, 4001029]
+      }
+    },
+    {
+      "index": 4,
+      "name": "Underground Waterway",
+      "mapIds": [990000600, 990000610, 990000611, 990000620, 990000630, 990000631, 990000640, 990000641],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001031
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001032
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001033
+        },
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001034
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "requiredItems": [4001031, 4001032, 4001033, 4001034]
+      }
+    },
+    {
+      "index": 5,
+      "name": "King's Corridor",
+      "mapIds": [990000800],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "doorReactor": 9208009,
+        "sacrificeRequired": true,
+        "protectorRockId": 1032033
+      }
+    },
+    {
+      "index": 6,
+      "name": "Boss Stage",
+      "mapIds": [990000900],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001035
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 9040010,
+        "crystalReactor": 9201002,
+        "bossMonsters": [9300028],
+        "markOfEvilId": 4001035,
+        "otherMonsters": [9300022, 9300023]
+      }
+    }
+  ],
+  "rewards": []
+}

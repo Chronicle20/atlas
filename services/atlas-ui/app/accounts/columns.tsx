@@ -3,12 +3,13 @@
 import { ColumnDef } from "@tanstack/react-table"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
+import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
-import {MoreHorizontal} from "lucide-react";
+import {MoreHorizontal, LogOut, Shield, ShieldOff, Loader2} from "lucide-react";
 import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
 import type {Tenant} from "@/types/models/tenant";
+import type {CheckBanAttributes} from "@/types/models/ban";
 import {toast} from "sonner";
 import {useState} from "react";
 import {
@@ -25,11 +26,15 @@ import {
 interface ColumnProps {
     tenant: Tenant | null;
     onRefresh?: () => void;
+    banStatuses: Map<string, CheckBanAttributes>;
+    banStatusLoading: boolean;
+    onBanAccount?: (account: Account) => void;
+    onRemoveBan?: (account: Account) => void;
 }
 
 export const hiddenColumns = ["id", "attributes.gm"];
 
-export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>[] => {
+export const getColumns = ({tenant, onRefresh, banStatuses, banStatusLoading, onBanAccount, onRemoveBan}: ColumnProps): ColumnDef<Account>[] => {
     return [ {
             accessorKey: "id",
             header: "Id",
@@ -72,6 +77,53 @@ export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>
             }
         },
         {
+            id: "banStatus",
+            header: "Ban Status",
+            cell: ({ row }) => {
+                if (banStatusLoading) {
+                    return (
+                        <Badge variant="outline" className="text-muted-foreground">
+                            <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            Checking
+                        </Badge>
+                    );
+                }
+
+                const status = banStatuses.get(row.original.id);
+                if (!status) {
+                    return (
+                        <Badge variant="outline" className="text-muted-foreground">
+                            Unknown
+                        </Badge>
+                    );
+                }
+
+                if (status.banned) {
+                    const label = status.permanent ? "Banned (Permanent)" : "Banned";
+                    return (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Badge variant="destructive">
+                                        {label}
+                                    </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>{status.reason || "No reason provided"}</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    );
+                }
+
+                return (
+                    <Badge variant="secondary" className="bg-green-100 text-green-800 hover:bg-green-100">
+                        Active
+                    </Badge>
+                );
+            },
+        },
+        {
             accessorKey: "attributes.gender",
             header: "Gender",
             cell: ({getValue}) => {
@@ -104,15 +156,18 @@ export const getColumns = ({tenant, onRefresh}: ColumnProps): ColumnDef<Account>
         {
             id: "actions",
             cell: ({ row }) => {
-                return <AccountActions account={row.original} tenant={tenant} onRefresh={onRefresh} />
+                return <AccountActions account={row.original} tenant={tenant} onRefresh={onRefresh} banStatuses={banStatuses} onBanAccount={onBanAccount} onRemoveBan={onRemoveBan} />
             },
         }
     ]
 };
 
-function AccountActions({ account, tenant, onRefresh }: { account: Account; tenant: Tenant | null; onRefresh?: (() => void) | undefined }) {
+function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount, onRemoveBan }: { account: Account; tenant: Tenant | null; onRefresh?: (() => void) | undefined; banStatuses: Map<string, CheckBanAttributes>; onBanAccount?: ((account: Account) => void) | undefined; onRemoveBan?: ((account: Account) => void) | undefined }) {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
+
+    const status = banStatuses.get(account.id);
+    const isBanned = status?.banned === true;
 
     const handleLogout = async () => {
         if (!tenant) return;
@@ -156,6 +211,21 @@ function AccountActions({ account, tenant, onRefresh }: { account: Account; tena
                     <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
                         Delete Account
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    {isBanned ? (
+                        <DropdownMenuItem onClick={() => onRemoveBan?.(account)}>
+                            <ShieldOff className="mr-2 h-4 w-4" />
+                            Remove Ban
+                        </DropdownMenuItem>
+                    ) : (
+                        <DropdownMenuItem
+                            className="text-destructive focus:text-destructive"
+                            onClick={() => onBanAccount?.(account)}
+                        >
+                            <Shield className="mr-2 h-4 w-4" />
+                            Ban Account
+                        </DropdownMenuItem>
+                    )}
                 </DropdownMenuContent>
             </DropdownMenu>
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

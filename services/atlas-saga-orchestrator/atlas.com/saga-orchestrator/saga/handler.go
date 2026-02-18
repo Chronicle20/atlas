@@ -40,6 +40,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -2680,12 +2681,25 @@ func (h *HandlerImpl) handleStageClearAttemptPq(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	h.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId().String(),
-		"instance_id":    payload.InstanceId.String(),
-	}).Debug("Attempting to clear party quest stage")
+	var err error
+	if payload.InstanceId != uuid.Nil {
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"instance_id":    payload.InstanceId.String(),
+		}).Debug("Attempting to clear party quest stage")
 
-	err := h.partyQuestP.StageClearAttempt(payload.InstanceId)
+		err = h.partyQuestP.StageClearAttempt(payload.InstanceId)
+	} else if payload.CharacterId != 0 {
+		h.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"character_id":   payload.CharacterId,
+		}).Debug("Attempting to clear party quest stage by character")
+
+		err = h.partyQuestP.StageClearAttemptByCharacter(payload.CharacterId)
+	} else {
+		return errors.New("StageClearAttemptPqPayload requires either instanceId or characterId")
+	}
+
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to attempt party quest stage clear.")
 		return err

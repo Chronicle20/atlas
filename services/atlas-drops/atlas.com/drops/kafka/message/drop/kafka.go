@@ -159,6 +159,7 @@ type CommandSpawnFromCharacterBody struct {
 type CommandRequestReservationBody struct {
 	DropId      uint32 `json:"dropId"`
 	CharacterId uint32 `json:"characterId"`
+	PartyId     uint32 `json:"partyId"`
 	CharacterX  int16  `json:"characterX"`
 	CharacterY  int16  `json:"characterY"`
 	PetSlot     int8   `json:"petSlot"`

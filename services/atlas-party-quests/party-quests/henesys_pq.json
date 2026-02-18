@@ -41,10 +41,10 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "custom_data",
+          "operator": ">=",
           "value": 6,
-          "referenceId": 4001095
+          "referenceKey": "stage"
         }
       ],
       "rewards": [],
@@ -62,10 +62,10 @@
       "duration": 0,
       "clearConditions": [
         {
-          "type": "item_count",
-          "operator": "gte",
+          "type": "custom_data",
+          "operator": ">=",
           "value": 10,
-          "referenceId": 4001101
+          "referenceKey": "friendlyDropCount"
         }
       ],
       "clearActions": ["destroy_monsters"],

@@ -188,6 +188,37 @@ func requestDefinitionByQuestId(questId string) requests.Request[DefinitionRestM
 	return rest.MakeGetRequest[DefinitionRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/definitions/quest/%s", questId))
 }
 
+// InstanceRestModel represents a party quest instance from the atlas-party-quests REST API
+type InstanceRestModel struct {
+	Id uuid.UUID `json:"-"`
+}
+
+func (r InstanceRestModel) GetName() string {
+	return "instances"
+}
+
+func (r InstanceRestModel) GetID() string {
+	return r.Id.String()
+}
+
+func (r *InstanceRestModel) SetID(idStr string) error {
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = id
+	return nil
+}
+
+// ExtractInstance is a pass-through extractor for InstanceRestModel
+func ExtractInstance(r InstanceRestModel) (InstanceRestModel, error) {
+	return r, nil
+}
+
+func requestInstanceByCharacterId(characterId uint32) requests.Request[InstanceRestModel] {
+	return rest.MakeGetRequest[InstanceRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/instances/character/%d", characterId))
+}
+
 // Command represents a command message to atlas-party-quests
 type Command[E any] struct {
 	WorldId     world.Id `json:"worldId"`

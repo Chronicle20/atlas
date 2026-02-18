@@ -110,7 +110,7 @@ func handleRequestReservation(l logrus.FieldLogger, ctx context.Context, c messa
 		return
 	}
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	_, _ = drop.NewProcessor(l, ctx).ReserveAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId, c.Body.PetSlot)
+	_, _ = drop.NewProcessor(l, ctx).ReserveAndEmit(c.TransactionId, f, c.Body.DropId, c.Body.CharacterId, c.Body.PartyId, c.Body.PetSlot)
 }
 
 func handleCancelReservation(l logrus.FieldLogger, ctx context.Context, c messageDropKafka.Command[messageDropKafka.CommandCancelReservationBody]) {

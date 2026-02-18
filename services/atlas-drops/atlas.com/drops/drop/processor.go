@@ -26,9 +26,9 @@ type Processor interface {
 	SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error)
 
 	// Reserve reserves a drop for a character
-	Reserve(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (Model, error)
+	Reserve(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error)
 	// ReserveAndEmit reserves a drop for a character and emits a Kafka message
-	ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (Model, error)
+	ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error)
 
 	// CancelReservation cancels a drop reservation
 	CancelReservation(mb *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error
@@ -128,12 +128,12 @@ func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error
 }
 
 // Reserve reserves a drop for a character
-func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
-	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
-		d, err := GetRegistry().ReserveDrop(dropId, characterId, petSlot)
+func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
+	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
+		d, err := GetRegistry().ReserveDrop(dropId, characterId, partyId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
-			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, d))
+			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, d, characterId))
 		} else {
 			p.l.Debugf("Failed reserving [%d] for [%d].", dropId, characterId)
 			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, field, dropId, characterId))
@@ -143,12 +143,12 @@ func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.
 }
 
 // ReserveAndEmit reserves a drop for a character and emits a Kafka message
-func (p *ProcessorImpl) ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+func (p *ProcessorImpl) ReserveAndEmit(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
 	producerProvider := producer.ProviderImpl(p.l)(p.ctx)
 	var result Model
 	var err error
 	err = message.Emit(producerProvider)(func(mb *message.Buffer) error {
-		result, err = p.Reserve(mb)(transactionId, field, dropId, characterId, petSlot)
+		result, err = p.Reserve(mb)(transactionId, field, dropId, characterId, partyId, petSlot)
 		return err
 	})
 	return result, err

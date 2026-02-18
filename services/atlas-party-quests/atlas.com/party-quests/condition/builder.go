@@ -7,6 +7,7 @@ type Builder struct {
 	operator      string
 	value         uint32
 	referenceId   uint32
+	referenceKey  string
 }
 
 func NewBuilder() *Builder {
@@ -33,6 +34,11 @@ func (b *Builder) SetReferenceId(id uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetReferenceKey(key string) *Builder {
+	b.referenceKey = key
+	return b
+}
+
 func (b *Builder) Build() (Model, error) {
 	if b.conditionType == "" {
 		return Model{}, errors.New("type is required")
@@ -45,5 +51,6 @@ func (b *Builder) Build() (Model, error) {
 		operator:      b.operator,
 		value:         b.value,
 		referenceId:   b.referenceId,
+		referenceKey:  b.referenceKey,
 	}, nil
 }

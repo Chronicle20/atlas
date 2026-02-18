@@ -2100,6 +2100,15 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 
 		return stepId, saga.Pending, saga.WarpPartyQuestMembersToMap, payload, nil
 
+	case "stage_clear_attempt_pq":
+		// Format: stage_clear_attempt_pq
+		// No params required - attempts to clear the current PQ stage for the character's instance.
+		payload := saga.StageClearAttemptPqPayload{
+			CharacterId: characterId,
+		}
+
+		return stepId, saga.Pending, saga.StageClearAttemptPq, payload, nil
+
 	default:
 		return "", "", "", nil, fmt.Errorf("unknown operation type: %s", operation.Type())
 	}

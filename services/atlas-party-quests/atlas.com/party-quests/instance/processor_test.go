@@ -63,6 +63,13 @@ func TestEvaluateCondition(t *testing.T) {
 		SetReferenceId(2001).
 		Build()
 
+	customDataCondition, _ := condition.NewBuilder().
+		SetType("custom_data").
+		SetOperator(">=").
+		SetValue(6).
+		SetReferenceKey("stage").
+		Build()
+
 	unknownCondition, _ := condition.NewBuilder().
 		SetType("unknown").
 		SetOperator(">=").
@@ -103,6 +110,30 @@ func TestEvaluateCondition(t *testing.T) {
 			"monster_not_met",
 			monsterCondition,
 			testStageState(nil, map[uint32]uint32{2001: 7}),
+			false,
+		},
+		{
+			"custom_data_met",
+			customDataCondition,
+			NewStageState().WithCustomData("stage", 6),
+			true,
+		},
+		{
+			"custom_data_exceeded",
+			customDataCondition,
+			NewStageState().WithCustomData("stage", 7),
+			true,
+		},
+		{
+			"custom_data_not_met",
+			customDataCondition,
+			NewStageState().WithCustomData("stage", 5),
+			false,
+		},
+		{
+			"custom_data_missing_key",
+			customDataCondition,
+			NewStageState(),
 			false,
 		},
 		{

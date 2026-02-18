@@ -97,7 +97,7 @@ func pickedUpEventStatusProvider(transactionId uuid.UUID, field field.Model, d M
 	return producer.SingleMessageProvider(key, value)
 }
 
-func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d Model) model.Provider[[]kafka.Message] {
+func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d Model, characterId uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(d.Id()))
 	value := &messageDropKafka.StatusEvent[messageDropKafka.StatusEventReservedBody]{
 		TransactionId: transactionId,
@@ -108,7 +108,7 @@ func reservedEventStatusProvider(transactionId uuid.UUID, field field.Model, d M
 		DropId:        d.Id(),
 		Type:          messageDropKafka.StatusEventTypeReserved,
 		Body: messageDropKafka.StatusEventReservedBody{
-			CharacterId:   d.OwnerId(),
+			CharacterId:   characterId,
 			ItemId:        d.ItemId(),
 			Quantity:      d.Quantity(),
 			Meso:          d.Meso(),

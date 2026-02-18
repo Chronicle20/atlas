@@ -1348,6 +1348,15 @@ func evaluateCondition(c condition.Model, ss StageState) bool {
 		actual = ss.ItemCounts()[c.ReferenceId()]
 	case "monster_kill":
 		actual = ss.MonsterKills()[c.ReferenceId()]
+	case "custom_data":
+		if v, ok := ss.CustomData()[c.ReferenceKey()]; ok {
+			switch n := v.(type) {
+			case float64:
+				actual = uint32(n)
+			case int:
+				actual = uint32(n)
+			}
+		}
 	default:
 		return true
 	}

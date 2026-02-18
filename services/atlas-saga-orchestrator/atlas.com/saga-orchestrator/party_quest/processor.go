@@ -54,6 +54,7 @@ type Processor interface {
 	UpdateCustomData(instanceId uuid.UUID, updates map[string]string, increments []string) error
 	BroadcastMessage(instanceId uuid.UUID, messageType string, message string) error
 	StageClearAttempt(instanceId uuid.UUID) error
+	StageClearAttemptByCharacter(characterId uint32) error
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -335,6 +336,21 @@ func (p *ProcessorImpl) produceStageClearAttemptCommand(instanceId uuid.UUID) er
 	}
 	mp := producer.SingleMessageProvider(key, value)
 	return produceToCommandTopic(p.l, p.ctx)(mp)
+}
+
+// StageClearAttemptByCharacter looks up the PQ instance by character and produces a STAGE_CLEAR_ATTEMPT command.
+func (p *ProcessorImpl) StageClearAttemptByCharacter(characterId uint32) error {
+	inst, err := requests.Provider[InstanceRestModel, InstanceRestModel](p.l, p.ctx)(requestInstanceByCharacterId(characterId), ExtractInstance)()
+	if err != nil {
+		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
+	}
+
+	p.l.WithFields(logrus.Fields{
+		"character_id": characterId,
+		"instance_id":  inst.Id.String(),
+	}).Debug("Resolved PQ instance for stage clear attempt")
+
+	return p.StageClearAttempt(inst.Id)
 }
 
 // compareUint32 evaluates: actual <operator> expected

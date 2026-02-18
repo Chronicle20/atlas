@@ -13,7 +13,7 @@ func SpawnDropCommandProvider(f field.Model, itemId uint32, quantity uint32, mes
 		ItemId:       itemId,
 		Quantity:     quantity,
 		Mesos:        mesos,
-		DropType:     0,
+		DropType:     2,
 		X:            x,
 		Y:            y,
 		OwnerId:      0,

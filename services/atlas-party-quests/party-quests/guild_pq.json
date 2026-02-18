@@ -27,6 +27,14 @@
   ],
   "failRequirements": [],
   "exit": 990001100,
+  "bonus": {
+    "mapId": 990001000,
+    "duration": 40,
+    "entry": "auto",
+    "properties": {
+      "boxReactors": [9202012]
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -192,19 +200,6 @@
         "bossMonsters": [9300028],
         "markOfEvilId": 4001035,
         "otherMonsters": [9300022, 9300023]
-      }
-    },
-    {
-      "index": 7,
-      "name": "Bonus Stage",
-      "mapIds": [990001000],
-      "type": "bonus",
-      "duration": 40,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "boxReactors": [9202012]
       }
     }
   ],

@@ -90,6 +90,9 @@ func main() {
 					if err := ip.TickBonusTimerAndEmit(); err != nil {
 						l.WithError(err).Warn("Error ticking bonus timer.")
 					}
+					if err := ip.TickCompletionTimerAndEmit(); err != nil {
+						l.WithError(err).Warn("Error ticking completion timer.")
+					}
 					if err := ip.TickRegistrationTimerAndEmit(); err != nil {
 						l.WithError(err).Warn("Error ticking registration timer.")
 					}

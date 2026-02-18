@@ -21,6 +21,7 @@ type Builder struct {
 	startEvents       []EventTrigger
 	failRequirements  []condition.Model
 	exit              uint32
+	bonus             *Bonus
 	stages            []stage.Model
 	rewards           []reward.Model
 	createdAt         time.Time
@@ -90,6 +91,11 @@ func (b *Builder) SetExit(exit uint32) *Builder {
 	return b
 }
 
+func (b *Builder) SetBonus(bonus *Bonus) *Builder {
+	b.bonus = bonus
+	return b
+}
+
 func (b *Builder) SetStages(stages []stage.Model) *Builder {
 	b.stages = stages
 	return b
@@ -128,6 +134,7 @@ func (b *Builder) Build() (Model, error) {
 		startEvents:       b.startEvents,
 		failRequirements:  b.failRequirements,
 		exit:              b.exit,
+		bonus:             b.bonus,
 		stages:            b.stages,
 		rewards:           b.rewards,
 		createdAt:         b.createdAt,

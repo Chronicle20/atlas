@@ -36,6 +36,7 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStageStateCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateCustomDataCommand(db))))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleBroadcastMessageCommand(db))))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterBonusCommand(db))))
 	}
 }
 
@@ -141,5 +142,16 @@ func handleBroadcastMessageCommand(db *gorm.DB) message.Handler[pq.Command[pq.Br
 
 		l.Debugf("Handling BROADCAST_MESSAGE command for instance [%s].", c.Body.InstanceId)
 		_ = instance.NewProcessor(l, ctx, db).BroadcastMessageAndEmit(c.Body.InstanceId, c.Body.MessageType, c.Body.Message)
+	}
+}
+
+func handleEnterBonusCommand(db *gorm.DB) message.Handler[pq.Command[pq.EnterBonusCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c pq.Command[pq.EnterBonusCommandBody]) {
+		if c.Type != pq.CommandTypeEnterBonus {
+			return
+		}
+
+		l.Debugf("Handling ENTER_BONUS command for instance [%s].", c.Body.InstanceId)
+		_ = instance.NewProcessor(l, ctx, db).EnterBonusAndEmit(c.Body.InstanceId)
 	}
 }

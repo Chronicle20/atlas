@@ -15,6 +15,7 @@ const (
 	StateActive      State = "active"
 	StateClearing    State = "clearing"
 	StateCompleted   State = "completed"
+	StateBonus       State = "bonus"
 	StateFailed      State = "failed"
 )
 

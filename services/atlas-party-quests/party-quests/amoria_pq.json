@@ -32,6 +32,17 @@
   ],
   "failRequirements": [],
   "exit": 670011000,
+  "bonus": {
+    "mapId": 670010800,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "couplesVariant": 670010750,
+      "vaultVariant": 670010800,
+      "cupidCodePieceId": 4031597,
+      "couplesRequiredPieces": 35
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -157,35 +168,6 @@
       "properties": {
         "collectItemId": 4031594,
         "bossPhases": 3
-      }
-    },
-    {
-      "index": 6,
-      "name": "Bonus Stage",
-      "mapIds": [670010800, 670010750],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [
-        {
-          "type": "random_item",
-          "amount": 1,
-          "items": [
-            {"templateId": 1102101, "weight": 1, "quantity": 1},
-            {"templateId": 1102102, "weight": 1, "quantity": 1},
-            {"templateId": 1102103, "weight": 1, "quantity": 1},
-            {"templateId": 1102104, "weight": 1, "quantity": 1},
-            {"templateId": 1102105, "weight": 1, "quantity": 1},
-            {"templateId": 1102106, "weight": 1, "quantity": 1}
-          ]
-        }
-      ],
-      "warpType": "all",
-      "properties": {
-        "couplesVariant": 670010750,
-        "vaultVariant": 670010800,
-        "cupidCodePieceId": 4031597,
-        "couplesRequiredPieces": 35
       }
     }
   ],

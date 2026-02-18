@@ -32,6 +32,14 @@
   ],
   "failRequirements": [],
   "exit": 610030010,
+  "bonus": {
+    "mapId": 610030800,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "chestReactors": [6102002, 6102003, 6102004, 6102005]
+    }
+  },
   "stages": [
     {
       "index": 0,
@@ -137,19 +145,6 @@
       "rewards": [],
       "warpType": "all",
       "properties": {}
-    },
-    {
-      "index": 7,
-      "name": "Bonus Stage",
-      "mapIds": [610030800],
-      "type": "bonus",
-      "duration": 60,
-      "clearConditions": [],
-      "rewards": [],
-      "warpType": "all",
-      "properties": {
-        "chestReactors": [6102002, 6102003, 6102004, 6102005]
-      }
     }
   ],
   "rewards": []

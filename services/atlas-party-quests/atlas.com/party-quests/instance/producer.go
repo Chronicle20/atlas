@@ -196,6 +196,20 @@ func destroyReactorsInFieldProvider(worldId world.Id, channelId channel.Id, mapI
 	return producer.SingleMessageProvider(key, value)
 }
 
+func bonusEnteredEventProvider(worldId world.Id, instanceId uuid.UUID, questId string, mapId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(0))
+	value := &pq.StatusEvent[pq.BonusEnteredEventBody]{
+		WorldId:    worldId,
+		InstanceId: instanceId,
+		QuestId:    questId,
+		Type:       pq.EventTypeBonusEntered,
+		Body: pq.BonusEnteredEventBody{
+			MapId: mapId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func instanceDestroyedEventProvider(worldId world.Id, instanceId uuid.UUID, questId string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(0))
 	value := &pq.StatusEvent[pq.InstanceDestroyedEventBody]{

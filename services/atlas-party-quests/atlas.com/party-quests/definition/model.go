@@ -44,6 +44,7 @@ type Model struct {
 	startEvents       []EventTrigger
 	failRequirements  []condition.Model
 	exit              uint32
+	bonus             *Bonus
 	stages            []stage.Model
 	rewards           []reward.Model
 	createdAt         time.Time
@@ -60,6 +61,7 @@ func (m Model) StartRequirements() []condition.Model   { return m.startRequireme
 func (m Model) StartEvents() []EventTrigger            { return m.startEvents }
 func (m Model) FailRequirements() []condition.Model    { return m.failRequirements }
 func (m Model) Exit() uint32                           { return m.exit }
+func (m Model) Bonus() *Bonus                          { return m.bonus }
 func (m Model) Stages() []stage.Model                  { return m.stages }
 func (m Model) Rewards() []reward.Model                { return m.rewards }
 func (m Model) CreatedAt() time.Time                   { return m.createdAt }

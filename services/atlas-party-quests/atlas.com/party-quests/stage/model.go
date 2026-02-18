@@ -12,7 +12,6 @@ const (
 	TypeReactorTrigger      = "reactor_trigger"
 	TypeWarpPuzzle          = "warp_puzzle"
 	TypeSequenceMemoryGame  = "sequence_memory_game"
-	TypeBonus               = "bonus"
 	TypeBoss                = "boss"
 )
 

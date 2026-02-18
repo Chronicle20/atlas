@@ -5,6 +5,7 @@ import (
 	"atlas-party-quests/definition"
 	"atlas-party-quests/instance"
 	characterConsumer "atlas-party-quests/kafka/consumer/character"
+	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
 	"atlas-party-quests/logger"
 	"atlas-party-quests/service"
@@ -57,8 +58,10 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	monsterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	pqConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	characterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	monsterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 
 	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
 	if err != nil {

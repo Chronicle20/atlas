@@ -5,6 +5,7 @@ import (
 	"atlas-party-quests/kafka/message"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/google/uuid"
 )
 
@@ -25,6 +26,12 @@ type ProcessorMock struct {
 	UpdateCustomDataFunc      func(instanceId uuid.UUID, updates map[string]string, increments []string) error
 	BroadcastMessageFunc      func(mb *message.Buffer) func(instanceId uuid.UUID, messageType string, msg string) error
 	BroadcastMessageAndEmitFunc func(instanceId uuid.UUID, messageType string, msg string) error
+	HandleFriendlyMonsterDamagedFunc      func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterDamagedAndEmitFunc func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterKilledFunc        func(mb *message.Buffer) func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterKilledAndEmitFunc func(f field.Model, monsterId uint32) error
+	HandleFriendlyMonsterDropFunc          func(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error
+	HandleFriendlyMonsterDropAndEmitFunc   func(f field.Model, monsterId uint32, itemCount uint32) error
 	GetByFieldInstanceFunc    func(fieldInstance uuid.UUID) (instance.Model, error)
 	DestroyFunc               func(mb *message.Buffer) func(instanceId uuid.UUID, reason string) error
 	DestroyAndEmitFunc        func(instanceId uuid.UUID, reason string) error
@@ -154,6 +161,48 @@ func (m *ProcessorMock) BroadcastMessage(mb *message.Buffer) func(instanceId uui
 func (m *ProcessorMock) BroadcastMessageAndEmit(instanceId uuid.UUID, messageType string, msg string) error {
 	if m.BroadcastMessageAndEmitFunc != nil {
 		return m.BroadcastMessageAndEmitFunc(instanceId, messageType, msg)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterDamaged(mb *message.Buffer) func(f field.Model, monsterId uint32) error {
+	if m.HandleFriendlyMonsterDamagedFunc != nil {
+		return m.HandleFriendlyMonsterDamagedFunc(mb)
+	}
+	return func(field.Model, uint32) error { return nil }
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterDamagedAndEmit(f field.Model, monsterId uint32) error {
+	if m.HandleFriendlyMonsterDamagedAndEmitFunc != nil {
+		return m.HandleFriendlyMonsterDamagedAndEmitFunc(f, monsterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterKilled(mb *message.Buffer) func(f field.Model, monsterId uint32) error {
+	if m.HandleFriendlyMonsterKilledFunc != nil {
+		return m.HandleFriendlyMonsterKilledFunc(mb)
+	}
+	return func(field.Model, uint32) error { return nil }
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterKilledAndEmit(f field.Model, monsterId uint32) error {
+	if m.HandleFriendlyMonsterKilledAndEmitFunc != nil {
+		return m.HandleFriendlyMonsterKilledAndEmitFunc(f, monsterId)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterDrop(mb *message.Buffer) func(f field.Model, monsterId uint32, itemCount uint32) error {
+	if m.HandleFriendlyMonsterDropFunc != nil {
+		return m.HandleFriendlyMonsterDropFunc(mb)
+	}
+	return func(field.Model, uint32, uint32) error { return nil }
+}
+
+func (m *ProcessorMock) HandleFriendlyMonsterDropAndEmit(f field.Model, monsterId uint32, itemCount uint32) error {
+	if m.HandleFriendlyMonsterDropAndEmitFunc != nil {
+		return m.HandleFriendlyMonsterDropAndEmitFunc(f, monsterId, itemCount)
 	}
 	return nil
 }

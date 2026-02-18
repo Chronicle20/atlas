@@ -73,6 +73,7 @@ func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEnt
 	}
 
 	f := m.Field()
+	var dropCount uint32
 	for _, d := range filtered {
 		if rand.Int31n(999999) >= int32(d.Chance()) {
 			continue
@@ -96,6 +97,15 @@ func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEnt
 		err := producer.ProviderImpl(t.l)(ctx)(drop.EnvCommandTopicDrop)(cp)
 		if err != nil {
 			t.l.WithError(err).Errorf("Unable to emit drop for friendly monster [%d].", m.UniqueId())
+		} else {
+			dropCount++
+		}
+	}
+
+	if dropCount > 0 {
+		err := producer.ProviderImpl(t.l)(ctx)(EnvEventTopicMonsterStatus)(friendlyDropStatusEventProvider(f, m.UniqueId(), e.MonsterId(), dropCount))
+		if err != nil {
+			t.l.WithError(err).Errorf("Unable to emit friendly drop event for monster [%d].", m.UniqueId())
 		}
 	}
 }

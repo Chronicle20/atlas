@@ -89,6 +89,10 @@ func damageReflectedEventProvider(m Model, characterId uint32, reflectDamage uin
 	})
 }
 
+func friendlyDropStatusEventProvider(f field.Model, uniqueId uint32, monsterId uint32, itemCount uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(f, uniqueId, monsterId, EventMonsterStatusFriendlyDrop, statusEventFriendlyDropBody{ItemCount: itemCount})
+}
+
 func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {

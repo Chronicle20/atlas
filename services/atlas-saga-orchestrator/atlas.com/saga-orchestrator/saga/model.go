@@ -486,9 +486,10 @@ const (
 	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"     // Warp all party quest members to a map
 
 	// Party quest reactor orchestration actions
-	UpdatePqCustomData Action = "update_pq_custom_data"  // Update custom data on a party quest instance
-	HitReactor         Action = "hit_reactor"             // Programmatically hit a reactor by name
-	BroadcastPqMessage Action = "broadcast_pq_message"    // Broadcast a message to party quest members
+	UpdatePqCustomData  Action = "update_pq_custom_data"  // Update custom data on a party quest instance
+	HitReactor          Action = "hit_reactor"             // Programmatically hit a reactor by name
+	BroadcastPqMessage  Action = "broadcast_pq_message"    // Broadcast a message to party quest members
+	StageClearAttemptPq Action = "stage_clear_attempt_pq"  // Attempt to clear the current PQ stage
 )
 
 // Step represents a single step within a saga.
@@ -1302,6 +1303,12 @@ type BroadcastPqMessagePayload struct {
 	Message     string    `json:"message"`     // Message text
 }
 
+// StageClearAttemptPqPayload represents the payload for attempting to clear the current PQ stage.
+// This produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
+type StageClearAttemptPqPayload struct {
+	InstanceId uuid.UUID `json:"instanceId"` // Party quest instance ID
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1744,6 +1751,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case BroadcastPqMessage:
 		var payload BroadcastPqMessagePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StageClearAttemptPq:
+		var payload StageClearAttemptPqPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

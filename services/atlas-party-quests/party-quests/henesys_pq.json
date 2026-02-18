@@ -78,7 +78,25 @@
       "warpType": "all",
       "properties": {
         "npcId": 1012114,
-        "collectItemId": 4001101
+        "collectItemId": 4001101,
+        "friendlyMonster": {
+          "monsterId": 9300061,
+          "x": -183,
+          "y": -433,
+          "fh": 7,
+          "spawnMessage": "Protect the Moon Bunny!",
+          "onDamaged": {
+            "hitInterval": 5,
+            "message": "The Moon Bunny is feeling sick. Please protect it so it can make delicious rice cakes."
+          },
+          "onKilled": {
+            "message": "Due to your failure to protect the Moon Bunny, you have been transported to the Exile Map.",
+            "action": "fail"
+          },
+          "onDrop": {
+            "messageTemplate": "The Moon Bunny made rice cake number {count}."
+          }
+        }
       }
     },
     {

@@ -29,7 +29,7 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		t, _ = topic.EnvProvider(l)(reactor.EnvCommandTopic)()
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
 		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleHit)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClearCooldowns)))
+		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyInField)))
 	}
 }
 
@@ -63,11 +63,11 @@ func handleHit(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reac
 	}
 }
 
-func handleClearCooldowns(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reactor.ClearCooldownsCommandBody]) {
-	if c.Type != reactor.CommandTypeClearCooldowns {
+func handleDestroyInField(l logrus.FieldLogger, ctx context.Context, c reactor.Command[reactor.DestroyInFieldCommandBody]) {
+	if c.Type != reactor.CommandTypeDestroyInField {
 		return
 	}
 
 	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
-	reactor.ClearCooldownsInField(l)(ctx)(f)
+	reactor.DestroyInField(l)(ctx)(f)
 }

@@ -503,15 +503,15 @@ func (p *ProcessorImpl) executeClearActions(stg stage.Model, inst Model) {
 	}
 }
 
-func (p *ProcessorImpl) emitClearReactorCooldowns(mb *message.Buffer, inst Model, mapIds []uint32) {
+func (p *ProcessorImpl) emitDestroyReactorsInField(mb *message.Buffer, inst Model, mapIds []uint32) {
 	for i, mid := range mapIds {
 		fieldInstance := uuid.Nil
 		if i < len(inst.FieldInstances()) {
 			fieldInstance = inst.FieldInstances()[i]
 		}
-		err := mb.Put(reactorMessage.EnvCommandTopic, clearReactorCooldownsProvider(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance))
+		err := mb.Put(reactorMessage.EnvCommandTopic, destroyReactorsInFieldProvider(inst.WorldId(), inst.ChannelId(), _map.Id(mid), fieldInstance))
 		if err != nil {
-			p.l.WithError(err).Warnf("Failed to emit clear reactor cooldowns for map [%d] instance [%s].", mid, fieldInstance)
+			p.l.WithError(err).Warnf("Failed to emit destroy reactors for map [%d] instance [%s].", mid, fieldInstance)
 		}
 	}
 }
@@ -617,10 +617,10 @@ func (p *ProcessorImpl) complete(mb *message.Buffer, inst Model, def definition.
 		return err
 	}
 
-	// Clear reactor cooldowns for current stage maps
+	// Destroy reactors in current stage maps
 	stageIdx := inst.CurrentStageIndex()
 	if int(stageIdx) < len(def.Stages()) {
-		p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+		p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 	}
 
 	// Check for bonus stage
@@ -683,12 +683,12 @@ func (p *ProcessorImpl) Forfeit(mb *message.Buffer) func(instanceId uuid.UUID) e
 			return err
 		}
 
-		// Clear reactor cooldowns for current stage maps
+		// Destroy reactors in current stage maps
 		def, defErr := definition.NewProcessor(p.l, p.ctx, p.db).ByIdProvider(inst.DefinitionId())()
 		if defErr == nil {
 			stageIdx := inst.CurrentStageIndex()
 			if int(stageIdx) < len(def.Stages()) {
-				p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+				p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 			}
 		}
 
@@ -840,11 +840,11 @@ func (p *ProcessorImpl) Destroy(mb *message.Buffer) func(instanceId uuid.UUID, r
 			p.l.WithError(err).Warnf("Failed to load definition for instance [%s], using exit map 0.", instanceId)
 		}
 
-		// Destroy monsters and clear reactor cooldowns in the current stage maps
+		// Destroy monsters and reactors in the current stage maps
 		stageIdx := inst.CurrentStageIndex()
 		if int(stageIdx) < len(def.Stages()) {
 			p.destroyMonstersInStage(def.Stages()[stageIdx], inst)
-			p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+			p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 		}
 
 		exitMap := _map.Id(def.Exit())
@@ -902,7 +902,7 @@ func (p *ProcessorImpl) TickGlobalTimer(mb *message.Buffer) error {
 			_ = mb.Put(pq.EnvEventStatusTopic, failedEventProvider(inst.WorldId(), inst.Id(), inst.QuestId(), "time_expired"))
 			stageIdx := inst.CurrentStageIndex()
 			if int(stageIdx) < len(def.Stages()) {
-				p.emitClearReactorCooldowns(mb, inst, def.Stages()[stageIdx].MapIds())
+				p.emitDestroyReactorsInField(mb, inst, def.Stages()[stageIdx].MapIds())
 			}
 			_ = p.Destroy(mb)(inst.Id(), "time_expired")
 		}

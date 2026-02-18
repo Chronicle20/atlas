@@ -14,7 +14,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_REACTOR"
 	CommandTypeCreate        = "CREATE"
 	CommandTypeHit           = "HIT"
-	CommandTypeClearCooldowns = "CLEAR_COOLDOWNS"
+	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
 type Command[E any] struct {
@@ -43,7 +43,7 @@ type HitCommandBody struct {
 	SkillId     uint32 `json:"skillId"`
 }
 
-type ClearCooldownsCommandBody struct {
+type DestroyInFieldCommandBody struct {
 }
 
 // Reactor Actions topic and commands

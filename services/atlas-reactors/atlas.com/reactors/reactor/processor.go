@@ -62,13 +62,19 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 	}
 }
 
-func ClearCooldownsInField(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) {
+func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) {
 	return func(ctx context.Context) func(f field.Model) {
 		t := tenant.MustFromContext(ctx)
 		return func(f field.Model) {
+			reactors := GetRegistry().GetInField(t, f)
+			for _, r := range reactors {
+				CancelPendingActivation(r.Id())
+				GetRegistry().Remove(t, r.Id())
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(r))
+			}
 			mk := NewMapKey(f)
 			GetRegistry().ClearAllCooldownsForMap(t, mk)
-			l.Debugf("Cleared all reactor cooldowns for map [%d] instance [%s].", f.MapId(), f.Instance())
+			l.Debugf("Destroyed [%d] reactors and cleared cooldowns for map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
 		}
 	}
 }

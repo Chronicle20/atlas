@@ -9,7 +9,7 @@ import (
 
 const (
 	EnvCommandTopic          = "COMMAND_TOPIC_REACTOR"
-	CommandTypeClearCooldowns = "CLEAR_COOLDOWNS"
+	CommandTypeDestroyInField = "DESTROY_IN_FIELD"
 )
 
 type Command[E any] struct {
@@ -21,5 +21,5 @@ type Command[E any] struct {
 	Body      E          `json:"body"`
 }
 
-type ClearCooldownsCommandBody struct {
+type DestroyInFieldCommandBody struct {
 }

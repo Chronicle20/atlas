@@ -183,15 +183,15 @@ func sendMessageProvider(worldId world.Id, channelId channel.Id, characterId uin
 	return producer.SingleMessageProvider(key, value)
 }
 
-func clearReactorCooldownsProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Provider[[]kafka.Message] {
+func destroyReactorsInFieldProvider(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(mapId))
-	value := &reactorMessage.Command[reactorMessage.ClearCooldownsCommandBody]{
+	value := &reactorMessage.Command[reactorMessage.DestroyInFieldCommandBody]{
 		WorldId:   worldId,
 		ChannelId: channelId,
 		MapId:     mapId,
 		Instance:  instance,
-		Type:      reactorMessage.CommandTypeClearCooldowns,
-		Body:      reactorMessage.ClearCooldownsCommandBody{},
+		Type:      reactorMessage.CommandTypeDestroyInField,
+		Body:      reactorMessage.DestroyInFieldCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

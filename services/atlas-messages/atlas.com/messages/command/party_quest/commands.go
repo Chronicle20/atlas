@@ -11,14 +11,14 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 
-func PQRegisterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func PQRegisterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@pq\s+register\s+(\S+)$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) < 2 {
@@ -48,9 +48,10 @@ func PQRegisterCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	}
 }
 
-func PQStageCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func PQStageCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@pq\s+stage$`)
 			match := re.FindStringSubmatch(m)
 			if match == nil {

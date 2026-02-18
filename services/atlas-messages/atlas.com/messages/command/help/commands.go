@@ -7,7 +7,6 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
@@ -36,9 +35,9 @@ var commandSyntaxList = []string{
 	"@pq stage - Force-advance the current party quest stage",
 }
 
-func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(_ context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`^@help$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) != 1 {
@@ -52,8 +51,6 @@ func HelpCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch c
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
 					mp := message.NewProcessor(l, ctx)
-
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), c.MapId()).Build()
 					for _, text := range commandSyntaxList {
 						err := mp.IssuePinkText(f, 0, text, []uint32{c.Id()})
 						if err != nil {

@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -26,9 +26,9 @@ func createTestCharacter(id uint32, name string, isGm bool) character.Model {
 
 // mockCommandProducer creates a simple command producer for testing
 func mockCommandProducer(pattern string) Producer {
-	return func(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (Executor, bool) {
-		return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (Executor, bool) {
-			return func(ch channel.Model, c character.Model, m string) (Executor, bool) {
+	return func(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (Executor, bool) {
+		return func(ctx context.Context) func(f field.Model, c character.Model, m string) (Executor, bool) {
+			return func(_ field.Model, c character.Model, m string) (Executor, bool) {
 				if m == pattern {
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
@@ -74,7 +74,7 @@ func TestRegistry_Get(t *testing.T) {
 	gmCharacter := createTestCharacter(12345, "TestGM", true)
 	_ = createTestCharacter(12346, "TestPlayer", false) // Available for future permission tests
 
-	ch := channel.NewModel(1, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {
 		name         string
@@ -111,7 +111,7 @@ func TestRegistry_Get(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			executor, found := Registry().Get(logger, ctx, ch, tc.character, tc.message)
+			executor, found := Registry().Get(logger, ctx, f, tc.character, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v for message '%s'", tc.expectFound, found, tc.message)
@@ -139,7 +139,7 @@ func TestRegistry_Get_MultipleCommands(t *testing.T) {
 	Registry().Add(mockCommandProducer("@multi_test_2"))
 	Registry().Add(mockCommandProducer("@multi_test_3"))
 
-	ch := channel.NewModel(1, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	testCases := []struct {
 		name        string
@@ -170,7 +170,7 @@ func TestRegistry_Get_MultipleCommands(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			_, found := Registry().Get(logger, ctx, ch, gmCharacter, tc.message)
+			_, found := Registry().Get(logger, ctx, f, gmCharacter, tc.message)
 
 			if found != tc.expectFound {
 				t.Errorf("Expected found=%v, got found=%v for message '%s'", tc.expectFound, found, tc.message)
@@ -185,13 +185,13 @@ func TestRegistry_Get_ExecutorExecution(t *testing.T) {
 
 	gmCharacter := createTestCharacter(12345, "TestGM", true)
 
-	ch := channel.NewModel(1, 1)
+	f := field.NewBuilder(1, 1, 100000000).Build()
 
 	// Add a command that we can verify execution
 	executed := false
-	executorCommand := func(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (Executor, bool) {
-		return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (Executor, bool) {
-			return func(ch channel.Model, c character.Model, m string) (Executor, bool) {
+	executorCommand := func(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (Executor, bool) {
+		return func(ctx context.Context) func(f field.Model, c character.Model, m string) (Executor, bool) {
+			return func(_ field.Model, c character.Model, m string) (Executor, bool) {
 				if m == "@executor_test" {
 					return func(l logrus.FieldLogger) func(ctx context.Context) error {
 						return func(ctx context.Context) error {
@@ -207,7 +207,7 @@ func TestRegistry_Get_ExecutorExecution(t *testing.T) {
 
 	Registry().Add(executorCommand)
 
-	executor, found := Registry().Get(logger, ctx, ch, gmCharacter, "@executor_test")
+	executor, found := Registry().Get(logger, ctx, f, gmCharacter, "@executor_test")
 	if !found {
 		t.Fatal("Expected command to be found")
 	}

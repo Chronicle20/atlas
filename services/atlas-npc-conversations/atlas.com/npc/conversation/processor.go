@@ -866,7 +866,7 @@ func (p *ProcessorImpl) processPartyQuestActionState(ctx ConversationContext, st
 	ctx.Context()["partyQuestAction_notLeaderState"] = partyQuestAction.NotLeaderState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -925,7 +925,7 @@ func (p *ProcessorImpl) processPartyQuestBonusActionState(ctx ConversationContex
 	ctx.Context()["partyQuestBonusAction_failureState"] = bonusAction.FailureState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),

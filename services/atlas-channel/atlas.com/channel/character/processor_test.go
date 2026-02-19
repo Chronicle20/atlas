@@ -181,12 +181,7 @@ func TestMockProcessor_Decorators(t *testing.T) {
 	testChar := createTestCharacter(111, "DecoratorChar", 20)
 
 	// Test that decorators return the character unchanged (mock implementation)
-	result := mockProc.PetModelDecorator(testChar)
-	if result.Id() != testChar.Id() {
-		t.Error("PetModelDecorator() changed character ID unexpectedly")
-	}
-
-	result = mockProc.InventoryDecorator(testChar)
+	result := mockProc.InventoryDecorator(testChar)
 	if result.Id() != testChar.Id() {
 		t.Error("InventoryDecorator() changed character ID unexpectedly")
 	}

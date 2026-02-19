@@ -45,7 +45,6 @@ func uint128ToBigInt(a Uint128) *big.Int {
 }
 
 func TestMult(t *testing.T) {
-	rand.Seed(0)
 	mod := big.NewInt(1)
 	mod.Lsh(mod, 128)
 	resbig, multbig := &big.Int{}, &big.Int{}

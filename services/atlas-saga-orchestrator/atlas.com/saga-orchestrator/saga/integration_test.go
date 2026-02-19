@@ -879,7 +879,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 				Quantity:   1,
 			},
 		}).
-		AddStep("step-3-final-action", Pending, AwardInventory, AwardItemActionPayload{
+		AddStep("step-3-final-action", Pending, AwardAsset, AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: ItemPayload{
 				TemplateId: 2000000,
@@ -967,7 +967,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	// Test dynamic step addition with specific ordering constraints
 	// Add another step dynamically to ensure proper insertion
 	additionalStepId := fmt.Sprintf("additional_step_%d", transactionId.ClockSequence()+1)
-	additionalStep := NewStep[any](additionalStepId, Pending, AwardInventory, AwardItemActionPayload{
+	additionalStep := NewStep[any](additionalStepId, Pending, AwardAsset, AwardItemActionPayload{
 		CharacterId: 12345,
 		Item: ItemPayload{
 			TemplateId: 3000000,
@@ -1065,7 +1065,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 				Quantity:   1,
 			},
 		}).
-		AddStep("step-3", Pending, AwardInventory, AwardItemActionPayload{
+		AddStep("step-3", Pending, AwardAsset, AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: ItemPayload{
 				TemplateId: 2000000,

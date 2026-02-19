@@ -40,7 +40,7 @@ func GetNpcStringRegistry() *document.Registry[string, NpcString] {
 }
 
 func InitString(t tenant.Model, path string) error {
-	exml, err := xml.Read(path)
+	exml, err := xml.FromPathProvider(path)()
 	if err != nil {
 		return err
 	}

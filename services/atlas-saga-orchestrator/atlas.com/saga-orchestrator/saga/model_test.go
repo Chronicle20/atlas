@@ -32,8 +32,8 @@ func TestSaga_Failing(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Pending, AwardInventory, nil).
-					AddStep("step2", Completed, AwardInventory, nil)
+					AddStep("step1", Pending, AwardAsset, nil).
+					AddStep("step2", Completed, AwardAsset, nil)
 			},
 			expected: false,
 		},
@@ -44,8 +44,8 @@ func TestSaga_Failing(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Failed, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Failed, AwardAsset, nil)
 			},
 			expected: true,
 		},
@@ -90,8 +90,8 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Completed, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Completed, AwardAsset, nil)
 			},
 			expectStep:     false,
 			expectedStepId: "",
@@ -103,9 +103,9 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Pending, AwardInventory, nil).
-					AddStep("step3", Pending, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Pending, AwardAsset, nil).
+					AddStep("step3", Pending, AwardAsset, nil)
 			},
 			expectStep:     true,
 			expectedStepId: "step2",
@@ -155,8 +155,8 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Pending, AwardInventory, nil).
-					AddStep("step2", Pending, AwardInventory, nil)
+					AddStep("step1", Pending, AwardAsset, nil).
+					AddStep("step2", Pending, AwardAsset, nil)
 			},
 			expected: -1,
 		},
@@ -167,9 +167,9 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Completed, AwardInventory, nil).
-					AddStep("step3", Pending, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Completed, AwardAsset, nil).
+					AddStep("step3", Pending, AwardAsset, nil)
 			},
 			expected: 1,
 		},
@@ -180,10 +180,10 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Failed, AwardInventory, nil).
-					AddStep("step3", Completed, AwardInventory, nil).
-					AddStep("step4", Pending, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Failed, AwardAsset, nil).
+					AddStep("step3", Completed, AwardAsset, nil).
+					AddStep("step4", Pending, AwardAsset, nil)
 			},
 			expected: 2,
 		},
@@ -226,8 +226,8 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Completed, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Completed, AwardAsset, nil)
 			},
 			expected: -1,
 		},
@@ -238,9 +238,9 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Completed, AwardInventory, nil).
-					AddStep("step2", Pending, AwardInventory, nil).
-					AddStep("step3", Pending, AwardInventory, nil)
+					AddStep("step1", Completed, AwardAsset, nil).
+					AddStep("step2", Pending, AwardAsset, nil).
+					AddStep("step3", Pending, AwardAsset, nil)
 			},
 			expected: 1,
 		},
@@ -251,10 +251,10 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(InventoryTransaction).
 					SetInitiatedBy("test").
-					AddStep("step1", Failed, AwardInventory, nil).
-					AddStep("step2", Completed, AwardInventory, nil).
-					AddStep("step3", Pending, AwardInventory, nil).
-					AddStep("step4", Pending, AwardInventory, nil)
+					AddStep("step1", Failed, AwardAsset, nil).
+					AddStep("step2", Completed, AwardAsset, nil).
+					AddStep("step3", Pending, AwardAsset, nil).
+					AddStep("step4", Pending, AwardAsset, nil)
 			},
 			expected: 2,
 		},
@@ -294,8 +294,8 @@ func TestBuilder(t *testing.T) {
 		},
 	}
 
-	builder.AddStep("step1", Pending, AwardInventory, payload)
-	builder.AddStep("step2", Completed, AwardInventory, payload)
+	builder.AddStep("step1", Pending, AwardAsset, payload)
+	builder.AddStep("step2", Completed, AwardAsset, payload)
 
 	// Build the saga
 	saga, err := builder.Build()
@@ -652,7 +652,7 @@ func TestCreateAndEquipAssetAction(t *testing.T) {
 	t.Run("Action in action constants", func(t *testing.T) {
 		// Test that CreateAndEquipAsset is one of the defined actions
 		actions := []Action{
-			AwardInventory,
+			AwardAsset,
 			AwardAsset,
 			AwardExperience,
 			AwardLevel,

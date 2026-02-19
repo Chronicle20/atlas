@@ -46,7 +46,7 @@ func handleGetById(d *rest.HandlerDependency, c *rest.HandlerContext) http.Handl
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 		}
 	})
 }
@@ -71,7 +71,7 @@ func handleGetByIdInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 								return
 							}
 
-							server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+							server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 						}
 					})
 				})
@@ -132,7 +132,7 @@ func handleGetInMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 							return
 						}
 
-						server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 					}
 				})
 			})

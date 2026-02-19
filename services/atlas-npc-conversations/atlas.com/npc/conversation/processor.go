@@ -717,7 +717,7 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 			Quantity:   quantityMultiplier,
 		},
 	}
-	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardInventory, craftPayload)
+	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardAsset, craftPayload)
 
 	// Build and execute saga
 	s := sagaBuilder.Build()

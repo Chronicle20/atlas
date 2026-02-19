@@ -74,7 +74,6 @@ type ConditionInput struct {
 	Values          []int      `json:"values,omitempty"`          // Values for "in" operator
 	ReferenceId     uint32     `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
 	Step            string     `json:"step,omitempty"`            // For quest progress validation
-	ItemId          uint32     `json:"itemId,omitempty"`          // Deprecated: use ReferenceId instead
 	WorldId         world.Id   `json:"worldId,omitempty"`         // For mapCapacity conditions
 	ChannelId       channel.Id `json:"channelId,omitempty"`       // For mapCapacity conditions
 	IncludeEquipped bool       `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
@@ -193,16 +192,6 @@ func (b *ConditionBuilder) SetStep(step string) *ConditionBuilder {
 	return b
 }
 
-// SetItemId sets the item ID (deprecated: use SetReferenceId instead)
-func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
-	if b.err != nil {
-		return b
-	}
-
-	b.referenceId = &itemId
-	return b
-}
-
 // SetIncludeEquipped sets whether to include equipped items in item condition checks
 func (b *ConditionBuilder) SetIncludeEquipped(includeEquipped bool) *ConditionBuilder {
 	if b.err != nil {
@@ -224,11 +213,8 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 		b.SetValues(input.Values)
 	}
 
-	// Handle ReferenceId (preferred) or ItemId (deprecated)
 	if input.ReferenceId != 0 {
 		b.SetReferenceId(input.ReferenceId)
-	} else if input.ItemId != 0 {
-		b.SetReferenceId(input.ItemId) // Migrate ItemId to ReferenceId
 	}
 
 	// Set step for quest progress validation
@@ -250,7 +236,7 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	// Validate required fields for specific condition types
 	switch ConditionType(input.Type) {
 	case ItemCondition:
-		if input.ReferenceId == 0 && input.ItemId == 0 {
+		if input.ReferenceId == 0 {
 			b.err = fmt.Errorf("referenceId is required for item conditions")
 		}
 	case QuestStatusCondition:

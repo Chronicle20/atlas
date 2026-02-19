@@ -38,7 +38,7 @@ func handleGetMonsterById(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 		}
 	})
 }

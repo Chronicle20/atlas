@@ -117,10 +117,10 @@ func TestConditionBuilder(t *testing.T) {
 		{
 			name: "Valid item equals condition",
 			input: ConditionInput{
-				Type:     "item",
-				Operator: "=",
-				Value:    10,
-				ItemId:   2000001,
+				Type:        "item",
+				Operator:    "=",
+				Value:       10,
+				ReferenceId: 2000001,
 			},
 			wantType:    ItemCondition,
 			wantOp:      Equals,
@@ -300,7 +300,7 @@ func TestProcessorValidateStructured(t *testing.T) {
 			name:        "Item condition - pass",
 			characterId: 123,
 			conditions: []ConditionInput{
-				{Type: "item", Operator: ">=", Value: 10, ItemId: 2000001},
+				{Type: "item", Operator: ">=", Value: 10, ReferenceId: 2000001},
 			},
 			setupMock: func(m *mock.ProcessorImpl) {
 				m.GetByIdFunc = func(decorators ...model.Decorator[character.Model]) func(characterId uint32) (character.Model, error) {

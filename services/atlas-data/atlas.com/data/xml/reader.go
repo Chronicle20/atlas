@@ -11,15 +11,6 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 )
 
-// deprecated
-func Read(path string) (*Node, error) {
-	n, err := FromPathProvider(path)()
-	if err != nil {
-		return nil, err
-	}
-	return &n, nil
-}
-
 type IdProvider func(path string, id uint32) model.Provider[Node]
 
 func PadUint32(value uint32, digits uint8) string {

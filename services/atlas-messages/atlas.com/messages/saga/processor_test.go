@@ -67,7 +67,7 @@ func TestProcessor_CreateWithMultipleSteps(t *testing.T) {
 		SetInitiatedBy("COMMAND").
 		AddStep("step1", Pending, AwardExperience, AwardExperiencePayload{CharacterId: 1}).
 		AddStep("step2", Pending, AwardMesos, AwardMesosPayload{CharacterId: 1, Amount: 1000}).
-		AddStep("step3", Pending, AwardInventory, AwardItemActionPayload{CharacterId: 1}).
+		AddStep("step3", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 1}).
 		Build()
 
 	if err != nil {
@@ -79,7 +79,7 @@ func TestProcessor_CreateWithMultipleSteps(t *testing.T) {
 	}
 
 	// Document step actions
-	expectedActions := []Action{AwardExperience, AwardMesos, AwardInventory}
+	expectedActions := []Action{AwardExperience, AwardMesos, AwardAsset}
 	for i, step := range saga.Steps {
 		if step.Action != expectedActions[i] {
 			t.Errorf("Step %d: expected action %s, got %s", i, expectedActions[i], step.Action)
@@ -155,7 +155,7 @@ func TestProcessor_CreateWithDifferentActions(t *testing.T) {
 		},
 		{
 			name:    "Award Inventory",
-			action:  AwardInventory,
+			action:  AwardAsset,
 			payload: AwardItemActionPayload{CharacterId: 12345, Item: ItemPayload{TemplateId: 2000000, Quantity: 1}},
 		},
 		{

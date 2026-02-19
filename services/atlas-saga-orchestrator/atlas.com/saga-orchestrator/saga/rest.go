@@ -73,7 +73,7 @@ type PayloadUnmarshaler func(interface{}) (any, error)
 
 // payloadUnmarshalers maps action types to their payload unmarshalers
 var payloadUnmarshalers = map[Action]PayloadUnmarshaler{
-	AwardInventory:       unmarshalAwardInventoryPayload,
+	AwardAsset:           unmarshalAwardAssetPayload,
 	AwardExperience:      unmarshalAwardExperiencePayload,
 	AwardLevel:           unmarshalAwardLevelPayload,
 	AwardMesos:           unmarshalAwardMesosPayload,
@@ -123,7 +123,7 @@ func unmarshalGenericPayload[T any](rawPayload interface{}) (T, error) {
 }
 
 // Unmarshalers for specific payload types
-func unmarshalAwardInventoryPayload(rawPayload interface{}) (any, error) {
+func unmarshalAwardAssetPayload(rawPayload interface{}) (any, error) {
 	return unmarshalGenericPayload[AwardItemActionPayload](rawPayload)
 }
 

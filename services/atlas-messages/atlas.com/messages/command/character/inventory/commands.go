@@ -90,7 +90,7 @@ func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 						s, buildErr := saga.NewBuilder().
 							SetSagaType(saga.InventoryTransaction).
 							SetInitiatedBy("atlas-messages").
-							AddStep("give_item", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+							AddStep("give_item", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 								CharacterId: id,
 								Item: saga.ItemPayload{
 									TemplateId: templateId,

@@ -1,13 +1,13 @@
 package configuration
 
 import (
-	"io/ioutil"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
 
 func loadConfiguration() (*Configuration, error) {
-	yamlFile, err := ioutil.ReadFile("config.yaml")
+	yamlFile, err := os.ReadFile("config.yaml")
 	if err != nil {
 		return nil, err
 	}

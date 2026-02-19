@@ -54,7 +54,7 @@ func handleGetMonstersInMap(d *rest.HandlerDependency, c *rest.HandlerContext) h
 							return
 						}
 
-						server.Marshal[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+						server.MarshalResponse[[]monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 					}
 				})
 			})
@@ -105,7 +105,7 @@ func handleCreateMonsterInMap(d *rest.HandlerDependency, c *rest.HandlerContext,
 							return
 						}
 
-						server.Marshal[monster.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+						server.MarshalResponse[monster.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 					}
 				})
 			})

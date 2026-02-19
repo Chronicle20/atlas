@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -12,6 +14,10 @@ import (
 func TestEvaluateContextValueAsInt_EmbeddedNegation(t *testing.T) {
 	// This test covers the bug where "-{context.cost}" was passed to arithmetic
 	// evaluation without resolving the {context.cost} placeholder first.
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+
 	l, _ := test.NewNullLogger()
 	l.SetLevel(logrus.DebugLevel)
 
@@ -28,8 +34,9 @@ func TestEvaluateContextValueAsInt_EmbeddedNegation(t *testing.T) {
 	defer GetRegistry().ClearContext(tctx, characterId)
 
 	executor := &OperationExecutorImpl{
-		l: l,
-		t: tm,
+		l:   l,
+		ctx: tctx,
+		t:   tm,
 	}
 
 	tests := []struct {

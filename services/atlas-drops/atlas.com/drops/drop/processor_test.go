@@ -805,7 +805,7 @@ func TestProcessor_Gather_WithItemDrop(t *testing.T) {
 }
 
 func TestProcessor_Reserve_OwnerCanReserve(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -829,7 +829,7 @@ func TestProcessor_Reserve_OwnerCanReserve(t *testing.T) {
 }
 
 func TestProcessor_Reserve_NonOwnerRejectedDuringWindow(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -853,7 +853,7 @@ func TestProcessor_Reserve_NonOwnerRejectedDuringWindow(t *testing.T) {
 }
 
 func TestProcessor_Reserve_PartyMemberCanReserve(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -877,7 +877,7 @@ func TestProcessor_Reserve_PartyMemberCanReserve(t *testing.T) {
 }
 
 func TestProcessor_Reserve_FFAAfterTimeout(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -902,7 +902,7 @@ func TestProcessor_Reserve_FFAAfterTimeout(t *testing.T) {
 }
 
 func TestProcessor_Reserve_PlayerDropIsFFA(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 
@@ -927,7 +927,7 @@ func TestProcessor_Reserve_PlayerDropIsFFA(t *testing.T) {
 }
 
 func TestProcessor_Reserve_FriendlyMobDropIsFFA(t *testing.T) {
-	resetRegistry()
+	setupProcessorTestRegistry(t)
 	ctx, ten := createTestContext(t)
 	l := createTestLogger()
 

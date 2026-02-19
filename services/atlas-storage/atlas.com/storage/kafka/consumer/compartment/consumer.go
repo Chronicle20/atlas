@@ -15,7 +15,6 @@ import (
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -64,8 +63,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 		}
 
 		// Get the asset before release to know its inventory type
-		t := tenant.MustFromContext(ctx)
-		assetModel, err := asset.GetById(db, t.Id())(uint32(c.Body.AssetId))
+		assetModel, err := asset.GetById(db.WithContext(ctx))(uint32(c.Body.AssetId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get asset [%d] before release", c.Body.AssetId)
 			return
@@ -85,22 +83,20 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 
 // updateProjectionOnAccept updates the projection when an asset is accepted into storage
 func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
-	proj, ok := projection.GetManager().Get(characterId)
+	proj, ok := projection.GetManager().Get(ctx, characterId)
 	if !ok {
 		return // No projection exists, nothing to update
 	}
 
-	t := tenant.MustFromContext(ctx)
-
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return
 	}
 
 	// Update only the operated compartment with filtered assets
-	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
+	projection.GetManager().Update(ctx, characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
 		filtered := make([]asset.Model, 0)
@@ -119,22 +115,20 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 
 // updateProjectionOnRelease updates the projection when an asset is released from storage
 func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *gorm.DB, characterId uint32, inventoryType inventory.Type) {
-	proj, ok := projection.GetManager().Get(characterId)
+	proj, ok := projection.GetManager().Get(ctx, characterId)
 	if !ok {
 		return // No projection exists, nothing to update
 	}
 
-	t := tenant.MustFromContext(ctx)
-
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return
 	}
 
 	// Update only the operated compartment with filtered assets
-	projection.GetManager().Update(characterId, func(p projection.Model) projection.Model {
+	projection.GetManager().Update(ctx, characterId, func(p projection.Model) projection.Model {
 		newCompartments := p.Compartments()
 
 		filtered := make([]asset.Model, 0)

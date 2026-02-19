@@ -372,33 +372,6 @@ func TestHandleAwardAsset(t *testing.T) {
 			expectError:   true,
 			errorContains: "failed to create item",
 		},
-		{
-			name:   "Success case - AwardInventory (deprecated)",
-			action: AwardInventory,
-			payload: AwardItemActionPayload{
-				CharacterId: 12345,
-				Item: ItemPayload{
-					TemplateId: 2000,
-					Quantity:   5,
-				},
-			},
-			mockError:   nil,
-			expectError: false,
-		},
-		{
-			name:   "Error case - AwardInventory (deprecated)",
-			action: AwardInventory,
-			payload: AwardItemActionPayload{
-				CharacterId: 12345,
-				Item: ItemPayload{
-					TemplateId: 2000,
-					Quantity:   5,
-				},
-			},
-			mockError:     errors.New("failed to create item"),
-			expectError:   true,
-			errorContains: "failed to create item",
-		},
 	}
 
 	for _, tt := range tests {
@@ -446,87 +419,6 @@ func TestHandleAwardAsset(t *testing.T) {
 	}
 }
 
-// TestHandleAwardInventory tests the deprecated handleAwardInventory function
-// which is now a wrapper for handleAwardAsset
-func TestHandleAwardInventory(t *testing.T) {
-	tests := []struct {
-		name          string
-		payload       AwardItemActionPayload
-		mockError     error
-		expectError   bool
-		errorContains string
-	}{
-		{
-			name: "Success case",
-			payload: AwardItemActionPayload{
-				CharacterId: 12345,
-				Item: ItemPayload{
-					TemplateId: 2000,
-					Quantity:   5,
-				},
-			},
-			mockError:   nil,
-			expectError: false,
-		},
-		{
-			name: "Error case",
-			payload: AwardItemActionPayload{
-				CharacterId: 12345,
-				Item: ItemPayload{
-					TemplateId: 2000,
-					Quantity:   5,
-				},
-			},
-			mockError:     errors.New("failed to create item"),
-			expectError:   true,
-			errorContains: "failed to create item",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			compP := &mock2.ProcessorMock{}
-
-			logger, _ := test.NewNullLogger()
-			logger.SetLevel(logrus.DebugLevel)
-
-			_, ctx := setupContext()
-
-			// Configure mock
-			compP.RequestCreateItemFunc = func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
-				// Verify parameters
-				assert.Equal(t, tt.payload.CharacterId, characterId)
-				assert.Equal(t, tt.payload.Item.TemplateId, templateId)
-				assert.Equal(t, tt.payload.Item.Quantity, quantity)
-				return tt.mockError
-			}
-
-			// Create test saga and step
-			transactionId := uuid.New()
-			saga, err := NewBuilder().
-				SetTransactionId(transactionId).
-				SetSagaType(QuestReward).
-				SetInitiatedBy("test").
-				Build()
-			assert.NoError(t, err)
-
-			step := NewStep[any]("test-step", Pending, AwardInventory, tt.payload)
-
-			// Execute
-			err = NewHandler(logger, ctx).WithCompartmentProcessor(compP).handleAwardInventory(saga, step)
-
-			// Verify
-			if tt.expectError {
-				assert.Error(t, err)
-				if tt.errorContains != "" {
-					assert.Contains(t, err.Error(), tt.errorContains)
-				}
-			} else {
-				assert.NoError(t, err)
-			}
-		})
-	}
-}
 
 func TestHandleAwardLevel(t *testing.T) {
 	tests := []struct {

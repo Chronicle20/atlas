@@ -1,50 +1,52 @@
 package session
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	mutex           sync.RWMutex
-	sessionRegistry map[uuid.UUID]map[uint32]Model
-	lockRegistry    map[uuid.UUID]*sync.RWMutex
+	reg    *atlas.TenantRegistry[uint32, Model]
+	client *goredis.Client
 }
 
-var once sync.Once
 var registry *Registry
 
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTenantRegistry[uint32, Model](client, "character-session", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		client: client,
+	}
+}
+
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.sessionRegistry = make(map[uuid.UUID]map[uint32]Model)
-		registry.lockRegistry = make(map[uuid.UUID]*sync.RWMutex)
-	})
 	return registry
 }
 
-func (r *Registry) Add(t tenant.Model, characterId uint32, ch channel.Model, state State) error {
-	r.mutex.Lock()
-	if _, ok := r.lockRegistry[t.Id()]; !ok {
-		r.lockRegistry[t.Id()] = &sync.RWMutex{}
-		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
-	}
-	r.mutex.Unlock()
+func (r *Registry) tenantSetKey() string {
+	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+}
 
-	r.lockRegistry[t.Id()].Lock()
-	defer r.lockRegistry[t.Id()].Unlock()
-	if val, ok := r.sessionRegistry[t.Id()][characterId]; ok {
-		if val.State() == StateLoggedIn {
-			return errors.New("already logged in")
-		}
+func (r *Registry) Add(ctx context.Context, characterId uint32, ch channel.Model, state State) error {
+	t := tenant.MustFromContext(ctx)
+
+	existing, err := r.reg.Get(ctx, t, characterId)
+	if err == nil && existing.State() == StateLoggedIn {
+		return errors.New("already logged in")
 	}
 
-	r.sessionRegistry[t.Id()][characterId] = Model{
+	m := Model{
 		tenant:      t,
 		characterId: characterId,
 		worldId:     ch.WorldId(),
@@ -52,21 +54,21 @@ func (r *Registry) Add(t tenant.Model, characterId uint32, ch channel.Model, sta
 		state:       state,
 		age:         time.Now(),
 	}
+
+	err = r.reg.Put(ctx, t, characterId, m)
+	if err != nil {
+		return err
+	}
+
+	tb, _ := json.Marshal(&t)
+	r.client.SAdd(ctx, r.tenantSetKey(), tb)
 	return nil
 }
 
-func (r *Registry) Set(t tenant.Model, characterId uint32, ch channel.Model, state State) error {
-	r.mutex.Lock()
-	if _, ok := r.lockRegistry[t.Id()]; !ok {
-		r.lockRegistry[t.Id()] = &sync.RWMutex{}
-		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
-	}
-	r.mutex.Unlock()
+func (r *Registry) Set(ctx context.Context, characterId uint32, ch channel.Model, state State) error {
+	t := tenant.MustFromContext(ctx)
 
-	r.lockRegistry[t.Id()].Lock()
-	defer r.lockRegistry[t.Id()].Unlock()
-
-	r.sessionRegistry[t.Id()][characterId] = Model{
+	m := Model{
 		tenant:      t,
 		characterId: characterId,
 		worldId:     ch.WorldId(),
@@ -74,51 +76,44 @@ func (r *Registry) Set(t tenant.Model, characterId uint32, ch channel.Model, sta
 		state:       state,
 		age:         time.Now(),
 	}
+
+	err := r.reg.Put(ctx, t, characterId, m)
+	if err != nil {
+		return err
+	}
+
+	tb, _ := json.Marshal(&t)
+	r.client.SAdd(ctx, r.tenantSetKey(), tb)
 	return nil
 }
 
-func (r *Registry) Get(t tenant.Model, characterId uint32) (Model, error) {
-	if _, ok := r.lockRegistry[t.Id()]; !ok {
-		r.mutex.Lock()
-		r.lockRegistry[t.Id()] = &sync.RWMutex{}
-		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
-		r.mutex.Unlock()
-	}
-
-	r.lockRegistry[t.Id()].RLock()
-	defer r.lockRegistry[t.Id()].RUnlock()
-	if val, ok := r.sessionRegistry[t.Id()][characterId]; ok {
-		return val, nil
-	}
-	return Model{}, errors.New("not found")
+func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	return r.reg.Get(ctx, t, characterId)
 }
 
-func (r *Registry) GetAll() []Model {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	var results = make([]Model, 0)
-
-	for t, cm := range r.sessionRegistry {
-		r.lockRegistry[t].RLock()
-		for _, c := range cm {
-			results = append(results, c)
-		}
-		r.lockRegistry[t].RUnlock()
+func (r *Registry) GetAll(ctx context.Context) []Model {
+	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	if err != nil {
+		return nil
 	}
 
+	var results []Model
+	for _, mb := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(mb), &t); err != nil {
+			continue
+		}
+		vals, err := r.reg.GetAllValues(ctx, t)
+		if err != nil {
+			continue
+		}
+		results = append(results, vals...)
+	}
 	return results
 }
 
-func (r *Registry) Remove(t tenant.Model, characterId uint32) {
-	if _, ok := r.lockRegistry[t.Id()]; !ok {
-		r.mutex.Lock()
-		r.lockRegistry[t.Id()] = &sync.RWMutex{}
-		r.sessionRegistry[t.Id()] = make(map[uint32]Model)
-		r.mutex.Unlock()
-	}
-
-	r.lockRegistry[t.Id()].Lock()
-	defer r.lockRegistry[t.Id()].Unlock()
-	delete(r.sessionRegistry[t.Id()], characterId)
+func (r *Registry) Remove(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Remove(ctx, t, characterId)
 }

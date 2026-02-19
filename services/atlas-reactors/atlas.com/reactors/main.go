@@ -11,6 +11,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -40,6 +41,9 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	reactor.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

@@ -1,137 +1,46 @@
 package rest
 
 import (
-	"context"
-	"io"
 	"net/http"
 
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
 
-type HandlerDependency struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-}
+type HandlerDependency = server.HandlerDependency
 
-func (h HandlerDependency) Logger() logrus.FieldLogger {
-	return h.l
-}
+type HandlerContext = server.HandlerContext
 
-func (h HandlerDependency) Context() context.Context {
-	return h.ctx
-}
+type GetHandler = server.GetHandler
 
-type HandlerContext struct {
-	si jsonapi.ServerInformation
-}
-
-func (h HandlerContext) ServerInformation() jsonapi.ServerInformation {
-	return h.si
-}
-
-type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
-
-type InputHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
+type InputHandler[M any] = server.InputHandler[M]
 
 func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var model M
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		err = jsonapi.Unmarshal(body, &model)
-		if err != nil {
-			d.l.WithError(err).Errorln("Deserializing input", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(d, c, model)(w, r)
-	}
+	return server.ParseInput[M](d, c, next)
 }
 
 func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-	return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-		return func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return handler(&HandlerDependency{l: fl, ctx: sctx}, &HandlerContext{si: si})
-			})
-		}
-	}
+	return server.RegisterSimpleHandler(l)
 }
 
 func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-	return func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-		return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return ParseInput[M](&HandlerDependency{l: fl, ctx: sctx}, &HandlerContext{si: si}, handler)
-			})
-		}
-	}
+	return server.RegisterSimpleInputHandler[M](l)
 }
 
-type TenantIdHandler func(tenantId uuid.UUID) http.HandlerFunc
-
-func ParseTenantId(l logrus.FieldLogger, next TenantIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		tenantId, err := uuid.Parse(mux.Vars(r)["tenantId"])
-		if err != nil {
-			l.WithError(err).Errorf("Unable to properly parse tenantId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(tenantId)(w, r)
-	}
+func ParseTenantId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "tenantId", next)
 }
 
-type RouteIdHandler func(routeId string) http.HandlerFunc
-
-func ParseRouteId(l logrus.FieldLogger, next RouteIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		routeId, ok := mux.Vars(r)["routeId"]
-		if !ok {
-			l.Errorf("Route ID not provided in path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(routeId)(w, r)
-	}
+func ParseRouteId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "routeId", next)
 }
 
-type VesselIdHandler func(vesselId string) http.HandlerFunc
-
-func ParseVesselId(l logrus.FieldLogger, next VesselIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vesselId, ok := mux.Vars(r)["vesselId"]
-		if !ok {
-			l.Errorf("Vessel ID not provided in path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(vesselId)(w, r)
-	}
+func ParseVesselId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "vesselId", next)
 }
 
-type InstanceRouteIdHandler func(instanceRouteId string) http.HandlerFunc
-
-func ParseInstanceRouteId(l logrus.FieldLogger, next InstanceRouteIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		instanceRouteId, ok := mux.Vars(r)["instanceRouteId"]
-		if !ok {
-			l.Errorf("Instance route ID not provided in path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(instanceRouteId)(w, r)
-	}
+func ParseInstanceRouteId(l logrus.FieldLogger, next func(string) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseStringId(l, "instanceRouteId", next)
 }

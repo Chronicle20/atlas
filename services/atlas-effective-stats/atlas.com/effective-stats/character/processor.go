@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -36,14 +35,12 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		t:   tenant.MustFromContext(ctx),
 	}
 }
 
@@ -51,14 +48,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // If the character hasn't been initialized yet, this will lazily initialize them
 func (p *ProcessorImpl) GetEffectiveStats(ch channel.Model, characterId uint32) (stat.Computed, []stat.Bonus, error) {
 	// Lazy initialization - ensure character's data is set up
-	if !GetRegistry().IsInitialized(p.t, characterId) {
+	if !GetRegistry().IsInitialized(p.ctx, characterId) {
 		p.l.Debugf("Character [%d] not initialized, performing lazy initialization.", characterId)
 		if err := InitializeCharacter(p.l, p.ctx, characterId, ch); err != nil {
 			p.l.WithError(err).Warnf("Failed to initialize character [%d], returning current state.", characterId)
 		}
 	}
 
-	m := GetRegistry().GetOrCreate(p.t, ch, characterId)
+	m := GetRegistry().GetOrCreate(p.ctx, ch, characterId)
 
 	return m.Computed(), m.Bonuses(), nil
 }
@@ -66,7 +63,7 @@ func (p *ProcessorImpl) GetEffectiveStats(ch channel.Model, characterId uint32) 
 // AddBonus adds or updates a flat stat bonus for a character
 func (p *ProcessorImpl) AddBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, amount int32) error {
 	b := stat.NewBonus(source, statType, amount)
-	m := GetRegistry().AddBonus(p.t, ch, characterId, b)
+	m := GetRegistry().AddBonus(p.ctx, ch, characterId, b)
 	p.l.Debugf("Added bonus [%s] for character [%d]: %s = %d", source, characterId, statType, amount)
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -75,7 +72,7 @@ func (p *ProcessorImpl) AddBonus(ch channel.Model, characterId uint32, source st
 // AddMultiplierBonus adds or updates a percentage stat bonus for a character
 func (p *ProcessorImpl) AddMultiplierBonus(ch channel.Model, characterId uint32, source string, statType stat.Type, multiplier float64) error {
 	b := stat.NewMultiplierBonus(source, statType, multiplier)
-	m := GetRegistry().AddBonus(p.t, ch, characterId, b)
+	m := GetRegistry().AddBonus(p.ctx, ch, characterId, b)
 	p.l.Debugf("Added multiplier bonus [%s] for character [%d]: %s = %.2f%%", source, characterId, statType, multiplier*100)
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -84,14 +81,14 @@ func (p *ProcessorImpl) AddMultiplierBonus(ch channel.Model, characterId uint32,
 // RemoveBonus removes a specific stat bonus for a character
 func (p *ProcessorImpl) RemoveBonus(characterId uint32, source string, statType stat.Type) error {
 	// Get current model to capture old MaxHP/MaxMP before removal
-	oldModel, err := GetRegistry().Get(p.t, characterId)
+	oldModel, err := GetRegistry().Get(p.ctx, characterId)
 	if err != nil {
 		return err
 	}
 	oldComputed := oldModel.Computed()
 
 	// Remove bonus and recompute
-	newModel, err := GetRegistry().RemoveBonus(p.t, characterId, source, statType)
+	newModel, err := GetRegistry().RemoveBonus(p.ctx, characterId, source, statType)
 	if err != nil {
 		return err
 	}
@@ -109,14 +106,14 @@ func (p *ProcessorImpl) RemoveBonus(characterId uint32, source string, statType 
 // RemoveBonusesBySource removes all bonuses from a specific source for a character
 func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string) error {
 	// Get current model to capture old MaxHP/MaxMP before removal
-	oldModel, err := GetRegistry().Get(p.t, characterId)
+	oldModel, err := GetRegistry().Get(p.ctx, characterId)
 	if err != nil {
 		return err
 	}
 	oldComputed := oldModel.Computed()
 
 	// Remove bonuses and recompute
-	newModel, err := GetRegistry().RemoveBonusesBySource(p.t, characterId, source)
+	newModel, err := GetRegistry().RemoveBonusesBySource(p.ctx, characterId, source)
 	if err != nil {
 		return err
 	}
@@ -133,7 +130,7 @@ func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string)
 
 // SetBaseStats sets the base stats for a character
 func (p *ProcessorImpl) SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error {
-	m := GetRegistry().SetBaseStats(p.t, ch, characterId, base)
+	m := GetRegistry().SetBaseStats(p.ctx, ch, characterId, base)
 	p.l.Debugf("Set base stats for character [%d]: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
 		characterId, base.Strength(), base.Dexterity(), base.Intelligence(), base.Luck(), base.MaxHp(), base.MaxMp())
 	p.logEffectiveStats(characterId, m.Computed())
@@ -147,7 +144,7 @@ func (p *ProcessorImpl) AddEquipmentBonuses(ch channel.Model, characterId uint32
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added equipment [%d] bonuses for character [%d]: %d stats", equipmentId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -166,7 +163,7 @@ func (p *ProcessorImpl) AddBuffBonuses(ch channel.Model, characterId uint32, buf
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added buff [%d] bonuses for character [%d]: %d stats", buffSourceId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -185,7 +182,7 @@ func (p *ProcessorImpl) AddPassiveBonuses(ch channel.Model, characterId uint32, 
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.t, ch, characterId, sourcedBonuses)
+	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
 	p.l.Debugf("Added passive skill [%d] bonuses for character [%d]: %d stats", skillId, characterId, len(bonuses))
 	p.logEffectiveStats(characterId, m.Computed())
 	return nil
@@ -199,7 +196,7 @@ func (p *ProcessorImpl) RemovePassiveBonuses(characterId uint32, skillId uint32)
 
 // RemoveCharacter removes a character from the registry
 func (p *ProcessorImpl) RemoveCharacter(characterId uint32) {
-	GetRegistry().Delete(p.t, characterId)
+	GetRegistry().Delete(p.ctx, characterId)
 	p.l.Debugf("Removed character [%d] from effective stats registry.", characterId)
 }
 

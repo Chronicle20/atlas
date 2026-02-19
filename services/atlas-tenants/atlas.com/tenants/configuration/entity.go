@@ -11,7 +11,7 @@ import (
 type Entity struct {
 	gorm.Model
 	ID           uuid.UUID       `gorm:"type:uuid;primaryKey"`
-	TenantID     uuid.UUID       `gorm:"type:uuid;not null"`
+	TenantId     uuid.UUID       `gorm:"type:uuid;not null"`
 	ResourceName string          `gorm:"not null"`
 	ResourceData json.RawMessage `gorm:"type:jsonb;not null"`
 }

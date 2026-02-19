@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-npc/commodities"
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 	character2 "atlas-npc/kafka/consumer/character"
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"
@@ -13,6 +13,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -44,6 +45,10 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	shops.InitRegistry(rc)
+	shops.InitConsumableCache(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

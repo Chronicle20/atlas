@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-effective-stats/stat"
+	"encoding/json"
 	"math"
 	"time"
 
@@ -269,4 +270,50 @@ func (m Model) ComputeEffectiveStats() stat.Computed {
 func (m Model) Recompute() Model {
 	computed := m.ComputeEffectiveStats()
 	return m.WithComputed(computed)
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		WorldId     world.Id      `json:"worldId"`
+		ChannelId   channel.Id    `json:"channelId"`
+		CharacterId uint32        `json:"characterId"`
+		BaseStats   stat.Base     `json:"baseStats"`
+		Bonuses     []stat.Bonus  `json:"bonuses"`
+		Computed    stat.Computed `json:"computed"`
+		LastUpdated time.Time     `json:"lastUpdated"`
+		Initialized bool          `json:"initialized"`
+	}{
+		WorldId:     m.ch.WorldId(),
+		ChannelId:   m.ch.Id(),
+		CharacterId: m.characterId,
+		BaseStats:   m.baseStats,
+		Bonuses:     m.bonuses,
+		Computed:    m.computed,
+		LastUpdated: m.lastUpdated,
+		Initialized: m.initialized,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		WorldId     world.Id      `json:"worldId"`
+		ChannelId   channel.Id    `json:"channelId"`
+		CharacterId uint32        `json:"characterId"`
+		BaseStats   stat.Base     `json:"baseStats"`
+		Bonuses     []stat.Bonus  `json:"bonuses"`
+		Computed    stat.Computed `json:"computed"`
+		LastUpdated time.Time     `json:"lastUpdated"`
+		Initialized bool          `json:"initialized"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.ch = channel.NewModel(aux.WorldId, aux.ChannelId)
+	m.characterId = aux.CharacterId
+	m.baseStats = aux.BaseStats
+	m.bonuses = aux.Bonuses
+	m.computed = aux.Computed
+	m.lastUpdated = aux.LastUpdated
+	m.initialized = aux.Initialized
+	return nil
 }

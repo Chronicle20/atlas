@@ -10,11 +10,20 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 )
+
+func setupProcessorTest(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
 
 func setupTestContext(t *testing.T, ten tenant.Model) context.Context {
 	t.Helper()
@@ -28,6 +37,7 @@ func setupTestLogger(t *testing.T) logrus.FieldLogger {
 }
 
 func TestNewProcessor(t *testing.T) {
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -38,6 +48,7 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestNewProcessor_ExtractsTenant(t *testing.T) {
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -49,7 +60,8 @@ func TestNewProcessor_ExtractsTenant(t *testing.T) {
 }
 
 func TestNewProcessor_PanicsOnMissingTenant(t *testing.T) {
-	ctx := context.Background() // No tenant in context
+	setupProcessorTest(t)
+	ctx := context.Background()
 	l := setupTestLogger(t)
 
 	assert.Panics(t, func() {
@@ -58,9 +70,7 @@ func TestNewProcessor_PanicsOnMissingTenant(t *testing.T) {
 }
 
 func TestProcessor_Change(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -87,9 +97,7 @@ func TestProcessor_Change(t *testing.T) {
 }
 
 func TestProcessor_Change_AddsToRegistry(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -102,16 +110,13 @@ func TestProcessor_Change_AddsToRegistry(t *testing.T) {
 	f := field.NewBuilder(0, 1, 100000000).Build()
 	_, _ = p.Change(mb, uuid.New(), characterId, f, 5)
 
-	// Verify expression was added to registry
-	retrieved, found := r.get(ten, characterId)
+	retrieved, found := GetRegistry().get(ctx, characterId)
 	assert.True(t, found)
 	assert.Equal(t, uint32(5), retrieved.Expression())
 }
 
 func TestProcessor_Change_AddsMessageToBuffer(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -124,46 +129,37 @@ func TestProcessor_Change_AddsMessageToBuffer(t *testing.T) {
 
 	assert.NoError(t, err)
 
-	// Verify message was added to buffer
 	messages := mb.GetAll()
 	assert.NotEmpty(t, messages)
 }
 
 func TestProcessor_Clear(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
-	// First add an expression
 	characterId := uint32(1000)
 	f := field.NewBuilder(0, 1, 100000000).Build()
-	r.add(ten, characterId, f, 5)
+	GetRegistry().add(ctx, characterId, f, 5)
 
-	// Verify it exists
-	_, found := r.get(ten, characterId)
+	_, found := GetRegistry().get(ctx, characterId)
 	assert.True(t, found)
 
-	// Clear it
 	p := NewProcessor(l, ctx)
 	mb := message.NewBuffer()
 
 	model, err := p.Clear(mb, uuid.New(), characterId)
 
 	assert.NoError(t, err)
-	assert.Equal(t, Model{}, model) // Clear returns empty model
+	assert.Equal(t, Model{}, model)
 
-	// Verify it was removed
-	_, found = r.get(ten, characterId)
+	_, found = GetRegistry().get(ctx, characterId)
 	assert.False(t, found)
 }
 
 func TestProcessor_Clear_NonExistent(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -171,7 +167,6 @@ func TestProcessor_Clear_NonExistent(t *testing.T) {
 	p := NewProcessor(l, ctx)
 	mb := message.NewBuffer()
 
-	// Clear should not error for non-existent character
 	model, err := p.Clear(mb, uuid.New(), 9999)
 
 	assert.NoError(t, err)
@@ -179,16 +174,13 @@ func TestProcessor_Clear_NonExistent(t *testing.T) {
 }
 
 func TestProcessor_MultipleChanges(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
 
 	p := NewProcessor(l, ctx)
 
-	// Change multiple characters
 	for i := uint32(0); i < 10; i++ {
 		mb := message.NewBuffer()
 		f := field.NewBuilder(0, 1, 100000000).Build()
@@ -196,18 +188,15 @@ func TestProcessor_MultipleChanges(t *testing.T) {
 		assert.NoError(t, err)
 	}
 
-	// Verify all were added
 	for i := uint32(0); i < 10; i++ {
-		retrieved, found := r.get(ten, 1000+i)
+		retrieved, found := GetRegistry().get(ctx, 1000+i)
 		assert.True(t, found)
 		assert.Equal(t, i, retrieved.Expression())
 	}
 }
 
 func TestProcessor_ChangeReplacesPrevious(t *testing.T) {
-	r := GetRegistry()
-	r.ResetForTesting()
-
+	setupProcessorTest(t)
 	ten := setupTestTenant(t)
 	ctx := setupTestContext(t, ten)
 	l := setupTestLogger(t)
@@ -216,16 +205,13 @@ func TestProcessor_ChangeReplacesPrevious(t *testing.T) {
 	characterId := uint32(1000)
 	f := field.NewBuilder(0, 1, 100000000).Build()
 
-	// First change
 	mb1 := message.NewBuffer()
 	_, _ = p.Change(mb1, uuid.New(), characterId, f, 5)
 
-	// Second change (should replace)
 	mb2 := message.NewBuffer()
 	_, _ = p.Change(mb2, uuid.New(), characterId, f, 10)
 
-	// Verify the new expression replaced the old one
-	retrieved, found := r.get(ten, characterId)
+	retrieved, found := GetRegistry().get(ctx, characterId)
 	assert.True(t, found)
 	assert.Equal(t, uint32(10), retrieved.Expression())
 }

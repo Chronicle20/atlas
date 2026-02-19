@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"sync"
 	"testing"
 
@@ -9,162 +10,158 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/stretchr/testify/assert"
 )
 
-func testTenant() tenant.Model {
-	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
-	return t
+func setupRegistryTest(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
 }
 
-func testMapKey(worldId world.Id, channelId channel.Id, mapId _map.Id) MapKey {
-	return MapKey{
-		Tenant: testTenant(),
-		Field:  field.NewBuilder(worldId, channelId, mapId).Build(),
-	}
+func setupTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	assert.NoError(t, err)
+	return ten
+}
+
+func testCtx(t tenant.Model) context.Context {
+	return tenant.WithContext(context.Background(), t)
 }
 
 func TestRegistry_AddCharacter_And_GetMap(t *testing.T) {
-	r := getRegistry()
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
 	characterId := uint32(12345)
-	mk := testMapKey(1, 2, 100000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Clean up before test
-	r.RemoveCharacter(characterId)
+	GetRegistry().AddCharacter(ctx, characterId, f)
 
-	r.AddCharacter(mk, characterId)
-
-	result, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("expected to find character in registry")
-	}
-
-	if result.Field.WorldId() != mk.Field.WorldId() {
-		t.Errorf("expected WorldId %d, got %d", mk.Field.WorldId(), result.Field.WorldId())
-	}
-	if result.Field.ChannelId() != mk.Field.ChannelId() {
-		t.Errorf("expected ChannelId %d, got %d", mk.Field.ChannelId(), result.Field.ChannelId())
-	}
-	if result.Field.MapId() != mk.Field.MapId() {
-		t.Errorf("expected MapId %d, got %d", mk.Field.MapId(), result.Field.MapId())
-	}
-
-	// Clean up after test
-	r.RemoveCharacter(characterId)
+	result, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
+	assert.Equal(t, f.WorldId(), result.WorldId())
+	assert.Equal(t, f.ChannelId(), result.ChannelId())
+	assert.Equal(t, f.MapId(), result.MapId())
 }
 
 func TestRegistry_RemoveCharacter(t *testing.T) {
-	r := getRegistry()
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
 	characterId := uint32(12346)
-	mk := testMapKey(1, 2, 100000000)
+	f := field.NewBuilder(1, 2, 100000000).Build()
 
-	// Add character first
-	r.AddCharacter(mk, characterId)
+	GetRegistry().AddCharacter(ctx, characterId, f)
 
-	// Verify it exists
-	_, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("character should exist before removal")
-	}
+	_, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
 
-	// Remove character
-	r.RemoveCharacter(characterId)
+	GetRegistry().RemoveCharacter(ctx, characterId)
 
-	// Verify it's gone
-	_, ok = r.GetMap(characterId)
-	if ok {
-		t.Error("character should not exist after removal")
-	}
+	_, ok = GetRegistry().GetMap(ctx, characterId)
+	assert.False(t, ok)
 }
 
 func TestRegistry_GetMap_NotFound(t *testing.T) {
-	r := getRegistry()
-	nonExistentId := uint32(99999999)
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
 
-	// Ensure it doesn't exist
-	r.RemoveCharacter(nonExistentId)
-
-	_, ok := r.GetMap(nonExistentId)
-	if ok {
-		t.Error("expected not to find non-existent character")
-	}
+	_, ok := GetRegistry().GetMap(ctx, uint32(99999999))
+	assert.False(t, ok)
 }
 
 func TestRegistry_AddCharacter_OverwritesExisting(t *testing.T) {
-	r := getRegistry()
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
 	characterId := uint32(12347)
-	mk1 := testMapKey(1, 1, 100000000)
-	mk2 := testMapKey(2, 3, 200000000)
+	f1 := field.NewBuilder(1, 1, 100000000).Build()
+	f2 := field.NewBuilder(2, 3, 200000000).Build()
 
-	// Clean up
-	r.RemoveCharacter(characterId)
+	GetRegistry().AddCharacter(ctx, characterId, f1)
+	GetRegistry().AddCharacter(ctx, characterId, f2)
 
-	// Add with first map key
-	r.AddCharacter(mk1, characterId)
-
-	// Add with second map key (should overwrite)
-	r.AddCharacter(mk2, characterId)
-
-	result, ok := r.GetMap(characterId)
-	if !ok {
-		t.Fatal("expected to find character")
-	}
-
-	if result.Field.WorldId() != mk2.Field.WorldId() {
-		t.Errorf("expected WorldId %d, got %d", mk2.Field.WorldId(), result.Field.WorldId())
-	}
-	if result.Field.ChannelId() != mk2.Field.ChannelId() {
-		t.Errorf("expected ChannelId %d, got %d", mk2.Field.ChannelId(), result.Field.ChannelId())
-	}
-	if result.Field.MapId() != mk2.Field.MapId() {
-		t.Errorf("expected MapId %d, got %d", mk2.Field.MapId(), result.Field.MapId())
-	}
-
-	// Clean up
-	r.RemoveCharacter(characterId)
+	result, ok := GetRegistry().GetMap(ctx, characterId)
+	assert.True(t, ok)
+	assert.Equal(t, f2.WorldId(), result.WorldId())
+	assert.Equal(t, f2.ChannelId(), result.ChannelId())
+	assert.Equal(t, f2.MapId(), result.MapId())
 }
 
 func TestRegistry_ConcurrentAccess(t *testing.T) {
-	r := getRegistry()
+	setupRegistryTest(t)
+	ten := setupTestTenant(t)
+	ctx := testCtx(ten)
+
 	baseCharacterId := uint32(50000)
 	numGoroutines := 100
-	numOperations := 100
 
 	var wg sync.WaitGroup
 	wg.Add(numGoroutines)
 
 	for i := 0; i < numGoroutines; i++ {
-		go func(goroutineId int) {
+		go func(idx int) {
 			defer wg.Done()
-			characterId := baseCharacterId + uint32(goroutineId)
-			mk := testMapKey(world.Id(goroutineId%256), channel.Id(goroutineId%20), _map.Id(100000000+goroutineId))
-
-			for j := 0; j < numOperations; j++ {
-				// Add
-				r.AddCharacter(mk, characterId)
-
-				// Get
-				_, _ = r.GetMap(characterId)
-
-				// Remove
-				r.RemoveCharacter(characterId)
-			}
+			characterId := baseCharacterId + uint32(idx)
+			f := field.NewBuilder(world.Id(idx%256), channel.Id(idx%20), _map.Id(100000000+idx)).Build()
+			GetRegistry().AddCharacter(ctx, characterId, f)
+			_, _ = GetRegistry().GetMap(ctx, characterId)
+			GetRegistry().RemoveCharacter(ctx, characterId)
 		}(i)
 	}
 
 	wg.Wait()
-
-	// Clean up all test characters
-	for i := 0; i < numGoroutines; i++ {
-		r.RemoveCharacter(baseCharacterId + uint32(i))
-	}
 }
 
-func TestRegistry_Singleton(t *testing.T) {
-	r1 := getRegistry()
-	r2 := getRegistry()
+func TestRegistry_TenantIsolation(t *testing.T) {
+	setupRegistryTest(t)
 
-	if r1 != r2 {
-		t.Error("getRegistry should return the same instance")
-	}
+	ten1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
+
+	ctx1 := testCtx(ten1)
+	ctx2 := testCtx(ten2)
+
+	f := field.NewBuilder(1, 2, 100000000).Build()
+	GetRegistry().AddCharacter(ctx1, 1000, f)
+
+	_, found1 := GetRegistry().GetMap(ctx1, 1000)
+	assert.True(t, found1)
+
+	_, found2 := GetRegistry().GetMap(ctx2, 1000)
+	assert.False(t, found2)
+}
+
+func TestRegistry_TenantIsolation_SameCharacterId(t *testing.T) {
+	setupRegistryTest(t)
+
+	ten1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ten2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
+
+	ctx1 := testCtx(ten1)
+	ctx2 := testCtx(ten2)
+
+	f1 := field.NewBuilder(1, 1, 100000000).Build()
+	f2 := field.NewBuilder(2, 2, 200000000).Build()
+
+	GetRegistry().AddCharacter(ctx1, 1000, f1)
+	GetRegistry().AddCharacter(ctx2, 1000, f2)
+
+	result1, found1 := GetRegistry().GetMap(ctx1, 1000)
+	assert.True(t, found1)
+	assert.Equal(t, f1.MapId(), result1.MapId())
+
+	result2, found2 := GetRegistry().GetMap(ctx2, 1000)
+	assert.True(t, found2)
+	assert.Equal(t, f2.MapId(), result2.MapId())
 }

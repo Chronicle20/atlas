@@ -85,29 +85,29 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 // ByIdProvider returns a provider for retrieving an NPC conversation by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 // ByNpcIdProvider returns a provider for retrieving an NPC conversation by NPC ID
 func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByNpcIdProvider(p.t.Id())(npcId)(p.db))
+	return model.Map[Entity, Model](Make)(getByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))
 }
 
 // AllProvider returns a provider for retrieving all NPC conversations
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // AllByNpcIdProvider returns a provider for retrieving all NPC conversations for a specific NPC ID
 func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(p.t.Id())(npcId)(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Create creates a new NPC conversation
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating NPC conversation for NPC [%d]", m.NpcId())
 
-	result, err := createNpcConversation(p.db)(p.t.Id())(m)
+	result, err := createNpcConversation(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create NPC conversation for NPC [%d]", m.NpcId())
 		return Model{}, err
@@ -119,7 +119,7 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating NPC conversation [%s]", id)
 
-	result, err := updateNpcConversation(p.db)(p.t.Id())(id)(m)
+	result, err := updateNpcConversation(p.db.WithContext(p.ctx))(id)(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update NPC conversation [%s]", id)
 		return Model{}, err
@@ -131,7 +131,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting NPC conversation [%s]", id)
 
-	err := deleteNpcConversation(p.db)(p.t.Id())(id)
+	err := deleteNpcConversation(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversation [%s]", id)
 		return err
@@ -143,7 +143,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all NPC conversations for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllNpcConversations(p.db)(p.t.Id())
+	count, err := deleteAllNpcConversations(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversations for tenant [%s]", p.t.Id())
 		return 0, err

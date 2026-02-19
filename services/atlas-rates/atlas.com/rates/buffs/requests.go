@@ -1,7 +1,6 @@
 package buffs
 
 import (
-	"atlas-rates/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestBuffs(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }

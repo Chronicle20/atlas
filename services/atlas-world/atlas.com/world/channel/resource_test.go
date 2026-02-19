@@ -25,20 +25,14 @@ func (t testServerInformation) GetPrefix() string {
 }
 
 func TestHandleGetChannelServers_Success(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
-	tenant := test.CreateDefaultMockTenant()
 
 	// Register some test channels
 	processor := channel.NewProcessor(logger, ctx)
 	_, _ = processor.Register(channelConstant.NewModel(1, 0), "192.168.1.1", 8080, 0, 100)
 	_, _ = processor.Register(channelConstant.NewModel(1, 1), "192.168.1.2", 8081, 50, 100)
-
-	// Clean up after test
-	defer func() {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 0))
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 1))
-	}()
 
 	// Create router with the channel resource
 	router := mux.NewRouter()
@@ -70,16 +64,8 @@ func TestHandleGetChannelServers_Success(t *testing.T) {
 }
 
 func TestHandleGetChannelServers_Empty(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
-	tenant := test.CreateDefaultMockTenant()
-
-	// Ensure no channels exist for this tenant/world
-	servers := channel.GetChannelRegistry().ChannelServers(tenant)
-	for _, s := range servers {
-		if s.WorldId() == 99 {
-			_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
-		}
-	}
 
 	// Create router with the channel resource
 	router := mux.NewRouter()
@@ -106,18 +92,13 @@ func TestHandleGetChannelServers_Empty(t *testing.T) {
 }
 
 func TestHandleGetChannel_Success(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 	ctx := test.CreateTestContext()
-	tenant := test.CreateDefaultMockTenant()
 
 	// Register a test channel
 	processor := channel.NewProcessor(logger, ctx)
 	_, _ = processor.Register(channelConstant.NewModel(1, 2), "192.168.1.1", 8080, 50, 100)
-
-	// Clean up after test
-	defer func() {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(1, 2))
-	}()
 
 	// Create router with the channel resource
 	router := mux.NewRouter()
@@ -149,6 +130,7 @@ func TestHandleGetChannel_Success(t *testing.T) {
 }
 
 func TestHandleGetChannel_NotFound(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	// Create router with the channel resource
@@ -176,8 +158,7 @@ func TestHandleGetChannel_NotFound(t *testing.T) {
 }
 
 func TestHandleRegisterChannelServer_ReturnsErrorWithoutKafka(t *testing.T) {
-	// Note: This test verifies the handler correctly returns 500 when Kafka is unavailable.
-	// In production with Kafka, it would return 202.
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	// Create router with the channel resource
@@ -213,13 +194,13 @@ func TestHandleRegisterChannelServer_ReturnsErrorWithoutKafka(t *testing.T) {
 	router.ServeHTTP(rr, req)
 
 	// Without Kafka infrastructure, the handler should return 500
-	// This verifies the error handling path works correctly
 	if status := rr.Code; status != http.StatusInternalServerError {
 		t.Errorf("handler returned wrong status code: got %v want %v (without Kafka)", status, http.StatusInternalServerError)
 	}
 }
 
 func TestHandleGetChannelServers_InvalidWorldId(t *testing.T) {
+	setupTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	// Create router with the channel resource

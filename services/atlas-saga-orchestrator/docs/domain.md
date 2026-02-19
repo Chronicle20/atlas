@@ -56,7 +56,6 @@ Represents a single action within a saga.
 | Action | Description |
 |--------|-------------|
 | award_asset | Awards items to a character inventory |
-| award_inventory | (Deprecated) Awards items to inventory, use award_asset |
 | award_experience | Awards experience points |
 | award_level | Awards levels |
 | award_mesos | Awards mesos currency |

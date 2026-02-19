@@ -25,19 +25,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 }
 
 func (p *Processor) GetMap(characterId uint32) (field.Model, error) {
-	mk, ok := getRegistry().GetMap(characterId)
+	f, ok := GetRegistry().GetMap(p.ctx, characterId)
 	if !ok {
 		return field.Model{}, errors.New("not found")
 	}
-	return mk.Field, nil
+	return f, nil
 }
 
 func (p *Processor) Enter(f field.Model, characterId uint32) {
-	getRegistry().AddCharacter(MapKey{Tenant: p.t, Field: f}, characterId)
+	GetRegistry().AddCharacter(p.ctx, characterId, f)
 }
 
 func (p *Processor) Exit(_ field.Model, characterId uint32) {
-	getRegistry().RemoveCharacter(characterId)
+	GetRegistry().RemoveCharacter(p.ctx, characterId)
 }
 
 func (p *Processor) TransitionMap(f field.Model, characterId uint32) {

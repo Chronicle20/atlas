@@ -7,23 +7,41 @@ import (
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
 	"context"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func testDatabase(t *testing.T) *gorm.DB {
+func TestMain(m *testing.M) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	compartment.InitReservationRegistry(rc)
+	compartment.InitLockRegistry(rc)
+	os.Exit(m.Run())
+}
+
+func testDatabase(t *testing.T, l logrus.FieldLogger) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, asset.Migration, compartment.Migration)
@@ -55,7 +73,7 @@ func TestCompactAndSort(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -121,7 +139,7 @@ func TestSort(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -188,7 +206,7 @@ func TestMergeAndCompact(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -248,7 +266,7 @@ func TestMergeAndCompactOverflow(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -311,7 +329,7 @@ func TestMergeAndCompactGood(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 

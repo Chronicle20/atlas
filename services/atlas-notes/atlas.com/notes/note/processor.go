@@ -67,7 +67,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(characterId uint32) func
 						return Model{}, err
 					}
 
-					m, err = createNote(p.db)(p.t.Id())(m)
+					m, err = createNote(p.db.WithContext(p.ctx), p.t.Id(), m)
 					if err != nil {
 						return Model{}, err
 					}
@@ -105,7 +105,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(id uint32) func(characte
 							return Model{}, err
 						}
 
-						m, err = updateNote(p.db)(p.t.Id())(m)
+						m, err = updateNote(p.db.WithContext(p.ctx), p.t.Id(), m)
 						if err != nil {
 							return Model{}, err
 						}
@@ -134,7 +134,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uint32) error {
 			return err
 		}
 
-		err = deleteNote(p.db)(p.t.Id())(id)
+		err = deleteNote(p.db.WithContext(p.ctx), id)
 		if err != nil {
 			return err
 		}
@@ -164,7 +164,7 @@ func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) e
 				return err
 			}
 		}
-		err = deleteAllNotes(p.db)(p.t.Id())(characterId)
+		err = deleteAllNotes(p.db.WithContext(p.ctx), characterId)
 		if err != nil {
 			return err
 		}
@@ -179,17 +179,17 @@ func (p *ProcessorImpl) DeleteAllAndEmit(characterId uint32) error {
 
 // ByIdProvider retrieves a note by ID
 func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 // ByCharacterProvider retrieves all notes for a character
 func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getByCharacterIdProvider(p.t.Id())(characterId)(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getByCharacterIdProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // InTenantProvider retrieves all notes in a tenant
 func (p *ProcessorImpl) InTenantProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider()(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Discard discards multiple notes for a character
@@ -209,7 +209,7 @@ func (p *ProcessorImpl) Discard(mb *message.Buffer) func(ch channel.Model) func(
 					}
 
 					// Delete the note
-					err = deleteNote(p.db)(p.t.Id())(noteId)
+					err = deleteNote(p.db.WithContext(p.ctx), noteId)
 					if err != nil {
 						return err
 					}

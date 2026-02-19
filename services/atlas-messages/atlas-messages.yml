@@ -5,7 +5,7 @@ metadata:
   name: atlas-messages
   namespace: atlas
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: atlas-messages

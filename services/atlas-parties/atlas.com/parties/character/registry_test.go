@@ -1,6 +1,7 @@
 package character
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -9,13 +10,27 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
+func setupTestRegistry(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+}
+
+func createTestCtx(ten tenant.Model) context.Context {
+	return tenant.WithContext(context.Background(), ten)
+}
+
 func TestRegistryCreate(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(123)
 	name := "TestChar"
@@ -27,7 +42,7 @@ func TestRegistryCreate(t *testing.T) {
 	gm := 0
 
 	f := field.NewBuilder(worldId, channelId, mapId).Build()
-	char := r.Create(ten, f, characterId, name, level, jobId, gm)
+	char := r.Create(ctx, f, characterId, name, level, jobId, gm)
 
 	assert.Equal(t, characterId, char.Id())
 	assert.Equal(t, name, char.Name())
@@ -39,14 +54,13 @@ func TestRegistryCreate(t *testing.T) {
 	assert.Equal(t, uint32(0), char.PartyId())
 	assert.Equal(t, false, char.Online())
 	assert.Equal(t, gm, char.GM())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryGet(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(124)
 	name := "TestChar2"
@@ -55,34 +69,35 @@ func TestRegistryGet(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	created := r.Create(ten, f, characterId, name, level, jobId, 0)
+	created := r.Create(ctx, f, characterId, name, level, jobId, 0)
 
 	// Get character
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, created.Id(), retrieved.Id())
 	assert.Equal(t, created.Name(), retrieved.Name())
 	assert.Equal(t, created.Level(), retrieved.Level())
 	assert.Equal(t, created.JobId(), retrieved.JobId())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryGetNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	nonExistentId := uint32(999)
 
-	_, err := r.Get(ten, nonExistentId)
+	_, err := r.Get(ctx, nonExistentId)
 	assert.Error(t, err)
 	assert.Equal(t, ErrNotFound, err)
 }
 
 func TestRegistryUpdateLevelChange(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(125)
 	initialLevel := byte(10)
@@ -90,27 +105,26 @@ func TestRegistryUpdateLevelChange(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", initialLevel, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", initialLevel, job.Id(100), 0)
 
 	// Update level
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.ChangeLevel(newLevel)
 	})
 
 	assert.Equal(t, newLevel, updated.Level())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, newLevel, retrieved.Level())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateJobChange(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(126)
 	initialJobId := job.Id(100)
@@ -118,104 +132,101 @@ func TestRegistryUpdateJobChange(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, initialJobId, 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, initialJobId, 0)
 
 	// Update job
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.ChangeJob(newJobId)
 	})
 
 	assert.Equal(t, newJobId, updated.JobId())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, newJobId, retrieved.JobId())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdatePartyOperations(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(127)
 	partyId := uint32(456)
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Join party
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.JoinParty(partyId)
 	})
 
 	assert.Equal(t, partyId, updated.PartyId())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, partyId, retrieved.PartyId())
 
 	// Leave party
-	updated = r.Update(ten, characterId, func(m Model) Model {
+	updated = r.Update(ctx, characterId, func(m Model) Model {
 		return m.LeaveParty()
 	})
 
 	assert.Equal(t, uint32(0), updated.PartyId())
 
 	// Verify persistence
-	retrieved, err = r.Get(ten, characterId)
+	retrieved, err = r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, uint32(0), retrieved.PartyId())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateLoginLogout(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(128)
 
 	// Create character (initially offline)
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Login
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.Login()
 	})
 
 	assert.Equal(t, true, updated.Online())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, true, retrieved.Online())
 
 	// Logout
-	updated = r.Update(ten, characterId, func(m Model) Model {
+	updated = r.Update(ctx, characterId, func(m Model) Model {
 		return m.Logout()
 	})
 
 	assert.Equal(t, false, updated.Online())
 
 	// Verify persistence
-	retrieved, err = r.Get(ten, characterId)
+	retrieved, err = r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, false, retrieved.Online())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateMapChange(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(129)
 	initialMapId := _map.Id(100000)
@@ -223,27 +234,26 @@ func TestRegistryUpdateMapChange(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, 1, initialMapId).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Change map
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.ChangeMap(newMapId)
 	})
 
 	assert.Equal(t, newMapId, updated.MapId())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, newMapId, retrieved.MapId())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateChannelChange(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(130)
 	initialChannelId := channel.Id(1)
@@ -251,27 +261,26 @@ func TestRegistryUpdateChannelChange(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, initialChannelId, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Change channel
-	updated := r.Update(ten, characterId, func(m Model) Model {
+	updated := r.Update(ctx, characterId, func(m Model) Model {
 		return m.ChangeChannel(newChannelId)
 	})
 
 	assert.Equal(t, newChannelId, updated.ChannelId())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, newChannelId, retrieved.ChannelId())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateMultipleUpdaters(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(131)
 	initialLevel := byte(10)
@@ -281,10 +290,10 @@ func TestRegistryUpdateMultipleUpdaters(t *testing.T) {
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", initialLevel, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", initialLevel, job.Id(100), 0)
 
 	// Apply multiple updates in one call
-	updated := r.Update(ten, characterId,
+	updated := r.Update(ctx, characterId,
 		func(m Model) Model { return m.ChangeLevel(newLevel) },
 		func(m Model) Model { return m.ChangeJob(newJobId) },
 		func(m Model) Model { return m.JoinParty(partyId) },
@@ -297,107 +306,109 @@ func TestRegistryUpdateMultipleUpdaters(t *testing.T) {
 	assert.Equal(t, true, updated.Online())
 
 	// Verify persistence
-	retrieved, err := r.Get(ten, characterId)
+	retrieved, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, newLevel, retrieved.Level())
 	assert.Equal(t, newJobId, retrieved.JobId())
 	assert.Equal(t, partyId, retrieved.PartyId())
 	assert.Equal(t, true, retrieved.Online())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryDelete(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(132)
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Verify character exists
-	_, err := r.Get(ten, characterId)
+	_, err := r.Get(ctx, characterId)
 	assert.NoError(t, err)
 
 	// Delete character
-	err = r.Delete(ten, characterId)
+	err = r.Delete(ctx, characterId)
 	assert.NoError(t, err)
 
 	// Verify character is deleted
-	_, err = r.Get(ten, characterId)
+	_, err = r.Get(ctx, characterId)
 	assert.Error(t, err)
 	assert.Equal(t, ErrNotFound, err)
 }
 
 func TestRegistryDeleteNotFound(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	nonExistentId := uint32(999)
 
-	err := r.Delete(ten, nonExistentId)
+	err := r.Delete(ctx, nonExistentId)
 	assert.Error(t, err)
 	assert.Equal(t, ErrNotFound, err)
 }
 
 func TestRegistryMultiTenantIsolation(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ten2, _ := tenant.Create(uuid.New(), "GMS", 87, 1)
+	ctx1 := createTestCtx(ten1)
+	ctx2 := createTestCtx(ten2)
 
 	characterId := uint32(133)
 
 	// Create character in tenant 1
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten1, f, characterId, "TestChar1", 10, job.Id(100), 0)
+	r.Create(ctx1, f, characterId, "TestChar1", 10, job.Id(100), 0)
 
 	// Create character with same ID in tenant 2
-	r.Create(ten2, f, characterId, "TestChar2", 20, job.Id(200), 0)
+	r.Create(ctx2, f, characterId, "TestChar2", 20, job.Id(200), 0)
 
 	// Verify isolation
-	char1, err := r.Get(ten1, characterId)
+	char1, err := r.Get(ctx1, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, "TestChar1", char1.Name())
 	assert.Equal(t, byte(10), char1.Level())
 	assert.Equal(t, job.Id(100), char1.JobId())
 
-	char2, err := r.Get(ten2, characterId)
+	char2, err := r.Get(ctx2, characterId)
 	assert.NoError(t, err)
 	assert.Equal(t, "TestChar2", char2.Name())
 	assert.Equal(t, byte(20), char2.Level())
 	assert.Equal(t, job.Id(200), char2.JobId())
 
 	// Update in tenant 1 should not affect tenant 2
-	r.Update(ten1, characterId, func(m Model) Model {
+	r.Update(ctx1, characterId, func(m Model) Model {
 		return m.ChangeLevel(25)
 	})
 
-	char1, _ = r.Get(ten1, characterId)
-	char2, _ = r.Get(ten2, characterId)
+	char1, _ = r.Get(ctx1, characterId)
+	char2, _ = r.Get(ctx2, characterId)
 
 	assert.Equal(t, byte(25), char1.Level())
 	assert.Equal(t, byte(20), char2.Level())
-
-	// Cleanup
-	r.Delete(ten1, characterId)
-	r.Delete(ten2, characterId)
 }
 
 func TestRegistryUpdateOrderMatters(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(134)
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	r.Create(ten, f, characterId, "TestChar", 10, job.Id(100), 0)
+	r.Create(ctx, f, characterId, "TestChar", 10, job.Id(100), 0)
 
 	// Test that updaters are applied in order
-	updated := r.Update(ten, characterId,
+	updated := r.Update(ctx, characterId,
 		func(m Model) Model { return m.ChangeLevel(15) },
 		func(m Model) Model { return m.ChangeLevel(20) },
 		func(m Model) Model { return m.ChangeLevel(25) },
@@ -405,31 +416,27 @@ func TestRegistryUpdateOrderMatters(t *testing.T) {
 
 	// Final level should be 25 (last updater wins)
 	assert.Equal(t, byte(25), updated.Level())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }
 
 func TestRegistryUpdateEmptyUpdaters(t *testing.T) {
+	setupTestRegistry(t)
 	r := GetRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := createTestCtx(ten)
 
 	characterId := uint32(135)
 	originalLevel := byte(10)
 
 	// Create character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	original := r.Create(ten, f, characterId, "TestChar", originalLevel, job.Id(100), 0)
+	original := r.Create(ctx, f, characterId, "TestChar", originalLevel, job.Id(100), 0)
 
 	// Update with no updaters
-	updated := r.Update(ten, characterId)
+	updated := r.Update(ctx, characterId)
 
 	// Should return unchanged character
 	assert.Equal(t, original.Level(), updated.Level())
 	assert.Equal(t, original.JobId(), updated.JobId())
 	assert.Equal(t, original.PartyId(), updated.PartyId())
 	assert.Equal(t, original.Online(), updated.Online())
-
-	// Cleanup
-	r.Delete(ten, characterId)
 }

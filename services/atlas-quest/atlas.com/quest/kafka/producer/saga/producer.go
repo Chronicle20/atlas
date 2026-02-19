@@ -54,7 +54,7 @@ func (b *Builder) AddAwardItem(characterId uint32, templateId uint32, quantity u
 	b.steps = append(b.steps, saga.Step{
 		Id:     stepId(b.stepCounter),
 		Status: saga.Pending,
-		Action: saga.AwardInventory,
+		Action: saga.AwardAsset,
 		Payload: saga.AwardItemPayload{
 			CharacterId: characterId,
 			Item: saga.ItemDetail{

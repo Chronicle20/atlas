@@ -1,7 +1,6 @@
 package thread
 
 import (
-	"atlas-guilds/database"
 	"atlas-guilds/kafka/message"
 	thread2 "atlas-guilds/kafka/message/thread"
 	"atlas-guilds/kafka/producer"
@@ -9,6 +8,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -60,7 +60,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 }
 
 func (p *ProcessorImpl) AllProvider(guildId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll(p.t.Id(), guildId)(p.db))()
+	return model.SliceMap(Make)(getAll(guildId)(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {
@@ -68,7 +68,7 @@ func (p *ProcessorImpl) GetAll(guildId uint32) ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32, threadId uint32) model.Provider[Model] {
-	return model.Map(Make)(getById(p.t.Id(), guildId, threadId)(p.db))
+	return model.Map(Make)(getById(guildId, threadId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetById(guildId uint32, threadId uint32) (Model, error) {
@@ -83,7 +83,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(g
 					return func(message string) func(emoticonId uint32) func(notice bool) (Model, error) {
 						return func(emoticonId uint32) func(notice bool) (Model, error) {
 							return func(notice bool) (Model, error) {
-								thr, err := create(p.db, p.t.Id(), guildId, posterId, title, message, emoticonId, notice)
+								thr, err := create(p.db.WithContext(p.ctx), p.t.Id(), guildId, posterId, title, message, emoticonId, notice)
 								if err != nil {
 									p.l.Debugf("Unable to create thread for guild [%d].", guildId)
 									return Model{}, err
@@ -124,14 +124,14 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(worldId world.Id) func(g
 							return func(emoticonId uint32) func(notice bool) (Model, error) {
 								return func(notice bool) (Model, error) {
 									var thr Model
-									txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+									txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 										var err error
 										thr, err = p.WithTransaction(tx).GetById(guildId, threadId)
 										if err != nil {
 											p.l.Debugf("Cannot locate guild [%d] thread [%d] being updated.", guildId, threadId)
 											return err
 										}
-										err = update(tx, p.t.Id(), guildId, threadId, posterId, title, message, emoticonId, notice)
+										err = update(tx, guildId, threadId, posterId, title, message, emoticonId, notice)
 										if err != nil {
 											p.l.Debugf("Unable to update guild [%d] thread [%d].", guildId, threadId)
 											return err
@@ -173,8 +173,8 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId world.Id) func(g
 		return func(guildId uint32) func(threadId uint32) func(actorId uint32) error {
 			return func(threadId uint32) func(actorId uint32) error {
 				return func(actorId uint32) error {
-					txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-						thr, err := getById(p.t.Id(), guildId, threadId)(tx)()
+					txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+						thr, err := getById(guildId, threadId)(tx)()
 						if err != nil {
 							p.l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
 							return err
@@ -188,7 +188,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(worldId world.Id) func(g
 							}
 						}
 
-						err = remove(tx, p.t.Id(), guildId, threadId)
+						err = remove(tx, guildId, threadId)
 						if err != nil {
 							p.l.Debugf("Unable to delete guild [%d] thread [%d].", guildId, threadId)
 							return err
@@ -226,7 +226,7 @@ func (p *ProcessorImpl) Reply(mb *message.Buffer) func(worldId world.Id) func(gu
 					return func(msg string) (Model, error) {
 						var thr Model
 						var rp reply.Model
-						txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 							_, err := p.WithTransaction(tx).GetById(guildId, threadId)
 							if err != nil {
 								p.l.Debugf("Unable to locate thread [%d] for guild [%d] being replied to.", guildId, threadId)
@@ -278,7 +278,7 @@ func (p *ProcessorImpl) DeleteReply(mb *message.Buffer) func(worldId world.Id) f
 				return func(actorId uint32) func(replyId uint32) (Model, error) {
 					return func(replyId uint32) (Model, error) {
 						var thr Model
-						txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 							_, err := p.WithTransaction(tx).GetById(guildId, threadId)
 							if err != nil {
 								p.l.Debugf("Unable to locate thread [%d] for guild [%d] being replied to.", guildId, threadId)

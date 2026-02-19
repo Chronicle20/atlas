@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 )
 
 const serviceName = "atlas-expressions"
@@ -19,6 +20,9 @@ const consumerGroupId = "Expression Service"
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	expression.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

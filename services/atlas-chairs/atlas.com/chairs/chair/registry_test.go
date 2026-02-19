@@ -1,34 +1,43 @@
 package chair
 
 import (
+	"context"
 	"sync"
 	"testing"
+
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
-func resetRegistry() {
-	r := GetRegistry()
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.characterRegister = make(map[uint32]Model)
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(client)
+}
+
+func testCtx() context.Context {
+	st, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	return tenant.WithContext(context.Background(), st)
 }
 
 func TestRegistry_GetSet(t *testing.T) {
-	resetRegistry()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
 	characterId := uint32(12345)
 	m := Model{id: 1, chairType: "FIXED"}
 
-	// Initially should not exist
-	_, ok := GetRegistry().Get(characterId)
+	_, ok := GetRegistry().Get(ctx, characterId)
 	if ok {
 		t.Fatal("Expected character to not exist in registry initially")
 	}
 
-	// Set the chair
-	GetRegistry().Set(characterId, m)
+	GetRegistry().Set(ctx, characterId, m)
 
-	// Now should exist
-	retrieved, ok := GetRegistry().Get(characterId)
+	retrieved, ok := GetRegistry().Get(ctx, characterId)
 	if !ok {
 		t.Fatal("Expected character to exist in registry after Set")
 	}
@@ -43,68 +52,64 @@ func TestRegistry_GetSet(t *testing.T) {
 }
 
 func TestRegistry_Clear(t *testing.T) {
-	resetRegistry()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
 	characterId := uint32(12345)
 	m := Model{id: 1, chairType: "FIXED"}
 
-	// Set the chair
-	GetRegistry().Set(characterId, m)
+	GetRegistry().Set(ctx, characterId, m)
 
-	// Verify it exists
-	_, ok := GetRegistry().Get(characterId)
+	_, ok := GetRegistry().Get(ctx, characterId)
 	if !ok {
 		t.Fatal("Expected character to exist in registry after Set")
 	}
 
-	// Clear should return true
-	existed := GetRegistry().Clear(characterId)
+	existed := GetRegistry().Clear(ctx, characterId)
 	if !existed {
 		t.Fatal("Expected Clear to return true for existing entry")
 	}
 
-	// Now should not exist
-	_, ok = GetRegistry().Get(characterId)
+	_, ok = GetRegistry().Get(ctx, characterId)
 	if ok {
 		t.Fatal("Expected character to not exist in registry after Clear")
 	}
 }
 
 func TestRegistry_Clear_NotExists(t *testing.T) {
-	resetRegistry()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
 	characterId := uint32(99999)
 
-	// Clear non-existent entry should return false
-	existed := GetRegistry().Clear(characterId)
+	existed := GetRegistry().Clear(ctx, characterId)
 	if existed {
 		t.Fatal("Expected Clear to return false for non-existent entry")
 	}
 }
 
 func TestRegistry_Concurrent(t *testing.T) {
-	resetRegistry()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
 	var wg sync.WaitGroup
 	iterations := 100
 
-	// Concurrent writes
 	for i := 0; i < iterations; i++ {
 		wg.Add(1)
 		go func(id int) {
 			defer wg.Done()
 			characterId := uint32(id)
 			m := Model{id: uint32(id), chairType: "FIXED"}
-			GetRegistry().Set(characterId, m)
+			GetRegistry().Set(ctx, characterId, m)
 		}(i)
 	}
 
 	wg.Wait()
 
-	// Verify all entries exist
 	for i := 0; i < iterations; i++ {
 		characterId := uint32(i)
-		m, ok := GetRegistry().Get(characterId)
+		m, ok := GetRegistry().Get(ctx, characterId)
 		if !ok {
 			t.Errorf("Expected character %d to exist in registry", characterId)
 			continue
@@ -114,18 +119,17 @@ func TestRegistry_Concurrent(t *testing.T) {
 		}
 	}
 
-	// Concurrent reads and clears
 	for i := 0; i < iterations; i++ {
 		wg.Add(2)
 		go func(id int) {
 			defer wg.Done()
 			characterId := uint32(id)
-			GetRegistry().Get(characterId)
+			GetRegistry().Get(ctx, characterId)
 		}(i)
 		go func(id int) {
 			defer wg.Done()
 			characterId := uint32(id)
-			GetRegistry().Clear(characterId)
+			GetRegistry().Clear(ctx, characterId)
 		}(i)
 	}
 
@@ -133,9 +137,9 @@ func TestRegistry_Concurrent(t *testing.T) {
 }
 
 func TestRegistry_MultipleCharacters(t *testing.T) {
-	resetRegistry()
+	setupTestRegistry(t)
+	ctx := testCtx()
 
-	// Set chairs for multiple characters
 	chars := []struct {
 		characterId uint32
 		chairId     uint32
@@ -148,12 +152,11 @@ func TestRegistry_MultipleCharacters(t *testing.T) {
 
 	for _, c := range chars {
 		m := Model{id: c.chairId, chairType: c.chairType}
-		GetRegistry().Set(c.characterId, m)
+		GetRegistry().Set(ctx, c.characterId, m)
 	}
 
-	// Verify all entries
 	for _, c := range chars {
-		m, ok := GetRegistry().Get(c.characterId)
+		m, ok := GetRegistry().Get(ctx, c.characterId)
 		if !ok {
 			t.Errorf("Expected character %d to exist", c.characterId)
 			continue
@@ -166,21 +169,62 @@ func TestRegistry_MultipleCharacters(t *testing.T) {
 		}
 	}
 
-	// Clear one and verify others unaffected
-	GetRegistry().Clear(200)
+	GetRegistry().Clear(ctx, 200)
 
-	_, ok := GetRegistry().Get(200)
+	_, ok := GetRegistry().Get(ctx, 200)
 	if ok {
 		t.Error("Expected character 200 to be cleared")
 	}
 
-	_, ok = GetRegistry().Get(100)
+	_, ok = GetRegistry().Get(ctx, 100)
 	if !ok {
 		t.Error("Expected character 100 to still exist")
 	}
 
-	_, ok = GetRegistry().Get(300)
+	_, ok = GetRegistry().Get(ctx, 300)
 	if !ok {
 		t.Error("Expected character 300 to still exist")
+	}
+}
+
+func TestRegistry_TenantIsolation(t *testing.T) {
+	setupTestRegistry(t)
+
+	tenant1, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tenant2, _ := tenant.Create(uuid.New(), "EMS", 83, 1)
+	ctx1 := tenant.WithContext(context.Background(), tenant1)
+	ctx2 := tenant.WithContext(context.Background(), tenant2)
+
+	characterId := uint32(12345)
+
+	GetRegistry().Set(ctx1, characterId, Model{id: 1, chairType: "FIXED"})
+	GetRegistry().Set(ctx2, characterId, Model{id: 2, chairType: "PORTABLE"})
+
+	m1, ok1 := GetRegistry().Get(ctx1, characterId)
+	if !ok1 {
+		t.Fatal("Expected tenant1 character to exist")
+	}
+	if m1.Id() != 1 {
+		t.Errorf("Tenant1: expected chair id 1, got %d", m1.Id())
+	}
+
+	m2, ok2 := GetRegistry().Get(ctx2, characterId)
+	if !ok2 {
+		t.Fatal("Expected tenant2 character to exist")
+	}
+	if m2.Id() != 2 {
+		t.Errorf("Tenant2: expected chair id 2, got %d", m2.Id())
+	}
+
+	GetRegistry().Clear(ctx1, characterId)
+
+	_, ok := GetRegistry().Get(ctx1, characterId)
+	if ok {
+		t.Error("Expected tenant1 data to be cleared")
+	}
+
+	_, ok = GetRegistry().Get(ctx2, characterId)
+	if !ok {
+		t.Error("Expected tenant2 data to still exist")
 	}
 }

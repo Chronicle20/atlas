@@ -34,9 +34,12 @@ Pure curried business functions plus `AndEmit` variants for Kafka emission. Depe
 
 **Typical Signatures:**
 ```go
+// Create keeps tenantId — needed to set the entity field
 func create(db *gorm.DB, tenantId uuid.UUID, ...) (Model, error)
-func delete(db *gorm.DB, tenantId uuid.UUID, id uint32) error
-func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID) model.Operator[Model]
+
+// Update/Delete do NOT take tenantId — automatic tenant filtering via GORM callbacks
+func deleteById(db *gorm.DB, id uint32) error
+func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(characterId uint32) model.Operator[Model]
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 func SetLevel(level byte) EntityUpdateFunction
@@ -58,13 +61,14 @@ func SetMeso(amount uint32) EntityUpdateFunction
 
 **Typical Signatures:**
 ```go
-func getById(tenantId uuid.UUID, id uint32) database.EntityProvider[entity]
-func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId world.Id) database.EntityProvider[[]entity]
-func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity]
+// Providers do NOT take tenantId — automatic tenant filtering via GORM callbacks
+func getById(id uint32) database.EntityProvider[entity]
+func getForAccountInWorld(accountId uint32, worldId world.Id) database.EntityProvider[[]entity]
+func getAll() database.EntityProvider[[]entity]
 func modelFromEntity(e entity) (Model, error)
 ```
 
-**Pattern:** Provider functions are curried - they accept query parameters and return a function that takes `*gorm.DB` and returns `model.Provider[T]`. This enables lazy evaluation and composition with `model.Map`, `model.SliceMap`, and `model.ParallelMap`.
+**Pattern:** Provider functions are curried - they accept query parameters and return a function that takes `*gorm.DB` and returns `model.Provider[T]`. The `*gorm.DB` must have context set via `db.WithContext(ctx)` for automatic tenant filtering. This enables lazy evaluation and composition with `model.Map`, `model.SliceMap`, and `model.ParallelMap`.
 
 **Why This Separation:**
 - **Testability** - Read and write operations can be mocked independently

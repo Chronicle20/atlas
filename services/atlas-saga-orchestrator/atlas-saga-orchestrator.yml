@@ -5,7 +5,7 @@ metadata:
   name: atlas-saga-orchestrator
   namespace: atlas
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: atlas-saga-orchestrator
@@ -15,7 +15,7 @@ spec:
         app: atlas-saga-orchestrator
     spec:
       containers:
-      - name: guilds
+      - name: saga-orchestrator
         image: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
         ports:
         - containerPort: 8080
@@ -25,6 +25,24 @@ spec:
         env:
         - name: LOG_LEVEL
           value: "debug"
+        - name: DB_USER
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: DB_PASSWORD
+        - name: DB_NAME
+          value: "atlas-saga-orchestrator"
+        - name: SAGA_DEFAULT_TIMEOUT
+          value: "5m"
+        - name: SAGA_REAPER_INTERVAL
+          value: "30s"
+        - name: SAGA_RECOVERY_ENABLED
+          value: "true"
 ---
 apiVersion: v1
 kind: Service

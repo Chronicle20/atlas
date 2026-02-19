@@ -12,7 +12,9 @@ import (
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
@@ -25,7 +27,12 @@ func (m *mockInviteProcessor) Create(_ uint32, _ world.Id, _ uint32, _ uint32) e
 }
 
 // Test setup helper - creates a processor with real character processor
-func setupTest() (*ProcessorImpl, tenant.Model) {
+func setupTest(t *testing.T) (*ProcessorImpl, context.Context) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	character.InitRegistry(rc)
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
 
@@ -43,11 +50,16 @@ func setupTest() (*ProcessorImpl, tenant.Model) {
 		ip:  mockInvite,
 	}
 
-	return processor, ten
+	return processor, ctx
 }
 
 // Test setup helper for LeaveAndEmit tests - creates processor with mock producer
-func setupTestWithProducer() (*ProcessorImpl, tenant.Model) {
+func setupTestWithProducer(t *testing.T) (*ProcessorImpl, context.Context) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	character.InitRegistry(rc)
+
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel) // Reduce noise in tests
 
@@ -68,20 +80,20 @@ func setupTestWithProducer() (*ProcessorImpl, tenant.Model) {
 		ip:  mockInvite,
 	}
 
-	return processor, ten
+	return processor, ctx
 }
 
 // Helper to create a real character in the character registry
-func createRealCharacter(ten tenant.Model, id uint32, partyId uint32) character.Model {
+func createRealCharacter(ctx context.Context, id uint32, partyId uint32) character.Model {
 	registry := character.GetRegistry()
 
 	// Create base character
 	f := field.NewBuilder(1, 1, 100000).Build()
-	char := registry.Create(ten, f, id, "TestChar", 50, job.Id(100), 0)
+	char := registry.Create(ctx, f, id, "TestChar", 50, job.Id(100), 0)
 
 	// Update with party if needed
 	if partyId != 0 {
-		char = registry.Update(ten, id, func(m character.Model) character.Model {
+		char = registry.Update(ctx, id, func(m character.Model) character.Model {
 			return m.JoinParty(partyId)
 		})
 	}
@@ -101,8 +113,8 @@ func assertTopicMessageExists(t *testing.T, buffer *message.Buffer, topic string
 // Test data structures for table-driven tests
 type partyLeaveTestCase struct {
 	name              string
-	setupParty        func(ten tenant.Model) (uint32, uint32, uint32) // returns partyId, leaderId, memberId
-	setupCharacter    func(ten tenant.Model, partyId, leaderId, memberId uint32)
+	setupParty        func(ctx context.Context) (uint32, uint32, uint32) // returns partyId, leaderId, memberId
+	setupCharacter    func(ctx context.Context, partyId, leaderId, memberId uint32)
 	leaveCharacter    uint32
 	expectError       error
 	expectPartyExists bool
@@ -113,18 +125,18 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 	tests := []partyLeaveTestCase{
 		{
 			name: "regular member leaves",
-			setupParty: func(ten tenant.Model) (uint32, uint32, uint32) {
+			setupParty: func(ctx context.Context) (uint32, uint32, uint32) {
 				leaderId := uint32(1)
 				memberId := uint32(2)
-				party := GetRegistry().Create(ten, leaderId)
-				GetRegistry().Update(ten, party.Id(), func(m Model) Model {
+				party := GetRegistry().Create(ctx, leaderId)
+				GetRegistry().Update(ctx, party.Id(), func(m Model) Model {
 					return Model.AddMember(m, memberId)
 				})
 				return party.Id(), leaderId, memberId
 			},
-			setupCharacter: func(ten tenant.Model, partyId, leaderId, memberId uint32) {
-				createRealCharacter(ten, leaderId, partyId)
-				createRealCharacter(ten, memberId, partyId)
+			setupCharacter: func(ctx context.Context, partyId, leaderId, memberId uint32) {
+				createRealCharacter(ctx, leaderId, partyId)
+				createRealCharacter(ctx, memberId, partyId)
 			},
 			leaveCharacter:    2, // memberId
 			expectError:       nil,
@@ -133,13 +145,13 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 		},
 		{
 			name: "leader leaves single-member party (disbands)",
-			setupParty: func(ten tenant.Model) (uint32, uint32, uint32) {
+			setupParty: func(ctx context.Context) (uint32, uint32, uint32) {
 				leaderId := uint32(1)
-				party := GetRegistry().Create(ten, leaderId)
+				party := GetRegistry().Create(ctx, leaderId)
 				return party.Id(), leaderId, 0 // no other members
 			},
-			setupCharacter: func(ten tenant.Model, partyId, leaderId, memberId uint32) {
-				createRealCharacter(ten, leaderId, partyId)
+			setupCharacter: func(ctx context.Context, partyId, leaderId, memberId uint32) {
+				createRealCharacter(ctx, leaderId, partyId)
 			},
 			leaveCharacter:    1, // leaderId
 			expectError:       nil,
@@ -148,18 +160,18 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 		},
 		{
 			name: "leader leaves multi-member party (disbands all)",
-			setupParty: func(ten tenant.Model) (uint32, uint32, uint32) {
+			setupParty: func(ctx context.Context) (uint32, uint32, uint32) {
 				leaderId := uint32(1)
 				memberId := uint32(2)
-				party := GetRegistry().Create(ten, leaderId)
-				GetRegistry().Update(ten, party.Id(), func(m Model) Model {
+				party := GetRegistry().Create(ctx, leaderId)
+				GetRegistry().Update(ctx, party.Id(), func(m Model) Model {
 					return Model.AddMember(m, memberId)
 				})
 				return party.Id(), leaderId, memberId
 			},
-			setupCharacter: func(ten tenant.Model, partyId, leaderId, memberId uint32) {
-				createRealCharacter(ten, leaderId, partyId)
-				createRealCharacter(ten, memberId, partyId)
+			setupCharacter: func(ctx context.Context, partyId, leaderId, memberId uint32) {
+				createRealCharacter(ctx, leaderId, partyId)
+				createRealCharacter(ctx, memberId, partyId)
 			},
 			leaveCharacter:    1, // leaderId
 			expectError:       nil,
@@ -170,11 +182,11 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			processor, ten := setupTest()
+			processor, ctx := setupTest(t)
 
 			// Setup party and characters
-			partyId, leaderId, memberId := tc.setupParty(ten)
-			tc.setupCharacter(ten, partyId, leaderId, memberId)
+			partyId, leaderId, memberId := tc.setupParty(ctx)
+			tc.setupCharacter(ctx, partyId, leaderId, memberId)
 
 			// Create message buffer
 			buffer := message.NewBuffer()
@@ -194,11 +206,11 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 			if tc.expectPartyExists {
 				assert.Equal(t, tc.expectMemberCount, len(result.Members()))
 				// Verify party still exists in registry
-				_, registryErr := GetRegistry().Get(ten, partyId)
+				_, registryErr := GetRegistry().Get(ctx, partyId)
 				assert.NoError(t, registryErr)
 			} else {
 				// For disbanded parties, the party should be removed from registry
-				_, registryErr := GetRegistry().Get(ten, partyId)
+				_, registryErr := GetRegistry().Get(ctx, partyId)
 				assert.Error(t, registryErr, "Expected party to be removed from registry")
 			}
 
@@ -206,9 +218,9 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 			assertTopicMessageExists(t, buffer, EnvEventStatusTopic)
 
 			// Cleanup character registry
-			character.GetRegistry().Delete(ten, leaderId)
+			character.GetRegistry().Delete(ctx, leaderId)
 			if memberId != 0 {
-				character.GetRegistry().Delete(ten, memberId)
+				character.GetRegistry().Delete(ctx, memberId)
 			}
 		})
 	}
@@ -217,15 +229,15 @@ func TestLeave_SuccessScenarios(t *testing.T) {
 func TestLeave_ErrorScenarios(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupCharacter func(ten tenant.Model) uint32
+		setupCharacter func(ctx context.Context) uint32
 		partyId        uint32
 		characterId    uint32
 		expectError    error
 	}{
 		{
 			name: "character not in specified party",
-			setupCharacter: func(ten tenant.Model) uint32 {
-				char := createRealCharacter(ten, 1, 100) // character in party 100
+			setupCharacter: func(ctx context.Context) uint32 {
+				char := createRealCharacter(ctx, 1, 100) // character in party 100
 				return char.Id()
 			},
 			partyId:     200, // try to leave different party
@@ -234,8 +246,8 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 		},
 		{
 			name: "character not in any party",
-			setupCharacter: func(ten tenant.Model) uint32 {
-				char := createRealCharacter(ten, 1, 0) // character not in party
+			setupCharacter: func(ctx context.Context) uint32 {
+				char := createRealCharacter(ctx, 1, 0) // character not in party
 				return char.Id()
 			},
 			partyId:     100,
@@ -244,7 +256,7 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 		},
 		{
 			name: "character not found",
-			setupCharacter: func(ten tenant.Model) uint32 {
+			setupCharacter: func(ctx context.Context) uint32 {
 				// Don't create any character
 				return 999
 			},
@@ -256,10 +268,10 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			processor, ten := setupTest()
+			processor, ctx := setupTest(t)
 
 			// Setup
-			characterId := tc.setupCharacter(ten)
+			characterId := tc.setupCharacter(ctx)
 			buffer := message.NewBuffer()
 
 			// Execute
@@ -274,7 +286,7 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 			}
 
 			// Cleanup
-			character.GetRegistry().Delete(ten, characterId)
+			character.GetRegistry().Delete(ctx, characterId)
 		})
 	}
 }
@@ -282,12 +294,12 @@ func TestLeave_ErrorScenarios(t *testing.T) {
 func TestLeaveAndEmit_Integration(t *testing.T) {
 	// This tests the Emit wrapper specifically
 	t.Run("LeaveAndEmit calls Leave and emits via producer", func(t *testing.T) {
-		processor, ten := setupTestWithProducer()
+		processor, ctx := setupTestWithProducer(t)
 
 		// Setup party and character
 		leaderId := uint32(1)
-		party := GetRegistry().Create(ten, leaderId)
-		createRealCharacter(ten, leaderId, party.Id())
+		party := GetRegistry().Create(ctx, leaderId)
+		createRealCharacter(ctx, leaderId, party.Id())
 
 		// LeaveAndEmit should work without explicit buffer
 		// Note: This will fail to emit due to no real Kafka broker, but the Leave logic should work
@@ -299,7 +311,7 @@ func TestLeaveAndEmit_Integration(t *testing.T) {
 		}
 
 		// Verify party was still processed (removed from registry even if emit failed)
-		_, registryErr := GetRegistry().Get(ten, party.Id())
+		_, registryErr := GetRegistry().Get(ctx, party.Id())
 		if registryErr == nil {
 			// Party still exists, which means the leave logic didn't complete due to emit failure
 			// This is expected behavior - let's just verify the character was properly set up
@@ -307,30 +319,30 @@ func TestLeaveAndEmit_Integration(t *testing.T) {
 		}
 
 		// Cleanup
-		character.GetRegistry().Delete(ten, leaderId)
-		GetRegistry().Remove(ten, party.Id()) // Cleanup the party if it still exists
+		character.GetRegistry().Delete(ctx, leaderId)
+		GetRegistry().Remove(ctx, party.Id()) // Cleanup the party if it still exists
 	})
 }
 
 // Test party state transitions more systematically
 func TestPartyStateTransitions(t *testing.T) {
 	t.Run("party membership changes correctly", func(t *testing.T) {
-		processor, ten := setupTest()
+		processor, ctx := setupTest(t)
 
 		// Create party with leader and two members
 		leaderId := uint32(1)
 		member1Id := uint32(2)
 		member2Id := uint32(3)
 
-		party := GetRegistry().Create(ten, leaderId)
-		party, _ = GetRegistry().Update(ten, party.Id(), func(m Model) Model {
+		party := GetRegistry().Create(ctx, leaderId)
+		party, _ = GetRegistry().Update(ctx, party.Id(), func(m Model) Model {
 			return Model.AddMember(Model.AddMember(m, member1Id), member2Id)
 		})
 
 		// Create real characters
-		createRealCharacter(ten, leaderId, party.Id())
-		createRealCharacter(ten, member1Id, party.Id())
-		createRealCharacter(ten, member2Id, party.Id())
+		createRealCharacter(ctx, leaderId, party.Id())
+		createRealCharacter(ctx, member1Id, party.Id())
+		createRealCharacter(ctx, member2Id, party.Id())
 
 		buffer := message.NewBuffer()
 
@@ -347,12 +359,12 @@ func TestPartyStateTransitions(t *testing.T) {
 		assert.NoError(t, err2)
 
 		// Verify party no longer exists
-		_, registryErr := GetRegistry().Get(ten, party.Id())
+		_, registryErr := GetRegistry().Get(ctx, party.Id())
 		assert.Error(t, registryErr)
 
 		// Cleanup
-		character.GetRegistry().Delete(ten, leaderId)
-		character.GetRegistry().Delete(ten, member1Id)
-		character.GetRegistry().Delete(ten, member2Id)
+		character.GetRegistry().Delete(ctx, leaderId)
+		character.GetRegistry().Delete(ctx, member1Id)
+		character.GetRegistry().Delete(ctx, member2Id)
 	})
 }

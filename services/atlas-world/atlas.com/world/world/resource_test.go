@@ -24,13 +24,14 @@ func (t testServerInformation) GetPrefix() string {
 }
 
 func TestHandleGetWorlds_NoChannelsRegistered(t *testing.T) {
+	setupWorldTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
-	tenant := test.CreateDefaultMockTenant()
+	ctx := test.CreateTestContext()
 
 	// Ensure no channels exist for this tenant
-	servers := channel.GetChannelRegistry().ChannelServers(tenant)
+	servers := channel.GetChannelRegistry().ChannelServers(ctx)
 	for _, s := range servers {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(ctx, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 	}
 
 	// Create router with the world resource
@@ -58,13 +59,14 @@ func TestHandleGetWorlds_NoChannelsRegistered(t *testing.T) {
 }
 
 func TestHandleGetWorld_NotFound(t *testing.T) {
+	setupWorldTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
-	tenant := test.CreateDefaultMockTenant()
+	ctx := test.CreateTestContext()
 
 	// Ensure no channels exist for this tenant
-	servers := channel.GetChannelRegistry().ChannelServers(tenant)
+	servers := channel.GetChannelRegistry().ChannelServers(ctx)
 	for _, s := range servers {
-		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(tenant, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
+		_ = channel.GetChannelRegistry().RemoveByWorldAndChannel(ctx, channelConstant.NewModel(s.WorldId(), s.ChannelId()))
 	}
 
 	// Create router with the world resource
@@ -92,6 +94,7 @@ func TestHandleGetWorld_NotFound(t *testing.T) {
 }
 
 func TestHandleGetWorld_InvalidWorldId(t *testing.T) {
+	setupWorldTestRegistry(t)
 	logger, _ := logtest.NewNullLogger()
 
 	// Create router with the world resource
@@ -117,8 +120,3 @@ func TestHandleGetWorld_InvalidWorldId(t *testing.T) {
 		t.Errorf("handler returned wrong status code: got %v want %v", status, http.StatusBadRequest)
 	}
 }
-
-// Note: Testing TestHandleGetWorld_Success and TestHandleGetWorlds_Success
-// requires the configuration service to be available with proper tenant config.
-// These are integration tests that would need the full service infrastructure.
-// The tests above verify the error handling paths work correctly.

@@ -8,11 +8,13 @@ import (
 )
 
 func TestTransform(t *testing.T) {
+	setupTestRegistry(t)
 	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
 	now := time.Now()
 
 	// Create a model via the registry to get a properly constructed instance
-	m := GetRegistry().Create(ten, 1001, 1, 2001, "BUDDY", 5001)
+	m := GetRegistry().Create(ctx, 1001, 1, 2001, "BUDDY", 5001)
 
 	rm, err := Transform(m)
 
@@ -30,8 +32,10 @@ func TestTransform_AllInviteTypes(t *testing.T) {
 
 	for _, inviteType := range inviteTypes {
 		t.Run(inviteType, func(t *testing.T) {
+			setupTestRegistry(t)
 			ten := setupTestTenant(t)
-			m := GetRegistry().Create(ten, 1001, 1, 2001, inviteType, 5001)
+			ctx := setupTestContext(t, ten)
+			m := GetRegistry().Create(ctx, 1001, 1, 2001, inviteType, 5001)
 
 			rm, err := Transform(m)
 

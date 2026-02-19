@@ -1,7 +1,6 @@
 package wishlist
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,7 +16,7 @@ func getBaseRequest() string {
 }
 
 func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }
 
 func addForCharacterId(characterId uint32, serialNumber uint32) requests.Request[RestModel] {
@@ -26,9 +25,9 @@ func addForCharacterId(characterId uint32, serialNumber uint32) requests.Request
 		CharacterId:  characterId,
 		SerialNumber: serialNumber,
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId), i)
+	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId), i)
 }
 
 func clearForCharacterId(characterId uint32) requests.EmptyBodyRequest {
-	return rest.MakeDeleteRequest(fmt.Sprintf(getBaseRequest()+Resource, characterId))
+	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }

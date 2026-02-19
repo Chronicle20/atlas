@@ -68,24 +68,13 @@ func TestAdministratorFunctionCurrying(t *testing.T) {
 		updateFunc := updateNpcConversation(db)
 		assert.NotNil(t, updateFunc)
 
-		updateForTenant := updateFunc(tenantId)
-		assert.NotNil(t, updateForTenant)
-
-		updateForId := updateForTenant(id)
+		updateForId := updateFunc(id)
 		assert.NotNil(t, updateForId)
 	})
 
 	t.Run("deleteNpcConversation currying", func(t *testing.T) {
 		deleteFunc := deleteNpcConversation(db)
 		assert.NotNil(t, deleteFunc)
-
-		deleteForTenant := deleteFunc(tenantId)
-		assert.NotNil(t, deleteForTenant)
-	})
-
-	t.Run("deleteAllNpcConversations currying", func(t *testing.T) {
-		deleteAllFunc := deleteAllNpcConversations(db)
-		assert.NotNil(t, deleteAllFunc)
 	})
 }
 
@@ -114,8 +103,7 @@ func TestAdministratorFunctionSignatures(t *testing.T) {
 		require.NoError(t, err)
 
 		updateFunc := updateNpcConversation(db)
-		updateForTenant := updateFunc(tenantId)
-		updateForId := updateForTenant(createdModel.Id())
+		updateForId := updateFunc(createdModel.Id())
 
 		// Update with the same model data
 		updatedModel, err := updateForId(model)
@@ -130,16 +118,13 @@ func TestAdministratorFunctionSignatures(t *testing.T) {
 		require.NoError(t, err)
 
 		deleteFunc := deleteNpcConversation(db)
-		deleteForTenant := deleteFunc(tenantId)
 
-		err = deleteForTenant(createdModel.Id())
+		err = deleteFunc(createdModel.Id())
 		assert.NoError(t, err)
 	})
 
 	t.Run("deleteAllNpcConversations returns correct types", func(t *testing.T) {
-		deleteAllFunc := deleteAllNpcConversations(db)
-
-		count, err := deleteAllFunc(tenantId)
+		count, err := deleteAllNpcConversations(db)
 		assert.NoError(t, err)
 		assert.GreaterOrEqual(t, count, int64(0))
 	})

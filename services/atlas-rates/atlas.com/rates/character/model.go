@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-rates/rate"
+	"encoding/json"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -110,4 +111,38 @@ func (m Model) WithoutFactorsBySource(source string) Model {
 		characterId: m.characterId,
 		factors:     newFactors,
 	}
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		WorldId     world.Id      `json:"worldId"`
+		ChannelId   channel.Id    `json:"channelId"`
+		CharacterId uint32        `json:"characterId"`
+		Factors     []rate.Factor `json:"factors"`
+	}{
+		WorldId:     m.worldId,
+		ChannelId:   m.channelId,
+		CharacterId: m.characterId,
+		Factors:     m.factors,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		WorldId     world.Id      `json:"worldId"`
+		ChannelId   channel.Id    `json:"channelId"`
+		CharacterId uint32        `json:"characterId"`
+		Factors     []rate.Factor `json:"factors"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.worldId = aux.WorldId
+	m.channelId = aux.ChannelId
+	m.characterId = aux.CharacterId
+	m.factors = aux.Factors
+	if m.factors == nil {
+		m.factors = make([]rate.Factor, 0)
+	}
+	return nil
 }

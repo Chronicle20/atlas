@@ -1,10 +1,7 @@
 package wallet
 
 import (
-	"context"
-
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -24,11 +21,11 @@ func createEntity(db *gorm.DB, t tenant.Model, accountId uint32, credit uint32, 
 	return Make(*e)
 }
 
-func updateEntity(db *gorm.DB, t tenant.Model, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
+func updateEntity(db *gorm.DB, accountId uint32, credit uint32, points uint32, prepaid uint32) (Model, error) {
 	var e Entity
 
 	err := db.
-		Where("tenant_id = ? AND account_id = ?", t.Id(), accountId).
+		Where("account_id = ?", accountId).
 		First(&e).Error
 	if err != nil {
 		return Model{}, err
@@ -46,8 +43,6 @@ func updateEntity(db *gorm.DB, t tenant.Model, accountId uint32, credit uint32, 
 	return Make(e)
 }
 
-func deleteEntity(ctx context.Context) func(db *gorm.DB, tenantId uuid.UUID, accountId uint32) error {
-	return func(db *gorm.DB, tenantId uuid.UUID, accountId uint32) error {
-		return db.WithContext(ctx).Where("tenant_id = ? AND account_id = ?", tenantId, accountId).Delete(&Entity{}).Error
-	}
+func deleteEntity(db *gorm.DB, accountId uint32) error {
+	return db.Where("account_id = ?", accountId).Delete(&Entity{}).Error
 }

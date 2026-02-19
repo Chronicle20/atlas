@@ -1,17 +1,17 @@
 package commodities
 
 import (
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[[]Entity] {
+func getByNpcId(npcId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).Find(&results).Error
+		err := db.Where("npc_id = ?", npcId).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -19,10 +19,10 @@ func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[[]Enti
 	}
 }
 
-func getAllByTenant(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
+func getAllByTenant() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenantId}).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -31,7 +31,7 @@ func getAllByTenant(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
 }
 
 // getCommodityIdToNpcIdMap returns a provider that gets a map of commodity ID to NPC ID for a tenant
-func getCommodityIdToNpcIdMap(tenantId uuid.UUID) database.EntityProvider[map[uuid.UUID]uint32] {
+func getCommodityIdToNpcIdMap() database.EntityProvider[map[uuid.UUID]uint32] {
 	return func(db *gorm.DB) model.Provider[map[uuid.UUID]uint32] {
 		var results []struct {
 			Id    uuid.UUID
@@ -39,7 +39,6 @@ func getCommodityIdToNpcIdMap(tenantId uuid.UUID) database.EntityProvider[map[uu
 		}
 		err := db.Table("commodities").
 			Select("id, npc_id").
-			Where("tenant_id = ?", tenantId).
 			Where("deleted_at IS NULL").
 			Find(&results).Error
 		if err != nil {
@@ -57,11 +56,11 @@ func getCommodityIdToNpcIdMap(tenantId uuid.UUID) database.EntityProvider[map[uu
 }
 
 // existsByNpcId returns a provider that checks if any commodities exist for a given NPC ID
-func existsByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[bool] {
+func existsByNpcId(npcId uint32) database.EntityProvider[bool] {
 	return func(db *gorm.DB) model.Provider[bool] {
 		var count int64
 		err := db.Model(&Entity{}).
-			Where(&Entity{TenantId: tenantId, NpcId: npcId}).
+			Where("npc_id = ?", npcId).
 			Count(&count).Error
 		if err != nil {
 			return model.ErrorProvider[bool](err)
@@ -71,12 +70,11 @@ func existsByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[boo
 }
 
 // getDistinctNpcIds returns a provider that gets a distinct list of NPC IDs for a tenant
-func getDistinctNpcIds(tenantId uuid.UUID) database.EntityProvider[[]uint32] {
+func getDistinctNpcIds() database.EntityProvider[[]uint32] {
 	return func(db *gorm.DB) model.Provider[[]uint32] {
 		var results []uint32
 		err := db.Table("commodities").
 			Select("DISTINCT npc_id").
-			Where("tenant_id = ?", tenantId).
 			Where("deleted_at IS NULL").
 			Order("npc_id").
 			Pluck("npc_id", &results).Error

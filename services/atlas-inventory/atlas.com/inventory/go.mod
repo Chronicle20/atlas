@@ -22,9 +22,11 @@ require (
 
 require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
+	github.com/alicebob/miniredis/v2 v2.36.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
+	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -41,8 +43,10 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/redis/go-redis/v9 v9.18.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/uber/jaeger-lib v2.4.1+incompatible // indirect
+	github.com/yuin/gopher-lua v1.1.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.40.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.40.0 // indirect

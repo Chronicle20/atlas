@@ -33,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
-	m, ok := getRegistry().Get(p.t, characterId)
+	m, ok := getRegistry().Get(p.ctx, characterId)
 	if !ok {
 		return Model{}, errors.New("not found")
 	}
@@ -41,7 +41,7 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) Clear(transactionId uuid.UUID, field field.Model, characterId uint32) error {
-	existed := getRegistry().Clear(p.t, characterId)
+	existed := getRegistry().Clear(p.ctx, characterId)
 	if existed {
 		p.l.Debugf("Clearing chalkboard for [%d].", characterId)
 		return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(clearStatusEventProvider(transactionId, field, characterId))
@@ -53,6 +53,6 @@ func (p *ProcessorImpl) Set(transactionId uuid.UUID, field field.Model, characte
 	// TODO ensure they are in a place that this can be set.
 	// TODO ensure they are alive.
 	p.l.Debugf("Setting chalkboard to [%s] for [%d].", message, characterId)
-	getRegistry().Set(p.t, characterId, message)
+	getRegistry().Set(p.ctx, characterId, message)
 	return producer.ProviderImpl(p.l)(p.ctx)(chalkboard2.EnvEventTopicStatus)(setStatusEventProvider(transactionId, field, characterId, message))
 }

@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-ban/ban"
-	"atlas-ban/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-ban/history"
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"

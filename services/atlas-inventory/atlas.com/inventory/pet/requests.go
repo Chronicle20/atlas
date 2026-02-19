@@ -1,7 +1,6 @@
 package pet
 
 import (
-	"atlas-inventory/rest"
 	"context"
 	"fmt"
 
@@ -20,7 +19,7 @@ func getBaseRequest() string {
 }
 
 func requestById(petId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
 }
 
 func requestCreate(i Model) requests.Request[RestModel] {
@@ -30,5 +29,5 @@ func requestCreate(i Model) requests.Request[RestModel] {
 			return RestModel{}, err
 		}
 	}
-	return rest.MakePostRequest[RestModel](getBaseRequest()+Resource, rm)
+	return requests.PostRequest[RestModel](getBaseRequest()+Resource, rm)
 }

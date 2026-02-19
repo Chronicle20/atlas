@@ -9,10 +9,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {
+func generateUniqueCashId(db *gorm.DB) (int64, error) {
 	for {
 		cashId := rand.Int63()
-		entities, err := byCashIdProvider(tenantId, cashId)(db)()
+		entities, err := byCashIdProvider(cashId)(db)()
 		if err != nil {
 			return 0, err
 		}
@@ -23,7 +23,7 @@ func generateUniqueCashId(tenantId uuid.UUID, db *gorm.DB) (int64, error) {
 }
 
 func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
-	cashId, err := generateUniqueCashId(tenantId, db)
+	cashId, err := generateUniqueCashId(db)
 	if err != nil {
 		return model.ErrorProvider[Entity](err)
 	}
@@ -49,7 +49,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, compartmentId uuid.UUID, templateId
 }
 
 func findOrCreateByCashId(db *gorm.DB, tenantId uuid.UUID, cashId int64, compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32, expiration time.Time) model.Provider[Entity] {
-	entities, err := byCashIdProvider(tenantId, cashId)(db)()
+	entities, err := byCashIdProvider(cashId)(db)()
 	if err != nil {
 		return model.ErrorProvider[Entity](err)
 	}
@@ -78,10 +78,10 @@ func findOrCreateByCashId(db *gorm.DB, tenantId uuid.UUID, cashId int64, compart
 	return model.FixedProvider(entity)
 }
 
-func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
-	return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
+func deleteById(db *gorm.DB, id uint32) error {
+	return db.Where("id = ?", id).Delete(&Entity{}).Error
 }
 
-func updateQuantity(db *gorm.DB, tenantId uuid.UUID, id uint32, quantity uint32) error {
-	return db.Model(&Entity{}).Where("tenant_id = ? AND id = ?", tenantId, id).Update("quantity", quantity).Error
+func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {
+	return db.Model(&Entity{}).Where("id = ?", id).Update("quantity", quantity).Error
 }

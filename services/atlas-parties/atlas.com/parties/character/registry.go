@@ -1,52 +1,39 @@
 package character
 
 import (
+	"context"
 	"errors"
-	"sync"
+	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	lock         sync.Mutex
-	characterReg map[tenant.Model]map[uint32]Model
-	tenantLock   map[tenant.Model]*sync.RWMutex
+	characters *atlas.TenantRegistry[uint32, Model]
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		characters: atlas.NewTenantRegistry[uint32, Model](client, "party-character", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, f field.Model, id uint32, name string, level byte, jobId job.Id, gm int) Model {
-	r.lock.Lock()
-
-	var cm map[uint32]Model
-	var cml *sync.RWMutex
-	var ok bool
-	if cm, ok = r.characterReg[t]; ok {
-		cml = r.tenantLock[t]
-	} else {
-		cm = make(map[uint32]Model)
-		cml = &sync.RWMutex{}
-	}
-	r.characterReg[t] = cm
-	r.tenantLock[t] = cml
-	r.lock.Unlock()
-
-	cml.Lock()
-
+func (r *Registry) Create(ctx context.Context, f field.Model, id uint32, name string, level byte, jobId job.Id, gm int) Model {
+	t := tenant.MustFromContext(ctx)
 	m := Model{
 		tenantId: t.Id(),
 		id:       id,
@@ -58,55 +45,37 @@ func (r *Registry) Create(t tenant.Model, f field.Model, id uint32, name string,
 		online:   false,
 		gm:       gm,
 	}
-	cm[id] = m
-	cml.Unlock()
+	_ = r.characters.Put(ctx, t, id, m)
 	return m
 }
 
-func (r *Registry) Get(t tenant.Model, id uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.characterReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
+func (r *Registry) Get(ctx context.Context, id uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, id)
+	if err != nil {
+		return Model{}, ErrNotFound
 	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if m, ok := r.characterReg[t][id]; ok {
-		return m, nil
-	}
-	return Model{}, ErrNotFound
+	return m, nil
 }
 
-func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) Model) Model {
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	m := r.characterReg[t][id]
+func (r *Registry) Update(ctx context.Context, id uint32, updaters ...func(m Model) Model) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, id)
+	if err != nil {
+		return Model{}
+	}
 	for _, updater := range updaters {
 		m = updater(m)
 	}
-	r.characterReg[t][id] = m
+	_ = r.characters.Put(ctx, t, id, m)
 	return m
 }
 
-func (r *Registry) Delete(t tenant.Model, id uint32) error {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
+func (r *Registry) Delete(ctx context.Context, id uint32) error {
+	t := tenant.MustFromContext(ctx)
+	_, err := r.characters.Get(ctx, t, id)
+	if err != nil {
 		return ErrNotFound
 	}
-
-	tl.Lock()
-	defer tl.Unlock()
-
-	if _, ok := r.characterReg[t][id]; !ok {
-		return ErrNotFound
-	}
-
-	delete(r.characterReg[t], id)
-	return nil
+	return r.characters.Remove(ctx, t, id)
 }

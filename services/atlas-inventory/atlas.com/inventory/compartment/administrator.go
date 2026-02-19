@@ -21,11 +21,11 @@ func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventoryType i
 	return Make(*e)
 }
 
-func updateCapacity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, inventoryType int8, capacity uint32) (Model, error) {
+func updateCapacity(db *gorm.DB, characterId uint32, inventoryType int8, capacity uint32) (Model, error) {
 	var e Entity
 
 	err := db.
-		Where("tenant_id = ? AND character_id = ? AND inventory_type = ?", tenantId, characterId, inventoryType).
+		Where("character_id = ? AND inventory_type = ?", characterId, inventoryType).
 		First(&e).Error
 	if err != nil {
 		return Model{}, err
@@ -41,6 +41,6 @@ func updateCapacity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, invento
 	return Make(e)
 }
 
-func deleteById(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID) error {
-	return db.Where(&Entity{TenantId: tenantId, Id: id}).Delete(&Entity{}).Error
+func deleteById(db *gorm.DB, id uuid.UUID) error {
+	return db.Where("id = ?", id).Delete(&Entity{}).Error
 }

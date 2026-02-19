@@ -1,52 +1,38 @@
 package messenger
 
 import (
-	"sync"
+	"context"
+	"strconv"
 
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	lock              sync.Mutex
-	tenantMessengerId map[tenant.Model]uint32
-
-	messengerReg map[tenant.Model]map[uint32]Model
-	tenantLock   map[tenant.Model]*sync.RWMutex
+	messengers *atlas.TenantRegistry[uint32, Model]
+	idGen      *atlas.IDGenerator
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		messengers: atlas.NewTenantRegistry[uint32, Model](client, "messenger", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		idGen: atlas.NewIDGenerator(client, "messenger"),
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.tenantMessengerId = make(map[tenant.Model]uint32)
-		registry.messengerReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	})
 	return registry
 }
 
-func (r *Registry) Create(t tenant.Model, characterId uint32) Model {
-	var messengerId uint32
-	var messengerReg map[uint32]Model
-	var tenantLock *sync.RWMutex
-	var ok bool
+func (r *Registry) Create(ctx context.Context, characterId uint32) Model {
+	t := tenant.MustFromContext(ctx)
 
-	r.lock.Lock()
-	if messengerId, ok = r.tenantMessengerId[t]; ok {
-		messengerId += 1
-		messengerReg = r.messengerReg[t]
-		tenantLock = r.tenantLock[t]
-	} else {
-		messengerId = StartMessengerId
-		messengerReg = make(map[uint32]Model)
-		tenantLock = &sync.RWMutex{}
-	}
-	r.tenantMessengerId[t] = messengerId
-	r.messengerReg[t] = messengerReg
-	r.tenantLock[t] = tenantLock
-	r.lock.Unlock()
+	messengerId, _ := r.idGen.NextID(ctx, t)
 
 	m, _ := NewBuilder().
 		SetTenantId(t.Id()).
@@ -54,55 +40,33 @@ func (r *Registry) Create(t tenant.Model, characterId uint32) Model {
 		AddMember(characterId, 0).
 		Build()
 
-	tenantLock.Lock()
-	messengerReg[messengerId] = m
-	tenantLock.Unlock()
+	_ = r.messengers.Put(ctx, t, messengerId, m)
 	return m
 }
 
-func (r *Registry) GetAll(t tenant.Model) []Model {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.messengerReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
+func (r *Registry) GetAll(ctx context.Context) []Model {
+	t := tenant.MustFromContext(ctx)
 
-	tl.RLock()
-	defer tl.RUnlock()
-	var res = make([]Model, 0)
-	for _, v := range r.messengerReg[t] {
-		res = append(res, v)
+	results, err := r.messengers.GetAllValues(ctx, t)
+	if err != nil {
+		return make([]Model, 0)
 	}
-	return res
+	return results
 }
 
-func (r *Registry) Get(t tenant.Model, messengerId uint32) (Model, error) {
-	var tl *sync.RWMutex
-	var ok bool
-	if tl, ok = r.tenantLock[t]; !ok {
-		r.lock.Lock()
-		tl = &sync.RWMutex{}
-		r.messengerReg[t] = make(map[uint32]Model)
-		r.tenantLock[t] = tl
-		r.lock.Unlock()
-	}
-
-	tl.RLock()
-	defer tl.RUnlock()
-	if m, ok := r.messengerReg[t][messengerId]; ok {
-		return m, nil
-	}
-	return Model{}, ErrNotFound
+func (r *Registry) Get(ctx context.Context, messengerId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	return r.messengers.Get(ctx, t, messengerId)
 }
 
-func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) Model) (Model, error) {
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	m := r.messengerReg[t][id]
+func (r *Registry) Update(ctx context.Context, id uint32, updaters ...func(m Model) Model) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+
+	m, err := r.messengers.Get(ctx, t, id)
+	if err != nil {
+		return Model{}, err
+	}
+
 	for _, updater := range updaters {
 		m = updater(m)
 	}
@@ -111,12 +75,14 @@ func (r *Registry) Update(t tenant.Model, id uint32, updaters ...func(m Model) M
 		return Model{}, ErrAtCapacity
 	}
 
-	r.messengerReg[t][id] = m
+	err = r.messengers.Put(ctx, t, id, m)
+	if err != nil {
+		return Model{}, err
+	}
 	return m, nil
 }
 
-func (r *Registry) Remove(t tenant.Model, messengerId uint32) {
-	r.tenantLock[t].Lock()
-	defer r.tenantLock[t].Unlock()
-	delete(r.messengerReg[t], messengerId)
+func (r *Registry) Remove(ctx context.Context, messengerId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.messengers.Remove(ctx, t, messengerId)
 }

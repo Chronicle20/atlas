@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,13 +18,13 @@ func getBaseRequest() string {
 }
 
 func requestById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }
 
 func requestByIdWithInventory(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByIdWithInventory, id))
 }
 
 func requestByName(name string) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByName, name))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByName, name))
 }

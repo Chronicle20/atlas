@@ -3,12 +3,15 @@ package consumer
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"sync"
+	"sync/atomic"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -18,11 +21,16 @@ import (
 
 type KafkaReader interface {
 	MessageReader
+	MessageCommitter
 	io.Closer
 }
 
 type MessageReader interface {
-	ReadMessage(ctx context.Context) (kafka.Message, error)
+	FetchMessage(ctx context.Context) (kafka.Message, error)
+}
+
+type MessageCommitter interface {
+	CommitMessages(ctx context.Context, msgs ...kafka.Message) error
 }
 
 type ReaderProducer func(config kafka.ReaderConfig) KafkaReader
@@ -149,7 +157,6 @@ type Consumer struct {
 	handlers      map[string]handler.Handler
 	headerParsers []HeaderParser
 	mu            sync.Mutex
-	handlerWg     sync.WaitGroup
 }
 
 func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) {
@@ -158,78 +165,41 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 
 	l.Infof("Creating topic consumer.")
 
-	// Create cancellable context before spawning goroutine to avoid race condition
 	readerCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		for {
 			var msg kafka.Message
 			readerFunc := func(attempt int) (bool, error) {
 				var err error
-				msg, err = c.reader.ReadMessage(readerCtx)
+				msg, err = c.reader.FetchMessage(readerCtx)
 				if err == io.EOF || errors.Is(err, context.Canceled) {
 					return false, err
 				} else if err != nil {
-					l.WithError(err).Warnf("Could not read message on topic, will retry.")
+					l.WithError(err).Warnf("Could not fetch message on topic, will retry.")
 					return true, err
 				}
 				return false, err
 			}
 
-			err := retry.Try(readerFunc, 10)
+			cfg := retry.DefaultConfig().WithMaxRetries(10).WithInitialDelay(100 * time.Millisecond).WithMaxDelay(10 * time.Second)
+			err := retry.Try(readerCtx, cfg, readerFunc)
 			if err == io.EOF || errors.Is(err, context.Canceled) {
 				l.Infof("Reader closed, shutdown.")
 				return
 			} else if err != nil {
-				l.WithError(err).Errorf("Could not successfully read message, exiting consumer loop.")
+				l.WithError(err).Errorf("Could not successfully fetch message, exiting consumer loop.")
 				return
-			} else {
-				l.Debugf("Message received %s.", string(msg.Value))
+			}
 
-				// Pass msg as parameter to avoid closure capture race
-				c.handlerWg.Add(1)
-				go func(m kafka.Message) {
-					defer c.handlerWg.Done()
-
-					wctx := readerCtx
-					for _, p := range c.headerParsers {
-						wctx = p(wctx, m.Headers)
-					}
-
-					var span trace.Span
-					wctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(wctx, c.name)
-					// Create new logger instance instead of reassigning shared logger
-					handlerLogger := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
-					defer span.End()
-
-					// Deep copy handlers map to avoid race condition
-					c.mu.Lock()
-					handlersCopy := make(map[string]handler.Handler, len(c.handlers))
-					for k, v := range c.handlers {
-						handlersCopy[k] = v
-					}
-					c.mu.Unlock()
-
-					for id, h := range handlersCopy {
-						var handle = h
-						var handleId = id
-						c.handlerWg.Add(1)
-						go func() {
-							defer c.handlerWg.Done()
-							// Use local error variable to avoid closure capture race
-							cont, handlerErr := handle(handlerLogger, wctx, m)
-							if !cont {
-								c.mu.Lock()
-								delete(c.handlers, handleId)
-								c.mu.Unlock()
-							}
-							if handlerErr != nil {
-								handlerLogger.WithError(handlerErr).Errorf("Handler [%s] failed.", handleId)
-							}
-						}()
-					}
-				}(msg)
+			l.Debugf("Message received %s.", string(msg.Value))
+			if c.processMessage(l, readerCtx, msg) {
+				if err = c.reader.CommitMessages(readerCtx, msg); err != nil {
+					l.WithError(err).Warnf("Could not commit message offset, it may be redelivered.")
+				}
 			}
 		}
 	}()
@@ -240,6 +210,60 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 	if err := c.reader.Close(); err != nil {
 		l.WithError(err).Errorf("Error closing reader.")
 	}
-	c.handlerWg.Wait()
+	<-done
 	l.Infof("Topic consumer stopped.")
+}
+
+// processMessage runs all handlers synchronously and returns true if all succeeded.
+func (c *Consumer) processMessage(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) bool {
+	wctx := ctx
+	for _, p := range c.headerParsers {
+		wctx = p(wctx, msg.Headers)
+	}
+
+	var span trace.Span
+	wctx, span = otel.GetTracerProvider().Tracer("atlas-kafka").Start(wctx, c.name)
+	handlerLogger := l.WithField("trace.id", span.SpanContext().TraceID().String()).WithField("span.id", span.SpanContext().SpanID().String())
+	defer span.End()
+
+	c.mu.Lock()
+	handlersCopy := make(map[string]handler.Handler, len(c.handlers))
+	for k, v := range c.handlers {
+		handlersCopy[k] = v
+	}
+	c.mu.Unlock()
+
+	var handlerWg sync.WaitGroup
+	var hadError atomic.Bool
+	for id, h := range handlersCopy {
+		var handle = h
+		var handleId = id
+		handlerWg.Add(1)
+		go func() {
+			defer handlerWg.Done()
+			cont, handlerErr := c.safeHandle(handle, handlerLogger, wctx, msg)
+			if !cont {
+				c.mu.Lock()
+				delete(c.handlers, handleId)
+				c.mu.Unlock()
+			}
+			if handlerErr != nil {
+				hadError.Store(true)
+				handlerLogger.WithError(handlerErr).Errorf("Handler [%s] failed.", handleId)
+			}
+		}()
+	}
+	handlerWg.Wait()
+	return !hadError.Load()
+}
+
+// safeHandle wraps handler execution with panic recovery.
+func (c *Consumer) safeHandle(h handler.Handler, l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (cont bool, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			cont = true
+			err = fmt.Errorf("handler panicked: %v", r)
+		}
+	}()
+	return h(l, ctx, msg)
 }

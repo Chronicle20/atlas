@@ -44,7 +44,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 // Change changes the expression for a character
 func (p *ProcessorImpl) Change(mb *message.Buffer, transactionId uuid.UUID, characterId uint32, field field.Model, expression uint32) (Model, error) {
 	p.l.Debugf("Changing expression to [%d] for character [%d] in field [%s].", expression, characterId, field.Id())
-	m := GetRegistry().add(p.t, characterId, field, expression)
+	m := GetRegistry().add(p.ctx, characterId, field, expression)
 
 	// Add message to buffer
 	err := mb.Put(expression2.EnvExpressionEvent, expressionEventProvider(transactionId, characterId, field, expression))
@@ -82,7 +82,7 @@ type changeInput struct {
 // Clear clears the expression for a character
 func (p *ProcessorImpl) Clear(_ *message.Buffer, _ uuid.UUID, characterId uint32) (Model, error) {
 	p.l.Debugf("Clearing expression for character [%d].", characterId)
-	GetRegistry().clear(p.t, characterId)
+	GetRegistry().clear(p.ctx, characterId)
 	// Return an empty model since we're clearing
 	return Model{}, nil
 }

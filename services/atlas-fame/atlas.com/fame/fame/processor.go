@@ -2,7 +2,6 @@ package fame
 
 import (
 	"atlas-fame/character"
-	"atlas-fame/database"
 	"atlas-fame/kafka/message"
 	messageFame "atlas-fame/kafka/message/fame"
 	"atlas-fame/kafka/producer"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -50,7 +50,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) ByCharacterIdLastMonthProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdLastMonthEntityProvider(p.t.Id(), characterId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(byCharacterIdLastMonthEntityProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByCharacterIdLastMonth(characterId uint32) ([]Model, error) {
@@ -63,7 +63,7 @@ func (p *ProcessorImpl) RequestChange(mb *message.Buffer) func(transactionId uui
 			return func(characterId uint32) func(targetId uint32) func(amount int8) error {
 				return func(targetId uint32) func(amount int8) error {
 					return func(amount int8) error {
-						return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 							characterProcessor := character.NewProcessor(p.l, p.ctx, tx)
 							c, err := characterProcessor.GetById(characterId)
 							if err != nil {
@@ -102,7 +102,7 @@ func (p *ProcessorImpl) RequestChange(mb *message.Buffer) func(transactionId uui
 								return mb.Put(messageFame.EnvEventTopicFameStatus, errorEventStatusProvider(transactionId, field.Channel(), characterId, messageFame.StatusEventErrorTypeNotThisMonth))
 							}
 
-							_, err = create(tx, p.t, characterId, targetId, amount)
+							_, err = create(tx, p.t.Id(), characterId, targetId, amount)
 							if err != nil {
 								return mb.Put(messageFame.EnvEventTopicFameStatus, errorEventStatusProvider(transactionId, field.Channel(), characterId, messageFame.StatusEventErrorTypeUnexpected))
 							}
@@ -124,7 +124,7 @@ func (p *ProcessorImpl) RequestChangeAndEmit(transactionId uuid.UUID, field fiel
 }
 
 func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return deleteByCharacterId(tx, p.t.Id(), characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return deleteByCharacterId(tx, characterId)
 	})
 }

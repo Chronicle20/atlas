@@ -1,6 +1,7 @@
 package portal
 
 import (
+	"atlas-portals/blocked"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -12,10 +13,19 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
+
+func setupBlockedRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	blocked.InitRegistry(client)
+}
 
 // createTestContext creates a context with a mock tenant for consumer tests
 func createTestContext() context.Context {
@@ -59,6 +69,7 @@ func setupMockDataServerForConsumer(responses map[string]interface{}) (*httptest
 }
 
 func TestHandleEnterCommand_ParameterExtraction(t *testing.T) {
+	setupBlockedRegistry(t)
 	// Create a mock server that will return a portal
 	portalResource := map[string]interface{}{
 		"type": "portals",
@@ -117,6 +128,7 @@ func TestHandleEnterCommand_ParameterExtraction(t *testing.T) {
 }
 
 func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
+	setupBlockedRegistry(t)
 	tests := []struct {
 		name        string
 		worldId     world.Id
@@ -179,6 +191,7 @@ func TestHandleEnterCommand_DifferentParameters(t *testing.T) {
 }
 
 func TestHandleEnterCommand_PortalNotFound(t *testing.T) {
+	setupBlockedRegistry(t)
 	// Empty responses - portal won't be found
 	_, cleanup := setupMockDataServerForConsumer(map[string]interface{}{})
 	defer cleanup()

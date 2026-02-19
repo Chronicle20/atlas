@@ -1,19 +1,18 @@
 package shops
 
 import (
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 	"errors"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 // getByNpcId returns a provider that gets a shop entity by NPC ID
-func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[Entity] {
+func getByNpcId(npcId uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).First(&result).Error
+		err := db.Where("npc_id = ?", npcId).First(&result).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return model.ErrorProvider[Entity](ErrNotFound)
@@ -25,10 +24,10 @@ func getByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[Entity
 }
 
 // getAllShops returns a provider that gets all shop entities for a tenant
-func getAllShops(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
+func getAllShops() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenantId}).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -37,11 +36,11 @@ func getAllShops(tenantId uuid.UUID) database.EntityProvider[[]Entity] {
 }
 
 // existsByNpcId returns a provider that checks if a shop exists for a given NPC ID
-func existsByNpcId(tenantId uuid.UUID, npcId uint32) database.EntityProvider[bool] {
+func existsByNpcId(npcId uint32) database.EntityProvider[bool] {
 	return func(db *gorm.DB) model.Provider[bool] {
 		var count int64
 		err := db.Model(&Entity{}).
-			Where(&Entity{TenantId: tenantId, NpcId: npcId}).
+			Where("npc_id = ?", npcId).
 			Count(&count).Error
 		if err != nil {
 			return model.ErrorProvider[bool](err)

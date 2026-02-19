@@ -3,7 +3,7 @@ package character
 import (
 	"atlas-character/data/portal"
 	skill3 "atlas-character/data/skill"
-	"atlas-character/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-character/drop"
 	"atlas-character/external/effective_stats"
 	"atlas-character/kafka/message"
@@ -143,7 +143,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 
 func (p *ProcessorImpl) ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model] {
 	return func(id uint32) model.Provider[Model] {
-		mp := model.Map(modelFromEntity)(getById(p.t.Id(), id)(p.db))
+		mp := model.Map(modelFromEntity)(getById(id)(p.db.WithContext(p.ctx)))
 		return model.Map(model.Decorate[Model](decorators))(mp)
 	}
 }
@@ -157,27 +157,27 @@ func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(id ui
 
 func (p *ProcessorImpl) GetForAccountInWorld(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) ([]Model, error) {
 	return func(accountId uint32, worldId world.Id) ([]Model, error) {
-		mp := model.SliceMap(modelFromEntity)(getForAccountInWorld(p.t.Id(), accountId, worldId)(p.db))(model.ParallelMap())
+		mp := model.SliceMap(modelFromEntity)(getForAccountInWorld(accountId, worldId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())()
 	}
 }
 
 func (p *ProcessorImpl) GetForMapInWorld(decorators ...model.Decorator[Model]) func(worldId world.Id, mapId _map.Id) ([]Model, error) {
 	return func(worldId world.Id, mapId _map.Id) ([]Model, error) {
-		mp := model.SliceMap(modelFromEntity)(getForMapInWorld(p.t.Id(), worldId, mapId)(p.db))(model.ParallelMap())
+		mp := model.SliceMap(modelFromEntity)(getForMapInWorld(worldId, mapId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 		return model.SliceMap(model.Decorate[Model](decorators))(mp)(model.ParallelMap())()
 	}
 }
 
 func (p *ProcessorImpl) GetForName(decorators ...model.Decorator[Model]) func(name string) ([]Model, error) {
 	return func(name string) ([]Model, error) {
-		mp := model.SliceMap[entity, Model](modelFromEntity)(getForName(p.t.Id(), name)(p.db))(model.ParallelMap())
+		mp := model.SliceMap[entity, Model](modelFromEntity)(getForName(name)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 		return model.SliceMap(model.Decorate[Model](decorators))(mp)(model.ParallelMap())()
 	}
 }
 
 func (p *ProcessorImpl) GetAll(decorators ...model.Decorator[Model]) ([]Model, error) {
-	mp := model.SliceMap(modelFromEntity)(getAll(p.t.Id())(p.db))(model.ParallelMap())
+	mp := model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))(model.ParallelMap())
 	return model.SliceMap(model.Decorate[Model](decorators))(mp)(model.ParallelMap())()
 }
 
@@ -244,7 +244,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 		}
 
 		var res Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error persisting character in database.")
@@ -269,13 +269,13 @@ func (p *ProcessorImpl) DeleteAndEmit(transactionId uuid.UUID, characterId uint3
 
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.GetById()(characterId)
 			if err != nil {
 				return err
 			}
 
-			err = delete(tx, p.t.Id(), characterId)
+			err = delete(tx, characterId)
 			if err != nil {
 				return err
 			}
@@ -298,7 +298,7 @@ func (p *ProcessorImpl) DeleteByAccountIdAndEmit(accountId uint32) error {
 
 func (p *ProcessorImpl) DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error {
 	return func(accountId uint32) error {
-		cs, err := model.SliceMap(modelFromEntity)(getForAccount(p.t.Id(), accountId)(p.db))(model.ParallelMap())()
+		cs, err := model.SliceMap(modelFromEntity)(getForAccount(accountId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve characters for account [%d].", accountId)
 			return err
@@ -367,7 +367,7 @@ func (p *ProcessorImpl) ChangeMapAndEmit(transactionId uuid.UUID, characterId ui
 
 func (p *ProcessorImpl) ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
 	return func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-		cmf := dynamicUpdate(p.db)(SetMapId(field.MapId()), SetInstance(field.Instance()))(p.t.Id())
+		cmf := dynamicUpdate(p.db.WithContext(p.ctx))(SetMapId(field.MapId()), SetInstance(field.Instance()))
 		papf := p.positionAtPortal(field.MapId(), portalId)
 		amcf := announceMapChangedWithBuffer(mb)(transactionId, field, portalId)
 		return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
@@ -412,12 +412,12 @@ func (p *ProcessorImpl) ChangeJobAndEmit(transactionId uuid.UUID, characterId ui
 func (p *ProcessorImpl) ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error {
 		p.l.Debugf("Attempting to set character [%d] job to [%d].", characterId, jobId)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
-			err = dynamicUpdate(tx)(SetJob(jobId))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetJob(jobId))(c)
 			if err != nil {
 				return err
 			}
@@ -443,13 +443,13 @@ func (p *ProcessorImpl) ChangeHair(mb *message.Buffer) func(transactionId uuid.U
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
 		p.l.Debugf("Attempting to set character [%d] hair to [%d].", characterId, styleId)
 		var oldHair uint32
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
 			oldHair = c.Hair()
-			err = dynamicUpdate(tx)(SetHair(styleId))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetHair(styleId))(c)
 			if err != nil {
 				return err
 			}
@@ -475,13 +475,13 @@ func (p *ProcessorImpl) ChangeFace(mb *message.Buffer) func(transactionId uuid.U
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error {
 		p.l.Debugf("Attempting to set character [%d] face to [%d].", characterId, styleId)
 		var oldFace uint32
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
 			oldFace = c.Face()
-			err = dynamicUpdate(tx)(SetFace(styleId))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetFace(styleId))(c)
 			if err != nil {
 				return err
 			}
@@ -507,13 +507,13 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error {
 		p.l.Debugf("Attempting to set character [%d] skin to [%d].", characterId, styleId)
 		var oldSkin byte
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
 			}
 			oldSkin = c.SkinColor()
-			err = dynamicUpdate(tx)(SetSkinColor(styleId))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetSkinColor(styleId))(c)
 			if err != nil {
 				return err
 			}
@@ -555,7 +555,7 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 		p.l.Debugf("Attempting to award character [%d] [%d] experience.", characterId, amount)
 		awardedLevels := byte(0)
 		current := uint32(0)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -569,7 +569,7 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 				awardedLevels += 1
 			}
 
-			err = dynamicUpdate(tx)(SetExperience(current))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetExperience(current))(c)
 			if err != nil {
 				return err
 			}
@@ -599,7 +599,7 @@ func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId 
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error {
 		p.l.Debugf("Attempting to deduct [%d] experience from character [%d].", amount, characterId)
 		current := uint32(0)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -611,7 +611,7 @@ func (p *ProcessorImpl) DeductExperience(mb *message.Buffer) func(transactionId 
 				current = 0
 			}
 
-			err = dynamicUpdate(tx)(SetExperience(current))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetExperience(current))(c)
 			if err != nil {
 				return err
 			}
@@ -641,7 +641,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 		p.l.Debugf("Attempting to award character [%d] [%d] level(s).", characterId, amount)
 		actual := amount
 		current := byte(0)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -653,7 +653,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 			}
 			current = c.Level() + actual
 
-			err = dynamicUpdate(tx)(SetLevel(current))(p.t.Id())(c)
+			err = dynamicUpdate(tx)(SetLevel(current))(c)
 			if err != nil {
 				return err
 			}
@@ -675,7 +675,7 @@ func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) 
 }
 
 func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -690,14 +690,14 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 			return err
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(p.t.Id())(c)
+		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c)
 		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType))
 		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
 	})
 }
 
 func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error {
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -708,7 +708,7 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 			return err
 		}
 
-		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(p.t.Id())(c)
+		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(meso))))(c)
 		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
 	})
 	if txErr != nil {
@@ -718,7 +718,7 @@ func (p *ProcessorImpl) AttemptMesoPickUp(transactionId uuid.UUID, field field.M
 }
 
 func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error {
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their meso adjusted.", characterId)
@@ -729,7 +729,7 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 			return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(notEnoughMesoErrorStatusEventProvider(transactionId, characterId, c.WorldId(), int32(amount)))
 		}
 
-		return dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(p.t.Id())(c)
+		return dynamicUpdate(tx)(SetMeso(c.Meso() - amount))(c)
 	})
 	if txErr != nil {
 		return txErr
@@ -744,7 +744,7 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 }
 
 func (p *ProcessorImpl) RequestChangeFame(transactionId uuid.UUID, characterId uint32, amount int8, actorId uint32, actorType string) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve character [%d] who is having their fame adjusted.", characterId)
@@ -752,7 +752,7 @@ func (p *ProcessorImpl) RequestChangeFame(transactionId uuid.UUID, characterId u
 		}
 
 		total := c.Fame() + int16(amount)
-		err = dynamicUpdate(tx)(SetFame(total))(p.t.Id())(c)
+		err = dynamicUpdate(tx)(SetFame(total))(c)
 		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(fameChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType))
 		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeFame}, nil))
 	})
@@ -764,7 +764,7 @@ type Distribution struct {
 }
 
 func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId uint32, distributions []Distribution) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
 			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{}, nil))
@@ -840,7 +840,7 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 		eufs = append(eufs, SetAP(c.AP()-spent))
 		stats = append(stats, stat.TypeAvailableAP)
 
-		err = dynamicUpdate(tx)(eufs...)(p.t.Id())(c)
+		err = dynamicUpdate(tx)(eufs...)(c)
 		if err != nil {
 			_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeAvailableAP}, nil))
 			return err
@@ -853,7 +853,7 @@ func (p *ProcessorImpl) RequestDistributeAp(transactionId uuid.UUID, characterId
 
 func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId uint32, skillId uint32, amount int8) error {
 	var c Model
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
 		c, err = p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
 		if err != nil {
@@ -867,7 +867,7 @@ func (p *ProcessorImpl) RequestDistributeSp(transactionId uuid.UUID, characterId
 		if c.SP(sb) < uint32(amount) {
 			return errors.New("not enough sp")
 		}
-		return dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(p.t.Id())(c)
+		return dynamicUpdate(tx)(SetSP(c.SP(sb)-uint32(amount), uint32(sb)))(c)
 	})
 	if txErr != nil {
 		return txErr
@@ -1030,7 +1030,7 @@ func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel
 func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 		var adjusted uint16
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1047,7 +1047,7 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 
 			adjusted = enforceBounds(amount, c.Hp(), maxHP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
-			return dynamicUpdate(tx)(SetHealth(adjusted))(p.t.Id())(c)
+			return dynamicUpdate(tx)(SetHealth(adjusted))(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1074,7 +1074,7 @@ func (p *ProcessorImpl) SetHPAndEmit(transactionId uuid.UUID, channel channel.Mo
 func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount uint16) error {
 		var clamped uint16
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1095,7 +1095,7 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 				clamped = maxHP
 			}
 			p.l.Debugf("Setting character [%d] health to [%d].", characterId, clamped)
-			return dynamicUpdate(tx)(SetHealth(clamped))(p.t.Id())(c)
+			return dynamicUpdate(tx)(SetHealth(clamped))(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1121,7 +1121,7 @@ func (p *ProcessorImpl) ChangeMPAndEmit(transactionId uuid.UUID, channel channel
 
 func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1138,7 +1138,7 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 
 			adjusted := enforceBounds(amount, c.Mp(), maxMP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)
-			return dynamicUpdate(tx)(SetMana(adjusted))(p.t.Id())(c)
+			return dynamicUpdate(tx)(SetMana(adjusted))(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1157,7 +1157,7 @@ func (p *ProcessorImpl) ClampHPAndEmit(transactionId uuid.UUID, channel channel.
 func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
 		var clamped bool
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1167,7 +1167,7 @@ func (p *ProcessorImpl) ClampHP(mb *message.Buffer) func(transactionId uuid.UUID
 			if c.Hp() > maxValue {
 				p.l.Debugf("Clamping character [%d] HP from [%d] to [%d] (effective max decreased).", characterId, c.Hp(), maxValue)
 				clamped = true
-				return dynamicUpdate(tx)(SetHealth(maxValue))(p.t.Id())(c)
+				return dynamicUpdate(tx)(SetHealth(maxValue))(c)
 			}
 			return nil
 		})
@@ -1191,7 +1191,7 @@ func (p *ProcessorImpl) ClampMPAndEmit(transactionId uuid.UUID, channel channel.
 func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
 	return func(transactionId uuid.UUID, channel channel.Model, characterId uint32, maxValue uint16) error {
 		var clamped bool
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1201,7 +1201,7 @@ func (p *ProcessorImpl) ClampMP(mb *message.Buffer) func(transactionId uuid.UUID
 			if c.Mp() > maxValue {
 				p.l.Debugf("Clamping character [%d] MP from [%d] to [%d] (effective max decreased).", characterId, c.Mp(), maxValue)
 				clamped = true
-				return dynamicUpdate(tx)(SetMana(maxValue))(p.t.Id())(c)
+				return dynamicUpdate(tx)(SetMana(maxValue))(c)
 			}
 			return nil
 		})
@@ -1236,7 +1236,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 		var newStr, newDex uint16
 		var newInt uint16
 
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
 			if err != nil {
 				return err
@@ -1297,7 +1297,7 @@ func (p *ProcessorImpl) ProcessLevelChange(mb *message.Buffer) func(transactionI
 				sus = append(sus, stat.TypeDexterity)
 			}
 
-			return dynamicUpdate(tx)(eufs...)(p.t.Id())(c)
+			return dynamicUpdate(tx)(eufs...)(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1468,7 +1468,7 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 			return uint16(rand.Float32()*float32(upper-lower+1)) + lower
 		}
 
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById(p.SkillModelDecorator)(characterId)
 			if err != nil {
 				return err
@@ -1518,7 +1518,7 @@ func (p *ProcessorImpl) ProcessJobChange(mb *message.Buffer) func(transactionId 
 
 			p.l.Debugf("As a result of processing a job change to [%d]. Character [%d] will gain [%d] AP, [%d] SP, [%d] HP, and [%d] MP.", jobId, characterId, addedAP, addedSP, addedHP, addedMP)
 			sb := getSkillBook(c.JobId())
-			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(p.t.Id())(c)
+			return dynamicUpdate(tx)(SetAP(c.AP()+addedAP), SetSP(c.SP(sb)+addedSP, uint32(sb)), SetHealth(newMaxHP), SetMaxHp(newMaxHP), SetMana(newMaxMP), SetMaxMp(newMaxMP))(c)
 		})
 		if txErr != nil {
 			return txErr
@@ -1557,7 +1557,7 @@ type fieldChange struct {
 
 func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
 	return func(transactionId uuid.UUID, characterId uint32, input RestModel) error {
-		return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1692,7 +1692,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				}
 			}
 
-			err = dynamicUpdate(tx)(updates...)(p.t.Id())(c)
+			err = dynamicUpdate(tx)(updates...)(c)
 			if err != nil {
 				return err
 			}
@@ -1747,7 +1747,7 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		const baseStat uint16 = 4
 
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetById()(characterId)
 			if err != nil {
 				return err
@@ -1781,7 +1781,7 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 				SetIntelligence(baseStat),
 				SetLuck(baseStat),
 				SetAP(c.AP()+returnedAP),
-			)(p.t.Id())(c)
+			)(c)
 		})
 		if txErr != nil {
 			return txErr

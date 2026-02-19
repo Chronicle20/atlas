@@ -2,12 +2,22 @@ package character
 
 import (
 	"atlas-npc/kafka/message/character"
+	"atlas-npc/shops"
 	"atlas-npc/test"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
+
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	shops.InitRegistry(client)
+}
 
 func TestHandleStatusEventLogout(t *testing.T) {
 	t.Run("wrong event type does nothing", func(t *testing.T) {
@@ -31,6 +41,7 @@ func TestHandleStatusEventLogout(t *testing.T) {
 	})
 
 	t.Run("correct event type processes logout", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 
@@ -75,6 +86,7 @@ func TestHandleStatusEventMapChanged(t *testing.T) {
 	})
 
 	t.Run("correct event type processes map change", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 
@@ -120,6 +132,7 @@ func TestHandleStatusEventChannelChanged(t *testing.T) {
 	})
 
 	t.Run("correct event type processes channel change", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 

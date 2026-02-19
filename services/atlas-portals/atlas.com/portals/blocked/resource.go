@@ -6,7 +6,6 @@ import (
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -25,10 +24,8 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 func handleGetBlockedPortals(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			t := tenant.MustFromContext(d.Context())
-
-			// Get blocked portals from cache
-			blockedPortals := GetCache().GetForCharacter(t.Id(), characterId)
+			// Get blocked portals from registry
+			blockedPortals := GetRegistry().GetForCharacter(d.Context(), characterId)
 
 			d.Logger().Debugf("Found [%d] blocked portals for character [%d].", len(blockedPortals), characterId)
 

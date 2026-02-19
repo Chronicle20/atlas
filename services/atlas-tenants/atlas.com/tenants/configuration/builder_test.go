@@ -18,12 +18,12 @@ func TestNewModelBuilder(t *testing.T) {
 
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": {"id": "test-1", "name": "Test Route"}}`)
 
 	model, err := configuration.NewModelBuilder().
 		SetID(id).
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -34,8 +34,8 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	if model.ID() != id {
 		t.Errorf("model.ID() = %v, want %v", model.ID(), id)
 	}
-	if model.TenantID() != tenantID {
-		t.Errorf("model.TenantID() = %v, want %v", model.TenantID(), tenantID)
+	if model.TenantId() != tenantId {
+		t.Errorf("model.TenantId() = %v, want %v", model.TenantId(), tenantId)
 	}
 	if model.ResourceName() != "routes" {
 		t.Errorf("model.ResourceName() = %s, want 'routes'", model.ResourceName())
@@ -58,7 +58,7 @@ func TestBuild_MissingTenantId(t *testing.T) {
 
 func TestBuild_MissingResourceName(t *testing.T) {
 	_, err := configuration.NewModelBuilder().
-		SetTenantID(uuid.New()).
+		SetTenantId(uuid.New()).
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()
 
@@ -68,9 +68,9 @@ func TestBuild_MissingResourceName(t *testing.T) {
 }
 
 func TestBuild_Success(t *testing.T) {
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	model, err := configuration.NewModelBuilder().
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{"data": []}`)).
 		Build()
@@ -78,8 +78,8 @@ func TestBuild_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
-	if model.TenantID() != tenantID {
-		t.Errorf("model.TenantID() = %v, want %v", model.TenantID(), tenantID)
+	if model.TenantId() != tenantId {
+		t.Errorf("model.TenantId() = %v, want %v", model.TenantId(), tenantId)
 	}
 	// ID should be auto-generated
 	if model.ID() == uuid.Nil {
@@ -88,9 +88,9 @@ func TestBuild_Success(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	original, err := configuration.NewModelBuilder().
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{"data": []}`)).
 		Build()
@@ -114,8 +114,8 @@ func TestCloneModel(t *testing.T) {
 	if cloned.ID() != original.ID() {
 		t.Errorf("cloned.ID() = %v, want %v", cloned.ID(), original.ID())
 	}
-	if cloned.TenantID() != tenantID {
-		t.Errorf("cloned.TenantID() = %v, want %v", cloned.TenantID(), tenantID)
+	if cloned.TenantId() != tenantId {
+		t.Errorf("cloned.TenantId() = %v, want %v", cloned.TenantId(), tenantId)
 	}
 	if cloned.ResourceName() != "vessels" {
 		t.Errorf("cloned.ResourceName() = %s, want 'vessels'", cloned.ResourceName())
@@ -123,11 +123,11 @@ func TestCloneModel(t *testing.T) {
 }
 
 func TestBuilderFluentChaining(t *testing.T) {
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": {"id": "test-1"}}`)
 
 	model, err := configuration.NewModelBuilder().
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -135,8 +135,8 @@ func TestBuilderFluentChaining(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Build() unexpected error: %v", err)
 	}
-	if model.TenantID() != tenantID {
-		t.Errorf("model.TenantID() = %v, want %v", model.TenantID(), tenantID)
+	if model.TenantId() != tenantId {
+		t.Errorf("model.TenantId() = %v, want %v", model.TenantId(), tenantId)
 	}
 	if model.ResourceName() != "routes" {
 		t.Errorf("model.ResourceName() = %s, want 'routes'", model.ResourceName())
@@ -144,9 +144,9 @@ func TestBuilderFluentChaining(t *testing.T) {
 }
 
 func TestModelString(t *testing.T) {
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	model, err := configuration.NewModelBuilder().
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(json.RawMessage(`{}`)).
 		Build()

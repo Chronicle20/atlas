@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"atlas-messages/rest"
 	"fmt"
 	"net/url"
 
@@ -18,9 +17,9 @@ func getBaseRequest() string {
 }
 
 func requestById(skillId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
 }
 
 func requestByName(name string) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+skillsSearchResource, url.QueryEscape(name)))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+skillsSearchResource, url.QueryEscape(name)))
 }

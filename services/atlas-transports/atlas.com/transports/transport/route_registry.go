@@ -1,103 +1,80 @@
 package transport
 
 import (
+	"context"
 	"fmt"
-	"sync"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	atlas "github.com/Chronicle20/atlas-redis"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type RouteRegistry struct {
-	mutex         sync.RWMutex
-	routeRegister map[uuid.UUID]map[uuid.UUID]Model
+	routes *atlas.TenantRegistry[uuid.UUID, Model]
 }
 
 var routeRegistry *RouteRegistry
-var routeRegistryOnce sync.Once
+
+func InitRouteRegistry(client *goredis.Client) {
+	routeRegistry = &RouteRegistry{
+		routes: atlas.NewTenantRegistry[uuid.UUID, Model](client, "transport-route", func(id uuid.UUID) string {
+			return id.String()
+		}),
+	}
+}
 
 func getRouteRegistry() *RouteRegistry {
-	routeRegistryOnce.Do(func() {
-		routeRegistry = &RouteRegistry{}
-		routeRegistry.routeRegister = make(map[uuid.UUID]map[uuid.UUID]Model)
-	})
 	return routeRegistry
 }
 
-func (r *RouteRegistry) AddTenant(t tenant.Model, routes []Model) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	var tenantStates map[uuid.UUID]Model
-	var ok bool
-	if tenantStates, ok = r.routeRegister[t.Id()]; !ok {
-		tenantStates = make(map[uuid.UUID]Model)
-		r.routeRegister[t.Id()] = tenantStates
-	}
+func (r *RouteRegistry) AddTenant(ctx context.Context, routes []Model) {
+	t := tenant.MustFromContext(ctx)
 	for _, route := range routes {
-		tenantStates[route.Id()] = route
+		_ = r.routes.Put(ctx, t, route.Id(), route)
 	}
 }
 
-func (r *RouteRegistry) GetRoute(t tenant.Model, id uuid.UUID) (Model, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	if _, ok := r.routeRegister[t.Id()]; !ok {
+func (r *RouteRegistry) GetRoute(ctx context.Context, id uuid.UUID) (Model, bool) {
+	t := tenant.MustFromContext(ctx)
+	route, err := r.routes.Get(ctx, t, id)
+	if err != nil {
 		return Model{}, false
 	}
-
-	if route, ok := r.routeRegister[t.Id()][id]; ok {
-		return route, true
-	}
-	return Model{}, false
+	return route, true
 }
 
-func (r *RouteRegistry) GetRoutes(t tenant.Model) ([]Model, error) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	if tenantRegister, ok := r.routeRegister[t.Id()]; ok {
-		var routes []Model
-		for _, route := range tenantRegister {
-			routes = append(routes, route)
-		}
-		return routes, nil
+func (r *RouteRegistry) GetRoutes(ctx context.Context) ([]Model, error) {
+	t := tenant.MustFromContext(ctx)
+	routes, err := r.routes.GetAllValues(ctx, t)
+	if err != nil {
+		return make([]Model, 0), nil
 	}
-	return make([]Model, 0), nil
+	return routes, nil
 }
 
-func (r *RouteRegistry) GetRouteByStartMap(t tenant.Model, mapId _map.Id) (Model, error) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-
-	if tenantRegister, ok := r.routeRegister[t.Id()]; ok {
-		for _, route := range tenantRegister {
-			if route.StartMapId() == mapId {
-				return route, nil
-			}
+func (r *RouteRegistry) GetRouteByStartMap(ctx context.Context, mapId _map.Id) (Model, error) {
+	routes, _ := r.GetRoutes(ctx)
+	for _, route := range routes {
+		if route.StartMapId() == mapId {
+			return route, nil
 		}
 	}
 	return Model{}, fmt.Errorf("route not found for start map %d", mapId)
 }
 
-func (r *RouteRegistry) UpdateRoute(t tenant.Model, route Model) error {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	if _, ok := r.routeRegister[t.Id()]; !ok {
-		r.routeRegister[t.Id()] = make(map[uuid.UUID]Model)
-	}
-	r.routeRegister[t.Id()][route.Id()] = route
-	return nil
+func (r *RouteRegistry) UpdateRoute(ctx context.Context, route Model) error {
+	t := tenant.MustFromContext(ctx)
+	return r.routes.Put(ctx, t, route.Id(), route)
 }
 
-// ClearTenant removes all routes for a tenant and returns the count of deleted routes
-func (r *RouteRegistry) ClearTenant(t tenant.Model) int {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	count := 0
-	if tenantRoutes, ok := r.routeRegister[t.Id()]; ok {
-		count = len(tenantRoutes)
-		delete(r.routeRegister, t.Id())
+func (r *RouteRegistry) ClearTenant(ctx context.Context) int {
+	routes, _ := r.GetRoutes(ctx)
+	count := len(routes)
+	t := tenant.MustFromContext(ctx)
+	for _, route := range routes {
+		_ = r.routes.Remove(ctx, t, route.Id())
 	}
 	return count
 }

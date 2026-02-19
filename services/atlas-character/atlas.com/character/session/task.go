@@ -36,7 +36,7 @@ func (t *Timeout) Run() {
 	cur := time.Now()
 
 	t.l.Debugf("Executing timeout task.")
-	cs := GetRegistry().GetAll()
+	cs := GetRegistry().GetAll(sctx)
 	for _, m := range cs {
 		tctx := tenant.WithContext(sctx, m.Tenant())
 		cp := character.NewProcessor(t.l, tctx, t.db)
@@ -44,7 +44,7 @@ func (t *Timeout) Run() {
 
 		if m.State() == StateTransition && cur.Sub(m.Age()) > t.timeout {
 			t.l.Debugf("Timing out record for character [%d].", m.CharacterId())
-			GetRegistry().Remove(m.Tenant(), m.CharacterId())
+			GetRegistry().Remove(tctx, m.CharacterId())
 
 			// Close session history
 			hp := history.NewProcessor(t.l, tctx, t.db)

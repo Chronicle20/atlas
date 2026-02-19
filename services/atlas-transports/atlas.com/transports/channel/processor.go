@@ -29,15 +29,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) Register(ch channel.Model) error {
-	getRegistry().Add(p.t.Id(), ch)
+	getRegistry().Add(p.ctx, ch)
 	return nil
 }
 
 func (p *ProcessorImpl) Unregister(ch channel.Model) error {
-	getRegistry().Remove(p.t.Id(), ch)
+	getRegistry().Remove(p.ctx, ch)
 	return nil
 }
 
 func (p *ProcessorImpl) GetAll() []channel.Model {
-	return getRegistry().GetAll(p.t.Id())
+	return getRegistry().GetAll(p.ctx)
 }

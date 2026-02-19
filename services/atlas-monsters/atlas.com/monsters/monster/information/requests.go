@@ -1,7 +1,6 @@
 package information
 
 import (
-	"atlas-monsters/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestById(monsterId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+monsterResource, monsterId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+monsterResource, monsterId))
 }

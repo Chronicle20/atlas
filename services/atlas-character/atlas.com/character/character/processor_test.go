@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -16,10 +17,13 @@ import (
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, character.Migration)

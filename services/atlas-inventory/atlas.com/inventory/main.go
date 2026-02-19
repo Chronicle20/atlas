@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
-	"atlas-inventory/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
@@ -14,7 +14,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
-
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -44,6 +44,10 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	compartment.InitReservationRegistry(rc)
+	compartment.InitLockRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

@@ -257,7 +257,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 
 | Action | Payload | Description |
 |--------|---------|-------------|
-| award_inventory | AwardItemPayload | Award item to character |
+| award_asset | AwardItemPayload | Award item to character |
 | award_experience | AwardExperiencePayload | Award experience |
 | award_mesos | AwardMesosPayload | Award mesos |
 | award_fame | AwardFamePayload | Award fame |

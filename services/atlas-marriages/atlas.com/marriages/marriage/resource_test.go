@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -58,6 +59,8 @@ func TestMarriageResourceIntegration(t *testing.T) {
 
 // setupResourceTestDB creates an in-memory SQLite database for testing
 func setupResourceTestDB(t *testing.T) *gorm.DB {
+	l := logrus.New()
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.New(
 			logrus.StandardLogger(),
@@ -69,6 +72,8 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 		),
 	})
 	require.NoError(t, err)
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Run migrations
 	err = Migration(db)

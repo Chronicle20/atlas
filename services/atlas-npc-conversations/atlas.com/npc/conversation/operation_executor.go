@@ -90,7 +90,7 @@ func (c *inventoryCheckerImpl) HasItem(characterId uint32, itemId uint32) (bool,
 // Supports both "{context.xxx}" and "context.xxx" formats, as well as embedded references like "-{context.cost}"
 func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramName string, value string) (string, error) {
 	// Get the conversation context
-	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 	if err != nil {
 		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
 		return "", err
@@ -125,7 +125,7 @@ func (e *OperationExecutorImpl) evaluateContextValue(characterId uint32, paramNa
 
 // getContextValue retrieves a value from the conversation context by key
 func (e *OperationExecutorImpl) getContextValue(characterId uint32, key string) (string, error) {
-	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 	if err != nil {
 		return "", fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
 	}
@@ -140,7 +140,7 @@ func (e *OperationExecutorImpl) getContextValue(characterId uint32, key string) 
 
 // setContextValue stores a value in the conversation context
 func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, value string) error {
-	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 	if err != nil {
 		return fmt.Errorf("failed to get conversation context for character [%d]: %w", characterId, err)
 	}
@@ -153,7 +153,7 @@ func (e *OperationExecutorImpl) setContextValue(characterId uint32, key string, 
 	contextMap[key] = value
 
 	// Save the updated context back to the registry
-	GetRegistry().UpdateContext(e.t, characterId, ctx)
+	GetRegistry().UpdateContext(e.ctx, characterId, ctx)
 
 	return nil
 }
@@ -850,7 +850,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			},
 		}
 
-		return stepId, saga.Pending, saga.AwardInventory, payload, nil
+		return stepId, saga.Pending, saga.AwardAsset, payload, nil
 
 	case "award_mesos":
 		// Format: award_mesos
@@ -1457,7 +1457,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		} else {
 			// Check context for questId (set by quest conversations)
-			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
 				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
 			}
@@ -1480,7 +1480,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		} else {
 			// Get NPC ID from conversation context
-			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
 				return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
 			}
@@ -1520,7 +1520,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		} else {
 			// Check context for questId (set by quest conversations)
-			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
 				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
 			}
@@ -1543,7 +1543,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		} else {
 			// Get NPC ID from conversation context
-			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
 				return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
 			}
@@ -1573,7 +1573,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		} else {
 			// Check context for questId (set by quest conversations)
-			ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+			ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 			if err != nil {
 				return "", "", "", nil, fmt.Errorf("failed to get conversation context for questId: %w", err)
 			}
@@ -1716,7 +1716,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		// Get NPC ID from conversation context
-		ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+		ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 		if err != nil {
 			return "", "", "", nil, fmt.Errorf("failed to get conversation context for NPC ID: %w", err)
 		}
@@ -2117,7 +2117,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 // storeStylesInContext stores a uint32 array of styles in the conversation context
 func (e *OperationExecutorImpl) storeStylesInContext(characterId uint32, key string, styles []uint32) error {
 	// Get current context
-	ctx, err := GetRegistry().GetPreviousContext(e.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(e.ctx, characterId)
 	if err != nil {
 		e.l.WithError(err).Errorf("Failed to get conversation context for character [%d]", characterId)
 		return fmt.Errorf("failed to get conversation context: %w", err)
@@ -2130,7 +2130,7 @@ func (e *OperationExecutorImpl) storeStylesInContext(characterId uint32, key str
 	ctx.Context()[key] = stylesStr
 
 	// Save context
-	GetRegistry().UpdateContext(e.t, characterId, ctx)
+	GetRegistry().UpdateContext(e.ctx, characterId, ctx)
 
 	e.l.Debugf("Stored %d styles in context key [%s] for character [%d]: %s",
 		len(styles), key, characterId, stylesStr)

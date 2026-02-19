@@ -3,17 +3,23 @@ package test
 import (
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 // SetupTestDB creates a new SQLite in-memory database for testing
 func SetupTestDB(t *testing.T, migrations ...func(db *gorm.DB) error) *gorm.DB {
+	l := logrus.New()
+
 	// Open an in-memory SQLite database
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Run migrations
 	for _, migration := range migrations {

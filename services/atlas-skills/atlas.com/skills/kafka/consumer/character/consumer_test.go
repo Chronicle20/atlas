@@ -11,11 +11,21 @@ import (
 
 	skillconst "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
 
+func setupCooldownRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	skill.InitRegistry(client)
+}
+
 func TestHandleStatusEventLogout(t *testing.T) {
+	setupCooldownRegistry(t)
 	db := test.SetupTestDB(t)
 	defer test.CleanupTestDB(db)
 
@@ -36,6 +46,7 @@ func TestHandleStatusEventLogout(t *testing.T) {
 }
 
 func TestHandleStatusEventDeleted(t *testing.T) {
+	setupCooldownRegistry(t)
 	db := test.SetupTestDB(t)
 	defer test.CleanupTestDB(db)
 

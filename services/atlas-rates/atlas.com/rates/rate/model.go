@@ -1,5 +1,7 @@
 package rate
 
+import "encoding/json"
+
 // Type identifies what the rate affects
 type Type string
 
@@ -41,6 +43,33 @@ func NewFactor(source string, rateType Type, multiplier float64) Factor {
 		rateType:   rateType,
 		multiplier: multiplier,
 	}
+}
+
+func (f Factor) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Source     string  `json:"source"`
+		RateType   Type    `json:"rateType"`
+		Multiplier float64 `json:"multiplier"`
+	}{
+		Source:     f.source,
+		RateType:   f.rateType,
+		Multiplier: f.multiplier,
+	})
+}
+
+func (f *Factor) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Source     string  `json:"source"`
+		RateType   Type    `json:"rateType"`
+		Multiplier float64 `json:"multiplier"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	f.source = aux.Source
+	f.rateType = aux.RateType
+	f.multiplier = aux.Multiplier
+	return nil
 }
 
 // Computed holds all computed rates for a character

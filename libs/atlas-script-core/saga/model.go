@@ -96,7 +96,7 @@ type Action string
 
 // Constants for different actions
 const (
-	AwardInventory         Action = "award_inventory"
+	AwardAsset             Action = "award_asset"
 	AwardExperience        Action = "award_experience"
 	AwardLevel             Action = "award_level"
 	AwardMesos             Action = "award_mesos"
@@ -599,7 +599,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 
 	// Now handle the Payload field based on the Action type (you can customize this)
 	switch s.Action {
-	case AwardInventory:
+	case AwardAsset:
 		var payload AwardItemActionPayload
 		if err := json.Unmarshal(aux.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.Action, err)
@@ -884,7 +884,7 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 
 // SelectGachaponRewardPayload represents the payload required to select a random reward from a gachapon.
 // The saga orchestrator will call atlas-gachapons to select a reward, then store the result
-// in the saga context for subsequent AwardInventory and EmitGachaponWin steps.
+// in the saga context for subsequent AwardAsset and EmitGachaponWin steps.
 type SelectGachaponRewardPayload struct {
 	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
 	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action

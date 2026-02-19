@@ -1,7 +1,6 @@
 package config
 
 import (
-	"atlas-transports/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 
 func requestInstanceRoutes(tenantId string) requests.Request[[]InstanceRouteRestModel] {
 	url := fmt.Sprintf("%stenants/%s/%s/%s", getBaseRequest(), tenantId, configurationsResource, instanceRoutesResource)
-	return rest.MakeGetRequest[[]InstanceRouteRestModel](url)
+	return requests.GetRequest[[]InstanceRouteRestModel](url)
 }

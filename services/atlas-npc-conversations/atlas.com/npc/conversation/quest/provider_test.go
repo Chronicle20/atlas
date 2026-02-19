@@ -13,15 +13,11 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	db := test.SetupTestDB(t, MigrateTable)
 	defer test.CleanupTestDB(t, db)
 
-	tenantId := uuid.New()
 	id := uuid.New()
 	questId := uint32(1001)
 
 	t.Run("getByIdProvider currying", func(t *testing.T) {
-		providerByTenant := getByIdProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		providerById := providerByTenant(id)
+		providerById := getByIdProvider(id)
 		assert.NotNil(t, providerById)
 
 		provider := providerById(db)
@@ -29,10 +25,7 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("getByQuestIdProvider currying", func(t *testing.T) {
-		providerByTenant := getByQuestIdProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		providerByQuestId := providerByTenant(questId)
+		providerByQuestId := getByQuestIdProvider(questId)
 		assert.NotNil(t, providerByQuestId)
 
 		provider := providerByQuestId(db)
@@ -40,10 +33,7 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("getAllProvider currying", func(t *testing.T) {
-		providerByTenant := getAllProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		provider := providerByTenant(db)
+		provider := getAllProvider(db)
 		assert.NotNil(t, provider)
 	})
 }
@@ -52,12 +42,11 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	db := test.SetupTestDB(t, MigrateTable)
 	defer test.CleanupTestDB(t, db)
 
-	tenantId := uuid.New()
 	id := uuid.New()
 	questId := uint32(1001)
 
 	t.Run("getByIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByIdProvider(tenantId)(id)(db)
+		provider := getByIdProvider(id)(db)
 
 		// Provider should be callable and return Entity and error
 		entity, err := provider()
@@ -66,7 +55,7 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	})
 
 	t.Run("getByQuestIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByQuestIdProvider(tenantId)(questId)(db)
+		provider := getByQuestIdProvider(questId)(db)
 
 		entity, err := provider()
 		assert.Error(t, err) // Expected - record not found
@@ -74,7 +63,7 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	})
 
 	t.Run("getAllProvider returns slice provider", func(t *testing.T) {
-		provider := getAllProvider(tenantId)(db)
+		provider := getAllProvider(db)
 
 		entities, err := provider()
 		assert.NoError(t, err) // Empty result is not an error

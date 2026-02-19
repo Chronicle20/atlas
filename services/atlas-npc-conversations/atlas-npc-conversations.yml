@@ -5,7 +5,7 @@ metadata:
   name: atlas-npc-conversations
   namespace: atlas
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: atlas-npc-conversations

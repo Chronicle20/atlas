@@ -1,45 +1,51 @@
 package chair
 
 import (
-	"sync"
+	"context"
+	"strconv"
+
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	mutex             sync.RWMutex
-	characterRegister map[uint32]Model
+	reg *atlas.TenantRegistry[uint32, Model]
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTenantRegistry[uint32, Model](client, "chair", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterRegister = make(map[uint32]Model)
-	})
 	return registry
 }
 
-func (r *Registry) Get(characterId uint32) (Model, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	if val, ok := r.characterRegister[characterId]; ok {
-		return val, ok
+func (r *Registry) Get(ctx context.Context, characterId uint32) (Model, bool) {
+	t := tenant.MustFromContext(ctx)
+	v, err := r.reg.Get(ctx, t, characterId)
+	if err != nil {
+		return Model{}, false
 	}
-	return Model{}, false
+	return v, true
 }
 
-func (r *Registry) Set(characterId uint32, value Model) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.characterRegister[characterId] = value
+func (r *Registry) Set(ctx context.Context, characterId uint32, value Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Put(ctx, t, characterId, value)
 }
 
-func (r *Registry) Clear(characterId uint32) bool {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	if _, ok := r.characterRegister[characterId]; ok {
-		delete(r.characterRegister, characterId)
+func (r *Registry) Clear(ctx context.Context, characterId uint32) bool {
+	t := tenant.MustFromContext(ctx)
+	exists, _ := r.reg.Exists(ctx, t, characterId)
+	if exists {
+		_ = r.reg.Remove(ctx, t, characterId)
 		return true
 	}
 	return false

@@ -9,7 +9,6 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -37,7 +36,6 @@ type ProcessorImpl struct {
 	l                logrus.FieldLogger
 	ctx              context.Context
 	db               *gorm.DB
-	t                tenant.Model
 	GetByNpcIdFn     func(npcId uint32) ([]Model, error)
 	GetAllByTenantFn func() ([]Model, error)
 	CreateFn         func(npcId uint32, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error)
@@ -50,7 +48,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 		l:   l,
 		ctx: ctx,
 		db:  db,
-		t:   tenant.MustFromContext(ctx),
 	}
 	return p
 }
@@ -60,7 +57,6 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 		l:   p.l,
 		ctx: p.ctx,
 		db:  tx,
-		t:   p.t,
 	}
 	newProcessor.GetByNpcIdFn = p.GetByNpcIdFn
 	newProcessor.GetAllByTenantFn = p.GetAllByTenantFn
@@ -78,7 +74,7 @@ func (p *ProcessorImpl) GetByNpcId(npcId uint32) ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByNpcIdProvider(npcId uint32) model.Provider[[]Model] {
-	mp := model.SliceMap(Make)(getByNpcId(p.t.Id(), npcId)(p.db))(model.ParallelMap())
+	mp := model.SliceMap(Make)(getByNpcId(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 	return model.SliceMap(model.Decorate(model.Decorators(p.DataDecorator)))(mp)(model.ParallelMap())
 }
 
@@ -129,7 +125,7 @@ func (p *ProcessorImpl) CreateCommodity(npcId uint32, templateId uint32, mesoPri
 	if p.CreateFn != nil {
 		return p.CreateFn(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	}
-	c, err := createCommodity(p.ctx, p.db)(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+	c, err := createCommodity(p.ctx, p.db.WithContext(p.ctx))(npcId, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		return Model{}, err
 	}
@@ -141,7 +137,7 @@ func (p *ProcessorImpl) UpdateCommodity(id uuid.UUID, templateId uint32, mesoPri
 		return p.UpdateFn(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 
 	}
-	c, err := updateCommodity(p.ctx, p.db)(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
+	c, err := updateCommodity(p.ctx, p.db.WithContext(p.ctx))(id, templateId, mesoPrice, discountRate, tokenTemplateId, tokenPrice, period, levelLimited)
 	if err != nil {
 		return Model{}, err
 	}
@@ -152,7 +148,7 @@ func (p *ProcessorImpl) DeleteCommodity(id uuid.UUID) error {
 	if p.DeleteFn != nil {
 		return p.DeleteFn(id)
 	}
-	return deleteCommodity(p.ctx, p.db)(id)
+	return deleteCommodity(p.ctx, p.db.WithContext(p.ctx))(id)
 }
 
 func (p *ProcessorImpl) GetAllByTenant() ([]Model, error) {
@@ -163,7 +159,7 @@ func (p *ProcessorImpl) GetAllByTenant() ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByTenantProvider() model.Provider[[]Model] {
-	mp := model.SliceMap(Make)(getAllByTenant(p.t.Id())(p.db))(model.ParallelMap())
+	mp := model.SliceMap(Make)(getAllByTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap())
 	return model.SliceMap(model.Decorate(model.Decorators(p.DataDecorator)))(mp)(model.ParallelMap())
 }
 
@@ -172,19 +168,19 @@ func (p *ProcessorImpl) GetCommodityIdToNpcIdMap() (map[uuid.UUID]uint32, error)
 }
 
 func (p *ProcessorImpl) CommodityIdToNpcIdMapProvider() model.Provider[map[uuid.UUID]uint32] {
-	return getCommodityIdToNpcIdMap(p.t.Id())(p.db)
+	return getCommodityIdToNpcIdMap()(p.db.WithContext(p.ctx))
 }
 
 func (p *ProcessorImpl) DeleteAllCommoditiesByNpcId(npcId uint32) error {
-	return deleteAllCommoditiesByNpcId(p.ctx, p.db)(npcId)
+	return deleteAllCommoditiesByNpcId(p.ctx, p.db.WithContext(p.ctx))(npcId)
 }
 
 func (p *ProcessorImpl) DeleteAllCommodities() error {
-	return deleteAllCommodities(p.ctx, p.db)()
+	return deleteAllCommodities(p.ctx, p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) ExistsByNpcId(npcId uint32) (bool, error) {
-	return existsByNpcId(p.t.Id(), npcId)(p.db)()
+	return existsByNpcId(npcId)(p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) GetDistinctNpcIds() ([]uint32, error) {
@@ -192,5 +188,5 @@ func (p *ProcessorImpl) GetDistinctNpcIds() ([]uint32, error) {
 }
 
 func (p *ProcessorImpl) DistinctNpcIdsProvider() model.Provider[[]uint32] {
-	return getDistinctNpcIds(p.t.Id())(p.db)
+	return getDistinctNpcIds()(p.db.WithContext(p.ctx))
 }

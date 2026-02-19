@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"atlas-character-factory/configuration/tenant"
-	"atlas-character-factory/rest"
 
 	"github.com/Chronicle20/atlas-rest/requests"
 )
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestAllTenants() requests.Request[[]tenant.RestModel] {
-	return rest.MakeGetRequest[[]tenant.RestModel](getBaseRequest() + AllTenants)
+	return requests.GetRequest[[]tenant.RestModel](getBaseRequest() + AllTenants)
 }

@@ -26,26 +26,26 @@ func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(worldId 
 }
 
 // UpdateMesos updates the mesos amount in storage
-func UpdateMesos(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID, mesos uint32) error {
+func UpdateMesos(l logrus.FieldLogger, db *gorm.DB) func(id uuid.UUID, mesos uint32) error {
 	return func(id uuid.UUID, mesos uint32) error {
 		return db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", tenantId, id).
+			Where("id = ?", id).
 			Update("mesos", mesos).Error
 	}
 }
 
 // UpdateCapacity updates the storage capacity
-func UpdateCapacity(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID, capacity uint32) error {
+func UpdateCapacity(l logrus.FieldLogger, db *gorm.DB) func(id uuid.UUID, capacity uint32) error {
 	return func(id uuid.UUID, capacity uint32) error {
 		return db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", tenantId, id).
+			Where("id = ?", id).
 			Update("capacity", capacity).Error
 	}
 }
 
 // Delete deletes a storage by ID
-func Delete(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uuid.UUID) error {
+func Delete(l logrus.FieldLogger, db *gorm.DB) func(id uuid.UUID) error {
 	return func(id uuid.UUID) error {
-		return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }

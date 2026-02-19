@@ -80,7 +80,7 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	p.l.Debugf("Starting conversation with NPC [%d] with character [%d] in map [%d].", npcId, characterId, field.MapId())
 
 	// Check if there's already a conversation in progress
-	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	_, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err == nil {
 		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting new conversation with NPC [%d].", characterId, npcId)
 		return errors.New("another conversation exists")
@@ -124,11 +124,11 @@ func (p *ProcessorImpl) Start(field field.Model, npcId uint32, characterId uint3
 	ctx := builder.Build()
 
 	// Store the context
-	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
 
 	cont := true
 	for cont {
-		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
+		ctx, err = GetRegistry().GetPreviousContext(p.ctx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 			return errors.New("conversation context not found")
@@ -147,7 +147,7 @@ func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, 
 	p.l.Debugf("Starting quest [%d] conversation with NPC [%d] for character [%d] in map [%d].", questId, npcId, characterId, f.MapId())
 
 	// Check if there's already a conversation in progress
-	_, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	_, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err == nil {
 		p.l.Debugf("Previous conversation for character [%d] exists, avoiding starting quest [%d] conversation.", characterId, questId)
 		return errors.New("another conversation exists")
@@ -180,11 +180,11 @@ func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, 
 	ctx := builder.Build()
 
 	// Store the context
-	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
 
 	cont := true
 	for cont {
-		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
+		ctx, err = GetRegistry().GetPreviousContext(p.ctx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 			return errors.New("conversation context not found")
@@ -201,7 +201,7 @@ func (p *ProcessorImpl) StartQuest(f field.Model, questId uint32, npcId uint32, 
 
 func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, lastMessageType byte, selection int32) error {
 	// Get the previous context
-	ctx, err := GetRegistry().GetPreviousContext(p.t, characterId)
+	ctx, err := GetRegistry().GetPreviousContext(p.ctx, characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 		return errors.New("conversation context not found")
@@ -364,7 +364,7 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 	// If there's a next state, process it
 	if nextStateId == "" {
 		// No next state, end the conversation
-		GetRegistry().ClearContext(p.t, characterId)
+		GetRegistry().ClearContext(p.ctx, characterId)
 		return nil
 	}
 
@@ -390,12 +390,12 @@ func (p *ProcessorImpl) Continue(npcId uint32, characterId uint32, action byte, 
 	ctx = builder.Build()
 
 	// Store the context
-	GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
 
 	cont := true
 	for cont {
 		var err error
-		ctx, err = GetRegistry().GetPreviousContext(p.t, characterId)
+		ctx, err = GetRegistry().GetPreviousContext(p.ctx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve conversation context for [%d].", characterId)
 			return errors.New("conversation context not found")
@@ -452,12 +452,12 @@ func (p *ProcessorImpl) ProcessState(ctx ConversationContext) (bool, error) {
 		ctx = builder.Build()
 
 		// Store the context
-		GetRegistry().SetContext(p.t, ctx.CharacterId(), ctx)
+		GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
 
 		return state.stateType == GenericActionType, nil
 	} else {
 		// No next state, end the conversation
-		GetRegistry().ClearContext(p.t, ctx.CharacterId())
+		GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
 		return false, nil
 	}
 }
@@ -571,7 +571,7 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 	defer func() {
 		if r := recover(); r != nil {
 			p.l.Errorf("Panic recovered in processGenericActionState for character [%d]: %v", ctx.CharacterId(), r)
-			GetRegistry().ClearContext(p.t, ctx.CharacterId())
+			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
 		}
 	}()
 
@@ -581,7 +581,7 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to execute operation [%s] for character [%d]. Cleaning up conversation context.", operation.Type(), ctx.CharacterId())
 			// Clean up conversation context before returning error
-			GetRegistry().ClearContext(p.t, ctx.CharacterId())
+			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
 			return "", err
 		}
 	}
@@ -598,7 +598,7 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to evaluate condition [%+v] for character [%d]. Cleaning up conversation context.", outcome.Conditions()[0], ctx.CharacterId())
 			// Clean up conversation context before returning error
-			GetRegistry().ClearContext(p.t, ctx.CharacterId())
+			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
 			return "", err
 		}
 
@@ -717,7 +717,7 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 			Quantity:   quantityMultiplier,
 		},
 	}
-	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardInventory, craftPayload)
+	sagaBuilder.AddStep("award_crafted_item", saga.Pending, saga.AwardAsset, craftPayload)
 
 	// Build and execute saga
 	s := sagaBuilder.Build()
@@ -736,7 +736,7 @@ func (p *ProcessorImpl) processCraftActionState(ctx ConversationContext, state S
 	ctx.Context()["craftAction_missingMaterialsState"] = craftAction.MissingMaterialsState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -800,7 +800,7 @@ func (p *ProcessorImpl) processTransportActionState(ctx ConversationContext, sta
 	ctx.Context()["transportAction_serviceErrorState"] = transportAction.ServiceErrorState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -866,7 +866,7 @@ func (p *ProcessorImpl) processPartyQuestActionState(ctx ConversationContext, st
 	ctx.Context()["partyQuestAction_notLeaderState"] = partyQuestAction.NotLeaderState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -925,7 +925,7 @@ func (p *ProcessorImpl) processPartyQuestBonusActionState(ctx ConversationContex
 	ctx.Context()["partyQuestBonusAction_failureState"] = bonusAction.FailureState()
 
 	// Update conversation context in registry
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -988,7 +988,7 @@ func (p *ProcessorImpl) processGachaponActionState(ctx ConversationContext, stat
 	ctx = ctx.SetPendingSagaId(sagaId)
 	ctx.Context()["gachaponAction_failureState"] = gachaponAction.FailureState()
 
-	GetRegistry().UpdateContext(p.t, ctx.CharacterId(), ctx)
+	GetRegistry().UpdateContext(p.ctx, ctx.CharacterId(), ctx)
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": sagaId.String(),
@@ -1164,6 +1164,6 @@ func (p *ProcessorImpl) processAskSlideMenuState(ctx ConversationContext, state 
 
 func (p *ProcessorImpl) End(characterId uint32) error {
 	p.l.Debugf("Ending conversation with character [%d].", characterId)
-	GetRegistry().ClearContext(p.t, characterId)
+	GetRegistry().ClearContext(p.ctx, characterId)
 	return nil
 }

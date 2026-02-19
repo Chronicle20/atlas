@@ -28,7 +28,7 @@ func (e *RevertTask) Run() {
 	sctx, span := otel.GetTracerProvider().Tracer("atlas-expressions").Start(context.Background(), RevertTaskName)
 	defer span.End()
 
-	for _, exp := range GetRegistry().popExpired() {
+	for _, exp := range GetRegistry().popExpired(sctx) {
 		tctx := tenant.WithContext(sctx, exp.Tenant())
 		transactionId := uuid.New() // Generate a new transaction ID for each expired expression
 		_ = producer.ProviderImpl(e.l)(tctx)(expression.EnvExpressionEvent)(expressionEventProvider(transactionId, exp.CharacterId(), exp.Field(), 0))

@@ -81,20 +81,20 @@ func (p *ProcessorImpl) AddTenant(distinctRoutes []Model, sharedVessels []Shared
 		scheduledRoutes = append(scheduledRoutes, route)
 	}
 
-	getRouteRegistry().AddTenant(p.t, scheduledRoutes)
+	getRouteRegistry().AddTenant(p.ctx, scheduledRoutes)
 	return nil
 }
 
 // ClearTenant removes all routes for the current tenant and returns the count of deleted routes
 func (p *ProcessorImpl) ClearTenant() int {
 	p.l.Debugf("Clearing routes for tenant [%s].", p.t.Id())
-	return getRouteRegistry().ClearTenant(p.t)
+	return getRouteRegistry().ClearTenant(p.ctx)
 }
 
 // ByIdProvider returns a provider for a route by id
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 	return func() (Model, error) {
-		m, ok := getRouteRegistry().GetRoute(p.t, id)
+		m, ok := getRouteRegistry().GetRoute(p.ctx, id)
 		if !ok {
 			return Model{}, errors.New("route not found")
 		}
@@ -105,7 +105,7 @@ func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
 // ByStartMapProvider returns a provider for a route by start map id
 func (p *ProcessorImpl) ByStartMapProvider(mapId map2.Id) model.Provider[Model] {
 	return func() (Model, error) {
-		return getRouteRegistry().GetRouteByStartMap(p.t, mapId)
+		return getRouteRegistry().GetRouteByStartMap(p.ctx, mapId)
 	}
 }
 
@@ -117,7 +117,7 @@ func (p *ProcessorImpl) GetByStartMap(mapId map2.Id) (Model, error) {
 // AllRoutesProvider returns a provider for all routes
 func (p *ProcessorImpl) AllRoutesProvider() model.Provider[[]Model] {
 	return func() ([]Model, error) {
-		return getRouteRegistry().GetRoutes(p.t)
+		return getRouteRegistry().GetRoutes(p.ctx)
 	}
 }
 
@@ -138,7 +138,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(route Model) error 
 			return err
 		}
 		if changed {
-			err := getRouteRegistry().UpdateRoute(p.t, r)
+			err := getRouteRegistry().UpdateRoute(p.ctx, r)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error updating route [%s].", route.Id())
 			}

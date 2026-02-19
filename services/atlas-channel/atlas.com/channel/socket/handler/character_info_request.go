@@ -28,7 +28,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		cp := character.NewProcessor(l, ctx)
 		decorators := make([]model.Decorator[character.Model], 0)
 		if petInfo {
-			decorators = append(decorators, cp.PetModelDecorator)
+			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
 		}
 		c, err := cp.GetById(decorators...)(characterId)
 		if err != nil {

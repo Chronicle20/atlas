@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-family/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-family/family"
 	"atlas-family/kafka/consumer/character"
 	family2 "atlas-family/kafka/consumer/family"

@@ -2,6 +2,7 @@ package buff
 
 import (
 	"atlas-buffs/buff/stat"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -44,6 +45,49 @@ func (m Model) CreatedAt() time.Time {
 
 func (m Model) ExpiresAt() time.Time {
 	return m.expiresAt
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id        uuid.UUID    `json:"id"`
+		SourceId  int32        `json:"sourceId"`
+		Level     byte         `json:"level"`
+		Duration  int32        `json:"duration"`
+		Changes   []stat.Model `json:"changes"`
+		CreatedAt time.Time    `json:"createdAt"`
+		ExpiresAt time.Time    `json:"expiresAt"`
+	}{
+		Id:        m.id,
+		SourceId:  m.sourceId,
+		Level:     m.level,
+		Duration:  m.duration,
+		Changes:   m.changes,
+		CreatedAt: m.createdAt,
+		ExpiresAt: m.expiresAt,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Id        uuid.UUID    `json:"id"`
+		SourceId  int32        `json:"sourceId"`
+		Level     byte         `json:"level"`
+		Duration  int32        `json:"duration"`
+		Changes   []stat.Model `json:"changes"`
+		CreatedAt time.Time    `json:"createdAt"`
+		ExpiresAt time.Time    `json:"expiresAt"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.id = aux.Id
+	m.sourceId = aux.SourceId
+	m.level = aux.Level
+	m.duration = aux.Duration
+	m.changes = aux.Changes
+	m.createdAt = aux.CreatedAt
+	m.expiresAt = aux.ExpiresAt
+	return nil
 }
 
 var (

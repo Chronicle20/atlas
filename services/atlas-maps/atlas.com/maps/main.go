@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-maps/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	mapConsumer "atlas-maps/kafka/consumer/map"

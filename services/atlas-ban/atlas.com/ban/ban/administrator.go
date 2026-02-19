@@ -4,16 +4,16 @@ import (
 	"net"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *Entity))
 
-func create(db *gorm.DB) func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
-	return func(tenant tenant.Model, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
+func create(db *gorm.DB) func(tenantId uuid.UUID, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
+	return func(tenantId uuid.UUID, banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 		a := &Entity{
-			TenantId:   tenant.Id(),
+			TenantId:   tenantId,
 			BanType:    byte(banType),
 			Value:      value,
 			Reason:     reason,
@@ -32,9 +32,9 @@ func create(db *gorm.DB) func(tenant tenant.Model, banType BanType, value string
 	}
 }
 
-func deleteById(db *gorm.DB) func(tenant tenant.Model, id uint32) error {
-	return func(tenant tenant.Model, id uint32) error {
-		return db.Where(&Entity{TenantId: tenant.Id(), ID: id}).Delete(&Entity{}).Error
+func deleteById(db *gorm.DB) func(id uint32) error {
+	return func(id uint32) error {
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }
 
@@ -55,10 +55,10 @@ func isCIDR(value string) bool {
 	return err == nil
 }
 
-func updateExpiresAt(db *gorm.DB) func(tenant tenant.Model, id uint32, expiresAt time.Time) error {
-	return func(tenant tenant.Model, id uint32, expiresAt time.Time) error {
+func updateExpiresAt(db *gorm.DB) func(id uint32, expiresAt time.Time) error {
+	return func(id uint32, expiresAt time.Time) error {
 		return db.Model(&Entity{}).
-			Where(&Entity{TenantId: tenant.Id(), ID: id}).
+			Where("id = ?", id).
 			Update("expires_at", expiresAt).Error
 	}
 }

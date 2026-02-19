@@ -1,7 +1,6 @@
 package cosmetic
 
 import (
-	"atlas-npc-conversations/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,11 +15,11 @@ func getCharacterServiceUrl() string {
 }
 
 func requestCharacterById(characterId uint32) requests.Request[RestCharacterModel] {
-	return rest.MakeGetRequest[RestCharacterModel](fmt.Sprintf(getCharacterServiceUrl()+CharacterResource, characterId))
+	return requests.GetRequest[RestCharacterModel](fmt.Sprintf(getCharacterServiceUrl()+CharacterResource, characterId))
 }
 
 func requestUpdateCharacter(characterId uint32, updateRequest CharacterUpdateRequest) requests.Request[RestCharacterModel] {
-	return rest.MakePatchRequest[RestCharacterModel](
+	return requests.PatchRequest[RestCharacterModel](
 		fmt.Sprintf(getCharacterServiceUrl()+CharacterResource, characterId),
 		updateRequest,
 	)

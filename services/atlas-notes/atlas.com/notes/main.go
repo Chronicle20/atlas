@@ -1,7 +1,6 @@
 package main
 
 import (
-	"atlas-notes/database"
 	"atlas-notes/kafka/consumer/character"
 	note_consumer "atlas-notes/kafka/consumer/note"
 	"atlas-notes/logger"
@@ -10,6 +9,7 @@ import (
 	"atlas-notes/tracing"
 	"os"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
 )

@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"atlas-query-aggregator/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -16,7 +15,7 @@ func getBaseRequest() string {
 // requestRoutesByStartMap requests routes filtered by start map ID
 // Uses JSON:API filter syntax: ?filter[startMapId]={mapId}
 func requestRoutesByStartMap(mapId _map.Id) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](
+	return requests.GetRequest[[]RestModel](
 		fmt.Sprintf(getBaseRequest()+"?filter[startMapId]=%d", mapId),
 	)
 }

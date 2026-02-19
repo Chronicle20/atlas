@@ -6,15 +6,18 @@ import (
 	"time"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
-func newTestRegistry() *InstanceRegistry {
-	return &InstanceRegistry{
-		instances: make(map[uuid.UUID]*TransportInstance),
-		byRoute:   make(map[RouteKey][]*TransportInstance),
-	}
+func setupInstanceTestRegistry(t *testing.T) *InstanceRegistry {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitInstanceRegistry(rc)
+	return getInstanceRegistry()
 }
 
 func newTestRoute() RouteModel {
@@ -30,25 +33,27 @@ func newTestRoute() RouteModel {
 }
 
 func TestFindOrCreateInstance_CreatesNew(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
 
 	inst := reg.FindOrCreateInstance(tenantId, route, now)
 
-	assert.NotNil(t, inst)
 	assert.NotEqual(t, uuid.Nil, inst.InstanceId())
 	assert.Equal(t, route.Id(), inst.RouteId())
 	assert.Equal(t, tenantId, inst.TenantId())
 	assert.Equal(t, Boarding, inst.State())
-	assert.Equal(t, 0, inst.CharacterCount())
-	assert.True(t, inst.BoardingUntil().After(now))
-	assert.True(t, inst.ArrivalAt().After(inst.BoardingUntil()))
+
+	loaded, ok := reg.GetInstance(inst.InstanceId())
+	assert.True(t, ok)
+	assert.Equal(t, 0, loaded.CharacterCount())
+	assert.True(t, loaded.BoardingUntil().After(now))
+	assert.True(t, loaded.ArrivalAt().After(loaded.BoardingUntil()))
 }
 
 func TestFindOrCreateInstance_ReusesExisting(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -60,7 +65,7 @@ func TestFindOrCreateInstance_ReusesExisting(t *testing.T) {
 }
 
 func TestFindOrCreateInstance_NewWhenFull(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute() // capacity = 3
 	now := time.Now()
@@ -75,7 +80,7 @@ func TestFindOrCreateInstance_NewWhenFull(t *testing.T) {
 }
 
 func TestFindOrCreateInstance_NewWhenBoardingExpired(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -90,27 +95,32 @@ func TestFindOrCreateInstance_NewWhenBoardingExpired(t *testing.T) {
 }
 
 func TestAddCharacter(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
 
 	inst := reg.FindOrCreateInstance(tenantId, route, now)
-	ok := reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
+	ok, count := reg.AddCharacter(inst.InstanceId(), CharacterEntry{CharacterId: 42, WorldId: 0, ChannelId: 1})
 
 	assert.True(t, ok)
-	assert.Equal(t, 1, inst.CharacterCount())
-	assert.True(t, inst.HasCharacter(42))
+	assert.Equal(t, 1, count)
+
+	loaded, ok2 := reg.GetInstance(inst.InstanceId())
+	assert.True(t, ok2)
+	assert.Equal(t, 1, loaded.CharacterCount())
+	assert.True(t, loaded.HasCharacter(42))
 }
 
 func TestAddCharacter_InvalidInstance(t *testing.T) {
-	reg := newTestRegistry()
-	ok := reg.AddCharacter(uuid.New(), CharacterEntry{CharacterId: 42})
+	reg := setupInstanceTestRegistry(t)
+	ok, count := reg.AddCharacter(uuid.New(), CharacterEntry{CharacterId: 42})
 	assert.False(t, ok)
+	assert.Equal(t, 0, count)
 }
 
 func TestRemoveCharacter(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -121,13 +131,16 @@ func TestRemoveCharacter(t *testing.T) {
 
 	empty := reg.RemoveCharacter(inst.InstanceId(), 1)
 	assert.False(t, empty)
-	assert.Equal(t, 1, inst.CharacterCount())
-	assert.False(t, inst.HasCharacter(1))
-	assert.True(t, inst.HasCharacter(2))
+
+	loaded, ok := reg.GetInstance(inst.InstanceId())
+	assert.True(t, ok)
+	assert.Equal(t, 1, loaded.CharacterCount())
+	assert.False(t, loaded.HasCharacter(1))
+	assert.True(t, loaded.HasCharacter(2))
 }
 
 func TestRemoveCharacter_LastCharacter(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -137,11 +150,14 @@ func TestRemoveCharacter_LastCharacter(t *testing.T) {
 
 	empty := reg.RemoveCharacter(inst.InstanceId(), 1)
 	assert.True(t, empty)
-	assert.Equal(t, 0, inst.CharacterCount())
+
+	loaded, ok := reg.GetInstance(inst.InstanceId())
+	assert.True(t, ok)
+	assert.Equal(t, 0, loaded.CharacterCount())
 }
 
 func TestTransitionToInTransit(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -151,11 +167,14 @@ func TestTransitionToInTransit(t *testing.T) {
 
 	ok := reg.TransitionToInTransit(inst.InstanceId())
 	assert.True(t, ok)
-	assert.Equal(t, InTransit, inst.State())
+
+	loaded, ok2 := reg.GetInstance(inst.InstanceId())
+	assert.True(t, ok2)
+	assert.Equal(t, InTransit, loaded.State())
 }
 
 func TestTransitionToInTransit_AlreadyInTransit(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -168,7 +187,7 @@ func TestTransitionToInTransit_AlreadyInTransit(t *testing.T) {
 }
 
 func TestReleaseInstance(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -183,7 +202,7 @@ func TestReleaseInstance(t *testing.T) {
 }
 
 func TestGetExpiredBoarding(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -202,7 +221,7 @@ func TestGetExpiredBoarding(t *testing.T) {
 }
 
 func TestGetExpiredTransit(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -221,7 +240,7 @@ func TestGetExpiredTransit(t *testing.T) {
 }
 
 func TestGetStuck(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -239,7 +258,7 @@ func TestGetStuck(t *testing.T) {
 }
 
 func TestGetAllActive(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()
@@ -252,7 +271,7 @@ func TestGetAllActive(t *testing.T) {
 }
 
 func TestConcurrentAccess(t *testing.T) {
-	reg := newTestRegistry()
+	reg := setupInstanceTestRegistry(t)
 	tenantId := uuid.New()
 	route := newTestRoute()
 	now := time.Now()

@@ -47,7 +47,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 
 	rr := httptest.NewRecorder()
-	server.Marshal[character.RestModel](testLogger())(rr)(GetServer())(res)
+	server.MarshalResponse[character.RestModel](testLogger())(rr)(GetServer())(make(map[string][]string))(res)
 
 	if rr.Code != http.StatusOK {
 		t.Fatalf("Failed to write rest model: %v", err)

@@ -31,25 +31,25 @@ func (t *Timeout) Run() {
 	_, span := otel.GetTracerProvider().Tracer("atlas-invites").Start(context.Background(), TimeoutTask)
 	defer span.End()
 
-	is, err := GetRegistry().GetExpired(t.timeout)
-	if err != nil {
-		return
-	}
+	tenants := GetRegistry().GetActiveTenants()
+	for _, ten := range tenants {
+		ctx := tenant.WithContext(context.Background(), ten)
+		is := GetRegistry().GetExpired(ctx, t.timeout)
 
-	t.l.Debugf("Executing timeout task.")
-	for _, i := range is {
-		t.l.Infof("Invite [%d] has expired. Character [%d] will no longer be able to act upon it.", i.Id(), i.TargetId())
-		err = GetRegistry().Delete(i.Tenant(), i.TargetId(), i.Type(), i.OriginatorId())
-		if err != nil {
-			t.l.WithError(err).Errorf("Unable to expire invite [%d].", i.Id())
-			return
-		}
+		t.l.Debugf("Executing timeout task for tenant [%s].", ten.Id().String())
+		for _, i := range is {
+			t.l.Infof("Invite [%d] has expired. Character [%d] will no longer be able to act upon it.", i.Id(), i.TargetId())
+			err := GetRegistry().Delete(ctx, i.TargetId(), i.Type(), i.OriginatorId())
+			if err != nil {
+				t.l.WithError(err).Errorf("Unable to expire invite [%d].", i.Id())
+				continue
+			}
 
-		ctx := tenant.WithContext(context.Background(), i.Tenant())
-		transactionId := uuid.New()
-		err = producer.ProviderImpl(t.l)(ctx)(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId(), transactionId))
-		if err != nil {
-			t.l.WithError(err).Errorf("Unable to produce rejection event for [%d] denying [%d] [%s] due to timeout.", i.TargetId(), i.OriginatorId(), i.Type())
+			transactionId := uuid.New()
+			err = producer.ProviderImpl(t.l)(ctx)(invite2.EnvEventStatusTopic)(rejectedStatusEventProvider(i.ReferenceId(), i.WorldId(), i.Type(), i.OriginatorId(), i.TargetId(), transactionId))
+			if err != nil {
+				t.l.WithError(err).Errorf("Unable to produce rejection event for [%d] denying [%d] [%s] due to timeout.", i.TargetId(), i.OriginatorId(), i.Type())
+			}
 		}
 	}
 }

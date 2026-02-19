@@ -1,64 +1,63 @@
 package character
 
 import (
-	"sync"
+	"context"
+	"fmt"
+	"strconv"
+
+	atlas "github.com/Chronicle20/atlas-redis"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	mutex             sync.RWMutex
-	characterRegister map[MapKey][]uint32
+	client    *goredis.Client
+	namespace string
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		client:    client,
+		namespace: "chalk-char",
+	}
+}
 
 func getRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterRegister = make(map[MapKey][]uint32)
-	})
 	return registry
 }
 
-func appendIfMissing(slice []uint32, value uint32) []uint32 {
-	for _, v := range slice {
-		if v == value {
-			return slice
+func (r *Registry) setKey(key MapKey) string {
+	tk := atlas.TenantKey(key.Tenant)
+	f := key.Field
+	return fmt.Sprintf("atlas:%s:%s:%d:%d:%d:%s",
+		r.namespace, tk,
+		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
+}
+
+func (r *Registry) AddCharacter(ctx context.Context, key MapKey, characterId uint32) {
+	rk := r.setKey(key)
+	r.client.SAdd(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+}
+
+func (r *Registry) RemoveCharacter(ctx context.Context, key MapKey, characterId uint32) {
+	rk := r.setKey(key)
+	r.client.SRem(ctx, rk, strconv.FormatUint(uint64(characterId), 10))
+}
+
+func (r *Registry) GetInMap(ctx context.Context, key MapKey) []uint32 {
+	rk := r.setKey(key)
+	members, err := r.client.SMembers(ctx, rk).Result()
+	if err != nil {
+		return nil
+	}
+	result := make([]uint32, 0, len(members))
+	for _, m := range members {
+		v, err := strconv.ParseUint(m, 10, 32)
+		if err != nil {
+			continue
 		}
+		result = append(result, uint32(v))
 	}
-	return append(slice, value)
-}
-
-func removeIfExists(slice []uint32, value uint32) []uint32 {
-	for i, v := range slice {
-		if v == value {
-			return append(slice[:i], slice[i+1:]...)
-		}
-	}
-	return slice
-}
-
-func (r *Registry) AddCharacter(key MapKey, characterId uint32) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if _, ok := r.characterRegister[key]; !ok {
-		r.characterRegister[key] = make([]uint32, 0)
-	}
-	r.characterRegister[key] = appendIfMissing(r.characterRegister[key], characterId)
-}
-
-func (r *Registry) RemoveCharacter(key MapKey, characterId uint32) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if _, ok := r.characterRegister[key]; ok {
-		r.characterRegister[key] = removeIfExists(r.characterRegister[key], characterId)
-	}
-}
-
-func (r *Registry) GetInMap(key MapKey) []uint32 {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	return r.characterRegister[key]
+	return result
 }

@@ -1,7 +1,6 @@
 package _map
 
 import (
-	"atlas-npc-conversations/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/field"
@@ -18,7 +17,7 @@ func getBaseRequest() string {
 }
 
 func requestCharactersInMap(f field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](
+	return requests.GetRequest[[]RestModel](
 		fmt.Sprintf(getBaseRequest()+mapInstanceCharactersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()),
 	)
 }

@@ -4,99 +4,105 @@ import (
 	"atlas-character-factory/configuration/tenant/characters/template"
 	"context"
 	"fmt"
-	"sync"
 
+	atlas "github.com/Chronicle20/atlas-redis"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 // FollowUpSagaTemplate stores the template information needed to create a follow-up saga
 type FollowUpSagaTemplate struct {
-	TenantId                       uuid.UUID
-	Input                          RestModel
-	Template                       template.RestModel
-	CharacterCreationTransactionId uuid.UUID
+	TenantId                       uuid.UUID          `json:"tenantId"`
+	Input                          RestModel          `json:"input"`
+	Template                       template.RestModel `json:"template"`
+	CharacterCreationTransactionId uuid.UUID          `json:"characterCreationTransactionId"`
 }
 
-// FollowUpSagaTemplateStore provides thread-safe storage for follow-up saga templates
+// FollowUpSagaTemplateStore provides Redis-backed storage for follow-up saga templates
 type FollowUpSagaTemplateStore struct {
-	templates map[string]FollowUpSagaTemplate
-	mutex     sync.RWMutex
+	reg *atlas.Registry[string, FollowUpSagaTemplate]
 }
 
-// Singleton instance
-var (
-	templateStoreInstance *FollowUpSagaTemplateStore
-	templateStoreOnce     sync.Once
-)
+var templateStoreInstance *FollowUpSagaTemplateStore
 
 // GetFollowUpSagaTemplateStore returns the singleton instance of the template store
 func GetFollowUpSagaTemplateStore() *FollowUpSagaTemplateStore {
-	templateStoreOnce.Do(func() {
-		templateStoreInstance = &FollowUpSagaTemplateStore{
-			templates: make(map[string]FollowUpSagaTemplate),
-		}
-	})
 	return templateStoreInstance
 }
 
 // Store stores the template information for later use when character created event is received
-func (s *FollowUpSagaTemplateStore) Store(tenantId uuid.UUID, characterName string, input RestModel, template template.RestModel, characterCreationTransactionId uuid.UUID) error {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// Store with tenant-aware key to avoid conflicts
+func (s *FollowUpSagaTemplateStore) Store(tenantId uuid.UUID, characterName string, input RestModel, tmpl template.RestModel, characterCreationTransactionId uuid.UUID) error {
 	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
-	s.templates[key] = FollowUpSagaTemplate{
+	return s.reg.Put(context.Background(), key, FollowUpSagaTemplate{
 		TenantId:                       tenantId,
 		Input:                          input,
-		Template:                       template,
+		Template:                       tmpl,
 		CharacterCreationTransactionId: characterCreationTransactionId,
-	}
-
-	return nil
+	})
 }
 
 // Get retrieves the stored template information
 func (s *FollowUpSagaTemplateStore) Get(tenantId uuid.UUID, characterName string) (FollowUpSagaTemplate, bool) {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
 	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
-	template, exists := s.templates[key]
-	return template, exists
+	v, err := s.reg.Get(context.Background(), key)
+	if err != nil {
+		return FollowUpSagaTemplate{}, false
+	}
+	return v, true
 }
 
 // Remove removes the stored template information after use
 func (s *FollowUpSagaTemplateStore) Remove(tenantId uuid.UUID, characterName string) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
 	key := fmt.Sprintf("%s:%s", tenantId.String(), characterName)
-	delete(s.templates, key)
+	_ = s.reg.Remove(context.Background(), key)
 }
 
-// Clear removes all stored templates (useful for testing)
+// Clear removes all stored templates
 func (s *FollowUpSagaTemplateStore) Clear() {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.templates = make(map[string]FollowUpSagaTemplate)
+	ctx := context.Background()
+	pattern := fmt.Sprintf("atlas:%s:*", s.reg.Namespace())
+	var cursor uint64
+	for {
+		keys, next, err := s.reg.Client().Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			break
+		}
+		if len(keys) > 0 {
+			s.reg.Client().Del(ctx, keys...)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
 }
 
 // Size returns the number of stored templates
 func (s *FollowUpSagaTemplateStore) Size() int {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
-
-	return len(s.templates)
+	ctx := context.Background()
+	pattern := fmt.Sprintf("atlas:%s:*", s.reg.Namespace())
+	count := 0
+	var cursor uint64
+	for {
+		keys, next, err := s.reg.Client().Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			break
+		}
+		count += len(keys)
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return count
 }
 
 // storeFollowUpSagaTemplate stores the template information for later use when character created event is received
-func storeFollowUpSagaTemplate(ctx context.Context, characterName string, input RestModel, template template.RestModel, characterCreationTransactionId uuid.UUID) error {
+func storeFollowUpSagaTemplate(ctx context.Context, characterName string, input RestModel, tmpl template.RestModel, characterCreationTransactionId uuid.UUID) error {
 	t := tenant.MustFromContext(ctx)
 	store := GetFollowUpSagaTemplateStore()
-	return store.Store(t.Id(), characterName, input, template, characterCreationTransactionId)
+	return store.Store(t.Id(), characterName, input, tmpl, characterCreationTransactionId)
 }
 
 // GetFollowUpSagaTemplate retrieves the stored template information
@@ -113,105 +119,130 @@ func RemoveFollowUpSagaTemplate(tenantId uuid.UUID, characterName string) {
 
 // SagaCompletionTracker tracks completion status for character creation saga pairs
 type SagaCompletionTracker struct {
-	TenantId                       uuid.UUID
-	AccountId                      uint32
-	CharacterId                    uint32
-	CharacterCreationTransactionId uuid.UUID
-	FollowUpSagaTransactionId      uuid.UUID
-	CharacterCreationCompleted     bool
-	FollowUpSagaCompleted          bool
+	TenantId                       uuid.UUID `json:"tenantId"`
+	AccountId                      uint32    `json:"accountId"`
+	CharacterId                    uint32    `json:"characterId"`
+	CharacterCreationTransactionId uuid.UUID `json:"characterCreationTransactionId"`
+	FollowUpSagaTransactionId      uuid.UUID `json:"followUpSagaTransactionId"`
+	CharacterCreationCompleted     bool      `json:"characterCreationCompleted"`
+	FollowUpSagaCompleted          bool      `json:"followUpSagaCompleted"`
 }
 
-// SagaCompletionTrackerStore provides thread-safe storage for saga completion tracking
+// SagaCompletionTrackerStore provides Redis-backed storage for saga completion tracking
 type SagaCompletionTrackerStore struct {
-	trackers map[uuid.UUID]*SagaCompletionTracker
-	mutex    sync.RWMutex
+	reg *atlas.Registry[string, SagaCompletionTracker]
 }
 
-// Singleton instance for saga completion tracking
-var (
-	sagaTrackerStoreInstance *SagaCompletionTrackerStore
-	sagaTrackerStoreOnce     sync.Once
-)
+var sagaTrackerStoreInstance *SagaCompletionTrackerStore
 
 // GetSagaCompletionTrackerStore returns the singleton instance of the saga completion tracker store
 func GetSagaCompletionTrackerStore() *SagaCompletionTrackerStore {
-	sagaTrackerStoreOnce.Do(func() {
-		sagaTrackerStoreInstance = &SagaCompletionTrackerStore{
-			trackers: make(map[uuid.UUID]*SagaCompletionTracker),
-		}
-	})
 	return sagaTrackerStoreInstance
 }
 
 // StoreTrackerForCharacterCreation stores tracking information for character creation saga
 func (s *SagaCompletionTrackerStore) StoreTrackerForCharacterCreation(tenantId uuid.UUID, accountId uint32, characterCreationTransactionId uuid.UUID) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.trackers[characterCreationTransactionId] = &SagaCompletionTracker{
+	ctx := context.Background()
+	tracker := SagaCompletionTracker{
 		TenantId:                       tenantId,
 		AccountId:                      accountId,
 		CharacterCreationTransactionId: characterCreationTransactionId,
-		CharacterCreationCompleted:     false,
-		FollowUpSagaCompleted:          false,
 	}
+	_ = s.reg.Put(ctx, characterCreationTransactionId.String(), tracker)
 }
 
 // UpdateTrackerForFollowUpSaga updates the tracker with follow-up saga information
 func (s *SagaCompletionTrackerStore) UpdateTrackerForFollowUpSaga(characterCreationTransactionId uuid.UUID, followUpSagaTransactionId uuid.UUID, characterId uint32) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	if tracker, exists := s.trackers[characterCreationTransactionId]; exists {
-		tracker.FollowUpSagaTransactionId = followUpSagaTransactionId
-		tracker.CharacterId = characterId
-		// Also store the tracker by follow-up saga transaction ID for easy lookup
-		s.trackers[followUpSagaTransactionId] = tracker
+	ctx := context.Background()
+	tracker, err := s.reg.Get(ctx, characterCreationTransactionId.String())
+	if err != nil {
+		return
 	}
+	tracker.FollowUpSagaTransactionId = followUpSagaTransactionId
+	tracker.CharacterId = characterId
+	_ = s.reg.Put(ctx, characterCreationTransactionId.String(), tracker)
+	_ = s.reg.Put(ctx, followUpSagaTransactionId.String(), tracker)
 }
 
 // MarkSagaCompleted marks a saga as completed and returns the tracker if both sagas are now complete
 func (s *SagaCompletionTrackerStore) MarkSagaCompleted(transactionId uuid.UUID) (*SagaCompletionTracker, bool) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
+	ctx := context.Background()
+	tracker, err := s.reg.Get(ctx, transactionId.String())
+	if err != nil {
+		return nil, false
+	}
 
-	if tracker, exists := s.trackers[transactionId]; exists {
-		// Check if this is the character creation saga or follow-up saga
-		if transactionId == tracker.CharacterCreationTransactionId {
-			tracker.CharacterCreationCompleted = true
-		} else if transactionId == tracker.FollowUpSagaTransactionId {
-			tracker.FollowUpSagaCompleted = true
-		}
+	if transactionId == tracker.CharacterCreationTransactionId {
+		tracker.CharacterCreationCompleted = true
+	} else if transactionId == tracker.FollowUpSagaTransactionId {
+		tracker.FollowUpSagaCompleted = true
+	}
 
-		// Check if both sagas are now complete
-		if tracker.CharacterCreationCompleted && tracker.FollowUpSagaCompleted {
-			// Remove both tracker entries since we're done
-			delete(s.trackers, tracker.CharacterCreationTransactionId)
-			if tracker.FollowUpSagaTransactionId != uuid.Nil {
-				delete(s.trackers, tracker.FollowUpSagaTransactionId)
-			}
-			return tracker, true
+	if tracker.CharacterCreationCompleted && tracker.FollowUpSagaCompleted {
+		_ = s.reg.Remove(ctx, tracker.CharacterCreationTransactionId.String())
+		if tracker.FollowUpSagaTransactionId != uuid.Nil {
+			_ = s.reg.Remove(ctx, tracker.FollowUpSagaTransactionId.String())
 		}
+		return &tracker, true
+	}
+
+	// Write updated tracker back to both keys
+	_ = s.reg.Put(ctx, tracker.CharacterCreationTransactionId.String(), tracker)
+	if tracker.FollowUpSagaTransactionId != uuid.Nil {
+		_ = s.reg.Put(ctx, tracker.FollowUpSagaTransactionId.String(), tracker)
 	}
 
 	return nil, false
 }
 
-// Clear removes all stored trackers (useful for testing)
+// Clear removes all stored trackers
 func (s *SagaCompletionTrackerStore) Clear() {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	s.trackers = make(map[uuid.UUID]*SagaCompletionTracker)
+	ctx := context.Background()
+	pattern := fmt.Sprintf("atlas:%s:*", s.reg.Namespace())
+	var cursor uint64
+	for {
+		keys, next, err := s.reg.Client().Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			break
+		}
+		if len(keys) > 0 {
+			s.reg.Client().Del(ctx, keys...)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
 }
 
 // Size returns the number of stored trackers
 func (s *SagaCompletionTrackerStore) Size() int {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
+	ctx := context.Background()
+	pattern := fmt.Sprintf("atlas:%s:*", s.reg.Namespace())
+	count := 0
+	var cursor uint64
+	for {
+		keys, next, err := s.reg.Client().Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			break
+		}
+		count += len(keys)
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+	return count
+}
 
-	return len(s.trackers)
+// InitCache initializes both Redis-backed stores
+func InitCache(client *goredis.Client) {
+	templateStoreInstance = &FollowUpSagaTemplateStore{
+		reg: atlas.NewRegistry[string, FollowUpSagaTemplate](client, "char-factory-template", func(k string) string { return k }),
+	}
+	sagaTrackerStoreInstance = &SagaCompletionTrackerStore{
+		reg: atlas.NewRegistry[string, SagaCompletionTracker](client, "char-factory-saga", func(k string) string { return k }),
+	}
 }
 
 // StoreFollowUpSagaTracking stores the follow-up saga tracking information

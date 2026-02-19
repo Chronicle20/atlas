@@ -32,13 +32,13 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) GetWorldRates(worldId world.Id) Model {
-	return GetRegistry().GetWorldRates(p.t, worldId)
+	return GetRegistry().GetWorldRates(p.ctx, worldId)
 }
 
 func (p *ProcessorImpl) UpdateWorldRate(worldId world.Id, rateType Type, multiplier float64) error {
 	p.l.Debugf("Updating world [%d] rate [%s] to [%.2f] for tenant [%s].", worldId, rateType, multiplier, p.t.String())
 
-	GetRegistry().SetWorldRate(p.t, worldId, rateType, multiplier)
+	GetRegistry().SetWorldRate(p.ctx, worldId, rateType, multiplier)
 
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		return buf.Put(rateMessage.EnvEventTopicWorldRate, rateProducer.WorldRateChangedEventProvider(p.t, worldId, rateMessage.RateType(rateType), multiplier))

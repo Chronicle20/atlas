@@ -13,15 +13,11 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	db := test.SetupTestDB(t, MigrateTable)
 	defer test.CleanupTestDB(t, db)
 
-	tenantId := uuid.New()
 	id := uuid.New()
 	npcId := uint32(1001)
 
 	t.Run("getByIdProvider currying", func(t *testing.T) {
-		providerByTenant := getByIdProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		providerById := providerByTenant(id)
+		providerById := getByIdProvider(id)
 		assert.NotNil(t, providerById)
 
 		provider := providerById(db)
@@ -29,10 +25,7 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("getByNpcIdProvider currying", func(t *testing.T) {
-		providerByTenant := getByNpcIdProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		providerByNpcId := providerByTenant(npcId)
+		providerByNpcId := getByNpcIdProvider(npcId)
 		assert.NotNil(t, providerByNpcId)
 
 		provider := providerByNpcId(db)
@@ -40,18 +33,12 @@ func TestProviderFunctionCurrying(t *testing.T) {
 	})
 
 	t.Run("getAllProvider currying", func(t *testing.T) {
-		providerByTenant := getAllProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		provider := providerByTenant(db)
+		provider := getAllProvider(db)
 		assert.NotNil(t, provider)
 	})
 
 	t.Run("getAllByNpcIdProvider currying", func(t *testing.T) {
-		providerByTenant := getAllByNpcIdProvider(tenantId)
-		assert.NotNil(t, providerByTenant)
-
-		providerByNpcId := providerByTenant(npcId)
+		providerByNpcId := getAllByNpcIdProvider(npcId)
 		assert.NotNil(t, providerByNpcId)
 
 		provider := providerByNpcId(db)
@@ -63,12 +50,11 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	db := test.SetupTestDB(t, MigrateTable)
 	defer test.CleanupTestDB(t, db)
 
-	tenantId := uuid.New()
 	id := uuid.New()
 	npcId := uint32(1001)
 
 	t.Run("getByIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByIdProvider(tenantId)(id)(db)
+		provider := getByIdProvider(id)(db)
 
 		// Provider should be callable and return Entity and error
 		entity, err := provider()
@@ -77,7 +63,7 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	})
 
 	t.Run("getByNpcIdProvider returns entity provider", func(t *testing.T) {
-		provider := getByNpcIdProvider(tenantId)(npcId)(db)
+		provider := getByNpcIdProvider(npcId)(db)
 
 		entity, err := provider()
 		assert.Error(t, err) // Expected - record not found
@@ -85,7 +71,7 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	})
 
 	t.Run("getAllProvider returns slice provider", func(t *testing.T) {
-		provider := getAllProvider(tenantId)(db)
+		provider := getAllProvider(db)
 
 		entities, err := provider()
 		assert.NoError(t, err) // Empty result is not an error
@@ -93,7 +79,7 @@ func TestProviderFunctionSignatures(t *testing.T) {
 	})
 
 	t.Run("getAllByNpcIdProvider returns slice provider", func(t *testing.T) {
-		provider := getAllByNpcIdProvider(tenantId)(npcId)(db)
+		provider := getAllByNpcIdProvider(npcId)(db)
 
 		entities, err := provider()
 		assert.NoError(t, err) // Empty result is not an error

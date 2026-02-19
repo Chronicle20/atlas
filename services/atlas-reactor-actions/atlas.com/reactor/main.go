@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"atlas-reactor-actions/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-reactor-actions/logger"
 	"atlas-reactor-actions/script"
 	"atlas-reactor-actions/service"

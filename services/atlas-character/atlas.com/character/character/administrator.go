@@ -46,29 +46,27 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id,
 	return modelFromEntity(*e)
 }
 
-func delete(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-	return db.Where(&entity{TenantId: tenantId, ID: characterId}).Delete(&entity{}).Error
+func delete(db *gorm.DB, characterId uint32) error {
+	return db.Where("id = ?", characterId).Delete(&entity{}).Error
 }
 
 // Returns a function which accepts a character model,and updates the persisted state of the character given a set of
 // modifying functions.
-func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID) model.Operator[Model] {
-	return func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID) model.Operator[Model] {
-		return func(tenantId uuid.UUID) model.Operator[Model] {
-			return func(c Model) error {
-				if len(modifiers) > 0 {
-					err := update(db, tenantId, c.Id(), modifiers...)
-					if err != nil {
-						return err
-					}
+func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+	return func(modifiers ...EntityUpdateFunction) model.Operator[Model] {
+		return func(c Model) error {
+			if len(modifiers) > 0 {
+				err := update(db, c.Id(), modifiers...)
+				if err != nil {
+					return err
 				}
-				return nil
 			}
+			return nil
 		}
 	}
 }
 
-func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...EntityUpdateFunction) error {
+func update(db *gorm.DB, characterId uint32, modifiers ...EntityUpdateFunction) error {
 	// Build a map of column->value updates instead of using a struct
 	// This avoids GORM including zero values from unset fields
 	updates := make(map[string]interface{})
@@ -149,7 +147,7 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...En
 		return nil
 	}
 
-	return db.Model(&entity{TenantId: tenantId, ID: characterId}).Updates(updates).Error
+	return db.Model(&entity{ID: characterId}).Updates(updates).Error
 }
 
 func SetLevel(level byte) EntityUpdateFunction {

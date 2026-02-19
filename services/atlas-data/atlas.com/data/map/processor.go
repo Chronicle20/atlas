@@ -1,7 +1,7 @@
 package _map
 
 import (
-	"atlas-data/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-data/document"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"

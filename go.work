@@ -2,9 +2,12 @@ go 1.25.5
 
 use (
 	./libs/atlas-constants
+	./libs/atlas-database
 	./libs/atlas-kafka
 	./libs/atlas-model
+	./libs/atlas-redis
 	./libs/atlas-rest
+	./libs/atlas-retry
 	./libs/atlas-script-core
 	./libs/atlas-socket
 	./libs/atlas-tenant

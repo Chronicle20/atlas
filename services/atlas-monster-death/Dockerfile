@@ -13,6 +13,7 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-retry/go.mod libs/atlas-retry/
 # Copy service module definitions
 COPY services/atlas-monster-death/atlas.com/monster/go.mod services/atlas-monster-death/atlas.com/monster/go.sum services/atlas-monster-death/atlas.com/monster/
 
@@ -25,6 +26,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./services/atlas-monster-death/atlas.com/monster' >> go.work && \
     echo ')' >> go.work
 
@@ -38,6 +40,7 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-retry libs/atlas-retry
 # Copy service source code
 COPY services/atlas-monster-death/atlas.com/monster services/atlas-monster-death/atlas.com/monster
 

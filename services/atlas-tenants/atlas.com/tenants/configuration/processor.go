@@ -18,77 +18,77 @@ import (
 type Processor interface {
 	// Route operations
 	// CreateRoute creates a new route configuration
-	CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error)
+	CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error)
 	// CreateRouteAndEmit creates a new route configuration and emits events
-	CreateRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (Model, error)
+	CreateRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error)
 	// UpdateRoute updates an existing route configuration
-	UpdateRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error)
+	UpdateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error)
 	// UpdateRouteAndEmit updates an existing route configuration and emits events
-	UpdateRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (Model, error)
+	UpdateRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error)
 	// DeleteRoute deletes a route configuration
-	DeleteRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error
+	DeleteRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) error
 	// DeleteRouteAndEmit deletes a route configuration and emits events
-	DeleteRouteAndEmit(tenantID uuid.UUID, routeID string) error
+	DeleteRouteAndEmit(tenantId uuid.UUID, routeID string) error
 	// GetRouteById gets a route by ID
-	GetRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error)
+	GetRouteById(tenantId uuid.UUID, routeID string) (map[string]interface{}, error)
 	// GetAllRoutes gets all routes for a tenant
-	GetAllRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	GetAllRoutes(tenantId uuid.UUID) ([]map[string]interface{}, error)
 	// RouteByIdProvider returns a provider for a route by ID
-	RouteByIdProvider(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
+	RouteByIdProvider(tenantId uuid.UUID, routeID string) model.Provider[map[string]interface{}]
 	// AllRoutesProvider returns a provider for all routes for a tenant
-	AllRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+	AllRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
 	// Instance route operations
 	// CreateInstanceRoute creates a new instance route configuration
-	CreateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error)
+	CreateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error)
 	// CreateInstanceRouteAndEmit creates a new instance route configuration and emits events
-	CreateInstanceRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (Model, error)
+	CreateInstanceRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error)
 	// UpdateInstanceRoute updates an existing instance route configuration
-	UpdateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error)
+	UpdateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error)
 	// UpdateInstanceRouteAndEmit updates an existing instance route configuration and emits events
-	UpdateInstanceRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (Model, error)
+	UpdateInstanceRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error)
 	// DeleteInstanceRoute deletes an instance route configuration
-	DeleteInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error
+	DeleteInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) error
 	// DeleteInstanceRouteAndEmit deletes an instance route configuration and emits events
-	DeleteInstanceRouteAndEmit(tenantID uuid.UUID, routeID string) error
+	DeleteInstanceRouteAndEmit(tenantId uuid.UUID, routeID string) error
 	// GetInstanceRouteById gets an instance route by ID
-	GetInstanceRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error)
+	GetInstanceRouteById(tenantId uuid.UUID, routeID string) (map[string]interface{}, error)
 	// GetAllInstanceRoutes gets all instance routes for a tenant
-	GetAllInstanceRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	GetAllInstanceRoutes(tenantId uuid.UUID) ([]map[string]interface{}, error)
 	// InstanceRouteByIdProvider returns a provider for an instance route by ID
-	InstanceRouteByIdProvider(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}]
+	InstanceRouteByIdProvider(tenantId uuid.UUID, routeID string) model.Provider[map[string]interface{}]
 	// AllInstanceRoutesProvider returns a provider for all instance routes for a tenant
-	AllInstanceRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+	AllInstanceRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
 	// Vessel operations
 	// CreateVessel creates a new vessel configuration
-	CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (Model, error)
+	CreateVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vessel map[string]interface{}) (Model, error)
 	// CreateVesselAndEmit creates a new vessel configuration and emits events
-	CreateVesselAndEmit(tenantID uuid.UUID, vessel map[string]interface{}) (Model, error)
+	CreateVesselAndEmit(tenantId uuid.UUID, vessel map[string]interface{}) (Model, error)
 	// UpdateVessel updates an existing vessel configuration
-	UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error)
+	UpdateVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error)
 	// UpdateVesselAndEmit updates an existing vessel configuration and emits events
-	UpdateVesselAndEmit(tenantID uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error)
+	UpdateVesselAndEmit(tenantId uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error)
 	// DeleteVessel deletes a vessel configuration
-	DeleteVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vesselID string) error
+	DeleteVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vesselID string) error
 	// DeleteVesselAndEmit deletes a vessel configuration and emits events
-	DeleteVesselAndEmit(tenantID uuid.UUID, vesselID string) error
+	DeleteVesselAndEmit(tenantId uuid.UUID, vesselID string) error
 	// GetVesselById gets a vessel by ID
-	GetVesselById(tenantID uuid.UUID, vesselID string) (map[string]interface{}, error)
+	GetVesselById(tenantId uuid.UUID, vesselID string) (map[string]interface{}, error)
 	// GetAllVessels gets all vessels for a tenant
-	GetAllVessels(tenantID uuid.UUID) ([]map[string]interface{}, error)
+	GetAllVessels(tenantId uuid.UUID) ([]map[string]interface{}, error)
 	// VesselByIdProvider returns a provider for a vessel by ID
-	VesselByIdProvider(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
+	VesselByIdProvider(tenantId uuid.UUID, vesselID string) model.Provider[map[string]interface{}]
 	// AllVesselsProvider returns a provider for all vessels for a tenant
-	AllVesselsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}]
+	AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}]
 
 	// Seed operations
 	// SeedRoutes clears existing routes for a tenant and loads them from seed files
-	SeedRoutes(tenantID uuid.UUID) (SeedResult, error)
+	SeedRoutes(tenantId uuid.UUID) (SeedResult, error)
 	// SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-	SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, error)
+	SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error)
 	// SeedVessels clears existing vessels for a tenant and loads them from seed files
-	SeedVessels(tenantID uuid.UUID) (SeedResult, error)
+	SeedVessels(tenantId uuid.UUID) (SeedResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -110,11 +110,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 // Create creates a new route configuration
-func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 		return func(route map[string]interface{}) (Model, error) {
 			// Check if configuration already exists
-			existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "routes")(p.db)
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "routes")(p.db)
 			existing, err := existingProvider()
 
 			var resourceData json.RawMessage
@@ -158,7 +158,7 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 				if id, ok := route["id"].(string); ok {
 					routeID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteCreated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantId, EventTypeRouteCreated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -172,7 +172,7 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 
 				entity := Entity{
 					ID:           uuid.New(),
-					TenantID:     tenantID,
+					TenantId:     tenantId,
 					ResourceName: "routes",
 					ResourceData: resourceData,
 				}
@@ -191,7 +191,7 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 				if id, ok := route["id"].(string); ok {
 					routeID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteCreated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantId, EventTypeRouteCreated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -205,21 +205,21 @@ func (p *ProcessorImpl) CreateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 }
 
 // CreateRouteAndEmit creates a new route configuration and emits events
-func (p *ProcessorImpl) CreateRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.CreateRoute(mb)(tenantID)(route)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.CreateRoute(mb)(tenantId)(route)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // Update updates an existing route configuration
-func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
 		return func(routeID string) func(route map[string]interface{}) (Model, error) {
 			return func(route map[string]interface{}) (Model, error) {
 				// Check if configuration exists
-				existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "routes")(p.db)
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "routes")(p.db)
 				existing, err := existingProvider()
 				if err != nil {
 					return Model{}, err
@@ -277,7 +277,7 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 				}
 
 				// Add event to message buffer
-				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteUpdated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantId, EventTypeRouteUpdated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -288,24 +288,24 @@ func (p *ProcessorImpl) UpdateRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 }
 
 // UpdateRouteAndEmit updates an existing route configuration and emits events
-func (p *ProcessorImpl) UpdateRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.UpdateRoute(mb)(tenantID)(routeID)(route)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.UpdateRoute(mb)(tenantId)(routeID)(route)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // Delete deletes a route configuration
-func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error {
-	return func(tenantID uuid.UUID) func(routeID string) error {
+func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) error {
+	return func(tenantId uuid.UUID) func(routeID string) error {
 		return func(routeID string) error {
-			if err := DeleteConfiguration(p.db, tenantID, "routes", routeID); err != nil {
+			if err := DeleteConfiguration(p.db, tenantId, "routes", routeID); err != nil {
 				return err
 			}
 
 			// Add event to message buffer
-			if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantID, EventTypeRouteDeleted, routeID)); err != nil {
+			if err := mb.Put(EventTopicConfigurationStatus, CreateRouteStatusEventProvider(tenantId, EventTypeRouteDeleted, routeID)); err != nil {
 				return err
 			}
 
@@ -315,38 +315,38 @@ func (p *ProcessorImpl) DeleteRoute(mb *message.Buffer) func(tenantID uuid.UUID)
 }
 
 // DeleteRouteAndEmit deletes a route configuration and emits events
-func (p *ProcessorImpl) DeleteRouteAndEmit(tenantID uuid.UUID, routeID string) error {
+func (p *ProcessorImpl) DeleteRouteAndEmit(tenantId uuid.UUID, routeID string) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteRoute(mb)(tenantID)(routeID)
+		return p.DeleteRoute(mb)(tenantId)(routeID)
 	})
 }
 
 // GetRouteById gets a route by ID
-func (p *ProcessorImpl) GetRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error) {
-	return p.RouteByIdProvider(tenantID, routeID)()
+func (p *ProcessorImpl) GetRouteById(tenantId uuid.UUID, routeID string) (map[string]interface{}, error) {
+	return p.RouteByIdProvider(tenantId, routeID)()
 }
 
 // GetAllRoutes gets all routes for a tenant
-func (p *ProcessorImpl) GetAllRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error) {
-	return p.AllRoutesProvider(tenantID)()
+func (p *ProcessorImpl) GetAllRoutes(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllRoutesProvider(tenantId)()
 }
 
 // RouteByIdProvider returns a provider for a route by ID
-func (p *ProcessorImpl) RouteByIdProvider(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}] {
-	return GetRouteByIdProvider(tenantID, routeID)(p.db)
+func (p *ProcessorImpl) RouteByIdProvider(tenantId uuid.UUID, routeID string) model.Provider[map[string]interface{}] {
+	return GetRouteByIdProvider(tenantId, routeID)(p.db)
 }
 
 // AllRoutesProvider returns a provider for all routes for a tenant
-func (p *ProcessorImpl) AllRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
-	return GetAllRoutesProvider(tenantID)(p.db)
+func (p *ProcessorImpl) AllRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllRoutesProvider(tenantId)(p.db)
 }
 
 // CreateVessel creates a new vessel configuration
-func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vessel map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(vessel map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vessel map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(vessel map[string]interface{}) (Model, error) {
 		return func(vessel map[string]interface{}) (Model, error) {
 			// Check if configuration already exists
-			existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "vessels")(p.db)
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "vessels")(p.db)
 			existing, err := existingProvider()
 
 			var resourceData json.RawMessage
@@ -390,7 +390,7 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 				if id, ok := vessel["id"].(string); ok {
 					vesselID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselCreated, vesselID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantId, EventTypeVesselCreated, vesselID)); err != nil {
 					return Model{}, err
 				}
 
@@ -404,7 +404,7 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 
 				entity := Entity{
 					ID:           uuid.New(),
-					TenantID:     tenantID,
+					TenantId:     tenantId,
 					ResourceName: "vessels",
 					ResourceData: resourceData,
 				}
@@ -423,7 +423,7 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 				if id, ok := vessel["id"].(string); ok {
 					vesselID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselCreated, vesselID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantId, EventTypeVesselCreated, vesselID)); err != nil {
 					return Model{}, err
 				}
 
@@ -437,21 +437,21 @@ func (p *ProcessorImpl) CreateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 }
 
 // CreateVesselAndEmit creates a new vessel configuration and emits events
-func (p *ProcessorImpl) CreateVesselAndEmit(tenantID uuid.UUID, vessel map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateVesselAndEmit(tenantId uuid.UUID, vessel map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.CreateVessel(mb)(tenantID)(vessel)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.CreateVessel(mb)(tenantId)(vessel)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // UpdateVessel updates an existing vessel configuration
-func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(vesselID string) func(vessel map[string]interface{}) (Model, error) {
 		return func(vesselID string) func(vessel map[string]interface{}) (Model, error) {
 			return func(vessel map[string]interface{}) (Model, error) {
 				// Check if configuration exists
-				existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "vessels")(p.db)
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "vessels")(p.db)
 				existing, err := existingProvider()
 				if err != nil {
 					return Model{}, err
@@ -509,7 +509,7 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 				}
 
 				// Add event to message buffer
-				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselUpdated, vesselID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantId, EventTypeVesselUpdated, vesselID)); err != nil {
 					return Model{}, err
 				}
 
@@ -520,24 +520,24 @@ func (p *ProcessorImpl) UpdateVessel(mb *message.Buffer) func(tenantID uuid.UUID
 }
 
 // UpdateVesselAndEmit updates an existing vessel configuration and emits events
-func (p *ProcessorImpl) UpdateVesselAndEmit(tenantID uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateVesselAndEmit(tenantId uuid.UUID, vesselID string, vessel map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.UpdateVessel(mb)(tenantID)(vesselID)(vessel)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.UpdateVessel(mb)(tenantId)(vesselID)(vessel)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // DeleteVessel deletes a vessel configuration
-func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantID uuid.UUID) func(vesselID string) error {
-	return func(tenantID uuid.UUID) func(vesselID string) error {
+func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantId uuid.UUID) func(vesselID string) error {
+	return func(tenantId uuid.UUID) func(vesselID string) error {
 		return func(vesselID string) error {
-			if err := DeleteConfiguration(p.db, tenantID, "vessels", vesselID); err != nil {
+			if err := DeleteConfiguration(p.db, tenantId, "vessels", vesselID); err != nil {
 				return err
 			}
 
 			// Add event to message buffer
-			if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantID, EventTypeVesselDeleted, vesselID)); err != nil {
+			if err := mb.Put(EventTopicConfigurationStatus, CreateVesselStatusEventProvider(tenantId, EventTypeVesselDeleted, vesselID)); err != nil {
 				return err
 			}
 
@@ -547,37 +547,37 @@ func (p *ProcessorImpl) DeleteVessel(mb *message.Buffer) func(tenantID uuid.UUID
 }
 
 // DeleteVesselAndEmit deletes a vessel configuration and emits events
-func (p *ProcessorImpl) DeleteVesselAndEmit(tenantID uuid.UUID, vesselID string) error {
+func (p *ProcessorImpl) DeleteVesselAndEmit(tenantId uuid.UUID, vesselID string) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteVessel(mb)(tenantID)(vesselID)
+		return p.DeleteVessel(mb)(tenantId)(vesselID)
 	})
 }
 
 // GetVesselById gets a vessel by ID
-func (p *ProcessorImpl) GetVesselById(tenantID uuid.UUID, vesselID string) (map[string]interface{}, error) {
-	return p.VesselByIdProvider(tenantID, vesselID)()
+func (p *ProcessorImpl) GetVesselById(tenantId uuid.UUID, vesselID string) (map[string]interface{}, error) {
+	return p.VesselByIdProvider(tenantId, vesselID)()
 }
 
 // GetAllVessels gets all vessels for a tenant
-func (p *ProcessorImpl) GetAllVessels(tenantID uuid.UUID) ([]map[string]interface{}, error) {
-	return p.AllVesselsProvider(tenantID)()
+func (p *ProcessorImpl) GetAllVessels(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllVesselsProvider(tenantId)()
 }
 
 // VesselByIdProvider returns a provider for a vessel by ID
-func (p *ProcessorImpl) VesselByIdProvider(tenantID uuid.UUID, vesselID string) model.Provider[map[string]interface{}] {
-	return GetVesselByIdProvider(tenantID, vesselID)(p.db)
+func (p *ProcessorImpl) VesselByIdProvider(tenantId uuid.UUID, vesselID string) model.Provider[map[string]interface{}] {
+	return GetVesselByIdProvider(tenantId, vesselID)(p.db)
 }
 
 // AllVesselsProvider returns a provider for all vessels for a tenant
-func (p *ProcessorImpl) AllVesselsProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
-	return GetAllVesselsProvider(tenantID)(p.db)
+func (p *ProcessorImpl) AllVesselsProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllVesselsProvider(tenantId)(p.db)
 }
 
 // CreateInstanceRoute creates a new instance route configuration
-func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(route map[string]interface{}) (Model, error) {
 		return func(route map[string]interface{}) (Model, error) {
-			existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "instance-routes")(p.db)
+			existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "instance-routes")(p.db)
 			existing, err := existingProvider()
 
 			var resourceData json.RawMessage
@@ -616,7 +616,7 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantID uu
 				if id, ok := route["id"].(string); ok {
 					routeID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantID, EventTypeInstanceRouteCreated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantId, EventTypeInstanceRouteCreated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -629,7 +629,7 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantID uu
 
 				entity := Entity{
 					ID:           uuid.New(),
-					TenantID:     tenantID,
+					TenantId:     tenantId,
 					ResourceName: "instance-routes",
 					ResourceData: resourceData,
 				}
@@ -647,7 +647,7 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantID uu
 				if id, ok := route["id"].(string); ok {
 					routeID = id
 				}
-				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantID, EventTypeInstanceRouteCreated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantId, EventTypeInstanceRouteCreated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -660,20 +660,20 @@ func (p *ProcessorImpl) CreateInstanceRoute(mb *message.Buffer) func(tenantID uu
 }
 
 // CreateInstanceRouteAndEmit creates a new instance route configuration and emits events
-func (p *ProcessorImpl) CreateInstanceRouteAndEmit(tenantID uuid.UUID, route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) CreateInstanceRouteAndEmit(tenantId uuid.UUID, route map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.CreateInstanceRoute(mb)(tenantID)(route)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.CreateInstanceRoute(mb)(tenantId)(route)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // UpdateInstanceRoute updates an existing instance route configuration
-func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
-	return func(tenantID uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
+	return func(tenantId uuid.UUID) func(routeID string) func(route map[string]interface{}) (Model, error) {
 		return func(routeID string) func(route map[string]interface{}) (Model, error) {
 			return func(route map[string]interface{}) (Model, error) {
-				existingProvider := GetByTenantIdAndResourceNameProvider(tenantID, "instance-routes")(p.db)
+				existingProvider := GetByTenantIdAndResourceNameProvider(tenantId, "instance-routes")(p.db)
 				existing, err := existingProvider()
 				if err != nil {
 					return Model{}, err
@@ -728,7 +728,7 @@ func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantID uu
 					return Model{}, err
 				}
 
-				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantID, EventTypeInstanceRouteUpdated, routeID)); err != nil {
+				if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantId, EventTypeInstanceRouteUpdated, routeID)); err != nil {
 					return Model{}, err
 				}
 
@@ -739,23 +739,23 @@ func (p *ProcessorImpl) UpdateInstanceRoute(mb *message.Buffer) func(tenantID uu
 }
 
 // UpdateInstanceRouteAndEmit updates an existing instance route configuration and emits events
-func (p *ProcessorImpl) UpdateInstanceRouteAndEmit(tenantID uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
+func (p *ProcessorImpl) UpdateInstanceRouteAndEmit(tenantId uuid.UUID, routeID string, route map[string]interface{}) (Model, error) {
 	return message.EmitWithResult[Model, uuid.UUID](p.p)(func(mb *message.Buffer) func(uuid.UUID) (Model, error) {
-		return func(tenantID uuid.UUID) (Model, error) {
-			return p.UpdateInstanceRoute(mb)(tenantID)(routeID)(route)
+		return func(tenantId uuid.UUID) (Model, error) {
+			return p.UpdateInstanceRoute(mb)(tenantId)(routeID)(route)
 		}
-	})(tenantID)
+	})(tenantId)
 }
 
 // DeleteInstanceRoute deletes an instance route configuration
-func (p *ProcessorImpl) DeleteInstanceRoute(mb *message.Buffer) func(tenantID uuid.UUID) func(routeID string) error {
-	return func(tenantID uuid.UUID) func(routeID string) error {
+func (p *ProcessorImpl) DeleteInstanceRoute(mb *message.Buffer) func(tenantId uuid.UUID) func(routeID string) error {
+	return func(tenantId uuid.UUID) func(routeID string) error {
 		return func(routeID string) error {
-			if err := DeleteConfiguration(p.db, tenantID, "instance-routes", routeID); err != nil {
+			if err := DeleteConfiguration(p.db, tenantId, "instance-routes", routeID); err != nil {
 				return err
 			}
 
-			if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantID, EventTypeInstanceRouteDeleted, routeID)); err != nil {
+			if err := mb.Put(EventTopicConfigurationStatus, CreateInstanceRouteStatusEventProvider(tenantId, EventTypeInstanceRouteDeleted, routeID)); err != nil {
 				return err
 			}
 
@@ -765,40 +765,40 @@ func (p *ProcessorImpl) DeleteInstanceRoute(mb *message.Buffer) func(tenantID uu
 }
 
 // DeleteInstanceRouteAndEmit deletes an instance route configuration and emits events
-func (p *ProcessorImpl) DeleteInstanceRouteAndEmit(tenantID uuid.UUID, routeID string) error {
+func (p *ProcessorImpl) DeleteInstanceRouteAndEmit(tenantId uuid.UUID, routeID string) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.DeleteInstanceRoute(mb)(tenantID)(routeID)
+		return p.DeleteInstanceRoute(mb)(tenantId)(routeID)
 	})
 }
 
 // GetInstanceRouteById gets an instance route by ID
-func (p *ProcessorImpl) GetInstanceRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error) {
-	return p.InstanceRouteByIdProvider(tenantID, routeID)()
+func (p *ProcessorImpl) GetInstanceRouteById(tenantId uuid.UUID, routeID string) (map[string]interface{}, error) {
+	return p.InstanceRouteByIdProvider(tenantId, routeID)()
 }
 
 // GetAllInstanceRoutes gets all instance routes for a tenant
-func (p *ProcessorImpl) GetAllInstanceRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error) {
-	return p.AllInstanceRoutesProvider(tenantID)()
+func (p *ProcessorImpl) GetAllInstanceRoutes(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return p.AllInstanceRoutesProvider(tenantId)()
 }
 
 // InstanceRouteByIdProvider returns a provider for an instance route by ID
-func (p *ProcessorImpl) InstanceRouteByIdProvider(tenantID uuid.UUID, routeID string) model.Provider[map[string]interface{}] {
-	return GetInstanceRouteByIdProvider(tenantID, routeID)(p.db)
+func (p *ProcessorImpl) InstanceRouteByIdProvider(tenantId uuid.UUID, routeID string) model.Provider[map[string]interface{}] {
+	return GetInstanceRouteByIdProvider(tenantId, routeID)(p.db)
 }
 
 // AllInstanceRoutesProvider returns a provider for all instance routes for a tenant
-func (p *ProcessorImpl) AllInstanceRoutesProvider(tenantID uuid.UUID) model.Provider[[]map[string]interface{}] {
-	return GetAllInstanceRoutesProvider(tenantID)(p.db)
+func (p *ProcessorImpl) AllInstanceRoutesProvider(tenantId uuid.UUID) model.Provider[[]map[string]interface{}] {
+	return GetAllInstanceRoutesProvider(tenantId)(p.db)
 }
 
 // SeedRoutes clears existing routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedRoutes(tenantID uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding routes for tenant [%s]", tenantID)
+func (p *ProcessorImpl) SeedRoutes(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding routes for tenant [%s]", tenantId)
 
 	result := SeedResult{}
 
 	// Delete all existing routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "routes")
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "routes")
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing routes: %w", err)
 	}
@@ -814,7 +814,7 @@ func (p *ProcessorImpl) SeedRoutes(tenantID uuid.UUID) (SeedResult, error) {
 	// Create each route
 	for _, route := range routes {
 		id, _ := route["id"].(string)
-		_, err := p.CreateRouteAndEmit(tenantID, route)
+		_, err := p.CreateRouteAndEmit(tenantId, route)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
 			result.FailedCount++
@@ -824,19 +824,19 @@ func (p *ProcessorImpl) SeedRoutes(tenantID uuid.UUID) (SeedResult, error) {
 	}
 
 	p.l.Infof("Route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
 }
 
 // SeedInstanceRoutes clears existing instance routes for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding instance routes for tenant [%s]", tenantID)
+func (p *ProcessorImpl) SeedInstanceRoutes(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding instance routes for tenant [%s]", tenantId)
 
 	result := SeedResult{}
 
 	// Delete all existing instance routes for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "instance-routes")
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "instance-routes")
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing instance routes: %w", err)
 	}
@@ -852,7 +852,7 @@ func (p *ProcessorImpl) SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, erro
 	// Create each instance route
 	for _, route := range routes {
 		id, _ := route["id"].(string)
-		_, err := p.CreateInstanceRouteAndEmit(tenantID, route)
+		_, err := p.CreateInstanceRouteAndEmit(tenantId, route)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
 			result.FailedCount++
@@ -862,19 +862,19 @@ func (p *ProcessorImpl) SeedInstanceRoutes(tenantID uuid.UUID) (SeedResult, erro
 	}
 
 	p.l.Infof("Instance route seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
 }
 
 // SeedVessels clears existing vessels for a tenant and loads them from seed files
-func (p *ProcessorImpl) SeedVessels(tenantID uuid.UUID) (SeedResult, error) {
-	p.l.Infof("Seeding vessels for tenant [%s]", tenantID)
+func (p *ProcessorImpl) SeedVessels(tenantId uuid.UUID) (SeedResult, error) {
+	p.l.Infof("Seeding vessels for tenant [%s]", tenantId)
 
 	result := SeedResult{}
 
 	// Delete all existing vessels for this tenant
-	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantID, "vessels")
+	deletedCount, err := DeleteConfigurationByResourceName(p.db, tenantId, "vessels")
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing vessels: %w", err)
 	}
@@ -890,7 +890,7 @@ func (p *ProcessorImpl) SeedVessels(tenantID uuid.UUID) (SeedResult, error) {
 	// Create each vessel
 	for _, vessel := range vessels {
 		id, _ := vessel["id"].(string)
-		_, err := p.CreateVesselAndEmit(tenantID, vessel)
+		_, err := p.CreateVesselAndEmit(tenantId, vessel)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("%s: failed to create: %v", id, err))
 			result.FailedCount++
@@ -900,7 +900,7 @@ func (p *ProcessorImpl) SeedVessels(tenantID uuid.UUID) (SeedResult, error) {
 	}
 
 	p.l.Infof("Vessel seed complete for tenant [%s]: deleted=%d, created=%d, failed=%d",
-		tenantID, result.DeletedCount, result.CreatedCount, result.FailedCount)
+		tenantId, result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
 }

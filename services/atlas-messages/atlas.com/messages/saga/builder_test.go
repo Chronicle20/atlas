@@ -210,8 +210,8 @@ func TestBuilder_AddStep_DifferentPayloadTypes(t *testing.T) {
 			},
 		},
 		{
-			name:   "AwardInventory payload",
-			action: AwardInventory,
+			name:   "AwardAsset payload",
+			action: AwardAsset,
 			payload: AwardItemActionPayload{
 				CharacterId: 12345,
 				Item: ItemPayload{
@@ -288,7 +288,7 @@ func TestBuilder_Build(t *testing.T) {
 		SetTransactionId(customId).
 		SetSagaType(InventoryTransaction).
 		SetInitiatedBy("atlas-messages").
-		AddStep("give_item", Pending, AwardInventory, AwardItemActionPayload{
+		AddStep("give_item", Pending, AwardAsset, AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: ItemPayload{
 				TemplateId: 2000000,

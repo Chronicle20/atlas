@@ -49,7 +49,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 // AllProvider returns all channel servers for the tenant
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.FixedProvider(GetChannelRegistry().ChannelServers(p.t))
+	return model.FixedProvider(GetChannelRegistry().ChannelServers(p.ctx))
 }
 
 func (p *ProcessorImpl) GetByWorld(worldId world.Id) ([]Model, error) {
@@ -67,7 +67,7 @@ func (p *ProcessorImpl) GetById(ch channel.Model) (Model, error) {
 
 // ByIdProvider returns a specific channel server
 func (p *ProcessorImpl) ByIdProvider(ch channel.Model) model.Provider[Model] {
-	cs, err := GetChannelRegistry().ChannelServer(p.t, ch)
+	cs, err := GetChannelRegistry().ChannelServer(p.ctx, ch)
 	if err != nil {
 		return model.ErrorProvider[Model](err)
 	}
@@ -89,13 +89,13 @@ func (p *ProcessorImpl) Register(ch channel.Model, ipAddress string, port int, c
 	if err != nil {
 		return Model{}, err
 	}
-	return GetChannelRegistry().Register(p.t, m), nil
+	return GetChannelRegistry().Register(p.ctx, m), nil
 }
 
 // Unregister unregisters a channel server
 func (p *ProcessorImpl) Unregister(ch channel.Model) error {
 	p.l.Debugf("Unregistering world [%d] channel [%d] for tenant [%s].", ch.WorldId(), ch.Id(), p.t.String())
-	return GetChannelRegistry().RemoveByWorldAndChannel(p.t, ch)
+	return GetChannelRegistry().RemoveByWorldAndChannel(p.ctx, ch)
 }
 
 // RequestStatus requests the status of channels for a tenant

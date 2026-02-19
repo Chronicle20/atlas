@@ -35,7 +35,7 @@ func (t *Timeout) Run() {
 	t.l.Debugf("Executing %s task.", ExpirationTask)
 	err := model.ForEachSlice(model.FixedProvider(GetChannelRegistry().Tenants()), func(te tenant.Model) error {
 		tctx := tenant.WithContext(sctx, te)
-		return model.ForEachSlice(model.FixedProvider(GetChannelRegistry().ChannelServers(te)), func(c Model) error {
+		return model.ForEachSlice(model.FixedProvider(GetChannelRegistry().ChannelServers(tctx)), func(c Model) error {
 			if c.CreatedAt().Add(time.Second * 15).Before(time.Now()) {
 				ch := channel.NewModel(c.WorldId(), c.ChannelId())
 				return NewProcessor(t.l, tctx).Unregister(ch)

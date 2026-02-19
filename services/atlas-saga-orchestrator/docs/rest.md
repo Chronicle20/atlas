@@ -232,7 +232,7 @@ The following actions have registered payload unmarshalers for the POST endpoint
 
 | Action | Payload Type |
 |--------|-------------|
-| award_inventory | AwardItemActionPayload |
+| award_asset | AwardItemActionPayload |
 | award_experience | AwardExperiencePayload |
 | award_level | AwardLevelPayload |
 | award_mesos | AwardMesosPayload |

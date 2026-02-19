@@ -5,22 +5,18 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 // GetProposalByIdProvider retrieves a proposal by ID
-func GetProposalByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(proposalId uint32, tenantId uuid.UUID) model.Provider[Proposal] {
-	return func(proposalId uint32, tenantId uuid.UUID) model.Provider[Proposal] {
+func GetProposalByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(proposalId uint32) model.Provider[Proposal] {
+	return func(proposalId uint32) model.Provider[Proposal] {
 		return func() (Proposal, error) {
-			log.WithFields(logrus.Fields{
-				"proposalId": proposalId,
-				"tenantId":   tenantId,
-			}).Debug("Retrieving proposal by ID")
+			log.WithField("proposalId", proposalId).Debug("Retrieving proposal by ID")
 
 			var entity ProposalEntity
-			err := db.Where("id = ? AND tenant_id = ?", proposalId, tenantId).First(&entity).Error
+			err := db.Where("id = ?", proposalId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return Proposal{}, errors.New("proposal not found")
@@ -34,18 +30,17 @@ func GetProposalByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(proposalI
 }
 
 // GetActiveProposalProvider retrieves an active proposal between two characters
-func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
-	return func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
+func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32) model.Provider[*Proposal] {
+	return func(proposerId, targetId uint32) model.Provider[*Proposal] {
 		return func() (*Proposal, error) {
 			log.WithFields(logrus.Fields{
 				"proposerId": proposerId,
 				"targetId":   targetId,
-				"tenantId":   tenantId,
 			}).Debug("Retrieving active proposal")
 
 			var entity ProposalEntity
-			err := db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ? AND status = ?",
-				proposerId, targetId, tenantId, ProposalStatusPending).
+			err := db.Where("proposer_id = ? AND target_id = ? AND status = ?",
+				proposerId, targetId, ProposalStatusPending).
 				First(&entity).Error
 
 			if err != nil {
@@ -71,17 +66,14 @@ func GetActiveProposalProvider(db *gorm.DB, log logrus.FieldLogger) func(propose
 }
 
 // GetPendingProposalsByCharacterProvider retrieves all pending proposals for a character
-func GetPendingProposalsByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID) model.Provider[[]Proposal] {
-	return func(characterId uint32, tenantId uuid.UUID) model.Provider[[]Proposal] {
+func GetPendingProposalsByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[[]Proposal] {
+	return func(characterId uint32) model.Provider[[]Proposal] {
 		return func() ([]Proposal, error) {
-			log.WithFields(logrus.Fields{
-				"characterId": characterId,
-				"tenantId":    tenantId,
-			}).Debug("Retrieving pending proposals for character")
+			log.WithField("characterId", characterId).Debug("Retrieving pending proposals for character")
 
 			var entities []ProposalEntity
-			err := db.Where("(proposer_id = ? OR target_id = ?) AND tenant_id = ? AND status = ?",
-				characterId, characterId, tenantId, ProposalStatusPending).
+			err := db.Where("(proposer_id = ? OR target_id = ?) AND status = ?",
+				characterId, characterId, ProposalStatusPending).
 				Order("created_at DESC").
 				Find(&entities).Error
 
@@ -108,18 +100,17 @@ func GetPendingProposalsByCharacterProvider(db *gorm.DB, log logrus.FieldLogger)
 }
 
 // GetProposalHistoryProvider retrieves the history of proposals between two characters
-func GetProposalHistoryProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[[]Proposal] {
-	return func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[[]Proposal] {
+func GetProposalHistoryProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32) model.Provider[[]Proposal] {
+	return func(proposerId, targetId uint32) model.Provider[[]Proposal] {
 		return func() ([]Proposal, error) {
 			log.WithFields(logrus.Fields{
 				"proposerId": proposerId,
 				"targetId":   targetId,
-				"tenantId":   tenantId,
 			}).Debug("Retrieving proposal history")
 
 			var entities []ProposalEntity
-			err := db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ?",
-				proposerId, targetId, tenantId).
+			err := db.Where("proposer_id = ? AND target_id = ?",
+				proposerId, targetId).
 				Order("created_at DESC").
 				Find(&entities).Error
 
@@ -142,16 +133,13 @@ func GetProposalHistoryProvider(db *gorm.DB, log logrus.FieldLogger) func(propos
 }
 
 // GetLastProposalByProposerProvider retrieves the last proposal made by a proposer
-func GetLastProposalByProposerProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
-	return func(proposerId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
+func GetLastProposalByProposerProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId uint32) model.Provider[*Proposal] {
+	return func(proposerId uint32) model.Provider[*Proposal] {
 		return func() (*Proposal, error) {
-			log.WithFields(logrus.Fields{
-				"proposerId": proposerId,
-				"tenantId":   tenantId,
-			}).Debug("Retrieving last proposal by proposer")
+			log.WithField("proposerId", proposerId).Debug("Retrieving last proposal by proposer")
 
 			var entity ProposalEntity
-			err := db.Where("proposer_id = ? AND tenant_id = ?", proposerId, tenantId).
+			err := db.Where("proposer_id = ?", proposerId).
 				Order("created_at DESC").
 				First(&entity).Error
 
@@ -173,17 +161,16 @@ func GetLastProposalByProposerProvider(db *gorm.DB, log logrus.FieldLogger) func
 }
 
 // GetLastProposalToTargetProvider retrieves the last proposal made to a specific target
-func GetLastProposalToTargetProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
-	return func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[*Proposal] {
+func GetLastProposalToTargetProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32) model.Provider[*Proposal] {
+	return func(proposerId, targetId uint32) model.Provider[*Proposal] {
 		return func() (*Proposal, error) {
 			log.WithFields(logrus.Fields{
 				"proposerId": proposerId,
 				"targetId":   targetId,
-				"tenantId":   tenantId,
 			}).Debug("Retrieving last proposal to target")
 
 			var entity ProposalEntity
-			err := db.Where("proposer_id = ? AND target_id = ? AND tenant_id = ?", proposerId, targetId, tenantId).
+			err := db.Where("proposer_id = ? AND target_id = ?", proposerId, targetId).
 				Order("created_at DESC").
 				First(&entity).Error
 
@@ -205,17 +192,14 @@ func GetLastProposalToTargetProvider(db *gorm.DB, log logrus.FieldLogger) func(p
 }
 
 // GetActiveMarriageByCharacterProvider retrieves active marriage for a character
-func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
-	return func(characterId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
+func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[*Marriage] {
+	return func(characterId uint32) model.Provider[*Marriage] {
 		return func() (*Marriage, error) {
-			log.WithFields(logrus.Fields{
-				"characterId": characterId,
-				"tenantId":    tenantId,
-			}).Debug("Retrieving active marriage for character")
+			log.WithField("characterId", characterId).Debug("Retrieving active marriage for character")
 
 			var entity Entity
-			err := db.Where("(character_id1 = ? OR character_id2 = ?) AND tenant_id = ? AND status IN (?)",
-				characterId, characterId, tenantId, []MarriageStatus{StatusProposed, StatusEngaged, StatusMarried}).
+			err := db.Where("(character_id1 = ? OR character_id2 = ?) AND status IN (?)",
+				characterId, characterId, []MarriageStatus{StatusProposed, StatusEngaged, StatusMarried}).
 				First(&entity).Error
 
 			if err != nil {
@@ -236,16 +220,13 @@ func GetActiveMarriageByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) f
 }
 
 // GetMarriageByIdProvider retrieves a marriage by ID
-func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
-	return func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Marriage] {
+func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32) model.Provider[*Marriage] {
+	return func(marriageId uint32) model.Provider[*Marriage] {
 		return func() (*Marriage, error) {
-			log.WithFields(logrus.Fields{
-				"marriageId": marriageId,
-				"tenantId":   tenantId,
-			}).Debug("Retrieving marriage by ID")
+			log.WithField("marriageId", marriageId).Debug("Retrieving marriage by ID")
 
 			var entity Entity
-			err := db.Where("id = ? AND tenant_id = ?", marriageId, tenantId).First(&entity).Error
+			err := db.Where("id = ?", marriageId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -264,17 +245,14 @@ func GetMarriageByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageI
 }
 
 // GetMarriageHistoryByCharacterProvider retrieves marriage history for a character
-func GetMarriageHistoryByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32, tenantId uuid.UUID) model.Provider[[]Marriage] {
-	return func(characterId uint32, tenantId uuid.UUID) model.Provider[[]Marriage] {
+func GetMarriageHistoryByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) func(characterId uint32) model.Provider[[]Marriage] {
+	return func(characterId uint32) model.Provider[[]Marriage] {
 		return func() ([]Marriage, error) {
-			log.WithFields(logrus.Fields{
-				"characterId": characterId,
-				"tenantId":    tenantId,
-			}).Debug("Retrieving marriage history for character")
+			log.WithField("characterId", characterId).Debug("Retrieving marriage history for character")
 
 			var entities []Entity
-			err := db.Where("(character_id1 = ? OR character_id2 = ?) AND tenant_id = ?",
-				characterId, characterId, tenantId).
+			err := db.Where("character_id1 = ? OR character_id2 = ?",
+				characterId, characterId).
 				Order("created_at DESC").
 				Find(&entities).Error
 
@@ -297,16 +275,13 @@ func GetMarriageHistoryByCharacterProvider(db *gorm.DB, log logrus.FieldLogger) 
 }
 
 // GetCeremonyByIdProvider retrieves a ceremony by ID
-func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
-	return func(ceremonyId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32) model.Provider[*Ceremony] {
+	return func(ceremonyId uint32) model.Provider[*Ceremony] {
 		return func() (*Ceremony, error) {
-			log.WithFields(logrus.Fields{
-				"ceremonyId": ceremonyId,
-				"tenantId":   tenantId,
-			}).Debug("Retrieving ceremony by ID")
+			log.WithField("ceremonyId", ceremonyId).Debug("Retrieving ceremony by ID")
 
 			var entity CeremonyEntity
-			err := db.Where("id = ? AND tenant_id = ?", ceremonyId, tenantId).First(&entity).Error
+			err := db.Where("id = ?", ceremonyId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -325,16 +300,13 @@ func GetCeremonyByIdProvider(db *gorm.DB, log logrus.FieldLogger) func(ceremonyI
 }
 
 // GetCeremonyByMarriageIdProvider retrieves a ceremony by marriage ID
-func GetCeremonyByMarriageIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
-	return func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+func GetCeremonyByMarriageIdProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32) model.Provider[*Ceremony] {
+	return func(marriageId uint32) model.Provider[*Ceremony] {
 		return func() (*Ceremony, error) {
-			log.WithFields(logrus.Fields{
-				"marriageId": marriageId,
-				"tenantId":   tenantId,
-			}).Debug("Retrieving ceremony by marriage ID")
+			log.WithField("marriageId", marriageId).Debug("Retrieving ceremony by marriage ID")
 
 			var entity CeremonyEntity
-			err := db.Where("marriage_id = ? AND tenant_id = ?", marriageId, tenantId).First(&entity).Error
+			err := db.Where("marriage_id = ?", marriageId).First(&entity).Error
 			if err != nil {
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					return nil, nil
@@ -353,15 +325,12 @@ func GetCeremonyByMarriageIdProvider(db *gorm.DB, log logrus.FieldLogger) func(m
 }
 
 // CheckGlobalCooldownProvider checks if a character is in global cooldown
-func CheckGlobalCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId uint32, tenantId uuid.UUID) model.Provider[bool] {
-	return func(proposerId uint32, tenantId uuid.UUID) model.Provider[bool] {
+func CheckGlobalCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId uint32) model.Provider[bool] {
+	return func(proposerId uint32) model.Provider[bool] {
 		return func() (bool, error) {
-			log.WithFields(logrus.Fields{
-				"proposerId": proposerId,
-				"tenantId":   tenantId,
-			}).Debug("Checking global cooldown")
+			log.WithField("proposerId", proposerId).Debug("Checking global cooldown")
 
-			lastProposalProvider := GetLastProposalByProposerProvider(db, log)(proposerId, tenantId)
+			lastProposalProvider := GetLastProposalByProposerProvider(db, log)(proposerId)
 			lastProposal, err := lastProposalProvider()
 			if err != nil {
 				return false, err
@@ -379,16 +348,15 @@ func CheckGlobalCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(propo
 }
 
 // CheckPerTargetCooldownProvider checks if a character is in per-target cooldown
-func CheckPerTargetCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[bool] {
-	return func(proposerId, targetId uint32, tenantId uuid.UUID) model.Provider[bool] {
+func CheckPerTargetCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(proposerId, targetId uint32) model.Provider[bool] {
+	return func(proposerId, targetId uint32) model.Provider[bool] {
 		return func() (bool, error) {
 			log.WithFields(logrus.Fields{
 				"proposerId": proposerId,
 				"targetId":   targetId,
-				"tenantId":   tenantId,
 			}).Debug("Checking per-target cooldown")
 
-			lastProposalProvider := GetLastProposalToTargetProvider(db, log)(proposerId, targetId, tenantId)
+			lastProposalProvider := GetLastProposalToTargetProvider(db, log)(proposerId, targetId)
 			lastProposal, err := lastProposalProvider()
 			if err != nil {
 				return false, err
@@ -415,136 +383,122 @@ func CheckPerTargetCooldownProvider(db *gorm.DB, log logrus.FieldLogger) func(pr
 }
 
 // GetCeremonyByMarriageProvider is an alias for GetCeremonyByMarriageIdProvider
-func GetCeremonyByMarriageProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32, tenantId uuid.UUID) model.Provider[*Ceremony] {
+func GetCeremonyByMarriageProvider(db *gorm.DB, log logrus.FieldLogger) func(marriageId uint32) model.Provider[*Ceremony] {
 	return GetCeremonyByMarriageIdProvider(db, log)
 }
 
 // GetUpcomingCeremoniesProvider retrieves all upcoming ceremonies
-func GetUpcomingCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-		return func() ([]Ceremony, error) {
-			log.WithField("tenantId", tenantId).Debug("Retrieving upcoming ceremonies")
+func GetUpcomingCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Provider[[]Ceremony] {
+	return func() ([]Ceremony, error) {
+		log.Debug("Retrieving upcoming ceremonies")
 
-			var entities []CeremonyEntity
-			err := db.Where("tenant_id = ? AND status = ?", tenantId, CeremonyStatusScheduled).
-				Order("scheduled_at ASC").
-				Find(&entities).Error
+		var entities []CeremonyEntity
+		err := db.Where("status = ?", CeremonyStatusScheduled).
+			Order("scheduled_at ASC").
+			Find(&entities).Error
 
+		if err != nil {
+			return nil, err
+		}
+
+		ceremonies := make([]Ceremony, 0, len(entities))
+		for _, entity := range entities {
+			ceremony, err := MakeCeremony(entity)
 			if err != nil {
 				return nil, err
 			}
-
-			ceremonies := make([]Ceremony, 0, len(entities))
-			for _, entity := range entities {
-				ceremony, err := MakeCeremony(entity)
-				if err != nil {
-					return nil, err
-				}
-				ceremonies = append(ceremonies, ceremony)
-			}
-
-			return ceremonies, nil
+			ceremonies = append(ceremonies, ceremony)
 		}
+
+		return ceremonies, nil
 	}
 }
 
 // GetActiveCeremoniesProvider retrieves all active ceremonies
-func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-		return func() ([]Ceremony, error) {
-			log.WithField("tenantId", tenantId).Debug("Retrieving active ceremonies")
+func GetActiveCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Provider[[]Ceremony] {
+	return func() ([]Ceremony, error) {
+		log.Debug("Retrieving active ceremonies")
 
-			var entities []CeremonyEntity
-			err := db.Where("tenant_id = ? AND status = ?", tenantId, CeremonyStatusActive).
-				Order("started_at ASC").
-				Find(&entities).Error
+		var entities []CeremonyEntity
+		err := db.Where("status = ?", CeremonyStatusActive).
+			Order("started_at ASC").
+			Find(&entities).Error
 
+		if err != nil {
+			return nil, err
+		}
+
+		ceremonies := make([]Ceremony, 0, len(entities))
+		for _, entity := range entities {
+			ceremony, err := MakeCeremony(entity)
 			if err != nil {
 				return nil, err
 			}
-
-			ceremonies := make([]Ceremony, 0, len(entities))
-			for _, entity := range entities {
-				ceremony, err := MakeCeremony(entity)
-				if err != nil {
-					return nil, err
-				}
-				ceremonies = append(ceremonies, ceremony)
-			}
-
-			return ceremonies, nil
+			ceremonies = append(ceremonies, ceremony)
 		}
+
+		return ceremonies, nil
 	}
 }
 
 // GetTimeoutCeremoniesProvider retrieves all active ceremonies that have been running longer than the disconnection timeout
-func GetTimeoutCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-	return func(tenantId uuid.UUID) model.Provider[[]Ceremony] {
-		return func() ([]Ceremony, error) {
-			log.WithField("tenantId", tenantId).Debug("Retrieving ceremonies that may have timed out")
+func GetTimeoutCeremoniesProvider(db *gorm.DB, log logrus.FieldLogger) model.Provider[[]Ceremony] {
+	return func() ([]Ceremony, error) {
+		log.Debug("Retrieving ceremonies that may have timed out")
 
-			var entities []CeremonyEntity
-			timeoutThreshold := time.Now().Add(-DisconnectionTimeout)
-			err := db.Where("tenant_id = ? AND status = ? AND started_at < ?", 
-				tenantId, CeremonyStatusActive, timeoutThreshold).
-				Order("started_at ASC").
-				Find(&entities).Error
+		var entities []CeremonyEntity
+		timeoutThreshold := time.Now().Add(-DisconnectionTimeout)
+		err := db.Where("status = ? AND started_at < ?",
+			CeremonyStatusActive, timeoutThreshold).
+			Order("started_at ASC").
+			Find(&entities).Error
 
+		if err != nil {
+			return nil, err
+		}
+
+		ceremonies := make([]Ceremony, 0, len(entities))
+		for _, entity := range entities {
+			ceremony, err := MakeCeremony(entity)
 			if err != nil {
 				return nil, err
 			}
-
-			ceremonies := make([]Ceremony, 0, len(entities))
-			for _, entity := range entities {
-				ceremony, err := MakeCeremony(entity)
-				if err != nil {
-					return nil, err
-				}
-				ceremonies = append(ceremonies, ceremony)
-			}
-
-			log.WithFields(logrus.Fields{
-				"tenantId": tenantId,
-				"count":    len(ceremonies),
-			}).Debug("Found ceremonies that may have timed out")
-
-			return ceremonies, nil
+			ceremonies = append(ceremonies, ceremony)
 		}
+
+		log.WithField("count", len(ceremonies)).Debug("Found ceremonies that may have timed out")
+
+		return ceremonies, nil
 	}
 }
 
 // GetExpiredProposalsProvider retrieves all proposals that have expired but not yet been marked as expired
-func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) func(tenantId uuid.UUID) model.Provider[[]Proposal] {
-	return func(tenantId uuid.UUID) model.Provider[[]Proposal] {
-		return func() ([]Proposal, error) {
-			log.WithField("tenantId", tenantId).Debug("Retrieving expired proposals")
+func GetExpiredProposalsProvider(db *gorm.DB, log logrus.FieldLogger) model.Provider[[]Proposal] {
+	return func() ([]Proposal, error) {
+		log.Debug("Retrieving expired proposals")
 
-			var entities []ProposalEntity
-			now := time.Now()
-			err := db.Where("tenant_id = ? AND status = ? AND expires_at < ?", 
-				tenantId, ProposalStatusPending, now).
-				Order("expires_at ASC").
-				Find(&entities).Error
+		var entities []ProposalEntity
+		now := time.Now()
+		err := db.Where("status = ? AND expires_at < ?",
+			ProposalStatusPending, now).
+			Order("expires_at ASC").
+			Find(&entities).Error
 
+		if err != nil {
+			return nil, err
+		}
+
+		proposals := make([]Proposal, 0, len(entities))
+		for _, entity := range entities {
+			proposal, err := MakeProposal(entity)
 			if err != nil {
 				return nil, err
 			}
-
-			proposals := make([]Proposal, 0, len(entities))
-			for _, entity := range entities {
-				proposal, err := MakeProposal(entity)
-				if err != nil {
-					return nil, err
-				}
-				proposals = append(proposals, proposal)
-			}
-
-			log.WithFields(logrus.Fields{
-				"tenantId": tenantId,
-				"count":    len(proposals),
-			}).Debug("Found expired proposals")
-
-			return proposals, nil
+			proposals = append(proposals, proposal)
 		}
+
+		log.WithField("count", len(proposals)).Debug("Found expired proposals")
+
+		return proposals, nil
 	}
 }

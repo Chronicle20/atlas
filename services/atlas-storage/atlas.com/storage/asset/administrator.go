@@ -52,30 +52,30 @@ func Create(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(m Model)
 	}
 }
 
-func Delete(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32) error {
+func Delete(l logrus.FieldLogger, db *gorm.DB) func(id uint32) error {
 	return func(id uint32) error {
-		return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }
 
-func DeleteByStorageId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID) error {
+func DeleteByStorageId(l logrus.FieldLogger, db *gorm.DB) func(storageId uuid.UUID) error {
 	return func(storageId uuid.UUID) error {
-		return db.Where("tenant_id = ? AND storage_id = ?", tenantId, storageId).Delete(&Entity{}).Error
+		return db.Where("storage_id = ?", storageId).Delete(&Entity{}).Error
 	}
 }
 
-func UpdateSlot(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32, slot int16) error {
+func UpdateSlot(l logrus.FieldLogger, db *gorm.DB) func(id uint32, slot int16) error {
 	return func(id uint32, slot int16) error {
 		return db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", tenantId, id).
+			Where("id = ?", id).
 			Update("slot", slot).Error
 	}
 }
 
-func UpdateQuantity(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(id uint32, quantity uint32) error {
+func UpdateQuantity(l logrus.FieldLogger, db *gorm.DB) func(id uint32, quantity uint32) error {
 	return func(id uint32, quantity uint32) error {
 		return db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", tenantId, id).
+			Where("id = ?", id).
 			Update("quantity", quantity).Error
 	}
 }

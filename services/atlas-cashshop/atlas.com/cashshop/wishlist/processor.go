@@ -45,7 +45,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
@@ -56,7 +56,7 @@ func (p *ProcessorImpl) Add(mb *message.Buffer) func(characterId uint32) func(se
 	return func(characterId uint32) func(serialNumber uint32) (Model, error) {
 		return func(serialNumber uint32) (Model, error) {
 			p.l.Debugf("Character [%d] adding [%d] to their wishlist.", characterId, serialNumber)
-			m, err := createEntity(p.db, p.t, characterId, serialNumber)
+			m, err := createEntity(p.db.WithContext(p.ctx), p.t, characterId, serialNumber)
 			if err != nil {
 				return Model{}, err
 			}
@@ -76,7 +76,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32) func
 	return func(characterId uint32) func(itemId uuid.UUID) error {
 		return func(itemId uuid.UUID) error {
 			p.l.Debugf("Deleting wish list item [%s] for character [%d].", itemId, characterId)
-			err := deleteEntity(p.ctx)(p.db, p.t.Id(), characterId, itemId)
+			err := deleteEntity(p.db.WithContext(p.ctx), characterId, itemId)
 			if err != nil {
 				return err
 			}
@@ -94,7 +94,7 @@ func (p *ProcessorImpl) DeleteAndEmit(characterId uint32, itemId uuid.UUID) erro
 func (p *ProcessorImpl) DeleteAll(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Deleting wish list for character [%d].", characterId)
-		err := deleteEntityForCharacter(p.ctx)(p.db, p.t.Id(), characterId)
+		err := deleteEntityForCharacter(p.db.WithContext(p.ctx), characterId)
 		if err != nil {
 			return err
 		}

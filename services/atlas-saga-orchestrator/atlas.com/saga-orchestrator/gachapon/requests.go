@@ -1,7 +1,6 @@
 package gachapon
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 
@@ -16,12 +15,12 @@ func getBaseRequest() string {
 }
 
 func requestSelectReward(gachaponId string) requests.Request[RewardRestModel] {
-	return rest.MakePostRequest[RewardRestModel](
+	return requests.PostRequest[RewardRestModel](
 		fmt.Sprintf("%sgachapons/%s/rewards/select", getBaseRequest(), gachaponId), nil)
 }
 
 func requestGetGachapon(gachaponId string) requests.Request[GachaponRestModel] {
-	return rest.MakeGetRequest[GachaponRestModel](
+	return requests.GetRequest[GachaponRestModel](
 		fmt.Sprintf("%sgachapons/%s", getBaseRequest(), gachaponId))
 }
 

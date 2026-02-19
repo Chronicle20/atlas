@@ -2,13 +2,12 @@ package macro
 
 import (
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func deleteByCharacter(db *gorm.DB, t tenant.Model, characterId uint32) error {
-	return db.Where(&Entity{TenantId: t.Id(), CharacterId: characterId}).Delete(&Entity{}).Error
+func deleteByCharacter(db *gorm.DB, characterId uint32) error {
+	return db.Where("character_id = ?", characterId).Delete(&Entity{}).Error
 }
 
 func create(db *gorm.DB, tenantId uuid.UUID, id uint32, characterId uint32, name string, shout bool, skillId1 uint32, skillId2 uint32, skillId3 uint32) model.Provider[Model] {

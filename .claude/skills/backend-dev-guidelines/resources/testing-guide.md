@@ -192,6 +192,8 @@ Before committing changes, especially to core business logic:
 - [ ] Review changed files for accidental debug code or commented-out logic
 - [ ] Ensure no secrets, credentials, or sensitive data in code
 - [ ] Check that tenant context is properly propagated in new code paths
+- [ ] Ensure test DB setups call `database.RegisterTenantCallbacks(l, db)` for SQLite databases
+- [ ] Verify providers use `db.WithContext(ctx)` not bare `db` for tenant filtering
 
 ### Recommended Git Hooks
 

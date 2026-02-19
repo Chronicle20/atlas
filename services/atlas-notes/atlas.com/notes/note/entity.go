@@ -10,7 +10,7 @@ import (
 // Entity represents a note in the database
 type Entity struct {
 	ID          uint32 `gorm:"primaryKey;autoIncrement"`
-	TenantID    uuid.UUID
+	TenantId    uuid.UUID
 	CharacterID uint32
 	SenderID    uint32
 	Message     string
@@ -42,7 +42,7 @@ func Make(e Entity) (Model, error) {
 func MakeEntity(tenantId uuid.UUID, n Model) Entity {
 	return Entity{
 		ID:          n.Id(),
-		TenantID:    tenantId,
+		TenantId:    tenantId,
 		CharacterID: n.CharacterId(),
 		SenderID:    n.SenderId(),
 		Message:     n.Message(),

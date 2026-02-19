@@ -1,6 +1,7 @@
 package conversation
 
 import (
+	"context"
 	"testing"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -15,6 +16,7 @@ func TestEvaluateContextValueAsInt_EmbeddedNegation(t *testing.T) {
 	l.SetLevel(logrus.DebugLevel)
 
 	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
 	characterId := uint32(1)
 
 	// Seed the registry with a conversation context containing the "cost" key
@@ -22,8 +24,8 @@ func TestEvaluateContextValueAsInt_EmbeddedNegation(t *testing.T) {
 		SetCharacterId(characterId).
 		AddContextValue("cost", "1000").
 		Build()
-	GetRegistry().SetContext(tm, characterId, ctx)
-	defer GetRegistry().ClearContext(tm, characterId)
+	GetRegistry().SetContext(tctx, characterId, ctx)
+	defer GetRegistry().ClearContext(tctx, characterId)
 
 	executor := &OperationExecutorImpl{
 		l: l,

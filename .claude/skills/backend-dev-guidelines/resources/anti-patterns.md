@@ -18,7 +18,10 @@ description: Common pitfalls to avoid when implementing Golang microservices.
 
 | Hardcoded topics | Breaks environment portability |
 | Missing validation | Allows invalid domain states |
-| Passing TenantId as param | Must use context extraction |
+| Passing TenantId to providers/update/delete | Automatic via GORM callbacks — only pass to create functions |
+| Manual `Where("tenant_id = ?", ...)` in queries | Use `db.WithContext(ctx)` — GORM callback injects tenant filter |
+| Adding `RegisterTenantCallbacks` to main.go | `database.Connect()` already registers them — only use in test files |
+| Using struct-based WHERE after removing TenantId | GORM skips zero-value fields — use string-based `.Where("col = ?", val)` |
 | Skipping header decorators | Breaks tracing and tenancy propagation |
 | Global context usage | Breaks request isolation |
 | Manual JSON:API envelope handling | Breaks JSON:API integration, adds boilerplate |

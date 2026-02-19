@@ -48,6 +48,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	shops.InitRegistry(rc)
+	shops.InitConsumableCache(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

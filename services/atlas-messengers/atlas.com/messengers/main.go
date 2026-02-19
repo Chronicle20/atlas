@@ -47,6 +47,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	messenger.InitRegistry(rc)
+	messenger.InitLock(rc)
 	character2.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)

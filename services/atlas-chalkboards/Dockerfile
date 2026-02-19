@@ -13,6 +13,7 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 # Copy service module definitions
 COPY services/atlas-chalkboards/atlas.com/chalkboards/go.mod services/atlas-chalkboards/atlas.com/chalkboards/go.sum services/atlas-chalkboards/atlas.com/chalkboards/
 
@@ -25,6 +26,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./services/atlas-chalkboards/atlas.com/chalkboards' >> go.work && \
     echo ')' >> go.work
 
@@ -38,6 +40,7 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-redis libs/atlas-redis
 # Copy service source code
 COPY services/atlas-chalkboards/atlas.com/chalkboards services/atlas-chalkboards/atlas.com/chalkboards
 

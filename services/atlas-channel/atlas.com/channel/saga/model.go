@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
@@ -16,6 +17,7 @@ const (
 	StorageOperation     Type = "storage_operation"
 	CashShopOperation    Type = "cash_shop_operation"
 	CharacterRespawn     Type = "character_respawn"
+	FieldEffectUse       Type = "field_effect_use"
 )
 
 // Saga represents the entire saga transaction
@@ -56,6 +58,8 @@ const (
 	DeductExperience     Action = "deduct_experience"       // Deduct experience from character
 	CancelAllBuffs       Action = "cancel_all_buffs"        // Cancel all active buffs
 	WarpToPortal         Action = "warp_to_portal"          // Warp character to a portal
+	FieldEffectWeather    Action = "field_effect_weather"     // Show weather effect to all characters in a field
+	ApplyConsumableEffect Action = "apply_consumable_effect" // Apply consumable item effects without consuming from inventory
 )
 
 // Step represents a single step within a saga
@@ -199,4 +203,23 @@ type WarpToPortalPayload struct {
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 	MapId       uint32     `json:"mapId"`       // Target map ID
 	PortalId    uint32     `json:"portalId"`    // Target portal ID (0 for spawn point)
+}
+
+// ApplyConsumableEffectPayload represents the payload for applying consumable item effects to a character
+type ApplyConsumableEffectPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId to apply item effects to
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	ItemId      uint32     `json:"itemId"`      // Consumable item ID whose effects should be applied
+}
+
+// FieldEffectWeatherPayload represents the payload for the field_effect_weather action
+type FieldEffectWeatherPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+	ItemId    uint32     `json:"itemId"`    // Cash shop weather item ID
+	Message   string     `json:"message"`   // Weather message text
+	Duration  uint32     `json:"duration"`  // Duration in seconds
 }

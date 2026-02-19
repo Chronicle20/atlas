@@ -4,7 +4,7 @@ metadata:
   name: atlas-tenants
   namespace: atlas
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: atlas-tenants

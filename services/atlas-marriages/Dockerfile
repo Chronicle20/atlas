@@ -13,6 +13,8 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-database/go.mod libs/atlas-database/go.sum libs/atlas-database/
+COPY libs/atlas-retry/go.mod libs/atlas-retry/
 # Copy service module definitions
 COPY services/atlas-marriages/atlas.com/marriages/go.mod services/atlas-marriages/atlas.com/marriages/go.sum services/atlas-marriages/atlas.com/marriages/
 
@@ -25,6 +27,8 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-database' >> go.work && \
+    echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./services/atlas-marriages/atlas.com/marriages' >> go.work && \
     echo ')' >> go.work
 
@@ -38,6 +42,8 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-database libs/atlas-database
+COPY libs/atlas-retry libs/atlas-retry
 # Copy service source code
 COPY services/atlas-marriages/atlas.com/marriages services/atlas-marriages/atlas.com/marriages
 

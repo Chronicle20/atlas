@@ -42,21 +42,21 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) ByQuestIdProvider(questId string) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByQuestIdProvider(p.t.Id())(questId)(p.db))
+	return model.Map[Entity, Model](Make)(getByQuestIdProvider(questId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating PQ definition [%s]", m.QuestId())
 
-	result, err := createDefinition(p.db)(p.t.Id())(m)
+	result, err := createDefinition(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create PQ definition [%s]", m.QuestId())
 		return Model{}, err
@@ -67,7 +67,7 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating PQ definition [%s]", id)
 
-	result, err := updateDefinition(p.db)(p.t.Id())(id)(m)
+	result, err := updateDefinition(p.db.WithContext(p.ctx))(id)(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update PQ definition [%s]", id)
 		return Model{}, err
@@ -78,7 +78,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting PQ definition [%s]", id)
 
-	err := deleteDefinition(p.db)(p.t.Id())(id)
+	err := deleteDefinition(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete PQ definition [%s]", id)
 		return err
@@ -89,7 +89,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all PQ definitions for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllDefinitions(p.db)(p.t.Id())
+	count, err := deleteAllDefinitions(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete PQ definitions for tenant [%s]", p.t.Id())
 		return 0, err

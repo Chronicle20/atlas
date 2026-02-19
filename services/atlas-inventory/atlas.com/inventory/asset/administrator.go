@@ -51,16 +51,16 @@ func create(db *gorm.DB, tenantId uuid.UUID, m Model) (Model, error) {
 	return Make(*e)
 }
 
-func updateSlot(db *gorm.DB, tenantId uuid.UUID, id uint32, slot int16) error {
-	return db.Model(&Entity{TenantId: tenantId, Id: id}).Select("Slot").Updates(&Entity{Slot: slot}).Error
+func updateSlot(db *gorm.DB, id uint32, slot int16) error {
+	return db.Model(&Entity{Id: id}).Select("Slot").Updates(&Entity{Slot: slot}).Error
 }
 
-func updateQuantity(db *gorm.DB, tenantId uuid.UUID, id uint32, quantity uint32) error {
-	return db.Model(&Entity{TenantId: tenantId, Id: id}).Select("Quantity").Updates(&Entity{Quantity: quantity}).Error
+func updateQuantity(db *gorm.DB, id uint32, quantity uint32) error {
+	return db.Model(&Entity{Id: id}).Select("Quantity").Updates(&Entity{Quantity: quantity}).Error
 }
 
-func updateEquipmentStats(db *gorm.DB, tenantId uuid.UUID, id uint32, m Model) error {
-	return db.Model(&Entity{TenantId: tenantId, Id: id}).
+func updateEquipmentStats(db *gorm.DB, id uint32, m Model) error {
+	return db.Model(&Entity{Id: id}).
 		Select("Strength", "Dexterity", "Intelligence", "Luck", "Hp", "Mp",
 			"WeaponAttack", "MagicAttack", "WeaponDefense", "MagicDefense",
 			"Accuracy", "Avoidability", "Hands", "Speed", "Jump", "Slots",
@@ -91,6 +91,6 @@ func updateEquipmentStats(db *gorm.DB, tenantId uuid.UUID, id uint32, m Model) e
 		}).Error
 }
 
-func deleteById(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
-	return db.Where(&Entity{TenantId: tenantId, Id: id}).Delete(&Entity{}).Error
+func deleteById(db *gorm.DB, id uint32) error {
+	return db.Where("id = ?", id).Delete(&Entity{}).Error
 }

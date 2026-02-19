@@ -22,6 +22,6 @@ func create(db *gorm.DB, tenantId uuid.UUID, threadId uint32, posterId uint32, m
 	return Make(*e)
 }
 
-func remove(db *gorm.DB, tenantId uuid.UUID, threadId uint32, replyId uint32) error {
-	return db.Where("tenant_id = ? AND thread_id = ? AND id = ?", tenantId, threadId, replyId).Delete(&Entity{}).Error
+func remove(db *gorm.DB, threadId uint32, replyId uint32) error {
+	return db.Where("thread_id = ? AND id = ?", threadId, replyId).Delete(&Entity{}).Error
 }

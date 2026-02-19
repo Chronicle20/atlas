@@ -8,7 +8,7 @@ import (
 	"atlas-data/cosmetic/face"
 	"atlas-data/cosmetic/hair"
 	"atlas-data/data"
-	"atlas-data/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-data/document"
 	"atlas-data/equipment"
 	"atlas-data/etc"

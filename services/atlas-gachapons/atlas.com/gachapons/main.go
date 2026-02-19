@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-gachapons/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-gachapons/gachapon"
 	"atlas-gachapons/global"
 	"atlas-gachapons/item"

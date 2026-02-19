@@ -3,7 +3,7 @@ package quest
 import (
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
-	"atlas-quest/database"
+	database "github.com/Chronicle20/atlas-database"
 	questmessage "atlas-quest/kafka/message/quest"
 	"atlas-quest/kafka/message/saga"
 	sagaproducer "atlas-quest/kafka/producer/saga"
@@ -118,19 +118,19 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 }
 
 func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
-	return model.Map(Make)(byIdEntityProvider(p.t.Id(), id)(p.db))
+	return model.Map(Make)(byIdEntityProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))()
+	return model.SliceMap(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndQuestIdProvider(characterId uint32, questId uint32) model.Provider[Model] {
-	return model.Map(Make)(byCharacterIdAndQuestIdEntityProvider(p.t.Id(), characterId, questId)(p.db))
+	return model.Map(Make)(byCharacterIdAndQuestIdEntityProvider(characterId, questId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndStateProvider(characterId uint32, state State) model.Provider[[]Model] {
-	return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(p.t.Id(), characterId, state)(p.db))()
+	return model.SliceMap(Make)(byCharacterIdAndStateEntityProvider(characterId, state)(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
@@ -259,13 +259,13 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
 
 	var m Model
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
 		// If quest record exists (completed or forfeited), restart it; otherwise create new
 		if existing.Id() > 0 {
-			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
+			m, err = restart(tx, existing.Id(), expirationTime)
 		} else {
-			m, err = create(tx, p.t, characterId, questId, expirationTime)
+			m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
 		}
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create/restart quest [%d] for character [%d].", questId, characterId)
@@ -364,12 +364,12 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	mapIds = append(mapIds, questDef.EndRequirements.FieldEnter...)
 
 	var m Model
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
 		if existing.Id() > 0 {
-			m, err = restart(tx, p.t.Id(), existing.Id(), expirationTime)
+			m, err = restart(tx, existing.Id(), expirationTime)
 		} else {
-			m, err = create(tx, p.t, characterId, questId, expirationTime)
+			m, err = create(tx, p.t.Id(), characterId, questId, expirationTime)
 		}
 		if err != nil {
 			return err
@@ -456,9 +456,9 @@ func (p *ProcessorImpl) completeCore(characterId uint32, questId uint32, questDe
 	}
 
 	var completedAt time.Time
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
-		completedAt, err = completeQuest(tx, p.t.Id(), existing.Id())
+		completedAt, err = completeQuest(tx, existing.Id())
 		return err
 	})
 	if txErr != nil {
@@ -489,8 +489,8 @@ func (p *ProcessorImpl) Forfeit(transactionId uuid.UUID, characterId uint32, que
 		return ErrQuestNotStarted
 	}
 
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return forfeitQuest(tx, p.t.Id(), existing.Id())
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return forfeitQuest(tx, existing.Id())
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to forfeit quest [%d] for character [%d].", questId, characterId)
@@ -518,7 +518,7 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 		return errors.New("quest not started")
 	}
 
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return setProgress(tx, p.t.Id(), existing.Id(), infoNumber, progressValue)
 	})
 	if txErr != nil {
@@ -547,8 +547,8 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 }
 
 func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) error {
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return deleteByCharacterIdWithProgress(tx, p.t.Id(), characterId)
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return deleteByCharacterIdWithProgress(tx, characterId)
 	})
 	if txErr != nil {
 		p.l.WithError(txErr).Errorf("Unable to delete quests for character [%d].", characterId)

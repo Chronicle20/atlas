@@ -1,22 +1,21 @@
 package global
 
 import (
-	"atlas-gachapons/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
+func getAll() database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId})
+		return database.SliceQuery[entity](db, &entity{})
 	}
 }
 
-func getByTier(tenantId uuid.UUID, tier string) database.EntityProvider[[]entity] {
+func getByTier(tier string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, Tier: tier})
+		return database.SliceQuery[entity](db, &entity{Tier: tier})
 	}
 }
 

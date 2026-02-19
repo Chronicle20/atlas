@@ -1,12 +1,15 @@
 package account
 
 import (
+	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -27,6 +30,8 @@ func setupTestDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to auto migrate: %v", err)
 	}
+	l, _ := logtest.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 	return db
 }
 
@@ -41,7 +46,8 @@ func TestInternalCreate(t *testing.T) {
 	testPassword := "password"
 
 	st := sampleTenant()
-	a, err := create(db)(st, testName, testPassword, 0)
+	tctx := tenant.WithContext(context.Background(), st)
+	a, err := create(db.WithContext(tctx), st.Id(), testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
@@ -68,17 +74,18 @@ func TestInternalUpdate(t *testing.T) {
 	testPic := "4567"
 
 	st := sampleTenant()
-	a, err := create(db)(st, testName, testPassword, 0)
+	tctx := tenant.WithContext(context.Background(), st)
+	a, err := create(db.WithContext(tctx), st.Id(), testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	err = update(db)(updatePin(testPin), updatePic(testPic), updateTos(true), updateGender(1))(st, a.Id())
+	err = update(db.WithContext(tctx))(updatePin(testPin), updatePic(testPic), updateTos(true), updateGender(1))(a.Id())
 	if err != nil {
 		t.Fatalf("Failed to update account: %v", err)
 	}
 
-	re, err := entityById(st, a.id)(db)()
+	re, err := entityById(a.id)(db.WithContext(tctx))()
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated account: %v", err)
 	}
@@ -119,24 +126,25 @@ func TestInternalGetByName(t *testing.T) {
 	testPassword := "password"
 
 	st := sampleTenant()
-	_, err := create(db)(st, testName, testPassword, 0)
+	tctx := tenant.WithContext(context.Background(), st)
+	_, err := create(db.WithContext(tctx), st.Id(), testName, testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other1", testPassword, 0)
+	_, err = create(db.WithContext(tctx), st.Id(), "other1", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other2", testPassword, 0)
+	_, err = create(db.WithContext(tctx), st.Id(), "other2", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
-	_, err = create(db)(st, "other3", testPassword, 0)
+	_, err = create(db.WithContext(tctx), st.Id(), "other3", testPassword, 0)
 	if err != nil {
 		t.Fatalf("Failed to create account: %v", err)
 	}
 
-	re, err := entitiesByName(st, testName)(db)()
+	re, err := entitiesByName(testName)(db.WithContext(tctx))()
 	if err != nil {
 		t.Fatalf("Failed to retrieve updated account: %v", err)
 	}

@@ -1,18 +1,17 @@
 package ban
 
 import (
-	"atlas-ban/database"
+	database "github.com/Chronicle20/atlas-database"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
-func entityById(t tenant.Model, id uint32) database.EntityProvider[Entity] {
+func entityById(id uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: t.Id(), ID: id}).First(&result).Error
+		err := db.Where("id = ?", id).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}
@@ -20,10 +19,10 @@ func entityById(t tenant.Model, id uint32) database.EntityProvider[Entity] {
 	}
 }
 
-func entitiesByTenant(t tenant.Model) database.EntityProvider[[]Entity] {
+func entitiesByTenant() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: t.Id()}).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -31,10 +30,10 @@ func entitiesByTenant(t tenant.Model) database.EntityProvider[[]Entity] {
 	}
 }
 
-func entitiesByType(t tenant.Model, banType BanType) database.EntityProvider[[]Entity] {
+func entitiesByType(banType BanType) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where("tenant_id = ? AND ban_type = ?", t.Id(), byte(banType)).Find(&results).Error
+		err := db.Where("ban_type = ?", byte(banType)).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -42,11 +41,11 @@ func entitiesByType(t tenant.Model, banType BanType) database.EntityProvider[[]E
 	}
 }
 
-func activeIPBans(t tenant.Model) database.EntityProvider[[]Entity] {
+func activeIPBans() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
 		now := time.Now()
-		err := db.Where("tenant_id = ? AND ban_type = ? AND (permanent = ? OR expires_at > ?)", t.Id(), byte(BanTypeIP), true, now).Find(&results).Error
+		err := db.Where("ban_type = ? AND (permanent = ? OR expires_at > ?)", byte(BanTypeIP), true, now).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -54,11 +53,11 @@ func activeIPBans(t tenant.Model) database.EntityProvider[[]Entity] {
 	}
 }
 
-func activeExactBans(t tenant.Model, banType BanType, value string) database.EntityProvider[[]Entity] {
+func activeExactBans(banType BanType, value string) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
 		now := time.Now()
-		err := db.Where("tenant_id = ? AND ban_type = ? AND value = ? AND (permanent = ? OR expires_at > ?)", t.Id(), byte(banType), value, true, now).Find(&results).Error
+		err := db.Where("ban_type = ? AND value = ? AND (permanent = ? OR expires_at > ?)", byte(banType), value, true, now).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

@@ -31,7 +31,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) Put(m Model) (Model, error) {
-	result, err := upsert(p.db, p.t.Id(), m)
+	result, err := upsert(p.db.WithContext(p.ctx), p.t.Id(), m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to upsert saved location [%s] for character [%d].", m.LocationType(), m.CharacterId())
 		return Model{}, err
@@ -41,7 +41,7 @@ func (p *ProcessorImpl) Put(m Model) (Model, error) {
 }
 
 func (p *ProcessorImpl) Get(characterId uint32, locationType string) (Model, error) {
-	m, err := getByCharacterIdAndType(p.db, p.t.Id(), characterId, locationType)
+	m, err := getByCharacterIdAndType(p.db.WithContext(p.ctx), characterId, locationType)
 	if err != nil {
 		p.l.WithError(err).Debugf("Unable to get saved location [%s] for character [%d].", locationType, characterId)
 		return Model{}, err
@@ -50,7 +50,7 @@ func (p *ProcessorImpl) Get(characterId uint32, locationType string) (Model, err
 }
 
 func (p *ProcessorImpl) Delete(characterId uint32, locationType string) error {
-	err := deleteByCharacterIdAndType(p.db, p.t.Id(), characterId, locationType)
+	err := deleteByCharacterIdAndType(p.db.WithContext(p.ctx), characterId, locationType)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to delete saved location [%s] for character [%d].", locationType, characterId)
 		return err

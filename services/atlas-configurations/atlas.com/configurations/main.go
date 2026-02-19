@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-configurations/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-configurations/logger"
 	"atlas-configurations/seeder"
 	"atlas-configurations/service"

@@ -8,6 +8,7 @@ import (
 
 	"atlas-marriages/character"
 
+	database "github.com/Chronicle20/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -21,6 +22,8 @@ import (
 
 // setupTestDB creates an in-memory SQLite database for testing
 func setupTestDB(t *testing.T) *gorm.DB {
+	l := logrus.New()
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.New(
 			logrus.StandardLogger(),
@@ -34,6 +37,8 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
@@ -1641,6 +1646,7 @@ func TestProcessor_ProcessExpiredProposals(t *testing.T) {
 func TestGetExpiredProposalsProvider(t *testing.T) {
 	db := setupTestDB(t)
 	tenantId := uuid.New()
+	ctx := setupTestContext(tenantId)
 	logger := logrus.New()
 
 	t.Run("find_expired_proposals", func(t *testing.T) {
@@ -1702,7 +1708,7 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 		db.Create(&alreadyExpiredProposal)
 
 		// Get expired proposals
-		provider := GetExpiredProposalsProvider(db, logger)(tenantId)
+		provider := GetExpiredProposalsProvider(db.WithContext(ctx), logger)
 		expiredProposals, err := provider()
 		if err != nil {
 			t.Fatalf("Failed to get expired proposals: %v", err)
@@ -1724,6 +1730,7 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 	t.Run("no_expired_proposals", func(t *testing.T) {
 		// Use a different tenant ID to ensure isolation
 		differentTenantId := uuid.New()
+		differentCtx := setupTestContext(differentTenantId)
 
 		// Clear the table
 		db.Exec("DELETE FROM proposal_entities")
@@ -1744,7 +1751,7 @@ func TestGetExpiredProposalsProvider(t *testing.T) {
 		db.Create(&activeProposal)
 
 		// Query using the different tenant ID
-		provider := GetExpiredProposalsProvider(db, logger)(differentTenantId)
+		provider := GetExpiredProposalsProvider(db.WithContext(differentCtx), logger)
 		expiredProposals, err := provider()
 		if err != nil {
 			t.Fatalf("Failed to get expired proposals: %v", err)

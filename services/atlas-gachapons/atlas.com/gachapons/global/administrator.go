@@ -1,9 +1,8 @@
 package global
 
 import (
-	"atlas-gachapons/database"
+	database "github.com/Chronicle20/atlas-database"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -28,11 +27,11 @@ func BulkCreateItem(db *gorm.DB, models []Model) error {
 	})
 }
 
-func DeleteItem(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
-	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
+func DeleteItem(db *gorm.DB, id uint32) error {
+	return db.Where(&entity{ID: id}).Delete(&entity{}).Error
 }
 
-func DeleteAllForTenant(db *gorm.DB, tenantId uuid.UUID) (int64, error) {
-	result := db.Unscoped().Where("tenant_id = ?", tenantId).Delete(&entity{})
+func DeleteAllForTenant(db *gorm.DB) (int64, error) {
+	result := db.Unscoped().Delete(&entity{})
 	return result.RowsAffected, result.Error
 }

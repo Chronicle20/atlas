@@ -1,22 +1,21 @@
 package item
 
 import (
-	"atlas-gachapons/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getByGachaponId(tenantId uuid.UUID, gachaponId string) database.EntityProvider[[]entity] {
+func getByGachaponId(gachaponId string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, GachaponId: gachaponId})
+		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId})
 	}
 }
 
-func getByGachaponIdAndTier(tenantId uuid.UUID, gachaponId string, tier string) database.EntityProvider[[]entity] {
+func getByGachaponIdAndTier(gachaponId string, tier string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, GachaponId: gachaponId, Tier: tier})
+		return database.SliceQuery[entity](db, &entity{GachaponId: gachaponId, Tier: tier})
 	}
 }
 

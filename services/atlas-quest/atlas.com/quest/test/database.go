@@ -5,6 +5,8 @@ import (
 	"atlas-quest/quest/progress"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -12,12 +14,17 @@ import (
 
 // SetupTestDB creates an in-memory SQLite database for testing
 func SetupTestDB(t *testing.T) *gorm.DB {
+	l := logrus.New()
+	l.SetLevel(logrus.PanicLevel)
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		t.Fatalf("Failed to open test database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Run migrations
 	if err := db.AutoMigrate(&quest.Entity{}, &progress.Entity{}); err != nil {

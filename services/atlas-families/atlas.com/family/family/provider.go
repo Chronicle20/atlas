@@ -1,7 +1,7 @@
 package family
 
 import (
-	"atlas-family/database"
+	database "github.com/Chronicle20/atlas-database"
 	"errors"
 
 	"github.com/Chronicle20/atlas-model/model"

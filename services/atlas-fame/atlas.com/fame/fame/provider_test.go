@@ -1,10 +1,14 @@
 package fame
 
 import (
+	"context"
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -19,10 +23,18 @@ func testDatabase(t *testing.T) *gorm.DB {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
 
+	l, _ := test.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
+
 	if err = Migration(db); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)
 	}
 	return db
+}
+
+func tenantContext(tenantId uuid.UUID) context.Context {
+	t, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	return tenant.WithContext(context.Background(), t)
 }
 
 func createTestEntity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, amount int8, createdAt time.Time) Entity {
@@ -47,8 +59,8 @@ func TestByCharacterIdLastMonthEntityProvider_ReturnsMatchingEntities(t *testing
 	now := time.Now()
 	createTestEntity(db, tenantId, characterId, 2000, 1, now.AddDate(0, 0, -5))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -65,8 +77,8 @@ func TestByCharacterIdLastMonthEntityProvider_ReturnsMultipleEntities(t *testing
 	createTestEntity(db, tenantId, characterId, 2001, 1, now.AddDate(0, 0, -10))
 	createTestEntity(db, tenantId, characterId, 2002, -1, now.AddDate(0, 0, -15))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 3)
@@ -83,8 +95,8 @@ func TestByCharacterIdLastMonthEntityProvider_ExcludesOldEntities(t *testing.T) 
 	// Entity older than last month - should be excluded
 	createTestEntity(db, tenantId, characterId, 2001, 1, now.AddDate(0, -2, 0))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -101,8 +113,8 @@ func TestByCharacterIdLastMonthEntityProvider_FiltersByTenant(t *testing.T) {
 	createTestEntity(db, tenantId1, characterId, 2000, 1, now.AddDate(0, 0, -5))
 	createTestEntity(db, tenantId2, characterId, 2001, 1, now.AddDate(0, 0, -5))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId1, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId1)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -119,8 +131,8 @@ func TestByCharacterIdLastMonthEntityProvider_FiltersByCharacterId(t *testing.T)
 	createTestEntity(db, tenantId, characterId1, 2000, 1, now.AddDate(0, 0, -5))
 	createTestEntity(db, tenantId, characterId2, 2001, 1, now.AddDate(0, 0, -5))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId1)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId1)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -132,8 +144,8 @@ func TestByCharacterIdLastMonthEntityProvider_ReturnsEmptyForNoMatches(t *testin
 	tenantId := uuid.New()
 	characterId := uint32(1000)
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 0)
@@ -148,8 +160,8 @@ func TestByCharacterIdLastMonthEntityProvider_BoundaryDateExactlyOneMonth(t *tes
 	lastMonth := time.Now().AddDate(0, -1, 0)
 	createTestEntity(db, tenantId, characterId, 2000, 1, lastMonth.Add(time.Hour))
 
-	provider := byCharacterIdLastMonthEntityProvider(tenantId, characterId)
-	result, err := provider(db)()
+	provider := byCharacterIdLastMonthEntityProvider(characterId)
+	result, err := provider(db.WithContext(tenantContext(tenantId)))()
 
 	assert.NoError(t, err)
 	assert.Len(t, result, 1)

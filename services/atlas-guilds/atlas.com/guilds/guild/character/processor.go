@@ -1,9 +1,9 @@
 package character
 
 import (
-	"atlas-guilds/database"
 	"context"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -33,7 +33,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
-	return model.Map(Make)(getById(p.t.Id(), characterId)(p.db))
+	return model.Map(Make)(getById(characterId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
@@ -41,8 +41,8 @@ func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) SetGuild(characterId uint32, guildId uint32) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		c, _ := getById(p.t.Id(), characterId)(tx)()
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		c, _ := getById(characterId)(tx)()
 		if c.GuildId != 0 {
 			c.GuildId = guildId
 			return tx.Save(&c).Error

@@ -66,7 +66,7 @@ func TestCreateAndEquipAsset_CompleteIntegrationFlow(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Step 1: Execute the CreateAndEquipAsset step
 	err = processor.Step(transactionId)
@@ -158,7 +158,7 @@ func TestCreateAndEquipAsset_StepAddition(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Execute the CreateAndEquipAsset step
 	err = processor.Step(transactionId)
@@ -262,7 +262,7 @@ func TestCreateAndEquipAsset_CompensationFlow(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Execute creation successfully
 	err = processor.Step(transactionId)
@@ -343,7 +343,7 @@ func TestCreateAndEquipAsset_AssetCreationFailure(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Execute the CreateAndEquipAsset step - should fail
 	err = processor.Step(transactionId)
@@ -422,7 +422,7 @@ func TestCreateAndEquipAsset_EquipPhaseFailure(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Execute the CreateAndEquipAsset step - should succeed
 	err = processor.Step(transactionId)
@@ -547,7 +547,7 @@ func TestCreateAndEquipAsset_MultipleFailureRecovery(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// First attempt - should fail
 	err = processor.Step(transactionId)
@@ -661,7 +661,7 @@ func TestCreateAndEquipAsset_CompensationFailure(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Execute and complete CreateAndEquipAsset step
 	err = processor.Step(transactionId)
@@ -756,7 +756,7 @@ func TestCreateAndEquipAsset_StateConsistencyValidation(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Test state consistency throughout failure and recovery process
 
@@ -890,7 +890,7 @@ func TestCreateAndEquipAsset_DynamicStepCreationAndOrdering(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Verify initial step order
 	initialSaga, err := processor.GetById(transactionId)
@@ -1076,7 +1076,7 @@ func TestCreateAndEquipAsset_DynamicStepOrderingConstraints(t *testing.T) {
 	assert.NoError(t, err, "Failed to build saga")
 
 	// Store saga in cache
-	_ = GetCache().Put(te.Id(), saga)
+	_ = GetCache().Put(tctx, saga)
 
 	// Test 1: Add auto-equip step after completed CreateAndEquipAsset step
 	autoEquipStepId := "auto_equip_step_after_completion"

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-party-quests/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-party-quests/definition"
 	"atlas-party-quests/instance"
 	characterConsumer "atlas-party-quests/kafka/consumer/character"

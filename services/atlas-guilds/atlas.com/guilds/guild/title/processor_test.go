@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -45,6 +46,9 @@ func setupTestDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	l := setupTestLogger(t)
+	database.RegisterTenantCallbacks(l, db)
 
 	// Use raw SQL for title table to avoid PostgreSQL-specific uuid_generate_v4()
 	if err = db.Exec(`CREATE TABLE IF NOT EXISTS titles (

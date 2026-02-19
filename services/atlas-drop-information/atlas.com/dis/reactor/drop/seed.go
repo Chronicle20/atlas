@@ -3,7 +3,6 @@ package drop
 import (
 	"os"
 
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
@@ -19,8 +18,8 @@ func GetReactorDropsPath() string {
 	return defaultReactorDropsPath
 }
 
-// DeleteAllForTenant deletes all reactor drops for a specific tenant
-func DeleteAllForTenant(db *gorm.DB, tenantId uuid.UUID) (int64, error) {
-	result := db.Unscoped().Where("tenant_id = ?", tenantId).Delete(&entity{})
+// DeleteAll deletes all reactor drops for the tenant in context
+func DeleteAll(db *gorm.DB) (int64, error) {
+	result := db.Unscoped().Where("1 = 1").Delete(&entity{})
 	return result.RowsAffected, result.Error
 }

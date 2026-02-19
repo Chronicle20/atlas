@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -13,10 +14,12 @@ import (
 )
 
 func setupTestDatabase(t *testing.T) *gorm.DB {
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+	database.RegisterTenantCallbacks(l, db)
 	err = db.AutoMigrate(&Entity{})
 	if err != nil {
 		t.Fatalf("Failed to auto migrate: %v", err)
@@ -35,7 +38,7 @@ func testContext(t tenant.Model) context.Context {
 
 func recordTestEntry(t *testing.T, db *gorm.DB, tm tenant.Model, accountId uint32, accountName string, ip string, hwid string, success bool, failureReason string) Model {
 	t.Helper()
-	m, err := create(db)(tm, accountId, accountName, ip, hwid, success, failureReason)
+	m, err := create(db.WithContext(testContext(tm)))(tm.Id(), accountId, accountName, ip, hwid, success, failureReason)
 	if err != nil {
 		t.Fatalf("Failed to record test entry: %v", err)
 	}
@@ -212,7 +215,7 @@ func TestProcessorPurgeOlderThan(t *testing.T) {
 		Success:     true,
 		CreatedAt:   time.Now().AddDate(0, 0, -100),
 	}
-	if err := db.Create(oldEntry).Error; err != nil {
+	if err := db.WithContext(ctx).Create(oldEntry).Error; err != nil {
 		t.Fatalf("Failed to create old entry: %v", err)
 	}
 
@@ -263,10 +266,10 @@ func TestProcessorPurgeIsolation(t *testing.T) {
 		Success:     true,
 		CreatedAt:   time.Now().AddDate(0, 0, -100),
 	}
-	if err := db.Create(oldEntry1).Error; err != nil {
+	if err := db.WithContext(testContext(st1)).Create(oldEntry1).Error; err != nil {
 		t.Fatalf("Failed to create old entry 1: %v", err)
 	}
-	if err := db.Create(oldEntry2).Error; err != nil {
+	if err := db.WithContext(testContext(st2)).Create(oldEntry2).Error; err != nil {
 		t.Fatalf("Failed to create old entry 2: %v", err)
 	}
 

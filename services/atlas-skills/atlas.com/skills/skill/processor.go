@@ -1,7 +1,7 @@
 package skill
 
 import (
-	"atlas-skills/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-skills/kafka/message"
 	skill2 "atlas-skills/kafka/message/skill"
 	"atlas-skills/kafka/producer"
@@ -85,13 +85,13 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 
 // ByCharacterIdProvider returns a provider for all skills for a character
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	mp := model.SliceMap(Make)(getByCharacterId(p.t.Id(), characterId)(p.db))()
+	mp := model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))()
 	return model.SliceMap(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)(model.ParallelMap())
 }
 
 // ByIdProvider returns a provider for a skill by ID
 func (p *ProcessorImpl) ByIdProvider(characterId uint32, id uint32) model.Provider[Model] {
-	mp := model.Map(Make)(getById(p.t.Id(), characterId, id)(p.db))
+	mp := model.Map(Make)(getById(characterId, id)(p.db.WithContext(p.ctx)))
 	return model.Map(model.Decorate(model.Decorators(p.CooldownDecorator(characterId))))(mp)
 }
 
@@ -100,7 +100,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 		p.l.Debugf("Attempting to create skill [%d] for character [%d].", id, characterId)
 		var s Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var err error
 			s, err = p.WithTransaction(tx).ByIdProvider(characterId, id)()
 			if s.Id() != 0 {
@@ -140,13 +140,13 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) (Model, error) {
 		p.l.Debugf("Attempting to update skill [%d] for character [%d].", id, characterId)
 		var s Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var err error
 			s, err = p.WithTransaction(tx).ByIdProvider(characterId, id)()
 			if err != nil {
 				return errors.New("does not exist")
 			}
-			err = dynamicUpdate(tx)(SetLevel(level), SetMasterLevel(masterLevel), SetExpiration(expiration))(p.t.Id(), characterId)(s)
+			err = dynamicUpdate(tx)(SetLevel(level), SetMasterLevel(masterLevel), SetExpiration(expiration))(characterId)(s)
 			if err != nil {
 				return err
 			}
@@ -229,8 +229,8 @@ func (p *ProcessorImpl) ClearAll(characterId uint32) error {
 
 // Delete deletes all skills for a character
 func (p *ProcessorImpl) Delete(characterId uint32) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return deleteByCharacter(tx, p.t, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return deleteByCharacter(tx, characterId)
 	})
 }
 

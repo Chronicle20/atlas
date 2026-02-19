@@ -1,13 +1,13 @@
 package document
 
 import (
-	"atlas-data/database"
+	database "github.com/Chronicle20/atlas-database"
 	"context"
 	"encoding/json"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -32,10 +32,9 @@ func NewDbStorage[I string, M Identifier[I]](l logrus.FieldLogger, db *gorm.DB, 
 }
 
 func (s *DbStorage[I, M]) All(ctx context.Context) model.Provider[[]M] {
-	t := tenant.MustFromContext(ctx)
 	results := make([]M, 0)
 	docs := make([]Entity, 0)
-	err := s.db.Where(&Entity{TenantId: t.Id(), Type: s.docType}).Find(&docs).Error
+	err := s.db.WithContext(ctx).Where("type = ?", s.docType).Find(&docs).Error
 	if err != nil {
 		return model.ErrorProvider[[]M](err)
 	}
@@ -52,12 +51,11 @@ func (s *DbStorage[I, M]) All(ctx context.Context) model.Provider[[]M] {
 }
 
 func (s *DbStorage[I, M]) ById(ctx context.Context) func(id I) model.Provider[M] {
-	t := tenant.MustFromContext(ctx)
 	return func(id I) model.Provider[M] {
 		var res M
 		doc := Entity{}
-		err := s.db.
-			Where("tenant_id = ? AND type = ? AND document_id = ?", t.Id(), s.docType, id).
+		err := s.db.WithContext(ctx).
+			Where("type = ? AND document_id = ?", s.docType, id).
 			First(&doc).Error
 		if err != nil {
 			return model.ErrorProvider[M](err)
@@ -103,7 +101,7 @@ func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 			return model.ErrorProvider[M](err)
 		}
 
-		txErr := database.ExecuteTransaction(s.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(s.db.WithContext(ctx), func(tx *gorm.DB) error {
 			docId, err := strconv.Atoi(string(m.GetID()))
 			if err != nil {
 				return err
@@ -128,13 +126,11 @@ func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 }
 
 func (s *DbStorage[I, M]) Clear(ctx context.Context) error {
-	t := tenant.MustFromContext(ctx)
-	return s.db.Where(&Entity{TenantId: t.Id(), Type: s.docType}).Delete(&Entity{}).Error
+	return s.db.WithContext(ctx).Where("type = ?", s.docType).Delete(&Entity{}).Error
 }
 
 func DeleteAll(ctx context.Context) func(db *gorm.DB) error {
-	t := tenant.MustFromContext(ctx)
 	return func(db *gorm.DB) error {
-		return db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
+		return db.WithContext(ctx).Where("1 = 1").Delete(&Entity{}).Error
 	}
 }

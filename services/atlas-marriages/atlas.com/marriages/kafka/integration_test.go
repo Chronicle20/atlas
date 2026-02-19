@@ -11,6 +11,7 @@ import (
 	marriageMessage "atlas-marriages/kafka/message/marriage"
 	marriageService "atlas-marriages/marriage"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/producer"
@@ -45,13 +46,15 @@ func TestKafkaIntegration(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
-	// Run migrations
-	err = marriageService.Migration(db)
-	require.NoError(t, err)
-
 	// Set up test logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
+
+	database.RegisterTenantCallbacks(logger, db)
+
+	// Run migrations
+	err = marriageService.Migration(db)
+	require.NoError(t, err)
 
 	// Create test context with tenant
 	tenantId := uuid.New()
@@ -304,12 +307,8 @@ func testEndToEndMessageFlow(t *testing.T, logger logrus.FieldLogger, ctx contex
 		require.NoError(t, err)
 		assert.NotNil(t, proposal)
 
-		// 3. Extract tenant from context
-		tenantModel := tenant.MustFromContext(ctx)
-		tenantId := tenantModel.Id()
-
-		// 4. Verify the proposal exists in database
-		proposalModel, err := marriageService.GetProposalByIdProvider(db, logger)(proposal.Id(), tenantId)()
+		// 3. Verify the proposal exists in database
+		proposalModel, err := marriageService.GetProposalByIdProvider(db.WithContext(ctx), logger)(proposal.Id())()
 		require.NoError(t, err)
 		assert.Equal(t, proposerId, proposalModel.ProposerId())
 		assert.Equal(t, targetId, proposalModel.TargetId())
@@ -341,12 +340,8 @@ func testEndToEndMessageFlow(t *testing.T, logger logrus.FieldLogger, ctx contex
 		require.NoError(t, err)
 		assert.NotNil(t, marriageModel)
 
-		// 3. Extract tenant from context
-		tenantModel := tenant.MustFromContext(ctx)
-		tenantId := tenantModel.Id()
-
-		// 4. Verify the marriage exists in database
-		marriagePtr, err := marriageService.GetMarriageByIdProvider(db, logger)(marriageModel.Id(), tenantId)()
+		// 3. Verify the marriage exists in database
+		marriagePtr, err := marriageService.GetMarriageByIdProvider(db.WithContext(ctx), logger)(marriageModel.Id())()
 		require.NoError(t, err)
 		require.NotNil(t, marriagePtr)
 		assert.Equal(t, marriageService.StatusEngaged, marriagePtr.Status())
@@ -387,12 +382,8 @@ func testEndToEndMessageFlow(t *testing.T, logger logrus.FieldLogger, ctx contex
 		require.NoError(t, err)
 		assert.NotNil(t, ceremony)
 
-		// 4. Extract tenant from context
-		tenantModel := tenant.MustFromContext(ctx)
-		tenantId := tenantModel.Id()
-
-		// 5. Verify the ceremony exists in database
-		ceremonyPtr, err := marriageService.GetCeremonyByIdProvider(db, logger)(ceremony.Id(), tenantId)()
+		// 4. Verify the ceremony exists in database
+		ceremonyPtr, err := marriageService.GetCeremonyByIdProvider(db.WithContext(ctx), logger)(ceremony.Id())()
 		require.NoError(t, err)
 		require.NotNil(t, ceremonyPtr)
 		assert.Equal(t, marriageService.CeremonyStatusScheduled, ceremonyPtr.Status())
@@ -445,9 +436,7 @@ func testEndToEndMessageFlow(t *testing.T, logger logrus.FieldLogger, ctx contex
 		require.NoError(t, err)
 
 		// Update the marriage in the database
-		tenantModel := tenant.MustFromContext(ctx)
-		tenantId := tenantModel.Id()
-		_, err = marriageService.UpdateMarriage(db, logger)(marriedMarriage)()
+		_, err = marriageService.UpdateMarriage(db.WithContext(ctx), logger)(marriedMarriage)()
 		require.NoError(t, err)
 
 		// 4. Process divorce through processor
@@ -456,7 +445,7 @@ func testEndToEndMessageFlow(t *testing.T, logger logrus.FieldLogger, ctx contex
 		assert.NotNil(t, divorcedMarriage)
 
 		// 5. Verify the marriage status is updated in database
-		marriagePtr, err := marriageService.GetMarriageByIdProvider(db, logger)(marriageModel.Id(), tenantId)()
+		marriagePtr, err := marriageService.GetMarriageByIdProvider(db.WithContext(ctx), logger)(marriageModel.Id())()
 		require.NoError(t, err)
 		require.NotNil(t, marriagePtr)
 		assert.Equal(t, marriageService.StatusDivorced, marriagePtr.Status())
@@ -953,13 +942,15 @@ func TestMessageHandlerIntegration(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
-	// Run migrations
-	err = marriageService.Migration(db)
-	require.NoError(t, err)
-
 	// Set up test logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
+
+	database.RegisterTenantCallbacks(logger, db)
+
+	// Run migrations
+	err = marriageService.Migration(db)
+	require.NoError(t, err)
 
 	// Create test context with tenant
 	tenantId := uuid.New()

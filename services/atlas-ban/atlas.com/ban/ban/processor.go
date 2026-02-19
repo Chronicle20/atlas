@@ -48,7 +48,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 func (p *ProcessorImpl) Create(banType BanType, value string, reason string, reasonCode byte, permanent bool, expiresAt time.Time, issuedBy string) (Model, error) {
 	p.l.Debugf("Creating ban type [%d] value [%s] reason [%s].", banType, value, reason)
-	m, err := create(p.db)(p.t, banType, value, reason, reasonCode, permanent, expiresAt, issuedBy)
+	m, err := create(p.db.WithContext(p.ctx))(p.t.Id(), banType, value, reason, reasonCode, permanent, expiresAt, issuedBy)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to create ban for value [%s].", value)
 		return Model{}, err
@@ -72,7 +72,7 @@ func (p *ProcessorImpl) CreateAndEmit(banType BanType, value string, reason stri
 
 func (p *ProcessorImpl) Delete(banId uint32) error {
 	p.l.Debugf("Deleting ban [%d].", banId)
-	err := deleteById(p.db)(p.t, banId)
+	err := deleteById(p.db.WithContext(p.ctx))(banId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to delete ban [%d].", banId)
 		return err
@@ -102,7 +102,7 @@ func (p *ProcessorImpl) ExpireBan(banId uint32) error {
 		p.l.Warnf("Cannot expire permanent ban [%d].", banId)
 		return ErrCannotExpirePermanentBan
 	}
-	err = updateExpiresAt(p.db)(p.t, banId, time.Now())
+	err = updateExpiresAt(p.db.WithContext(p.ctx))(banId, time.Now())
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to expire ban [%d].", banId)
 		return err
@@ -126,21 +126,21 @@ func (p *ProcessorImpl) GetById(banId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(banId uint32) model.Provider[Model] {
-	return model.Map(Make)(entityById(p.t, banId)(p.db))
+	return model.Map(Make)(entityById(banId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByTenant(p.t)(p.db))(model.ParallelMap())()
+	return model.SliceMap(Make)(entitiesByTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetByType(banType BanType) ([]Model, error) {
-	return model.SliceMap(Make)(entitiesByType(p.t, banType)(p.db))(model.ParallelMap())()
+	return model.SliceMap(Make)(entitiesByType(banType)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (*Model, error) {
 	// Check exact IP bans
 	if ip != "" {
-		bans, err := model.SliceMap(Make)(activeExactBans(p.t, BanTypeIP, ip)(p.db))(model.ParallelMap())()
+		bans, err := model.SliceMap(Make)(activeExactBans(BanTypeIP, ip)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 		if err != nil {
 			return nil, err
 		}
@@ -149,7 +149,7 @@ func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (*Mod
 		}
 
 		// Check CIDR range bans
-		allIPBans, err := model.SliceMap(Make)(activeIPBans(p.t)(p.db))(model.ParallelMap())()
+		allIPBans, err := model.SliceMap(Make)(activeIPBans()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +162,7 @@ func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (*Mod
 
 	// Check HWID bans
 	if hwid != "" {
-		bans, err := model.SliceMap(Make)(activeExactBans(p.t, BanTypeHWID, hwid)(p.db))(model.ParallelMap())()
+		bans, err := model.SliceMap(Make)(activeExactBans(BanTypeHWID, hwid)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 		if err != nil {
 			return nil, err
 		}
@@ -174,7 +174,7 @@ func (p *ProcessorImpl) CheckBan(ip string, hwid string, accountId uint32) (*Mod
 	// Check account bans
 	if accountId > 0 {
 		accountValue := strconv.FormatUint(uint64(accountId), 10)
-		bans, err := model.SliceMap(Make)(activeExactBans(p.t, BanTypeAccount, accountValue)(p.db))(model.ParallelMap())()
+		bans, err := model.SliceMap(Make)(activeExactBans(BanTypeAccount, accountValue)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 		if err != nil {
 			return nil, err
 		}

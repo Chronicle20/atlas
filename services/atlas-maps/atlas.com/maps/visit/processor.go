@@ -20,32 +20,30 @@ type Processor interface {
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
-	t   tenant.Model
 	db  *gorm.DB
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	t := tenant.MustFromContext(ctx)
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
-		t:   t,
 		db:  db,
 	}
 }
 
 func (p *ProcessorImpl) RecordVisit(characterId uint32, mapId _map.Id) error {
-	return recordVisit(p.db)(p.t.Id())(characterId)(mapId)
+	t := tenant.MustFromContext(p.ctx)
+	return recordVisit(p.db.WithContext(p.ctx))(t.Id())(characterId)(mapId)
 }
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Visit] {
-	return model.SliceMap[Entity, Visit](Make)(getByCharacterIdProvider(p.t.Id())(characterId)(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Visit](Make)(getByCharacterIdProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByCharacterIdAndMapIdProvider(characterId uint32, mapId _map.Id) model.Provider[Visit] {
-	return model.Map[Entity, Visit](Make)(getByCharacterIdAndMapIdProvider(p.t.Id())(characterId)(mapId)(p.db))
+	return model.Map[Entity, Visit](Make)(getByCharacterIdAndMapIdProvider(characterId)(mapId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) (int64, error) {
-	return deleteByCharacterId(p.db)(p.t.Id())(characterId)
+	return deleteByCharacterId(p.db.WithContext(p.ctx))(characterId)
 }

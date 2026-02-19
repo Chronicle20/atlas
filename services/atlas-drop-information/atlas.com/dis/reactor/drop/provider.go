@@ -1,18 +1,16 @@
 package drop
 
 import (
-	"atlas-drops-information/database"
-
-	"github.com/google/uuid"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"gorm.io/gorm"
 )
 
-func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
+func getAll() database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Where(&entity{TenantId: tenantId}).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}
@@ -20,9 +18,9 @@ func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
 	}
 }
 
-func getByReactorId(tenantId uuid.UUID, reactorId uint32) database.EntityProvider[[]entity] {
+func getByReactorId(reactorId uint32) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, ReactorId: reactorId})
+		return database.SliceQuery[entity](db, &entity{ReactorId: reactorId})
 	}
 }
 

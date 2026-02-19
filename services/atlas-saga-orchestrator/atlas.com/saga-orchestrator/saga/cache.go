@@ -1,25 +1,27 @@
 package saga
 
 import (
+	"context"
 	"sync"
 
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
 // Cache is an interface for a saga cache
 type Cache interface {
-	// GetAll returns all sagas for a tenant
-	GetAll(tenantId uuid.UUID) []Saga
+	// GetAll returns all sagas for the tenant in context
+	GetAll(ctx context.Context) []Saga
 
-	// GetById returns a saga by its transaction ID for a tenant
-	GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool)
+	// GetById returns a saga by its transaction ID for the tenant in context
+	GetById(ctx context.Context, transactionId uuid.UUID) (Saga, bool)
 
-	// Put adds or updates a saga in the cache for a tenant.
+	// Put adds or updates a saga in the cache for the tenant in context.
 	// Returns an error on version conflict (optimistic locking).
-	Put(tenantId uuid.UUID, saga Saga) error
+	Put(ctx context.Context, saga Saga) error
 
-	// Remove removes a saga from the cache for a tenant
-	Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool
+	// Remove removes a saga from the cache for the tenant in context
+	Remove(ctx context.Context, transactionId uuid.UUID) bool
 }
 
 // InMemoryCache is an in-memory implementation of the Cache interface
@@ -58,10 +60,13 @@ func ResetCache() {
 	}
 }
 
-// GetAll returns all sagas for a tenant
-func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga {
+// GetAll returns all sagas for the tenant in context
+func (c *InMemoryCache) GetAll(ctx context.Context) []Saga {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
+
+	t := tenant.MustFromContext(ctx)
+	tenantId := t.Id()
 
 	// Get the tenant's sagas map
 	sagas, exists := c.tenantSagas[tenantId]
@@ -78,10 +83,13 @@ func (c *InMemoryCache) GetAll(tenantId uuid.UUID) []Saga {
 	return result
 }
 
-// GetByID returns a saga by its transaction ID for a tenant
-func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool) {
+// GetById returns a saga by its transaction ID for the tenant in context
+func (c *InMemoryCache) GetById(ctx context.Context, transactionId uuid.UUID) (Saga, bool) {
 	c.mutex.RLock()
 	defer c.mutex.RUnlock()
+
+	t := tenant.MustFromContext(ctx)
+	tenantId := t.Id()
 
 	// Get the tenant's sagas map
 	sagas, exists := c.tenantSagas[tenantId]
@@ -94,10 +102,13 @@ func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Sa
 	return saga, exists
 }
 
-// Put adds or updates a saga in the cache for a tenant
-func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) error {
+// Put adds or updates a saga in the cache for the tenant in context
+func (c *InMemoryCache) Put(ctx context.Context, saga Saga) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	t := tenant.MustFromContext(ctx)
+	tenantId := t.Id()
 
 	// Ensure the tenant's sagas map exists
 	if _, exists := c.tenantSagas[tenantId]; !exists {
@@ -109,10 +120,13 @@ func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) error {
 	return nil
 }
 
-// Remove removes a saga from the cache for a tenant
-func (c *InMemoryCache) Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool {
+// Remove removes a saga from the cache for the tenant in context
+func (c *InMemoryCache) Remove(ctx context.Context, transactionId uuid.UUID) bool {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
+
+	t := tenant.MustFromContext(ctx)
+	tenantId := t.Id()
 
 	// Get the tenant's sagas map
 	sagas, exists := c.tenantSagas[tenantId]

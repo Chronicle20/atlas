@@ -1,7 +1,7 @@
 package drop
 
 import (
-	"atlas-drops-information/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"gorm.io/gorm"
 )

@@ -74,7 +74,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			te, ctx := setupContext()
+			_, ctx := setupContext()
 			processor, hook := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks
@@ -114,7 +114,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Store saga in cache for processing
-			_ = GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(ctx, saga)
 
 			// Execute saga processing
 			err = processor.Step(saga.TransactionId())
@@ -270,7 +270,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			compP := &mock2.ProcessorMock{}
 			validP := &mock3.ProcessorMock{}
 
-			te, ctx := setupContext()
+			_, ctx := setupContext()
 			processor, _ := setupTestProcessor(ctx, charP, compP, validP)
 
 			// Configure mocks to fail at specific step
@@ -353,7 +353,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Store saga in cache for processing
-			_ = GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(ctx, saga)
 
 			// Execute saga processing
 			err = processor.Step(saga.TransactionId())

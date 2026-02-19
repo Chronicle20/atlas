@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -34,11 +35,13 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func testDatabase(t *testing.T) *gorm.DB {
+func testDatabase(t *testing.T, l logrus.FieldLogger) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, asset.Migration, compartment.Migration)
@@ -70,7 +73,7 @@ func TestCompactAndSort(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -136,7 +139,7 @@ func TestSort(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -203,7 +206,7 @@ func TestMergeAndCompact(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -263,7 +266,7 @@ func TestMergeAndCompactOverflow(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 
@@ -326,7 +329,7 @@ func TestMergeAndCompactGood(t *testing.T) {
 	l := testLogger()
 	te := testTenant()
 	ctx := tenant.WithContext(context.Background(), te)
-	db := testDatabase(t)
+	db := testDatabase(t, l)
 
 	mb := message.NewBuffer()
 

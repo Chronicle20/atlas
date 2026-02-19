@@ -4,16 +4,23 @@ import (
 	"errors"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
 func setupTestDB() (*gorm.DB, error) {
+	l := logrus.New()
+	l.SetLevel(logrus.DebugLevel)
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Create the tables manually for SQLite compatibility
 	err = db.Exec(`
@@ -101,7 +108,7 @@ func TestUpdateCapacity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := updateCapacity(db, tenantId, tt.characterId, tt.newCapacity)
+			err := updateCapacity(db, tt.characterId, tt.newCapacity)
 
 			if tt.expectedError != "" {
 				if err == nil {
@@ -118,7 +125,7 @@ func TestUpdateCapacity(t *testing.T) {
 
 				// Verify the capacity was updated
 				var updatedEntity Entity
-				err = db.Where("tenant_id = ? AND character_id = ?", tenantId, tt.characterId).First(&updatedEntity).Error
+				err = db.Where("character_id = ?", tt.characterId).First(&updatedEntity).Error
 				if err != nil {
 					t.Fatalf("Failed to retrieve updated entity: %v", err)
 				}

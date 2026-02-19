@@ -1,17 +1,16 @@
 package quest
 
 import (
-	"atlas-quest/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func byIdEntityProvider(tenantId uuid.UUID, id uint32) database.EntityProvider[Entity] {
+func byIdEntityProvider(id uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: tenantId, ID: id}).Preload("Progress").First(&result).Error
+		err := db.Where("id = ?", id).Preload("Progress").First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}
@@ -19,10 +18,10 @@ func byIdEntityProvider(tenantId uuid.UUID, id uint32) database.EntityProvider[E
 	}
 }
 
-func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId uint32) database.EntityProvider[[]Entity] {
+func byCharacterIdEntityProvider(characterId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId}).Preload("Progress").Find(&results).Error
+		err := db.Where("character_id = ?", characterId).Preload("Progress").Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -30,10 +29,10 @@ func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId uint32) databas
 	}
 }
 
-func byCharacterIdAndQuestIdEntityProvider(tenantId uuid.UUID, characterId uint32, questId uint32) database.EntityProvider[Entity] {
+func byCharacterIdAndQuestIdEntityProvider(characterId uint32, questId uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var result Entity
-		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId, QuestId: questId}).Preload("Progress").First(&result).Error
+		err := db.Where("character_id = ? AND quest_id = ?", characterId, questId).Preload("Progress").First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}
@@ -41,10 +40,10 @@ func byCharacterIdAndQuestIdEntityProvider(tenantId uuid.UUID, characterId uint3
 	}
 }
 
-func byCharacterIdAndStateEntityProvider(tenantId uuid.UUID, characterId uint32, state State) database.EntityProvider[[]Entity] {
+func byCharacterIdAndStateEntityProvider(characterId uint32, state State) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenantId, CharacterId: characterId, State: state}).Preload("Progress").Find(&results).Error
+		err := db.Where("character_id = ? AND state = ?", characterId, state).Preload("Progress").Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

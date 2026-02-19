@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/world"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,9 @@ func testDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	l, _ := test.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, storage.Migration, asset.Migration)
@@ -108,7 +112,7 @@ func TestAsset_GetById(t *testing.T) {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
 
-	retrieved, err := asset.GetById(db, te.Id())(created.Id())
+	retrieved, err := asset.GetById(db.WithContext(ctx))(created.Id())
 	if err != nil {
 		t.Fatalf("Failed to get asset by ID: %v", err)
 	}
@@ -141,7 +145,7 @@ func TestAsset_GetByStorageId(t *testing.T) {
 		}
 	}
 
-	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets by storage ID: %v", err)
 	}
@@ -168,12 +172,12 @@ func TestAsset_Delete(t *testing.T) {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
 
-	err = asset.Delete(testLogger(), db, te.Id())(a.Id())
+	err = asset.Delete(testLogger(), db.WithContext(ctx))(a.Id())
 	if err != nil {
 		t.Fatalf("Failed to delete asset: %v", err)
 	}
 
-	_, err = asset.GetById(db, te.Id())(a.Id())
+	_, err = asset.GetById(db.WithContext(ctx))(a.Id())
 	if err == nil {
 		t.Fatalf("Asset should have been deleted")
 	}
@@ -199,12 +203,12 @@ func TestAsset_DeleteByStorageId(t *testing.T) {
 		}
 	}
 
-	err := asset.DeleteByStorageId(testLogger(), db, te.Id())(s.Id())
+	err := asset.DeleteByStorageId(testLogger(), db.WithContext(ctx))(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to delete assets by storage ID: %v", err)
 	}
 
-	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}
@@ -232,12 +236,12 @@ func TestAsset_UpdateSlot(t *testing.T) {
 	}
 
 	newSlot := int16(5)
-	err = asset.UpdateSlot(testLogger(), db, te.Id())(a.Id(), newSlot)
+	err = asset.UpdateSlot(testLogger(), db.WithContext(ctx))(a.Id(), newSlot)
 	if err != nil {
 		t.Fatalf("Failed to update slot: %v", err)
 	}
 
-	updated, err := asset.GetById(db, te.Id())(a.Id())
+	updated, err := asset.GetById(db.WithContext(ctx))(a.Id())
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
 	}

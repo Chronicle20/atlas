@@ -1,24 +1,27 @@
 package list
 
 import (
-	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// TestIncreaseCapacityIntegration tests the end-to-end increase capacity flow
-func TestIncreaseCapacityIntegration(t *testing.T) {
-	// Setup database
+func setupProcessorTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	l := logrus.New()
+	l.SetLevel(logrus.DebugLevel)
+
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to setup test database: %v", err)
 	}
 
-	// Create the tables manually for SQLite compatibility
+	database.RegisterTenantCallbacks(l, db)
+
 	err = db.Exec(`
 		CREATE TABLE lists (
 			tenant_id TEXT NOT NULL,
@@ -46,15 +49,15 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 		t.Fatalf("Failed to create buddies table: %v", err)
 	}
 
-	logger := logrus.New()
-	logger.SetLevel(logrus.DebugLevel)
+	return db
+}
 
-	// Use NewProcessor to get a properly initialized processor
-	// Note: This requires tenant context which we'll mock at the NewProcessor level
+// TestIncreaseCapacityIntegration tests the end-to-end increase capacity flow
+func TestIncreaseCapacityIntegration(t *testing.T) {
+	db := setupProcessorTestDB(t)
+
 	characterId := uint32(12345)
 	initialCapacity := byte(20)
-
-	// Test the administrator function directly first
 	tenantId := uuid.New()
 
 	// Create initial entity directly
@@ -64,7 +67,7 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 		CharacterId: characterId,
 		Capacity:    initialCapacity,
 	}
-	err = db.Create(&entity).Error
+	err := db.Create(&entity).Error
 	if err != nil {
 		t.Fatalf("Failed to create test entity: %v", err)
 	}
@@ -86,7 +89,7 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 			expectedError: true,
 		},
 		{
-			name:          "Invalid capacity - lower value", 
+			name:          "Invalid capacity - lower value",
 			newCapacity:   15,
 			expectedError: true,
 		},
@@ -97,7 +100,7 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 			// Reset capacity for each test
 			db.Model(&entity).Update("capacity", initialCapacity)
 
-			err := updateCapacity(db, tenantId, characterId, tt.newCapacity)
+			err := updateCapacity(db, characterId, tt.newCapacity)
 
 			if tt.expectedError {
 				if err == nil {
@@ -110,7 +113,7 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 
 				// Verify the capacity was updated
 				var updatedEntity Entity
-				err = db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).First(&updatedEntity).Error
+				err = db.Where("character_id = ?", characterId).First(&updatedEntity).Error
 				if err != nil {
 					t.Fatalf("Failed to retrieve updated entity: %v", err)
 				}
@@ -125,38 +128,7 @@ func TestIncreaseCapacityIntegration(t *testing.T) {
 
 // TestIncreaseCapacityValidationBoundaries tests edge cases for capacity validation
 func TestIncreaseCapacityValidationBoundaries(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("Failed to setup test database: %v", err)
-	}
-
-	// Create the tables manually for SQLite compatibility
-	err = db.Exec(`
-		CREATE TABLE lists (
-			tenant_id TEXT NOT NULL,
-			id TEXT PRIMARY KEY,
-			character_id INTEGER NOT NULL,
-			capacity INTEGER NOT NULL
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create lists table: %v", err)
-	}
-
-	err = db.Exec(`
-		CREATE TABLE buddies (
-			character_id INTEGER PRIMARY KEY,
-			list_id TEXT NOT NULL,
-			"group" TEXT NOT NULL,
-			character_name TEXT NOT NULL,
-			channel_id INTEGER NOT NULL DEFAULT -1,
-			in_shop BOOLEAN NOT NULL DEFAULT false,
-			pending BOOLEAN NOT NULL DEFAULT false
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create buddies table: %v", err)
-	}
+	db := setupProcessorTestDB(t)
 
 	tenantId := uuid.New()
 	characterId := uint32(12345)
@@ -169,7 +141,7 @@ func TestIncreaseCapacityValidationBoundaries(t *testing.T) {
 		CharacterId: characterId,
 		Capacity:    initialCapacity,
 	}
-	err = db.Create(&entity).Error
+	err := db.Create(&entity).Error
 	if err != nil {
 		t.Fatalf("Failed to create test entity: %v", err)
 	}
@@ -193,7 +165,7 @@ func TestIncreaseCapacityValidationBoundaries(t *testing.T) {
 			// Reset capacity for each test
 			db.Model(&entity).Update("capacity", initialCapacity)
 
-			err := updateCapacity(db, tenantId, characterId, tc.newCapacity)
+			err := updateCapacity(db, characterId, tc.newCapacity)
 
 			if tc.shouldPass && err != nil {
 				t.Errorf("Expected validation to pass for capacity %d, but got error: %v", tc.newCapacity, err)
@@ -207,39 +179,7 @@ func TestIncreaseCapacityValidationBoundaries(t *testing.T) {
 
 // TestIncreaseCapacityDatabaseIntegration tests database state changes without requiring full processor context
 func TestIncreaseCapacityDatabaseIntegration(t *testing.T) {
-	// Setup database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("Failed to setup test database: %v", err)
-	}
-
-	// Create the tables manually for SQLite compatibility
-	err = db.Exec(`
-		CREATE TABLE lists (
-			tenant_id TEXT NOT NULL,
-			id TEXT PRIMARY KEY,
-			character_id INTEGER NOT NULL,
-			capacity INTEGER NOT NULL
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create lists table: %v", err)
-	}
-
-	err = db.Exec(`
-		CREATE TABLE buddies (
-			character_id INTEGER PRIMARY KEY,
-			list_id TEXT NOT NULL,
-			"group" TEXT NOT NULL,
-			character_name TEXT NOT NULL,
-			channel_id INTEGER NOT NULL DEFAULT -1,
-			in_shop BOOLEAN NOT NULL DEFAULT false,
-			pending BOOLEAN NOT NULL DEFAULT false
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create buddies table: %v", err)
-	}
+	db := setupProcessorTestDB(t)
 
 	tenantId := uuid.New()
 	characterId := uint32(12345)
@@ -253,21 +193,21 @@ func TestIncreaseCapacityDatabaseIntegration(t *testing.T) {
 		CharacterId: characterId,
 		Capacity:    initialCapacity,
 	}
-	err = db.Create(&entity).Error
+	err := db.Create(&entity).Error
 	if err != nil {
 		t.Fatalf("Failed to create test entity: %v", err)
 	}
 
 	testCases := []struct {
-		name                   string
-		characterId           uint32
-		newCapacity           byte
-		expectError           bool
-		expectedErrorType     string
-		expectCapacityChange  bool
+		name                 string
+		characterId          uint32
+		newCapacity          byte
+		expectError          bool
+		expectedErrorType    string
+		expectCapacityChange bool
 	}{
 		{
-			name:                  "Valid capacity increase",
+			name:                 "Valid capacity increase",
 			characterId:          characterId,
 			newCapacity:          newCapacity,
 			expectError:          false,
@@ -304,7 +244,7 @@ func TestIncreaseCapacityDatabaseIntegration(t *testing.T) {
 			}
 
 			// Test the administrator function directly (bypassing processor tenant context complexity)
-			err := updateCapacity(db, tenantId, tc.characterId, tc.newCapacity)
+			err := updateCapacity(db, tc.characterId, tc.newCapacity)
 
 			if tc.expectError {
 				if err == nil {
@@ -326,7 +266,7 @@ func TestIncreaseCapacityDatabaseIntegration(t *testing.T) {
 				if tc.expectCapacityChange {
 					// Verify the database was updated
 					var updatedEntity Entity
-					err = db.Where("tenant_id = ? AND character_id = ?", tenantId, tc.characterId).First(&updatedEntity).Error
+					err = db.Where("character_id = ?", tc.characterId).First(&updatedEntity).Error
 					if err != nil {
 						t.Fatalf("Failed to retrieve updated entity: %v", err)
 					}
@@ -342,39 +282,7 @@ func TestIncreaseCapacityDatabaseIntegration(t *testing.T) {
 
 // TestIncreaseCapacityTransactionIntegration tests transaction handling and data consistency
 func TestIncreaseCapacityTransactionIntegration(t *testing.T) {
-	// Setup database
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatalf("Failed to setup test database: %v", err)
-	}
-
-	// Create the tables manually for SQLite compatibility
-	err = db.Exec(`
-		CREATE TABLE lists (
-			tenant_id TEXT NOT NULL,
-			id TEXT PRIMARY KEY,
-			character_id INTEGER NOT NULL,
-			capacity INTEGER NOT NULL
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create lists table: %v", err)
-	}
-
-	err = db.Exec(`
-		CREATE TABLE buddies (
-			character_id INTEGER PRIMARY KEY,
-			list_id TEXT NOT NULL,
-			"group" TEXT NOT NULL,
-			character_name TEXT NOT NULL,
-			channel_id INTEGER NOT NULL DEFAULT -1,
-			in_shop BOOLEAN NOT NULL DEFAULT false,
-			pending BOOLEAN NOT NULL DEFAULT false
-		)
-	`).Error
-	if err != nil {
-		t.Fatalf("Failed to create buddies table: %v", err)
-	}
+	db := setupProcessorTestDB(t)
 
 	tenantId := uuid.New()
 	characterId := uint32(12345)
@@ -387,7 +295,7 @@ func TestIncreaseCapacityTransactionIntegration(t *testing.T) {
 		CharacterId: characterId,
 		Capacity:    initialCapacity,
 	}
-	err = db.Create(&entity).Error
+	err := db.Create(&entity).Error
 	if err != nil {
 		t.Fatalf("Failed to create test entity: %v", err)
 	}
@@ -396,15 +304,15 @@ func TestIncreaseCapacityTransactionIntegration(t *testing.T) {
 	t.Run("Transaction consistency", func(t *testing.T) {
 		// Test that invalid capacity doesn't change the database
 		originalCapacity := initialCapacity
-		
-		err := updateCapacity(db, tenantId, characterId, originalCapacity-1) // Invalid: lower capacity
+
+		err := updateCapacity(db, characterId, originalCapacity-1) // Invalid: lower capacity
 		if err == nil {
 			t.Error("Expected error for invalid capacity, but got none")
 		}
 
 		// Verify capacity wasn't changed
 		var unchangedEntity Entity
-		err = db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).First(&unchangedEntity).Error
+		err = db.Where("character_id = ?", characterId).First(&unchangedEntity).Error
 		if err != nil {
 			t.Fatalf("Failed to retrieve entity after failed update: %v", err)
 		}
@@ -417,15 +325,15 @@ func TestIncreaseCapacityTransactionIntegration(t *testing.T) {
 	// Test successful capacity increase
 	t.Run("Successful capacity update", func(t *testing.T) {
 		newCapacity := byte(30)
-		
-		err := updateCapacity(db, tenantId, characterId, newCapacity)
+
+		err := updateCapacity(db, characterId, newCapacity)
 		if err != nil {
 			t.Errorf("Expected no error for valid capacity increase, but got: %v", err)
 		}
 
 		// Verify capacity was changed
 		var updatedEntity Entity
-		err = db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).First(&updatedEntity).Error
+		err = db.Where("character_id = ?", characterId).First(&updatedEntity).Error
 		if err != nil {
 			t.Fatalf("Failed to retrieve entity after successful update: %v", err)
 		}
@@ -438,11 +346,16 @@ func TestIncreaseCapacityTransactionIntegration(t *testing.T) {
 
 // TestIncreaseCapacityConcurrentIntegration tests concurrent capacity changes at the administrator level
 func TestIncreaseCapacityConcurrentIntegration(t *testing.T) {
+	l := logrus.New()
+	l.SetLevel(logrus.DebugLevel)
+
 	// Setup database with better concurrency support
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to setup test database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	// Enable WAL mode for better concurrency
 	db.Exec("PRAGMA journal_mode=WAL;")
@@ -498,12 +411,12 @@ func TestIncreaseCapacityConcurrentIntegration(t *testing.T) {
 
 		// Simulate concurrent capacity increases using administrator functions
 		go func() {
-			err1 = updateCapacity(db, tenantId, characterId, 25)
+			err1 = updateCapacity(db, characterId, 25)
 			done <- true
 		}()
 
 		go func() {
-			err2 = updateCapacity(db, tenantId, characterId, 30)
+			err2 = updateCapacity(db, characterId, 30)
 			done <- true
 		}()
 
@@ -527,7 +440,7 @@ func TestIncreaseCapacityConcurrentIntegration(t *testing.T) {
 
 		// Verify final state is consistent
 		var finalEntity Entity
-		err = db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).First(&finalEntity).Error
+		err = db.Where("character_id = ?", characterId).First(&finalEntity).Error
 		if err != nil {
 			t.Fatalf("Failed to retrieve final entity: %v", err)
 		}
@@ -539,23 +452,4 @@ func TestIncreaseCapacityConcurrentIntegration(t *testing.T) {
 
 		t.Logf("Concurrent test results: err1=%v, err2=%v, final_capacity=%d", err1, err2, finalEntity.Capacity)
 	})
-}
-
-// mockTenant implements the tenant.Model interface for testing
-type mockTenant struct {
-	tenantId uuid.UUID
-}
-
-func (m mockTenant) Id() uuid.UUID {
-	return m.tenantId
-}
-
-// Helper function to create a mock tenant context
-func createMockTenantContext(tenantId uuid.UUID) context.Context {
-	// Create a proper tenant model that implements the interface
-	mockTenantModel := mockTenant{tenantId: tenantId}
-	// Since we don't know the exact context key used by atlas-tenant,
-	// we'll create a context that should work with the MustFromContext function
-	// This may need to be adjusted based on the actual tenant package implementation
-	return context.WithValue(context.Background(), "tenant", mockTenantModel)
 }

@@ -61,24 +61,24 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Script
 
 // ByIdProvider returns a provider for retrieving a portal script by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[PortalScript] {
-	return model.Map[Entity, PortalScript](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, PortalScript](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 // ByPortalIdProvider returns a provider for retrieving a portal script by portal ID
 func (p *ProcessorImpl) ByPortalIdProvider(portalId string) model.Provider[PortalScript] {
-	return model.Map[Entity, PortalScript](Make)(getByPortalIdProvider(p.t.Id())(portalId)(p.db))
+	return model.Map[Entity, PortalScript](Make)(getByPortalIdProvider(portalId)(p.db.WithContext(p.ctx)))
 }
 
 // AllProvider returns a provider for retrieving all portal scripts
 func (p *ProcessorImpl) AllProvider() model.Provider[[]PortalScript] {
-	return model.SliceMap[Entity, PortalScript](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, PortalScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Create creates a new portal script
 func (p *ProcessorImpl) Create(m PortalScript) (PortalScript, error) {
 	p.l.Debugf("Creating portal script [%s]", m.PortalId())
 
-	result, err := createPortalScript(p.db)(p.t.Id())(m)
+	result, err := createPortalScript(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create portal script [%s]", m.PortalId())
 		return PortalScript{}, err
@@ -90,7 +90,7 @@ func (p *ProcessorImpl) Create(m PortalScript) (PortalScript, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m PortalScript) (PortalScript, error) {
 	p.l.Debugf("Updating portal script [%s]", id)
 
-	result, err := updatePortalScript(p.db)(p.t.Id())(id)(m)
+	result, err := updatePortalScript(p.db.WithContext(p.ctx))(id)(m, p.t.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update portal script [%s]", id)
 		return PortalScript{}, err
@@ -102,7 +102,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m PortalScript) (PortalScript, erro
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting portal script [%s]", id)
 
-	err := deletePortalScript(p.db)(p.t.Id())(id)
+	err := deletePortalScript(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete portal script [%s]", id)
 		return err
@@ -114,7 +114,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all portal scripts for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllPortalScripts(p.db)(p.t.Id())
+	count, err := deleteAllPortalScripts(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete portal scripts for tenant [%s]", p.t.Id())
 		return 0, err

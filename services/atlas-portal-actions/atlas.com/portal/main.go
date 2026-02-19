@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"atlas-portal-actions/action"
-	"atlas-portal-actions/database"
+	database "github.com/Chronicle20/atlas-database"
 	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"

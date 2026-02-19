@@ -64,24 +64,24 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 // ByIdProvider returns a provider for retrieving a quest conversation by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 // ByQuestIdProvider returns a provider for retrieving a quest conversation by quest ID
 func (p *ProcessorImpl) ByQuestIdProvider(questId uint32) model.Provider[Model] {
-	return model.Map[Entity, Model](Make)(getByQuestIdProvider(p.t.Id())(questId)(p.db))
+	return model.Map[Entity, Model](Make)(getByQuestIdProvider(questId)(p.db.WithContext(p.ctx)))
 }
 
 // AllProvider returns a provider for retrieving all quest conversations
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, Model](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Create creates a new quest conversation
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating quest conversation for quest [%d]", m.QuestId())
 
-	result, err := createQuestConversation(p.db)(p.t.Id())(m)
+	result, err := createQuestConversation(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create quest conversation for quest [%d]", m.QuestId())
 		return Model{}, err
@@ -93,7 +93,7 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating quest conversation [%s]", id)
 
-	result, err := updateQuestConversation(p.db)(p.t.Id())(id)(m)
+	result, err := updateQuestConversation(p.db.WithContext(p.ctx))(id)(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update quest conversation [%s]", id)
 		return Model{}, err
@@ -105,7 +105,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting quest conversation [%s]", id)
 
-	err := deleteQuestConversation(p.db)(p.t.Id())(id)
+	err := deleteQuestConversation(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete quest conversation [%s]", id)
 		return err
@@ -117,7 +117,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all quest conversations for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllQuestConversations(p.db)(p.t.Id())
+	count, err := deleteAllQuestConversations(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete all quest conversations for tenant [%s]", p.t.Id())
 		return 0, err

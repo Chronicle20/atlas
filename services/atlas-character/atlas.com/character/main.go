@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-character/character"
-	"atlas-character/database"
+	database "github.com/Chronicle20/atlas-database"
 	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"

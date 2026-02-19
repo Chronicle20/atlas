@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -17,10 +18,12 @@ import (
 
 func setupTestDB(t *testing.T) *gorm.DB {
 	t.Helper()
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	require.NoError(t, err)
+	database.RegisterTenantCallbacks(l, db)
 	require.NoError(t, MigrateTable(db))
 	t.Cleanup(func() {
 		sqlDB, _ := db.DB()

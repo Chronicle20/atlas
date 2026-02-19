@@ -1,15 +1,13 @@
 package gachapon
 
 import (
-	"atlas-gachapons/database"
+	database "github.com/Chronicle20/atlas-database"
 
-	"github.com/google/uuid"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
 func CreateGachapon(db *gorm.DB, m Model) error {
-	npcIds := make(pq.Int64Array, len(m.NpcIds()))
+	npcIds := make(int64Array, len(m.NpcIds()))
 	for i, id := range m.NpcIds() {
 		npcIds[i] = int64(id)
 	}
@@ -37,9 +35,9 @@ func BulkCreateGachapon(db *gorm.DB, models []Model) error {
 	})
 }
 
-func UpdateGachapon(db *gorm.DB, tenantId uuid.UUID, id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
+func UpdateGachapon(db *gorm.DB, id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
 	return db.Model(&entity{}).
-		Where(&entity{TenantId: tenantId, ID: id}).
+		Where(&entity{ID: id}).
 		Updates(map[string]interface{}{
 			"name":            name,
 			"common_weight":   commonWeight,
@@ -48,11 +46,11 @@ func UpdateGachapon(db *gorm.DB, tenantId uuid.UUID, id string, name string, com
 		}).Error
 }
 
-func DeleteGachapon(db *gorm.DB, tenantId uuid.UUID, id string) error {
-	return db.Where(&entity{TenantId: tenantId, ID: id}).Delete(&entity{}).Error
+func DeleteGachapon(db *gorm.DB, id string) error {
+	return db.Where(&entity{ID: id}).Delete(&entity{}).Error
 }
 
-func DeleteAllForTenant(db *gorm.DB, tenantId uuid.UUID) (int64, error) {
-	result := db.Unscoped().Where("tenant_id = ?", tenantId).Delete(&entity{})
+func DeleteAllForTenant(db *gorm.DB) (int64, error) {
+	result := db.Unscoped().Delete(&entity{})
 	return result.RowsAffected, result.Error
 }

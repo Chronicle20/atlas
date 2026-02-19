@@ -9,7 +9,6 @@ import (
 	"errors"
 	"math/big"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -28,12 +27,10 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	t := tenant.MustFromContext(ctx)
-	return &ProcessorImpl{l: l, ctx: ctx, db: db, t: t}
+	return &ProcessorImpl{l: l, ctx: ctx, db: db}
 }
 
 func (p *ProcessorImpl) SelectReward(gachaponId string) (Model, error) {

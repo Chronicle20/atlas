@@ -6,14 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, t tenant.Model, characterId uint32, questId uint32, expirationTime time.Time) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, questId uint32, expirationTime time.Time) (Model, error) {
 	e := NewEntityBuilder().
-		SetTenantId(t.Id()).
+		SetTenantId(tenantId).
 		SetCharacterId(characterId).
 		SetQuestId(questId).
 		SetState(StateStarted).
@@ -28,8 +27,8 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, questId uint32, exp
 	return Make(e)
 }
 
-func restart(db *gorm.DB, tenantId uuid.UUID, id uint32, expirationTime time.Time) (Model, error) {
-	entity, err := byIdEntityProvider(tenantId, id)(db)()
+func restart(db *gorm.DB, id uint32, expirationTime time.Time) (Model, error) {
+	entity, err := byIdEntityProvider(id)(db)()
 	if err != nil {
 		return Model{}, err
 	}
@@ -53,8 +52,8 @@ func restart(db *gorm.DB, tenantId uuid.UUID, id uint32, expirationTime time.Tim
 	return Make(updated)
 }
 
-func completeQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) (time.Time, error) {
-	entity, err := byIdEntityProvider(tenantId, id)(db)()
+func completeQuest(db *gorm.DB, id uint32) (time.Time, error) {
+	entity, err := byIdEntityProvider(id)(db)()
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -72,8 +71,8 @@ func completeQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) (time.Time, error
 	return completedAt, nil
 }
 
-func forfeitQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
-	entity, err := byIdEntityProvider(tenantId, id)(db)()
+func forfeitQuest(db *gorm.DB, id uint32) error {
+	entity, err := byIdEntityProvider(id)(db)()
 	if err != nil {
 		return err
 	}
@@ -95,7 +94,7 @@ func forfeitQuest(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
 }
 
 func setProgress(db *gorm.DB, tenantId uuid.UUID, id uint32, infoNumber uint32, progressValue string) error {
-	entity, err := byIdEntityProvider(tenantId, id)(db)()
+	entity, err := byIdEntityProvider(id)(db)()
 	if err != nil {
 		return err
 	}
@@ -132,8 +131,8 @@ func setProgress(db *gorm.DB, tenantId uuid.UUID, id uint32, infoNumber uint32, 
 	return nil
 }
 
-func deleteWithProgress(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
-	entity, err := byIdEntityProvider(tenantId, id)(db)()
+func deleteWithProgress(db *gorm.DB, id uint32) error {
+	entity, err := byIdEntityProvider(id)(db)()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil
@@ -154,9 +153,9 @@ func deleteWithProgress(db *gorm.DB, tenantId uuid.UUID, id uint32) error {
 	return nil
 }
 
-func deleteByCharacterIdWithProgress(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
+func deleteByCharacterIdWithProgress(db *gorm.DB, characterId uint32) error {
 	var entities []Entity
-	if err := db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Find(&entities).Error; err != nil {
+	if err := db.Where("character_id = ?", characterId).Find(&entities).Error; err != nil {
 		return fmt.Errorf("failed to find entities: %w", err)
 	}
 

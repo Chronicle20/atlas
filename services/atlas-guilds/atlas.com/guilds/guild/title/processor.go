@@ -1,9 +1,9 @@
 package title
 
 import (
-	"atlas-guilds/database"
 	"context"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -34,9 +34,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 func (p *ProcessorImpl) CreateDefaults(guildId uint32) ([]Model, error) {
 	var results []Model
 	var txErr error
-	txErr = database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
-		results, err = createDefault(tx, p.t, guildId)
+		results, err = createDefault(tx, p.t.Id(), guildId)
 		if err != nil {
 			return err
 		}
@@ -46,12 +46,12 @@ func (p *ProcessorImpl) CreateDefaults(guildId uint32) ([]Model, error) {
 }
 
 func (p *ProcessorImpl) Replace(guildId uint32, titles []string) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		err := tx.Where("tenant_id = ? AND guild_id = ?", p.t.Id(), guildId).Delete(&Entity{}).Error
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		err := tx.Where("guild_id = ?", guildId).Delete(&Entity{}).Error
 		if err != nil {
 			return err
 		}
-		_, err = create(tx, p.t, guildId, titles)
+		_, err = createTitles(tx, p.t.Id(), guildId, titles)
 		if err != nil {
 			return err
 		}
@@ -60,7 +60,7 @@ func (p *ProcessorImpl) Replace(guildId uint32, titles []string) error {
 }
 
 func (p *ProcessorImpl) Clear(guildId uint32) error {
-	err := p.db.Where("tenant_id = ? AND guild_id = ?", p.t.Id(), guildId).Delete(&Entity{}).Error
+	err := p.db.WithContext(p.ctx).Where("guild_id = ?", guildId).Delete(&Entity{}).Error
 	if err != nil {
 		return err
 	}

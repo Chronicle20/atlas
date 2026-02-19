@@ -3,19 +3,18 @@ package fame
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, amount int8) (Model, error) {
-	_, err := NewBuilder(t.Id(), characterId, targetId, amount).Build()
+func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, amount int8) (Model, error) {
+	_, err := NewBuilder(tenantId, characterId, targetId, amount).Build()
 	if err != nil {
 		return Model{}, err
 	}
 
 	e := &Entity{
-		TenantId:    t.Id(),
+		TenantId:    tenantId,
 		CharacterId: characterId,
 		TargetId:    targetId,
 		Amount:      amount,
@@ -29,6 +28,6 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, targetId uint32, am
 	return Make(*e)
 }
 
-func deleteByCharacterId(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-	return db.Where("tenant_id = ? AND (character_id = ? OR target_id = ?)", tenantId, characterId, characterId).Delete(&Entity{}).Error
+func deleteByCharacterId(db *gorm.DB, characterId uint32) error {
+	return db.Where("character_id = ? OR target_id = ?", characterId, characterId).Delete(&Entity{}).Error
 }

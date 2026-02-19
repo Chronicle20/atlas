@@ -1,7 +1,7 @@
 package services
 
 import (
-	"atlas-configurations/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-configurations/services/service"
 	"context"
 	"encoding/json"

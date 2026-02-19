@@ -4,7 +4,7 @@ import (
 	"atlas-npc-conversations/conversation"
 	npcConversation "atlas-npc-conversations/conversation/npc"
 	"atlas-npc-conversations/conversation/quest"
-	"atlas-npc-conversations/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"

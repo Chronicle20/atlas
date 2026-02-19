@@ -5,6 +5,7 @@ import (
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
+	cashData "atlas-channel/data/cash"
 	mapData "atlas-channel/data/map"
 	npc2 "atlas-channel/data/npc"
 	"atlas-channel/drop"
@@ -16,6 +17,7 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/party_quest"
 	"atlas-channel/reactor"
+	"atlas-channel/saga"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -31,6 +33,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -245,6 +248,17 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				_ = session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(l)(we.ItemId, we.Message))(s)
+
+				ci, cerr := cashData.NewProcessor(l, ctx).GetById(we.ItemId)
+				if cerr != nil {
+					return
+				}
+				if ci.BgmPath != "" {
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(l)(ci.BgmPath))(s)
+				}
+				if ci.StateChangeItem > 0 {
+					applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
+				}
 			}()
 			return nil
 		}
@@ -398,6 +412,58 @@ func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l l
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
+
+		go applyWeatherEffects(l, ctx, wp, f, e.Body.ItemId)
+	}
+}
+
+func applyWeatherEffects(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, f field.Model, itemId uint32) {
+	ci, err := cashData.NewProcessor(l, ctx).GetById(itemId)
+	if err != nil {
+		l.WithError(err).Debugf("Unable to retrieve cash item [%d] data for weather effects.", itemId)
+		return
+	}
+
+	if ci.BgmPath != "" {
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(l)(ci.BgmPath)))
+	}
+
+	if ci.StateChangeItem == 0 {
+		return
+	}
+
+	ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to get character IDs in map [%d] instance [%s] for weather buff.", f.MapId(), f.Instance())
+		return
+	}
+
+	sp := saga.NewProcessor(l, ctx)
+	for _, id := range ids {
+		applyConsumableEffectSaga(l, sp, id, f, ci.StateChangeItem)
+	}
+}
+
+func applyConsumableEffectSaga(l logrus.FieldLogger, sp saga.Processor, characterId uint32, f field.Model, itemId uint32) {
+	now := time.Now()
+	s := saga.Saga{
+		TransactionId: uuid.New(),
+		SagaType:      saga.FieldEffectUse,
+		InitiatedBy:   "WEATHER",
+		Steps: []saga.Step[any]{
+			{
+				StepId:    "apply_consumable_effect",
+				Status:    saga.Pending,
+				Action:    saga.ApplyConsumableEffect,
+				Payload:   saga.ApplyConsumableEffectPayload{CharacterId: characterId, WorldId: f.WorldId(), ChannelId: f.ChannelId(), ItemId: itemId},
+				CreatedAt: now,
+				UpdatedAt: now,
+			},
+		},
+	}
+	err := sp.Create(s)
+	if err != nil {
+		l.WithError(err).Errorf("Unable to create apply consumable effect saga for character [%d] item [%d].", characterId, itemId)
 	}
 }
 

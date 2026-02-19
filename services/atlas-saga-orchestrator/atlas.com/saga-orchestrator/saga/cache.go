@@ -14,8 +14,9 @@ type Cache interface {
 	// GetById returns a saga by its transaction ID for a tenant
 	GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool)
 
-	// Put adds or updates a saga in the cache for a tenant
-	Put(tenantId uuid.UUID, saga Saga)
+	// Put adds or updates a saga in the cache for a tenant.
+	// Returns an error on version conflict (optimistic locking).
+	Put(tenantId uuid.UUID, saga Saga) error
 
 	// Remove removes a saga from the cache for a tenant
 	Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool
@@ -30,23 +31,29 @@ type InMemoryCache struct {
 	mutex sync.RWMutex
 }
 
-// Singleton instance of the cache
-var instance *InMemoryCache
+// Singleton cache instance
+var cacheInstance Cache
 var once sync.Once
 
 // GetCache returns the singleton instance of the cache
 func GetCache() Cache {
 	once.Do(func() {
-		instance = &InMemoryCache{
+		cacheInstance = &InMemoryCache{
 			tenantSagas: make(map[uuid.UUID]map[uuid.UUID]Saga),
 		}
 	})
-	return instance
+	return cacheInstance
+}
+
+// SetCache sets the singleton cache instance (call from main.go before consumers start)
+func SetCache(c Cache) {
+	cacheInstance = c
+	once.Do(func() {}) // ensure once is spent so GetCache doesn't overwrite
 }
 
 // ResetCache resets the singleton cache instance for testing
 func ResetCache() {
-	instance = &InMemoryCache{
+	cacheInstance = &InMemoryCache{
 		tenantSagas: make(map[uuid.UUID]map[uuid.UUID]Saga),
 	}
 }
@@ -88,7 +95,7 @@ func (c *InMemoryCache) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Sa
 }
 
 // Put adds or updates a saga in the cache for a tenant
-func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) {
+func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) error {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 
@@ -99,6 +106,7 @@ func (c *InMemoryCache) Put(tenantId uuid.UUID, saga Saga) {
 
 	// Add or update the saga
 	c.tenantSagas[tenantId][saga.TransactionId()] = saga
+	return nil
 }
 
 // Remove removes a saga from the cache for a tenant

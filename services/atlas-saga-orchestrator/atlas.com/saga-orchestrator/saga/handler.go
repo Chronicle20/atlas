@@ -2391,7 +2391,9 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 	}
 
 	// Update the saga in cache with the new steps
-	GetCache().Put(h.t.Id(), updatedSaga)
+	if err := GetCache().Put(h.t.Id(), updatedSaga); err != nil {
+		return err
+	}
 
 	// Mark current step as complete
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)

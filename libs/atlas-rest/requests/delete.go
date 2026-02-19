@@ -12,7 +12,7 @@ type EmptyBodyRequest func(l logrus.FieldLogger, ctx context.Context) error
 
 func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configurators ...Configurator) error {
 	return func(url string, configurators ...Configurator) error {
-		c := &configuration{retries: 1}
+		c := &configuration{retries: 1, timeout: DefaultTimeout}
 		for _, configurator := range configurators {
 			configurator(c)
 		}
@@ -31,10 +31,12 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 				hd(req.Header)
 			}
 
-			req = req.WithContext(ctx)
+			reqCtx, cancel := context.WithTimeout(ctx, c.timeout)
+			defer cancel()
+			req = req.WithContext(reqCtx)
 
 			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
-			r, err = http.DefaultClient.Do(req)
+			r, err = client.Do(req)
 			if err != nil {
 				l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", http.MethodDelete, url)
 				return true, err

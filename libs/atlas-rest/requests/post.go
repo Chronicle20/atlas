@@ -13,7 +13,7 @@ import (
 func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {
 	return func(method string) func(url string, input interface{}, configurators ...Configurator) (A, error) {
 		return func(url string, input interface{}, configurators ...Configurator) (A, error) {
-			c := &configuration{retries: 1}
+			c := &configuration{retries: 1, timeout: DefaultTimeout}
 			for _, configurator := range configurators {
 				configurator(c)
 			}
@@ -38,10 +38,12 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 					hd(req.Header)
 				}
 
-				req = req.WithContext(ctx)
+				reqCtx, cancel := context.WithTimeout(ctx, c.timeout)
+				defer cancel()
+				req = req.WithContext(reqCtx)
 
 				l.Debugf("Issuing [%s] request to [%s].", method, req.URL)
-				r, err = http.DefaultClient.Do(req)
+				r, err = client.Do(req)
 				if err != nil {
 					l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", method, url)
 					return true, err

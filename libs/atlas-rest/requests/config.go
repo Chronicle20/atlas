@@ -1,7 +1,10 @@
 package requests
 
+import "time"
+
 type configuration struct {
 	retries          int
+	timeout          time.Duration
 	headerDecorators []HeaderDecorator
 }
 
@@ -11,6 +14,13 @@ type Configurator func(c *configuration)
 func SetRetries(amount int) Configurator {
 	return func(c *configuration) {
 		c.retries = amount
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SetTimeout(d time.Duration) Configurator {
+	return func(c *configuration) {
+		c.timeout = d
 	}
 }
 

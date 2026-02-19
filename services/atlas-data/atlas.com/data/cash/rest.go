@@ -35,10 +35,12 @@ type TimeWindow struct {
 }
 
 type RestModel struct {
-	Id          uint32             `json:"-"`
-	SlotMax     uint32             `json:"slotMax"`
-	Spec        map[SpecType]int32 `json:"spec"`
-	TimeWindows []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
+	Id              uint32             `json:"-"`
+	SlotMax         uint32             `json:"slotMax"`
+	StateChangeItem uint32             `json:"stateChangeItem,omitempty"`
+	BgmPath         string             `json:"bgmPath,omitempty"`
+	Spec            map[SpecType]int32 `json:"spec"`
+	TimeWindows     []TimeWindow       `json:"timeWindows,omitempty"` // Active time windows from info/time
 }
 
 func (r RestModel) GetName() string {

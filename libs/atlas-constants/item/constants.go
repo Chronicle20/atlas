@@ -33,7 +33,7 @@ const (
 	ClassificationMessageBanner            = Classification(508)
 	ClassificationNote                     = Classification(509)
 	ClassificationSongPlayer               = Classification(510)
-	ClassificationMapEffect                = Classification(512)
+	ClassificationFieldEffect              = Classification(512)
 	ClassificationDeathProtection          = Classification(513)
 	ClassificationStorePermit              = Classification(514)
 	ClassificationCosmeticCoupon           = Classification(515)

@@ -1,7 +1,6 @@
 package asset
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,10 +17,10 @@ func getBaseRequest() string {
 
 // requestById creates a GET request for a specific asset by ID
 func requestById(accountId uint32, compartmentId uuid.UUID, assetId uuid.UUID) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"/%s", accountId, compartmentId.String(), assetId.String()))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"/%s", accountId, compartmentId.String(), assetId.String()))
 }
 
 // requestByCompartmentId creates a GET request for all assets in a compartment
 func requestByCompartmentId(accountId uint32, compartmentId uuid.UUID) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, compartmentId.String()))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, compartmentId.String()))
 }

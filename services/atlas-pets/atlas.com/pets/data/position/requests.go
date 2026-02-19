@@ -1,7 +1,6 @@
 package position
 
 import (
-	"atlas-pets/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -21,5 +20,5 @@ func getInMap(mapId _map.Id, x int16, y int16) requests.Request[FootholdRestMode
 		X: x,
 		Y: y,
 	}
-	return rest.MakePostRequest[FootholdRestModel](fmt.Sprintf(getBaseRequest()+positionsResource, mapId), i)
+	return requests.PostRequest[FootholdRestModel](fmt.Sprintf(getBaseRequest()+positionsResource, mapId), i)
 }

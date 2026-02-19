@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"atlas-asset-expiration/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/world"
@@ -18,9 +17,9 @@ func getBaseRequest() string {
 }
 
 func requestStorage(accountId uint32, worldId world.Id) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, worldId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId, worldId))
 }
 
 func requestAssets(accountId uint32, worldId world.Id) requests.Request[[]AssetRestModel] {
-	return rest.MakeGetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+Assets, accountId, worldId))
+	return requests.GetRequest[[]AssetRestModel](fmt.Sprintf(getBaseRequest()+Assets, accountId, worldId))
 }

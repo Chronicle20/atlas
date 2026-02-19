@@ -1,7 +1,6 @@
 package compartment
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 }
 
 func requestByType(characterId uint32, inventoryType inventory.Type) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByType, characterId, inventoryType))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByType, characterId, inventoryType))
 }

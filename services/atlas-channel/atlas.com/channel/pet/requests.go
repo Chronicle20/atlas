@@ -1,7 +1,6 @@
 package pet
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,9 +17,9 @@ func getBaseRequest() string {
 }
 
 func requestById(petId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, petId))
 }
 
 func requestByOwnerId(ownerId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByOwnerResource, ownerId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByOwnerResource, ownerId))
 }

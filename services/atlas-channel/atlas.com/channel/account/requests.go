@@ -1,7 +1,6 @@
 package account
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,8 +15,8 @@ func getBaseRequest() string {
 	return requests.RootUrl("ACCOUNTS")
 }
 
-var requestAccounts = rest.MakeGetRequest[[]RestModel](getBaseRequest() + AccountsResource)
+var requestAccounts = requests.GetRequest[[]RestModel](getBaseRequest() + AccountsResource)
 
 func requestAccountById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
 }

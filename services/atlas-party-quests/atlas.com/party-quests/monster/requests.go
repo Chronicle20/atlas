@@ -1,7 +1,6 @@
 package monster
 
 import (
-	"atlas-party-quests/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -21,11 +20,11 @@ func getBaseRequest() string {
 }
 
 func requestDestroyInField(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID) requests.EmptyBodyRequest {
-	return rest.MakeDeleteRequest(fmt.Sprintf(getBaseRequest()+MonstersInField, worldId, channelId, mapId, instance.String()))
+	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+MonstersInField, worldId, channelId, mapId, instance.String()))
 }
 
 func requestSpawnInField(f field.Model, input SpawnInputRestModel) requests.Request[SpawnResponseRestModel] {
-	return rest.MakePostRequest[SpawnResponseRestModel](fmt.Sprintf(getBaseRequest()+MonstersInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), input)
+	return requests.PostRequest[SpawnResponseRestModel](fmt.Sprintf(getBaseRequest()+MonstersInField, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()), input)
 }
 
 type SpawnInputRestModel struct {

@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestById(skillId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+skillsResource, skillId))
 }

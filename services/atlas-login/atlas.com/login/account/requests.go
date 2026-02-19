@@ -1,7 +1,6 @@
 package account
 
 import (
-	"atlas-login/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -21,28 +20,28 @@ func getBaseRequest() string {
 }
 
 func requestAccounts() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + AccountsResource)
+	return requests.GetRequest[[]RestModel](getBaseRequest() + AccountsResource)
 }
 
 func requestAccountByName(name string) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsByName, name))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsByName, name))
 }
 
 func requestAccountById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+AccountsById, id))
 }
 
 func requestUpdate(m Model) requests.Request[RestModel] {
 	im, _ := Transform(m)
-	return rest.MakePatchRequest[RestModel](fmt.Sprintf(getBaseRequest()+Update, m.id), im)
+	return requests.PatchRequest[RestModel](fmt.Sprintf(getBaseRequest()+Update, m.id), im)
 }
 
 func requestRecordPinAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PinAttemptOutputRestModel] {
 	input := PinAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
-	return rest.MakePostRequest[PinAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PinAttempts, accountId), input)
+	return requests.PostRequest[PinAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PinAttempts, accountId), input)
 }
 
 func requestRecordPicAttempt(accountId uint32, success bool, ipAddress string, hwid string) requests.Request[PicAttemptOutputRestModel] {
 	input := PicAttemptInputRestModel{Success: success, IpAddress: ipAddress, HWID: hwid}
-	return rest.MakePostRequest[PicAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PicAttempts, accountId), input)
+	return requests.PostRequest[PicAttemptOutputRestModel](fmt.Sprintf(getBaseRequest()+PicAttempts, accountId), input)
 }

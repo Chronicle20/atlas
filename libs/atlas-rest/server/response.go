@@ -8,18 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// Marshal
-// Deprecated : to be replaced with MarshalResponse
-//
-//goland:noinspection GoUnusedExportedFunction
-func Marshal[A any](l logrus.FieldLogger) func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(slice A) {
-	return func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(slice A) {
-		return func(si jsonapi.ServerInformation) func(slice A) {
-			return MarshalResponse[A](l)(w)(si)(make(map[string][]string))
-		}
-	}
-}
-
 //goland:noinspection GoUnusedExportedFunction
 func MarshalResponse[A any](l logrus.FieldLogger) func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(queryParams map[string][]string) func(slice A) {
 	return func(w http.ResponseWriter) func(si jsonapi.ServerInformation) func(queryParams map[string][]string) func(slice A) {

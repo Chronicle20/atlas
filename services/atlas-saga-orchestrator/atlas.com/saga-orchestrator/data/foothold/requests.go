@@ -1,7 +1,6 @@
 package foothold
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestFootholdBelow(mapId _map.Id, input PositionInputRestModel) requests.Request[FootholdRestModel] {
-	return rest.MakePostRequest[FootholdRestModel](fmt.Sprintf(getBaseRequest()+footholdBelowPath, mapId), input)
+	return requests.PostRequest[FootholdRestModel](fmt.Sprintf(getBaseRequest()+footholdBelowPath, mapId), input)
 }

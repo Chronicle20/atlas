@@ -1,8 +1,6 @@
 package factory
 
 import (
-	"atlas-login/rest"
-
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/requests"
 )
@@ -41,5 +39,5 @@ func requestCreate(accountId uint32, worldId world.Id, name string, jobIndex uin
 		Mp:           5,
 		MapId:        0,
 	}
-	return rest.MakePostRequest[CreateCharacterResponse](getBaseRequest()+Resource, i)
+	return requests.PostRequest[CreateCharacterResponse](getBaseRequest()+Resource, i)
 }

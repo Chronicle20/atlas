@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"atlas-character/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,9 +16,9 @@ func getBaseRequest() string {
 }
 
 func requestByCharacterId(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }
 
 func requestById(characterId uint32, id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, characterId, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, characterId, id))
 }

@@ -1,8 +1,6 @@
 package validation
 
 import (
-	"atlas-quest/data"
-
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -19,5 +17,5 @@ func requestValidation(characterId uint32, conditions []ConditionInput) requests
 		Id:         characterId,
 		Conditions: conditions,
 	}
-	return data.MakePostRequest[ResponseModel](getBaseRequest()+validationsPath, body)
+	return requests.PostRequest[ResponseModel](getBaseRequest()+validationsPath, body)
 }

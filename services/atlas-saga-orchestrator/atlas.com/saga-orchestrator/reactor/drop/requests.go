@@ -1,7 +1,6 @@
 package drop
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -22,7 +21,7 @@ func getDataBaseRequest() string {
 }
 
 func requestReactorDrops(reactorId uint32) requests.Request[ReactorRestModel] {
-	return rest.MakeGetRequest[ReactorRestModel](fmt.Sprintf(getBaseRequest()+reactorDropsPath, reactorId))
+	return requests.GetRequest[ReactorRestModel](fmt.Sprintf(getBaseRequest()+reactorDropsPath, reactorId))
 }
 
 func requestDropPosition(mapId _map.Id, initialX, initialY, fallbackX, fallbackY int16) requests.Request[PositionRestModel] {
@@ -32,5 +31,5 @@ func requestDropPosition(mapId _map.Id, initialX, initialY, fallbackX, fallbackY
 		FallbackX: fallbackX,
 		FallbackY: fallbackY,
 	}
-	return rest.MakePostRequest[PositionRestModel](fmt.Sprintf(getDataBaseRequest()+mapDropPositionPath, mapId), input)
+	return requests.PostRequest[PositionRestModel](fmt.Sprintf(getDataBaseRequest()+mapDropPositionPath, mapId), input)
 }

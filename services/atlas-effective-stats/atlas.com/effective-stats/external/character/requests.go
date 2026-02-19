@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-effective-stats/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 
 // RequestById returns a request to fetch a character by ID from atlas-character service
 func RequestById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }

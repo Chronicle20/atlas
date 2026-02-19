@@ -1,7 +1,6 @@
 package rates
 
 import (
-	"atlas-monster-death/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestForCharacter(ch channel.Model, characterId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+RatesResource, ch.WorldId(), ch.Id(), characterId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+RatesResource, ch.WorldId(), ch.Id(), characterId))
 }

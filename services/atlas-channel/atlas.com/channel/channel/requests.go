@@ -1,7 +1,6 @@
 package channel
 
 import (
-	"atlas-channel/rest"
 	"context"
 	"fmt"
 
@@ -21,7 +20,7 @@ func getBaseRequest() string {
 }
 
 func requestChannel(ch channel.Model) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelResource, ch.WorldId(), ch.Id()))
 }
 
 func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Model) error {
@@ -31,7 +30,7 @@ func registerChannel(l logrus.FieldLogger) func(ctx context.Context) func(c Mode
 			if err != nil {
 				return err
 			}
-			_, err = rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, c.WorldId()), i)(l, ctx)
+			_, err = requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+ChannelsResource, c.WorldId()), i)(l, ctx)
 			return err
 		}
 	}

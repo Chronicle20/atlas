@@ -1,7 +1,6 @@
 package cashshop
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 
@@ -22,6 +21,6 @@ func getBaseRequest() string {
 func RequestCompartment(l logrus.FieldLogger, ctx context.Context) func(accountId uint32, compartmentType byte) (CompartmentRestModel, error) {
 	return func(accountId uint32, compartmentType byte) (CompartmentRestModel, error) {
 		url := fmt.Sprintf(getBaseRequest()+compartmentsResource, accountId, compartmentType)
-		return rest.MakeGetRequest[CompartmentRestModel](url)(l, ctx)
+		return requests.GetRequest[CompartmentRestModel](url)(l, ctx)
 	}
 }

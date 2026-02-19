@@ -1,7 +1,6 @@
 package reactor
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 	"strconv"
@@ -153,7 +152,7 @@ func getReactorsBaseRequest() string {
 }
 
 func requestReactorsByName(worldId world.Id, channelId channel.Id, mapId _map.Id, instance uuid.UUID, name string) requests.Request[[]ReactorRestModel] {
-	return rest.MakeGetRequest[[]ReactorRestModel](fmt.Sprintf(
+	return requests.GetRequest[[]ReactorRestModel](fmt.Sprintf(
 		getReactorsBaseRequest()+"worlds/%d/channels/%d/maps/%d/instances/%s/reactors?name=%s",
 		worldId, channelId, mapId, instance.String(), name,
 	))

@@ -1,7 +1,6 @@
 package saved_location
 
 import (
-	"atlas-npc-conversations/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestByCharacterAndType(characterId uint32, locationType string) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndType, characterId, locationType))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndType, characterId, locationType))
 }

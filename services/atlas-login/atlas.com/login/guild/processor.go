@@ -29,7 +29,7 @@ func (p *Processor) ByMemberIdProvider(memberId uint32) model.Provider[[]Model] 
 func (p *Processor) IsGuildMaster(characterId uint32) (bool, error) {
 	g, err := p.GetByMemberId(characterId)
 	if err != nil {
-		if errors.Is(requests.ErrNotFound, err) {
+		if errors.Is(err, requests.ErrNotFound) {
 			return false, nil
 		}
 		return false, err

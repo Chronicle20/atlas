@@ -72,7 +72,7 @@ func (p *ProcessorImpl) ByAccountAndWorldProvider(decorators ...model.Decorator[
 func (p *ProcessorImpl) GetForWorld(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) ([]Model, error) {
 	return func(accountId uint32, worldId world.Id) ([]Model, error) {
 		cs, err := p.ByAccountAndWorldProvider(decorators...)(accountId, worldId)()
-		if errors.Is(requests.ErrNotFound, err) {
+		if errors.Is(err, requests.ErrNotFound) {
 			return make([]Model, 0), nil
 		}
 		return cs, err

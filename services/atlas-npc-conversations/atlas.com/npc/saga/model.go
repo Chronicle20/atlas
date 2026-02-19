@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/validation"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
 )
@@ -111,6 +112,41 @@ type StartInstanceTransportPayload struct {
 	RouteName   string     `json:"routeName"` // Route name (resolved to UUID at runtime by saga-orchestrator)
 }
 
+// RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
+type RegisterPartyQuestPayload struct {
+	CharacterId uint32     `json:"characterId"`
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`
+	QuestId     string     `json:"questId"` // Party quest definition ID (e.g., "henesys_pq")
+}
+
+// WarpPartyQuestMembersToMapPayload represents the payload required to warp all party quest members to a map.
+type WarpPartyQuestMembersToMapPayload struct {
+	CharacterId uint32     `json:"characterId"` // Character initiating the warp (must be in a party)
+	WorldId     world.Id   `json:"worldId"`
+	ChannelId   channel.Id `json:"channelId"`
+	MapId       _map.Id    `json:"mapId"`    // Destination map ID
+	PortalId    uint32     `json:"portalId"` // Destination portal ID
+}
+
+// LeavePartyQuestPayload represents the payload required to remove a character from their active party quest.
+type LeavePartyQuestPayload struct {
+	CharacterId uint32   `json:"characterId"`
+	WorldId     world.Id `json:"worldId"`
+}
+
+// StageClearAttemptPqPayload represents the payload required to attempt clearing the current PQ stage.
+type StageClearAttemptPqPayload struct {
+	CharacterId uint32 `json:"characterId"`
+}
+
+// EnterPartyQuestBonusPayload represents the payload for entering the bonus stage of a party quest.
+type EnterPartyQuestBonusPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating bonus entry
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
 // Re-export constants from atlas-script-core/saga
 const (
 	// Saga types
@@ -166,6 +202,13 @@ const (
 
 	// Transport actions
 	StartInstanceTransport Action = "start_instance_transport"
+
+	// Party quest actions
+	RegisterPartyQuest         Action = "register_party_quest"
+	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
+	LeavePartyQuest            Action = "leave_party_quest"
+	StageClearAttemptPq        Action = "stage_clear_attempt_pq"
+	EnterPartyQuestBonus       Action = "enter_party_quest_bonus"
 
 	// Gachapon actions
 	SelectGachaponReward = scriptsaga.SelectGachaponReward

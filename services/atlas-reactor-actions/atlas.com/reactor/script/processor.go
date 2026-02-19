@@ -208,10 +208,10 @@ func (p *ProcessorImpl) ProcessTrigger(reactorId string, reactorState int8, char
 
 // evaluateRules evaluates a list of rules and returns the result
 func (p *ProcessorImpl) evaluateRules(rules []Rule, reactorId string, reactorState int8, characterId uint32, eventType string) ProcessResult {
-	evaluator := NewConditionEvaluator(p.l)
+	evaluator := NewConditionEvaluator(p.l, p.ctx)
 
 	for _, rule := range rules {
-		matched, err := evaluator.EvaluateRule(reactorState, rule)
+		matched, err := evaluator.EvaluateRule(reactorState, characterId, rule)
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to evaluate rule [%s] for reactor [%s]", rule.Id(), reactorId)
 			return ProcessResult{

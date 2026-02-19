@@ -129,10 +129,14 @@ func (d *DropRegistry) GetDrop(dropId uint32) (Model, error) {
 	return drop, nil
 }
 
-func (d *DropRegistry) ReserveDrop(dropId uint32, characterId uint32, petSlot int8) (Model, error) {
+func (d *DropRegistry) ReserveDrop(dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
 	entry, ok := d.loadEntry(dropId)
 	if !ok {
 		return Model{}, errors.New("unable to locate drop")
+	}
+
+	if !entry.Drop.CanBeReservedBy(characterId, partyId) {
+		return Model{}, errors.New("drop is not available for this character")
 	}
 
 	if entry.Drop.Status() == StatusAvailable {

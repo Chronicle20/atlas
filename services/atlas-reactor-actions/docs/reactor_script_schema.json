@@ -75,7 +75,8 @@
           "type": "string",
           "description": "Type of condition",
           "enum": [
-            "reactor_state"
+            "reactor_state",
+            "pq_custom_data"
           ]
         },
         "operator": {
@@ -86,6 +87,10 @@
         "value": {
           "type": "string",
           "description": "Value to compare against"
+        },
+        "step": {
+          "type": "string",
+          "description": "Custom data key name (required for pq_custom_data conditions)"
         }
       }
     },
@@ -106,7 +111,10 @@
             "weaken_area_boss",
             "move_environment",
             "kill_all_monsters",
-            "drop_message"
+            "drop_message",
+            "update_pq_state",
+            "hit_reactor",
+            "broadcast_pq_message"
           ]
         },
         "params": {
@@ -169,6 +177,14 @@
                   "count": {
                     "type": "string",
                     "description": "Number of monsters to spawn (default: 1)"
+                  },
+                  "x": {
+                    "type": "string",
+                    "description": "X position override (default: reactor X)"
+                  },
+                  "y": {
+                    "type": "string",
+                    "description": "Y position override (default: reactor Y)"
                   }
                 }
               }
@@ -238,6 +254,70 @@
                   "message": {
                     "type": "string",
                     "description": "Message to display to player"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "update_pq_state" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "properties": {
+                  "updates": {
+                    "type": "string",
+                    "description": "Comma-separated key=value pairs to set (e.g., 'seeds=3,complete=true')"
+                  },
+                  "increments": {
+                    "type": "string",
+                    "description": "Comma-separated key names to increment by 1 (e.g., 'seeds,kills')"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "hit_reactor" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["reactorName"],
+                "properties": {
+                  "reactorName": {
+                    "type": "string",
+                    "description": "Name of the reactor to hit (resolved via REST query)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "broadcast_pq_message" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["message"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "Message type (default: PINK_TEXT)"
+                  },
+                  "message": {
+                    "type": "string",
+                    "description": "Message to broadcast to all PQ members"
                   }
                 }
               }

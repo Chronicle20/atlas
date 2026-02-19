@@ -14,7 +14,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "itemId": "4032313"
+                "referenceId": "4032313"
               }
             ],
             "nextState": "couponMessage"

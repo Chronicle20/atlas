@@ -77,11 +77,20 @@ A command consists of a Producer function that matches message patterns and retu
 | MobStatusCommandProducer | `@mobstatus <skillId\|skillName> [level]` | Executes mob skill on all monsters in map |
 | MobClearCommandProducer | `@mobclear [statusType]` | Clears statuses from all monsters in map |
 | DiseaseCommandProducer | `@disease <target> <diseaseType> [value] [duration]` | Applies a disease effect to character(s) |
+| PQRegisterCommandProducer | `@pq register <questId>` | Registers character for a party quest |
+| MobKillAllCommandProducer | `@mob kill all` | Kills all monsters in the current map |
+| PQStageCommandProducer | `@pq stage` | Force-advances the current party quest stage |
+| WeatherCommandProducer | `@weather <itemId> <message>` | Triggers a weather effect in the current field (30s) |
 
 Target values:
 - `me` - The command issuer
-- `map` - All characters in the current map (not supported for currency commands)
+- `map` - All characters in the current map
 - `<name>` - A specific character by name
+
+Exceptions:
+- AwardCurrencyCommandProducer does not support `map`
+- ChangeJobCommandProducer uses `my` instead of `me` for self-targeting and does not support `map`
+- WhereAmICommandProducer does not require GM status
 
 ---
 
@@ -266,6 +275,30 @@ Retrieves experience, meso, drop, and quest experience rates for characters, inc
 | Method | Responsibility |
 |--------|---------------|
 | GetByCharacter | Retrieves rates and factors for a character |
+
+---
+
+## Party Quest
+
+### Responsibility
+
+Provides party quest instance retrieval for command execution.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Party quest instance ID |
+
+### Processors
+
+#### PartyQuestProcessor
+
+| Method | Responsibility |
+|--------|---------------|
+| GetByCharacter | Retrieves the party quest instance for a character |
 
 ---
 

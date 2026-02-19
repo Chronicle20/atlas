@@ -140,7 +140,7 @@ func TestReserveDrop_Success(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	reserved, err := r.ReserveDrop(drop.Id(), characterId, petSlot)
+	reserved, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -160,12 +160,12 @@ func TestReserveDrop_AlreadyReservedBySameCharacter(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId, petSlot)
+	_, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	reserved2, err := r.ReserveDrop(drop.Id(), characterId, petSlot)
+	reserved2, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Should allow same character to re-reserve: %v", err)
 	}
@@ -186,12 +186,12 @@ func TestReserveDrop_AlreadyReservedByDifferentCharacter(t *testing.T) {
 	characterId2 := uint32(67890)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId1, petSlot)
+	_, err := r.ReserveDrop(drop.Id(), characterId1, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	_, err = r.ReserveDrop(drop.Id(), characterId2, petSlot)
+	_, err = r.ReserveDrop(drop.Id(), characterId2, 0, petSlot)
 	if err == nil {
 		t.Fatal("Expected error when reserving drop already reserved by another character")
 	}
@@ -201,7 +201,7 @@ func TestReserveDrop_NotFound(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
 
-	_, err := r.ReserveDrop(999999, 12345, -1)
+	_, err := r.ReserveDrop(999999, 12345, 0, -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving non-existent drop")
 	}
@@ -218,7 +218,7 @@ func TestCancelDropReservation_ValidCancellation(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(2)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId, petSlot)
+	_, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -249,7 +249,7 @@ func TestCancelDropReservation_WrongCharacter(t *testing.T) {
 	characterId2 := uint32(67890)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId1, petSlot)
+	_, err := r.ReserveDrop(drop.Id(), characterId1, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -440,7 +440,7 @@ func TestReserveDrop_WithPetSlot(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(2)
 
-	reserved, err := r.ReserveDrop(drop.Id(), characterId, petSlot)
+	reserved, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop with pet slot: %v", err)
 	}
@@ -499,7 +499,14 @@ func TestConcurrentReserveDrop(t *testing.T) {
 	r := GetRegistry()
 	ten := createTestTenant(t)
 
-	mb := createTestBuilder(ten, 1, 1, 100000000)
+	// Use FFA drop (owner=0) so ownership validation allows all characters to attempt reservation
+	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
+	mb := NewModelBuilder(ten, f).
+		SetItem(1000000, 1).
+		SetPosition(100, 200).
+		SetOwner(0, 0).
+		SetDropper(99999, 50, 150).
+		SetType(0)
 	drop := mustCreateDrop(t, r, mb)
 
 	const numGoroutines = 10
@@ -510,7 +517,7 @@ func TestConcurrentReserveDrop(t *testing.T) {
 		wg.Add(1)
 		go func(characterId uint32) {
 			defer wg.Done()
-			_, err := r.ReserveDrop(drop.Id(), characterId, -1)
+			_, err := r.ReserveDrop(drop.Id(), characterId, 0, -1)
 			if err == nil {
 				atomic.AddInt32(&successCount, 1)
 			}
@@ -583,7 +590,7 @@ func TestCancelDropReservation_AlreadyAvailable(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000).SetStatus(StatusAvailable)
 	drop := mustCreateDrop(t, r, mb)
 
-	_, _ = r.ReserveDrop(drop.Id(), uint32(12345), -1)
+	_, _ = r.ReserveDrop(drop.Id(), uint32(12345), 0, -1)
 
 	r.CancelDropReservation(drop.Id(), uint32(12345))
 

@@ -16,7 +16,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -54,7 +53,7 @@ func handleStatusEventUsed(sc server.Model, wp writer.Producer) message.Handler[
 		}
 
 		if e.ChairType == chair2.TypePortable {
-			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, uuid.Nil), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
+			err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.Body.CharacterId, showChairForeign(l)(ctx)(wp)(e.Body.CharacterId, e.ChairId))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show [%d] using chair [%d] to those in map [%d].", e.Body.CharacterId, e.ChairId, e.MapId)
 			}
@@ -143,7 +142,7 @@ func handleStatusEventCancelled(sc server.Model, wp writer.Producer) message.Han
 			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.CharacterSitResult, e.Body.CharacterId)
 		}
 
-		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, uuid.Nil), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
+		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.Body.CharacterId, cancelChairForeign(l)(ctx)(wp)(e.Body.CharacterId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write foreign character [%d] sit result completely to [%d].", e.Body.CharacterId, e.MapId)
 		}

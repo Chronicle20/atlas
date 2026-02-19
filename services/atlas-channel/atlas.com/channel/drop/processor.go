@@ -32,6 +32,6 @@ func (p *Processor) ForEachInMap(f field.Model, o model.Operator[Model]) error {
 	return model.ForEachSlice(p.InMapModelProvider(f), o, model.ParallelExecute())
 }
 
-func (p *Processor) RequestReservation(f field.Model, dropId uint32, characterId uint32, characterX int16, characterY int16, petSlot int8) error {
-	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(RequestReservationCommandProvider(f, dropId, characterId, characterX, characterY, petSlot))
+func (p *Processor) RequestReservation(f field.Model, dropId uint32, characterId uint32, partyId uint32, characterX int16, characterY int16, petSlot int8) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(drop2.EnvCommandTopic)(RequestReservationCommandProvider(f, dropId, characterId, partyId, characterX, characterY, petSlot))
 }

@@ -134,6 +134,23 @@ Commands a monster to use a skill.
 }
 ```
 
+#### DAMAGE_FRIENDLY
+
+Applies damage from a hostile monster to a friendly monster and resets its drop timer.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "monsterId": 0,
+  "type": "DAMAGE_FRIENDLY",
+  "body": {
+    "observerUniqueId": 0,
+    "attackerUniqueId": 0
+  }
+}
+```
+
 #### APPLY_STATUS_FIELD
 
 Applies a status effect to all monsters in a field.
@@ -173,6 +190,39 @@ Cancels status effects from all monsters in a field. If `statusTypes` is empty, 
   "body": {
     "statusTypes": ["STATUS_TYPE"]
   }
+}
+```
+
+#### USE_SKILL_FIELD
+
+Commands all monsters in a field to use a skill (GM command, bypasses validation).
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "USE_SKILL_FIELD",
+  "body": {
+    "skillId": 0,
+    "skillLevel": 0
+  }
+}
+```
+
+#### DESTROY_FIELD
+
+Destroys all monsters in a field.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "DESTROY_FIELD",
+  "body": {}
 }
 ```
 
@@ -305,6 +355,7 @@ Emitted when a monster takes damage but survives.
   "body": {
     "x": 0,
     "y": 0,
+    "observerId": 0,
     "actorId": 0,
     "boss": false,
     "damageEntries": [
@@ -441,6 +492,25 @@ Emitted when a monster reflects damage back to a character.
 
 `reflectType`: "WEAPON_REFLECT" or "MAGIC_REFLECT".
 
+#### FRIENDLY_DROP
+
+Emitted when a friendly monster's drop timer produces items.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "FRIENDLY_DROP",
+  "body": {
+    "itemCount": 0
+  }
+}
+```
+
 ### COMMAND_TOPIC_CHARACTER_BUFF
 
 Character buff commands produced when monster debuff skills target players.
@@ -514,12 +584,48 @@ Warps a character to a target map.
 }
 ```
 
+### COMMAND_TOPIC_DROP
+
+Drop spawn commands produced when friendly monster drop timers fire.
+
+**Message Type:**
+
+#### SPAWN
+
+Spawns an item or meso drop in a field.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "type": "SPAWN",
+  "body": {
+    "itemId": 0,
+    "quantity": 0,
+    "mesos": 0,
+    "dropType": 2,
+    "x": 0,
+    "y": 0,
+    "ownerId": 0,
+    "ownerPartyId": 0,
+    "dropperId": 0,
+    "dropperX": 0,
+    "dropperY": 0,
+    "playerDrop": false,
+    "mod": 1
+  }
+}
+```
+
 ## Transaction Semantics
 
 - All messages include span and tenant headers for tracing and multi-tenancy
 - Monster status events are keyed by mapId for partition ordering within a map
 - Character buff commands are keyed by characterId
 - Portal commands are keyed by characterId
+- Drop spawn commands are keyed by mapId
 
 ## Headers
 

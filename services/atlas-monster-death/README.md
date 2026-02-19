@@ -7,7 +7,7 @@ This service has no REST endpoints and no persistent storage. It operates purely
 ## External Dependencies
 
 - **Kafka**: Message broker for event consumption and command production
-- **Jaeger**: Distributed tracing
+- **OpenTelemetry Collector**: Distributed tracing via OTLP gRPC
 
 ## External Service Dependencies
 
@@ -18,6 +18,7 @@ This service makes REST calls to:
 - **Data Service** (`DATA`): Get monster information (HP, experience), calculate drop positions, and retrieve base equipment statistics
 - **Drop Information Service** (`DROPS_INFORMATION`): Get monster drop tables
 - **Quest Service** (`QUESTS`): Get started quests for quest-aware drop filtering
+- **Party Service** (`PARTIES`): Get party membership for drop ownership
 - **Rate Service** (`RATES`): Get character rate multipliers (exp, meso, item drop)
 
 ## Runtime Configuration
@@ -25,7 +26,7 @@ This service makes REST calls to:
 | Variable | Description |
 |----------|-------------|
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
-| `JAEGER_HOST_PORT` | Jaeger agent host:port |
+| `TRACE_ENDPOINT` | OpenTelemetry Collector gRPC endpoint |
 | `LOG_LEVEL` | Logging level |
 | `EVENT_TOPIC_MONSTER_STATUS` | Topic for monster status events |
 | `COMMAND_TOPIC_DROP` | Topic for drop spawn commands |
@@ -34,6 +35,7 @@ This service makes REST calls to:
 | `MAPS` | Base URL for map service |
 | `DATA` | Base URL for data service |
 | `DROPS_INFORMATION` | Base URL for drop information service |
+| `PARTIES` | Base URL for party service |
 | `QUESTS` | Base URL for quest service |
 | `RATES` | Base URL for rate service |
 

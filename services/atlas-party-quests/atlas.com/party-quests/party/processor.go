@@ -1,0 +1,58 @@
+package party
+
+import (
+	"context"
+
+	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
+)
+
+type Processor interface {
+	GetById(partyId uint32) (Model, error)
+	GetByMemberId(memberId uint32) (Model, error)
+	ByIdProvider(partyId uint32) model.Provider[Model]
+	ByMemberIdProvider(memberId uint32) model.Provider[[]Model]
+	GetMembers(partyId uint32) ([]MemberModel, error)
+}
+
+type ProcessorImpl struct {
+	l   logrus.FieldLogger
+	ctx context.Context
+}
+
+func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
+	return &ProcessorImpl{l: l, ctx: ctx}
+}
+
+func (p *ProcessorImpl) GetById(partyId uint32) (Model, error) {
+	return p.ByIdProvider(partyId)()
+}
+
+func (p *ProcessorImpl) ByIdProvider(partyId uint32) model.Provider[Model] {
+	pp := requests.Provider[RestModel, Model](p.l, p.ctx)(requestById(partyId), Extract)
+	mp := requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(partyId), ExtractMember, model.Filters[MemberModel]())
+	return func() (Model, error) {
+		pa, err := pp()
+		if err != nil {
+			return Model{}, err
+		}
+		ms, err := mp()
+		if err != nil {
+			return Model{}, err
+		}
+		return pa.SetMembers(ms), nil
+	}
+}
+
+func (p *ProcessorImpl) GetByMemberId(memberId uint32) (Model, error) {
+	return model.First[Model](p.ByMemberIdProvider(memberId), model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) ByMemberIdProvider(memberId uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestByMemberId(memberId), Extract, model.Filters[Model]())
+}
+
+func (p *ProcessorImpl) GetMembers(partyId uint32) ([]MemberModel, error) {
+	return requests.SliceProvider[MemberRestModel, MemberModel](p.l, p.ctx)(requestMembers(partyId), ExtractMember, model.Filters[MemberModel]())()
+}

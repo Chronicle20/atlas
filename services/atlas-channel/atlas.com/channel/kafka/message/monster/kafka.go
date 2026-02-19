@@ -8,12 +8,18 @@ import (
 )
 
 const (
-	EnvCommandTopic        = "COMMAND_TOPIC_MONSTER"
-	CommandTypeDamage      = "DAMAGE"
-	CommandTypeApplyStatus  = "APPLY_STATUS"
-	CommandTypeCancelStatus = "CANCEL_STATUS"
-	CommandTypeUseSkill     = "USE_SKILL"
+	EnvCommandTopic           = "COMMAND_TOPIC_MONSTER"
+	CommandTypeDamage         = "DAMAGE"
+	CommandTypeDamageFriendly = "DAMAGE_FRIENDLY"
+	CommandTypeApplyStatus    = "APPLY_STATUS"
+	CommandTypeCancelStatus   = "CANCEL_STATUS"
+	CommandTypeUseSkill       = "USE_SKILL"
 )
+
+type DamageFriendlyCommandBody struct {
+	AttackerUniqueId uint32 `json:"attackerUniqueId"`
+	ObserverUniqueId uint32 `json:"observerUniqueId"`
+}
 
 type Command[E any] struct {
 	WorldId   world.Id   `json:"worldId"`
@@ -101,6 +107,7 @@ type StatusEventStopControlBody struct {
 type StatusEventDamagedBody struct {
 	X             int16         `json:"x"`
 	Y             int16         `json:"y"`
+	ObserverId    uint32        `json:"observerId"`
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
@@ -140,7 +147,7 @@ type StatusEffectCancelledBody struct {
 }
 
 type StatusEventDamageReflectedBody struct {
-	CharacterId    uint32 `json:"characterId"`
-	ReflectDamage  uint32 `json:"reflectDamage"`
-	ReflectType    string `json:"reflectType"`
+	CharacterId   uint32 `json:"characterId"`
+	ReflectDamage uint32 `json:"reflectDamage"`
+	ReflectType   string `json:"reflectType"`
 }

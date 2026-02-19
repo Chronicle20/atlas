@@ -160,3 +160,7 @@ export type { ReactorScriptData } from './reactor-scripts.service';
 export type { SeedResult } from './seed.service';
 export { mapEntitiesService } from './map-entities.service';
 export type { MapPortalData, MapNpcData, MapReactorData, MapMonsterData } from './map-entities.service';
+
+// Ban management
+export { bansService } from './bans.service';
+export type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanQueryOptions, CheckBanParams } from './bans.service';

@@ -1,0 +1,270 @@
+{
+  "id": "ludi-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Ludibrium Party Quest",
+    "fieldLock": "channel",
+    "duration": "3600000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "6"
+      },
+      {
+        "type": "level",
+        "operator": ">=",
+        "value": "35"
+      },
+      {
+        "type": "level",
+        "operator": "<=",
+        "value": "50"
+      }
+    ],
+    "startEvents": [],
+    "failRequirements": [],
+    "registration": {
+      "type": "party",
+      "mode": "instant",
+      "duration": -1,
+      "mapId": "221024500"
+    },
+    "exit": "922010000",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Ratz Coupon Collection",
+        "description": "Party members traverse up, and back down the tower collecting passes from Ratz and Black Ratz.",
+        "mapId": ["922010100"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "20",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "2700"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "1",
+        "name": "Box Coupon Collection",
+        "description": "Party members collect coupons by breaking boxes. One or more unlucky party members may be sent to the Tower's Trap.",
+        "mapId": ["922010200", "922010201"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "15",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "3600"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "2",
+        "name": "Bloctopus Coupon Collection",
+        "description": "Party members traverse up, and back down the tower collecting passes from Bloctopus.",
+        "mapId": ["922010300"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "15",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "3300"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "3",
+        "name": "Darkness Monster Coupon Collection",
+        "description": "Party members must collect coupons from Darkness Monsters.",
+        "mapId": [
+          "922010400",
+          "922010401",
+          "922010402",
+          "922010403",
+          "922010404",
+          "922010405"
+        ],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "6",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "3300"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "4",
+        "name": "Class Portal Coupon Collection",
+        "description": "Party members must collect coupons from boxes. Two portals have specific class requirements to complete.",
+        "mapId": [
+          "922010500",
+          "922010501",
+          "922010502",
+          "922010503",
+          "922010504",
+          "922010505",
+          "922010506"
+        ],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "24",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "3770"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "5",
+        "name": "Warp Combination Puzzle",
+        "description": "Party members must use warps to navigate a combination puzzle to reach the next portal. Combination 133221333123111",
+        "mapId": ["922010600"],
+        "type": "warp_puzzle",
+        "duration": 0,
+        "combination_reset": {},
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "6",
+        "name": "Rombot Coupon Collection",
+        "description": "A range party member must kill monsters on top portion of map. This will spawn Rombots in the bottom portion which drop coupons.",
+        "mapId": ["922010700"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "3",
+            "referenceId": "4001022"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "4620"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "7",
+        "name": "Box Combination",
+        "description": "Five party members stand on individual boxes, if they match the randomized combination on communication with Blue Balloon, the stage is cleared.",
+        "mapId": ["922010800"],
+        "type": "combination_puzzle",
+        "duration": 0,
+        "digits": "9",
+        "combination_reset": {},
+        "clearConditions": [],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "5040"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "8",
+        "name": "Boss Stage",
+        "description": "Party members must kill Black Ratz from Another Dimension in order to spawn Alishar.",
+        "mapId": ["922010900"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "1",
+            "referenceId": "4001023"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "5950"
+          }
+        ],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "9",
+        "name": "Bonus",
+        "description": "The party quest has cleared, party members have a limited time to collect drops from boxes.",
+        "mapId": ["922011000"],
+        "type": "bonus",
+        "duration": 60000,
+        "warp": {
+          "type": "warp_out"
+        }
+      }
+    ]
+  }
+}

@@ -16,8 +16,10 @@ type RestStateModel struct {
 	GenericAction   *RestGenericActionModel    `json:"genericAction,omitempty"`   // Generic action model (if type is genericAction)
 	CraftAction     *RestCraftActionModel      `json:"craftAction,omitempty"`     // Craft action model (if type is craftAction)
 	TransportAction *RestTransportActionModel  `json:"transportAction,omitempty"` // Transport action model (if type is transportAction)
-	GachaponAction  *RestGachaponActionModel  `json:"gachaponAction,omitempty"`  // Gachapon action model (if type is gachaponAction)
-	ListSelection *RestListSelectionModel `json:"listSelection,omitempty"` // List selection model (if type is listSelection)
+	GachaponAction   *RestGachaponActionModel   `json:"gachaponAction,omitempty"`   // Gachapon action model (if type is gachaponAction)
+	PartyQuestAction      *RestPartyQuestActionModel      `json:"partyQuestAction,omitempty"`      // Party quest action model (if type is partyQuestAction)
+	PartyQuestBonusAction *RestPartyQuestBonusActionModel `json:"partyQuestBonusAction,omitempty"` // Party quest bonus action model (if type is partyQuestBonusAction)
+	ListSelection         *RestListSelectionModel         `json:"listSelection,omitempty"`         // List selection model (if type is listSelection)
 	AskNumber     *RestAskNumberModel    `json:"askNumber,omitempty"`     // Ask number model (if type is askNumber)
 	AskStyle                   *RestAskStyleModel                   `json:"askStyle,omitempty"`                   // Ask style model (if type is askStyle)
 	AskSlideMenu               *RestAskSlideMenuModel               `json:"askSlideMenu,omitempty"`               // Ask slide menu model (if type is askSlideMenu)
@@ -142,6 +144,19 @@ type RestGachaponActionModel struct {
 	GachaponId   string `json:"gachaponId"`   // Gachapon machine ID
 	TicketItemId uint32 `json:"ticketItemId"` // Ticket item ID to consume
 	FailureState string `json:"failureState"` // General failure state
+}
+
+// RestPartyQuestActionModel represents the REST model for party quest action states
+type RestPartyQuestActionModel struct {
+	QuestId         string `json:"questId"`                    // Party quest definition ID
+	FailureState    string `json:"failureState"`               // General failure state ID
+	NotInPartyState string `json:"notInPartyState,omitempty"`  // State when character has no party
+	NotLeaderState  string `json:"notLeaderState,omitempty"`   // State when character isn't party leader
+}
+
+// RestPartyQuestBonusActionModel represents the REST model for party quest bonus action states
+type RestPartyQuestBonusActionModel struct {
+	FailureState string `json:"failureState"` // Failure state ID
 }
 
 // RestListSelectionModel represents the REST model for list selection states
@@ -284,6 +299,18 @@ func TransformState(m StateModel) (RestStateModel, error) {
 		if gachaponAction != nil {
 			restGachaponAction := TransformGachaponAction(*gachaponAction)
 			restState.GachaponAction = &restGachaponAction
+		}
+	case PartyQuestActionType:
+		partyQuestAction := m.PartyQuestAction()
+		if partyQuestAction != nil {
+			restPartyQuestAction := TransformPartyQuestAction(*partyQuestAction)
+			restState.PartyQuestAction = &restPartyQuestAction
+		}
+	case PartyQuestBonusActionType:
+		partyQuestBonusAction := m.PartyQuestBonusAction()
+		if partyQuestBonusAction != nil {
+			restPartyQuestBonusAction := TransformPartyQuestBonusAction(*partyQuestBonusAction)
+			restState.PartyQuestBonusAction = &restPartyQuestBonusAction
 		}
 	case ListSelectionType:
 		listSelection := m.ListSelection()
@@ -536,6 +563,24 @@ func ExtractState(r RestStateModel) (StateModel, error) {
 			return StateModel{}, err
 		}
 		stateBuilder.SetGachaponAction(gachaponAction)
+	case PartyQuestActionType:
+		if r.PartyQuestAction == nil {
+			return StateModel{}, fmt.Errorf("partyQuestAction is required for partyQuestAction state")
+		}
+		partyQuestAction, err := ExtractPartyQuestAction(*r.PartyQuestAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetPartyQuestAction(partyQuestAction)
+	case PartyQuestBonusActionType:
+		if r.PartyQuestBonusAction == nil {
+			return StateModel{}, fmt.Errorf("partyQuestBonusAction is required for partyQuestBonusAction state")
+		}
+		partyQuestBonusAction, err := ExtractPartyQuestBonusAction(*r.PartyQuestBonusAction)
+		if err != nil {
+			return StateModel{}, err
+		}
+		stateBuilder.SetPartyQuestBonusAction(partyQuestBonusAction)
 	case ListSelectionType:
 		if r.ListSelection == nil {
 			return StateModel{}, fmt.Errorf("listSelection is required for listSelection state")
@@ -726,6 +771,36 @@ func ExtractGachaponAction(r RestGachaponActionModel) (*GachaponActionModel, err
 	return NewGachaponActionBuilder().
 		SetGachaponId(r.GachaponId).
 		SetTicketItemId(r.TicketItemId).
+		SetFailureState(r.FailureState).
+		Build()
+}
+
+func TransformPartyQuestAction(m PartyQuestActionModel) RestPartyQuestActionModel {
+	return RestPartyQuestActionModel{
+		QuestId:         m.QuestId(),
+		FailureState:    m.FailureState(),
+		NotInPartyState: m.NotInPartyState(),
+		NotLeaderState:  m.NotLeaderState(),
+	}
+}
+
+func ExtractPartyQuestAction(r RestPartyQuestActionModel) (*PartyQuestActionModel, error) {
+	return NewPartyQuestActionBuilder().
+		SetQuestId(r.QuestId).
+		SetFailureState(r.FailureState).
+		SetNotInPartyState(r.NotInPartyState).
+		SetNotLeaderState(r.NotLeaderState).
+		Build()
+}
+
+func TransformPartyQuestBonusAction(m PartyQuestBonusActionModel) RestPartyQuestBonusActionModel {
+	return RestPartyQuestBonusActionModel{
+		FailureState: m.FailureState(),
+	}
+}
+
+func ExtractPartyQuestBonusAction(r RestPartyQuestBonusActionModel) (*PartyQuestBonusActionModel, error) {
+	return NewPartyQuestBonusActionBuilder().
 		SetFailureState(r.FailureState).
 		Build()
 }

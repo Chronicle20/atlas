@@ -23,6 +23,7 @@ Command message for reactor hit or trigger events.
   "worldId": 0,
   "channelId": 0,
   "mapId": 100000000,
+  "instance": "00000000-0000-0000-0000-000000000000",
   "reactorId": 123,
   "classification": "2000",
   "reactorName": "box01",
@@ -39,6 +40,7 @@ Command message for reactor hit or trigger events.
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | reactorId | uint32 | Reactor instance identifier |
 | classification | string | Reactor classification ID |
 | reactorName | string | Reactor name |
@@ -87,6 +89,10 @@ Saga commands are produced using the `atlas-script-core/saga` package. The servi
 - `SpawnReactorDrops`: Spawn item drops at reactor location
 - `SpawnMonster`: Spawn monsters at reactor location
 - `SendMessage`: Send message to character
+- `UpdatePqCustomData`: Update party quest custom data (key=value updates and key increments)
+- `HitReactor`: Hit another reactor by name in the same field
+- `BroadcastPqMessage`: Broadcast a message to all party quest members
+- `StageClearAttemptPq`: Trigger stage clear attempt on a party quest instance
 
 ## Transaction Semantics
 

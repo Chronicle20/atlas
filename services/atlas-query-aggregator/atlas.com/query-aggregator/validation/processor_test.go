@@ -9,6 +9,7 @@ import (
 	"atlas-query-aggregator/guild"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/party"
 	marriageMock "atlas-query-aggregator/marriage/mock"
 	"atlas-query-aggregator/quest"
 	questMock "atlas-query-aggregator/quest/mock"
@@ -712,6 +713,11 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 					return func() (int, error) {
 						// Return 0 pet count for tests
 						return 0, nil
+					}
+				},
+				func(characterId uint32) model.Provider[party.Model] {
+					return func() (party.Model, error) {
+						return party.Model{}, nil
 					}
 				},
 				logger,

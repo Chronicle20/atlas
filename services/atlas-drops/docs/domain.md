@@ -70,8 +70,8 @@ A fluent builder for constructing drop Models. Requires a valid tenant and field
 [Created] -> AVAILABLE
 AVAILABLE -> RESERVED (via Reserve)
 RESERVED -> AVAILABLE (via CancelReservation)
-AVAILABLE -> [Removed] (via Gather or Expire)
-RESERVED -> [Removed] (via Gather)
+AVAILABLE -> [Removed] (via Gather, Consume, or Expire)
+RESERVED -> [Removed] (via Gather or Consume)
 ```
 
 ### Processors
@@ -90,6 +90,8 @@ RESERVED -> [Removed] (via Gather)
 | CancelReservationAndEmit | Cancels a reservation and emits the event via Kafka |
 | Gather | Removes a drop when picked up; emits PICKED_UP |
 | GatherAndEmit | Gathers a drop and emits the event via Kafka |
+| Consume | Removes a drop consumed by a game mechanic (e.g., item-reactor trigger); emits CONSUMED |
+| ConsumeAndEmit | Consumes a drop and emits the event via Kafka |
 | Expire | Removes a drop due to timeout; emits EXPIRED |
 | ExpireAndEmit | Expires a drop and emits the event via Kafka |
 | GetById | Retrieves a drop by ID from the registry |

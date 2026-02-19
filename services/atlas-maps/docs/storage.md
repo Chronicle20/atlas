@@ -42,8 +42,16 @@ Singleton registry tracking character presence in maps. State is not persisted a
 
 ### Spawn Point Registry
 
-Singleton registry tracking spawn point cooldowns. State is not persisted and is lazily initialized from atlas-data on first access per map.
+Singleton registry tracking spawn point cooldowns. State is not persisted and is lazily initialized from atlas-data on first access per map. Per-map mutexes provide concurrent access across different maps.
 
 | Key | Value |
 |-----|-------|
 | MapKey | []*CooldownSpawnPoint |
+
+### Weather Registry
+
+Singleton registry tracking active weather effects per map instance. State is not persisted. Expired entries are removed by the weather task.
+
+| Key | Value |
+|-----|-------|
+| FieldKey | WeatherEntry |

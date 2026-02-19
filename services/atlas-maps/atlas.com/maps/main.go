@@ -4,14 +4,17 @@ import (
 	"atlas-maps/database"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
+	mapConsumer "atlas-maps/kafka/consumer/map"
 	"atlas-maps/kafka/consumer/monster"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
+	"atlas-maps/map/weather"
 	"atlas-maps/service"
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
 	"atlas-maps/visit"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
@@ -57,11 +60,14 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	mapConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
 	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	mapConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
+	go tasks.Register(tasks.NewWeather(l, time.Second))
 
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -69,6 +75,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(_map.InitResource(GetServer())).
+		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
 		Run()
 

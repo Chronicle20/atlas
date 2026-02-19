@@ -36,7 +36,7 @@
                 "type": "item",
                 "operator": ">=",
                 "value": "1",
-                "itemId": "4031801"
+                "referenceId": "4031801"
               }
             ],
             "nextState": "hasRecommendationLetter"

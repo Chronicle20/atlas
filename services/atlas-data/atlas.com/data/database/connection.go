@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -124,8 +125,10 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 			return true, err
 		}
 
-		sqlDB.SetMaxOpenConns(30)
-		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetMaxOpenConns(getIntEnv("DB_MAX_OPEN_CONNS", 30))
+		sqlDB.SetMaxIdleConns(getIntEnv("DB_MAX_IDLE_CONNS", 10))
+		sqlDB.SetConnMaxLifetime(getDurationEnv("DB_CONN_MAX_LIFETIME", 5*time.Minute))
+		sqlDB.SetConnMaxIdleTime(getDurationEnv("DB_CONN_MAX_IDLE_TIME", 3*time.Minute))
 
 		return false, err
 	}
@@ -143,4 +146,22 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		}
 	}
 	return db
+}
+
+func getIntEnv(key string, defaultVal int) int {
+	if v, ok := os.LookupEnv(key); ok {
+		if i, err := strconv.Atoi(v); err == nil {
+			return i
+		}
+	}
+	return defaultVal
+}
+
+func getDurationEnv(key string, defaultVal time.Duration) time.Duration {
+	if v, ok := os.LookupEnv(key); ok {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+	}
+	return defaultVal
 }

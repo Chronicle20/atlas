@@ -10,18 +10,18 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardItemCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		ap := asset.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			var cn string
 			var itemIdStr string
 			var quantityStr string

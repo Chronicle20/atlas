@@ -8,7 +8,6 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/job"
 	"github.com/Chronicle20/atlas-model/model"
@@ -16,12 +15,13 @@ import (
 	"golang.org/x/net/context"
 )
 
-func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			var cn string
 			var amountStr string
 
@@ -94,12 +94,13 @@ func AwardExperienceCommandProducer(l logrus.FieldLogger) func(ctx context.Conte
 	}
 }
 
-func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			var cn string
 			var amountStr string
 
@@ -168,11 +169,12 @@ func AwardLevelCommandProducer(l logrus.FieldLogger) func(ctx context.Context) f
 	}
 }
 
-func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			var cn string
 			var jobStr string
 
@@ -238,12 +240,13 @@ func ChangeJobCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 	}
 }
 
-func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			var cn string
 			var amountStr string
 

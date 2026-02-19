@@ -18,12 +18,14 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	_map2 "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func WarpCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`@warp\s+(\w+)\s+(\d+)`)
 			match := re.FindStringSubmatch(m)
 			if len(match) != 3 {
@@ -93,9 +95,9 @@ func warpCommandProducer(ch channel.Model, actorId uint32, idProvider model.Prov
 	}, true
 }
 
-func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
-	return func(_ context.Context) func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
+func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, character character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(f field.Model, character character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, character character.Model, m string) (command.Executor, bool) {
 			re := regexp.MustCompile(`@query map`)
 			match := re.FindStringSubmatch(m)
 			if len(match) != 1 {
@@ -104,17 +106,21 @@ func WhereAmICommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(
 
 			return func(l logrus.FieldLogger) func(ctx context.Context) error {
 				return func(ctx context.Context) error {
-					f := field.NewBuilder(ch.WorldId(), ch.Id(), character.MapId()).Build()
-					return message.NewProcessor(l, ctx).IssuePinkText(f, 0, "You are in map "+strconv.Itoa(int(character.MapId())), []uint32{character.Id()})
+					msg := "You are in map " + strconv.Itoa(int(character.MapId()))
+					if f.Instance() != uuid.Nil {
+						msg += " [instance: " + f.Instance().String() + "]"
+					}
+					return message.NewProcessor(l, ctx).IssuePinkText(f, 0, msg, []uint32{character.Id()})
 				}
 			}, true
 		}
 	}
 }
 
-func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
-	return func(_ context.Context) func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
-		return func(ch channel.Model, character character.Model, m string) (command.Executor, bool) {
+func RatesCommandProducer(_ logrus.FieldLogger) func(_ context.Context) func(f field.Model, character character.Model, m string) (command.Executor, bool) {
+	return func(_ context.Context) func(f field.Model, character character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, character character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			re := regexp.MustCompile(`^@query rates$`)
 			match := re.FindStringSubmatch(m)
 			if len(match) != 1 {

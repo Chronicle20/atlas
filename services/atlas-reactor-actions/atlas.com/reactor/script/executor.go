@@ -4,12 +4,14 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	reactorsaga "atlas-reactor-actions/saga"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-script-core/operation"
 	"github.com/Chronicle20/atlas-script-core/saga"
+	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -64,6 +66,18 @@ func (e *OperationExecutor) ExecuteOperation(rc ReactorContext, characterId uint
 
 	case "drop_message":
 		return e.executeDropMessage(rc, characterId, op)
+
+	case "update_pq_state":
+		return e.executeUpdatePqState(rc, characterId, op)
+
+	case "hit_reactor":
+		return e.executeHitReactor(rc, characterId, op)
+
+	case "broadcast_pq_message":
+		return e.executeBroadcastPqMessage(rc, characterId, op)
+
+	case "stage_clear_attempt":
+		return e.executeStageClearAttempt(rc, characterId, op)
 
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
@@ -187,7 +201,21 @@ func (e *OperationExecutor) executeSpawnMonster(rc ReactorContext, characterId u
 		}
 	}
 
-	e.l.Debugf("Spawning [%d] monster(s) [%d] at reactor [%s] location (%d, %d)", count, monsterId, rc.Classification, rc.X, rc.Y)
+	// Allow x/y override from params, default to reactor position
+	x := rc.X
+	y := rc.Y
+	if xStr, ok := params["x"]; ok {
+		if parsed, err := strconv.ParseInt(xStr, 10, 16); err == nil {
+			x = int16(parsed)
+		}
+	}
+	if yStr, ok := params["y"]; ok {
+		if parsed, err := strconv.ParseInt(yStr, 10, 16); err == nil {
+			y = int16(parsed)
+		}
+	}
+
+	e.l.Debugf("Spawning [%d] monster(s) [%d] at reactor [%s] location (%d, %d)", count, monsterId, rc.Classification, x, y)
 
 	s := saga.NewBuilder().
 		SetSagaType(saga.InventoryTransaction).
@@ -203,8 +231,8 @@ func (e *OperationExecutor) executeSpawnMonster(rc ReactorContext, characterId u
 				MapId:       rc.Field.MapId(),
 				Instance:    rc.Field.Instance(),
 				MonsterId:   uint32(monsterId),
-				X:           rc.X,
-				Y:           rc.Y,
+				X:           x,
+				Y:           y,
 				Team:        0,
 				Count:       count,
 			},
@@ -316,4 +344,163 @@ func (e *OperationExecutor) executeDropMessage(rc ReactorContext, characterId ui
 		).Build()
 
 	return e.sagaP.Create(s)
+}
+
+// executeUpdatePqState updates party quest custom data via saga orchestration
+func (e *OperationExecutor) executeUpdatePqState(rc ReactorContext, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	// Look up the PQ instance for this character
+	pqInstance, err := e.getPqInstanceByCharacter(characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
+	}
+
+	// Parse updates (key=value pairs)
+	updates := make(map[string]string)
+	if v, ok := params["updates"]; ok && v != "" {
+		for _, pair := range strings.Split(v, ",") {
+			parts := strings.SplitN(strings.TrimSpace(pair), "=", 2)
+			if len(parts) == 2 {
+				updates[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
+			}
+		}
+	}
+
+	// Parse increments (comma-separated key names)
+	var increments []string
+	if v, ok := params["increments"]; ok && v != "" {
+		for _, key := range strings.Split(v, ",") {
+			if trimmed := strings.TrimSpace(key); trimmed != "" {
+				increments = append(increments, trimmed)
+			}
+		}
+	}
+
+	e.l.Debugf("Updating PQ state: instance=%s, updates=%v, increments=%v", pqInstance.Id, updates, increments)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-pq-state").
+		AddStep(
+			fmt.Sprintf("pq-state-%s-%d", rc.Classification, characterId),
+			saga.Pending,
+			saga.UpdatePqCustomData,
+			saga.UpdatePqCustomDataPayload{
+				InstanceId: pqInstance.Id,
+				Updates:    updates,
+				Increments: increments,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeHitReactor hits another reactor by name via saga orchestration
+func (e *OperationExecutor) executeHitReactor(rc ReactorContext, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	reactorName, ok := params["reactorName"]
+	if !ok {
+		return fmt.Errorf("hit_reactor operation missing reactorName parameter")
+	}
+
+	e.l.Debugf("Hitting reactor [%s] in map [%d] for character [%d]", reactorName, rc.Field.MapId(), characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-hit-reactor").
+		AddStep(
+			fmt.Sprintf("hit-%s-%d", reactorName, characterId),
+			saga.Pending,
+			saga.HitReactor,
+			saga.HitReactorPayload{
+				WorldId:     rc.Field.WorldId(),
+				ChannelId:   rc.Field.ChannelId(),
+				MapId:       rc.Field.MapId(),
+				Instance:    rc.Field.Instance(),
+				CharacterId: characterId,
+				ReactorName: reactorName,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeBroadcastPqMessage broadcasts a message to all PQ members via saga orchestration
+func (e *OperationExecutor) executeBroadcastPqMessage(rc ReactorContext, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	message, ok := params["message"]
+	if !ok {
+		return fmt.Errorf("broadcast_pq_message operation missing message parameter")
+	}
+
+	messageType := "PINK_TEXT"
+	if mt, ok := params["type"]; ok {
+		switch mt {
+		case "5":
+			messageType = "PINK_TEXT"
+		case "6":
+			messageType = "BLUE_TEXT"
+		default:
+			messageType = mt
+		}
+	}
+
+	// Look up the PQ instance for this character
+	pqInstance, err := e.getPqInstanceByCharacter(characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
+	}
+
+	e.l.Debugf("Broadcasting PQ message: instance=%s, type=%s, message=%s", pqInstance.Id, messageType, message)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-pq-broadcast").
+		AddStep(
+			fmt.Sprintf("pq-broadcast-%s-%d", rc.Classification, characterId),
+			saga.Pending,
+			saga.BroadcastPqMessage,
+			saga.BroadcastPqMessagePayload{
+				InstanceId:  pqInstance.Id,
+				MessageType: messageType,
+				Message:     message,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeStageClearAttempt triggers a stage clear attempt on the character's party quest instance via saga orchestration
+func (e *OperationExecutor) executeStageClearAttempt(rc ReactorContext, characterId uint32, op operation.Model) error {
+	pqInstance, err := e.getPqInstanceByCharacter(characterId)
+	if err != nil {
+		return fmt.Errorf("failed to get PQ instance for character %d: %w", characterId, err)
+	}
+
+	e.l.Debugf("Attempting stage clear: instance=%s, reactor=%s, character=%d", pqInstance.Id, rc.Classification, characterId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("reactor-action-stage-clear").
+		AddStep(
+			fmt.Sprintf("stage-clear-%s-%d", rc.Classification, characterId),
+			saga.Pending,
+			saga.StageClearAttemptPq,
+			saga.StageClearAttemptPqPayload{
+				InstanceId: pqInstance.Id,
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// getPqInstanceByCharacter queries the party-quests service for the character's PQ instance
+func (e *OperationExecutor) getPqInstanceByCharacter(characterId uint32) (pqInstanceRestModel, error) {
+	sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(e.ctx))
+	td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(e.ctx))
+	url := fmt.Sprintf(requests.RootUrl("PARTY_QUESTS")+"party-quests/instances/character/%d", characterId)
+	return requests.MakeGetRequest[pqInstanceRestModel](url, sd, td)(e.l, e.ctx)
 }

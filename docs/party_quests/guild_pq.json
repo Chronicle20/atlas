@@ -1,0 +1,180 @@
+{
+  "id": "guild-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Sharenian Ruins Party Quest",
+    "fieldLock": "channel",
+    "duration": "5400000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "6"
+      },
+      {
+        "type": "sameGuild",
+        "operator": "=",
+        "value": "true"
+      }
+    ],
+    "startEvents": [],
+    "failRequirements": [
+      {
+        "type": "registered_size",
+        "operator": "<",
+        "value": "6"
+      }
+    ],
+    "registration": {
+      "type": "individual",
+      "mode": "timed",
+      "duration": "180000",
+      "mapId": "101030104",
+      "affinity": "guild"
+    },
+    "exit": "990001100",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Protector Rock Collection",
+        "description": "Party members must break purple crystals to collect Protector Rock (1032033) earrings. These must be worn for the remainder of the PQ, else that member will die.",
+        "mapId": ["990000100", "990000200"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "1",
+        "name": "Statue Sequence Memory Game",
+        "description": "Party members must observe a sequence, illuminated on the statues in the map, and repeat it by attacking the statues.",
+        "mapId": ["990000300", "990000301"],
+        "type": "sequence_memory_game",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "successes",
+            "operator": "=",
+            "value": "3"
+          }
+        ],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "2",
+        "name": "Hall of the Knigts",
+        "description": "Party members must collect 6 Longinus Spear (4001025).",
+        "mapId": [
+          "990000400",
+          "990000401",
+          "990000410",
+          "990000420",
+          "990000430",
+          "990000431",
+          "990000440"
+        ],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "3",
+        "name": "Fountain of the Wiseman",
+        "description": "Party members must collect (ideally 4 of each) Scroll of Wisdom (4001028), Medal of Valor (4001027), Jr. Necki Drink (4001030), and the Spoiled Food (4001029). The items must be placed in front of the 4 statues to match the combination. The combination resets on 7 failed attempts.",
+        "mapId": ["990000500", "990000501", "990000502"],
+        "type": "combination_puzzle",
+        "duration": 0,
+        "digits": "4",
+        "combination_reset": {
+          "type": "failed_attempts",
+          "amount": "7"
+        },
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "4",
+        "name": "Underground Waterway",
+        "description": "Party members must collect Sharen III's Pants (4001031), Sharen III's Shoes (4001032), Sharen III's Top (4001033), and Sharen III's Crown (4001034) and place them on his grave to clear this stage.",
+        "mapId": [
+          "990000600",
+          "990000610",
+          "990000611",
+          "990000620",
+          "990000630",
+          "990000631",
+          "990000640",
+          "990000641"
+        ],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "5",
+        "name": "King's Corridor",
+        "description": "Lowest level party member must sacrifice themselves (by dropping the Protector Rock earrings) in front of the door.",
+        "mapId": ["990000800"],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "portal"
+        }
+      },
+      {
+        "index": "8",
+        "name": "Boss Stage",
+        "description": "Break the crystal on Ergoth's Throne to summon Ergoth.",
+        "mapId": ["990000900"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "1",
+            "referenceId": "4001035"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "guild_points"
+          }
+        ],
+        "warp": {
+          "type": "warp_out"
+        }
+      },
+      {
+        "index": "9",
+        "name": "Bonus",
+        "description": "The party quest has cleared, party members have a limited time to collect drops from boxes.",
+        "mapId": ["990001000"],
+        "type": "bonus",
+        "duration": 40000,
+        "warp": {
+          "type": "warp_out"
+        }
+      }
+    ]
+  }
+}

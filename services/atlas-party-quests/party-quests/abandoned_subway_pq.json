@@ -1,0 +1,117 @@
+{
+  "questId": "abandoned_subway_pq",
+  "name": "Abandoned Subway Party Quest",
+  "fieldLock": "channel",
+  "duration": 0,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 910320000
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 1,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 21,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 30,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "910330100"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 910320000,
+  "bonus": {
+    "mapId": 910320010,
+    "duration": 60,
+    "entry": "auto",
+    "properties": {
+      "monsters": [9700020],
+      "collectItemId": 2022615
+    }
+  },
+  "stages": [
+    {
+      "index": 0,
+      "name": "Monster Killing 1",
+      "mapIds": [910330100],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 1052115,
+        "actBarMechanic": true
+      }
+    },
+    {
+      "index": 1,
+      "name": "Monster Killing 2",
+      "mapIds": [910330200],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 1052115,
+        "actBarMechanic": true
+      }
+    },
+    {
+      "index": 2,
+      "name": "Monster Killing 3",
+      "mapIds": [910330300],
+      "type": "monster_killing",
+      "duration": 180,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 1052115,
+        "actBarMechanic": true
+      }
+    },
+    {
+      "index": 3,
+      "name": "Rewards",
+      "mapIds": [910320001],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {"templateId": 4001321, "weight": 1, "quantity": 1}
+          ]
+        }
+      ],
+      "warpType": "none",
+      "properties": {
+        "npcId": 1052115,
+        "gradeBased": true
+      }
+    }
+  ],
+  "rewards": []
+}

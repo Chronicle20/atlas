@@ -1,0 +1,81 @@
+{
+  "id": "henesys-pq",
+  "type": "party-quests",
+  "attributes": {
+    "name": "Moon Bunny's Rice Cake Party Quest",
+    "fieldLock": "channel",
+    "duration": "600000",
+    "startRequirements": [
+      {
+        "type": "registered_size",
+        "operator": ">=",
+        "value": "3"
+      },
+      {
+        "type": "level",
+        "operator": ">=",
+        "value": "10"
+      }
+    ],
+    "startEvents": [],
+    "failRequirements": [],
+    "registration": {
+      "type": "party",
+      "mode": "instant",
+      "duration": -1,
+      "mapId": "100000200"
+    },
+    "exit": "910010300",
+    "stages": [
+      {
+        "index": "0",
+        "name": "Primrose Seed Collection",
+        "description": "Party members collect all of the different Primrose Seeds (4001095, 4001096, 4001097, 4001098, 4001099, 4001100). Drop them on the correct platforms, and the Moon Bunny spawns.",
+        "mapId": ["910010000"],
+        "type": "reactor_trigger",
+        "duration": 0,
+        "clearConditions": [],
+        "rewards": [],
+        "warp": {
+          "type": "none"
+        }
+      },
+      {
+        "index": "1",
+        "name": "Rice Cake Collection",
+        "description": "Protect the Moon Bunny by killing enemies. Keep the Moon Bunny alive until all 10 Moon Bunny's Rice Cakes (4001101) are created and given to Growlie.",
+        "mapId": ["910010000"],
+        "type": "item_collection",
+        "duration": 0,
+        "clearConditions": [
+          {
+            "type": "item",
+            "operator": ">=",
+            "value": "10",
+            "referenceId": "4001101"
+          }
+        ],
+        "rewards": [
+          {
+            "type": "experience",
+            "amount": "1600"
+          }
+        ],
+        "warp": {
+          "type": "warp_out"
+        }
+      },
+      {
+        "index": "2",
+        "name": "Bonus",
+        "description": "The party quest has cleared, party members have a limited time to hunt monsters in the map.",
+        "mapId": ["910010200"],
+        "type": "bonus",
+        "duration": 60000,
+        "warp": {
+          "type": "warp_out"
+        }
+      }
+    ]
+  }
+}

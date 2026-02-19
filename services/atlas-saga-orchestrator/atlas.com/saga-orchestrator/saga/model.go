@@ -479,6 +479,21 @@ const (
 	// Gachapon actions
 	SelectGachaponReward    Action = "select_gachapon_reward"     // Select a random reward from a gachapon machine
 	EmitGachaponWin         Action = "emit_gachapon_win"          // Emit gachapon win event for announcements (uncommon/rare only)
+
+	// Party quest actions
+	RegisterPartyQuest             Action = "register_party_quest"                // Register a party for a party quest via atlas-party-quests
+	LeavePartyQuest                Action = "leave_party_quest"                   // Remove a character from their active party quest
+	WarpPartyQuestMembersToMap     Action = "warp_party_quest_members_to_map"     // Warp all party quest members to a map
+
+	// Party quest reactor orchestration actions
+	UpdatePqCustomData  Action = "update_pq_custom_data"  // Update custom data on a party quest instance
+	HitReactor          Action = "hit_reactor"             // Programmatically hit a reactor by name
+	BroadcastPqMessage  Action = "broadcast_pq_message"    // Broadcast a message to party quest members
+	StageClearAttemptPq    Action = "stage_clear_attempt_pq"     // Attempt to clear the current PQ stage
+	EnterPartyQuestBonus   Action = "enter_party_quest_bonus"   // Enter the bonus stage of a party quest
+
+	// Field effect actions
+	FieldEffectWeather Action = "field_effect_weather" // Show weather effect to all characters in a field
 )
 
 // Step represents a single step within a saga.
@@ -1240,6 +1255,83 @@ type EmitGachaponWinPayload struct {
 	GachaponName string   `json:"gachaponName"` // Gachapon display name
 }
 
+// RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
+type RegisterPartyQuestPayload struct {
+	CharacterId uint32     `json:"characterId"` // CharacterId initiating the registration
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // MapId where the registration NPC is
+	QuestId     string     `json:"questId"`     // Party quest definition ID (e.g., "henesys_pq")
+}
+
+// LeavePartyQuestPayload represents the payload required to remove a character from their active party quest.
+type LeavePartyQuestPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId of the character leaving
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
+// WarpPartyQuestMembersToMapPayload represents the payload required to warp all party quest members to a map.
+type WarpPartyQuestMembersToMapPayload struct {
+	CharacterId uint32     `json:"characterId"` // Character initiating the warp (must be in a party)
+	WorldId     world.Id   `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
+	MapId       _map.Id    `json:"mapId"`       // Destination map ID
+	PortalId    uint32     `json:"portalId"`    // Destination portal ID
+}
+
+// UpdatePqCustomDataPayload represents the payload for updating party quest custom data.
+// This produces an UPDATE_CUSTOM_DATA command to atlas-party-quests.
+type UpdatePqCustomDataPayload struct {
+	InstanceId uuid.UUID         `json:"instanceId"`           // Party quest instance ID
+	Updates    map[string]string `json:"updates,omitempty"`    // Key-value pairs to set
+	Increments []string          `json:"increments,omitempty"` // Keys to increment
+}
+
+// HitReactorPayload represents the payload for programmatically hitting a reactor by name.
+// The saga-orchestrator resolves the reactor name to an ID via atlas-reactors REST API,
+// then produces a HIT command to COMMAND_TOPIC_REACTOR.
+type HitReactorPayload struct {
+	WorldId     world.Id   `json:"worldId"`     // WorldId of the reactor's field
+	ChannelId   channel.Id `json:"channelId"`   // ChannelId of the reactor's field
+	MapId       _map.Id    `json:"mapId"`       // MapId of the reactor's field
+	Instance    uuid.UUID  `json:"instance"`    // Instance UUID of the reactor's field
+	CharacterId uint32     `json:"characterId"` // CharacterId triggering the hit
+	ReactorName string     `json:"reactorName"` // Reactor name to resolve via REST
+}
+
+// BroadcastPqMessagePayload represents the payload for broadcasting a message to PQ members.
+// This produces a BROADCAST_MESSAGE command to atlas-party-quests.
+type BroadcastPqMessagePayload struct {
+	InstanceId  uuid.UUID `json:"instanceId"`  // Party quest instance ID
+	MessageType string    `json:"messageType"` // Message type (e.g., "PINK_TEXT")
+	Message     string    `json:"message"`     // Message text
+}
+
+// StageClearAttemptPqPayload represents the payload for attempting to clear the current PQ stage.
+// This produces a STAGE_CLEAR_ATTEMPT command to atlas-party-quests.
+type StageClearAttemptPqPayload struct {
+	InstanceId  uuid.UUID `json:"instanceId"`            // Party quest instance ID (used by reactor actions)
+	CharacterId uint32    `json:"characterId,omitempty"` // Character ID for instance lookup (used by NPC conversations)
+}
+
+// EnterPartyQuestBonusPayload represents the payload for entering the bonus stage of a party quest.
+type EnterPartyQuestBonusPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId initiating bonus entry
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+}
+
+// FieldEffectWeatherPayload represents the payload for showing a weather effect to all
+// characters in a field. Produces a WEATHER_START command to COMMAND_TOPIC_MAP.
+type FieldEffectWeatherPayload struct {
+	WorldId   world.Id   `json:"worldId"`   // WorldId of the field
+	ChannelId channel.Id `json:"channelId"` // ChannelId of the field
+	MapId     _map.Id    `json:"mapId"`     // MapId of the field
+	Instance  uuid.UUID  `json:"instance"`  // Instance UUID of the field
+	ItemId    uint32     `json:"itemId"`    // Cash shop weather item ID
+	Message   string     `json:"message"`   // Weather message text
+	Duration  uint32     `json:"duration"`  // Duration in seconds
+}
+
 // Custom UnmarshalJSON for Step[T] to handle the generics
 func (s *Step[T]) UnmarshalJSON(data []byte) error {
 	// First unmarshal to get the action type
@@ -1646,6 +1738,66 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case EmitGachaponWin:
 		var payload EmitGachaponWinPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RegisterPartyQuest:
+		var payload RegisterPartyQuestPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case WarpPartyQuestMembersToMap:
+		var payload WarpPartyQuestMembersToMapPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case LeavePartyQuest:
+		var payload LeavePartyQuestPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case UpdatePqCustomData:
+		var payload UpdatePqCustomDataPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case HitReactor:
+		var payload HitReactorPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case BroadcastPqMessage:
+		var payload BroadcastPqMessagePayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case StageClearAttemptPq:
+		var payload StageClearAttemptPqPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case EnterPartyQuestBonus:
+		var payload EnterPartyQuestBonusPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case FieldEffectWeather:
+		var payload FieldEffectWeatherPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case DeductExperience:
+		var payload DeductExperiencePayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

@@ -6,7 +6,8 @@ Service for handling JSON-based reactor scripting. Receives hit and trigger comm
 
 - **PostgreSQL**: Stores reactor scripts with tenant isolation
 - **Kafka**: Consumes reactor action commands, produces saga commands
-- **OpenTelemetry**: Distributed tracing
+- **OpenTelemetry**: Distributed tracing via OTLP/gRPC
+- **atlas-party-quests service**: REST API for party quest instance data
 
 ## Runtime Configuration
 
@@ -17,6 +18,7 @@ Service for handling JSON-based reactor scripting. Receives hit and trigger comm
 | `DB_NAME` | Database name |
 | `DB_USER` | Database user |
 | `DB_PASSWORD` | Database password |
+| `TRACE_ENDPOINT` | OpenTelemetry collector endpoint (host:port) |
 | `BOOTSTRAP_SERVERS` | Kafka broker addresses |
 | `COMMAND_TOPIC_REACTOR_ACTIONS` | Topic for reactor action commands |
 | `COMMAND_TOPIC_SAGA` | Topic for saga commands |

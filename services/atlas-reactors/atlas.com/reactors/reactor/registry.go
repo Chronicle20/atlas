@@ -236,6 +236,28 @@ func (r *Registry) ClearCooldown(t tenant.Model, mk MapKey, classification uint3
 	r.client.Del(context.Background(), key)
 }
 
+func cooldownPatternKey(t tenant.Model, mk MapKey) string {
+	return fmt.Sprintf("reactor:cd:%s:%d:%d:%d:%s:*", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String())
+}
+
+func (r *Registry) ClearAllCooldownsForMap(t tenant.Model, mk MapKey) {
+	pattern := cooldownPatternKey(t, mk)
+	var cursor uint64
+	for {
+		keys, next, err := r.client.Scan(context.Background(), cursor, pattern, 100).Result()
+		if err != nil {
+			return
+		}
+		if len(keys) > 0 {
+			r.client.Del(context.Background(), keys...)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
+}
+
 func (r *Registry) CleanupExpiredCooldowns() {
 	// No-op: Redis TTL handles expiration automatically
 }

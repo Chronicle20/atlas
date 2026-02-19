@@ -8,17 +8,17 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
 
-func AwardCurrencyCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func AwardCurrencyCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sp := saga.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(_ field.Model, c character.Model, m string) (command.Executor, bool) {
 			var cn string
 			var currencyTypeStr string
 			var amountStr string

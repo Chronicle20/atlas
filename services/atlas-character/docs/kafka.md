@@ -44,6 +44,9 @@
 | CHANGE_MP | Command[ChangeMPBody] | Change MP |
 | SET_HP | Command[SetHPBody] | Set HP to specific value |
 | DEDUCT_EXPERIENCE | Command[DeductExperienceCommandBody] | Deduct experience |
+| RESET_STATS | Command[ResetStatsCommandBody] | Reset character stats |
+| CLAMP_HP | Command[ClampHPBody] | Clamp HP to max value |
+| CLAMP_MP | Command[ClampMPBody] | Clamp MP to max value |
 
 #### Character Movement Command Topic
 
@@ -105,6 +108,7 @@
 | GENDER_CHANGED | StatusEvent[StatusEventGenderChangedBody] | Gender changed |
 | SKIN_COLOR_CHANGED | StatusEvent[StatusEventSkinColorChangedBody] | Skin color changed |
 | GM_CHANGED | StatusEvent[StatusEventGmChangedBody] | GM status changed |
+| DIED | StatusEvent[StatusEventDiedBody] | Character died |
 | ERROR | StatusEvent[StatusEventErrorBody[NotEnoughMesoErrorStatusBodyBody]] | Error event |
 
 ### Commands Produced

@@ -1,0 +1,190 @@
+{
+  "questId": "forest_of_poison_fog_pq",
+  "name": "Forest of Poison Fog Party Quest",
+  "fieldLock": "channel",
+  "duration": 1800,
+  "registration": {
+    "type": "party",
+    "mode": "instant",
+    "duration": 0,
+    "mapId": 300030100
+  },
+  "startRequirements": [
+    {
+      "type": "party_size",
+      "operator": "gte",
+      "value": 4,
+      "referenceId": 0
+    },
+    {
+      "type": "level_min",
+      "operator": "gte",
+      "value": 45,
+      "referenceId": 0
+    },
+    {
+      "type": "level_max",
+      "operator": "lte",
+      "value": 55,
+      "referenceId": 0
+    }
+  ],
+  "startEvents": [
+    {
+      "type": "warp",
+      "target": "party",
+      "value": "930000100"
+    }
+  ],
+  "failRequirements": [],
+  "exit": 930000800,
+  "stages": [
+    {
+      "index": 0,
+      "name": "Mouth of the Forest",
+      "mapIds": [930000100],
+      "type": "monster_killing",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "monster_kill",
+          "operator": ">=",
+          "value": 0,
+          "referenceId": 9300172
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "monsters": [9300172],
+        "killAll": true
+      }
+    },
+    {
+      "index": 1,
+      "name": "Diluted Poison Collection",
+      "mapIds": [930000200],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 4,
+          "referenceId": 4001162
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "collectItemId": 4001162,
+        "concentratedPoisonId": 4001161,
+        "monsters": [9300173],
+        "reactors": [3002000, 3009000]
+      }
+    },
+    {
+      "index": 2,
+      "name": "Portal Maze",
+      "mapIds": [930000300],
+      "type": "warp_puzzle",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2133001
+      }
+    },
+    {
+      "index": 3,
+      "name": "Purification",
+      "mapIds": [930000400],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item",
+          "operator": ">=",
+          "value": 20,
+          "referenceId": 4001169
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2133001,
+        "purificationMarbles": 2270004,
+        "monsterMarble": 4001169,
+        "poisonFlower": 9300175,
+        "marblesPerPlayer": 10,
+        "totalFlowersRequired": 20
+      }
+    },
+    {
+      "index": 4,
+      "name": "Jump Quest",
+      "mapIds": [930000500],
+      "type": "reactor_trigger",
+      "duration": 0,
+      "clearConditions": [
+        {
+          "type": "item_count",
+          "operator": ">=",
+          "value": 1,
+          "referenceId": 4001163
+        }
+      ],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2133004,
+        "purpleStoneId": 4001163,
+        "reactors": [3002001, 3002002]
+      }
+    },
+    {
+      "index": 5,
+      "name": "Boss Stage",
+      "mapIds": [930000600],
+      "type": "boss",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [],
+      "warpType": "all",
+      "properties": {
+        "bossMonsters": [9300180, 9300181, 9300182],
+        "summonReactor": 3001000,
+        "summonItemId": 4001163,
+        "phases": 3
+      }
+    },
+    {
+      "index": 6,
+      "name": "Reward Stage",
+      "mapIds": [930000700],
+      "type": "item_collection",
+      "duration": 0,
+      "clearConditions": [],
+      "rewards": [
+        {
+          "type": "experience",
+          "amount": 52000
+        },
+        {
+          "type": "item",
+          "amount": 1,
+          "items": [
+            {"templateId": 4001198, "weight": 1, "quantity": 1}
+          ]
+        }
+      ],
+      "warpType": "all",
+      "properties": {
+        "npcId": 2133001,
+        "rewardItemId": 4001198
+      }
+    }
+  ],
+  "rewards": []
+}

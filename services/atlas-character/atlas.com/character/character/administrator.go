@@ -85,6 +85,8 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, modifiers ...En
 			switch column {
 			case "MapId":
 				updates[column] = tempEntity.MapId
+			case "Instance":
+				updates[column] = tempEntity.Instance
 			case "Level":
 				updates[column] = tempEntity.Level
 			case "Experience":
@@ -266,6 +268,14 @@ func SetMapId(mapId _map.Id) EntityUpdateFunction {
 	return func() ([]string, func(e *entity)) {
 		return []string{"MapId"}, func(e *entity) {
 			e.MapId = mapId
+		}
+	}
+}
+
+func SetInstance(instance uuid.UUID) EntityUpdateFunction {
+	return func() ([]string, func(e *entity)) {
+		return []string{"Instance"}, func(e *entity) {
+			e.Instance = instance
 		}
 	}
 }

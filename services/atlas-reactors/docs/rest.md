@@ -25,19 +25,20 @@ Retrieves a reactor by its unique ID.
 
 JSON:API document with type `reactors`.
 
-| Attribute      | Type   | Description                    |
-|----------------|--------|--------------------------------|
-| worldId        | byte   | World identifier               |
-| channelId      | byte   | Channel identifier             |
-| mapId          | uint32 | Map identifier                 |
-| classification | uint32 | Reactor type/classification ID |
-| name           | string | Reactor name                   |
-| state          | int8   | Current reactor state          |
-| eventState     | byte   | Event state                    |
-| x              | int16  | X coordinate position          |
-| y              | int16  | Y coordinate position          |
-| delay          | uint32 | Respawn delay in milliseconds  |
-| direction      | byte   | Facing direction               |
+| Attribute      | Type      | Description                    |
+|----------------|-----------|--------------------------------|
+| worldId        | byte      | World identifier               |
+| channelId      | byte      | Channel identifier             |
+| mapId          | uint32    | Map identifier                 |
+| instance       | uuid.UUID | Instance identifier            |
+| classification | uint32    | Reactor type/classification ID |
+| name           | string    | Reactor name                   |
+| state          | int8      | Current reactor state          |
+| eventState     | byte      | Event state                    |
+| x              | int16     | X coordinate position          |
+| y              | int16     | Y coordinate position          |
+| delay          | uint32    | Respawn delay in milliseconds  |
+| direction      | byte      | Facing direction               |
 
 **Error Conditions:**
 
@@ -53,12 +54,13 @@ Retrieves all reactors in a specific world/channel/map/instance.
 
 **Parameters:**
 
-| Name       | In   | Type   | Required | Description         |
-|------------|------|--------|----------|---------------------|
-| worldId    | path | byte   | Yes      | World identifier    |
-| channelId  | path | byte   | Yes      | Channel identifier  |
-| mapId      | path | uint32 | Yes      | Map identifier      |
-| instanceId | path | uuid   | Yes      | Instance identifier |
+| Name       | In    | Type   | Required | Description         |
+|------------|-------|--------|----------|---------------------|
+| worldId    | path  | byte   | Yes      | World identifier    |
+| channelId  | path  | byte   | Yes      | Channel identifier  |
+| mapId      | path  | uint32 | Yes      | Map identifier      |
+| instanceId | path  | uuid   | Yes      | Instance identifier |
+| name       | query | string | No       | Filter by reactor name |
 
 **Request Headers:**
 

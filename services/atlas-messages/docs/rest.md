@@ -132,6 +132,28 @@ Resource type: `rates`
 
 ---
 
+### atlas-party-quests
+
+#### GET /party-quests/instances/character/{characterId}
+
+Retrieves the party quest instance for a character.
+
+**Parameters**
+
+| Name | Type | Location | Description |
+|------|------|----------|-------------|
+| characterId | uint32 | path | Character ID |
+
+**Response Model**
+
+Resource type: `instances`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid.UUID | Party quest instance ID |
+
+---
+
 ### atlas-data
 
 #### GET /data/maps/{mapId}
@@ -154,7 +176,7 @@ Resource type: `maps`
 | streetName | string | Street name |
 | returnMapId | uint32 | Return map ID |
 
-#### GET /data/equipment/{itemId}/statistics
+#### GET /data/equipment/{itemId}
 
 Retrieves equipable item statistics.
 

@@ -194,7 +194,8 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return err
 					}
 
-					s = session.NewProcessor(l, ctx).SetMapId(s.SessionId(), event.Body.TargetMapId)
+					targetField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId).SetInstance(event.Body.TargetInstance).Build()
+					s = session.NewProcessor(l, ctx).SetField(s.SessionId(), targetField)
 
 					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(t)(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))(s)
 					if err != nil {

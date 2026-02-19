@@ -2,6 +2,7 @@ package handler
 
 import (
 	"atlas-channel/drop"
+	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -47,6 +48,12 @@ func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		l.Debugf("Character [%d] pet [%d] attempting to pick up drop [%d]. fieldKey [%d], updateTime [%d], x [%d], y[%d], crc [%d], bPickupOthers [%t], bSweepForDrop [%t], bLongRange [%t], ownerX [%d], ownerY [%d], posCrc [%d], rectCrc[%d].", s.CharacterId(), petId, dropId, fieldKey, updateTime, x, y, crc, bPickupOthers, bSweepForDrop, bLongRange, ownerX, ownerY, posCrc, rectCrc)
 
-		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), dropId, s.CharacterId(), x, y, p.Slot())
+		var partyId uint32
+		pp, perr := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
+		if perr == nil {
+			partyId = pp.Id()
+		}
+
+		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), dropId, s.CharacterId(), partyId, x, y, p.Slot())
 	}
 }

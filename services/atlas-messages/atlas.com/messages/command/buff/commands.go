@@ -13,18 +13,18 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 
-func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
-	return func(ctx context.Context) func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+func BuffCommandProducer(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+	return func(ctx context.Context) func(f field.Model, c character.Model, m string) (command.Executor, bool) {
 		cp := character.NewProcessor(l, ctx)
 		sdp := skill.NewProcessor(l, ctx)
 		mp := _map.NewProcessor(l, ctx)
-		return func(ch channel.Model, c character.Model, m string) (command.Executor, bool) {
+		return func(f field.Model, c character.Model, m string) (command.Executor, bool) {
+			ch := f.Channel()
 			// Support both name-based and ID-based syntax:
 			// @buff <target> <skillName> [duration]
 			// @buff <target> #<skillId> [duration]

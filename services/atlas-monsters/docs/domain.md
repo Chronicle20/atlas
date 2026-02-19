@@ -101,6 +101,9 @@ Monster type information retrieved from atlas-data.
 | mp | uint32 | Base magic points |
 | boss | bool | Whether this is a boss monster |
 | undead | bool | Whether this is an undead monster |
+| friendly | bool | Whether this is a friendly monster |
+| weaponAttack | uint32 | Base weapon attack |
+| dropPeriod | uint32 | Drop period in milliseconds (friendly monsters only) |
 | resistances | map[string]string | Elemental resistances (element code to resistance level) |
 | animationTimes | map[string]uint32 | Animation name to duration in milliseconds |
 | skills | []Skill | Mob skills available to this monster |
@@ -118,6 +121,32 @@ Banish target configuration for a monster.
 | Message | string | Banish message |
 | MapId | uint32 | Target map ID |
 | PortalName | string | Target portal name |
+
+### drop.Model
+
+Monster drop definition retrieved from atlas-drops.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| itemId | uint32 | Item ID (0 for meso drops) |
+| minimumQuantity | uint32 | Minimum drop quantity |
+| maximumQuantity | uint32 | Maximum drop quantity |
+| questId | uint32 | Associated quest ID (0 for non-quest drops) |
+| chance | uint32 | Drop chance out of 999999 |
+
+### DropTimerEntry
+
+Tracks drop timer state for a friendly monster.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| monsterId | uint32 | Monster type identifier |
+| field | field.Model | Field where the monster resides |
+| dropPeriod | time.Duration | Interval between drops (dropPeriod / 3) |
+| weaponAttack | uint32 | Monster weapon attack (for friendly damage calculation) |
+| maxHp | uint32 | Monster max HP (for friendly damage calculation) |
+| lastDropAt | time.Time | Time of last drop emission |
+| lastHitAt | time.Time | Time of last hit received |
 
 ### mobskill.Model
 
@@ -146,6 +175,7 @@ Mob skill definition retrieved from atlas-data.
 ## Invariants
 
 - Monster uniqueId values range from 1000000000 to 2000000000 per tenant
+- Friendly monsters with a non-zero dropPeriod are registered in the drop timer on creation
 - A monster is alive when hp > 0
 - A monster is controlled when controlCharacterId != 0
 - Damage entries accumulate over the monster's lifetime
@@ -163,6 +193,9 @@ Mob skill definition retrieved from atlas-data.
 - DoT tick interval defaults to 1000ms for POISON and VENOM if not specified
 - HP cannot exceed maxHp after healing
 - MP deduction is capped at current MP
+- Friendly monster damage formula: rand.Intn(((maxHp/13 + weaponAttack*10) * 2) + 500) / 10, minimum 1
+- Friendly drops skip quest-specific drops (questId != 0)
+- Drop timer next eligible time is lastHitAt + dropPeriod if hit since last drop, otherwise lastDropAt + dropPeriod
 
 ## State Transitions
 
@@ -222,8 +255,10 @@ Interface defining monster processing operations.
 - `StopControl`: Removes controller assignment, emits stop control status event
 - `FindNextController`: Finds and assigns the next controller for a monster
 - `Damage`: Applies damage to a monster; checks for damage reflection; may transfer control or kill monster; spawns revive monsters on boss death
+- `DamageFriendly`: Applies damage from a hostile monster to a friendly monster; resets the drop timer hit timestamp; uses attacker's info for damage calculation
 - `Move`: Updates monster position and stance
 - `UseSkill`: Validates and executes a monster skill (stat buff, heal, debuff, or summon)
+- `UseSkillGM`: Executes a mob skill on a monster without validation checks (no cooldown, MP, HP threshold, probability, or seal checks)
 - `ApplyStatusEffect`: Applies a status effect to a monster after checking elemental and boss immunities
 - `CancelStatusEffect`: Cancels status effects by type from a monster
 - `CancelAllStatusEffects`: Cancels all status effects from a monster
@@ -262,6 +297,17 @@ Singleton in-memory store for monster skill cooldowns.
 - `SetCooldown`: Sets a cooldown for a skill on a monster
 - `ClearCooldowns`: Clears all cooldowns for a monster
 
+### DropTimerRegistry
+
+Singleton in-memory store for friendly monster drop timers.
+
+**Operations:**
+- `Register`: Registers a friendly monster for periodic drop emission
+- `Unregister`: Removes a friendly monster from the drop timer
+- `RecordHit`: Updates the last hit timestamp for a friendly monster
+- `UpdateLastDrop`: Updates the last drop timestamp for a friendly monster
+- `GetAll`: Returns all registered drop timer entries
+
 ### TenantIdAllocator
 
 Per-tenant unique ID allocator for monster instances. Allocates IDs in the range 1000000000-2000000000. Reuses released IDs via a LIFO free pool.
@@ -269,6 +315,10 @@ Per-tenant unique ID allocator for monster instances. Allocates IDs in the range
 ### StatusExpirationTask
 
 Periodic task (1-second interval) that iterates all monsters across all tenants. Expires status effects past their expiry time and processes DoT ticks for poison and venom effects.
+
+### DropTimerTask
+
+Periodic task (1-second interval) that iterates all registered drop timer entries. For each entry whose drop period has elapsed, fetches the monster's drop table from atlas-drops, rolls for drops, emits spawn drop commands for successful rolls, and emits a FRIENDLY_DROP status event.
 
 ### RegistryAudit
 

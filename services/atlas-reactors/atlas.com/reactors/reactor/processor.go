@@ -62,8 +62,27 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 	}
 }
 
+func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model) {
+	return func(ctx context.Context) func(f field.Model) {
+		t := tenant.MustFromContext(ctx)
+		return func(f field.Model) {
+			reactors := GetRegistry().GetInField(t, f)
+			for _, r := range reactors {
+				CancelPendingActivation(r.Id())
+				GetRegistry().Remove(t, r.Id())
+				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(r))
+			}
+			mk := NewMapKey(f)
+			GetRegistry().ClearAllCooldownsForMap(t, mk)
+			l.Debugf("Destroyed [%d] reactors and cleared cooldowns for map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
+		}
+	}
+}
+
 func Teardown(l logrus.FieldLogger) func() {
 	return func() {
+		CancelAllPendingActivations()
+
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-reactors").Start(context.Background(), "teardown")
 		defer span.End()
 
@@ -100,6 +119,7 @@ func DestroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Model] {
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
+			CancelPendingActivation(m.Id())
 			t := tenant.MustFromContext(ctx)
 			mk := NewMapKey(m.Field())
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
@@ -149,6 +169,18 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			_, hasNextState := stateInfo[nextState]
 			if !hasNextState {
+				if persistsAtFinalState(stateInfo) {
+					updated, err := GetRegistry().Update(reactorId, func(b *ModelBuilder) {
+						b.SetState(nextState)
+					})
+					if err != nil {
+						l.WithError(err).Errorf("Unable to update reactor [%d] state.", reactorId)
+						return err
+					}
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+					Trigger(l)(ctx)(updated, characterId)
+					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
+				}
 				l.Debugf("Reactor [%d] next state [%d] not in state info. Triggering and destroying.", reactorId, nextState)
 				return TriggerAndDestroy(l)(ctx)(r, characterId)
 			}
@@ -163,6 +195,11 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			// Check if the new state is terminal (all its events lead to non-existent states)
 			if isTerminalState(stateInfo, nextState) {
+				if persistsAtFinalState(stateInfo) {
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+					Trigger(l)(ctx)(updated, characterId)
+					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
+				}
 				l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Triggering and destroying.", reactorId, r.State(), nextState)
 				return TriggerAndDestroy(l)(ctx)(updated, characterId)
 			}
@@ -173,17 +210,23 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 	}
 }
 
+// Trigger emits a TRIGGER command to atlas-reactor-actions without destroying the reactor
+func Trigger(l logrus.FieldLogger) func(ctx context.Context) func(r Model, characterId uint32) {
+	return func(ctx context.Context) func(r Model, characterId uint32) {
+		return func(r Model, characterId uint32) {
+			err := producer.ProviderImpl(l)(ctx)(EnvCommandReactorActionsTopic)(triggerActionsCommandProvider(r, characterId))
+			if err != nil {
+				l.WithError(err).Warnf("Failed to emit TRIGGER command to reactor-actions for reactor [%d].", r.Id())
+			}
+		}
+	}
+}
+
 // TriggerAndDestroy emits a TRIGGER command to atlas-reactor-actions and then destroys the reactor
 func TriggerAndDestroy(l logrus.FieldLogger) func(ctx context.Context) func(r Model, characterId uint32) error {
 	return func(ctx context.Context) func(r Model, characterId uint32) error {
 		return func(r Model, characterId uint32) error {
-			// Emit TRIGGER command to atlas-reactor-actions for script processing
-			err := producer.ProviderImpl(l)(ctx)(EnvCommandReactorActionsTopic)(triggerActionsCommandProvider(r, characterId))
-			if err != nil {
-				l.WithError(err).Warnf("Failed to emit TRIGGER command to reactor-actions for reactor [%d].", r.Id())
-				// Don't fail - continue with destruction
-			}
-
+			Trigger(l)(ctx)(r, characterId)
 			return Destroy(l)(ctx)(r)
 		}
 	}
@@ -193,6 +236,20 @@ func containsSkill(skills []uint32, skillId uint32) bool {
 	for _, s := range skills {
 		if s == skillId {
 			return true
+		}
+	}
+	return false
+}
+
+// persistsAtFinalState checks if a reactor should remain alive at its final
+// state rather than being destroyed. This applies to item-triggered (type 100)
+// and type 999 reactors.
+func persistsAtFinalState(stateInfo map[int8][]state.Model) bool {
+	for _, events := range stateInfo {
+		for _, event := range events {
+			if event.Type() == itemReactorStateType || event.Type() == 999 {
+				return true
+			}
 		}
 	}
 	return false

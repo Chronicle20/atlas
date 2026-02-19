@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -78,8 +78,9 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 					return err
 				}
 
+				cfg := retry.DefaultConfig().WithMaxRetries(10).WithInitialDelay(100 * time.Millisecond).WithMaxDelay(10 * time.Second)
 				for _, m := range ms {
-					err = retry.Try(tryMessage(l, w)(m), 10)
+					err = retry.Try(context.Background(), cfg, tryMessage(l, w)(m))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to emit event on topic [%s].", w.Topic())
 						return err

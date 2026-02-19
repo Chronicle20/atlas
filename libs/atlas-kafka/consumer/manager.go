@@ -7,10 +7,11 @@ import (
 	"io"
 	"sync"
 	"sync/atomic"
+	"time"
 
 	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/retry"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -184,7 +185,8 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 				return false, err
 			}
 
-			err := retry.Try(readerFunc, 10)
+			cfg := retry.DefaultConfig().WithMaxRetries(10).WithInitialDelay(100 * time.Millisecond).WithMaxDelay(10 * time.Second)
+			err := retry.Try(readerCtx, cfg, readerFunc)
 			if err == io.EOF || errors.Is(err, context.Canceled) {
 				l.Infof("Reader closed, shutdown.")
 				return

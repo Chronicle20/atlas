@@ -3,8 +3,9 @@ package requests
 import (
 	"context"
 	"net/http"
+	"time"
 
-	"github.com/Chronicle20/atlas-rest/retry"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -43,7 +44,8 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			}
 			return false, nil
 		}
-		err := retry.Try(get, c.retries)
+		cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(5 * time.Second)
+		err := retry.Try(ctx, cfg, get)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodDelete, url)
 			return err

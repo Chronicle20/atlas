@@ -6,6 +6,7 @@ use (
 	./libs/atlas-model
 	./libs/atlas-redis
 	./libs/atlas-rest
+	./libs/atlas-retry
 	./libs/atlas-script-core
 	./libs/atlas-socket
 	./libs/atlas-tenant

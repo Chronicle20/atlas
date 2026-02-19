@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
-	"github.com/Chronicle20/atlas-rest/retry"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,7 +48,8 @@ func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, conf
 			}
 			return false, nil
 		}
-		err := retry.Try(get, c.retries)
+		cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(5 * time.Second)
+		err := retry.Try(ctx, cfg, get)
 
 		var resp A
 		if err != nil {

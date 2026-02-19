@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"time"
 
-	"github.com/Chronicle20/atlas-rest/retry"
+	"github.com/Chronicle20/atlas-retry"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
@@ -50,7 +51,8 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				}
 				return false, nil
 			}
-			err = retry.Try(post, c.retries)
+			cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(5 * time.Second)
+			err = retry.Try(ctx, cfg, post)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", method, url)
 				return result, err

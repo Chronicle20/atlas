@@ -76,7 +76,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			delete(conversationCtx.Context(), "partyQuestAction_notInPartyState")
 			delete(conversationCtx.Context(), "partyQuestAction_notLeaderState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			return
 		}
@@ -86,7 +86,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Party quest bonus action completed - bonus entered, ending conversation")
 			delete(conversationCtx.Context(), "partyQuestBonusAction_failureState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			return
 		}

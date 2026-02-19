@@ -14,7 +14,7 @@ var (
 
 type modelBuilder struct {
 	id           uuid.UUID
-	tenantID     uuid.UUID
+	tenantId     uuid.UUID
 	resourceName string
 	resourceData json.RawMessage
 }
@@ -30,7 +30,7 @@ func NewModelBuilder() *modelBuilder {
 func CloneModel(m Model) *modelBuilder {
 	return &modelBuilder{
 		id:           m.id,
-		tenantID:     m.tenantID,
+		tenantId:     m.tenantId,
 		resourceName: m.resourceName,
 		resourceData: m.resourceData,
 	}
@@ -42,9 +42,9 @@ func (b *modelBuilder) SetID(id uuid.UUID) *modelBuilder {
 	return b
 }
 
-// SetTenantID sets the tenant ID
-func (b *modelBuilder) SetTenantID(tenantID uuid.UUID) *modelBuilder {
-	b.tenantID = tenantID
+// SetTenantId sets the tenant ID
+func (b *modelBuilder) SetTenantId(tenantId uuid.UUID) *modelBuilder {
+	b.tenantId = tenantId
 	return b
 }
 
@@ -62,7 +62,7 @@ func (b *modelBuilder) SetResourceData(resourceData json.RawMessage) *modelBuild
 
 // Build creates a new Model with validation
 func (b *modelBuilder) Build() (Model, error) {
-	if b.tenantID == uuid.Nil {
+	if b.tenantId == uuid.Nil {
 		return Model{}, ErrTenantIdRequired
 	}
 	if b.resourceName == "" {
@@ -70,7 +70,7 @@ func (b *modelBuilder) Build() (Model, error) {
 	}
 	return Model{
 		id:           b.id,
-		tenantID:     b.tenantID,
+		tenantId:     b.tenantId,
 		resourceName: b.resourceName,
 		resourceData: b.resourceData,
 	}, nil

@@ -10,7 +10,7 @@ import (
 
 type Entity struct {
 	ID             uuid.UUID `gorm:"primaryKey;column:id;type:uuid"`
-	TenantID       uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_visits_tenant_char_map,priority:1;index:idx_visits_tenant_char,priority:1"`
+	TenantId       uuid.UUID `gorm:"column:tenant_id;type:uuid;not null;uniqueIndex:idx_visits_tenant_char_map,priority:1;index:idx_visits_tenant_char,priority:1"`
 	CharacterID    uint32    `gorm:"column:character_id;not null;uniqueIndex:idx_visits_tenant_char_map,priority:2;index:idx_visits_tenant_char,priority:2"`
 	MapID          uint32    `gorm:"column:map_id;not null;uniqueIndex:idx_visits_tenant_char_map,priority:3"`
 	FirstVisitedAt time.Time `gorm:"column:first_visited_at;not null;default:CURRENT_TIMESTAMP"`

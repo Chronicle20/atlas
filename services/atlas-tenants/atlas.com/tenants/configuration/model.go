@@ -10,7 +10,7 @@ import (
 // Model represents a configuration in the domain
 type Model struct {
 	id           uuid.UUID
-	tenantID     uuid.UUID
+	tenantId     uuid.UUID
 	resourceName string
 	resourceData json.RawMessage
 }
@@ -20,9 +20,9 @@ func (m Model) ID() uuid.UUID {
 	return m.id
 }
 
-// TenantID returns the tenant ID
-func (m Model) TenantID() uuid.UUID {
-	return m.tenantID
+// TenantId returns the tenant ID
+func (m Model) TenantId() uuid.UUID {
+	return m.tenantId
 }
 
 // ResourceName returns the resource name
@@ -37,14 +37,14 @@ func (m Model) ResourceData() json.RawMessage {
 
 // String returns a string representation of the configuration
 func (m Model) String() string {
-	return fmt.Sprintf("ID [%s] TenantID [%s] ResourceName [%s]", m.ID().String(), m.TenantID().String(), m.ResourceName())
+	return fmt.Sprintf("ID [%s] TenantId [%s] ResourceName [%s]", m.ID().String(), m.TenantId().String(), m.ResourceName())
 }
 
 // Make converts an Entity to a Model
 func Make(e Entity) (Model, error) {
 	return NewModelBuilder().
 		SetID(e.ID).
-		SetTenantID(e.TenantID).
+		SetTenantId(e.TenantId).
 		SetResourceName(e.ResourceName).
 		SetResourceData(e.ResourceData).
 		Build()

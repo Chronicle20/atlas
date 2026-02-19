@@ -12,7 +12,7 @@ func recordVisit(db *gorm.DB) func(tenantId uuid.UUID) func(characterId uint32) 
 			return func(mapId _map.Id) error {
 				entity := Entity{
 					ID:          uuid.New(),
-					TenantID:    tenantId,
+					TenantId:    tenantId,
 					CharacterID: characterId,
 					MapID:       uint32(mapId),
 				}

@@ -61,7 +61,7 @@ func createTestVessel(id, name, routeAID, routeBID string) map[string]interface{
 	}
 }
 
-func (p *testProcessor) createRoute(tenantID uuid.UUID, route map[string]interface{}) (configuration.Model, error) {
+func (p *testProcessor) createRoute(tenantId uuid.UUID, route map[string]interface{}) (configuration.Model, error) {
 	resourceData, err := configuration.CreateSingleRouteJsonData(route)
 	if err != nil {
 		return configuration.Model{}, err
@@ -69,7 +69,7 @@ func (p *testProcessor) createRoute(tenantID uuid.UUID, route map[string]interfa
 
 	entity := configuration.NewEntityBuilder().
 		SetID(uuid.New()).
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -81,15 +81,15 @@ func (p *testProcessor) createRoute(tenantID uuid.UUID, route map[string]interfa
 	return configuration.Make(entity)
 }
 
-func (p *testProcessor) getAllRoutes(tenantID uuid.UUID) ([]map[string]interface{}, error) {
-	return configuration.GetAllRoutesProvider(tenantID)(p.db)()
+func (p *testProcessor) getAllRoutes(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return configuration.GetAllRoutesProvider(tenantId)(p.db)()
 }
 
-func (p *testProcessor) getRouteById(tenantID uuid.UUID, routeID string) (map[string]interface{}, error) {
-	return configuration.GetRouteByIdProvider(tenantID, routeID)(p.db)()
+func (p *testProcessor) getRouteById(tenantId uuid.UUID, routeID string) (map[string]interface{}, error) {
+	return configuration.GetRouteByIdProvider(tenantId, routeID)(p.db)()
 }
 
-func (p *testProcessor) createVessel(tenantID uuid.UUID, vessel map[string]interface{}) (configuration.Model, error) {
+func (p *testProcessor) createVessel(tenantId uuid.UUID, vessel map[string]interface{}) (configuration.Model, error) {
 	resourceData, err := configuration.CreateSingleVesselJsonData(vessel)
 	if err != nil {
 		return configuration.Model{}, err
@@ -97,7 +97,7 @@ func (p *testProcessor) createVessel(tenantID uuid.UUID, vessel map[string]inter
 
 	entity := configuration.NewEntityBuilder().
 		SetID(uuid.New()).
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("vessels").
 		SetResourceData(resourceData).
 		Build()
@@ -109,12 +109,12 @@ func (p *testProcessor) createVessel(tenantID uuid.UUID, vessel map[string]inter
 	return configuration.Make(entity)
 }
 
-func (p *testProcessor) getAllVessels(tenantID uuid.UUID) ([]map[string]interface{}, error) {
-	return configuration.GetAllVesselsProvider(tenantID)(p.db)()
+func (p *testProcessor) getAllVessels(tenantId uuid.UUID) ([]map[string]interface{}, error) {
+	return configuration.GetAllVesselsProvider(tenantId)(p.db)()
 }
 
-func (p *testProcessor) getVesselById(tenantID uuid.UUID, vesselID string) (map[string]interface{}, error) {
-	return configuration.GetVesselByIdProvider(tenantID, vesselID)(p.db)()
+func (p *testProcessor) getVesselById(tenantId uuid.UUID, vesselID string) (map[string]interface{}, error) {
+	return configuration.GetVesselByIdProvider(tenantId, vesselID)(p.db)()
 }
 
 // Route Tests
@@ -123,15 +123,15 @@ func TestCreateRoute_Success(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	route := createTestRoute("route-1", "Test Route")
 
-	m, err := processor.createRoute(tenantID, route)
+	m, err := processor.createRoute(tenantId, route)
 	if err != nil {
 		t.Fatalf("createRoute() unexpected error: %v", err)
 	}
-	if m.TenantID() != tenantID {
-		t.Errorf("m.TenantID() = %v, want %v", m.TenantID(), tenantID)
+	if m.TenantId() != tenantId {
+		t.Errorf("m.TenantId() = %v, want %v", m.TenantId(), tenantId)
 	}
 	if m.ResourceName() != "routes" {
 		t.Errorf("m.ResourceName() = %s, want 'routes'", m.ResourceName())
@@ -142,8 +142,8 @@ func TestGetAllRoutes_Empty(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
-	_, err := processor.getAllRoutes(tenantID)
+	tenantId := uuid.New()
+	_, err := processor.getAllRoutes(tenantId)
 	// When no configuration exists, this should error with record not found
 	if err == nil {
 		t.Error("getAllRoutes() expected error for non-existent configuration")
@@ -154,15 +154,15 @@ func TestGetAllRoutes_WithRoutes(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	route := createTestRoute("route-1", "Test Route")
 
-	_, err := processor.createRoute(tenantID, route)
+	_, err := processor.createRoute(tenantId, route)
 	if err != nil {
 		t.Fatalf("createRoute() unexpected error: %v", err)
 	}
 
-	routes, err := processor.getAllRoutes(tenantID)
+	routes, err := processor.getAllRoutes(tenantId)
 	if err != nil {
 		t.Fatalf("getAllRoutes() unexpected error: %v", err)
 	}
@@ -175,15 +175,15 @@ func TestGetRouteById_Found(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	route := createTestRoute("route-1", "Test Route")
 
-	_, err := processor.createRoute(tenantID, route)
+	_, err := processor.createRoute(tenantId, route)
 	if err != nil {
 		t.Fatalf("createRoute() unexpected error: %v", err)
 	}
 
-	found, err := processor.getRouteById(tenantID, "route-1")
+	found, err := processor.getRouteById(tenantId, "route-1")
 	if err != nil {
 		t.Fatalf("getRouteById() unexpected error: %v", err)
 	}
@@ -196,15 +196,15 @@ func TestGetRouteById_NotFound(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	route := createTestRoute("route-1", "Test Route")
 
-	_, err := processor.createRoute(tenantID, route)
+	_, err := processor.createRoute(tenantId, route)
 	if err != nil {
 		t.Fatalf("createRoute() unexpected error: %v", err)
 	}
 
-	_, err = processor.getRouteById(tenantID, "non-existent")
+	_, err = processor.getRouteById(tenantId, "non-existent")
 	if err == nil {
 		t.Error("getRouteById() expected error for non-existent route")
 	}
@@ -216,15 +216,15 @@ func TestCreateVessel_Success(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	vessel := createTestVessel("vessel-1", "Test Vessel", "route-a", "route-b")
 
-	m, err := processor.createVessel(tenantID, vessel)
+	m, err := processor.createVessel(tenantId, vessel)
 	if err != nil {
 		t.Fatalf("createVessel() unexpected error: %v", err)
 	}
-	if m.TenantID() != tenantID {
-		t.Errorf("m.TenantID() = %v, want %v", m.TenantID(), tenantID)
+	if m.TenantId() != tenantId {
+		t.Errorf("m.TenantId() = %v, want %v", m.TenantId(), tenantId)
 	}
 	if m.ResourceName() != "vessels" {
 		t.Errorf("m.ResourceName() = %s, want 'vessels'", m.ResourceName())
@@ -235,8 +235,8 @@ func TestGetAllVessels_Empty(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
-	_, err := processor.getAllVessels(tenantID)
+	tenantId := uuid.New()
+	_, err := processor.getAllVessels(tenantId)
 	// When no configuration exists, this should error with record not found
 	if err == nil {
 		t.Error("getAllVessels() expected error for non-existent configuration")
@@ -247,15 +247,15 @@ func TestGetAllVessels_WithVessels(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	vessel := createTestVessel("vessel-1", "Test Vessel", "route-a", "route-b")
 
-	_, err := processor.createVessel(tenantID, vessel)
+	_, err := processor.createVessel(tenantId, vessel)
 	if err != nil {
 		t.Fatalf("createVessel() unexpected error: %v", err)
 	}
 
-	vessels, err := processor.getAllVessels(tenantID)
+	vessels, err := processor.getAllVessels(tenantId)
 	if err != nil {
 		t.Fatalf("getAllVessels() unexpected error: %v", err)
 	}
@@ -268,15 +268,15 @@ func TestGetVesselById_Found(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	vessel := createTestVessel("vessel-1", "Test Vessel", "route-a", "route-b")
 
-	_, err := processor.createVessel(tenantID, vessel)
+	_, err := processor.createVessel(tenantId, vessel)
 	if err != nil {
 		t.Fatalf("createVessel() unexpected error: %v", err)
 	}
 
-	found, err := processor.getVesselById(tenantID, "vessel-1")
+	found, err := processor.getVesselById(tenantId, "vessel-1")
 	if err != nil {
 		t.Fatalf("getVesselById() unexpected error: %v", err)
 	}
@@ -289,15 +289,15 @@ func TestGetVesselById_NotFound(t *testing.T) {
 	processor, cleanup := setupTestProcessor(t)
 	defer cleanup()
 
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	vessel := createTestVessel("vessel-1", "Test Vessel", "route-a", "route-b")
 
-	_, err := processor.createVessel(tenantID, vessel)
+	_, err := processor.createVessel(tenantId, vessel)
 	if err != nil {
 		t.Fatalf("createVessel() unexpected error: %v", err)
 	}
 
-	_, err = processor.getVesselById(tenantID, "non-existent")
+	_, err = processor.getVesselById(tenantId, "non-existent")
 	if err == nil {
 		t.Error("getVesselById() expected error for non-existent vessel")
 	}
@@ -307,12 +307,12 @@ func TestGetVesselById_NotFound(t *testing.T) {
 
 func TestEntityBuilder(t *testing.T) {
 	id := uuid.New()
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": []}`)
 
 	entity := configuration.NewEntityBuilder().
 		SetID(id).
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -320,8 +320,8 @@ func TestEntityBuilder(t *testing.T) {
 	if entity.ID != id {
 		t.Errorf("entity.ID = %v, want %v", entity.ID, id)
 	}
-	if entity.TenantID != tenantID {
-		t.Errorf("entity.TenantID = %v, want %v", entity.TenantID, tenantID)
+	if entity.TenantId != tenantId {
+		t.Errorf("entity.TenantId = %v, want %v", entity.TenantId, tenantId)
 	}
 	if entity.ResourceName != "routes" {
 		t.Errorf("entity.ResourceName = %s, want 'routes'", entity.ResourceName)
@@ -329,11 +329,11 @@ func TestEntityBuilder(t *testing.T) {
 }
 
 func TestFromModel(t *testing.T) {
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": []}`)
 
 	model, err := configuration.NewModelBuilder().
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -346,8 +346,8 @@ func TestFromModel(t *testing.T) {
 	if entity.ID != model.ID() {
 		t.Errorf("entity.ID = %v, want %v", entity.ID, model.ID())
 	}
-	if entity.TenantID != model.TenantID() {
-		t.Errorf("entity.TenantID = %v, want %v", entity.TenantID, model.TenantID())
+	if entity.TenantId != model.TenantId() {
+		t.Errorf("entity.TenantId = %v, want %v", entity.TenantId, model.TenantId())
 	}
 	if entity.ResourceName != model.ResourceName() {
 		t.Errorf("entity.ResourceName = %s, want %s", entity.ResourceName, model.ResourceName())
@@ -356,12 +356,12 @@ func TestFromModel(t *testing.T) {
 
 func TestMake(t *testing.T) {
 	id := uuid.New()
-	tenantID := uuid.New()
+	tenantId := uuid.New()
 	resourceData := json.RawMessage(`{"data": []}`)
 
 	entity := configuration.NewEntityBuilder().
 		SetID(id).
-		SetTenantID(tenantID).
+		SetTenantId(tenantId).
 		SetResourceName("routes").
 		SetResourceData(resourceData).
 		Build()
@@ -374,8 +374,8 @@ func TestMake(t *testing.T) {
 	if model.ID() != id {
 		t.Errorf("model.ID() = %v, want %v", model.ID(), id)
 	}
-	if model.TenantID() != tenantID {
-		t.Errorf("model.TenantID() = %v, want %v", model.TenantID(), tenantID)
+	if model.TenantId() != tenantId {
+		t.Errorf("model.TenantId() = %v, want %v", model.TenantId(), tenantId)
 	}
 	if model.ResourceName() != "routes" {
 		t.Errorf("model.ResourceName() = %s, want 'routes'", model.ResourceName())

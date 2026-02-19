@@ -8,7 +8,7 @@ import (
 
 type entityBuilder struct {
 	id           uuid.UUID
-	tenantID     uuid.UUID
+	tenantId     uuid.UUID
 	resourceName string
 	resourceData json.RawMessage
 }
@@ -24,9 +24,9 @@ func (b *entityBuilder) SetID(id uuid.UUID) *entityBuilder {
 	return b
 }
 
-// SetTenantID sets the tenant ID
-func (b *entityBuilder) SetTenantID(tenantID uuid.UUID) *entityBuilder {
-	b.tenantID = tenantID
+// SetTenantId sets the tenant ID
+func (b *entityBuilder) SetTenantId(tenantId uuid.UUID) *entityBuilder {
+	b.tenantId = tenantId
 	return b
 }
 
@@ -46,7 +46,7 @@ func (b *entityBuilder) SetResourceData(resourceData json.RawMessage) *entityBui
 func (b *entityBuilder) Build() Entity {
 	return Entity{
 		ID:           b.id,
-		TenantID:     b.tenantID,
+		TenantId:     b.tenantId,
 		ResourceName: b.resourceName,
 		ResourceData: b.resourceData,
 	}
@@ -56,7 +56,7 @@ func (b *entityBuilder) Build() Entity {
 func FromModel(m Model) Entity {
 	return NewEntityBuilder().
 		SetID(m.ID()).
-		SetTenantID(m.TenantID()).
+		SetTenantId(m.TenantId()).
 		SetResourceName(m.ResourceName()).
 		SetResourceData(m.ResourceData()).
 		Build()

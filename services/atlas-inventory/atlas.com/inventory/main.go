@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
-	"atlas-inventory/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"

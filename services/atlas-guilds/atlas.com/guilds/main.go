@@ -2,7 +2,6 @@ package main
 
 import (
 	"atlas-guilds/coordinator"
-	"atlas-guilds/database"
 	"atlas-guilds/guild"
 	"atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
@@ -20,6 +19,7 @@ import (
 	"os"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"

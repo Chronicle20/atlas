@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"atlas-map-actions/database"
+	database "github.com/Chronicle20/atlas-database"
 	saga "atlas-map-actions/kafka/consumer/saga"
 	"atlas-map-actions/logger"
 	"atlas-map-actions/script"

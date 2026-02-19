@@ -55,24 +55,24 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Script
 
 // ByIdProvider returns a provider for retrieving a reactor script by ID
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[ReactorScript] {
-	return model.Map[Entity, ReactorScript](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, ReactorScript](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 // ByReactorIdProvider returns a provider for retrieving a reactor script by reactor ID
 func (p *ProcessorImpl) ByReactorIdProvider(reactorId string) model.Provider[ReactorScript] {
-	return model.Map[Entity, ReactorScript](Make)(getByReactorIdProvider(p.t.Id())(reactorId)(p.db))
+	return model.Map[Entity, ReactorScript](Make)(getByReactorIdProvider(reactorId)(p.db.WithContext(p.ctx)))
 }
 
 // AllProvider returns a provider for retrieving all reactor scripts
 func (p *ProcessorImpl) AllProvider() model.Provider[[]ReactorScript] {
-	return model.SliceMap[Entity, ReactorScript](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, ReactorScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Create creates a new reactor script
 func (p *ProcessorImpl) Create(m ReactorScript) (ReactorScript, error) {
 	p.l.Debugf("Creating reactor script [%s]", m.ReactorId())
 
-	result, err := createReactorScript(p.db)(p.t.Id())(m)
+	result, err := createReactorScript(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create reactor script [%s]", m.ReactorId())
 		return ReactorScript{}, err
@@ -84,7 +84,7 @@ func (p *ProcessorImpl) Create(m ReactorScript) (ReactorScript, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m ReactorScript) (ReactorScript, error) {
 	p.l.Debugf("Updating reactor script [%s]", id)
 
-	result, err := updateReactorScript(p.db)(p.t.Id())(id)(m)
+	result, err := updateReactorScript(p.db.WithContext(p.ctx))(id)(m, p.t.Id())
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update reactor script [%s]", id)
 		return ReactorScript{}, err
@@ -96,7 +96,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m ReactorScript) (ReactorScript, er
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting reactor script [%s]", id)
 
-	err := deleteReactorScript(p.db)(p.t.Id())(id)
+	err := deleteReactorScript(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete reactor script [%s]", id)
 		return err
@@ -108,7 +108,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all reactor scripts for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllReactorScripts(p.db)(p.t.Id())
+	count, err := deleteAllReactorScripts(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete reactor scripts for tenant [%s]", p.t.Id())
 		return 0, err

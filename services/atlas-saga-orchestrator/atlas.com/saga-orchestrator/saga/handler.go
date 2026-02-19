@@ -2212,7 +2212,7 @@ func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
 		}).Warn("Instance transport failed - emitting failure event")
 
 		// Remove saga from cache since this is a terminal failure
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		// Emit saga failed event with the transport-specific error code
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
@@ -2382,7 +2382,7 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 	}
 
 	// Update the saga in cache with the new steps
-	if err := GetCache().Put(h.t.Id(), updatedSaga); err != nil {
+	if err := GetCache().Put(h.ctx,updatedSaga); err != nil {
 		return err
 	}
 
@@ -2476,7 +2476,7 @@ func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest registration failed - emitting failure event")
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2525,7 +2525,7 @@ func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) err
 
 		errorCode := party_quest.GetErrorCode(err)
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2581,7 +2581,7 @@ func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
 	err := h.partyQuestP.LeavePartyQuest(payload.CharacterId, payload.WorldId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to leave party quest.")
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 		return err
 	}
 
@@ -2739,7 +2739,7 @@ func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest bonus entry failed - emitting failure event")
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(

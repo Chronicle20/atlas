@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-skills/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-skills/kafka/consumer/character"
 	macro2 "atlas-skills/kafka/consumer/macro"
 	skill2 "atlas-skills/kafka/consumer/skill"

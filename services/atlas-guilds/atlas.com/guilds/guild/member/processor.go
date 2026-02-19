@@ -1,10 +1,10 @@
 package member
 
 import (
-	"atlas-guilds/database"
 	"atlas-guilds/guild/character"
 	"context"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -36,9 +36,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 func (p *ProcessorImpl) AddMember(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte) (Model, error) {
 	var m Model
 	var txErr error
-	txErr = database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		var err error
-		m, err = create(tx, p.t, guildId, characterId, name, jobId, level, title)
+		m, err = create(tx, p.t.Id(), guildId, characterId, name, jobId, level, title)
 		if err != nil {
 			return err
 		}
@@ -54,8 +54,8 @@ func (p *ProcessorImpl) AddMember(guildId uint32, characterId uint32, name strin
 }
 
 func (p *ProcessorImpl) RemoveMember(guildId uint32, characterId uint32) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		err := tx.Where("tenant_id = ? AND guild_id = ? AND character_id = ?", p.t.Id(), guildId, characterId).Delete(&Entity{}).Error
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		err := tx.Where("guild_id = ? AND character_id = ?", guildId, characterId).Delete(&Entity{}).Error
 		if err != nil {
 			return err
 		}
@@ -69,9 +69,9 @@ func (p *ProcessorImpl) RemoveMember(guildId uint32, characterId uint32) error {
 }
 
 func (p *ProcessorImpl) UpdateStatus(characterId uint32, online bool) error {
-	return updateStatus(p.db, p.t.Id(), characterId, online)
+	return updateStatus(p.db.WithContext(p.ctx), characterId, online)
 }
 
 func (p *ProcessorImpl) UpdateTitle(characterId uint32, title byte) error {
-	return updateTitle(p.db, p.t.Id(), characterId, title)
+	return updateTitle(p.db.WithContext(p.ctx), characterId, title)
 }

@@ -26,13 +26,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 }
 
 func (p *Processor) GetAssetById(assetId uint32) (Model, error) {
-	t := tenant.MustFromContext(p.ctx)
-	return GetById(p.db, t.Id())(assetId)
+	return GetById(p.db.WithContext(p.ctx))(assetId)
 }
 
 func (p *Processor) GetAssetsByStorageId(storageId uuid.UUID) ([]Model, error) {
-	t := tenant.MustFromContext(p.ctx)
-	return GetByStorageId(p.db, t.Id())(storageId)
+	return GetByStorageId(p.db.WithContext(p.ctx))(storageId)
 }
 
 // StorageEntity is a minimal storage entity for cross-package queries
@@ -53,7 +51,7 @@ func (p *Processor) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uu
 	t := tenant.MustFromContext(p.ctx)
 
 	var storageEntity StorageEntity
-	err := p.db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", t.Id(), byte(worldId), accountId).
+	err := p.db.WithContext(p.ctx).Where("world_id = ? AND account_id = ?", byte(worldId), accountId).
 		First(&storageEntity).Error
 
 	if err == nil {
@@ -69,7 +67,7 @@ func (p *Processor) GetOrCreateStorageId(worldId world.Id, accountId uint32) (uu
 			Capacity:  4,
 			Mesos:     0,
 		}
-		createErr := p.db.Create(&storageEntity).Error
+		createErr := p.db.WithContext(p.ctx).Create(&storageEntity).Error
 		if createErr != nil {
 			return uuid.Nil, createErr
 		}

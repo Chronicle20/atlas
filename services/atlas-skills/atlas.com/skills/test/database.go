@@ -5,6 +5,8 @@ import (
 	"atlas-skills/skill"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
+	logtest "github.com/sirupsen/logrus/hooks/test"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -23,6 +25,9 @@ func SetupTestDB(t *testing.T) *gorm.DB {
 	if err := db.AutoMigrate(&skill.Entity{}, &macro.Entity{}); err != nil {
 		t.Fatalf("Failed to migrate test database: %v", err)
 	}
+
+	l, _ := logtest.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 
 	return db
 }

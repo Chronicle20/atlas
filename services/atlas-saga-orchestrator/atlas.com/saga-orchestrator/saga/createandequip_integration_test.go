@@ -147,7 +147,7 @@ func TestCreateAndEquipAssetIntegration(t *testing.T) {
 			assert.NoError(t, err, "Failed to build saga")
 
 			// Store saga in cache
-			_ = GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(tctx, saga)
 
 			// Execute saga step
 			err = processor.Step(saga.TransactionId())
@@ -297,7 +297,7 @@ func TestCreateAndEquipAssetKafkaEventFlow_Disabled(t *testing.T) {
 			assert.NoError(t, err, "Failed to build saga")
 
 			// Store saga in cache
-			_ = GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(tctx, saga)
 
 			// Phase 1: Execute the initial CreateAndEquipAsset step
 			err = processor.Step(transactionId)

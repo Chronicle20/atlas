@@ -2,7 +2,7 @@ package main
 
 import (
 	charReg "atlas-pets/character"
-	"atlas-pets/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-pets/kafka/consumer/asset"
 	"atlas-pets/kafka/consumer/character"
 	pet2 "atlas-pets/kafka/consumer/pet"

@@ -256,7 +256,7 @@ func TestUpdateCeremony(t *testing.T) {
 		}
 
 		// Update the ceremony
-		updateProvider := UpdateCeremony(db, log)(created.ID, updatedEntity, tenantId)
+		updateProvider := UpdateCeremony(db, log)(created.ID, updatedEntity)
 		result, err := updateProvider()
 
 		require.NoError(t, err)

@@ -1,7 +1,7 @@
 package templates
 
 import (
-	"atlas-configurations/database"
+	database "github.com/Chronicle20/atlas-database"
 	"context"
 	"encoding/json"
 

@@ -174,8 +174,6 @@ func (r *pqInstanceRestModel) SetID(idStr string) error {
 }
 
 func (e *ConditionEvaluator) getPqInstanceByCharacter(characterId uint32) (pqInstanceRestModel, error) {
-	sd := requests.AddHeaderDecorator(requests.SpanHeaderDecorator(e.ctx))
-	td := requests.AddHeaderDecorator(requests.TenantHeaderDecorator(e.ctx))
 	url := fmt.Sprintf(requests.RootUrl("PARTY_QUESTS")+"party-quests/instances/character/%d", characterId)
-	return requests.MakeGetRequest[pqInstanceRestModel](url, sd, td)(e.l, e.ctx)
+	return requests.GetRequest[pqInstanceRestModel](url)(e.l, e.ctx)
 }

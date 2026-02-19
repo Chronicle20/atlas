@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -30,12 +31,15 @@ func testContext() context.Context {
 }
 
 func testDatabase(t *testing.T) *gorm.DB {
+	l := testLogger()
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, pet.Migration, exclude.Migration)

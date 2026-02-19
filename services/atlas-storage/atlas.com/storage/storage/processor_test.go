@@ -10,6 +10,7 @@ import (
 
 	assetConstants "github.com/Chronicle20/atlas-constants/asset"
 	"github.com/Chronicle20/atlas-constants/world"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -36,6 +37,9 @@ func testDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	l, _ := test.NewNullLogger()
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, storage.Migration, asset.Migration)
@@ -129,8 +133,7 @@ func TestProcessor_Deposit_Equipable(t *testing.T) {
 	}
 
 	// Verify asset was created
-	te := tenant.MustFromContext(ctx)
-	a, err := asset.GetById(db, te.Id())(assetId)
+	a, err := asset.GetById(db.WithContext(ctx))(assetId)
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
 	}
@@ -168,8 +171,7 @@ func TestProcessor_Deposit_Stackable(t *testing.T) {
 	}
 
 	// Verify asset data is inline
-	te := tenant.MustFromContext(ctx)
-	a, err := asset.GetById(db, te.Id())(assetId)
+	a, err := asset.GetById(db.WithContext(ctx))(assetId)
 	if err != nil {
 		t.Fatalf("Failed to get asset: %v", err)
 	}
@@ -215,8 +217,7 @@ func TestProcessor_Withdraw_Full(t *testing.T) {
 	}
 
 	// Verify asset was deleted
-	te := tenant.MustFromContext(ctx)
-	_, err = asset.GetById(db, te.Id())(assetId)
+	_, err = asset.GetById(db.WithContext(ctx))(assetId)
 	if err == nil {
 		t.Fatalf("Asset should have been deleted")
 	}
@@ -257,8 +258,7 @@ func TestProcessor_Withdraw_Partial(t *testing.T) {
 	}
 
 	// Verify quantity was reduced
-	te := tenant.MustFromContext(ctx)
-	a, err := asset.GetById(db, te.Id())(assetId)
+	a, err := asset.GetById(db.WithContext(ctx))(assetId)
 	if err != nil {
 		t.Fatalf("Asset should still exist: %v", err)
 	}
@@ -450,8 +450,7 @@ func TestProcessor_DepositRollback(t *testing.T) {
 	}
 
 	// Verify asset was deleted
-	te := tenant.MustFromContext(ctx)
-	_, err = asset.GetById(db, te.Id())(assetId)
+	_, err = asset.GetById(db.WithContext(ctx))(assetId)
 	if err == nil {
 		t.Fatalf("Asset should have been deleted on rollback")
 	}
@@ -487,8 +486,7 @@ func TestProcessor_MultipleDeposits(t *testing.T) {
 		t.Fatalf("Failed to get storage: %v", err)
 	}
 
-	te := tenant.MustFromContext(ctx)
-	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}
@@ -502,7 +500,6 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 	db := testDatabase(t)
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
-	te := tenant.MustFromContext(ctx)
 
 	worldId := world.Id(0)
 	accountId := uint32(12345)
@@ -542,7 +539,7 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 	}
 
 	// Verify storage and assets exist before deletion
-	assets, err := asset.GetByStorageId(db, te.Id())(s.Id())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(s.Id())
 	if err != nil {
 		t.Fatalf("Failed to get assets: %v", err)
 	}
@@ -557,7 +554,7 @@ func TestProcessor_DeleteByAccountId(t *testing.T) {
 	}
 
 	// Verify storage is deleted
-	storages, err := storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	storages, err := storage.GetByAccountId(testLogger(), db.WithContext(ctx))(accountId)
 	if err != nil {
 		t.Fatalf("Failed to query storages: %v", err)
 	}
@@ -570,7 +567,6 @@ func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
 	db := testDatabase(t)
 	ctx := testContext()
 	p := storage.NewProcessor(testLogger(), ctx, db)
-	te := tenant.MustFromContext(ctx)
 
 	accountId := uint32(12345)
 
@@ -596,7 +592,7 @@ func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
 	}
 
 	// Verify storages exist before deletion
-	storages, err := storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	storages, err := storage.GetByAccountId(testLogger(), db.WithContext(ctx))(accountId)
 	if err != nil {
 		t.Fatalf("Failed to query storages: %v", err)
 	}
@@ -611,7 +607,7 @@ func TestProcessor_DeleteByAccountId_MultipleWorlds(t *testing.T) {
 	}
 
 	// Verify all storages are deleted
-	storages, err = storage.GetByAccountId(testLogger(), db, te.Id())(accountId)
+	storages, err = storage.GetByAccountId(testLogger(), db.WithContext(ctx))(accountId)
 	if err != nil {
 		t.Fatalf("Failed to query storages: %v", err)
 	}

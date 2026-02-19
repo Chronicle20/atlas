@@ -3,7 +3,7 @@ package list
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
-	"atlas-buddies/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-buddies/invite"
 	"atlas-buddies/kafka/message"
 	list2 "atlas-buddies/kafka/message/list"
@@ -20,6 +20,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
+
 
 type Processor interface {
 	WithTransaction(*gorm.DB) Processor
@@ -87,7 +88,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 }
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Model] {
-	return model.Map(Make)(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))
+	return model.Map(Make)(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
@@ -96,7 +97,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 
 func (p *ProcessorImpl) Create(characterId uint32, capacity byte) (Model, error) {
 	p.l.Debugf("Creating buddy list for character [%d] with a capacity of [%d].", characterId, capacity)
-	m, err := create(p.db, p.t, characterId, capacity)
+	m, err := create(p.db.WithContext(p.ctx), p.t.Id(), characterId, capacity)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to create initial buddy list for character [%d].", characterId)
 		return Model{}, err
@@ -112,7 +113,7 @@ func (p *ProcessorImpl) DeleteAndEmit(characterId uint32, worldId world.Id) erro
 
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32, worldId world.Id) error {
 	return func(characterId uint32, worldId world.Id) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			bl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				return err
@@ -120,7 +121,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32, worl
 
 			// Remove deleted character for all of their buddies.
 			for _, b := range bl.Buddies() {
-				err = removeBuddy(tx, p.t.Id(), b.CharacterId(), characterId)
+				err = removeBuddy(tx, b.CharacterId(), characterId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", b.CharacterId())
 					return err
@@ -128,7 +129,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(characterId uint32, worl
 
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.BuddyRemovedStatusEventProvider(character2.Id(b.CharacterId()), worldId, character2.Id(characterId)))
 			}
-			return deleteEntityWithBuddies(tx, p.t.Id(), characterId)
+			return deleteEntityWithBuddies(tx, characterId)
 		})
 		if txErr != nil {
 			return txErr
@@ -145,7 +146,7 @@ func (p *ProcessorImpl) RequestAddBuddyAndEmit(characterId uint32, worldId world
 
 func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32, group string) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32, group string) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			tc, err := p.cp.GetById(targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve character [%d] information.", targetId)
@@ -207,7 +208,7 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 			}
 			if mbe != nil {
 				p.l.Infof("Character [%d] is already on target characters [%d] buddy list.", characterId, targetId)
-				err = addBuddy(tx, p.t.Id(), characterId, targetId, tc.Name(), group, false)
+				err = addBuddy(tx, characterId, targetId, tc.Name(), group, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
 					_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
@@ -221,7 +222,7 @@ func (p *ProcessorImpl) RequestAddBuddy(mb *message.Buffer) func(characterId uin
 			}
 
 			// soft allocate buddy for character
-			err = addPendingBuddy(tx, p.t.Id(), characterId, targetId, tc.Name(), group)
+			err = addPendingBuddy(tx, characterId, targetId, tc.Name(), group)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to add buddy to buddy list for character [%d].", characterId)
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
@@ -252,7 +253,7 @@ func (p *ProcessorImpl) RequestDeleteBuddyAndEmit(characterId uint32, worldId wo
 
 func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
@@ -278,7 +279,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 				return nil
 			}
 
-			err = removeBuddy(tx, p.t.Id(), characterId, targetId)
+			err = removeBuddy(tx, characterId, targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
@@ -286,7 +287,7 @@ func (p *ProcessorImpl) RequestDeleteBuddy(mb *message.Buffer) func(characterId 
 			}
 
 			var update bool
-			update, err = updateBuddyChannel(tx, p.t.Id(), characterId, targetId, -1)
+			update, err = updateBuddyChannel(tx, characterId, targetId, -1)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))
@@ -316,7 +317,7 @@ func (p *ProcessorImpl) AcceptInviteAndEmit(characterId uint32, worldId world.Id
 
 func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			cbl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to retrieve buddy list for character [%d] attempting to add buddy.", characterId)
@@ -370,17 +371,17 @@ func (p *ProcessorImpl) AcceptInvite(mb *message.Buffer) func(characterId uint32
 				return err
 			}
 
-			err = removeBuddy(tx, p.t.Id(), targetId, characterId)
+			err = removeBuddy(tx, targetId, characterId)
 			if err != nil {
 				return err
 			}
 
-			err = addBuddy(tx, p.t.Id(), characterId, targetId, oc.Name(), "Default Group", false)
+			err = addBuddy(tx, characterId, targetId, oc.Name(), "Default Group", false)
 			if err != nil {
 				return err
 			}
 
-			err = addBuddy(tx, p.t.Id(), targetId, characterId, c.Name(), ob.Group(), false)
+			err = addBuddy(tx, targetId, characterId, c.Name(), ob.Group(), false)
 			if err != nil {
 				return err
 			}
@@ -405,14 +406,14 @@ func (p *ProcessorImpl) DeleteBuddyAndEmit(characterId uint32, worldId world.Id,
 
 func (p *ProcessorImpl) DeleteBuddy(mb *message.Buffer) func(characterId uint32, worldId world.Id, targetId uint32) error {
 	return func(characterId uint32, worldId world.Id, targetId uint32) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			err := removeBuddy(tx, p.t.Id(), characterId, targetId)
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			err := removeBuddy(tx, characterId, targetId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to remove buddy from buddy list for character [%d].", characterId)
 				return err
 			}
 			var update bool
-			update, err = updateBuddyChannel(tx, p.t.Id(), characterId, targetId, -1)
+			update, err = updateBuddyChannel(tx, characterId, targetId, -1)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, -1, targetId)
 				return err
@@ -441,15 +442,15 @@ func (p *ProcessorImpl) UpdateBuddyChannelAndEmit(characterId uint32, worldId wo
 
 func (p *ProcessorImpl) UpdateBuddyChannel(mb *message.Buffer) func(characterId uint32, worldId world.Id, channelId int8) error {
 	return func(characterId uint32, worldId world.Id, channelId int8) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			bl, err := byCharacterIdEntityProvider(p.t.Id(), characterId)(tx)()
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			bl, err := byCharacterIdEntityProvider(characterId)(tx)()
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)
 				return err
 			}
 			for _, b := range bl.Buddies {
 				var update bool
-				update, err = updateBuddyChannel(tx, p.t.Id(), characterId, b.CharacterId, channelId)
+				update, err = updateBuddyChannel(tx, characterId, b.CharacterId, channelId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to update character [%d] channel to [%d] in [%d] buddy list.", characterId, channelId, b.CharacterId)
 					return err
@@ -477,22 +478,22 @@ func (p *ProcessorImpl) UpdateBuddyShopStatusAndEmit(characterId uint32, worldId
 
 func (p *ProcessorImpl) UpdateBuddyShopStatus(mb *message.Buffer) func(characterId uint32, worldId world.Id, inShop bool) error {
 	return func(characterId uint32, worldId world.Id, inShop bool) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			bl, err := byCharacterIdEntityProvider(p.t.Id(), characterId)(tx)()
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			bl, err := byCharacterIdEntityProvider(characterId)(tx)()
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to locate buddy list for character [%d].", characterId)
 				return err
 			}
 			for _, b := range bl.Buddies {
 				var update bool
-				update, err = updateBuddyShopStatus(tx, p.t.Id(), characterId, b.CharacterId, inShop)
+				update, err = updateBuddyShopStatus(tx, characterId, b.CharacterId, inShop)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to update character [%d] shop status to [%t] in [%d] buddy list.", characterId, inShop, b.CharacterId)
 					return err
 				}
 
 				if update {
-					tbl, err := byCharacterIdEntityProvider(p.t.Id(), b.CharacterId)(tx)()
+					tbl, err := byCharacterIdEntityProvider(b.CharacterId)(tx)()
 					if err != nil {
 						return err
 					}
@@ -576,7 +577,7 @@ func (p *ProcessorImpl) IncreaseCapacity(mb *message.Buffer) func(characterId ui
 //   - Follows the Atlas pattern of pure functions with message buffer coordination
 func (p *ProcessorImpl) IncreaseCapacityWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, worldId world.Id, newCapacity byte) error {
 	return func(transactionId uuid.UUID, characterId uint32, worldId world.Id, newCapacity byte) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			// Get current buddy list to validate capacity
 			bl, err := p.WithTransaction(tx).GetByCharacterId(characterId)
 			if err != nil {
@@ -593,7 +594,7 @@ func (p *ProcessorImpl) IncreaseCapacityWithTransaction(mb *message.Buffer) func
 			}
 
 			// Update the capacity using administrator function
-			err = updateCapacity(tx, p.t.Id(), characterId, newCapacity)
+			err = updateCapacity(tx, characterId, newCapacity)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to update capacity for character [%d] to [%d].", characterId, newCapacity)
 				_ = mb.Put(list2.EnvStatusEventTopic, list3.ErrorStatusEventProvider(character2.Id(characterId), worldId, list2.StatusEventErrorUnknownError))

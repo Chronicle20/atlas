@@ -103,7 +103,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, se
 			if err != nil {
 				if errors.Is(err, ErrMemberNotFound) {
 					t := tenant.MustFromContext(p.ctx)
-					seniorModel, err = model.Map(Make)(CreateMember(p.db, p.log)(seniorId, t.Id(), seniorLevel, worldId))()
+					seniorModel, err = model.Map(Make)(CreateMember(p.db.WithContext(p.ctx), p.log)(seniorId, t.Id(), seniorLevel, worldId))()
 					if buf != nil {
 						if putErr := buf.Put(familymsg.EnvEventTopicErrors, LinkErrorEventProvider(0, seniorId, seniorId, juniorId, "SENIOR_NOT_FOUND", ErrSeniorNotFound.Error())); putErr != nil {
 							p.log.WithError(putErr).Error("Failed to add link error event to buffer")
@@ -170,7 +170,7 @@ func (p *ProcessorImpl) AddJunior(buf *message.Buffer) func(worldId world.Id, se
 
 			// Begin transaction
 			var result FamilyMember
-			err = p.db.Transaction(func(tx *gorm.DB) error {
+			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
 				// Update senior - add junior
 				updatedSenior, err := seniorModel.Builder().
 					AddJunior(juniorId).
@@ -242,7 +242,7 @@ func (p *ProcessorImpl) RemoveMember(_ *message.Buffer) func(characterId uint32,
 			}
 
 			var updatedMembers []FamilyMember
-			err = p.db.Transaction(func(tx *gorm.DB) error {
+			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					if seniorModel, err := p.GetByCharacterId(*memberModel.SeniorId()); err == nil {
@@ -315,7 +315,7 @@ func (p *ProcessorImpl) BreakLink(buf *message.Buffer) func(characterId uint32, 
 			}
 
 			var updatedMembers []FamilyMember
-			err = p.db.Transaction(func(tx *gorm.DB) error {
+			err = p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
 				// If member has a senior, remove from senior's junior list
 				if memberModel.HasSenior() {
 					if seniorModel, err := p.WithTransaction(tx).GetByCharacterId(*memberModel.SeniorId()); err == nil {
@@ -455,7 +455,7 @@ func (p *ProcessorImpl) AwardRep(buf *message.Buffer) func(characterId uint32, a
 				return FamilyMember{}, err
 			}
 
-			if _, err := SaveMember(p.db, p.log)(updatedMember)(); err != nil {
+			if _, err := SaveMember(p.db.WithContext(p.ctx), p.log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -507,7 +507,7 @@ func (p *ProcessorImpl) DeductRep(buf *message.Buffer) func(characterId uint32, 
 				return FamilyMember{}, err
 			}
 
-			if _, err := SaveMember(p.db, p.log)(updatedMember)(); err != nil {
+			if _, err := SaveMember(p.db.WithContext(p.ctx), p.log)(updatedMember)(); err != nil {
 				return FamilyMember{}, err
 			}
 
@@ -528,7 +528,7 @@ func (p *ProcessorImpl) ResetDailyRep(buf *message.Buffer) model.Provider[BatchR
 	return func() (BatchResetResult, error) {
 		p.log.Info("Resetting daily reputation for all members")
 
-		result, err := BatchResetDailyRep(p.db, p.log)()
+		result, err := BatchResetDailyRep(p.db.WithContext(p.ctx), p.log)()
 		if err != nil {
 			_ = buf.Put(familymsg.EnvEventTopicErrors, RepErrorEventProvider(0, 0, "RESET_FAILED", err.Error(), 0))
 			return BatchResetResult{}, err
@@ -602,9 +602,9 @@ func (p *ProcessorImpl) DeductRepAndEmit(_ uuid.UUID, characterId uint32, amount
 }
 
 func (p *ProcessorImpl) GetFamilyTree(characterId uint32) ([]FamilyMember, error) {
-	return model.SliceMap(Make)(GetFamilyTreeProvider(characterId)(p.db))(model.ParallelMap())()
+	return model.SliceMap(Make)(GetFamilyTreeProvider(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (FamilyMember, error) {
-	return model.Map(Make)(GetByIdProvider(characterId)(p.db))()
+	return model.Map(Make)(GetByIdProvider(characterId)(p.db.WithContext(p.ctx)))()
 }

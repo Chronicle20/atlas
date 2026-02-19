@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -13,10 +14,12 @@ import (
 )
 
 func setupTestDatabase(t *testing.T) *gorm.DB {
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+	database.RegisterTenantCallbacks(l, db)
 	err = db.AutoMigrate(&Entity{})
 	if err != nil {
 		t.Fatalf("Failed to auto migrate: %v", err)
@@ -35,7 +38,7 @@ func testContext(t tenant.Model) context.Context {
 
 func createTestBan(t *testing.T, db *gorm.DB, tm tenant.Model, banType BanType, value string, permanent bool, expiresAt time.Time) Model {
 	t.Helper()
-	m, err := create(db)(tm, banType, value, "test reason", 1, permanent, expiresAt, "admin")
+	m, err := create(db.WithContext(testContext(tm)))(tm.Id(), banType, value, "test reason", 1, permanent, expiresAt, "admin")
 	if err != nil {
 		t.Fatalf("Failed to create test ban: %v", err)
 	}

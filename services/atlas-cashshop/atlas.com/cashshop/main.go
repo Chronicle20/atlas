@@ -4,7 +4,7 @@ import (
 	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	"atlas-cashshop/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"

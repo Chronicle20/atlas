@@ -54,25 +54,25 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Script
 }
 
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[MapScript] {
-	return model.Map[Entity, MapScript](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map[Entity, MapScript](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) ByScriptNameProvider(scriptName string) model.Provider[[]MapScript] {
-	return model.SliceMap[Entity, MapScript](Make)(getByScriptNameProvider(p.t.Id())(scriptName)(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, MapScript](Make)(getByScriptNameProvider(scriptName)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) ByScriptNameAndTypeProvider(scriptName string, scriptType string) model.Provider[MapScript] {
-	return model.Map[Entity, MapScript](Make)(getByScriptNameAndTypeProvider(p.t.Id())(scriptName)(scriptType)(p.db))
+	return model.Map[Entity, MapScript](Make)(getByScriptNameAndTypeProvider(scriptName)(scriptType)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]MapScript] {
-	return model.SliceMap[Entity, MapScript](Make)(getAllProvider(p.t.Id())(p.db))(model.ParallelMap())
+	return model.SliceMap[Entity, MapScript](Make)(getAllProvider(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) Create(m MapScript) (MapScript, error) {
 	p.l.Debugf("Creating map script [%s] type [%s].", m.ScriptName(), m.ScriptType())
 
-	result, err := createMapScript(p.db)(p.t.Id())(m)
+	result, err := createMapScript(p.db.WithContext(p.ctx))(p.t.Id())(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create map script [%s].", m.ScriptName())
 		return MapScript{}, err
@@ -83,7 +83,7 @@ func (p *ProcessorImpl) Create(m MapScript) (MapScript, error) {
 func (p *ProcessorImpl) Update(id uuid.UUID, m MapScript) (MapScript, error) {
 	p.l.Debugf("Updating map script [%s].", id)
 
-	result, err := updateMapScript(p.db)(p.t.Id())(id)(m)
+	result, err := updateMapScript(p.db.WithContext(p.ctx))(id)(m)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update map script [%s].", id)
 		return MapScript{}, err
@@ -94,7 +94,7 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m MapScript) (MapScript, error) {
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting map script [%s].", id)
 
-	err := deleteMapScript(p.db)(p.t.Id())(id)
+	err := deleteMapScript(p.db.WithContext(p.ctx))(id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete map script [%s].", id)
 		return err
@@ -105,7 +105,7 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all map scripts for tenant [%s].", p.t.Id())
 
-	count, err := deleteAllMapScripts(p.db)(p.t.Id())
+	count, err := deleteAllMapScripts(p.db.WithContext(p.ctx))
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete map scripts for tenant [%s].", p.t.Id())
 		return 0, err

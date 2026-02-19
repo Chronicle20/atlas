@@ -1,8 +1,6 @@
 package wishlist
 
 import (
-	"context"
-
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -22,14 +20,10 @@ func createEntity(db *gorm.DB, t tenant.Model, characterId uint32, serialNumber 
 	return Make(*e)
 }
 
-func deleteEntity(ctx context.Context) func(db *gorm.DB, tenantId uuid.UUID, characterId uint32, itemId uuid.UUID) error {
-	return func(db *gorm.DB, tenantId uuid.UUID, characterId uint32, itemId uuid.UUID) error {
-		return db.WithContext(ctx).Where("tenant_id = ? AND character_id = ? AND id = ?", tenantId, characterId, itemId).Delete(&Entity{}).Error
-	}
+func deleteEntity(db *gorm.DB, characterId uint32, itemId uuid.UUID) error {
+	return db.Where("character_id = ? AND id = ?", characterId, itemId).Delete(&Entity{}).Error
 }
 
-func deleteEntityForCharacter(ctx context.Context) func(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-	return func(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-		return db.WithContext(ctx).Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Delete(&Entity{}).Error
-	}
+func deleteEntityForCharacter(db *gorm.DB, characterId uint32) error {
+	return db.Where("character_id = ?", characterId).Delete(&Entity{}).Error
 }

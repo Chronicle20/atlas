@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-npc/commodities"
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 	character2 "atlas-npc/kafka/consumer/character"
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"

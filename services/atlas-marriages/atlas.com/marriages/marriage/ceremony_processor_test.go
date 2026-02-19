@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
@@ -21,11 +22,14 @@ func TestCeremonyStateTransitions(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -93,11 +97,14 @@ func TestCeremonyInviteeManagement(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -163,11 +170,14 @@ func TestCeremonyQueries(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -243,11 +253,14 @@ func TestCeremonyTimeoutScenarios(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -448,11 +461,14 @@ func TestProposalTimeoutScenarios(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)
@@ -604,11 +620,14 @@ func TestCeremonyAndEmitMethods(t *testing.T) {
 	// Set up in-memory database
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	assert.NoError(t, err)
-	
+
+	l := logrus.New()
+	database.RegisterTenantCallbacks(l, db)
+
 	// Run migrations
 	err = db.AutoMigrate(&Entity{}, &ProposalEntity{}, &CeremonyEntity{})
 	assert.NoError(t, err)
-	
+
 	// Create logger
 	logger := logrus.New()
 	logger.SetLevel(logrus.DebugLevel)

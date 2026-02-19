@@ -1,7 +1,6 @@
 package database
 
 import (
-	"atlas-maps/retry"
 	"fmt"
 	"os"
 	"strconv"
@@ -54,6 +53,7 @@ func (d *DSNBuilder) Build() string {
 }
 
 type Configuration struct {
+	dsn        string
 	migrations []Migrator
 }
 
@@ -88,6 +88,7 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 	}
 
 	c := &Configuration{
+		dsn:        dsnBuilder.Build(),
 		migrations: make([]Migrator, 0),
 	}
 	for _, configurator := range configurators {
@@ -111,13 +112,15 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		sqlDB.SetConnMaxLifetime(getDurationEnv("DB_CONN_MAX_LIFETIME", 5*time.Minute))
 		sqlDB.SetConnMaxIdleTime(getDurationEnv("DB_CONN_MAX_IDLE_TIME", 3*time.Minute))
 
-		return false, err
+		return false, nil
 	}
 
-	err := retry.Try(tryToConnect, 10)
+	err := try(tryToConnect, 10)
 	if err != nil {
 		l.WithError(err).Fatalf("Failed to connect to database.")
 	}
+
+	registerTenantCallbacks(l, db)
 
 	for _, m := range c.migrations {
 		err = m(db)
@@ -126,6 +129,22 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		}
 	}
 	return db
+}
+
+func Teardown(l logrus.FieldLogger, db *gorm.DB) func() {
+	return func() {
+		sqlDB, err := db.DB()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve sql database.")
+			return
+		}
+		err = sqlDB.Close()
+		if err != nil {
+			l.WithError(err).Errorf("Unable to close database.")
+			return
+		}
+		l.Infof("Database connection closed.")
+	}
 }
 
 func getIntEnv(key string, defaultVal int) int {
@@ -144,4 +163,19 @@ func getDurationEnv(key string, defaultVal time.Duration) time.Duration {
 		}
 	}
 	return defaultVal
+}
+
+func try(fn func(attempt int) (retry bool, err error), retries int) error {
+	attempt := 1
+	for {
+		cont, err := fn(attempt)
+		if !cont || err == nil {
+			return nil
+		}
+		attempt++
+		if attempt > retries {
+			return fmt.Errorf("max retry reached: %w", err)
+		}
+		time.Sleep(1 * time.Second)
+	}
 }

@@ -15,7 +15,6 @@ import (
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -64,8 +63,7 @@ func handleReleaseCommand(db *gorm.DB) kafkaMessage.Handler[compartment.Command[
 		}
 
 		// Get the asset before release to know its inventory type
-		t := tenant.MustFromContext(ctx)
-		assetModel, err := asset.GetById(db, t.Id())(uint32(c.Body.AssetId))
+		assetModel, err := asset.GetById(db.WithContext(ctx))(uint32(c.Body.AssetId))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to get asset [%d] before release", c.Body.AssetId)
 			return
@@ -90,10 +88,8 @@ func updateProjectionOnAccept(l logrus.FieldLogger, ctx context.Context, db *gor
 		return // No projection exists, nothing to update
 	}
 
-	t := tenant.MustFromContext(ctx)
-
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return
@@ -124,10 +120,8 @@ func updateProjectionOnRelease(l logrus.FieldLogger, ctx context.Context, db *go
 		return // No projection exists, nothing to update
 	}
 
-	t := tenant.MustFromContext(ctx)
-
 	// Get fresh assets from database for this storage
-	assets, err := asset.GetByStorageId(db, t.Id())(proj.StorageId())
+	assets, err := asset.GetByStorageId(db.WithContext(ctx))(proj.StorageId())
 	if err != nil {
 		l.WithError(err).Warnf("Failed to refresh assets for projection update")
 		return

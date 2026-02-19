@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -18,23 +17,20 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	t := tenant.MustFromContext(ctx)
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
-		t:   t,
 	}
 }
 
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll(p.t.Id())(p.db))()
+	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) GetForMonster(monsterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getByMonsterId(p.t.Id(), monsterId)(p.db))()
+	return model.SliceMap(modelFromEntity)(getByMonsterId(monsterId)(p.db.WithContext(p.ctx)))()
 }

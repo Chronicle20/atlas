@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-tenants/configuration"
-	"atlas-tenants/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-tenants/logger"
 	"atlas-tenants/service"
 	"atlas-tenants/tenant"

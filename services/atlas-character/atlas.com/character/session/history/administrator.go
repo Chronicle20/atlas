@@ -28,17 +28,17 @@ func createSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32, ch chann
 }
 
 // closeSession closes an active session by setting the logout time
-func closeSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
+func closeSession(db *gorm.DB, characterId uint32) error {
 	now := time.Now()
 	return db.Model(&entity{}).
-		Where("tenant_id = ? AND character_id = ? AND logout_time IS NULL", tenantId, characterId).
+		Where("character_id = ? AND logout_time IS NULL", characterId).
 		Update("logout_time", now).Error
 }
 
 // getActiveSession returns the current active session for a character, if any
-func getActiveSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32) (Model, error) {
+func getActiveSession(db *gorm.DB, characterId uint32) (Model, error) {
 	var e entity
-	err := db.Where("tenant_id = ? AND character_id = ? AND logout_time IS NULL", tenantId, characterId).
+	err := db.Where("character_id = ? AND logout_time IS NULL", characterId).
 		First(&e).Error
 	if err != nil {
 		return Model{}, err
@@ -47,14 +47,14 @@ func getActiveSession(db *gorm.DB, tenantId uuid.UUID, characterId uint32) (Mode
 }
 
 // getSessionsSince returns all sessions for a character since the given time
-func getSessionsSince(db *gorm.DB, tenantId uuid.UUID, characterId uint32, since time.Time) ([]Model, error) {
+func getSessionsSince(db *gorm.DB, characterId uint32, since time.Time) ([]Model, error) {
 	var entities []entity
 	// Get sessions that either:
 	// 1. Started after 'since', OR
 	// 2. Were still active (no logout) at 'since', OR
 	// 3. Ended after 'since'
-	err := db.Where("tenant_id = ? AND character_id = ? AND (login_time >= ? OR logout_time IS NULL OR logout_time >= ?)",
-		tenantId, characterId, since, since).
+	err := db.Where("character_id = ? AND (login_time >= ? OR logout_time IS NULL OR logout_time >= ?)",
+		characterId, since, since).
 		Order("login_time ASC").
 		Find(&entities).Error
 	if err != nil {
@@ -69,12 +69,12 @@ func getSessionsSince(db *gorm.DB, tenantId uuid.UUID, characterId uint32, since
 }
 
 // getSessionsInRange returns all sessions that overlap with the given time range
-func getSessionsInRange(db *gorm.DB, tenantId uuid.UUID, characterId uint32, start, end time.Time) ([]Model, error) {
+func getSessionsInRange(db *gorm.DB, characterId uint32, start, end time.Time) ([]Model, error) {
 	var entities []entity
 	// Get sessions that overlap with [start, end]:
 	// Session overlaps if: login_time < end AND (logout_time IS NULL OR logout_time > start)
-	err := db.Where("tenant_id = ? AND character_id = ? AND login_time < ? AND (logout_time IS NULL OR logout_time > ?)",
-		tenantId, characterId, end, start).
+	err := db.Where("character_id = ? AND login_time < ? AND (logout_time IS NULL OR logout_time > ?)",
+		characterId, end, start).
 		Order("login_time ASC").
 		Find(&entities).Error
 	if err != nil {

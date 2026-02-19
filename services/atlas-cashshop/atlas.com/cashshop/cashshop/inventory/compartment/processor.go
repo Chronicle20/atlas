@@ -84,12 +84,12 @@ func (p *ProcessorImpl) GetById(id uuid.UUID) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByIdProvider(id uuid.UUID) model.Provider[Model] {
-	cp := model.Map[Entity, Model](Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	cp := model.Map[Entity, Model](Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 	return model.Map(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)
 }
 
 func (p *ProcessorImpl) ByAccountIdAndTypeProvider(accountId uint32, type_ CompartmentType) model.Provider[Model] {
-	cp := model.Map[Entity, Model](Make)(getByAccountIdAndTypeProvider(p.t.Id())(accountId)(type_)(p.db))
+	cp := model.Map[Entity, Model](Make)(getByAccountIdAndTypeProvider(accountId)(type_)(p.db.WithContext(p.ctx)))
 	return model.Map(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)
 }
 
@@ -98,7 +98,7 @@ func (p *ProcessorImpl) GetByAccountIdAndType(accountId uint32, type_ Compartmen
 }
 
 func (p *ProcessorImpl) AllByAccountIdProvider(accountId uint32) model.Provider[[]Model] {
-	cp := model.SliceMap[Entity, Model](Make)(getAllByAccountIdProvider(p.t.Id())(accountId)(p.db))(model.ParallelMap())
+	cp := model.SliceMap[Entity, Model](Make)(getAllByAccountIdProvider(accountId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 	return model.SliceMap(model.Decorate(model.Decorators(p.DecorateAssets)))(cp)(model.ParallelMap())
 }
 
@@ -112,7 +112,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(t
 			return func(capacity uint32) (Model, error) {
 				p.l.Debugf("Creating compartment for account [%d] with type [%d] and capacity [%d].", accountId, type_, capacity)
 
-				model, err := createEntity(p.db, p.t, accountId, type_, capacity)
+				model, err := createEntity(p.db.WithContext(p.ctx), p.t, accountId, type_, capacity)
 				if err != nil {
 					p.l.WithError(err).Errorf("Could not create compartment for account [%d].", accountId)
 					return Model{}, err
@@ -147,7 +147,7 @@ func (p *ProcessorImpl) UpdateCapacity(mb *message.Buffer) func(id uuid.UUID) fu
 		return func(capacity uint32) (Model, error) {
 			p.l.Debugf("Updating capacity of compartment [%s] to [%d].", id, capacity)
 
-			model, err := updateCapacity(p.db, p.t.Id(), id, capacity)
+			model, err := updateCapacity(p.db.WithContext(p.ctx), id, capacity)
 			if err != nil {
 				p.l.WithError(err).Errorf("Could not update capacity of compartment [%s].", id)
 				return Model{}, err
@@ -186,7 +186,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(id uuid.UUID) error {
 			return err
 		}
 
-		err = deleteEntity(p.db, p.t.Id(), id)
+		err = deleteEntity(p.db.WithContext(p.ctx), id)
 		if err != nil {
 			p.l.WithError(err).Errorf("Could not delete compartment [%s].", id)
 			return err
@@ -216,14 +216,14 @@ func (p *ProcessorImpl) DeleteAndEmit(id uuid.UUID) error {
 func (p *ProcessorImpl) DeleteAllByAccountId(mb *message.Buffer) func(accountId uint32) error {
 	return func(accountId uint32) error {
 		p.l.Debugf("Deleting all compartments for account [%d].", accountId)
-		txErr := p.db.Transaction(func(tx *gorm.DB) error {
+		txErr := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
 			cscm, err := p.GetByAccountId(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Could not get compartments for account [%d].", accountId)
 				return err
 			}
 			for _, ccm := range cscm {
-				err = deleteEntity(p.db, p.t.Id(), ccm.Id())
+				err = deleteEntity(p.db.WithContext(p.ctx), ccm.Id())
 				if err != nil {
 					p.l.WithError(err).Errorf("Could not delete compartment [%s].", ccm.Id())
 					return err

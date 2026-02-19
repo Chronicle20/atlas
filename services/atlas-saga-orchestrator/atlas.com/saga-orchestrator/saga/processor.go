@@ -192,7 +192,7 @@ func (p *ProcessorImpl) GetAll() ([]Saga, error) {
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Saga] {
 	return func() ([]Saga, error) {
-		return GetCache().GetAll(p.t.Id()), nil
+		return GetCache().GetAll(p.ctx), nil
 	}
 }
 
@@ -203,7 +203,7 @@ func (p *ProcessorImpl) GetById(transactionId uuid.UUID) (Saga, error) {
 
 func (p *ProcessorImpl) ByIdProvider(transactionId uuid.UUID) model.Provider[Saga] {
 	return func() (Saga, error) {
-		m, ok := GetCache().GetById(p.t.Id(), transactionId)
+		m, ok := GetCache().GetById(p.ctx, transactionId)
 		if !ok {
 			return Saga{}, errors.New("saga not found")
 		}
@@ -229,12 +229,7 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		return err
 	}
 
-	// Track tenant info for PostgreSQL persistence
-	if ps, ok := GetCache().(*PostgresStore); ok {
-		ps.TrackTenant(saga.TransactionId(), p.t)
-	}
-
-	if err := GetCache().Put(p.t.Id(), saga); err != nil {
+	if err := GetCache().Put(p.ctx, saga); err != nil {
 		return err
 	}
 
@@ -272,7 +267,7 @@ func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc fun
 	}
 
 	// Update the cache atomically
-	return GetCache().Put(p.t.Id(), sagaCopy)
+	return GetCache().Put(p.ctx,sagaCopy)
 }
 
 // SafeSetStepStatus safely updates step status with validation and logging
@@ -405,7 +400,7 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.t.Id(), s); err != nil {
+	if err := GetCache().Put(p.ctx,s); err != nil {
 		return err
 	}
 
@@ -473,7 +468,7 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.t.Id(), s); err != nil {
+	if err := GetCache().Put(p.ctx,s); err != nil {
 		return err
 	}
 
@@ -550,7 +545,7 @@ func (p *ProcessorImpl) MarkEarliestPendingStepWithResult(transactionId uuid.UUI
 	}
 
 	// Update the saga in the cache
-	if err := GetCache().Put(p.t.Id(), s); err != nil {
+	if err := GetCache().Put(p.ctx,s); err != nil {
 		return err
 	}
 
@@ -637,7 +632,7 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	}
 
 	// Update the saga in the cache atomically
-	if err := GetCache().Put(p.t.Id(), s); err != nil {
+	if err := GetCache().Put(p.ctx,s); err != nil {
 		return err
 	}
 
@@ -719,7 +714,7 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	}
 
 	// Update the saga in the cache atomically
-	if err := GetCache().Put(p.t.Id(), s); err != nil {
+	if err := GetCache().Put(p.ctx,s); err != nil {
 		return err
 	}
 
@@ -764,7 +759,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
-		GetCache().Remove(p.t.Id(), s.TransactionId())
+		GetCache().Remove(p.ctx,s.TransactionId())
 
 		// Emit saga completion event
 		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId()))

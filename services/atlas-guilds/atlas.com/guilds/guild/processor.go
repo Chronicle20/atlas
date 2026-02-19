@@ -3,7 +3,6 @@ package guild
 import (
 	"atlas-guilds/character"
 	"atlas-guilds/coordinator"
-	"atlas-guilds/database"
 	character2 "atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
 	"atlas-guilds/guild/title"
@@ -18,6 +17,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/world"
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -97,7 +97,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 }
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Model] {
-	return model.SliceMap(Make)(getAll(p.t.Id())(p.db))()
+	return model.SliceMap(Make)(getAll()(p.db.WithContext(p.ctx)))()
 }
 
 func MemberFilter(memberId uint32) model.Filter[Model] {
@@ -116,7 +116,7 @@ func (p *ProcessorImpl) GetSlice(filters ...model.Filter[Model]) ([]Model, error
 }
 
 func (p *ProcessorImpl) ByIdProvider(guildId uint32) model.Provider[Model] {
-	return model.Map(Make)(getById(p.t.Id(), guildId)(p.db))
+	return model.Map(Make)(getById(guildId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetById(guildId uint32) (Model, error) {
@@ -124,7 +124,7 @@ func (p *ProcessorImpl) GetById(guildId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByNameProvider(worldId world.Id, name string) model.Provider[Model] {
-	ep := model.SliceMap[Entity, Model](Make)(getForName(p.t.Id(), worldId, name)(p.db))(model.ParallelMap())
+	ep := model.SliceMap[Entity, Model](Make)(getForName(worldId, name)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 	return model.FirstProvider(ep, model.Filters[Model]())
 }
 
@@ -251,7 +251,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(l
 				}
 
 				var g Model
-				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 					g, err = p.WithTransaction(tx).GetByName(worldId, name)
 					if g.Id() != 0 {
 						p.l.WithError(err).Errorf("Attempting to create a guild [%s] by name which already exists.", name)
@@ -263,7 +263,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(worldId world.Id) func(l
 						p.l.WithError(err).Errorf("Character [%d] already in guild. Cannot create one.", leaderId)
 					}
 
-					g, err = create(tx, p.t, worldId, leaderId, name)
+					g, err = create(tx, p.t.Id(), worldId, leaderId, name)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to create guild [%s].", name)
 						return err
@@ -370,7 +370,7 @@ func (p *ProcessorImpl) ChangeEmblem(mb *message.Buffer) func(guildId uint32) fu
 						return func(logoBackgroundColor byte) func(transactionId uuid.UUID) error {
 							return func(transactionId uuid.UUID) error {
 								p.l.Debugf("Character [%d] attempting to update guild [%d] emblem to Logo [%d], Logo Color [%d], Logo Background [%d], Logo Background Color [%d].", characterId, guildId, logo, logoColor, logoBackground, logoBackgroundColor)
-								g, err := updateEmblem(p.db, p.t.Id(), guildId, logo, logoColor, logoBackground, logoBackgroundColor)
+								g, err := updateEmblem(p.db.WithContext(p.ctx), guildId, logo, logoColor, logoBackground, logoBackgroundColor)
 								if err != nil {
 									return err
 								}
@@ -395,7 +395,7 @@ func (p *ProcessorImpl) UpdateMemberOnline(mb *message.Buffer) func(characterId 
 	return func(characterId uint32) func(online bool) func(transactionId uuid.UUID) error {
 		return func(online bool) func(transactionId uuid.UUID) error {
 			return func(transactionId uuid.UUID) error {
-				return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 					g, err := p.WithTransaction(tx).GetByMemberId(characterId)
 					if err != nil {
 						return nil
@@ -425,7 +425,7 @@ func (p *ProcessorImpl) ChangeNotice(mb *message.Buffer) func(guildId uint32) fu
 			return func(notice string) func(transactionId uuid.UUID) error {
 				return func(transactionId uuid.UUID) error {
 					p.l.Debugf("Character [%d] is setting guild [%d] notice [%s].", characterId, guildId, notice)
-					g, err := updateNotice(p.db, p.t.Id(), guildId, notice)
+					g, err := updateNotice(p.db.WithContext(p.ctx), guildId, notice)
 					if err != nil {
 						return err
 					}
@@ -569,7 +569,7 @@ func (p *ProcessorImpl) ChangeMemberTitle(mb *message.Buffer) func(guildId uint3
 				return func(title byte) func(transactionId uuid.UUID) error {
 					return func(transactionId uuid.UUID) error {
 						p.l.Debugf("Character [%d] attempting to change [%d] title to [%d].", characterId, targetId, title)
-						return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+						return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 							g, err := p.WithTransaction(tx).GetByMemberId(characterId)
 							if err != nil {
 								return nil
@@ -599,7 +599,7 @@ func (p *ProcessorImpl) RequestDisband(mb *message.Buffer) func(characterId uint
 	return func(characterId uint32) func(transactionId uuid.UUID) error {
 		return func(transactionId uuid.UUID) error {
 			p.l.Debugf("Character [%d] attempting to disband guild.", characterId)
-			return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				g, err := p.WithTransaction(tx).GetByMemberId(characterId)
 				if err != nil {
 					return err
@@ -614,7 +614,7 @@ func (p *ProcessorImpl) RequestDisband(mb *message.Buffer) func(characterId uint
 					_ = member.NewProcessor(p.l, p.ctx, tx).RemoveMember(g.Id(), gm.CharacterId())
 				}
 				_ = title.NewProcessor(p.l, p.ctx, tx).Clear(g.Id())
-				_ = deleteGuild(tx, p.t.Id(), g.Id())
+				_ = deleteGuild(tx, g.Id())
 
 				_ = mb.Put(guild2.EnvStatusEventTopic, statusEventDisbandedProvider(g.WorldId(), g.Id(), members, transactionId))
 				return nil
@@ -641,7 +641,7 @@ func (p *ProcessorImpl) RequestCapacityIncrease(mb *message.Buffer) func(charact
 			}
 
 			p.l.Debugf("Character [%d] is attempting to increase guild [%d] capacity.", characterId, g.Id())
-			g, err = updateCapacity(p.db, p.t.Id(), g.Id())
+			g, err = updateCapacity(p.db.WithContext(p.ctx), g.Id())
 			if err != nil {
 				return err
 			}

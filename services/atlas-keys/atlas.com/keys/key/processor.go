@@ -58,7 +58,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 // ByCharacterIdProvider returns a provider for keys by character ID
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return entitySliceMapper(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db))()
+	return entitySliceMapper(byCharacterIdEntityProvider(characterId)(p.db.WithContext(p.ctx)))()
 }
 
 // GetByCharacterId gets keys by character ID
@@ -69,14 +69,14 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 
 // Reset resets keys for a character
 func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
-	return p.db.Transaction(func(tx *gorm.DB) error {
-		err := deleteByCharacter(tx, p.t, characterId)
+	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
 			return err
 		}
 		for i := 0; i < len(defaultKey); i++ {
-			_, err := create(tx, p.t, characterId, defaultKey[i], defaultType[i], defaultAction[i])
+			_, err := create(tx, p.t.Id(), characterId, defaultKey[i], defaultType[i], defaultAction[i])
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create key binding for character %d. key = %d type = %d action = %d.", characterId, defaultKey[i], defaultType[i], defaultAction[i])
 				return err
@@ -88,9 +88,9 @@ func (p *ProcessorImpl) Reset(_ uuid.UUID, characterId uint32) error {
 
 // CreateDefault creates default keys for a character
 func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
-	return p.db.Transaction(func(tx *gorm.DB) error {
+	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
 		for i := 0; i < len(defaultKey); i++ {
-			_, err := create(tx, p.t, characterId, defaultKey[i], defaultType[i], defaultAction[i])
+			_, err := create(tx, p.t.Id(), characterId, defaultKey[i], defaultType[i], defaultAction[i])
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create key binding for character %d. key = %d type = %d action = %d.", characterId, defaultKey[i], defaultType[i], defaultAction[i])
 				return err
@@ -102,8 +102,8 @@ func (p *ProcessorImpl) CreateDefault(_ uuid.UUID, characterId uint32) error {
 
 // Delete deletes keys for a character
 func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
-	return p.db.Transaction(func(tx *gorm.DB) error {
-		err := deleteByCharacter(tx, p.t, characterId)
+	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		err := deleteByCharacter(tx, characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete for character %d.", characterId)
 			return err
@@ -114,16 +114,16 @@ func (p *ProcessorImpl) Delete(_ uuid.UUID, characterId uint32) error {
 
 // ChangeKey changes a key binding
 func (p *ProcessorImpl) ChangeKey(_ uuid.UUID, characterId uint32, key int32, theType int8, action int32) error {
-	return p.db.Transaction(func(tx *gorm.DB) error {
-		_, err := byCharacterKeyEntityProvider(p.t.Id(), characterId, key)(tx)()
+	return p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		_, err := byCharacterKeyEntityProvider(characterId, key)(tx)()
 		if err != nil {
-			_, err = create(tx, p.t, characterId, key, theType, action)
+			_, err = create(tx, p.t.Id(), characterId, key, theType, action)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create key binding for character %d. key = %d type = %d action = %d.", characterId, key, theType, action)
 				return err
 			}
 		} else {
-			err = update(tx, p.t, characterId, key, theType, action)
+			err = update(tx, characterId, key, theType, action)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to update key binding for character %d. key = %d type = %d action = %d.", characterId, key, theType, action)
 				return err

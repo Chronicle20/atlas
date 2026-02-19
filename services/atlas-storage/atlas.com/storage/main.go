@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-storage/asset"
-	"atlas-storage/database"
+	database "github.com/Chronicle20/atlas-database"
 	account2 "atlas-storage/kafka/consumer/account"
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"

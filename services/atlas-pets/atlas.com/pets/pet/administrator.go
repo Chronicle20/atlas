@@ -34,10 +34,10 @@ func create(db *gorm.DB) func(t tenant.Model, ownerId uint32, m Model) (Model, e
 	}
 }
 
-func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint32, slot int8) error {
-	return func(t tenant.Model, petId uint32, slot int8) error {
+func updateSlot(db *gorm.DB) func(petId uint32, slot int8) error {
+	return func(petId uint32, slot int8) error {
 		result := db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Where("id = ?", petId).
 			Update("slot", slot)
 
 		if result.Error != nil {
@@ -52,10 +52,10 @@ func updateSlot(db *gorm.DB) func(t tenant.Model, petId uint32, slot int8) error
 	}
 }
 
-func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint32, closeness uint16) error {
-	return func(t tenant.Model, petId uint32, closeness uint16) error {
+func updateCloseness(db *gorm.DB) func(petId uint32, closeness uint16) error {
+	return func(petId uint32, closeness uint16) error {
 		result := db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Where("id = ?", petId).
 			Update("closeness", closeness)
 
 		if result.Error != nil {
@@ -70,10 +70,10 @@ func updateCloseness(db *gorm.DB) func(t tenant.Model, petId uint32, closeness u
 	}
 }
 
-func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint32, level byte) error {
-	return func(t tenant.Model, petId uint32, level byte) error {
+func updateLevel(db *gorm.DB) func(petId uint32, level byte) error {
+	return func(petId uint32, level byte) error {
 		result := db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Where("id = ?", petId).
 			Update("level", level)
 
 		if result.Error != nil {
@@ -88,10 +88,10 @@ func updateLevel(db *gorm.DB) func(t tenant.Model, petId uint32, level byte) err
 	}
 }
 
-func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byte) error {
-	return func(t tenant.Model, petId uint32, fullness byte) error {
+func updateFullness(db *gorm.DB) func(petId uint32, fullness byte) error {
+	return func(petId uint32, fullness byte) error {
 		result := db.Model(&Entity{}).
-			Where("tenant_id = ? AND id = ?", t.Id(), petId).
+			Where("id = ?", petId).
 			Update("fullness", fullness)
 
 		if result.Error != nil {
@@ -106,9 +106,9 @@ func updateFullness(db *gorm.DB) func(t tenant.Model, petId uint32, fullness byt
 	}
 }
 
-func deleteById(t tenant.Model, id uint32) func(db *gorm.DB) error {
+func deleteById(id uint32) func(db *gorm.DB) error {
 	return func(db *gorm.DB) error {
-		return db.Where(&Entity{TenantId: t.Id(), Id: id}).Delete(&Entity{}).Error
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }
 

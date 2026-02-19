@@ -1,11 +1,13 @@
 package saga
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"sync"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -35,7 +37,6 @@ type PostgresStore struct {
 	l   logrus.FieldLogger
 	mu  sync.RWMutex
 	ver map[uuid.UUID]int // tracks last-read version per transaction
-	ten map[uuid.UUID]tenant.Model // tracks tenant info per transaction for Put
 }
 
 // NewPostgresStore creates a new PostgreSQL-backed saga store
@@ -44,16 +45,15 @@ func NewPostgresStore(db *gorm.DB, l logrus.FieldLogger) *PostgresStore {
 		db:  db,
 		l:   l,
 		ver: make(map[uuid.UUID]int),
-		ten: make(map[uuid.UUID]tenant.Model),
 	}
 }
 
-// GetAll returns all active sagas for a tenant
-func (s *PostgresStore) GetAll(tenantId uuid.UUID) []Saga {
+// GetAll returns all active sagas for the tenant in context
+func (s *PostgresStore) GetAll(ctx context.Context) []Saga {
 	var entities []Entity
-	err := s.db.Where("tenant_id = ? AND status IN ?", tenantId, []string{"active", "compensating"}).Find(&entities).Error
+	err := s.db.WithContext(ctx).Where("status IN ?", []string{"active", "compensating"}).Find(&entities).Error
 	if err != nil {
-		s.l.WithError(err).WithField("tenant_id", tenantId.String()).Error("Failed to query sagas")
+		s.l.WithError(err).Error("Failed to query sagas")
 		return []Saga{}
 	}
 
@@ -69,10 +69,10 @@ func (s *PostgresStore) GetAll(tenantId uuid.UUID) []Saga {
 	return result
 }
 
-// GetById returns a saga by its transaction ID for a tenant
-func (s *PostgresStore) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Saga, bool) {
+// GetById returns a saga by its transaction ID for the tenant in context
+func (s *PostgresStore) GetById(ctx context.Context, transactionId uuid.UUID) (Saga, bool) {
 	var e Entity
-	err := s.db.Where("transaction_id = ? AND tenant_id = ?", transactionId, tenantId).First(&e).Error
+	err := s.db.WithContext(ctx).Where("transaction_id = ?", transactionId).First(&e).Error
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return Saga{}, false
@@ -95,9 +95,12 @@ func (s *PostgresStore) GetById(tenantId uuid.UUID, transactionId uuid.UUID) (Sa
 	return saga, true
 }
 
-// Put adds or updates a saga in the store for a tenant.
+// Put adds or updates a saga in the store for the tenant in context.
 // Returns VersionConflictError if another instance updated the saga concurrently.
-func (s *PostgresStore) Put(tenantId uuid.UUID, saga Saga) error {
+func (s *PostgresStore) Put(ctx context.Context, saga Saga) error {
+	t := tenant.MustFromContext(ctx)
+	tenantId := t.Id()
+
 	data, err := json.Marshal(saga)
 	if err != nil {
 		s.l.WithError(err).WithField("transaction_id", saga.TransactionId().String()).Error("Failed to serialize saga")
@@ -112,13 +115,12 @@ func (s *PostgresStore) Put(tenantId uuid.UUID, saga Saga) error {
 	// Check if we have a tracked version (existing saga)
 	s.mu.RLock()
 	ver, hasVer := s.ver[saga.TransactionId()]
-	t, hasTenant := s.ten[saga.TransactionId()]
 	s.mu.RUnlock()
 
 	if hasVer {
 		// Optimistic update: only succeed if version matches
-		result := s.db.Model(&Entity{}).
-			Where("transaction_id = ? AND tenant_id = ? AND version = ?", saga.TransactionId(), tenantId, ver).
+		result := s.db.WithContext(ctx).Model(&Entity{}).
+			Where("transaction_id = ? AND version = ?", saga.TransactionId(), ver).
 			Updates(map[string]interface{}{
 				"saga_type":    string(saga.SagaType()),
 				"initiated_by": saga.InitiatedBy(),
@@ -150,23 +152,15 @@ func (s *PostgresStore) Put(tenantId uuid.UUID, saga Saga) error {
 		s.ver[saga.TransactionId()] = ver + 1
 		s.mu.Unlock()
 	} else {
-		// New saga — insert with timeout
+		// New saga -- insert with timeout
 		timeoutAt := time.Now().Add(defaultTimeout)
-
-		var tenantRegion string
-		var tenantMajor, tenantMinor uint16
-		if hasTenant {
-			tenantRegion = t.Region()
-			tenantMajor = t.MajorVersion()
-			tenantMinor = t.MinorVersion()
-		}
 
 		e := Entity{
 			TransactionId: saga.TransactionId(),
 			TenantId:      tenantId,
-			TenantRegion:  tenantRegion,
-			TenantMajor:   tenantMajor,
-			TenantMinor:   tenantMinor,
+			TenantRegion:  t.Region(),
+			TenantMajor:   t.MajorVersion(),
+			TenantMinor:   t.MinorVersion(),
 			SagaType:      string(saga.SagaType()),
 			InitiatedBy:   saga.InitiatedBy(),
 			Status:        sagaStatus,
@@ -177,7 +171,7 @@ func (s *PostgresStore) Put(tenantId uuid.UUID, saga Saga) error {
 			TimeoutAt:     &timeoutAt,
 		}
 
-		result := s.db.Clauses(clause.OnConflict{
+		result := s.db.WithContext(ctx).Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "transaction_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"saga_type", "initiated_by", "status", "saga_data", "version", "updated_at"}),
 		}).Create(&e)
@@ -195,10 +189,10 @@ func (s *PostgresStore) Put(tenantId uuid.UUID, saga Saga) error {
 	return nil
 }
 
-// Remove marks a saga as completed (soft delete) for a tenant
-func (s *PostgresStore) Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool {
-	result := s.db.Model(&Entity{}).
-		Where("transaction_id = ? AND tenant_id = ?", transactionId, tenantId).
+// Remove marks a saga as completed (soft delete) for the tenant in context
+func (s *PostgresStore) Remove(ctx context.Context, transactionId uuid.UUID) bool {
+	result := s.db.WithContext(ctx).Model(&Entity{}).
+		Where("transaction_id = ?", transactionId).
 		Updates(map[string]interface{}{
 			"status":     "completed",
 			"updated_at": time.Now(),
@@ -212,23 +206,15 @@ func (s *PostgresStore) Remove(tenantId uuid.UUID, transactionId uuid.UUID) bool
 	// Clean up version tracking
 	s.mu.Lock()
 	delete(s.ver, transactionId)
-	delete(s.ten, transactionId)
 	s.mu.Unlock()
 
 	return result.RowsAffected > 0
 }
 
-// TrackTenant stores the full tenant model for a transaction so Put can persist tenant fields
-func (s *PostgresStore) TrackTenant(transactionId uuid.UUID, t tenant.Model) {
-	s.mu.Lock()
-	s.ten[transactionId] = t
-	s.mu.Unlock()
-}
-
 // GetAllActive returns all active and compensating sagas across all tenants (for startup recovery)
-func (s *PostgresStore) GetAllActive() []Entity {
+func (s *PostgresStore) GetAllActive(ctx context.Context) []Entity {
 	var entities []Entity
-	err := s.db.Where("status IN ?", []string{"active", "compensating"}).Find(&entities).Error
+	err := s.db.WithContext(database.WithoutTenantFilter(ctx)).Where("status IN ?", []string{"active", "compensating"}).Find(&entities).Error
 	if err != nil {
 		s.l.WithError(err).Error("Failed to query active sagas for recovery")
 		return nil
@@ -237,9 +223,9 @@ func (s *PostgresStore) GetAllActive() []Entity {
 }
 
 // GetTimedOut returns sagas that have exceeded their timeout, locking them for processing
-func (s *PostgresStore) GetTimedOut() []Entity {
+func (s *PostgresStore) GetTimedOut(ctx context.Context) []Entity {
 	var entities []Entity
-	err := s.db.
+	err := s.db.WithContext(database.WithoutTenantFilter(ctx)).
 		Clauses(clause.Locking{Strength: "UPDATE", Options: "SKIP LOCKED"}).
 		Where("status = ? AND timeout_at IS NOT NULL AND timeout_at < ?", "active", time.Now()).
 		Find(&entities).Error
@@ -251,9 +237,9 @@ func (s *PostgresStore) GetTimedOut() []Entity {
 }
 
 // UpdateStatusFailed marks a saga as failed
-func (s *PostgresStore) UpdateStatusFailed(tenantId uuid.UUID, transactionId uuid.UUID) {
-	s.db.Model(&Entity{}).
-		Where("transaction_id = ? AND tenant_id = ?", transactionId, tenantId).
+func (s *PostgresStore) UpdateStatusFailed(ctx context.Context, transactionId uuid.UUID) {
+	s.db.WithContext(ctx).Model(&Entity{}).
+		Where("transaction_id = ?", transactionId).
 		Updates(map[string]interface{}{
 			"status":     "failed",
 			"updated_at": time.Now(),
@@ -262,7 +248,6 @@ func (s *PostgresStore) UpdateStatusFailed(tenantId uuid.UUID, transactionId uui
 	// Clean up version tracking
 	s.mu.Lock()
 	delete(s.ver, transactionId)
-	delete(s.ten, transactionId)
 	s.mu.Unlock()
 }
 

@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-buddies/buddy"
-	"atlas-buddies/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-buddies/kafka/consumer/cashshop"
 	"atlas-buddies/kafka/consumer/character"
 	invite2 "atlas-buddies/kafka/consumer/invite"

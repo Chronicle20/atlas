@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-saga-orchestrator/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -147,7 +147,7 @@ func recoverSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.
 		return
 	}
 
-	entities := store.GetAllActive()
+	entities := store.GetAllActive(tdm.Context())
 	if len(entities) == 0 {
 		l.Infoln("No active sagas to recover.")
 		return
@@ -200,7 +200,7 @@ func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.M
 }
 
 func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
-	entities := store.GetTimedOut()
+	entities := store.GetTimedOut(tdm.Context())
 	if len(entities) == 0 {
 		return
 	}

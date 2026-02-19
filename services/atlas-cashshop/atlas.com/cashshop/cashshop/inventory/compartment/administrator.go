@@ -25,18 +25,16 @@ func createEntity(db *gorm.DB, t tenant.Model, accountId uint32, type_ Compartme
 }
 
 // deleteEntity deletes a compartment entity by ID
-func deleteEntity(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID) error {
-	return db.Where("tenant_id = ? AND id = ?", tenantId, id).Delete(&Entity{}).Error
+func deleteEntity(db *gorm.DB, id uuid.UUID) error {
+	return db.Where("id = ?", id).Delete(&Entity{}).Error
 }
 
-// deleteAllByAccountId deletes all compartments for an account
-
 // updateCapacity updates the capacity of a compartment
-func updateCapacity(db *gorm.DB, tenantId uuid.UUID, id uuid.UUID, capacity uint32) (Model, error) {
+func updateCapacity(db *gorm.DB, id uuid.UUID, capacity uint32) (Model, error) {
 	var entity Entity
 
 	// Find the entity
-	if err := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&entity).Error; err != nil {
+	if err := db.Where("id = ?", id).First(&entity).Error; err != nil {
 		return Model{}, err
 	}
 

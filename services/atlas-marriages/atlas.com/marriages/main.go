@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-marriages/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"

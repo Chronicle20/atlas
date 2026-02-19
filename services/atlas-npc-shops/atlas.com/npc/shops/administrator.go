@@ -1,7 +1,7 @@
 package shops
 
 import (
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 	"errors"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -30,7 +30,7 @@ func createShop(tenantId uuid.UUID, npcId uint32, recharger bool) database.Entit
 func updateShop(tenantId uuid.UUID, npcId uint32, recharger bool) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
 		var entity Entity
-		err := db.Where(&Entity{TenantId: tenantId, NpcId: npcId}).First(&entity).Error
+		err := db.Where("npc_id = ?", npcId).First(&entity).Error
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return createShop(tenantId, npcId, recharger)(db)
@@ -48,9 +48,9 @@ func updateShop(tenantId uuid.UUID, npcId uint32, recharger bool) database.Entit
 }
 
 // deleteAllShops returns a provider that deletes all shop entities for a tenant
-func deleteAllShops(tenantId uuid.UUID) database.EntityProvider[bool] {
+func deleteAllShops() database.EntityProvider[bool] {
 	return func(db *gorm.DB) model.Provider[bool] {
-		err := db.Where(&Entity{TenantId: tenantId}).Delete(&Entity{}).Error
+		err := db.Where("1 = 1").Delete(&Entity{}).Error
 		if err != nil {
 			return model.ErrorProvider[bool](err)
 		}

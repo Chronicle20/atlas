@@ -6,36 +6,30 @@ import (
 	"gorm.io/gorm"
 )
 
-func getByIdProvider(tenantId uuid.UUID) func(id uuid.UUID) func(db *gorm.DB) model.Provider[Entity] {
-	return func(id uuid.UUID) func(db *gorm.DB) model.Provider[Entity] {
-		return func(db *gorm.DB) model.Provider[Entity] {
-			return func() (Entity, error) {
-				var entity Entity
-				result := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&entity)
-				return entity, result.Error
-			}
+func getByIdProvider(id uuid.UUID) func(db *gorm.DB) model.Provider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		return func() (Entity, error) {
+			var entity Entity
+			result := db.Where("id = ?", id).First(&entity)
+			return entity, result.Error
 		}
 	}
 }
 
-func getByQuestIdProvider(tenantId uuid.UUID) func(questId string) func(db *gorm.DB) model.Provider[Entity] {
-	return func(questId string) func(db *gorm.DB) model.Provider[Entity] {
-		return func(db *gorm.DB) model.Provider[Entity] {
-			return func() (Entity, error) {
-				var entity Entity
-				result := db.Where("tenant_id = ? AND quest_id = ?", tenantId, questId).First(&entity)
-				return entity, result.Error
-			}
+func getByQuestIdProvider(questId string) func(db *gorm.DB) model.Provider[Entity] {
+	return func(db *gorm.DB) model.Provider[Entity] {
+		return func() (Entity, error) {
+			var entity Entity
+			result := db.Where("quest_id = ?", questId).First(&entity)
+			return entity, result.Error
 		}
 	}
 }
 
-func getAllProvider(tenantId uuid.UUID) func(db *gorm.DB) model.Provider[[]Entity] {
-	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return func() ([]Entity, error) {
-			var entities []Entity
-			result := db.Where("tenant_id = ?", tenantId).Find(&entities)
-			return entities, result.Error
-		}
+func getAllProvider(db *gorm.DB) model.Provider[[]Entity] {
+	return func() ([]Entity, error) {
+		var entities []Entity
+		result := db.Find(&entities)
+		return entities, result.Error
 	}
 }

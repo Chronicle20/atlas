@@ -84,14 +84,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-type IdOperator func(tenant.Model, uint32) error
+type IdOperator func(uint32) error
 
 func (p *ProcessorImpl) GetById(accountId uint32) (Model, error) {
 	return p.ByIdProvider(accountId)()
 }
 
 func (p *ProcessorImpl) ByIdProvider(accountId uint32) model.Provider[Model] {
-	return model.Map(decorateState(p.t))(model.Map(Make)(entityById(p.t, accountId)(p.db)))
+	return model.Map(decorateState(p.t))(model.Map(Make)(entityById(accountId)(p.db.WithContext(p.ctx))))
 }
 
 func (p *ProcessorImpl) GetByName(name string) (Model, error) {
@@ -99,7 +99,7 @@ func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[Model] {
-	return model.Map(decorateState(p.t))(model.FirstProvider(model.SliceMap(Make)(entitiesByName(p.t, name)(p.db))(model.ParallelMap()), model.Filters[Model]()))
+	return model.Map(decorateState(p.t))(model.FirstProvider(model.SliceMap(Make)(entitiesByName(name)(p.db.WithContext(p.ctx)))(model.ParallelMap()), model.Filters[Model]()))
 }
 
 func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
@@ -107,7 +107,7 @@ func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByTenantProvider() ([]Model, error) {
-	return model.SliceMap(decorateState(p.t))(model.SliceMap(Make)(allInTenant(p.t)(p.db))(model.ParallelMap()))(model.ParallelMap())()
+	return model.SliceMap(decorateState(p.t))(model.SliceMap(Make)(allInTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap()))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) LoggedInTenantProvider() ([]Model, error) {
@@ -167,7 +167,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string) func(passwo
 			}
 			p.l.Debugf("Defaulting gender to [%d]. 0 = Male, 1 = Female, 10 = UI Choose. This is determined by Region and Version capabilities.", gender)
 
-			m, err := create(p.db)(p.t, name, string(hashPass), gender)
+			m, err := create(p.db.WithContext(p.ctx), p.t.Id(), name, string(hashPass), gender)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create account [%s].", name)
 				return Model{}, err
@@ -217,7 +217,7 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 		return a, nil
 	}
 
-	err = update(p.db)(modifiers...)(p.t, accountId)
+	err = update(p.db.WithContext(p.ctx))(modifiers...)(accountId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to update account.")
 		return Model{}, err
@@ -245,7 +245,7 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 			return ErrAccountLoggedIn
 		}
 
-		err = deleteById(p.db)(p.t, accountId)
+		err = deleteById(p.db.WithContext(p.ctx))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete account [%d].", accountId)
 			return err
@@ -468,7 +468,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 		if success {
 			if a.PinAttempts() > 0 {
 				p.l.Debugf("Resetting PIN attempts for account [%d] after successful PIN entry.", accountId)
-				err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+				err = update(p.db.WithContext(p.ctx))(updatePinAttempts(0))(accountId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reset PIN attempts for account [%d].", accountId)
 					return 0, false, err
@@ -507,7 +507,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 			}
 
 			// Reset counter after issuing ban
-			err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+			err = update(p.db.WithContext(p.ctx))(updatePinAttempts(0))(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to reset PIN attempts after ban for account [%d].", accountId)
 				return 0, true, err
@@ -515,7 +515,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 			return 0, true, nil
 		}
 
-		err = update(p.db)(updatePinAttempts(newAttempts))(p.t, accountId)
+		err = update(p.db.WithContext(p.ctx))(updatePinAttempts(newAttempts))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to update PIN attempts for account [%d].", accountId)
 			return newAttempts, false, err
@@ -546,7 +546,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 		if success {
 			if a.PicAttempts() > 0 {
 				p.l.Debugf("Resetting PIC attempts for account [%d] after successful PIC entry.", accountId)
-				err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+				err = update(p.db.WithContext(p.ctx))(updatePicAttempts(0))(accountId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reset PIC attempts for account [%d].", accountId)
 					return 0, false, err
@@ -585,7 +585,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 			}
 
 			// Reset counter after issuing ban
-			err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+			err = update(p.db.WithContext(p.ctx))(updatePicAttempts(0))(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to reset PIC attempts after ban for account [%d].", accountId)
 				return 0, true, err
@@ -593,7 +593,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 			return 0, true, nil
 		}
 
-		err = update(p.db)(updatePicAttempts(newAttempts))(p.t, accountId)
+		err = update(p.db.WithContext(p.ctx))(updatePicAttempts(newAttempts))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to update PIC attempts for account [%d].", accountId)
 			return newAttempts, false, err

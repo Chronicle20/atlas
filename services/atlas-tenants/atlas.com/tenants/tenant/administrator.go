@@ -1,7 +1,7 @@
 package tenant
 
 import (
-	"atlas-tenants/database"
+	database "github.com/Chronicle20/atlas-database"
 	"errors"
 
 	"github.com/google/uuid"

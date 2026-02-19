@@ -91,7 +91,7 @@ func TestHandleAssetCreatedEvent_RegularCreation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	_ = saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an asset created event
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
@@ -144,7 +144,7 @@ func TestHandleAssetCreatedEvent_CreateAndEquipAsset(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	_ = saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an asset created event
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
@@ -198,7 +198,7 @@ func TestHandleAssetCreatedEvent_CharacterMismatch(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	_ = saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an event with a different character ID
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{

@@ -61,7 +61,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 }
 
 func (p *ProcessorImpl) ByAccountIdProvider(accountId uint32) model.Provider[Model] {
-	return model.Map(Make)(byAccountIdEntityProvider(p.t.Id(), accountId)(p.db))
+	return model.Map(Make)(byAccountIdEntityProvider(accountId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetByAccountId(accountId uint32) (Model, error) {
@@ -74,7 +74,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(accountId uint32) func(c
 			return func(points uint32) func(prepaid uint32) (Model, error) {
 				return func(prepaid uint32) (Model, error) {
 					p.l.Debugf("Initializing wallet information for account [%d]. Credit [%d], Points [%d], and Prepaid [%d].", accountId, credit, points, prepaid)
-					c, err := createEntity(p.db, p.t, accountId, credit, points, prepaid)
+					c, err := createEntity(p.db.WithContext(p.ctx), p.t, accountId, credit, points, prepaid)
 					if err != nil {
 						p.l.WithError(err).Errorf("Could not create wallet information for account [%d].", accountId)
 						return Model{}, err
@@ -98,7 +98,7 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(accountId uint32) func(c
 			return func(points uint32) func(prepaid uint32) (Model, error) {
 				return func(prepaid uint32) (Model, error) {
 					p.l.Debugf("Updating wallet information for account [%d]. Credit [%d], Points [%d], and Prepaid [%d].", accountId, credit, points, prepaid)
-					c, err := updateEntity(p.db, p.t, accountId, credit, points, prepaid)
+					c, err := updateEntity(p.db.WithContext(p.ctx), accountId, credit, points, prepaid)
 					if err != nil {
 						p.l.WithError(err).Errorf("Could not update wallet information for account [%d].", accountId)
 						return Model{}, err
@@ -123,7 +123,7 @@ func (p *ProcessorImpl) UpdateWithTransaction(mb *message.Buffer) func(transacti
 				return func(points uint32) func(prepaid uint32) (Model, error) {
 					return func(prepaid uint32) (Model, error) {
 						p.l.Debugf("Updating wallet information for account [%d] with transaction [%s]. Credit [%d], Points [%d], and Prepaid [%d].", accountId, transactionId.String(), credit, points, prepaid)
-						c, err := updateEntity(p.db, p.t, accountId, credit, points, prepaid)
+						c, err := updateEntity(p.db.WithContext(p.ctx), accountId, credit, points, prepaid)
 						if err != nil {
 							p.l.WithError(err).Errorf("Could not update wallet information for account [%d].", accountId)
 							return Model{}, err
@@ -192,7 +192,7 @@ func (p *ProcessorImpl) AdjustCurrencyWithTransaction(transactionId uuid.UUID, a
 func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error {
 	return func(accountId uint32) error {
 		p.l.Debugf("Account [%d] was deleted. Cleaning up wallet information...", accountId)
-		err := deleteEntity(p.ctx)(p.db, p.t.Id(), accountId)
+		err := deleteEntity(p.db.WithContext(p.ctx), accountId)
 		if err != nil {
 			return err
 		}

@@ -13,7 +13,6 @@ import (
 	kafkaMessage "github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -117,10 +116,8 @@ func handleShowStorageCommand(db *gorm.DB) kafkaMessage.Handler[message.ShowStor
 		l.Debugf("Received ShowStorage command for character [%d], NPC [%d], account [%d], world [%d]",
 			c.CharacterId, c.NpcId, c.AccountId, c.WorldId)
 
-		t := tenant.MustFromContext(ctx)
-
 		// Build the projection from storage data
-		proj, err := projection.BuildProjection(l, db, t.Id())(c.CharacterId, c.AccountId, c.WorldId, c.NpcId)
+		proj, err := projection.BuildProjection(l, db.WithContext(ctx))(c.CharacterId, c.AccountId, c.WorldId, c.NpcId)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to build projection for character [%d], account [%d], world [%d]",
 				c.CharacterId, c.AccountId, c.WorldId)

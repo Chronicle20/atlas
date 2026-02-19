@@ -1,7 +1,6 @@
 package cashshop
 
 import (
-	"atlas-asset-expiration/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,9 +16,9 @@ func getBaseRequest() string {
 }
 
 func requestInventory(accountId uint32) requests.Request[InventoryRestModel] {
-	return rest.MakeGetRequest[InventoryRestModel](fmt.Sprintf(getBaseRequest()+Inventory, accountId))
+	return requests.GetRequest[InventoryRestModel](fmt.Sprintf(getBaseRequest()+Inventory, accountId))
 }
 
 func requestCompartments(accountId uint32) requests.Request[[]CompartmentRestModel] {
-	return rest.MakeGetRequest[[]CompartmentRestModel](fmt.Sprintf(getBaseRequest()+Compartments, accountId))
+	return requests.GetRequest[[]CompartmentRestModel](fmt.Sprintf(getBaseRequest()+Compartments, accountId))
 }

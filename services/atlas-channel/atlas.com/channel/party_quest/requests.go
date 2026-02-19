@@ -1,7 +1,6 @@
 package party_quest
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestTimerByCharacterId(characterId uint32) requests.Request[TimerRestModel] {
-	return rest.MakeGetRequest[TimerRestModel](fmt.Sprintf(getBaseRequest()+TimerByCharacterId, characterId))
+	return requests.GetRequest[TimerRestModel](fmt.Sprintf(getBaseRequest()+TimerByCharacterId, characterId))
 }

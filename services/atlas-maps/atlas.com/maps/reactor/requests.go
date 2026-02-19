@@ -1,7 +1,6 @@
 package reactor
 
 import (
-	"atlas-maps/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/field"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestInMap(field field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, field.WorldId(), field.ChannelId(), field.MapId(), field.Instance()))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+Resource, field.WorldId(), field.ChannelId(), field.MapId(), field.Instance()))
 }

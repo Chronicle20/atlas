@@ -1,7 +1,6 @@
 package position
 
 import (
-	"atlas-monster-death/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -23,5 +22,5 @@ func getInMap(mapId _map.Id, initialX int16, initialY int16, fallbackX int16, fa
 		FallbackX: fallbackX,
 		FallbackY: fallbackY,
 	}
-	return rest.MakePostRequest[RestModel](fmt.Sprintf(getBaseRequest()+positionsResource, mapId), i)
+	return requests.PostRequest[RestModel](fmt.Sprintf(getBaseRequest()+positionsResource, mapId), i)
 }

@@ -1,7 +1,6 @@
 package quest
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,13 +17,13 @@ func getBaseRequest() string {
 }
 
 func requestById(questId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+questByIdResource, questId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+questByIdResource, questId))
 }
 
 func requestAll() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + questsResource)
+	return requests.GetRequest[[]RestModel](getBaseRequest() + questsResource)
 }
 
 func requestAutoStart() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + autoStartQuests)
+	return requests.GetRequest[[]RestModel](getBaseRequest() + autoStartQuests)
 }

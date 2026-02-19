@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"atlas-query-aggregator/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,9 +18,9 @@ func getBaseRequest() string {
 }
 
 func requestById(characterId uint32, skillId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, skillId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, skillId))
 }
 
 func requestByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByCharacter, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByCharacter, characterId))
 }

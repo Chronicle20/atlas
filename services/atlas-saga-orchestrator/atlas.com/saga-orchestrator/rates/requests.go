@@ -1,7 +1,6 @@
 package rates
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestRates(ch channel.Model, characterId uint32) requests.Request[DataContainer] {
-	return rest.MakeGetRequest[DataContainer](fmt.Sprintf(getBaseRequest()+ratesPath, ch.WorldId(), ch.Id(), characterId))
+	return requests.GetRequest[DataContainer](fmt.Sprintf(getBaseRequest()+ratesPath, ch.WorldId(), ch.Id(), characterId))
 }

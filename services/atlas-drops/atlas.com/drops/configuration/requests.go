@@ -1,7 +1,6 @@
 package configuration
 
 import (
-	"atlas-drops/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,5 +18,5 @@ func getBaseRequest() string {
 }
 
 func requestByService(serviceId uuid.UUID) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
 }

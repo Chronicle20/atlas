@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-login/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/world"
@@ -20,17 +19,17 @@ func getBaseRequest() string {
 }
 
 func requestByAccountAndWorld(accountId uint32, worldId world.Id) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByAccountAndWorld, accountId, worldId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByAccountAndWorld, accountId, worldId))
 }
 
 func requestByName(name string) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByName, name))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByName, name))
 }
 
 func requestById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }
 
 func requestDelete(id uint32) requests.EmptyBodyRequest {
-	return rest.MakeDeleteRequest(fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.DeleteRequest(fmt.Sprintf(getBaseRequest()+ById, id))
 }

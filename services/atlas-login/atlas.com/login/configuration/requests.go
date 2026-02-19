@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"atlas-login/configuration/tenant"
-	"atlas-login/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -20,9 +19,9 @@ func getBaseRequest() string {
 }
 
 func requestByService(serviceId uuid.UUID) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByService, serviceId.String()))
 }
 
 func requestForTenant(tenantId uuid.UUID) requests.Request[tenant.RestModel] {
-	return rest.MakeGetRequest[tenant.RestModel](fmt.Sprintf(getBaseRequest()+ForTenant, tenantId.String()))
+	return requests.GetRequest[tenant.RestModel](fmt.Sprintf(getBaseRequest()+ForTenant, tenantId.String()))
 }

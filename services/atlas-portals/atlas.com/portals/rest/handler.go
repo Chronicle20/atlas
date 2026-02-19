@@ -1,7 +1,6 @@
 package rest
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
@@ -11,45 +10,17 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type HandlerDependency struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-}
+type HandlerDependency = server.HandlerDependency
 
-func (h HandlerDependency) Logger() logrus.FieldLogger {
-	return h.l
-}
+type HandlerContext = server.HandlerContext
 
-func (h HandlerDependency) Context() context.Context {
-	return h.ctx
-}
-
-type HandlerContext struct {
-	si jsonapi.ServerInformation
-}
-
-func (h HandlerContext) ServerInformation() jsonapi.ServerInformation {
-	return h.si
-}
-
-type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
+type GetHandler = server.GetHandler
 
 func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-	return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-		return func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-					return handler(&HandlerDependency{l: tl, ctx: tctx}, &HandlerContext{si: si})
-				})
-			})
-		}
-	}
+	return server.RegisterHandler(l)
 }
 
-type CharacterIdHandler func(characterId uint32) http.HandlerFunc
-
-func ParseCharacterId(l logrus.FieldLogger, next CharacterIdHandler) http.HandlerFunc {
+func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		characterIdStr := mux.Vars(r)["characterId"]
 		if characterIdStr == "" {

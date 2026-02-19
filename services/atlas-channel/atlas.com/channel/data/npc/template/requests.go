@@ -1,7 +1,6 @@
 package template
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestById(npcId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+npcById, npcId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+npcById, npcId))
 }

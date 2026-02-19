@@ -8,6 +8,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -322,7 +323,7 @@ func TestParseMapId_MissingVar(t *testing.T) {
 
 func TestHandlerDependency_Logger(t *testing.T) {
 	l, _ := test.NewNullLogger()
-	d := HandlerDependency{l: l}
+	d := server.NewHandlerDependency(l, nil)
 
 	if d.Logger() != l {
 		t.Error("Logger() should return the stored logger")
@@ -333,7 +334,7 @@ func TestHandlerDependency_Context(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	req := httptest.NewRequest(http.MethodGet, "/test", nil)
 	ctx := req.Context()
-	d := HandlerDependency{l: l, ctx: ctx}
+	d := server.NewHandlerDependency(l, ctx)
 
 	if d.Context() != ctx {
 		t.Error("Context() should return the stored context")

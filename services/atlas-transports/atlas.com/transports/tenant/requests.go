@@ -1,8 +1,6 @@
 package tenant
 
 import (
-	"atlas-transports/rest"
-
 	"github.com/Chronicle20/atlas-rest/requests"
 )
 
@@ -15,5 +13,5 @@ func getBaseRequest() string {
 }
 
 func requestAll() requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](getBaseRequest() + tenantsResource)
+	return requests.GetRequest[[]RestModel](getBaseRequest() + tenantsResource)
 }

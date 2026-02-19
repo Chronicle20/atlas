@@ -2,7 +2,6 @@ package configuration
 
 import (
 	"atlas-cashshop/configuration/tenant"
-	"atlas-cashshop/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,5 +18,5 @@ func getBaseRequest() string {
 }
 
 func RequestForTenant(tenantId uuid.UUID) requests.Request[tenant.RestModel] {
-	return rest.MakeGetRequest[tenant.RestModel](fmt.Sprintf(getBaseRequest()+ForTenant, tenantId.String()))
+	return requests.GetRequest[tenant.RestModel](fmt.Sprintf(getBaseRequest()+ForTenant, tenantId.String()))
 }

@@ -1,7 +1,6 @@
 package ban
 
 import (
-	"atlas-account/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestCheckBan(ip string, hwid string, accountId uint32) requests.Request[CheckRestModel] {
-	return rest.MakeGetRequest[CheckRestModel](fmt.Sprintf(getBaseRequest()+BansCheck, ip, hwid, accountId))
+	return requests.GetRequest[CheckRestModel](fmt.Sprintf(getBaseRequest()+BansCheck, ip, hwid, accountId))
 }

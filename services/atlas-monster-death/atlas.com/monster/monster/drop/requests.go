@@ -1,7 +1,6 @@
 package drop
 
 import (
-	"atlas-monster-death/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestForMonster(monsterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+MonsterDropsResource, monsterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+MonsterDropsResource, monsterId))
 }

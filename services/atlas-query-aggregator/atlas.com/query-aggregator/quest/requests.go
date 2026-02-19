@@ -1,7 +1,6 @@
 package quest
 
 import (
-	"atlas-query-aggregator/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -21,17 +20,17 @@ func getBaseRequest() string {
 }
 
 func requestById(characterId uint32, questId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, questId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ByCharacterAndId, characterId, questId))
 }
 
 func requestByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByCharacter, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByCharacter, characterId))
 }
 
 func requestStartedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuests, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuests, characterId))
 }
 
 func requestCompletedByCharacter(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+CompletedQuests, characterId))
 }

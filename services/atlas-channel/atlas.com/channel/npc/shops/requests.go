@@ -1,7 +1,6 @@
 package shops
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestNPCShop(templateId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+npcShop, templateId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+npcShop, templateId))
 }

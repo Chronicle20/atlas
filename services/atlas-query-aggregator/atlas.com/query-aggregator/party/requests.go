@@ -1,7 +1,6 @@
 package party
 
 import (
-	"atlas-query-aggregator/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestByMemberId(memberId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByMemberId, memberId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByMemberId, memberId))
 }

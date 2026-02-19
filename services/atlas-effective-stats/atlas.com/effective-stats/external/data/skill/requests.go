@@ -1,7 +1,6 @@
 package skill
 
 import (
-	"atlas-effective-stats/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 
 // RequestById returns a request to fetch skill data by ID from atlas-data service
 func RequestById(skillId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+SkillById, skillId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+SkillById, skillId))
 }

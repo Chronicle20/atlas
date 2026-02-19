@@ -1,7 +1,6 @@
 package transport
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 
@@ -20,7 +19,7 @@ func getBaseRequest() string {
 
 // requestAllRoutes fetches all instance routes from atlas-transports
 func requestAllRoutes() requests.Request[[]RouteRestModel] {
-	return rest.MakeGetRequest[[]RouteRestModel](getBaseRequest() + "transports/instance-routes")
+	return requests.GetRequest[[]RouteRestModel](getBaseRequest() + "transports/instance-routes")
 }
 
 // GetRouteByName fetches all routes and finds the one matching the given name
@@ -52,7 +51,7 @@ func StartTransport(l logrus.FieldLogger, ctx context.Context) func(routeId uuid
 
 		url := fmt.Sprintf("%stransports/instance-routes/%s/start", getBaseRequest(), routeId.String())
 		// Use struct{} as the response type since this endpoint returns 204 No Content
-		_, err := rest.MakePostRequest[struct{}](url, body)(l, ctx)
+		_, err := requests.PostRequest[struct{}](url, body)(l, ctx)
 		return err
 	}
 }

@@ -16,6 +16,7 @@ func setupTestRegistry(t *testing.T) {
 	mr := miniredis.RunT(t)
 	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
 	InitRegistry(rc)
+	InitLock(rc)
 }
 
 func createTestCtx(t *testing.T) context.Context {

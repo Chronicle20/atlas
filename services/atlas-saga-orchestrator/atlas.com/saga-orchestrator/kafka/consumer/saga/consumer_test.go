@@ -25,7 +25,7 @@ func TestHandleSagaCommand(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(saga.QuestReward).
 					SetInitiatedBy("test-initiator").
-					AddStep("step-1", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+					AddStep("step-1", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 						CharacterId: 12345,
 						Item: saga.ItemPayload{
 							TemplateId: 1000000,
@@ -61,7 +61,7 @@ func TestHandleSagaCommand(t *testing.T) {
 					SetTransactionId(uuid.New()).
 					SetSagaType(saga.InventoryTransaction).
 					SetInitiatedBy("multi-step-test").
-					AddStep("step-1", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+					AddStep("step-1", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 						CharacterId: 12345,
 						Item: saga.ItemPayload{
 							TemplateId: 1000000,

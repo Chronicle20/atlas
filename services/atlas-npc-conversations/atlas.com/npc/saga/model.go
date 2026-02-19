@@ -161,7 +161,7 @@ const (
 	Failed    = scriptsaga.Failed
 
 	// Action constants
-	AwardInventory         = scriptsaga.AwardInventory
+	AwardAsset             = scriptsaga.AwardAsset
 	AwardExperience        = scriptsaga.AwardExperience
 	AwardLevel             = scriptsaga.AwardLevel
 	AwardMesos             = scriptsaga.AwardMesos

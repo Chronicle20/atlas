@@ -74,13 +74,13 @@ func TestHandleAssetCreatedEvent_RegularCreation(t *testing.T) {
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
 
-	// Create a saga with a regular AwardInventory step (not CreateAndEquipAsset)
+	// Create a saga with a regular AwardAsset step (not CreateAndEquipAsset)
 	transactionId := uuid.New()
 	testSaga, err := saga.NewBuilder().
 		SetTransactionId(transactionId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("asset-creation-test").
-		AddStep("award-step", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+		AddStep("award-step", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: saga.ItemPayload{
 				TemplateId: 1000000,

@@ -69,7 +69,7 @@ func handleGetQuestsByCharacter(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
-				server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	}
@@ -93,7 +93,7 @@ func handleGetQuestsByCharacterAndState(db *gorm.DB, state State) rest.GetHandle
 					return
 				}
 
-				server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	}
@@ -122,7 +122,7 @@ func handleGetQuestByCharacterAndId(db *gorm.DB) rest.GetHandler {
 						return
 					}
 
-					server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+					server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 				}
 			})
 		})
@@ -140,7 +140,7 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 					// Return 422 Unprocessable Entity with failed conditions
 					result := ValidationFailedRestModel{FailedConditions: failedConditions}
 					w.WriteHeader(http.StatusUnprocessableEntity)
-					server.Marshal[ValidationFailedRestModel](d.Logger())(w)(c.ServerInformation())(result)
+					server.MarshalResponse[ValidationFailedRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(result)
 					return
 				}
 				if errors.Is(err, ErrQuestAlreadyStarted) {
@@ -168,7 +168,7 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 					return
 				}
 
-				server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	})
@@ -206,7 +206,7 @@ func handleCompleteQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Co
 				// Return next quest ID in response if this is part of a chain
 				if nextQuestId > 0 {
 					result := CompleteQuestResponseRestModel{NextQuestId: nextQuestId}
-					server.Marshal[CompleteQuestResponseRestModel](d.Logger())(w)(c.ServerInformation())(result)
+					server.MarshalResponse[CompleteQuestResponseRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(result)
 					return
 				}
 
@@ -263,7 +263,7 @@ func handleGetQuestProgress(db *gorm.DB) rest.GetHandler {
 						return
 					}
 
-					server.Marshal[[]progress.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+					server.MarshalResponse[[]progress.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 				}
 			})
 		})

@@ -225,12 +225,8 @@ func validateConditionInput(input ConditionInput) error {
 	// Validate condition-specific requirements
 	switch input.Type {
 	case "item":
-		// Item conditions require referenceId (or legacy itemId)
-		if input.ReferenceId == 0 && input.ItemId == 0 {
+		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for item conditions")
-		}
-		if input.ItemId != 0 && input.ReferenceId != 0 {
-			return fmt.Errorf("both itemId and referenceId specified - use referenceId only")
 		}
 	case "questStatus":
 		// Quest status conditions require referenceId

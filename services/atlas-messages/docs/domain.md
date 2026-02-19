@@ -195,7 +195,7 @@ Builds and submits saga transactions for command execution. Commands produce sag
 
 | Action | Payload Type | Description |
 |--------|-------------|-------------|
-| AwardInventory | AwardItemActionPayload | Awards items to inventory |
+| AwardAsset | AwardItemActionPayload | Awards items to inventory |
 | AwardExperience | AwardExperiencePayload | Awards experience points |
 | AwardLevel | AwardLevelPayload | Awards character levels |
 | AwardMesos | AwardMesosPayload | Awards mesos |

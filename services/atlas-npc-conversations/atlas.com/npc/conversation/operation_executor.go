@@ -850,7 +850,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			},
 		}
 
-		return stepId, saga.Pending, saga.AwardInventory, payload, nil
+		return stepId, saga.Pending, saga.AwardAsset, payload, nil
 
 	case "award_mesos":
 		// Format: award_mesos

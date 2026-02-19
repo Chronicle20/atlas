@@ -3,7 +3,6 @@ package monster
 import (
 	"atlas-monster-death/monster/drop"
 	"math"
-	"math/rand"
 	"testing"
 )
 
@@ -30,9 +29,6 @@ func TestEvaluateSuccess_MaxChance(t *testing.T) {
 }
 
 func TestEvaluateSuccess_FiftyPercentChance(t *testing.T) {
-	// Use a seeded random for reproducibility
-	rand.Seed(42)
-
 	// 50% chance = 499999
 	d, _ := drop.NewBuilder().SetChance(499999).Build()
 

@@ -119,7 +119,7 @@ func TestCreateCommandProvider_WithMultipleSteps(t *testing.T) {
 		SetInitiatedBy("test").
 		AddStep("step1", Pending, AwardExperience, AwardExperiencePayload{}).
 		AddStep("step2", Pending, AwardMesos, AwardMesosPayload{}).
-		AddStep("step3", Pending, AwardInventory, AwardItemActionPayload{}).
+		AddStep("step3", Pending, AwardAsset, AwardItemActionPayload{}).
 		Build()
 
 	if buildErr != nil {

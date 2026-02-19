@@ -23,7 +23,6 @@ import (
 // Processor interface defines the operations for character processing
 type Processor interface {
 	GetById(decorators ...model.Decorator[Model]) func(characterId uint32) (Model, error)
-	PetModelDecorator(m Model) Model
 	InventoryDecorator(m Model) Model
 	PetAssetEnrichmentDecorator(m Model) Model
 	SkillModelDecorator(m Model) Model
@@ -64,21 +63,6 @@ func (p *ProcessorImpl) GetById(decorators ...model.Decorator[Model]) func(chara
 	}
 }
 
-// deprecated
-func (p *ProcessorImpl) PetModelDecorator(m Model) Model {
-	ms, err := pet.NewProcessor(p.l, p.ctx).GetByOwner(m.Id())
-	if err != nil {
-		return m
-	}
-	if len(ms) == 0 {
-		return m
-	}
-	sort.Slice(ms, func(i, j int) bool {
-		return ms[i].Slot() < ms[j].Slot()
-	})
-	return m.SetPets(ms)
-}
-
 func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	i, err := p.ip.GetByCharacterId(m.Id())
 	if err != nil {
@@ -87,15 +71,31 @@ func (p *ProcessorImpl) InventoryDecorator(m Model) Model {
 	return m.SetInventory(i)
 }
 
-// PetAssetEnrichmentDecorator enriches pet assets in the cash compartment with pet data from atlas-pets.
-// Must run after InventoryDecorator.
+// PetAssetEnrichmentDecorator fetches pets for a character, sets them on the model, and enriches
+// pet assets in the cash compartment with live pet data from atlas-pets.
 func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
+	// Fetch all pets for this character
+	pp := pet.NewProcessor(p.l, p.ctx)
+	pets, err := pp.GetByOwner(m.Id())
+	if err != nil {
+		p.l.WithError(err).Debugf("Unable to fetch pets for character [%d].", m.Id())
+		return m
+	}
+
+	// Always set pets on the model (sorted by slot)
+	if len(pets) > 0 {
+		sort.Slice(pets, func(i, j int) bool {
+			return pets[i].Slot() < pets[j].Slot()
+		})
+		m = m.SetPets(pets)
+	}
+
+	// Enrich pet assets in the cash compartment if present
 	cashComp := m.Inventory().Cash()
 	if len(cashComp.Assets()) == 0 {
 		return m
 	}
 
-	// Check if there are any pet assets to enrich
 	hasPets := false
 	for _, a := range cashComp.Assets() {
 		if a.IsPet() {
@@ -104,14 +104,6 @@ func (p *ProcessorImpl) PetAssetEnrichmentDecorator(m Model) Model {
 		}
 	}
 	if !hasPets {
-		return m
-	}
-
-	// Fetch all pets for this character
-	pp := pet.NewProcessor(p.l, p.ctx)
-	pets, err := pp.GetByOwner(m.Id())
-	if err != nil {
-		p.l.WithError(err).Debugf("Unable to fetch pets for character [%d] for asset enrichment.", m.Id())
 		return m
 	}
 

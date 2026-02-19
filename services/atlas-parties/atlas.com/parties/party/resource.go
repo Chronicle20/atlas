@@ -67,7 +67,7 @@ func handleGetParties(d *rest.HandlerDependency, c *rest.HandlerContext) http.Ha
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 	}
 }
 
@@ -105,7 +105,7 @@ func handleGetParty(d *rest.HandlerDependency, c *rest.HandlerContext) http.Hand
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 		}
 	})
 }
@@ -148,7 +148,7 @@ func handleGetPartyMembers(d *rest.HandlerDependency, c *rest.HandlerContext) ht
 				return
 			}
 
-			server.Marshal[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(res.Members)
+			server.MarshalResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res.Members)
 		}
 	})
 }
@@ -193,7 +193,7 @@ func handleGetPartyMember(d *rest.HandlerDependency, c *rest.HandlerContext) htt
 					return
 				}
 
-				server.Marshal[MemberRestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	})

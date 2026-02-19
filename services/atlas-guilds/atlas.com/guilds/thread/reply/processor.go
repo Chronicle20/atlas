@@ -30,9 +30,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) Add(threadId uint32, posterId uint32, message string) (Model, error) {
-	return create(p.db, p.t.Id(), threadId, posterId, message)
+	return create(p.db.WithContext(p.ctx), p.t.Id(), threadId, posterId, message)
 }
 
 func (p *ProcessorImpl) Delete(threadId uint32, replyId uint32) error {
-	return remove(p.db, p.t.Id(), threadId, replyId)
+	return remove(p.db.WithContext(p.ctx), threadId, replyId)
 }

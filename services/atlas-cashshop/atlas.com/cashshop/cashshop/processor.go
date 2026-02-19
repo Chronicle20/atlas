@@ -7,7 +7,7 @@ import (
 	"atlas-cashshop/character"
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
-	"atlas-cashshop/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -76,7 +76,7 @@ func (p *ProcessorImpl) PurchaseAndEmit(characterId uint32, currency uint32, ser
 
 func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, currency uint32, serialNumber uint32) error {
 	return func(characterId uint32, currency uint32, serialNumber uint32) error {
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 
 			ci, err := p.comP.GetById(serialNumber)
 			if err != nil {
@@ -169,7 +169,7 @@ func (p *ProcessorImpl) PurchaseInventoryIncrease(mb *message.Buffer) func(chara
 		newCapacity := uint32(0)
 
 		p.l.Debugf("Character [%d] attempting to purchase inventory [%d] increase using currency [%d]. Cost is [%d].", characterId, inventoryType, currency, cost)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.chaP.GetById(p.chaP.InventoryDecorator)(characterId)
 			if err != nil {
 				return err

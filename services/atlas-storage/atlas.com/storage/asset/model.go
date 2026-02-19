@@ -1,6 +1,7 @@
 package asset
 
 import (
+	"encoding/json"
 	"time"
 
 	af "github.com/Chronicle20/atlas-constants/asset"
@@ -134,4 +135,128 @@ func (m Model) Quantity() uint32 {
 		return m.quantity
 	}
 	return 1
+}
+
+func (m Model) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Id             uint32    `json:"id"`
+		StorageId      uuid.UUID `json:"storageId"`
+		Slot           int16     `json:"slot"`
+		TemplateId     uint32    `json:"templateId"`
+		Expiration     time.Time `json:"expiration"`
+		Quantity       uint32    `json:"quantity"`
+		OwnerId        uint32    `json:"ownerId"`
+		Flag           uint16    `json:"flag"`
+		Rechargeable   uint64    `json:"rechargeable"`
+		Strength       uint16    `json:"strength"`
+		Dexterity      uint16    `json:"dexterity"`
+		Intelligence   uint16    `json:"intelligence"`
+		Luck           uint16    `json:"luck"`
+		Hp             uint16    `json:"hp"`
+		Mp             uint16    `json:"mp"`
+		WeaponAttack   uint16    `json:"weaponAttack"`
+		MagicAttack    uint16    `json:"magicAttack"`
+		WeaponDefense  uint16    `json:"weaponDefense"`
+		MagicDefense   uint16    `json:"magicDefense"`
+		Accuracy       uint16    `json:"accuracy"`
+		Avoidability   uint16    `json:"avoidability"`
+		Hands          uint16    `json:"hands"`
+		Speed          uint16    `json:"speed"`
+		Jump           uint16    `json:"jump"`
+		Slots          uint16    `json:"slots"`
+		LevelType      byte      `json:"levelType"`
+		Level          byte      `json:"level"`
+		Experience     uint32    `json:"experience"`
+		HammersApplied uint32    `json:"hammersApplied"`
+		CashId         int64     `json:"cashId"`
+		CommodityId    uint32    `json:"commodityId"`
+		PurchaseBy     uint32    `json:"purchaseBy"`
+		PetId          uint32    `json:"petId"`
+	}{
+		Id: m.id, StorageId: m.storageId, Slot: m.slot, TemplateId: m.templateId,
+		Expiration: m.expiration, Quantity: m.quantity, OwnerId: m.ownerId, Flag: m.flag,
+		Rechargeable: m.rechargeable, Strength: m.strength, Dexterity: m.dexterity,
+		Intelligence: m.intelligence, Luck: m.luck, Hp: m.hp, Mp: m.mp,
+		WeaponAttack: m.weaponAttack, MagicAttack: m.magicAttack, WeaponDefense: m.weaponDefense,
+		MagicDefense: m.magicDefense, Accuracy: m.accuracy, Avoidability: m.avoidability,
+		Hands: m.hands, Speed: m.speed, Jump: m.jump, Slots: m.slots,
+		LevelType: m.levelType, Level: m.level, Experience: m.experience,
+		HammersApplied: m.hammersApplied, CashId: m.cashId, CommodityId: m.commodityId,
+		PurchaseBy: m.purchaseBy, PetId: m.petId,
+	})
+}
+
+func (m *Model) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		Id             uint32    `json:"id"`
+		StorageId      uuid.UUID `json:"storageId"`
+		Slot           int16     `json:"slot"`
+		TemplateId     uint32    `json:"templateId"`
+		Expiration     time.Time `json:"expiration"`
+		Quantity       uint32    `json:"quantity"`
+		OwnerId        uint32    `json:"ownerId"`
+		Flag           uint16    `json:"flag"`
+		Rechargeable   uint64    `json:"rechargeable"`
+		Strength       uint16    `json:"strength"`
+		Dexterity      uint16    `json:"dexterity"`
+		Intelligence   uint16    `json:"intelligence"`
+		Luck           uint16    `json:"luck"`
+		Hp             uint16    `json:"hp"`
+		Mp             uint16    `json:"mp"`
+		WeaponAttack   uint16    `json:"weaponAttack"`
+		MagicAttack    uint16    `json:"magicAttack"`
+		WeaponDefense  uint16    `json:"weaponDefense"`
+		MagicDefense   uint16    `json:"magicDefense"`
+		Accuracy       uint16    `json:"accuracy"`
+		Avoidability   uint16    `json:"avoidability"`
+		Hands          uint16    `json:"hands"`
+		Speed          uint16    `json:"speed"`
+		Jump           uint16    `json:"jump"`
+		Slots          uint16    `json:"slots"`
+		LevelType      byte      `json:"levelType"`
+		Level          byte      `json:"level"`
+		Experience     uint32    `json:"experience"`
+		HammersApplied uint32    `json:"hammersApplied"`
+		CashId         int64     `json:"cashId"`
+		CommodityId    uint32    `json:"commodityId"`
+		PurchaseBy     uint32    `json:"purchaseBy"`
+		PetId          uint32    `json:"petId"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	m.id = aux.Id
+	m.storageId = aux.StorageId
+	m.slot = aux.Slot
+	m.templateId = aux.TemplateId
+	m.expiration = aux.Expiration
+	m.quantity = aux.Quantity
+	m.ownerId = aux.OwnerId
+	m.flag = aux.Flag
+	m.rechargeable = aux.Rechargeable
+	m.strength = aux.Strength
+	m.dexterity = aux.Dexterity
+	m.intelligence = aux.Intelligence
+	m.luck = aux.Luck
+	m.hp = aux.Hp
+	m.mp = aux.Mp
+	m.weaponAttack = aux.WeaponAttack
+	m.magicAttack = aux.MagicAttack
+	m.weaponDefense = aux.WeaponDefense
+	m.magicDefense = aux.MagicDefense
+	m.accuracy = aux.Accuracy
+	m.avoidability = aux.Avoidability
+	m.hands = aux.Hands
+	m.speed = aux.Speed
+	m.jump = aux.Jump
+	m.slots = aux.Slots
+	m.levelType = aux.LevelType
+	m.level = aux.Level
+	m.experience = aux.Experience
+	m.hammersApplied = aux.HammersApplied
+	m.cashId = aux.CashId
+	m.commodityId = aux.CommodityId
+	m.purchaseBy = aux.PurchaseBy
+	m.petId = aux.PetId
+	return nil
 }

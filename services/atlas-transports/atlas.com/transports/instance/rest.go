@@ -76,7 +76,7 @@ func (r InstanceStatusRestModel) GetName() string {
 	return "instance-status"
 }
 
-func TransformInstanceStatus(inst *TransportInstance) (InstanceStatusRestModel, error) {
+func TransformInstanceStatus(inst TransportInstance) (InstanceStatusRestModel, error) {
 	stateStr := "boarding"
 	if inst.State() == InTransit {
 		stateStr = "in_transit"

@@ -4,7 +4,7 @@ import (
 	"atlas-pets/character"
 	data2 "atlas-pets/data/pet"
 	"atlas-pets/data/position"
-	"atlas-pets/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-pets/kafka/message"
 	"atlas-pets/kafka/message/pet"
 	"atlas-pets/kafka/producer"
@@ -84,7 +84,7 @@ type ProcessorImpl struct {
 	Despawner func(mb *message.Buffer) func(petId uint32) func(actorId uint32) func(reason string) error
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *ProcessorImpl {
 	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
@@ -143,7 +143,7 @@ func (p *ProcessorImpl) With(opts ...ProcessorOption) *ProcessorImpl {
 }
 
 func (p *ProcessorImpl) ByIdProvider(petId uint32) model.Provider[Model] {
-	return model.Map(Make)(getById(p.t.Id(), petId)(p.db))
+	return model.Map(Make)(getById(petId)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
@@ -151,7 +151,7 @@ func (p *ProcessorImpl) GetById(petId uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByOwnerProvider(ownerId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getByOwnerId(p.t.Id(), ownerId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(getByOwnerId(ownerId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByOwner(ownerId uint32) ([]Model, error) {
@@ -198,7 +198,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(i Model) (Model, error) 
 		p.l.Debugf("Attempting to create pet from template [%d] for character [%d].", i.TemplateId(), i.OwnerId())
 		// TODO this needs to generate a cashId if cashId == 0
 		var om Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			b := Clone(i)
 			if i.Level() < 1 || i.Level() > MaxLevel {
 				b.SetLevel(1)
@@ -264,7 +264,7 @@ func (p *ProcessorImpl) DeleteForCharacterAndEmit(characterId uint32) error {
 func (p *ProcessorImpl) DeleteForCharacter(mb *message.Buffer) func(characterId uint32) error {
 	return func(characterId uint32) error {
 		p.l.Debugf("Attempting to delete all pets for character [%d].", characterId)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			ps, err := p.GetByOwner(characterId)
 			if err != nil {
 				return err
@@ -290,8 +290,8 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(petId uint32) func(owner
 	return func(petId uint32) func(ownerId uint32) error {
 		return func(ownerId uint32) error {
 			p.l.Debugf("Attempting to delete pet [%d].", petId)
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-				err := deleteById(p.t, petId)(tx)
+			txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+				err := deleteById(petId)(tx)
 				if err != nil {
 					return err
 				}
@@ -339,7 +339,7 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 		return func(actorId uint32) func(lead bool) error {
 			return func(lead bool) error {
 				p.l.Debugf("Spawning pet [%d] for character [%d]", petId, actorId)
-				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
@@ -370,7 +370,7 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 							oldSlot := sp.Slot()
 							newSlot := oldSlot + 1
 							p.l.Debugf("Attempting to move existing spawned pet [%d] from [%d] to [%d].", sp.Id(), oldSlot, newSlot)
-							err = updateSlot(tx)(p.t, sp.Id(), newSlot)
+							err = updateSlot(tx)(sp.Id(), newSlot)
 							if err != nil {
 								return err
 							}
@@ -399,7 +399,7 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 					}
 					oldSlot := pe.Slot()
 					p.l.Debugf("Attempting to move pet [%d] to slot [%d].", petId, newSlot)
-					err = updateSlot(tx)(p.t, petId, newSlot)
+					err = updateSlot(tx)(petId, newSlot)
 					if err != nil {
 						return err
 					}
@@ -447,7 +447,7 @@ func (p *ProcessorImpl) defaultDespawn(mb *message.Buffer) func(petId uint32) fu
 		return func(actorId uint32) func(reason string) error {
 			return func(reason string) error {
 				p.l.Debugf("Attempting to despawn pet [%d] for character [%d].", petId, actorId)
-				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
@@ -470,7 +470,7 @@ func (p *ProcessorImpl) defaultDespawn(mb *message.Buffer) func(petId uint32) fu
 								oldSlot := sp.Slot()
 								newSlot := oldSlot - 1
 
-								err = updateSlot(tx)(p.t, sp.Id(), newSlot)
+								err = updateSlot(tx)(sp.Id(), newSlot)
 								if err != nil {
 									return err
 								}
@@ -486,7 +486,7 @@ func (p *ProcessorImpl) defaultDespawn(mb *message.Buffer) func(petId uint32) fu
 
 					oldSlot := pe.Slot()
 					newSlot := int8(-1)
-					err = updateSlot(tx)(p.t, petId, newSlot)
+					err = updateSlot(tx)(petId, newSlot)
 					if err != nil {
 						return err
 					}
@@ -517,7 +517,7 @@ func (p *ProcessorImpl) AttemptCommand(mb *message.Buffer) func(petId uint32) fu
 		return func(actorId uint32) func(commandId byte) error {
 			return func(commandId byte) error {
 				p.l.Debugf("Attempting command [%d] for pet [%d].", commandId, petId)
-				txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+				txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 					pe, err := p.With(WithTransaction(tx)).GetById(petId)
 					if err != nil {
 						return err
@@ -572,7 +572,7 @@ func (p *ProcessorImpl) EvaluateHungerAndEmit(ownerId uint32) error {
 func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) error {
 	return func(ownerId uint32) error {
 		p.l.Debugf("Evaluating hunger of pets for owner [%d].", ownerId)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			ps, err := p.With(WithTransaction(tx)).SpawnedByOwnerProvider(ownerId)()
 			if err != nil {
 				return err
@@ -587,7 +587,7 @@ func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) 
 				if newFullness < 0 {
 					newFullness = 0
 				}
-				err = updateFullness(tx)(p.t, pe.Id(), byte(newFullness))
+				err = updateFullness(tx)(pe.Id(), byte(newFullness))
 				if err != nil {
 					return err
 				}
@@ -617,7 +617,7 @@ func (p *ProcessorImpl) EvaluateHunger(mb *message.Buffer) func(ownerId uint32) 
 
 func (p *ProcessorImpl) ClearPositions(ownerId uint32) error {
 	p.l.Debugf("Clearing positions of pets for owner [%d].", ownerId)
-	txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		ps, err := p.With(WithTransaction(tx)).GetByOwner(ownerId)
 		if err != nil {
 			return err
@@ -656,7 +656,7 @@ func (p *ProcessorImpl) AwardCloseness(mb *message.Buffer) func(petId uint32) fu
 func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(transactionId uuid.UUID, petId uint32, amount uint16) error {
 	return func(transactionId uuid.UUID, petId uint32, amount uint16) error {
 		p.l.Debugf("Awarding [%d] closeness for pet [%d].", amount, petId)
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			pe, err := p.With(WithTransaction(tx)).GetById(petId)
 			if err != nil {
 				return err
@@ -684,7 +684,7 @@ func (p *ProcessorImpl) AwardClosenessWithTransaction(mb *message.Buffer) func(t
 				}
 			}
 
-			err = updateCloseness(tx)(p.t, petId, newCloseness)
+			err = updateCloseness(tx)(petId, newCloseness)
 			if err != nil {
 				return err
 			}
@@ -721,7 +721,7 @@ func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) fun
 	return func(petId uint32) func(amount byte) error {
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] fullness for pet [%d].", amount, petId)
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
@@ -730,7 +730,7 @@ func (p *ProcessorImpl) AwardFullness(mb *message.Buffer) func(petId uint32) fun
 				if newFullness > MaxFullness {
 					newFullness = MaxFullness
 				}
-				err = updateFullness(tx)(p.t, petId, newFullness)
+				err = updateFullness(tx)(petId, newFullness)
 				if err != nil {
 					return err
 				}
@@ -758,7 +758,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 	return func(petId uint32) func(amount byte) error {
 		return func(amount byte) error {
 			p.l.Debugf("Awarding [%d] level for pet [%d].", amount, petId)
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				pe, err := p.With(WithTransaction(tx)).GetById(petId)
 				if err != nil {
 					return err
@@ -767,7 +767,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(petId uint32) func(a
 				if newLevel > MaxLevel {
 					newLevel = MaxLevel
 				}
-				err = updateLevel(tx)(p.t, petId, newLevel)
+				err = updateLevel(tx)(petId, newLevel)
 				if err != nil {
 					return err
 				}
@@ -795,7 +795,7 @@ func (p *ProcessorImpl) SetExclude(mb *message.Buffer) func(petId uint32) func(i
 	return func(petId uint32) func(items []uint32) error {
 		return func(items []uint32) error {
 			p.l.Debugf("Attempting to set [%d] exclude items for pet [%d].", len(items), petId)
-			txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+			txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 				err := setExcludes(tx, petId, items)
 				if err != nil {
 					return err

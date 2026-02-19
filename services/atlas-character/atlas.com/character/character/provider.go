@@ -1,46 +1,42 @@
 package character
 
 import (
-	"atlas-character/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func getById(tenantId uuid.UUID, characterId uint32) database.EntityProvider[entity] {
+func getById(characterId uint32) database.EntityProvider[entity] {
 	return func(db *gorm.DB) model.Provider[entity] {
-		where := map[string]interface{}{"tenant_id": tenantId, "id": characterId}
-		return database.Query[entity](db, where)
+		return database.Query[entity](db.Where("id = ?", characterId), &entity{})
 	}
 }
 
-func getForAccountInWorld(tenantId uuid.UUID, accountId uint32, worldId world.Id) database.EntityProvider[[]entity] {
+func getForAccountInWorld(accountId uint32, worldId world.Id) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId, "world": worldId}
-		return database.SliceQuery[entity](db, where)
+		return database.SliceQuery[entity](db.Where("account_id = ? AND world = ?", accountId, worldId), &entity{})
 	}
 }
 
-func getForAccount(tenantId uuid.UUID, accountId uint32) database.EntityProvider[[]entity] {
+func getForAccount(accountId uint32) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		where := map[string]interface{}{"tenant_id": tenantId, "account_id": accountId}
-		return database.SliceQuery[entity](db, where)
+		return database.SliceQuery[entity](db.Where("account_id = ?", accountId), &entity{})
 	}
 }
 
-func getForMapInWorld(tenantId uuid.UUID, worldId world.Id, mapId _map.Id) database.EntityProvider[[]entity] {
+func getForMapInWorld(worldId world.Id, mapId _map.Id) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db, &entity{TenantId: tenantId, World: worldId, MapId: mapId})
+		return database.SliceQuery[entity](db.Where("world = ? AND map_id = ?", worldId, mapId), &entity{})
 	}
 }
 
-func getForName(tenantId uuid.UUID, name string) database.EntityProvider[[]entity] {
+func getForName(name string) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Where("tenant_id = ? AND LOWER(name) = LOWER(?)", tenantId, name).Find(&results).Error
+		err := db.Where("LOWER(name) = LOWER(?)", name).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}
@@ -48,10 +44,10 @@ func getForName(tenantId uuid.UUID, name string) database.EntityProvider[[]entit
 	}
 }
 
-func getAll(tenantId uuid.UUID) database.EntityProvider[[]entity] {
+func getAll() database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		var results []entity
-		err := db.Where("tenant_id = ?", tenantId).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]entity](err)
 		}

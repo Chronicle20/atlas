@@ -5,10 +5,10 @@ import (
 	"gorm.io/gorm"
 )
 
-func GetByStorageId(db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID) ([]Model, error) {
+func GetByStorageId(db *gorm.DB) func(storageId uuid.UUID) ([]Model, error) {
 	return func(storageId uuid.UUID) ([]Model, error) {
 		var entities []Entity
-		err := db.Where("tenant_id = ? AND storage_id = ?", tenantId, storageId).
+		err := db.Where("storage_id = ?", storageId).
 			Order("inventory_type ASC, template_id ASC").
 			Find(&entities).Error
 		if err != nil {
@@ -23,10 +23,10 @@ func GetByStorageId(db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID) (
 	}
 }
 
-func GetById(db *gorm.DB, tenantId uuid.UUID) func(id uint32) (Model, error) {
+func GetById(db *gorm.DB) func(id uint32) (Model, error) {
 	return func(id uint32) (Model, error) {
 		var e Entity
-		err := db.Where("tenant_id = ? AND id = ?", tenantId, id).First(&e).Error
+		err := db.Where("id = ?", id).First(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
@@ -34,10 +34,10 @@ func GetById(db *gorm.DB, tenantId uuid.UUID) func(id uint32) (Model, error) {
 	}
 }
 
-func GetByStorageIdAndTemplateId(db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID, templateId uint32) ([]Model, error) {
+func GetByStorageIdAndTemplateId(db *gorm.DB) func(storageId uuid.UUID, templateId uint32) ([]Model, error) {
 	return func(storageId uuid.UUID, templateId uint32) ([]Model, error) {
 		var entities []Entity
-		err := db.Where("tenant_id = ? AND storage_id = ? AND template_id = ?", tenantId, storageId, templateId).
+		err := db.Where("storage_id = ? AND template_id = ?", storageId, templateId).
 			Find(&entities).Error
 		if err != nil {
 			return nil, err
@@ -50,10 +50,10 @@ func GetByStorageIdAndTemplateId(db *gorm.DB, tenantId uuid.UUID) func(storageId
 	}
 }
 
-func GetByStorageIdAndInventoryType(db *gorm.DB, tenantId uuid.UUID) func(storageId uuid.UUID, inventoryType byte) ([]Model, error) {
+func GetByStorageIdAndInventoryType(db *gorm.DB) func(storageId uuid.UUID, inventoryType byte) ([]Model, error) {
 	return func(storageId uuid.UUID, inventoryType byte) ([]Model, error) {
 		var entities []Entity
-		err := db.Where("tenant_id = ? AND storage_id = ? AND inventory_type = ?", tenantId, storageId, inventoryType).
+		err := db.Where("storage_id = ? AND inventory_type = ?", storageId, inventoryType).
 			Order("template_id ASC").
 			Find(&entities).Error
 		if err != nil {

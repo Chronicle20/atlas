@@ -1,7 +1,6 @@
 package script
 
 import (
-	"atlas-maps/rest"
 	"fmt"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
@@ -17,5 +16,5 @@ func getBaseRequest() string {
 }
 
 func requestMapScripts(mapId _map.Id) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapsResource, mapId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+mapsResource, mapId))
 }

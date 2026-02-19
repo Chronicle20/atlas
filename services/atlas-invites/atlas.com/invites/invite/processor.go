@@ -48,7 +48,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	is, err := GetRegistry().GetForCharacter(p.t, characterId)
+	is, err := GetRegistry().GetForCharacter(p.ctx, characterId)
 	if err != nil {
 		return model.ErrorProvider[[]Model](err)
 	}
@@ -72,7 +72,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(referenceId uint32) func
 								"transaction":  transactionId.String(),
 							}).Debug("Creating invite")
 
-							i := GetRegistry().Create(p.t, originatorId, worldId, targetId, inviteType, referenceId)
+							i := GetRegistry().Create(p.ctx, originatorId, worldId, targetId, inviteType, referenceId)
 
 							p.l.WithFields(logrus.Fields{
 								"inviteId":     i.Id(),
@@ -128,7 +128,7 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(referenceId uint32) func
 							"transaction": transactionId.String(),
 						}).Debug("Accepting invite")
 
-						i, err := GetRegistry().GetByReference(p.t, actorId, inviteType, referenceId)
+						i, err := GetRegistry().GetByReference(p.ctx, actorId, inviteType, referenceId)
 						if err != nil {
 							p.l.WithError(err).WithFields(logrus.Fields{
 								"referenceId": referenceId,
@@ -148,7 +148,7 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(referenceId uint32) func
 							"transaction":  transactionId.String(),
 						}).Debug("Found invite to accept")
 
-						err = GetRegistry().Delete(p.t, actorId, inviteType, i.OriginatorId())
+						err = GetRegistry().Delete(p.ctx, actorId, inviteType, i.OriginatorId())
 						if err != nil {
 							p.l.WithError(err).WithFields(logrus.Fields{
 								"inviteId":     i.Id(),
@@ -213,7 +213,7 @@ func (p *ProcessorImpl) Reject(mb *message.Buffer) func(originatorId uint32) fun
 							"transaction":  transactionId.String(),
 						}).Debug("Rejecting invite")
 
-						i, err := GetRegistry().GetByOriginator(p.t, actorId, inviteType, originatorId)
+						i, err := GetRegistry().GetByOriginator(p.ctx, actorId, inviteType, originatorId)
 						if err != nil {
 							p.l.WithError(err).WithFields(logrus.Fields{
 								"originatorId": originatorId,
@@ -233,7 +233,7 @@ func (p *ProcessorImpl) Reject(mb *message.Buffer) func(originatorId uint32) fun
 							"transaction":  transactionId.String(),
 						}).Debug("Found invite to reject")
 
-						err = GetRegistry().Delete(p.t, actorId, inviteType, originatorId)
+						err = GetRegistry().Delete(p.ctx, actorId, inviteType, originatorId)
 						if err != nil {
 							p.l.WithError(err).WithFields(logrus.Fields{
 								"inviteId":     i.Id(),
@@ -284,7 +284,7 @@ func (p *ProcessorImpl) RejectAndEmit(originatorId uint32, worldId world.Id, inv
 }
 
 func (p *ProcessorImpl) DeleteByCharacterIdAndEmit(characterId uint32) error {
-	removed := GetRegistry().DeleteForCharacter(p.t, characterId)
+	removed := GetRegistry().DeleteForCharacter(p.ctx, characterId)
 	for _, i := range removed {
 		p.l.Infof("Invite [%d] removed due to character [%d] deletion. Originator [%d], target [%d], type [%s].", i.Id(), characterId, i.OriginatorId(), i.TargetId(), i.Type())
 		transactionId := uuid.New()

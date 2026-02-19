@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -13,10 +14,13 @@ import (
 )
 
 func testDatabase(t *testing.T) *gorm.DB {
+	l, _ := test.NewNullLogger()
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{})
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	database.RegisterTenantCallbacks(l, db)
 
 	if err := drop.Migration(db); err != nil {
 		t.Fatalf("Failed to migrate database: %v", err)

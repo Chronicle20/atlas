@@ -292,7 +292,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 		return func(wp writer.Producer) func(e asset2.StatusEvent[asset2.MovedStatusEventBody]) model.Operator[session.Model] {
 			return func(e asset2.StatusEvent[asset2.MovedStatusEventBody]) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator, cp.PetModelDecorator)(s.CharacterId())
+					c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue appearance update for character [%d] to others in map.", s.CharacterId())
 						return err

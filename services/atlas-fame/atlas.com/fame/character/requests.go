@@ -1,7 +1,6 @@
 package character
 
 import (
-	"atlas-fame/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,5 +18,5 @@ func getBaseRequest() string {
 }
 
 func requestById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }

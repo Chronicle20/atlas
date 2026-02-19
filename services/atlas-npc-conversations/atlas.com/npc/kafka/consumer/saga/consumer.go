@@ -12,7 +12,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -42,11 +41,8 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 
 		l.WithField("transaction_id", e.TransactionId.String()).Debug("Received saga completion event")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(ctx)
-
 		// Find the conversation context by saga ID
-		conversationCtx, err := conversation.GetRegistry().GetContextBySagaId(t, e.TransactionId)
+		conversationCtx, err := conversation.GetRegistry().GetContextBySagaId(ctx, e.TransactionId)
 		if err != nil {
 			l.WithError(err).WithField("transaction_id", e.TransactionId.String()).Warn("No conversation found for completed saga")
 			return
@@ -68,7 +64,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			delete(conversationCtx.Context(), "transportAction_routeNotFoundState")
 			delete(conversationCtx.Context(), "transportAction_serviceErrorState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			return
 		}
@@ -80,7 +76,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			delete(conversationCtx.Context(), "partyQuestAction_notInPartyState")
 			delete(conversationCtx.Context(), "partyQuestAction_notLeaderState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			return
 		}
@@ -90,7 +86,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Party quest bonus action completed - bonus entered, ending conversation")
 			delete(conversationCtx.Context(), "partyQuestBonusAction_failureState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			return
 		}
@@ -100,7 +96,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 			l.WithField("character_id", conversationCtx.CharacterId()).Debug("Gachapon action completed - item awarded, ending conversation")
 			delete(conversationCtx.Context(), "gachaponAction_failureState")
 			conversationCtx = conversationCtx.ClearPendingSaga()
-			conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+			conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 			_ = conversation.NewProcessor(l, ctx, db).End(conversationCtx.CharacterId())
 			npcSender.NewProcessor(l, ctx).Dispose(conversationCtx.Field().Channel(), conversationCtx.CharacterId())
 			return
@@ -125,7 +121,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger, db *gorm.DB) message.Handl
 		delete(conversationCtx.Context(), "craftAction_missingMaterialsState")
 
 		// Update the context in registry
-		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+		conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 
 		// Process the success state using ProcessorImpl directly
 		processor := conversation.NewProcessor(l, ctx, db).(*conversation.ProcessorImpl)
@@ -150,11 +146,8 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 			"failed_step":    e.Body.FailedStep,
 		}).Debug("Received saga failure event")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(ctx)
-
 		// Find the conversation context by saga ID
-		conversationCtx, err := conversation.GetRegistry().GetContextBySagaId(t, e.TransactionId)
+		conversationCtx, err := conversation.GetRegistry().GetContextBySagaId(ctx, e.TransactionId)
 		if err != nil {
 			l.WithError(err).WithField("transaction_id", e.TransactionId.String()).Warn("No conversation found for failed saga")
 			return
@@ -207,7 +200,7 @@ func handleStatusEventFailed(l logrus.FieldLogger, db *gorm.DB) message.Handler[
 		delete(conversationCtx.Context(), "partyQuestBonusAction_failureState")
 
 		// Update the context in registry
-		conversation.GetRegistry().UpdateContext(t, conversationCtx.CharacterId(), conversationCtx)
+		conversation.GetRegistry().UpdateContext(ctx, conversationCtx.CharacterId(), conversationCtx)
 
 		// Process the failure state using ProcessorImpl directly
 		processor := conversation.NewProcessor(l, ctx, db).(*conversation.ProcessorImpl)

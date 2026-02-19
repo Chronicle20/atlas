@@ -30,8 +30,8 @@ func create(db *gorm.DB, tenantId uuid.UUID, guildId uint32, posterId uint32, ti
 	return Make(*e)
 }
 
-func update(db *gorm.DB, tenantId uuid.UUID, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) error {
-	e, err := getById(tenantId, guildId, threadId)(db)()
+func update(db *gorm.DB, guildId uint32, threadId uint32, posterId uint32, title string, message string, emoticonId uint32, notice bool) error {
+	e, err := getById(guildId, threadId)(db)()
 	if err != nil {
 		return err
 	}
@@ -47,6 +47,6 @@ func update(db *gorm.DB, tenantId uuid.UUID, guildId uint32, threadId uint32, po
 	return nil
 }
 
-func remove(db *gorm.DB, tenantId uuid.UUID, guildId uint32, threadId uint32) error {
-	return db.Where("tenant_id = ? AND guild_id = ? AND id = ?", tenantId, guildId, threadId).Delete(&Entity{}).Error
+func remove(db *gorm.DB, guildId uint32, threadId uint32) error {
+	return db.Where("guild_id = ? AND id = ?", guildId, threadId).Delete(&Entity{}).Error
 }

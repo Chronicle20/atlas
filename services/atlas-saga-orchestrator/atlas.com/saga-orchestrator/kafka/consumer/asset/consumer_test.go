@@ -74,13 +74,13 @@ func TestHandleAssetCreatedEvent_RegularCreation(t *testing.T) {
 	te, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	tctx := tenant.WithContext(ctx, te)
 
-	// Create a saga with a regular AwardInventory step (not CreateAndEquipAsset)
+	// Create a saga with a regular AwardAsset step (not CreateAndEquipAsset)
 	transactionId := uuid.New()
 	testSaga, err := saga.NewBuilder().
 		SetTransactionId(transactionId).
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("asset-creation-test").
-		AddStep("award-step", saga.Pending, saga.AwardInventory, saga.AwardItemActionPayload{
+		AddStep("award-step", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
 			CharacterId: 12345,
 			Item: saga.ItemPayload{
 				TemplateId: 1000000,
@@ -91,7 +91,7 @@ func TestHandleAssetCreatedEvent_RegularCreation(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an asset created event
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
@@ -144,7 +144,7 @@ func TestHandleAssetCreatedEvent_CreateAndEquipAsset(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an asset created event
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{
@@ -198,7 +198,7 @@ func TestHandleAssetCreatedEvent_CharacterMismatch(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Store saga in cache
-	saga.GetCache().Put(te.Id(), testSaga)
+	_ = saga.GetCache().Put(tctx, testSaga)
 
 	// Create an event with a different character ID
 	event := asset2.StatusEvent[asset2.CreatedStatusEventBody]{

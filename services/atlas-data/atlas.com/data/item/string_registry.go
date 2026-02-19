@@ -1,7 +1,7 @@
 package item
 
 import (
-	"atlas-data/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
@@ -30,7 +30,7 @@ func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Con
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
 		return func(ctx context.Context) func(path string) error {
 			return func(path string) error {
-				exml, err := xml.Read(path)
+				exml, err := xml.FromPathProvider(path)()
 				if err != nil {
 					return err
 				}
@@ -67,7 +67,7 @@ func InitStringNested(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.C
 	return func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
 		return func(ctx context.Context) func(path string) error {
 			return func(path string) error {
-				exml, err := xml.Read(path)
+				exml, err := xml.FromPathProvider(path)()
 				if err != nil {
 					return err
 				}

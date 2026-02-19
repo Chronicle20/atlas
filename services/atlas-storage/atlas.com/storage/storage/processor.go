@@ -42,28 +42,27 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 func (p *Processor) GetOrCreateStorage(worldId world.Id, accountId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
 
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err == nil {
 		return s, nil
 	}
 
-	return Create(p.l, p.db, t.Id())(worldId, accountId)
+	return Create(p.l, p.db.WithContext(p.ctx), t.Id())(worldId, accountId)
 }
 
 func (p *Processor) GetStorageByWorldAndAccountId(worldId world.Id, accountId uint32) (Model, error) {
-	t := tenant.MustFromContext(p.ctx)
-	return GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	return GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 }
 
 func (p *Processor) CreateStorage(worldId world.Id, accountId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
 
-	_, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	_, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err == nil {
 		return Model{}, errors.New("storage already exists")
 	}
 
-	return Create(p.l, p.db, t.Id())(worldId, accountId)
+	return Create(p.l, p.db.WithContext(p.ctx), t.Id())(worldId, accountId)
 }
 
 func (p *Processor) Deposit(worldId world.Id, accountId uint32, body message.DepositBody) (uint32, error) {
@@ -107,7 +106,7 @@ func (p *Processor) Deposit(worldId world.Id, accountId uint32, body message.Dep
 		SetPetId(body.PetId).
 		Build()
 
-	a, err := asset.Create(p.l, p.db, t.Id())(m)
+	a, err := asset.Create(p.l, p.db.WithContext(p.ctx), t.Id())(m)
 	if err != nil {
 		return 0, err
 	}
@@ -127,27 +126,25 @@ func (p *Processor) DepositAndEmit(transactionId uuid.UUID, worldId world.Id, ac
 }
 
 func (p *Processor) Withdraw(body message.WithdrawBody) error {
-	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
-	a, err := asset.GetById(p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		return err
 	}
 
 	if a.IsStackable() && quantity > 0 && quantity < a.Quantity() {
-		return asset.UpdateQuantity(p.l, p.db, t.Id())(assetId, a.Quantity()-quantity)
+		return asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(assetId, a.Quantity()-quantity)
 	}
 
-	return asset.Delete(p.l, p.db, t.Id())(assetId)
+	return asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
 }
 
 func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.WithdrawBody) error {
-	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 
-	a, err := asset.GetById(p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		return err
 	}
@@ -163,9 +160,7 @@ func (p *Processor) WithdrawAndEmit(transactionId uuid.UUID, worldId world.Id, a
 }
 
 func (p *Processor) UpdateMesos(worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
-	t := tenant.MustFromContext(p.ctx)
-
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -186,13 +181,11 @@ func (p *Processor) UpdateMesos(worldId world.Id, accountId uint32, body message
 		newMesos = body.Mesos
 	}
 
-	return UpdateMesos(p.l, p.db, t.Id())(s.Id(), newMesos)
+	return UpdateMesos(p.l, p.db.WithContext(p.ctx))(s.Id(), newMesos)
 }
 
 func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, body message.UpdateMesosBody) error {
-	t := tenant.MustFromContext(p.ctx)
-
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
 	}
@@ -210,7 +203,7 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id
 		return err
 	}
 
-	s, _ = GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, _ = GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 
 	_ = p.emitMesosUpdatedEvent(transactionId, worldId, accountId, oldMesos, s.Mesos())
 
@@ -218,8 +211,7 @@ func (p *Processor) UpdateMesosAndEmit(transactionId uuid.UUID, worldId world.Id
 }
 
 func (p *Processor) DepositRollback(body message.DepositRollbackBody) error {
-	t := tenant.MustFromContext(p.ctx)
-	return asset.Delete(p.l, p.db, t.Id())(uint32(body.AssetId))
+	return asset.Delete(p.l, p.db.WithContext(p.ctx))(uint32(body.AssetId))
 }
 
 // Accept accepts an item into storage as part of a transfer saga
@@ -267,7 +259,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 	invType := inventoryTypeFromTemplateId(body.TemplateId)
 
 	// Determine slot
-	compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.db, t.Id())(s.Id(), invType)
+	compartmentAssets, err := asset.GetByStorageIdAndInventoryType(p.db.WithContext(p.ctx))(s.Id(), invType)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -280,7 +272,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 			actualQuantity = 1
 		}
 
-		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.db, t.Id())(s.Id(), body.TemplateId)
+		existingAssets, err := asset.GetByStorageIdAndTemplateId(p.db.WithContext(p.ctx))(s.Id(), body.TemplateId)
 		if err == nil && len(existingAssets) > 0 {
 			slotMax, err := p.getSlotMax(body.TemplateId, m)
 			if err != nil || slotMax == 0 {
@@ -296,7 +288,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 				}
 				if existing.Quantity()+actualQuantity <= slotMax {
 					newQuantity := existing.Quantity() + actualQuantity
-					err = asset.UpdateQuantity(p.l, p.db, t.Id())(existing.Id(), newQuantity)
+					err = asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(existing.Id(), newQuantity)
 					if err != nil {
 						continue
 					}
@@ -308,7 +300,7 @@ func (p *Processor) Accept(worldId world.Id, accountId uint32, body compartment.
 
 	// No merge — create new asset
 	m = asset.Clone(m).SetSlot(slot).Build()
-	a, err := asset.Create(p.l, p.db, t.Id())(m)
+	a, err := asset.Create(p.l, p.db.WithContext(p.ctx), t.Id())(m)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -329,32 +321,30 @@ func (p *Processor) AcceptAndEmit(worldId world.Id, accountId uint32, characterI
 }
 
 func (p *Processor) Release(body compartment.ReleaseCommandBody) error {
-	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 	quantity := uint32(body.Quantity)
 
-	a, err := asset.GetById(p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		return err
 	}
 
 	if quantity == 0 || !a.IsStackable() {
-		return asset.Delete(p.l, p.db, t.Id())(assetId)
+		return asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
 	}
 
 	if quantity >= a.Quantity() {
-		return asset.Delete(p.l, p.db, t.Id())(assetId)
+		return asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
 	}
 
 	newQuantity := a.Quantity() - quantity
-	return asset.UpdateQuantity(p.l, p.db, t.Id())(assetId, newQuantity)
+	return asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(assetId, newQuantity)
 }
 
 func (p *Processor) ReleaseAndEmit(worldId world.Id, accountId uint32, characterId uint32, body compartment.ReleaseCommandBody) error {
-	t := tenant.MustFromContext(p.ctx)
 	assetId := uint32(body.AssetId)
 
-	a, err := asset.GetById(p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		_ = p.emitCompartmentErrorEvent(worldId, accountId, characterId, body.TransactionId, "RELEASE_FAILED", err.Error())
 		return err
@@ -491,14 +481,12 @@ type mergeKey struct {
 }
 
 func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
-	t := tenant.MustFromContext(p.ctx)
-
-	s, err := GetByWorldAndAccountId(p.l, p.db, t.Id())(worldId, accountId)
+	s, err := GetByWorldAndAccountId(p.l, p.db.WithContext(p.ctx))(worldId, accountId)
 	if err != nil {
 		return err
 	}
 
-	assets, err := asset.GetByStorageId(p.db, t.Id())(s.Id())
+	assets, err := asset.GetByStorageId(p.db.WithContext(p.ctx))(s.Id())
 	if err != nil {
 		return err
 	}
@@ -527,7 +515,7 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 	}
 
 	if len(stackableGroups) == 0 {
-		return p.sortAssets(t.Id(), assets)
+		return p.sortAssets(assets)
 	}
 
 	var mergedAssets []asset.Model
@@ -560,7 +548,7 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 			newQuantity := min(remainingQuantity, slotMax)
 			remainingQuantity -= newQuantity
 
-			err := asset.UpdateQuantity(p.l, p.db, t.Id())(a.Id(), newQuantity)
+			err := asset.UpdateQuantity(p.l, p.db.WithContext(p.ctx))(a.Id(), newQuantity)
 			if err != nil {
 				return err
 			}
@@ -569,7 +557,7 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 		}
 
 		for i := int(assetsToKeep); i < len(group); i++ {
-			err := asset.Delete(p.l, p.db, t.Id())(group[i].Id())
+			err := asset.Delete(p.l, p.db.WithContext(p.ctx))(group[i].Id())
 			if err != nil {
 				return err
 			}
@@ -578,10 +566,10 @@ func (p *Processor) MergeAndSort(worldId world.Id, accountId uint32) error {
 
 	allAssets := append(nonStackables, mergedAssets...)
 
-	return p.sortAssets(t.Id(), allAssets)
+	return p.sortAssets(allAssets)
 }
 
-func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model) error {
+func (p *Processor) sortAssets(assets []asset.Model) error {
 	byInventoryType := make(map[byte][]asset.Model)
 	for _, a := range assets {
 		invType := inventoryTypeFromTemplateId(a.TemplateId())
@@ -600,7 +588,7 @@ func (p *Processor) sortAssets(tenantId uuid.UUID, assets []asset.Model) error {
 		for i, a := range group {
 			newSlot := int16(i)
 			if a.Slot() != newSlot {
-				err := asset.UpdateSlot(p.l, p.db, tenantId)(a.Id(), newSlot)
+				err := asset.UpdateSlot(p.l, p.db.WithContext(p.ctx))(a.Id(), newSlot)
 				if err != nil {
 					return err
 				}
@@ -732,13 +720,13 @@ func (p *Processor) EmitProjectionCreatedEvent(characterId uint32, accountId uin
 func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, accountId uint32, assetId uint32, isCash bool, replaceItemId uint32, replaceMessage string) error {
 	t := tenant.MustFromContext(p.ctx)
 
-	a, err := asset.GetById(p.db, t.Id())(assetId)
+	a, err := asset.GetById(p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to find asset [%d] for expiration.", assetId)
 		return err
 	}
 
-	err = asset.Delete(p.l, p.db, t.Id())(assetId)
+	err = asset.Delete(p.l, p.db.WithContext(p.ctx))(assetId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete expired asset [%d].", assetId)
 		return err
@@ -755,7 +743,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 			return nil
 		}
 
-		assets, err := asset.GetByStorageId(p.db, t.Id())(s.Id())
+		assets, err := asset.GetByStorageId(p.db.WithContext(p.ctx))(s.Id())
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to get assets for slot calculation.")
 			return nil
@@ -766,7 +754,7 @@ func (p *Processor) ExpireAndEmit(transactionId uuid.UUID, worldId world.Id, acc
 			SetSlot(nextSlot).
 			Build()
 
-		_, err = asset.Create(p.l, p.db, t.Id())(replacement)
+		_, err = asset.Create(p.l, p.db.WithContext(p.ctx), t.Id())(replacement)
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to create replacement item [%d] for account [%d].", replaceItemId, accountId)
 		}
@@ -793,9 +781,7 @@ func (p *Processor) emitExpiredEvent(transactionId uuid.UUID, worldId world.Id, 
 }
 
 func (p *Processor) DeleteByAccountId(accountId uint32) error {
-	t := tenant.MustFromContext(p.ctx)
-
-	storages, err := GetByAccountId(p.l, p.db, t.Id())(accountId)
+	storages, err := GetByAccountId(p.l, p.db.WithContext(p.ctx))(accountId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to retrieve storages for account [%d].", accountId)
 		return err
@@ -804,12 +790,12 @@ func (p *Processor) DeleteByAccountId(accountId uint32) error {
 	p.l.Infof("Deleting [%d] storage(s) for account [%d].", len(storages), accountId)
 
 	for _, s := range storages {
-		err = asset.DeleteByStorageId(p.l, p.db, t.Id())(s.Id())
+		err = asset.DeleteByStorageId(p.l, p.db.WithContext(p.ctx))(s.Id())
 		if err != nil {
 			p.l.WithError(err).Warnf("Failed to delete assets for storage [%s].", s.Id())
 		}
 
-		err = Delete(p.l, p.db, t.Id())(s.Id())
+		err = Delete(p.l, p.db.WithContext(p.ctx))(s.Id())
 		if err != nil {
 			p.l.WithError(err).Errorf("Failed to delete storage [%s] for account [%d].", s.Id(), accountId)
 		}

@@ -3,14 +3,14 @@ package history
 import (
 	"time"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB) func(tenant tenant.Model, accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
-	return func(tenant tenant.Model, accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
+func create(db *gorm.DB) func(tenantId uuid.UUID, accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
+	return func(tenantId uuid.UUID, accountId uint32, accountName string, ipAddress string, hwid string, success bool, failureReason string) (Model, error) {
 		a := &Entity{
-			TenantId:      tenant.Id(),
+			TenantId:      tenantId,
 			AccountId:     accountId,
 			AccountName:   accountName,
 			IPAddress:     ipAddress,
@@ -28,9 +28,9 @@ func create(db *gorm.DB) func(tenant tenant.Model, accountId uint32, accountName
 	}
 }
 
-func deleteOlderThan(db *gorm.DB) func(tenant tenant.Model, cutoff time.Time) error {
-	return func(tenant tenant.Model, cutoff time.Time) error {
-		return db.Where("tenant_id = ? AND created_at < ?", tenant.Id(), cutoff).Delete(&Entity{}).Error
+func deleteOlderThan(db *gorm.DB) func(cutoff time.Time) error {
+	return func(cutoff time.Time) error {
+		return db.Where("created_at < ?", cutoff).Delete(&Entity{}).Error
 	}
 }
 

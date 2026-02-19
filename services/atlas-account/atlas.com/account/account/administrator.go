@@ -1,33 +1,31 @@
 package account
 
 import (
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type EntityUpdateFunction func() ([]string, func(e *Entity))
 
-func create(db *gorm.DB) func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
-	return func(tenant tenant.Model, name string, password string, gender byte) (Model, error) {
-		a := &Entity{
-			TenantId: tenant.Id(),
-			Name:     name,
-			Password: password,
-			Gender:   gender,
-		}
-
-		err := db.Create(a).Error
-		if err != nil {
-			return Model{}, err
-		}
-
-		return Make(*a)
+func create(db *gorm.DB, tenantId uuid.UUID, name string, password string, gender byte) (Model, error) {
+	a := &Entity{
+		TenantId: tenantId,
+		Name:     name,
+		Password: password,
+		Gender:   gender,
 	}
+
+	err := db.Create(a).Error
+	if err != nil {
+		return Model{}, err
+	}
+
+	return Make(*a)
 }
 
 func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 	return func(modifiers ...EntityUpdateFunction) IdOperator {
-		return func(tenant tenant.Model, id uint32) error {
+		return func(id uint32) error {
 			e := &Entity{}
 			var columns []string
 			for _, modifier := range modifiers {
@@ -35,14 +33,14 @@ func update(db *gorm.DB) func(modifiers ...EntityUpdateFunction) IdOperator {
 				columns = append(columns, c...)
 				u(e)
 			}
-			return db.Model(&Entity{TenantId: tenant.Id(), ID: id}).Select(columns).Updates(e).Error
+			return db.Model(&Entity{ID: id}).Select(columns).Updates(e).Error
 		}
 	}
 }
 
 func deleteById(db *gorm.DB) IdOperator {
-	return func(tenant tenant.Model, id uint32) error {
-		return db.Where(&Entity{TenantId: tenant.Id(), ID: id}).Delete(&Entity{}).Error
+	return func(id uint32) error {
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }
 

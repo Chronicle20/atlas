@@ -1,7 +1,6 @@
 package slot
 
 import (
-	"atlas-inventory/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 }
 
 func requestEquipmentSlotDestination(id uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+slotsForEquipment, id))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+slotsForEquipment, id))
 }

@@ -3,7 +3,7 @@ package asset
 import (
 	"atlas-cashshop/cashshop/commodity"
 	"atlas-cashshop/configuration"
-	"atlas-cashshop/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/item"
 	"atlas-cashshop/kafka/producer"
@@ -56,7 +56,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 }
 
 func (p *ProcessorImpl) ByIdProvider(id uint32) model.Provider[Model] {
-	return model.Map(Make)(getByIdProvider(p.t.Id())(id)(p.db))
+	return model.Map(Make)(getByIdProvider(id)(p.db.WithContext(p.ctx)))
 }
 
 func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
@@ -64,7 +64,7 @@ func (p *ProcessorImpl) GetById(id uint32) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getByCompartmentIdProvider(p.t.Id())(compartmentId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(getByCompartmentIdProvider(compartmentId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *ProcessorImpl) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error) {
@@ -74,7 +74,7 @@ func (p *ProcessorImpl) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, er
 func (p *ProcessorImpl) Create(mb *message.Buffer) func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return func(compartmentId uuid.UUID, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 		var result Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var period uint32 = 30
 			if commodityId != 0 {
 				c, err := p.cp.GetById(commodityId)
@@ -129,7 +129,7 @@ func (p *ProcessorImpl) CreateAndEmit(compartmentId uuid.UUID, templateId uint32
 func (p *ProcessorImpl) CreateWithCashId(mb *message.Buffer) func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 	return func(compartmentId uuid.UUID, cashId int64, templateId uint32, commodityId uint32, quantity uint32, purchasedBy uint32) (Model, error) {
 		var result Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var period uint32 = 30
 			if commodityId != 0 {
 				c, err := p.cp.GetById(commodityId)
@@ -181,12 +181,12 @@ func (p *ProcessorImpl) CreateWithCashIdAndEmit(compartmentId uuid.UUID, cashId 
 }
 
 func (p *ProcessorImpl) UpdateQuantity(id uint32, quantity uint32) error {
-	return updateQuantity(p.db, p.t.Id(), id, quantity)
+	return updateQuantity(p.db.WithContext(p.ctx), id, quantity)
 }
 
 func (p *ProcessorImpl) Delete(_ *message.Buffer) func(id uint32) error {
 	return func(id uint32) error {
-		return deleteById(p.db, p.t.Id(), id)
+		return deleteById(p.db.WithContext(p.ctx), id)
 	}
 }
 
@@ -199,7 +199,7 @@ func (p *ProcessorImpl) DeleteAndEmit(id uint32) error {
 func (p *ProcessorImpl) Release(_ *message.Buffer) func(id uint32) error {
 	return func(id uint32) error {
 		p.l.Debugf("Releasing asset [%d].", id)
-		return deleteById(p.db, p.t.Id(), id)
+		return deleteById(p.db.WithContext(p.ctx), id)
 	}
 }
 
@@ -219,7 +219,7 @@ func (p *ProcessorImpl) Expire(mb *message.Buffer) func(id uint32, replaceItemId
 			return err
 		}
 
-		err = deleteById(p.db, p.t.Id(), id)
+		err = deleteById(p.db.WithContext(p.ctx), id)
 		if err != nil {
 			return err
 		}

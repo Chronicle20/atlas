@@ -1,251 +1,69 @@
 package rest
 
 import (
-	"context"
-	"io"
 	"net/http"
-	"strconv"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
 
-type HandlerDependency struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-}
-
-func (h HandlerDependency) Logger() logrus.FieldLogger {
-	return h.l
-}
-
-func (h HandlerDependency) Context() context.Context {
-	return h.ctx
-}
-
-type HandlerContext struct {
-	si jsonapi.ServerInformation
-}
-
-func (h HandlerContext) ServerInformation() jsonapi.ServerInformation {
-	return h.si
-}
-
-type GetHandler func(d *HandlerDependency, c *HandlerContext) http.HandlerFunc
-
-type InputHandler[M any] func(d *HandlerDependency, c *HandlerContext, model M) http.HandlerFunc
+type HandlerDependency = server.HandlerDependency
+type HandlerContext = server.HandlerContext
+type GetHandler = server.GetHandler
+type InputHandler[M any] = server.InputHandler[M]
 
 func ParseInput[M any](d *HandlerDependency, c *HandlerContext, next InputHandler[M]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var model M
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		defer r.Body.Close()
-
-		err = jsonapi.Unmarshal(body, &model)
-		if err != nil {
-			d.l.WithError(err).Errorln("Deserializing input", err)
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(d, c, model)(w, r)
-	}
+	return server.ParseInput[M](d, c, next)
 }
 
-func RegisterHandler(l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-	return func(si jsonapi.ServerInformation) func(handlerName string, handler GetHandler) http.HandlerFunc {
-		return func(handlerName string, handler GetHandler) http.HandlerFunc {
-			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-					return handler(&HandlerDependency{l: tl, ctx: tctx}, &HandlerContext{si: si})
-				})
-			})
-		}
-	}
-}
+var RegisterHandler = server.RegisterHandler
 
 func RegisterInputHandler[M any](l logrus.FieldLogger) func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-	return func(si jsonapi.ServerInformation) func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-		return func(handlerName string, handler InputHandler[M]) http.HandlerFunc {
-			return server.RetrieveSpan(l, handlerName, context.Background(), func(sl logrus.FieldLogger, sctx context.Context) http.HandlerFunc {
-				fl := sl.WithFields(logrus.Fields{"originator": handlerName, "type": "rest_handler"})
-				return server.ParseTenant(fl, sctx, func(tl logrus.FieldLogger, tctx context.Context) http.HandlerFunc {
-					return ParseInput[M](&HandlerDependency{l: tl, ctx: tctx}, &HandlerContext{si: si}, handler)
-				})
-			})
-		}
-	}
+	return server.RegisterInputHandler[M](l)
 }
 
-type EquipmentIdHandler func(equipmentId uint32) http.HandlerFunc
-
-func ParseEquipmentId(l logrus.FieldLogger, next EquipmentIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		value, err := strconv.Atoi(vars["equipmentId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing characterId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(value))(w, r)
-	}
+func ParseEquipmentId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "equipmentId", next)
 }
 
-type MapIdHandler func(mapId _map.Id) http.HandlerFunc
-
-func ParseMapId(l logrus.FieldLogger, next MapIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		mapId, err := strconv.Atoi(vars["mapId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing mapId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(_map.Id(mapId))(w, r)
-	}
+func ParseMapId(l logrus.FieldLogger, next func(_map.Id) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[_map.Id](l, "mapId", next)
 }
 
-type PortalIdHandler func(portalId uint32) http.HandlerFunc
-
-func ParsePortalId(l logrus.FieldLogger, next PortalIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		portalId, err := strconv.Atoi(vars["portalId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing portalId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(portalId))(w, r)
-	}
+func ParsePortalId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "portalId", next)
 }
 
-type NpcHandler func(npcId uint32) http.HandlerFunc
-
-func ParseNPC(l logrus.FieldLogger, next NpcHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		npcId, err := strconv.Atoi(vars["npcId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing npcId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(npcId))(w, r)
-	}
+func ParseNPC(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "npcId", next)
 }
 
-type MonsterIdHandler func(monsterId uint32) http.HandlerFunc
-
-func ParseMonsterId(l logrus.FieldLogger, next MonsterIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		monsterId, err := strconv.Atoi(vars["monsterId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing monsterId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(monsterId))(w, r)
-	}
+func ParseMonsterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "monsterId", next)
 }
 
-type ReactorIdHandler func(reactorId uint32) http.HandlerFunc
-
-func ParseReactorId(l logrus.FieldLogger, next ReactorIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		reactorId, err := strconv.Atoi(vars["reactorId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing reactorId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(reactorId))(w, r)
-	}
+func ParseReactorId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "reactorId", next)
 }
 
-type SkillIdHandler func(skillId uint32) http.HandlerFunc
-
-func ParseSkillId(l logrus.FieldLogger, next SkillIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		skillId, err := strconv.Atoi(vars["skillId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing skillId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(skillId))(w, r)
-	}
+func ParseSkillId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "skillId", next)
 }
 
-type ItemIdHandler func(itemId uint32) http.HandlerFunc
-
-func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		itemId, err := strconv.Atoi(vars["itemId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing itemId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(itemId))(w, r)
-	}
+func ParseItemId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "itemId", next)
 }
 
-type QuestIdHandler func(questId uint32) http.HandlerFunc
-
-func ParseQuestId(l logrus.FieldLogger, next QuestIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		questId, err := strconv.Atoi(vars["questId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing questId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(questId))(w, r)
-	}
+func ParseQuestId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "questId", next)
 }
 
-type FaceIdHandler func(faceId uint32) http.HandlerFunc
-
-func ParseFaceId(l logrus.FieldLogger, next FaceIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		faceId, err := strconv.Atoi(vars["faceId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing faceId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(faceId))(w, r)
-	}
+func ParseFaceId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "faceId", next)
 }
 
-type HairIdHandler func(hairId uint32) http.HandlerFunc
-
-func ParseHairId(l logrus.FieldLogger, next HairIdHandler) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		hairId, err := strconv.Atoi(vars["hairId"])
-		if err != nil {
-			l.WithError(err).Errorf("Error parsing hairId as uint32")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		next(uint32(hairId))(w, r)
-	}
+func ParseHairId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "hairId", next)
 }

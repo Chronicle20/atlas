@@ -5,7 +5,7 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
-	"atlas-inventory/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/kafka/producer"
@@ -80,7 +80,7 @@ func (p *Processor) WithConsumableProcessor(conp consumable.Processor) *Processo
 }
 
 func (p *Processor) ByCompartmentIdProvider(compartmentId uuid.UUID) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getByCompartmentId(p.t.Id(), compartmentId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(getByCompartmentId(compartmentId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 func (p *Processor) GetByCompartmentId(compartmentId uuid.UUID) ([]Model, error) {
@@ -93,12 +93,12 @@ func (p *Processor) GetBySlot(compartmentId uuid.UUID, slot int16) (Model, error
 
 func (p *Processor) BySlotProvider(compartmentId uuid.UUID) func(slot int16) model.Provider[Model] {
 	return func(slot int16) model.Provider[Model] {
-		return model.Map(Make)(getBySlot(p.t.Id(), compartmentId, slot)(p.db))
+		return model.Map(Make)(getBySlot(compartmentId, slot)(p.db.WithContext(p.ctx)))
 	}
 }
 
 func (p *Processor) ByIdProvider(id uint32) model.Provider[Model] {
-	return model.Map(Make)(getById(p.t.Id(), id)(p.db))
+	return model.Map(Make)(getById(id)(p.db.WithContext(p.ctx)))
 }
 
 func (p *Processor) GetById(id uint32) (Model, error) {
@@ -140,7 +140,7 @@ func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
-			err := deleteById(p.db, p.t.Id(), a.Id())
+			err := deleteById(p.db.WithContext(p.ctx), a.Id())
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to delete asset [%d].", a.Id())
 				return err
@@ -155,7 +155,7 @@ func (p *Processor) Expire(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, isCash bool, replaceItemId uint32, replaceMessage string) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to expire asset [%d].", a.Id())
-			err := deleteById(p.db, p.t.Id(), a.Id())
+			err := deleteById(p.db.WithContext(p.ctx), a.Id())
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to expire asset [%d].", a.Id())
 				return err
@@ -170,7 +170,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to drop asset [%d].", a.Id())
-			err := deleteById(p.db, p.t.Id(), a.Id())
+			err := deleteById(p.db.WithContext(p.ctx), a.Id())
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to drop asset [%d].", a.Id())
 				return err
@@ -195,7 +195,7 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID,
 			return err
 		}
 		p.l.Debugf("Character [%d] attempting to update slot of asset [%d] to [%d] from [%d].", characterId, a.Id(), s, a.Slot())
-		err = updateSlot(p.db, p.t.Id(), a.Id(), s)
+		err = updateSlot(p.db.WithContext(p.ctx), a.Id(), s)
 		if err != nil {
 			return err
 		}
@@ -211,7 +211,7 @@ func (p *Processor) UpdateQuantity(mb *message.Buffer) func(transactionId uuid.U
 		if !a.HasQuantity() {
 			return errors.New("cannot update quantity of non-stackable")
 		}
-		err := updateQuantity(p.db, p.t.Id(), a.Id(), quantity)
+		err := updateQuantity(p.db.WithContext(p.ctx), a.Id(), quantity)
 		if err != nil {
 			return err
 		}
@@ -252,7 +252,7 @@ func (p *Processor) UpdateEquipmentStats(mb *message.Buffer) func(transactionId 
 			SetExpiration(stats.Expiration()).
 			Build()
 
-		err = updateEquipmentStats(p.db, p.t.Id(), assetId, updated)
+		err = updateEquipmentStats(p.db.WithContext(p.ctx), assetId, updated)
 		if err != nil {
 			return err
 		}
@@ -276,7 +276,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model, error) {
 		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
 		var a Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 			if !ok {
 				return errors.New("unknown item type")
@@ -353,7 +353,7 @@ func (p *Processor) CreateFromModel(mb *message.Buffer) func(transactionId uuid.
 	return func(transactionId uuid.UUID, characterId uint32, m Model) (Model, error) {
 		p.l.Debugf("Character [%d] creating asset from model for template [%d] in compartment [%s].", characterId, m.TemplateId(), m.CompartmentId().String())
 		var a Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			var err error
 			a, err = create(tx, p.t.Id(), m)
 			if err != nil {
@@ -372,7 +372,7 @@ func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, cha
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
 		p.l.Debugf("Character [%d] attempting to accept asset template [%d] in slot [%d] of compartment [%s].", characterId, m.TemplateId(), slot, compartmentId.String())
 		var a Model
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			nm := Clone(m).
 				SetCompartmentId(compartmentId).
 				SetSlot(slot).
@@ -397,7 +397,7 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
 			p.l.Debugf("Attempting to release asset [%d].", a.Id())
-			err := deleteById(p.db, p.t.Id(), a.Id())
+			err := deleteById(p.db.WithContext(p.ctx), a.Id())
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to release asset [%d].", a.Id())
 				return err

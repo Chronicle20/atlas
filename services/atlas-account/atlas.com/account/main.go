@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-account/account"
-	"atlas-account/database"
+	database "github.com/Chronicle20/atlas-database"
 	account2 "atlas-account/kafka/consumer/account"
 	"atlas-account/logger"
 	"atlas-account/service"
@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -43,6 +44,9 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	account.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

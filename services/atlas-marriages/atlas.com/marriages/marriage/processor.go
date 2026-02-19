@@ -184,7 +184,7 @@ func (p *ProcessorImpl) Propose(proposerId, targetId uint32) model.Provider[Prop
 		t := tenant.MustFromContext(p.ctx)
 
 		// Create proposal using administrator
-		entityProvider := CreateProposal(p.db, p.log)(proposerId, targetId, t.Id())
+		entityProvider := CreateProposal(p.db.WithContext(p.ctx), p.log)(proposerId, targetId, t.Id())
 		entity, err := entityProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -245,7 +245,7 @@ func (p *ProcessorImpl) AcceptProposal(proposalId uint32) model.Provider[Marriag
 		t := tenant.MustFromContext(p.ctx)
 
 		// Get the proposal
-		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposalProvider := GetProposalByIdProvider(p.db.WithContext(p.ctx), p.log)(proposalId)
 		proposal, err := proposalProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -263,14 +263,14 @@ func (p *ProcessorImpl) AcceptProposal(proposalId uint32) model.Provider[Marriag
 		}
 
 		// Update the proposal in the database
-		updateProposalProvider := UpdateProposal(p.db, p.log)(acceptedProposal)
+		updateProposalProvider := UpdateProposal(p.db.WithContext(p.ctx), p.log)(acceptedProposal)
 		_, err = updateProposalProvider()
 		if err != nil {
 			return Marriage{}, err
 		}
 
 		// Create the marriage
-		marriageProvider := CreateMarriage(p.db, p.log)(proposal.ProposerId(), proposal.TargetId(), t.Id())
+		marriageProvider := CreateMarriage(p.db.WithContext(p.ctx), p.log)(proposal.ProposerId(), proposal.TargetId(), t.Id())
 		marriageEntity, err := marriageProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -289,7 +289,7 @@ func (p *ProcessorImpl) AcceptProposal(proposalId uint32) model.Provider[Marriag
 		}
 
 		// Update the marriage in the database
-		updateMarriageProvider := UpdateMarriage(p.db, p.log)(engagedMarriage)
+		updateMarriageProvider := UpdateMarriage(p.db.WithContext(p.ctx), p.log)(engagedMarriage)
 		updatedEntity, err := updateMarriageProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -362,11 +362,8 @@ func (p *ProcessorImpl) DeclineProposal(proposalId uint32) model.Provider[Propos
 	return func() (Proposal, error) {
 		p.log.WithField("proposalId", proposalId).Debug("Declining proposal")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get the proposal
-		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposalProvider := GetProposalByIdProvider(p.db.WithContext(p.ctx), p.log)(proposalId)
 		proposal, err := proposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -384,7 +381,7 @@ func (p *ProcessorImpl) DeclineProposal(proposalId uint32) model.Provider[Propos
 		}
 
 		// Update the proposal in the database
-		updateProposalProvider := UpdateProposal(p.db, p.log)(declinedProposal)
+		updateProposalProvider := UpdateProposal(p.db.WithContext(p.ctx), p.log)(declinedProposal)
 		_, err = updateProposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -443,11 +440,8 @@ func (p *ProcessorImpl) CancelProposal(proposalId uint32) model.Provider[Proposa
 	return func() (Proposal, error) {
 		p.log.WithField("proposalId", proposalId).Debug("Cancelling proposal")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get the proposal
-		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposalProvider := GetProposalByIdProvider(p.db.WithContext(p.ctx), p.log)(proposalId)
 		proposal, err := proposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -465,7 +459,7 @@ func (p *ProcessorImpl) CancelProposal(proposalId uint32) model.Provider[Proposa
 		}
 
 		// Update the proposal in the database
-		updateProposalProvider := UpdateProposal(p.db, p.log)(cancelledProposal)
+		updateProposalProvider := UpdateProposal(p.db.WithContext(p.ctx), p.log)(cancelledProposal)
 		_, err = updateProposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -536,9 +530,6 @@ func (p *ProcessorImpl) CheckEligibility(characterId uint32) model.Provider[bool
 // CheckProposalEligibility performs comprehensive eligibility checks for a proposal
 func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Check basic character eligibility
 		proposerEligible, err := p.CheckEligibility(proposerId)()
 		if err != nil {
@@ -557,7 +548,7 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 		}
 
 		// Check if proposer is already married or engaged
-		proposerMarriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(proposerId, t.Id())
+		proposerMarriageProvider := GetActiveMarriageByCharacterProvider(p.db.WithContext(p.ctx), p.log)(proposerId)
 		proposerMarriage, err := proposerMarriageProvider()
 		if err != nil {
 			return false, err
@@ -567,7 +558,7 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 		}
 
 		// Check if target is already married or engaged
-		targetMarriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(targetId, t.Id())
+		targetMarriageProvider := GetActiveMarriageByCharacterProvider(p.db.WithContext(p.ctx), p.log)(targetId)
 		targetMarriage, err := targetMarriageProvider()
 		if err != nil {
 			return false, err
@@ -577,7 +568,7 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 		}
 
 		// Check if there's already a pending proposal between these characters
-		existingProposalProvider := GetActiveProposalProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		existingProposalProvider := GetActiveProposalProvider(p.db.WithContext(p.ctx), p.log)(proposerId, targetId)
 		existingProposal, err := existingProposalProvider()
 		if err != nil {
 			return false, err
@@ -593,9 +584,7 @@ func (p *ProcessorImpl) CheckProposalEligibility(proposerId, targetId uint32) mo
 // CheckGlobalCooldown checks if the proposer is in global cooldown period
 func (p *ProcessorImpl) CheckGlobalCooldown(proposerId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		cooldownProvider := CheckGlobalCooldownProvider(p.db, p.log)(proposerId, t.Id())
+		cooldownProvider := CheckGlobalCooldownProvider(p.db.WithContext(p.ctx), p.log)(proposerId)
 		return cooldownProvider()
 	}
 }
@@ -603,9 +592,7 @@ func (p *ProcessorImpl) CheckGlobalCooldown(proposerId uint32) model.Provider[bo
 // CheckPerTargetCooldown checks if the proposer is in cooldown period for specific target
 func (p *ProcessorImpl) CheckPerTargetCooldown(proposerId, targetId uint32) model.Provider[bool] {
 	return func() (bool, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		cooldownProvider := CheckPerTargetCooldownProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		cooldownProvider := CheckPerTargetCooldownProvider(p.db.WithContext(p.ctx), p.log)(proposerId, targetId)
 		return cooldownProvider()
 	}
 }
@@ -613,9 +600,7 @@ func (p *ProcessorImpl) CheckPerTargetCooldown(proposerId, targetId uint32) mode
 // GetActiveProposal retrieves an active proposal between two characters
 func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Provider[*Proposal] {
 	return func() (*Proposal, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		proposalProvider := GetActiveProposalProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		proposalProvider := GetActiveProposalProvider(p.db.WithContext(p.ctx), p.log)(proposerId, targetId)
 		return proposalProvider()
 	}
 }
@@ -623,9 +608,7 @@ func (p *ProcessorImpl) GetActiveProposal(proposerId, targetId uint32) model.Pro
 // GetPendingProposalsByCharacter retrieves all pending proposals for a character (sent or received)
 func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model.Provider[[]Proposal] {
 	return func() ([]Proposal, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		proposalsProvider := GetPendingProposalsByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
 		return proposalsProvider()
 	}
 }
@@ -633,9 +616,7 @@ func (p *ProcessorImpl) GetPendingProposalsByCharacter(characterId uint32) model
 // GetProposalHistory retrieves the history of proposals between two characters
 func (p *ProcessorImpl) GetProposalHistory(proposerId, targetId uint32) model.Provider[[]Proposal] {
 	return func() ([]Proposal, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		historyProvider := GetProposalHistoryProvider(p.db, p.log)(proposerId, targetId, t.Id())
+		historyProvider := GetProposalHistoryProvider(p.db.WithContext(p.ctx), p.log)(proposerId, targetId)
 		return historyProvider()
 	}
 }
@@ -694,7 +675,7 @@ func (p *ProcessorImpl) ScheduleCeremony(marriageId uint32, scheduledAt time.Tim
 		t := tenant.MustFromContext(p.ctx)
 
 		// Verify marriage exists and is engaged
-		marriageProvider := GetMarriageByIdProvider(p.db, p.log)(marriageId, t.Id())
+		marriageProvider := GetMarriageByIdProvider(p.db.WithContext(p.ctx), p.log)(marriageId)
 		marriage, err := marriageProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -707,7 +688,7 @@ func (p *ProcessorImpl) ScheduleCeremony(marriageId uint32, scheduledAt time.Tim
 		}
 
 		// Create ceremony using administrator
-		entityProvider := CreateCeremony(p.db, p.log)(marriageId, marriage.CharacterId1(), marriage.CharacterId2(), scheduledAt, invitees, t.Id())
+		entityProvider := CreateCeremony(p.db.WithContext(p.ctx), p.log)(marriageId, marriage.CharacterId1(), marriage.CharacterId2(), scheduledAt, invitees, t.Id())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -771,11 +752,8 @@ func (p *ProcessorImpl) StartCeremony(ceremonyId uint32) model.Provider[Ceremony
 	return func() (Ceremony, error) {
 		p.log.WithField("ceremonyId", ceremonyId).Debug("Starting ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -796,7 +774,7 @@ func (p *ProcessorImpl) StartCeremony(ceremonyId uint32) model.Provider[Ceremony
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -853,11 +831,8 @@ func (p *ProcessorImpl) CompleteCeremony(ceremonyId uint32) model.Provider[Cerem
 	return func() (Ceremony, error) {
 		p.log.WithField("ceremonyId", ceremonyId).Debug("Completing ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -878,7 +853,7 @@ func (p *ProcessorImpl) CompleteCeremony(ceremonyId uint32) model.Provider[Cerem
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -935,11 +910,8 @@ func (p *ProcessorImpl) CancelCeremony(ceremonyId uint32) model.Provider[Ceremon
 	return func() (Ceremony, error) {
 		p.log.WithField("ceremonyId", ceremonyId).Debug("Cancelling ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -960,7 +932,7 @@ func (p *ProcessorImpl) CancelCeremony(ceremonyId uint32) model.Provider[Ceremon
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1019,11 +991,8 @@ func (p *ProcessorImpl) PostponeCeremony(ceremonyId uint32) model.Provider[Cerem
 	return func() (Ceremony, error) {
 		p.log.WithField("ceremonyId", ceremonyId).Debug("Postponing ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1044,7 +1013,7 @@ func (p *ProcessorImpl) PostponeCeremony(ceremonyId uint32) model.Provider[Cerem
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1105,11 +1074,8 @@ func (p *ProcessorImpl) RescheduleCeremony(ceremonyId uint32, newScheduledAt tim
 			"newScheduledAt": newScheduledAt,
 		}).Debug("Rescheduling ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1130,7 +1096,7 @@ func (p *ProcessorImpl) RescheduleCeremony(ceremonyId uint32, newScheduledAt tim
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1189,11 +1155,8 @@ func (p *ProcessorImpl) AddInvitee(ceremonyId uint32, characterId uint32) model.
 			"characterId": characterId,
 		}).Debug("Adding invitee to ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1214,7 +1177,7 @@ func (p *ProcessorImpl) AddInvitee(ceremonyId uint32, characterId uint32) model.
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1267,11 +1230,8 @@ func (p *ProcessorImpl) RemoveInvitee(ceremonyId uint32, characterId uint32) mod
 			"characterId": characterId,
 		}).Debug("Removing invitee from ceremony")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1292,7 +1252,7 @@ func (p *ProcessorImpl) RemoveInvitee(ceremonyId uint32, characterId uint32) mod
 		}
 
 		// Update ceremony using administrator
-		entityProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		entityProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := entityProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1340,9 +1300,7 @@ func (p *ProcessorImpl) RemoveInviteeAndEmit(transactionId uuid.UUID, ceremonyId
 // GetCeremonyById retrieves a ceremony by its ID
 func (p *ProcessorImpl) GetCeremonyById(ceremonyId uint32) model.Provider[*Ceremony] {
 	return func() (*Ceremony, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		return ceremonyProvider()
 	}
 }
@@ -1350,9 +1308,7 @@ func (p *ProcessorImpl) GetCeremonyById(ceremonyId uint32) model.Provider[*Cerem
 // GetCeremonyByMarriage retrieves a ceremony by its associated marriage ID
 func (p *ProcessorImpl) GetCeremonyByMarriage(marriageId uint32) model.Provider[*Ceremony] {
 	return func() (*Ceremony, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		ceremonyProvider := GetCeremonyByMarriageProvider(p.db, p.log)(marriageId, t.Id())
+		ceremonyProvider := GetCeremonyByMarriageProvider(p.db.WithContext(p.ctx), p.log)(marriageId)
 		return ceremonyProvider()
 	}
 }
@@ -1360,9 +1316,7 @@ func (p *ProcessorImpl) GetCeremonyByMarriage(marriageId uint32) model.Provider[
 // GetUpcomingCeremonies retrieves all upcoming ceremonies
 func (p *ProcessorImpl) GetUpcomingCeremonies() model.Provider[[]Ceremony] {
 	return func() ([]Ceremony, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		ceremoniesProvider := GetUpcomingCeremoniesProvider(p.db, p.log)(t.Id())
+		ceremoniesProvider := GetUpcomingCeremoniesProvider(p.db.WithContext(p.ctx), p.log)
 		return ceremoniesProvider()
 	}
 }
@@ -1370,9 +1324,7 @@ func (p *ProcessorImpl) GetUpcomingCeremonies() model.Provider[[]Ceremony] {
 // GetActiveCeremonies retrieves all active ceremonies
 func (p *ProcessorImpl) GetActiveCeremonies() model.Provider[[]Ceremony] {
 	return func() ([]Ceremony, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		ceremoniesProvider := GetActiveCeremoniesProvider(p.db, p.log)(t.Id())
+		ceremoniesProvider := GetActiveCeremoniesProvider(p.db.WithContext(p.ctx), p.log)
 		return ceremoniesProvider()
 	}
 }
@@ -1385,11 +1337,8 @@ func (p *ProcessorImpl) Divorce(marriageId uint32, initiatedBy uint32) model.Pro
 			"initiatedBy": initiatedBy,
 		}).Debug("Processing divorce")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get the marriage
-		marriageProvider := GetMarriageByIdProvider(p.db, p.log)(marriageId, t.Id())
+		marriageProvider := GetMarriageByIdProvider(p.db.WithContext(p.ctx), p.log)(marriageId)
 		marriage, err := marriageProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -1415,7 +1364,7 @@ func (p *ProcessorImpl) Divorce(marriageId uint32, initiatedBy uint32) model.Pro
 		}
 
 		// Update the marriage in the database
-		updateMarriageProvider := UpdateMarriage(p.db, p.log)(divorcedMarriage)
+		updateMarriageProvider := UpdateMarriage(p.db.WithContext(p.ctx), p.log)(divorcedMarriage)
 		updatedEntity, err := updateMarriageProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -1479,11 +1428,8 @@ func (p *ProcessorImpl) AdvanceCeremonyState(ceremonyId uint32, nextState string
 			"nextState":  nextState,
 		}).Debug("Advancing ceremony state")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get ceremony
-		ceremonyProvider := GetCeremonyByIdProvider(p.db, p.log)(ceremonyId, t.Id())
+		ceremonyProvider := GetCeremonyByIdProvider(p.db.WithContext(p.ctx), p.log)(ceremonyId)
 		ceremony, err := ceremonyProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1524,7 +1470,7 @@ func (p *ProcessorImpl) AdvanceCeremonyState(ceremonyId uint32, nextState string
 		}
 
 		// Update ceremony in database
-		updateProvider := UpdateCeremony(p.db, p.log)(ceremonyId, updatedCeremony.ToEntity(), t.Id())
+		updateProvider := UpdateCeremony(p.db.WithContext(p.ctx), p.log)(ceremonyId, updatedCeremony.ToEntity())
 		entity, err := updateProvider()
 		if err != nil {
 			return Ceremony{}, err
@@ -1639,7 +1585,7 @@ func (p *ProcessorImpl) AcceptProposalWithTransactionAndEmit(transactionId uuid.
 		t := tenant.MustFromContext(p.ctx)
 
 		// Get the proposal
-		proposalProvider := GetProposalByIdProvider(txProcessor.db, txProcessor.log)(proposalId, t.Id())
+		proposalProvider := GetProposalByIdProvider(txProcessor.db, txProcessor.log)(proposalId)
 		proposal, err := proposalProvider()
 		if err != nil {
 			return Marriage{}, err
@@ -1741,7 +1687,7 @@ func (p *ProcessorImpl) AcceptProposalWithTransactionAndEmit(transactionId uuid.
 // This ensures both database operations and message emission are transactionally consistent
 func (p *ProcessorImpl) executeInTransaction(operation func(*ProcessorImpl) (Marriage, error)) (Marriage, error) {
 	// Begin database transaction
-	tx := p.db.Begin()
+	tx := p.db.WithContext(p.ctx).Begin()
 	if tx.Error != nil {
 		return Marriage{}, tx.Error
 	}
@@ -1774,9 +1720,7 @@ func (p *ProcessorImpl) executeInTransaction(operation func(*ProcessorImpl) (Mar
 // GetMarriageByCharacter retrieves the active marriage for a character
 func (p *ProcessorImpl) GetMarriageByCharacter(characterId uint32) model.Provider[*Marriage] {
 	return func() (*Marriage, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		marriageProvider := GetActiveMarriageByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
 		return marriageProvider()
 	}
 }
@@ -1784,9 +1728,7 @@ func (p *ProcessorImpl) GetMarriageByCharacter(characterId uint32) model.Provide
 // GetMarriageHistory retrieves marriage history for a character
 func (p *ProcessorImpl) GetMarriageHistory(characterId uint32) model.Provider[[]Marriage] {
 	return func() ([]Marriage, error) {
-		t := tenant.MustFromContext(p.ctx)
-
-		historyProvider := GetMarriageHistoryByCharacterProvider(p.db, p.log)(characterId, t.Id())
+		historyProvider := GetMarriageHistoryByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
 		return historyProvider()
 	}
 }
@@ -1796,11 +1738,8 @@ func (p *ProcessorImpl) ExpireProposal(proposalId uint32) model.Provider[Proposa
 	return func() (Proposal, error) {
 		p.log.WithField("proposalId", proposalId).Debug("Expiring proposal")
 
-		// Get tenant from context
-		t := tenant.MustFromContext(p.ctx)
-
 		// Get the proposal
-		proposalProvider := GetProposalByIdProvider(p.db, p.log)(proposalId, t.Id())
+		proposalProvider := GetProposalByIdProvider(p.db.WithContext(p.ctx), p.log)(proposalId)
 		proposal, err := proposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -1818,7 +1757,7 @@ func (p *ProcessorImpl) ExpireProposal(proposalId uint32) model.Provider[Proposa
 		}
 
 		// Update the proposal in the database
-		updateProposalProvider := UpdateProposal(p.db, p.log)(expiredProposal)
+		updateProposalProvider := UpdateProposal(p.db.WithContext(p.ctx), p.log)(expiredProposal)
 		_, err = updateProposalProvider()
 		if err != nil {
 			return Proposal{}, err
@@ -1864,11 +1803,8 @@ func (p *ProcessorImpl) ExpireProposalAndEmit(transactionId uuid.UUID, proposalI
 func (p *ProcessorImpl) ProcessExpiredProposals() error {
 	p.log.Debug("Processing expired proposals")
 
-	// Get tenant from context
-	t := tenant.MustFromContext(p.ctx)
-
 	// Get all expired proposals for this tenant
-	expiredProposalsProvider := GetExpiredProposalsProvider(p.db, p.log)(t.Id())
+	expiredProposalsProvider := GetExpiredProposalsProvider(p.db.WithContext(p.ctx), p.log)
 	expiredProposals, err := expiredProposalsProvider()
 	if err != nil {
 		p.log.WithError(err).Error("Failed to retrieve expired proposals")
@@ -1906,11 +1842,8 @@ func (p *ProcessorImpl) ProcessExpiredProposals() error {
 func (p *ProcessorImpl) ProcessCeremonyTimeouts() error {
 	p.log.Debug("Processing ceremony timeouts")
 
-	// Get tenant from context
-	t := tenant.MustFromContext(p.ctx)
-
 	// Get all ceremonies that may have timed out
-	timeoutCeremoniesProvider := GetTimeoutCeremoniesProvider(p.db, p.log)(t.Id())
+	timeoutCeremoniesProvider := GetTimeoutCeremoniesProvider(p.db.WithContext(p.ctx), p.log)
 	timeoutCeremonies, err := timeoutCeremoniesProvider()
 	if err != nil {
 		p.log.WithError(err).Error("Failed to retrieve ceremonies that may have timed out")
@@ -1952,11 +1885,8 @@ func (p *ProcessorImpl) ProcessCeremonyTimeouts() error {
 func (p *ProcessorImpl) HandleCharacterDeletion(characterId uint32) error {
 	p.log.WithField("characterId", characterId).Debug("Processing character deletion for marriage cleanup")
 
-	// Get tenant from context
-	t := tenant.MustFromContext(p.ctx)
-
 	// Get any active marriage for this character
-	marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+	marriageProvider := GetActiveMarriageByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
 	marriage, err := marriageProvider()
 	if err != nil {
 		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve active marriage for character deletion")
@@ -1990,7 +1920,7 @@ func (p *ProcessorImpl) HandleCharacterDeletion(characterId uint32) error {
 	}
 
 	// Update the marriage in the database
-	updateMarriageProvider := UpdateMarriage(p.db, p.log)(deletedMarriage)
+	updateMarriageProvider := UpdateMarriage(p.db.WithContext(p.ctx), p.log)(deletedMarriage)
 	_, err = updateMarriageProvider()
 	if err != nil {
 		p.log.WithError(err).WithFields(logrus.Fields{
@@ -2015,11 +1945,8 @@ func (p *ProcessorImpl) HandleCharacterDeletionAndEmit(transactionId uuid.UUID, 
 		"transactionId": transactionId,
 	}).Debug("Processing character deletion with event emission")
 
-	// Get tenant from context
-	t := tenant.MustFromContext(p.ctx)
-
 	// Get any active marriage for this character
-	marriageProvider := GetActiveMarriageByCharacterProvider(p.db, p.log)(characterId, t.Id())
+	marriageProvider := GetActiveMarriageByCharacterProvider(p.db.WithContext(p.ctx), p.log)(characterId)
 	marriage, err := marriageProvider()
 	if err != nil {
 		p.log.WithError(err).WithField("characterId", characterId).Error("Failed to retrieve active marriage for character deletion")
@@ -2054,7 +1981,7 @@ func (p *ProcessorImpl) HandleCharacterDeletionAndEmit(transactionId uuid.UUID, 
 		}
 
 		// Update the marriage in the database
-		updateMarriageProvider := UpdateMarriage(p.db, p.log)(deletedMarriage)
+		updateMarriageProvider := UpdateMarriage(p.db.WithContext(p.ctx), p.log)(deletedMarriage)
 		_, err = updateMarriageProvider()
 		if err != nil {
 			return err

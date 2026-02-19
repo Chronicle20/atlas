@@ -5,14 +5,13 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, t tenant.Model, characterId uint32, capacity byte) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, capacity byte) (Model, error) {
 	e := &Entity{
-		TenantId:    t.Id(),
+		TenantId:    tenantId,
 		CharacterId: characterId,
 		Capacity:    capacity,
 	}
@@ -24,12 +23,12 @@ func create(db *gorm.DB, t tenant.Model, characterId uint32, capacity byte) (Mod
 	return Make(*e)
 }
 
-func addPendingBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, targetName string, group string) error {
-	return addBuddy(db, tenantId, characterId, targetId, targetName, group, true)
+func addPendingBuddy(db *gorm.DB, characterId uint32, targetId uint32, targetName string, group string) error {
+	return addBuddy(db, characterId, targetId, targetName, group, true)
 }
 
-func addBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, targetName string, group string, pending bool) error {
-	e, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()
+func addBuddy(db *gorm.DB, characterId uint32, targetId uint32, targetName string, group string, pending bool) error {
+	e, err := byCharacterIdEntityProvider(characterId)(db)()
 	if err != nil {
 		return err
 	}
@@ -45,8 +44,8 @@ func addBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint
 	return db.Create(&nb).Error
 }
 
-func removeBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32) error {
-	e, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()
+func removeBuddy(db *gorm.DB, characterId uint32, targetId uint32) error {
+	e, err := byCharacterIdEntityProvider(characterId)(db)()
 	if err != nil {
 		return err
 	}
@@ -66,8 +65,8 @@ func removeBuddy(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId u
 	return db.Delete(&rb).Error
 }
 
-func updateBuddyChannel(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, channelId int8) (bool, error) {
-	bbl, err := byCharacterIdEntityProvider(tenantId, targetId)(db)()
+func updateBuddyChannel(db *gorm.DB, characterId uint32, targetId uint32, channelId int8) (bool, error) {
+	bbl, err := byCharacterIdEntityProvider(targetId)(db)()
 	if err != nil {
 		return false, err
 	}
@@ -90,8 +89,8 @@ func updateBuddyChannel(db *gorm.DB, tenantId uuid.UUID, characterId uint32, tar
 	return true, nil
 }
 
-func updateBuddyShopStatus(db *gorm.DB, tenantId uuid.UUID, characterId uint32, targetId uint32, inShop bool) (bool, error) {
-	bbl, err := byCharacterIdEntityProvider(tenantId, targetId)(db)()
+func updateBuddyShopStatus(db *gorm.DB, characterId uint32, targetId uint32, inShop bool) (bool, error) {
+	bbl, err := byCharacterIdEntityProvider(targetId)(db)()
 	if err != nil {
 		return false, err
 	}
@@ -114,12 +113,12 @@ func updateBuddyShopStatus(db *gorm.DB, tenantId uuid.UUID, characterId uint32, 
 	return true, nil
 }
 
-func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
+func deleteEntityWithBuddies(db *gorm.DB, characterId uint32) error {
 	var entity Entity
 
 	// Step 1: Find the Entity
 	if err := db.
-		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+		Where("character_id = ?", characterId).
 		First(&entity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil // No-op if not found
@@ -148,7 +147,6 @@ func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32
 //
 // Parameters:
 //   - db: Database transaction or connection
-//   - tenantId: UUID of the tenant for multi-tenancy support
 //   - characterId: ID of the character whose capacity should be increased
 //   - newCapacity: The new capacity value (must be > current capacity)
 //
@@ -162,9 +160,9 @@ func deleteEntityWithBuddies(db *gorm.DB, tenantId uuid.UUID, characterId uint32
 // Error Conditions:
 //   - Returns "INVALID_CAPACITY" error if newCapacity <= currentCapacity
 //   - Returns database error if character not found or save operation fails
-func updateCapacity(db *gorm.DB, tenantId uuid.UUID, characterId uint32, newCapacity byte) error {
+func updateCapacity(db *gorm.DB, characterId uint32, newCapacity byte) error {
 	// Get the current entity to validate capacity
-	entity, err := byCharacterIdEntityProvider(tenantId, characterId)(db)()
+	entity, err := byCharacterIdEntityProvider(characterId)(db)()
 	if err != nil {
 		return err
 	}

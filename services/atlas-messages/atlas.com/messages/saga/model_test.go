@@ -331,7 +331,7 @@ func TestSagaJSON_Marshaling(t *testing.T) {
 			{
 				StepId:    "give_item",
 				Status:    Pending,
-				Action:    AwardInventory,
+				Action:    AwardAsset,
 				Payload:   AwardItemActionPayload{CharacterId: 12345, Item: ItemPayload{TemplateId: 2000000, Quantity: 1}},
 				CreatedAt: now,
 				UpdatedAt: now,
@@ -417,11 +417,11 @@ func TestStep_UnmarshalJSON_AwardExperience(t *testing.T) {
 	}
 }
 
-func TestStep_UnmarshalJSON_AwardInventory(t *testing.T) {
+func TestStep_UnmarshalJSON_AwardAsset(t *testing.T) {
 	jsonData := `{
 		"stepId": "give_item",
 		"status": "pending",
-		"action": "award_inventory",
+		"action": "award_asset",
 		"payload": {
 			"characterId": 12345,
 			"item": {"templateId": 2000000, "quantity": 10}
@@ -658,7 +658,7 @@ func TestTypeConstants(t *testing.T) {
 
 func TestActionConstants(t *testing.T) {
 	actions := map[Action]string{
-		AwardInventory:     "award_inventory",
+		AwardAsset:         "award_asset",
 		AwardExperience:    "award_experience",
 		AwardLevel:         "award_level",
 		AwardMesos:         "award_mesos",

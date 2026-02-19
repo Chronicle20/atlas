@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -60,6 +61,14 @@ type ProcessorImpl struct {
 	validP  validation.Processor
 	guildP  guild.Processor
 	inviteP invite.Processor
+}
+
+const maxConflictRetries = 3
+
+// isVersionConflict checks if an error is a VersionConflictError
+func isVersionConflict(err error) bool {
+	var vce *VersionConflictError
+	return errors.As(err, &vce)
 }
 
 // NewProcessor creates a new saga processor
@@ -183,7 +192,7 @@ func (p *ProcessorImpl) GetAll() ([]Saga, error) {
 
 func (p *ProcessorImpl) AllProvider() model.Provider[[]Saga] {
 	return func() ([]Saga, error) {
-		return GetCache().GetAll(p.t.Id()), nil
+		return GetCache().GetAll(p.ctx), nil
 	}
 }
 
@@ -194,7 +203,7 @@ func (p *ProcessorImpl) GetById(transactionId uuid.UUID) (Saga, error) {
 
 func (p *ProcessorImpl) ByIdProvider(transactionId uuid.UUID) model.Provider[Saga] {
 	return func() (Saga, error) {
-		m, ok := GetCache().GetById(p.t.Id(), transactionId)
+		m, ok := GetCache().GetById(p.ctx, transactionId)
 		if !ok {
 			return Saga{}, errors.New("saga not found")
 		}
@@ -220,7 +229,9 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		return err
 	}
 
-	GetCache().Put(p.t.Id(), saga)
+	if err := GetCache().Put(p.ctx, saga); err != nil {
+		return err
+	}
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": saga.TransactionId().String(),
@@ -256,9 +267,7 @@ func (p *ProcessorImpl) AtomicUpdateSaga(transactionId uuid.UUID, updateFunc fun
 	}
 
 	// Update the cache atomically
-	GetCache().Put(p.t.Id(), sagaCopy)
-
-	return nil
+	return GetCache().Put(p.ctx,sagaCopy)
 }
 
 // SafeSetStepStatus safely updates step status with validation and logging
@@ -296,8 +305,37 @@ func (p *ProcessorImpl) StepCompleted(transactionId uuid.UUID, success bool) err
 }
 
 func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success bool, result map[string]any) error {
+	for attempt := 1; attempt <= maxConflictRetries; attempt++ {
+		err := p.stepCompletedWithResultOnce(transactionId, success, result)
+		if err == nil {
+			return nil
+		}
+		if !isVersionConflict(err) {
+			return err
+		}
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"attempt":        attempt,
+			"tenant_id":      p.t.Id().String(),
+		}).Warn("Version conflict in StepCompletedWithResult, retrying.")
+		time.Sleep(10 * time.Millisecond)
+	}
+	return fmt.Errorf("max retries exceeded for step completion on saga %s", transactionId.String())
+}
+
+func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {
 	s, err := p.GetById(transactionId)
 	if err != nil {
+		return nil
+	}
+
+	// Idempotency guard: if there are no pending steps and the saga is not failing,
+	// this is a duplicate event — the saga already advanced past this point.
+	if !s.Failing() && s.FindEarliestPendingStepIndex() == -1 {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"tenant_id":      p.t.Id().String(),
+		}).Debug("Duplicate step completion received — saga has no pending steps, ignoring.")
 		return nil
 	}
 
@@ -362,7 +400,9 @@ func (p *ProcessorImpl) MarkFurthestCompletedStepFailed(transactionId uuid.UUID)
 	}
 
 	// Update the saga in the cache
-	GetCache().Put(p.t.Id(), s)
+	if err := GetCache().Put(p.ctx,s); err != nil {
+		return err
+	}
 
 	step, _ := s.StepAt(furthestCompletedIndex)
 	p.l.WithFields(logrus.Fields{
@@ -428,7 +468,9 @@ func (p *ProcessorImpl) MarkEarliestPendingStep(transactionId uuid.UUID, status 
 	}
 
 	// Update the saga in the cache
-	GetCache().Put(p.t.Id(), s)
+	if err := GetCache().Put(p.ctx,s); err != nil {
+		return err
+	}
 
 	step, _ := s.StepAt(earliestPendingIndex)
 	p.l.WithFields(logrus.Fields{
@@ -503,7 +545,9 @@ func (p *ProcessorImpl) MarkEarliestPendingStepWithResult(transactionId uuid.UUI
 	}
 
 	// Update the saga in the cache
-	GetCache().Put(p.t.Id(), s)
+	if err := GetCache().Put(p.ctx,s); err != nil {
+		return err
+	}
 
 	step, _ := s.StepAt(earliestPendingIndex)
 	p.l.WithFields(logrus.Fields{
@@ -588,7 +632,9 @@ func (p *ProcessorImpl) AddStep(transactionId uuid.UUID, step Step[any]) error {
 	}
 
 	// Update the saga in the cache atomically
-	GetCache().Put(p.t.Id(), s)
+	if err := GetCache().Put(p.ctx,s); err != nil {
+		return err
+	}
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id":  s.TransactionId().String(),
@@ -668,7 +714,9 @@ func (p *ProcessorImpl) AddStepAfterCurrent(transactionId uuid.UUID, step Step[a
 	}
 
 	// Update the saga in the cache atomically
-	GetCache().Put(p.t.Id(), s)
+	if err := GetCache().Put(p.ctx,s); err != nil {
+		return err
+	}
 
 	p.l.WithFields(logrus.Fields{
 		"transaction_id":  s.TransactionId().String(),
@@ -711,7 +759,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
-		GetCache().Remove(p.t.Id(), s.TransactionId())
+		GetCache().Remove(p.ctx,s.TransactionId())
 
 		// Emit saga completion event
 		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId()))

@@ -1,14 +1,13 @@
 package party_quest
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"fmt"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/google/uuid"
 	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
@@ -27,7 +26,7 @@ func getBaseRequest() string {
 }
 
 func requestPartyByMemberId(memberId uint32) requests.Request[[]PartyRestModel] {
-	return rest.MakeGetRequest[[]PartyRestModel](fmt.Sprintf(getBaseRequest()+"parties?filter[members.id]=%d", memberId))
+	return requests.GetRequest[[]PartyRestModel](fmt.Sprintf(getBaseRequest()+"parties?filter[members.id]=%d", memberId))
 }
 
 // PartyRestModel represents a party from the atlas-parties REST API
@@ -122,7 +121,7 @@ func ExtractMember(r MemberRestModel) (MemberRestModel, error) {
 }
 
 func requestPartyMembers(partyId uint32) requests.Request[[]MemberRestModel] {
-	return rest.MakeGetRequest[[]MemberRestModel](fmt.Sprintf(getBaseRequest()+"parties/%d/members", partyId))
+	return requests.GetRequest[[]MemberRestModel](fmt.Sprintf(getBaseRequest()+"parties/%d/members", partyId))
 }
 
 // ConditionRestModel represents a start requirement condition from atlas-party-quests
@@ -186,7 +185,7 @@ func getPartyQuestsBaseRequest() string {
 }
 
 func requestDefinitionByQuestId(questId string) requests.Request[DefinitionRestModel] {
-	return rest.MakeGetRequest[DefinitionRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/definitions/quest/%s", questId))
+	return requests.GetRequest[DefinitionRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/definitions/quest/%s", questId))
 }
 
 // InstanceRestModel represents a party quest instance from the atlas-party-quests REST API
@@ -217,7 +216,7 @@ func ExtractInstance(r InstanceRestModel) (InstanceRestModel, error) {
 }
 
 func requestInstanceByCharacterId(characterId uint32) requests.Request[InstanceRestModel] {
-	return rest.MakeGetRequest[InstanceRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/instances/character/%d", characterId))
+	return requests.GetRequest[InstanceRestModel](fmt.Sprintf(getPartyQuestsBaseRequest()+"party-quests/instances/character/%d", characterId))
 }
 
 // Command represents a command message to atlas-party-quests

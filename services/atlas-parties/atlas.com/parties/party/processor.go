@@ -66,12 +66,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) AllProvider() ([]Model, error) {
-	return GetRegistry().GetAll(p.t), nil
+	return GetRegistry().GetAll(p.ctx), nil
 }
 
 func (p *ProcessorImpl) ByIdProvider(partyId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		return GetRegistry().Get(p.t, partyId)
+		return GetRegistry().Get(p.ctx, partyId)
 	}
 }
 
@@ -101,7 +101,7 @@ func (p *ProcessorImpl) GetByCharacter(characterId uint32) (Model, error) {
 // Efficient provider for character-to-party lookup
 func (p *ProcessorImpl) ByCharacterProvider(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		return GetRegistry().GetPartyByCharacter(p.t, characterId)
+		return GetRegistry().GetPartyByCharacter(p.ctx, characterId)
 	}
 }
 
@@ -157,7 +157,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(leaderId uint32) (Model,
 			return Model{}, ErrNotAsGm
 		}
 
-		party := GetRegistry().Create(p.t, leaderId)
+		party := GetRegistry().Create(p.ctx, leaderId)
 
 		p.l.Debugf("Created party [%d] for leader [%d].", party.Id(), leaderId)
 
@@ -219,7 +219,7 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(partyId uint32, characterI
 			return Model{}, ErrAlreadyIn
 		}
 
-		party, err := GetRegistry().Get(p.t, partyId)
+		party, err := GetRegistry().Get(p.ctx, partyId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -239,7 +239,7 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(partyId uint32, characterI
 		}
 
 		fn := func(m Model) Model { return Model.AddMember(m, characterId) }
-		party, err = GetRegistry().Update(p.t, partyId, fn)
+		party, err = GetRegistry().Update(p.ctx, partyId, fn)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to join party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -251,7 +251,7 @@ func (p *ProcessorImpl) Join(mb *message.Buffer) func(partyId uint32, characterI
 		err = p.cp.JoinParty(characterId, partyId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to join party [%d].", partyId)
-			party, err = GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
+			party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to clean up party [%d], when failing to add member [%d].", partyId, characterId)
 			}
@@ -311,7 +311,7 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 			return Model{}, ErrNotIn
 		}
 
-		party, err := GetRegistry().Get(p.t, partyId)
+		party, err := GetRegistry().Get(p.ctx, partyId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -321,7 +321,7 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 			return Model{}, err
 		}
 
-		party, err = GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
+		party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to expel from party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -333,7 +333,7 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 		err = p.cp.LeaveParty(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to expel from party [%d].", partyId)
-			party, err = GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
+			party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
 			}
@@ -360,7 +360,7 @@ func (p *ProcessorImpl) Expel(mb *message.Buffer) func(actorId uint32, partyId u
 			}
 
 			// Party is empty, disband it
-			GetRegistry().Remove(p.t, partyId)
+			GetRegistry().Remove(p.ctx, partyId)
 			p.l.Infof("Party [%d] disbanded after expelling last member [%d].", partyId, characterId)
 
 			return Model{}, nil
@@ -414,7 +414,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 			return Model{}, ErrNotIn
 		}
 
-		party, err := GetRegistry().Get(p.t, partyId)
+		party, err := GetRegistry().Get(p.ctx, partyId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to retrieve party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -426,7 +426,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 
 		var disbandParty = party.LeaderId() == characterId
 
-		party, err = GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
+		party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.RemoveMember(m, characterId) })
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(characterId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))
@@ -438,7 +438,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 		err = p.cp.LeaveParty(characterId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to leave party [%d].", partyId)
-			party, err = GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
+			party, err = GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.AddMember(m, characterId) })
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to clean up party [%d], when failing to remove member [%d].", partyId, characterId)
 			}
@@ -457,7 +457,7 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(partyId uint32, character
 				}
 			}
 
-			GetRegistry().Remove(p.t, partyId)
+			GetRegistry().Remove(p.ctx, partyId)
 			p.l.Debugf("Party [%d] has been disbanded.", partyId)
 			err = mb.Put(EnvEventStatusTopic, disbandEventProvider(characterId, partyId, c.WorldId(), party.Members()))
 			if err != nil {
@@ -556,7 +556,7 @@ func (p *ProcessorImpl) ChangeLeader(mb *message.Buffer) func(actorId uint32, pa
 			return Model{}, ErrNotIn
 		}
 
-		party, err := GetRegistry().Update(p.t, partyId, func(m Model) Model { return Model.SetLeader(m, characterId) })
+		party, err := GetRegistry().Update(p.ctx, partyId, func(m Model) Model { return Model.SetLeader(m, characterId) })
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to join party [%d].", partyId)
 			err = mb.Put(EnvEventStatusTopic, errorEventProvider(actorId, partyId, c.WorldId(), EventPartyStatusErrorUnexpected, ""))

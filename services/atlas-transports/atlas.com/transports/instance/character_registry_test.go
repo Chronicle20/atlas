@@ -3,18 +3,22 @@ package instance
 import (
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 )
 
-func newTestCharacterRegistry() *CharacterRegistry {
-	return &CharacterRegistry{
-		byCharacter: make(map[uint32]uuid.UUID),
-	}
+func setupCharacterTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitCharacterRegistry(rc)
 }
 
 func TestCharacterRegistry_Add(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 	instanceId := uuid.New()
 
 	cr.Add(42, instanceId)
@@ -23,7 +27,8 @@ func TestCharacterRegistry_Add(t *testing.T) {
 }
 
 func TestCharacterRegistry_Remove(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 	instanceId := uuid.New()
 
 	cr.Add(42, instanceId)
@@ -33,7 +38,8 @@ func TestCharacterRegistry_Remove(t *testing.T) {
 }
 
 func TestCharacterRegistry_GetInstanceForCharacter(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 	instanceId := uuid.New()
 
 	cr.Add(42, instanceId)
@@ -44,19 +50,22 @@ func TestCharacterRegistry_GetInstanceForCharacter(t *testing.T) {
 }
 
 func TestCharacterRegistry_GetInstanceForCharacter_NotFound(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 
 	_, ok := cr.GetInstanceForCharacter(42)
 	assert.False(t, ok)
 }
 
 func TestCharacterRegistry_IsInTransport_False(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 	assert.False(t, cr.IsInTransport(42))
 }
 
 func TestCharacterRegistry_MultipleCharacters(t *testing.T) {
-	cr := newTestCharacterRegistry()
+	setupCharacterTestRegistry(t)
+	cr := getCharacterRegistry()
 	inst1 := uuid.New()
 	inst2 := uuid.New()
 

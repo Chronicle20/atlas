@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -21,20 +20,18 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	t := tenant.MustFromContext(ctx)
-	return &ProcessorImpl{l: l, ctx: ctx, db: db, t: t}
+	return &ProcessorImpl{l: l, ctx: ctx, db: db}
 }
 
 func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
-	return model.SliceMap(modelFromEntity)(getAll(p.t.Id())(p.db))()
+	return model.SliceMap(modelFromEntity)(getAll()(p.db.WithContext(p.ctx)))()
 }
 
 func (p *ProcessorImpl) GetById(id string) (Model, error) {
-	e, err := getById(p.t.Id(), id)(p.db)()
+	e, err := getById(id)(p.db.WithContext(p.ctx))()
 	if err != nil {
 		return Model{}, err
 	}
@@ -42,13 +39,13 @@ func (p *ProcessorImpl) GetById(id string) (Model, error) {
 }
 
 func (p *ProcessorImpl) Create(m Model) error {
-	return CreateGachapon(p.db, m)
+	return CreateGachapon(p.db.WithContext(p.ctx), m)
 }
 
 func (p *ProcessorImpl) Update(id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error {
-	return UpdateGachapon(p.db, p.t.Id(), id, name, commonWeight, uncommonWeight, rareWeight)
+	return UpdateGachapon(p.db.WithContext(p.ctx), id, name, commonWeight, uncommonWeight, rareWeight)
 }
 
 func (p *ProcessorImpl) Delete(id string) error {
-	return DeleteGachapon(p.db, p.t.Id(), id)
+	return DeleteGachapon(p.db.WithContext(p.ctx), id)
 }

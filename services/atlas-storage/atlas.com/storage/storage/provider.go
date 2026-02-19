@@ -4,20 +4,19 @@ import (
 	"atlas-storage/asset"
 
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(worldId world.Id, accountId uint32) (Model, error) {
+func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB) func(worldId world.Id, accountId uint32) (Model, error) {
 	return func(worldId world.Id, accountId uint32) (Model, error) {
 		var e Entity
-		err := db.Where("tenant_id = ? AND world_id = ? AND account_id = ?", tenantId, byte(worldId), accountId).First(&e).Error
+		err := db.Where("world_id = ? AND account_id = ?", byte(worldId), accountId).First(&e).Error
 		if err != nil {
 			return Model{}, err
 		}
 
-		assets, err := asset.GetByStorageId(db, tenantId)(e.Id)
+		assets, err := asset.GetByStorageId(db)(e.Id)
 		if err != nil {
 			l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
 			assets = []asset.Model{}
@@ -34,17 +33,17 @@ func GetByWorldAndAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUI
 	}
 }
 
-func GetByAccountId(l logrus.FieldLogger, db *gorm.DB, tenantId uuid.UUID) func(accountId uint32) ([]Model, error) {
+func GetByAccountId(l logrus.FieldLogger, db *gorm.DB) func(accountId uint32) ([]Model, error) {
 	return func(accountId uint32) ([]Model, error) {
 		var entities []Entity
-		err := db.Where("tenant_id = ? AND account_id = ?", tenantId, accountId).Find(&entities).Error
+		err := db.Where("account_id = ?", accountId).Find(&entities).Error
 		if err != nil {
 			return nil, err
 		}
 
 		var models []Model
 		for _, e := range entities {
-			assets, err := asset.GetByStorageId(db, tenantId)(e.Id)
+			assets, err := asset.GetByStorageId(db)(e.Id)
 			if err != nil {
 				l.WithError(err).Warnf("Failed to load assets for storage %s, returning empty assets", e.Id)
 				assets = []asset.Model{}

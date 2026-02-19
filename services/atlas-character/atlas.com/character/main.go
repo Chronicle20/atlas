@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-character/character"
-	"atlas-character/database"
+	database "github.com/Chronicle20/atlas-database"
 	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 import _ "net/http/pprof"
@@ -50,6 +51,9 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	session.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

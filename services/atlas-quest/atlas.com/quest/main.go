@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-quest/database"
+	database "github.com/Chronicle20/atlas-database"
 	assetConsumer "atlas-quest/kafka/consumer/asset"
 	characterConsumer "atlas-quest/kafka/consumer/character"
 	monsterConsumer "atlas-quest/kafka/consumer/monster"

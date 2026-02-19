@@ -182,7 +182,7 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 		}).Info("Validation failed - terminating saga without compensation.")
 
 		// Remove saga from cache
-		GetCache().Remove(c.t.Id(), s.TransactionId())
+		GetCache().Remove(c.ctx,s.TransactionId())
 
 		// Extract character ID from the validation payload
 		characterId := ExtractCharacterId(failedStep)
@@ -252,7 +252,9 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -312,7 +314,9 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -373,7 +377,9 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -429,7 +435,9 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -551,7 +559,9 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -607,7 +617,9 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -663,7 +675,9 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -719,7 +733,9 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.ctx,updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -746,7 +762,7 @@ func (c *CompensatorImpl) compensateStorageOperation(s Saga, failedStep Step[any
 	}).Info("Storage operation failed - terminating saga with error event.")
 
 	// Remove saga from cache
-	GetCache().Remove(c.t.Id(), s.TransactionId())
+	GetCache().Remove(c.ctx,s.TransactionId())
 
 	// Emit saga failed event with context-appropriate error information
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
@@ -828,7 +844,7 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 	}
 
 	// Remove saga from cache
-	GetCache().Remove(c.t.Id(), s.TransactionId())
+	GetCache().Remove(c.ctx,s.TransactionId())
 
 	// Emit saga failed event
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(

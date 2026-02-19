@@ -20,39 +20,38 @@ type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
-	t   tenant.Model
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
-	t := tenant.MustFromContext(ctx)
-	return &ProcessorImpl{l: l, ctx: ctx, db: db, t: t}
+	return &ProcessorImpl{l: l, ctx: ctx, db: db}
 }
 
 func (p *ProcessorImpl) Seed() (CombinedSeedResult, error) {
-	p.l.Infof("Seeding gachapons for tenant [%s]", p.t.Id())
+	t := tenant.MustFromContext(p.ctx)
+	p.l.Infof("Seeding gachapons for tenant [%s]", t.Id())
 
 	result := CombinedSeedResult{}
 
-	gachaponResult, err := p.seedGachapons()
+	gachaponResult, err := p.seedGachapons(t)
 	if err != nil {
 		return result, fmt.Errorf("failed to seed gachapons: %w", err)
 	}
 	result.Gachapons = gachaponResult
 
-	itemResult, err := p.seedItems()
+	itemResult, err := p.seedItems(t)
 	if err != nil {
 		return result, fmt.Errorf("failed to seed items: %w", err)
 	}
 	result.Items = itemResult
 
-	globalResult, err := p.seedGlobalItems()
+	globalResult, err := p.seedGlobalItems(t)
 	if err != nil {
 		return result, fmt.Errorf("failed to seed global items: %w", err)
 	}
 	result.GlobalItems = globalResult
 
 	p.l.Infof("Seed complete for tenant [%s]: gachapons=%d/%d, items=%d/%d, global=%d/%d",
-		p.t.Id(),
+		t.Id(),
 		result.Gachapons.CreatedCount, result.Gachapons.DeletedCount,
 		result.Items.CreatedCount, result.Items.DeletedCount,
 		result.GlobalItems.CreatedCount, result.GlobalItems.DeletedCount)
@@ -60,10 +59,10 @@ func (p *ProcessorImpl) Seed() (CombinedSeedResult, error) {
 	return result, nil
 }
 
-func (p *ProcessorImpl) seedGachapons() (SeedResult, error) {
+func (p *ProcessorImpl) seedGachapons(t tenant.Model) (SeedResult, error) {
 	result := SeedResult{}
 
-	deletedCount, err := gachapon.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := gachapon.DeleteAllForTenant(p.db.WithContext(p.ctx))
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing gachapons: %w", err)
 	}
@@ -78,7 +77,7 @@ func (p *ProcessorImpl) seedGachapons() (SeedResult, error) {
 
 	var models []gachapon.Model
 	for _, jm := range jsonModels {
-		m, err := gachapon.NewBuilder(p.t.Id(), jm.Id).
+		m, err := gachapon.NewBuilder(t.Id(), jm.Id).
 			SetName(jm.Name).
 			SetNpcIds(jm.NpcIds).
 			SetCommonWeight(jm.CommonWeight).
@@ -94,7 +93,7 @@ func (p *ProcessorImpl) seedGachapons() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = gachapon.BulkCreateGachapon(p.db, models)
+		err = gachapon.BulkCreateGachapon(p.db.WithContext(p.ctx), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)
@@ -106,10 +105,10 @@ func (p *ProcessorImpl) seedGachapons() (SeedResult, error) {
 	return result, nil
 }
 
-func (p *ProcessorImpl) seedItems() (SeedResult, error) {
+func (p *ProcessorImpl) seedItems(t tenant.Model) (SeedResult, error) {
 	result := SeedResult{}
 
-	deletedCount, err := item.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := item.DeleteAllForTenant(p.db.WithContext(p.ctx))
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing items: %w", err)
 	}
@@ -124,7 +123,7 @@ func (p *ProcessorImpl) seedItems() (SeedResult, error) {
 
 	var models []item.Model
 	for _, jm := range jsonModels {
-		m, err := item.NewBuilder(p.t.Id(), 0).
+		m, err := item.NewBuilder(t.Id(), 0).
 			SetGachaponId(jm.GachaponId).
 			SetItemId(jm.ItemId).
 			SetQuantity(jm.Quantity).
@@ -139,7 +138,7 @@ func (p *ProcessorImpl) seedItems() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = item.BulkCreateItem(p.db, models)
+		err = item.BulkCreateItem(p.db.WithContext(p.ctx), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)
@@ -151,10 +150,10 @@ func (p *ProcessorImpl) seedItems() (SeedResult, error) {
 	return result, nil
 }
 
-func (p *ProcessorImpl) seedGlobalItems() (SeedResult, error) {
+func (p *ProcessorImpl) seedGlobalItems(t tenant.Model) (SeedResult, error) {
 	result := SeedResult{}
 
-	deletedCount, err := global.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := global.DeleteAllForTenant(p.db.WithContext(p.ctx))
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing global items: %w", err)
 	}
@@ -169,7 +168,7 @@ func (p *ProcessorImpl) seedGlobalItems() (SeedResult, error) {
 
 	var models []global.Model
 	for _, jm := range jsonModels {
-		m, err := global.NewBuilder(p.t.Id(), 0).
+		m, err := global.NewBuilder(t.Id(), 0).
 			SetItemId(jm.ItemId).
 			SetQuantity(jm.Quantity).
 			SetTier(jm.Tier).
@@ -183,7 +182,7 @@ func (p *ProcessorImpl) seedGlobalItems() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = global.BulkCreateItem(p.db, models)
+		err = global.BulkCreateItem(p.db.WithContext(p.ctx), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)

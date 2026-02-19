@@ -1,7 +1,6 @@
 package main
 
 import (
-	"atlas-fame/database"
 	"atlas-fame/fame"
 	"atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
@@ -9,6 +8,7 @@ import (
 	"atlas-fame/service"
 	"atlas-fame/tracing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 )
 

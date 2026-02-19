@@ -1,40 +1,48 @@
 package character
 
 import (
-	"sync"
+	"context"
+	"strconv"
+
+	"github.com/Chronicle20/atlas-constants/field"
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type Registry struct {
-	mutex             sync.RWMutex
-	characterRegister map[uint32]MapKey
+	reg *atlas.TenantRegistry[uint32, field.Model]
 }
 
 var registry *Registry
-var once sync.Once
 
-func getRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterRegister = make(map[uint32]MapKey)
-	})
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		reg: atlas.NewTenantRegistry[uint32, field.Model](client, "consumable-map-character", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+	}
+}
+
+func GetRegistry() *Registry {
 	return registry
 }
 
-func (r *Registry) AddCharacter(key MapKey, characterId uint32) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	r.characterRegister[characterId] = key
+func (r *Registry) AddCharacter(ctx context.Context, characterId uint32, f field.Model) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Put(ctx, t, characterId, f)
 }
 
-func (r *Registry) RemoveCharacter(characterId uint32) {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	delete(r.characterRegister, characterId)
+func (r *Registry) RemoveCharacter(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.reg.Remove(ctx, t, characterId)
 }
 
-func (r *Registry) GetMap(characterId uint32) (MapKey, bool) {
-	r.mutex.RLock()
-	defer r.mutex.RUnlock()
-	mk, ok := r.characterRegister[characterId]
-	return mk, ok
+func (r *Registry) GetMap(ctx context.Context, characterId uint32) (field.Model, bool) {
+	t := tenant.MustFromContext(ctx)
+	v, err := r.reg.Get(ctx, t, characterId)
+	if err != nil {
+		return field.Model{}, false
+	}
+	return v, true
 }

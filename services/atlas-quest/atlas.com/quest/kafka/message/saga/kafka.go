@@ -8,7 +8,7 @@ const (
 type Action string
 
 const (
-	AwardInventory  Action = "award_inventory"
+	AwardAsset      Action = "award_asset"
 	AwardExperience Action = "award_experience"
 	AwardMesos      Action = "award_mesos"
 	AwardFame       Action = "award_fame"

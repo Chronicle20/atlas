@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -30,12 +29,12 @@ func create(db *gorm.DB, tenantId uuid.UUID, characterId uint32, id uint32, leve
 
 // Returns a function which accepts a character model,and updates the persisted state of the character given a set of
 // modifying functions.
-func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID, characterId uint32) model.Operator[Model] {
-	return func(modifiers ...EntityUpdateFunction) func(tenantId uuid.UUID, characterId uint32) model.Operator[Model] {
-		return func(tenantId uuid.UUID, characterId uint32) model.Operator[Model] {
+func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(characterId uint32) model.Operator[Model] {
+	return func(modifiers ...EntityUpdateFunction) func(characterId uint32) model.Operator[Model] {
+		return func(characterId uint32) model.Operator[Model] {
 			return func(s Model) error {
 				if len(modifiers) > 0 {
-					err := update(db, tenantId, characterId, s.Id(), modifiers...)
+					err := update(db, characterId, s.Id(), modifiers...)
 					if err != nil {
 						return err
 					}
@@ -46,7 +45,7 @@ func dynamicUpdate(db *gorm.DB) func(modifiers ...EntityUpdateFunction) func(ten
 	}
 }
 
-func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, id uint32, modifiers ...EntityUpdateFunction) error {
+func update(db *gorm.DB, characterId uint32, id uint32, modifiers ...EntityUpdateFunction) error {
 	e := &Entity{}
 
 	var columns []string
@@ -55,7 +54,7 @@ func update(db *gorm.DB, tenantId uuid.UUID, characterId uint32, id uint32, modi
 		columns = append(columns, c...)
 		u(e)
 	}
-	return db.Model(&Entity{TenantId: tenantId, CharacterId: characterId, Id: id}).Select(columns).Updates(e).Error
+	return db.Model(&Entity{CharacterId: characterId, Id: id}).Select(columns).Updates(e).Error
 }
 
 func SetExpiration(expiration time.Time) EntityUpdateFunction {
@@ -82,6 +81,6 @@ func SetLevel(level byte) EntityUpdateFunction {
 	}
 }
 
-func deleteByCharacter(db *gorm.DB, t tenant.Model, characterId uint32) error {
-	return db.Where(&Entity{TenantId: t.Id(), CharacterId: characterId}).Delete(&Entity{}).Error
+func deleteByCharacter(db *gorm.DB, characterId uint32) error {
+	return db.Where("character_id = ?", characterId).Delete(&Entity{}).Error
 }

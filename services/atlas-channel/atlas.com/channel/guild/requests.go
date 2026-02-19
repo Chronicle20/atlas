@@ -1,7 +1,6 @@
 package guild
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,9 +17,9 @@ func getBaseRequest() string {
 }
 
 func requestById(id uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+ById, id))
 }
 
 func requestByMemberId(id uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByMemberId, id))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+ByMemberId, id))
 }

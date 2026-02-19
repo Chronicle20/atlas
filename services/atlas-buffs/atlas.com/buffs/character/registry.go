@@ -3,207 +3,196 @@ package character
 import (
 	"atlas-buffs/buff"
 	"atlas-buffs/buff/stat"
+	"context"
+	"encoding/json"
 	"errors"
-	"sync"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 var ErrNotFound = errors.New("not found")
 
 type Registry struct {
-	lock            sync.Mutex
-	characterReg    map[tenant.Model]map[uint32]Model
-	tenantLock      map[tenant.Model]*sync.RWMutex
-	poisonTickState map[tenant.Model]map[uint32]time.Time
+	characters  *atlas.TenantRegistry[uint32, Model]
+	poisonTicks *atlas.TenantRegistry[uint32, time.Time]
+	client      *goredis.Client
 }
 
 var registry *Registry
-var once sync.Once
+
+func InitRegistry(client *goredis.Client) {
+	registry = &Registry{
+		characters: atlas.NewTenantRegistry[uint32, Model](client, "buffs", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		poisonTicks: atlas.NewTenantRegistry[uint32, time.Time](client, "buffs-poison", func(k uint32) string {
+			return strconv.FormatUint(uint64(k), 10)
+		}),
+		client: client,
+	}
+}
 
 func GetRegistry() *Registry {
-	once.Do(func() {
-		registry = &Registry{}
-		registry.characterReg = make(map[tenant.Model]map[uint32]Model)
-		registry.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-		registry.poisonTickState = make(map[tenant.Model]map[uint32]time.Time)
-	})
 	return registry
 }
 
-// getOrCreateTenantMaps returns the character map and lock for a tenant,
-// creating them if they don't exist. This method is thread-safe.
-func (r *Registry) getOrCreateTenantMaps(t tenant.Model) (map[uint32]Model, *sync.RWMutex) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	cm, ok := r.characterReg[t]
-	if !ok {
-		cm = make(map[uint32]Model)
-		r.characterReg[t] = cm
-	}
-
-	cml, ok := r.tenantLock[t]
-	if !ok {
-		cml = &sync.RWMutex{}
-		r.tenantLock[t] = cml
-	}
-
-	return cm, cml
+func (r *Registry) tenantSetKey() string {
+	return "atlas:" + r.characters.Namespace() + ":_tenants"
 }
 
-func (r *Registry) Apply(t tenant.Model, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
+func (r *Registry) Apply(ctx context.Context, worldId world.Id, channelId channel.Id, characterId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) (buff.Model, error) {
+	t := tenant.MustFromContext(ctx)
+
 	b, err := buff.NewBuff(sourceId, level, duration, changes)
 	if err != nil {
 		return buff.Model{}, err
 	}
 
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.Lock()
-	defer cml.Unlock()
-
-	var m Model
-	var ok bool
-	if m, ok = cm[characterId]; !ok {
+	m, err := r.characters.Get(ctx, t, characterId)
+	if errors.Is(err, atlas.ErrNotFound) {
 		m = Model{
-			tenant:      t,
 			worldId:     worldId,
 			channelId:   channelId,
 			characterId: characterId,
 			buffs:       make(map[int32]buff.Model),
 		}
+	} else if err != nil {
+		return buff.Model{}, err
 	} else {
 		m.channelId = channelId
 	}
-	m.buffs[sourceId] = b
 
-	cm[characterId] = m
+	m.buffs[sourceId] = b
+	err = r.characters.Put(ctx, t, characterId, m)
+	if err != nil {
+		return buff.Model{}, err
+	}
+
+	tb, _ := json.Marshal(&t)
+	r.client.SAdd(ctx, r.tenantSetKey(), tb)
+
 	return b, nil
 }
 
-func (r *Registry) Get(t tenant.Model, id uint32) (Model, error) {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
-
-	if m, ok := cm[id]; ok {
-		return m, nil
+func (r *Registry) Get(ctx context.Context, id uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, id)
+	if errors.Is(err, atlas.ErrNotFound) {
+		return Model{}, ErrNotFound
 	}
-	return Model{}, ErrNotFound
+	return m, err
 }
 
-func (r *Registry) GetTenants() ([]tenant.Model, error) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	var res = make([]tenant.Model, 0)
-	for t := range r.characterReg {
-		res = append(res, t)
+func (r *Registry) GetTenants(ctx context.Context) ([]tenant.Model, error) {
+	members, err := r.client.SMembers(ctx, r.tenantSetKey()).Result()
+	if err != nil {
+		return nil, err
 	}
-	return res, nil
+	var tenants []tenant.Model
+	for _, mb := range members {
+		var t tenant.Model
+		if err := json.Unmarshal([]byte(mb), &t); err != nil {
+			continue
+		}
+		tenants = append(tenants, t)
+	}
+	return tenants, nil
 }
 
-func (r *Registry) GetCharacters(t tenant.Model) []Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
-
-	res := make([]Model, 0, len(cm))
-	for _, m := range cm {
-		res = append(res, m)
+func (r *Registry) GetCharacters(ctx context.Context) []Model {
+	t := tenant.MustFromContext(ctx)
+	vals, err := r.characters.GetAllValues(ctx, t)
+	if err != nil {
+		return nil
 	}
-	return res
+	return vals
 }
 
-func (r *Registry) Cancel(t tenant.Model, characterId uint32, sourceId int32) (buff.Model, error) {
-	cm, cml := r.getOrCreateTenantMaps(t)
+func (r *Registry) Cancel(ctx context.Context, characterId uint32, sourceId int32) (buff.Model, error) {
+	t := tenant.MustFromContext(ctx)
 
-	cml.Lock()
-	defer cml.Unlock()
-
-	c, ok := cm[characterId]
-	if !ok {
+	m, err := r.characters.Get(ctx, t, characterId)
+	if errors.Is(err, atlas.ErrNotFound) {
 		return buff.Model{}, ErrNotFound
 	}
+	if err != nil {
+		return buff.Model{}, err
+	}
 
-	var b buff.Model
+	var cancelled buff.Model
 	var found bool
 	not := make(map[int32]buff.Model)
-	for id, m := range c.buffs {
-		if m.SourceId() != sourceId {
-			not[id] = m
+	for id, b := range m.buffs {
+		if b.SourceId() != sourceId {
+			not[id] = b
 		} else {
-			b = m
+			cancelled = b
 			found = true
 		}
 	}
-	c.buffs = not
-	cm[characterId] = c
+	m.buffs = not
+	_ = r.characters.Put(ctx, t, characterId, m)
 
 	if !found {
 		return buff.Model{}, ErrNotFound
 	}
-	return b, nil
+	return cancelled, nil
 }
 
-func (r *Registry) GetExpired(t tenant.Model, characterId uint32) []buff.Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
+func (r *Registry) GetExpired(ctx context.Context, characterId uint32) []buff.Model {
+	t := tenant.MustFromContext(ctx)
 
-	cml.Lock()
-	defer cml.Unlock()
-
-	c, ok := cm[characterId]
-	if !ok {
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		return make([]buff.Model, 0)
 	}
 
 	not := make(map[int32]buff.Model)
-	res := make([]buff.Model, 0)
-	for id, m := range c.buffs {
-		if m.Expired() {
-			res = append(res, m)
+	var expired []buff.Model
+	for id, b := range m.buffs {
+		if b.Expired() {
+			expired = append(expired, b)
 		} else {
-			not[id] = m
+			not[id] = b
 		}
 	}
-	c.buffs = not
-	cm[characterId] = c
-	return res
+	m.buffs = not
+	_ = r.characters.Put(ctx, t, characterId, m)
+
+	if len(expired) == 0 {
+		return make([]buff.Model, 0)
+	}
+	return expired
 }
 
-func (r *Registry) CancelAll(t tenant.Model, characterId uint32) []buff.Model {
-	cm, cml := r.getOrCreateTenantMaps(t)
+func (r *Registry) CancelAll(ctx context.Context, characterId uint32) []buff.Model {
+	t := tenant.MustFromContext(ctx)
 
-	cml.Lock()
-	defer cml.Unlock()
-
-	c, ok := cm[characterId]
-	if !ok {
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		return make([]buff.Model, 0)
 	}
 
-	res := make([]buff.Model, 0, len(c.buffs))
-	for _, m := range c.buffs {
-		res = append(res, m)
+	all := make([]buff.Model, 0, len(m.buffs))
+	for _, b := range m.buffs {
+		all = append(all, b)
 	}
-	c.buffs = make(map[int32]buff.Model)
-	cm[characterId] = c
-	return res
+	m.buffs = make(map[int32]buff.Model)
+	_ = r.characters.Put(ctx, t, characterId, m)
+
+	return all
 }
 
-func (r *Registry) HasImmunity(t tenant.Model, characterId uint32) bool {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
-
-	m, ok := cm[characterId]
-	if !ok {
+func (r *Registry) HasImmunity(ctx context.Context, characterId uint32) bool {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
 		return false
 	}
 	return hasImmunityBuff(m)
@@ -217,14 +206,15 @@ type PoisonTickEntry struct {
 	Amount      int32
 }
 
-func (r *Registry) GetPoisonCharacters(t tenant.Model) []PoisonTickEntry {
-	cm, cml := r.getOrCreateTenantMaps(t)
-
-	cml.RLock()
-	defer cml.RUnlock()
+func (r *Registry) GetPoisonCharacters(ctx context.Context) []PoisonTickEntry {
+	t := tenant.MustFromContext(ctx)
+	vals, err := r.characters.GetAllValues(ctx, t)
+	if err != nil {
+		return nil
+	}
 
 	var results []PoisonTickEntry
-	for _, m := range cm {
+	for _, m := range vals {
 		for _, b := range m.buffs {
 			if b.Expired() {
 				continue
@@ -246,42 +236,21 @@ func (r *Registry) GetPoisonCharacters(t tenant.Model) []PoisonTickEntry {
 	return results
 }
 
-func (r *Registry) GetLastPoisonTick(t tenant.Model, characterId uint32) (time.Time, bool) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if tm, ok := r.poisonTickState[t]; ok {
-		if lt, ok := tm[characterId]; ok {
-			return lt, true
-		}
+func (r *Registry) GetLastPoisonTick(ctx context.Context, characterId uint32) (time.Time, bool) {
+	t := tenant.MustFromContext(ctx)
+	tick, err := r.poisonTicks.Get(ctx, t, characterId)
+	if err != nil {
+		return time.Time{}, false
 	}
-	return time.Time{}, false
+	return tick, true
 }
 
-func (r *Registry) UpdatePoisonTick(t tenant.Model, characterId uint32, at time.Time) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if _, ok := r.poisonTickState[t]; !ok {
-		r.poisonTickState[t] = make(map[uint32]time.Time)
-	}
-	r.poisonTickState[t][characterId] = at
+func (r *Registry) UpdatePoisonTick(ctx context.Context, characterId uint32, at time.Time) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.poisonTicks.Put(ctx, t, characterId, at)
 }
 
-func (r *Registry) ClearPoisonTick(t tenant.Model, characterId uint32) {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-
-	if tm, ok := r.poisonTickState[t]; ok {
-		delete(tm, characterId)
-	}
-}
-
-// ResetForTesting clears all registry state. Only for use in tests.
-func (r *Registry) ResetForTesting() {
-	r.lock.Lock()
-	defer r.lock.Unlock()
-	r.characterReg = make(map[tenant.Model]map[uint32]Model)
-	r.tenantLock = make(map[tenant.Model]*sync.RWMutex)
-	r.poisonTickState = make(map[tenant.Model]map[uint32]time.Time)
+func (r *Registry) ClearPoisonTick(ctx context.Context, characterId uint32) {
+	t := tenant.MustFromContext(ctx)
+	_ = r.poisonTicks.Remove(ctx, t, characterId)
 }

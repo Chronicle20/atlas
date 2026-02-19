@@ -84,7 +84,7 @@ func handleGetProjectionRequest() func(d *rest.HandlerDependency, c *rest.Handle
 		return ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				// Get projection from manager
-				proj, ok := GetManager().Get(characterId)
+				proj, ok := GetManager().Get(d.Context(), characterId)
 				if !ok {
 					d.Logger().Debugf("Projection not found for character [%d]", characterId)
 					w.WriteHeader(http.StatusNotFound)
@@ -114,7 +114,7 @@ func handleGetProjectionAssetRequest() func(d *rest.HandlerDependency, c *rest.H
 				return ParseSlot(d.Logger(), func(slot int16) http.HandlerFunc {
 					return func(w http.ResponseWriter, r *http.Request) {
 						// Get projection from manager
-						proj, ok := GetManager().Get(characterId)
+						proj, ok := GetManager().Get(d.Context(), characterId)
 						if !ok {
 							d.Logger().Debugf("Projection not found for character [%d]", characterId)
 							w.WriteHeader(http.StatusNotFound)

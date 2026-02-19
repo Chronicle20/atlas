@@ -51,10 +51,6 @@ func (m *MockProcessor) GetById(decorators ...model.Decorator[character.Model]) 
 	}
 }
 
-func (m *MockProcessor) PetModelDecorator(c character.Model) character.Model {
-	return c
-}
-
 func (m *MockProcessor) InventoryDecorator(c character.Model) character.Model {
 	return c
 }

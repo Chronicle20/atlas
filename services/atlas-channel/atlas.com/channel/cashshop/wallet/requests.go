@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestByAccountId(accountId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource, accountId))
 }

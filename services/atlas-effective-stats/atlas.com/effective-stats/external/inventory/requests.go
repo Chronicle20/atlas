@@ -1,7 +1,6 @@
 package inventory
 
 import (
-	"atlas-effective-stats/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -18,5 +17,5 @@ func getBaseRequest() string {
 // RequestEquipCompartment returns a request to fetch the equip compartment with assets
 // type=1 is the equip inventory type
 func RequestEquipCompartment(characterId uint32) requests.Request[CompartmentRestModel] {
-	return rest.MakeGetRequest[CompartmentRestModel](fmt.Sprintf(getBaseRequest()+CompartmentByType, characterId, 1))
+	return requests.GetRequest[CompartmentRestModel](fmt.Sprintf(getBaseRequest()+CompartmentByType, characterId, 1))
 }

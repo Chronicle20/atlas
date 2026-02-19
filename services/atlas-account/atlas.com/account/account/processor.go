@@ -84,14 +84,14 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
-type IdOperator func(tenant.Model, uint32) error
+type IdOperator func(uint32) error
 
 func (p *ProcessorImpl) GetById(accountId uint32) (Model, error) {
 	return p.ByIdProvider(accountId)()
 }
 
 func (p *ProcessorImpl) ByIdProvider(accountId uint32) model.Provider[Model] {
-	return model.Map(decorateState(p.t))(model.Map(Make)(entityById(p.t, accountId)(p.db)))
+	return model.Map(decorateState(p.t))(model.Map(Make)(entityById(accountId)(p.db.WithContext(p.ctx))))
 }
 
 func (p *ProcessorImpl) GetByName(name string) (Model, error) {
@@ -99,7 +99,7 @@ func (p *ProcessorImpl) GetByName(name string) (Model, error) {
 }
 
 func (p *ProcessorImpl) ByNameProvider(name string) model.Provider[Model] {
-	return model.Map(decorateState(p.t))(model.FirstProvider(model.SliceMap(Make)(entitiesByName(p.t, name)(p.db))(model.ParallelMap()), model.Filters[Model]()))
+	return model.Map(decorateState(p.t))(model.FirstProvider(model.SliceMap(Make)(entitiesByName(name)(p.db.WithContext(p.ctx)))(model.ParallelMap()), model.Filters[Model]()))
 }
 
 func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
@@ -107,7 +107,7 @@ func (p *ProcessorImpl) GetByTenant() ([]Model, error) {
 }
 
 func (p *ProcessorImpl) ByTenantProvider() ([]Model, error) {
-	return model.SliceMap(decorateState(p.t))(model.SliceMap(Make)(allInTenant(p.t)(p.db))(model.ParallelMap()))(model.ParallelMap())()
+	return model.SliceMap(decorateState(p.t))(model.SliceMap(Make)(allInTenant()(p.db.WithContext(p.ctx)))(model.ParallelMap()))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) LoggedInTenantProvider() ([]Model, error) {
@@ -115,18 +115,21 @@ func (p *ProcessorImpl) LoggedInTenantProvider() ([]Model, error) {
 }
 
 // allTenants Retrieves all tenants with accounts associated.
-var allTenants = model.FixedProvider(Get().Tenants())
+var allTenants model.Provider[[]tenant.Model] = func() ([]tenant.Model, error) {
+	return GetRegistry().Tenants(context.Background()), nil
+}
 
-func decorateState(tenant tenant.Model) model.Transformer[Model, Model] {
+func decorateState(t tenant.Model) model.Transformer[Model, Model] {
 	return func(m Model) (Model, error) {
-		st := Get().MaximalState(AccountKey{Tenant: tenant, AccountId: m.Id()})
+		ctx := tenant.WithContext(context.Background(), t)
+		st := GetRegistry().MaximalState(ctx, AccountKey{Tenant: t, AccountId: m.Id()})
 		m.state = st
 		return m, nil
 	}
 }
 
 func GetInTransition(timeout time.Duration) ([]AccountKey, error) {
-	return model.FixedProvider(Get().GetExpiredInTransition(timeout))()
+	return model.FixedProvider(GetRegistry().GetExpiredInTransition(context.Background(), timeout))()
 }
 
 func (p *ProcessorImpl) GetOrCreate(mb *message.Buffer) func(name string, password string, automaticRegister bool) (Model, error) {
@@ -164,7 +167,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(name string) func(passwo
 			}
 			p.l.Debugf("Defaulting gender to [%d]. 0 = Male, 1 = Female, 10 = UI Choose. This is determined by Region and Version capabilities.", gender)
 
-			m, err := create(p.db)(p.t, name, string(hashPass), gender)
+			m, err := create(p.db.WithContext(p.ctx), p.t.Id(), name, string(hashPass), gender)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create account [%s].", name)
 				return Model{}, err
@@ -214,7 +217,7 @@ func (p *ProcessorImpl) Update(accountId uint32, input Model) (Model, error) {
 		return a, nil
 	}
 
-	err = update(p.db)(modifiers...)(p.t, accountId)
+	err = update(p.db.WithContext(p.ctx))(modifiers...)(accountId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to update account.")
 		return Model{}, err
@@ -242,13 +245,13 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(accountId uint32) error 
 			return ErrAccountLoggedIn
 		}
 
-		err = deleteById(p.db)(p.t, accountId)
+		err = deleteById(p.db.WithContext(p.ctx))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to delete account [%d].", accountId)
 			return err
 		}
 
-		Get().Terminate(AccountKey{Tenant: p.t, AccountId: accountId})
+		GetRegistry().Terminate(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId})
 
 		p.l.Infof("Deleted account [%d] [%s].", a.Id(), a.Name())
 		return mb.Put(account2.EnvEventTopicStatus, deletedEventProvider()(a.Id(), a.Name()))
@@ -266,7 +269,7 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(sessionId uuid.UUID) func
 
 				ak := AccountKey{Tenant: p.t, AccountId: accountId}
 				sk := ServiceKey{SessionId: sessionId, Service: Service(issuer)}
-				err = Get().Login(ak, sk)
+				err = GetRegistry().Login(p.ctx, ak, sk)
 				if err != nil {
 					return err
 				}
@@ -293,12 +296,12 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(sessionId uuid.UUID) fun
 				}
 
 				if sessionId == uuid.Nil {
-					ok := Get().Terminate(AccountKey{Tenant: p.t, AccountId: accountId})
+					ok := GetRegistry().Terminate(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId})
 					if !ok {
 						return errors.New("error while logging out")
 					}
 				} else {
-					ok := Get().Logout(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+					ok := GetRegistry().Logout(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 					if !ok {
 						return errors.New("error while logging out")
 					}
@@ -410,7 +413,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 		}
 
 		p.l.Debugf("Received request to progress state for account [%d] to state [%d] from state [%d].", accountId, state, a.State())
-		for k, v := range Get().GetStates(AccountKey{Tenant: p.t, AccountId: accountId}) {
+		for k, v := range GetRegistry().GetStates(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}) {
 			p.l.Debugf("Has state [%d] for [%s] via session [%s].", v.State, k.Service, k.SessionId.String())
 		}
 		if a.State() == StateNotLoggedIn {
@@ -433,7 +436,7 @@ func (p *ProcessorImpl) ProgressState(mb *message.Buffer) func(sessionId uuid.UU
 			return mb.Put(account2.EnvEventSessionStatusTopic, stateChangedStatusProvider(sessionId, a.Id(), a.Name(), uint8(StateLoggedIn), params))
 		}
 		if state == StateTransition {
-			err = Get().Transition(AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
+			err = GetRegistry().Transition(p.ctx, AccountKey{Tenant: p.t, AccountId: accountId}, ServiceKey{SessionId: sessionId, Service: Service(issuer)})
 			if err == nil {
 				p.l.Debugf("State transition triggered a transition.")
 			}
@@ -465,7 +468,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 		if success {
 			if a.PinAttempts() > 0 {
 				p.l.Debugf("Resetting PIN attempts for account [%d] after successful PIN entry.", accountId)
-				err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+				err = update(p.db.WithContext(p.ctx))(updatePinAttempts(0))(accountId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reset PIN attempts for account [%d].", accountId)
 					return 0, false, err
@@ -504,7 +507,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 			}
 
 			// Reset counter after issuing ban
-			err = update(p.db)(updatePinAttempts(0))(p.t, accountId)
+			err = update(p.db.WithContext(p.ctx))(updatePinAttempts(0))(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to reset PIN attempts after ban for account [%d].", accountId)
 				return 0, true, err
@@ -512,7 +515,7 @@ func (p *ProcessorImpl) RecordPinAttempt(mb *message.Buffer) func(accountId uint
 			return 0, true, nil
 		}
 
-		err = update(p.db)(updatePinAttempts(newAttempts))(p.t, accountId)
+		err = update(p.db.WithContext(p.ctx))(updatePinAttempts(newAttempts))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to update PIN attempts for account [%d].", accountId)
 			return newAttempts, false, err
@@ -543,7 +546,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 		if success {
 			if a.PicAttempts() > 0 {
 				p.l.Debugf("Resetting PIC attempts for account [%d] after successful PIC entry.", accountId)
-				err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+				err = update(p.db.WithContext(p.ctx))(updatePicAttempts(0))(accountId)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to reset PIC attempts for account [%d].", accountId)
 					return 0, false, err
@@ -582,7 +585,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 			}
 
 			// Reset counter after issuing ban
-			err = update(p.db)(updatePicAttempts(0))(p.t, accountId)
+			err = update(p.db.WithContext(p.ctx))(updatePicAttempts(0))(accountId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to reset PIC attempts after ban for account [%d].", accountId)
 				return 0, true, err
@@ -590,7 +593,7 @@ func (p *ProcessorImpl) RecordPicAttempt(mb *message.Buffer) func(accountId uint
 			return 0, true, nil
 		}
 
-		err = update(p.db)(updatePicAttempts(newAttempts))(p.t, accountId)
+		err = update(p.db.WithContext(p.ctx))(updatePicAttempts(newAttempts))(accountId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to update PIC attempts for account [%d].", accountId)
 			return newAttempts, false, err

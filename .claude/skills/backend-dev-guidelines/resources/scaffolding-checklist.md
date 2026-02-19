@@ -166,6 +166,13 @@ After scaffolding is complete, run these skills to verify the work:
 1. `/service-doc` — generates/verifies service documentation
 2. `/backend-audit` — audits against Atlas backend developer guidelines
 
+## Database & Tenant Filtering Notes
+- `database.Connect()` automatically registers GORM tenant-filtering callbacks — do NOT add `RegisterTenantCallbacks` to `main.go`
+- Providers do NOT take `tenantId` — tenant filtering is automatic via `db.WithContext(ctx)`
+- Only `create` functions need `tenantId` (to set the entity field)
+- Test files using SQLite directly must call `database.RegisterTenantCallbacks(l, db)` after `gorm.Open()`
+- Entity structs should use `TenantId` (not `TenantID`) for field naming consistency
+
 ## Conditional Steps
 - Steps 4 and 5 only apply to services that expose REST endpoints
 - Kafka-only services (no REST API) skip Bruno and ingress

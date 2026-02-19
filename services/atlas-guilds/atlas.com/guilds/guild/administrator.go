@@ -2,14 +2,13 @@ package guild
 
 import (
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
-func create(db *gorm.DB, tenant tenant.Model, worldId world.Id, leaderId uint32, name string) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, worldId world.Id, leaderId uint32, name string) (Model, error) {
 	e := &Entity{
-		TenantId: tenant.Id(),
+		TenantId: tenantId,
 		WorldId:  byte(worldId),
 		Name:     name,
 		LeaderId: leaderId,
@@ -22,8 +21,8 @@ func create(db *gorm.DB, tenant tenant.Model, worldId world.Id, leaderId uint32,
 	return Make(*e)
 }
 
-func updateEmblem(db *gorm.DB, tenantId uuid.UUID, guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) (Model, error) {
-	ge, err := getById(tenantId, guildId)(db)()
+func updateEmblem(db *gorm.DB, guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) (Model, error) {
+	ge, err := getById(guildId)(db)()
 	if err != nil {
 		return Model{}, err
 	}
@@ -40,8 +39,8 @@ func updateEmblem(db *gorm.DB, tenantId uuid.UUID, guildId uint32, logo uint16, 
 	return Make(ge)
 }
 
-func updateNotice(db *gorm.DB, tenantId uuid.UUID, guildId uint32, notice string) (Model, error) {
-	ge, err := getById(tenantId, guildId)(db)()
+func updateNotice(db *gorm.DB, guildId uint32, notice string) (Model, error) {
+	ge, err := getById(guildId)(db)()
 	if err != nil {
 		return Model{}, err
 	}
@@ -53,8 +52,8 @@ func updateNotice(db *gorm.DB, tenantId uuid.UUID, guildId uint32, notice string
 	return Make(ge)
 }
 
-func updateCapacity(db *gorm.DB, tenantId uuid.UUID, guildId uint32) (Model, error) {
-	ge, err := getById(tenantId, guildId)(db)()
+func updateCapacity(db *gorm.DB, guildId uint32) (Model, error) {
+	ge, err := getById(guildId)(db)()
 	if err != nil {
 		return Model{}, err
 	}
@@ -66,6 +65,6 @@ func updateCapacity(db *gorm.DB, tenantId uuid.UUID, guildId uint32) (Model, err
 	return Make(ge)
 }
 
-func deleteGuild(db *gorm.DB, tenantId uuid.UUID, guildId uint32) error {
-	return db.Where("tenant_id = ? AND id = ?", tenantId, guildId).Delete(&Entity{}).Error
+func deleteGuild(db *gorm.DB, guildId uint32) error {
+	return db.Where("id = ?", guildId).Delete(&Entity{}).Error
 }

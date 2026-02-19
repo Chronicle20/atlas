@@ -56,7 +56,7 @@ func handleGetMessengers(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		server.Marshal[[]RestModel](d.Logger())(w)(c.ServerInformation())(res)
+		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 	}
 }
 
@@ -77,7 +77,7 @@ func handleGetMessenger(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			server.Marshal[RestModel](d.Logger())(w)(c.ServerInformation())(res)
+			server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 		}
 	})
 }
@@ -99,7 +99,7 @@ func handleGetMessengerMembers(d *rest.HandlerDependency, c *rest.HandlerContext
 				return
 			}
 
-			server.Marshal[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(res.Members)
+			server.MarshalResponse[[]MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res.Members)
 		}
 	})
 }
@@ -145,7 +145,7 @@ func handleGetMessengerMember(d *rest.HandlerDependency, c *rest.HandlerContext)
 					return
 				}
 
-				server.Marshal[MemberRestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[MemberRestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	})

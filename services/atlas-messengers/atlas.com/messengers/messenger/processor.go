@@ -8,10 +8,14 @@ import (
 	"atlas-messengers/kafka/producer"
 	"context"
 	"errors"
-	"sync"
+	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,58 +59,123 @@ func GetById(ctx context.Context) func(messengerId uint32) (Model, error) {
 	}
 }
 
-var createAndJoinLock = sync.RWMutex{}
+var createLock *atlas.Lock
+
+func InitLock(client *goredis.Client) {
+	createLock = atlas.NewLockWithTTL(client, "messenger-create", 10*time.Second)
+}
+
+var ErrLockFailed = errors.New("failed to acquire create lock")
+
+func acquireCreateLock(ctx context.Context, characterId uint32) (string, error) {
+	t := tenant.MustFromContext(ctx)
+	key := fmt.Sprintf("%s:%d", atlas.TenantKey(t), characterId)
+	deadline := time.Now().Add(3 * time.Second)
+	for time.Now().Before(deadline) {
+		ok, err := createLock.Acquire(ctx, key)
+		if err != nil {
+			return "", err
+		}
+		if ok {
+			return key, nil
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+	return "", ErrLockFailed
+}
+
+// createCore contains the create messenger business logic without lock acquisition.
+func createCore(l logrus.FieldLogger, ctx context.Context, transactionID uuid.UUID, characterId uint32) (Model, error) {
+	c, err := character.GetById(l)(ctx)(characterId)
+	if err != nil {
+		l.WithError(err).Errorf("Error getting character [%d].", characterId)
+		err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
+		}
+		return Model{}, err
+	}
+
+	if c.MessengerId() != 0 {
+		l.Errorf("Character [%d] already in messenger. Cannot create another one.", characterId)
+		err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined1, ""))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
+		}
+		return Model{}, ErrAlreadyIn
+	}
+
+	p := CreateMessenger(ctx)(characterId)
+
+	l.Debugf("Created messenger [%d] for character [%d].", p.Id(), characterId)
+
+	err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(createdEventProvider(transactionID, characterId, p.Id(), c.WorldId()))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to announce the messenger [%d] was created.", characterId)
+		err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
+		}
+		return Model{}, err
+	}
+
+	err = character.JoinMessenger(l)(ctx)(transactionID, characterId, p.Id())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to have character [%d] join messenger [%d]", characterId, p.Id())
+		err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		if err != nil {
+			l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
+		}
+		return Model{}, err
+	}
+
+	return p, nil
+}
+
+// createCoreBuffered contains the create messenger business logic with buffered event emission.
+func createCoreBuffered(l logrus.FieldLogger, ctx context.Context, buf *message.Buffer, transactionID uuid.UUID, characterId uint32) (Model, error) {
+	c, err := character.GetById(l)(ctx)(characterId)
+	if err != nil {
+		l.WithError(err).Errorf("Error getting character [%d].", characterId)
+		_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		return Model{}, err
+	}
+
+	if c.MessengerId() != 0 {
+		l.Errorf("Character [%d] already in messenger. Cannot create another one.", characterId)
+		_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined1, ""))
+		return Model{}, ErrAlreadyIn
+	}
+
+	p := CreateMessenger(ctx)(characterId)
+	l.Debugf("Created messenger [%d] for character [%d].", p.Id(), characterId)
+
+	err = buf.Put(messenger.EnvEventStatusTopic, createdEventProvider(transactionID, characterId, p.Id(), c.WorldId()))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to buffer messenger created event.")
+		_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		return Model{}, err
+	}
+
+	err = character.JoinMessenger(l)(ctx)(transactionID, characterId, p.Id())
+	if err != nil {
+		l.WithError(err).Errorf("Unable to have character [%d] join messenger [%d]", characterId, p.Id())
+		_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
+		return Model{}, err
+	}
+
+	return p, nil
+}
 
 func Create(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) (Model, error) {
 	return func(ctx context.Context) func(transactionID uuid.UUID, characterId uint32) (Model, error) {
 		return func(transactionID uuid.UUID, characterId uint32) (Model, error) {
-			createAndJoinLock.Lock()
-			defer createAndJoinLock.Unlock()
-
-			c, err := character.GetById(l)(ctx)(characterId)
+			key, err := acquireCreateLock(ctx, characterId)
 			if err != nil {
-				l.WithError(err).Errorf("Error getting character [%d].", characterId)
-				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
-				}
 				return Model{}, err
 			}
-
-			if c.MessengerId() != 0 {
-				l.Errorf("Character [%d] already in messenger. Cannot create another one.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined1, ""))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce messenger create error to [%d].", characterId)
-				}
-				return Model{}, ErrAlreadyIn
-			}
-
-			p := CreateMessenger(ctx)(characterId)
-
-			l.Debugf("Created messenger [%d] for character [%d].", p.Id(), characterId)
-
-			err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(createdEventProvider(transactionID, characterId, p.Id(), c.WorldId()))
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce the messenger [%d] was created.", characterId)
-				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
-				}
-				return Model{}, err
-			}
-
-			err = character.JoinMessenger(l)(ctx)(transactionID, characterId, p.Id())
-			if err != nil {
-				l.WithError(err).Errorf("Unable to have character [%d] join messenger [%d]", characterId, p.Id())
-				err = producer.ProviderImpl(l)(ctx)(messenger.EnvEventStatusTopic)(errorEventProvider(transactionID, characterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to announce messenger [%d] error.", p.Id())
-				}
-				return Model{}, err
-			}
-
-			return p, nil
+			defer createLock.Release(ctx, key)
+			return createCore(l, ctx, transactionID, characterId)
 		}
 	}
 }
@@ -273,8 +342,11 @@ func Leave(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uu
 func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(transactionID uuid.UUID, actorId uint32, characterId uint32) error {
 	return func(ctx context.Context) func(transactionID uuid.UUID, actorId uint32, characterId uint32) error {
 		return func(transactionID uuid.UUID, actorId uint32, characterId uint32) error {
-			createAndJoinLock.Lock()
-			defer createAndJoinLock.Unlock()
+			key, err := acquireCreateLock(ctx, actorId)
+			if err != nil {
+				return err
+			}
+			defer createLock.Release(ctx, key)
 
 			a, err := character.GetById(l)(ctx)(actorId)
 			if err != nil {
@@ -306,7 +378,7 @@ func RequestInvite(l logrus.FieldLogger) func(ctx context.Context) func(transact
 
 			var p Model
 			if a.MessengerId() == 0 {
-				p, err = Create(l)(ctx)(transactionID, actorId)
+				p, err = createCore(l, ctx, transactionID, actorId)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to automatically create messenger [%d].", a.MessengerId())
 					return err
@@ -429,40 +501,12 @@ func CreateAndEmit(l logrus.FieldLogger) func(ctx context.Context) func(input Cr
 		ep := producer.ProviderImpl(l)(ctx)
 		return message.EmitAlways[Model, CreateInput](ep)(func(buf *message.Buffer) func(CreateInput) (Model, error) {
 			return func(input CreateInput) (Model, error) {
-				createAndJoinLock.Lock()
-				defer createAndJoinLock.Unlock()
-
-				c, err := character.GetById(l)(ctx)(input.CharacterId)
+				key, err := acquireCreateLock(ctx, input.CharacterId)
 				if err != nil {
-					l.WithError(err).Errorf("Error getting character [%d].", input.CharacterId)
-					_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(input.TransactionID, input.CharacterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
 					return Model{}, err
 				}
-
-				if c.MessengerId() != 0 {
-					l.Errorf("Character [%d] already in messenger. Cannot create another one.", input.CharacterId)
-					_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(input.TransactionID, input.CharacterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorTypeAlreadyJoined1, ""))
-					return Model{}, ErrAlreadyIn
-				}
-
-				p := CreateMessenger(ctx)(input.CharacterId)
-				l.Debugf("Created messenger [%d] for character [%d].", p.Id(), input.CharacterId)
-
-				err = buf.Put(messenger.EnvEventStatusTopic, createdEventProvider(input.TransactionID, input.CharacterId, p.Id(), c.WorldId()))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to buffer messenger created event.")
-					_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(input.TransactionID, input.CharacterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
-					return Model{}, err
-				}
-
-				err = character.JoinMessenger(l)(ctx)(input.TransactionID, input.CharacterId, p.Id())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to have character [%d] join messenger [%d]", input.CharacterId, p.Id())
-					_ = buf.Put(messenger.EnvEventStatusTopic, errorEventProvider(input.TransactionID, input.CharacterId, 0, c.WorldId(), messenger.EventMessengerStatusErrorUnexpected, ""))
-					return Model{}, err
-				}
-
-				return p, nil
+				defer createLock.Release(ctx, key)
+				return createCoreBuffered(l, ctx, buf, input.TransactionID, input.CharacterId)
 			}
 		})
 	}
@@ -611,8 +655,11 @@ func RequestInviteAndEmit(l logrus.FieldLogger) func(ctx context.Context) func(i
 		ep := producer.ProviderImpl(l)(ctx)
 		return message.EmitAlwaysNoResult[RequestInviteInput](ep)(func(buf *message.Buffer) func(RequestInviteInput) error {
 			return func(input RequestInviteInput) error {
-				createAndJoinLock.Lock()
-				defer createAndJoinLock.Unlock()
+				key, err := acquireCreateLock(ctx, input.ActorId)
+				if err != nil {
+					return err
+				}
+				defer createLock.Release(ctx, key)
 
 				a, err := character.GetById(l)(ctx)(input.ActorId)
 				if err != nil {
@@ -635,8 +682,7 @@ func RequestInviteAndEmit(l logrus.FieldLogger) func(ctx context.Context) func(i
 
 				var p Model
 				if a.MessengerId() == 0 {
-					// Use the AndEmit version for nested create
-					p, err = CreateAndEmit(l)(ctx)(CreateInput{TransactionID: input.TransactionID, CharacterId: input.ActorId})
+					p, err = createCoreBuffered(l, ctx, buf, input.TransactionID, input.ActorId)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to automatically create messenger [%d].", a.MessengerId())
 						return err

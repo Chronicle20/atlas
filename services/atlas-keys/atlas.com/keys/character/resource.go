@@ -84,7 +84,7 @@ func handleGetKeyMap(db *gorm.DB) rest.GetHandler {
 					return
 				}
 
-				server.Marshal[[]key.RestModel](d.Logger())(w)(c.ServerInformation())(res)
+				server.MarshalResponse[[]key.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 			}
 		})
 	}

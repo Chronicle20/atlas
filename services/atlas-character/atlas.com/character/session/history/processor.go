@@ -51,10 +51,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 func (p *ProcessorImpl) StartSession(characterId uint32, ch channel.Model) (Model, error) {
 	// First, close any existing active session (safety check)
-	_ = closeSession(p.db, p.t.Id(), characterId)
+	_ = closeSession(p.db.WithContext(p.ctx), characterId)
 
 	// Create new session
-	m, err := createSession(p.db, p.t.Id(), characterId, ch)
+	m, err := createSession(p.db.WithContext(p.ctx), p.t.Id(), characterId, ch)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create session for character [%d].", characterId)
 		return Model{}, err
@@ -65,7 +65,7 @@ func (p *ProcessorImpl) StartSession(characterId uint32, ch channel.Model) (Mode
 }
 
 func (p *ProcessorImpl) EndSession(characterId uint32) error {
-	err := closeSession(p.db, p.t.Id(), characterId)
+	err := closeSession(p.db.WithContext(p.ctx), characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to end session for character [%d].", characterId)
 		return err
@@ -76,15 +76,15 @@ func (p *ProcessorImpl) EndSession(characterId uint32) error {
 }
 
 func (p *ProcessorImpl) GetActiveSession(characterId uint32) (Model, error) {
-	return getActiveSession(p.db, p.t.Id(), characterId)
+	return getActiveSession(p.db.WithContext(p.ctx), characterId)
 }
 
 func (p *ProcessorImpl) GetSessionsSince(characterId uint32, since time.Time) ([]Model, error) {
-	return getSessionsSince(p.db, p.t.Id(), characterId, since)
+	return getSessionsSince(p.db.WithContext(p.ctx), characterId, since)
 }
 
 func (p *ProcessorImpl) GetSessionsInRange(characterId uint32, start, end time.Time) ([]Model, error) {
-	return getSessionsInRange(p.db, p.t.Id(), characterId, start, end)
+	return getSessionsInRange(p.db.WithContext(p.ctx), characterId, start, end)
 }
 
 func (p *ProcessorImpl) ComputePlaytimeSince(characterId uint32, since time.Time) (time.Duration, error) {

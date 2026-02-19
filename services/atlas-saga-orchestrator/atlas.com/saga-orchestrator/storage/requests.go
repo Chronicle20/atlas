@@ -1,7 +1,6 @@
 package storage
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 
@@ -22,6 +21,6 @@ func getBaseRequest() string {
 func RequestProjectionAsset(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, compartmentType byte, slot int16) (ProjectionAssetRestModel, error) {
 	return func(characterId uint32, compartmentType byte, slot int16) (ProjectionAssetRestModel, error) {
 		url := fmt.Sprintf(getBaseRequest()+projectionAssetResource, characterId, compartmentType, slot)
-		return rest.MakeGetRequest[ProjectionAssetRestModel](url)(l, ctx)
+		return requests.GetRequest[ProjectionAssetRestModel](url)(l, ctx)
 	}
 }

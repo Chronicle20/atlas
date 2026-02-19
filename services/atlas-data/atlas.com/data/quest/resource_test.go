@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -84,6 +85,8 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 
 	err = db.AutoMigrate(&testDocumentEntity{})
 	require.NoError(t, err)
+
+	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
 
 	return db
 }

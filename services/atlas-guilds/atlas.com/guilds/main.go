@@ -1,7 +1,7 @@
 package main
 
 import (
-	"atlas-guilds/database"
+	"atlas-guilds/coordinator"
 	"atlas-guilds/guild"
 	"atlas-guilds/guild/character"
 	"atlas-guilds/guild/member"
@@ -19,7 +19,9 @@ import (
 	"os"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -51,6 +53,9 @@ func main() {
 	l.Infoln("Starting main service.")
 
 	tdm := service.GetTeardownManager()
+
+	rc := atlas.Connect(l)
+	coordinator.InitRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {

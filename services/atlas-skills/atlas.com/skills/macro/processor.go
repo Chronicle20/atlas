@@ -1,7 +1,7 @@
 package macro
 
 import (
-	"atlas-skills/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-skills/kafka/message"
 	macro2 "atlas-skills/kafka/message/macro"
 	"atlas-skills/kafka/producer"
@@ -50,7 +50,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 
 // ByCharacterIdProvider returns a provider for all macros for a character
 func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[[]Model] {
-	return model.SliceMap(Make)(getByCharacterId(p.t.Id(), characterId)(p.db))(model.ParallelMap())
+	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
 // Update updates all macros for a character with message buffer for events
@@ -59,8 +59,8 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 		p.l.Debugf("Updating skill macros for character [%d].", characterId)
 		var result []Model
 
-		txErr := database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-			err := deleteByCharacter(tx, p.t, characterId)
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			err := deleteByCharacter(tx, characterId)
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func (p *ProcessorImpl) UpdateAndEmit(transactionId uuid.UUID, worldId world.Id,
 
 // Delete deletes all macros for a character
 func (p *ProcessorImpl) Delete(characterId uint32) error {
-	return database.ExecuteTransaction(p.db, func(tx *gorm.DB) error {
-		return deleteByCharacter(tx, p.t, characterId)
+	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+		return deleteByCharacter(tx, characterId)
 	})
 }

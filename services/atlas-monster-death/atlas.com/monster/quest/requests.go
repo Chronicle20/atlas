@@ -1,7 +1,6 @@
 package quest
 
 import (
-	"atlas-monster-death/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -16,5 +15,5 @@ func getBaseRequest() string {
 }
 
 func requestStartedQuests(characterId uint32) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuestsResource, characterId))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+StartedQuestsResource, characterId))
 }

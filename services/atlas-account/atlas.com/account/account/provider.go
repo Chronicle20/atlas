@@ -1,18 +1,16 @@
 package account
 
 import (
-	"atlas-account/database"
+	database "github.com/Chronicle20/atlas-database"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
 	"gorm.io/gorm"
 )
 
-func entityById(tenant tenant.Model, id uint32) database.EntityProvider[Entity] {
+func entityById(id uint32) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
-		where := map[string]interface{}{"tenant_id": tenant.Id(), "id": id}
-		var result = Entity{}
-		err := db.Where(where).First(&result).Error
+		var result Entity
+		err := db.Where("id = ?", id).First(&result).Error
 		if err != nil {
 			return model.ErrorProvider[Entity](err)
 		}
@@ -20,10 +18,10 @@ func entityById(tenant tenant.Model, id uint32) database.EntityProvider[Entity] 
 	}
 }
 
-func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]Entity] {
+func entitiesByName(name string) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenant.Id(), Name: name}).First(&results).Error
+		err := db.Where("name = ?", name).First(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -31,10 +29,10 @@ func entitiesByName(tenant tenant.Model, name string) database.EntityProvider[[]
 	}
 }
 
-func allInTenant(tenant tenant.Model) database.EntityProvider[[]Entity] {
+func allInTenant() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where(&Entity{TenantId: tenant.Id()}).Find(&results).Error
+		err := db.Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -42,11 +40,3 @@ func allInTenant(tenant tenant.Model) database.EntityProvider[[]Entity] {
 	}
 }
 
-func allEntities(db *gorm.DB) model.Provider[[]Entity] {
-	var results []Entity
-	err := db.Find(&results).Error
-	if err != nil {
-		return model.ErrorProvider[[]Entity](err)
-	}
-	return model.FixedProvider[[]Entity](results)
-}

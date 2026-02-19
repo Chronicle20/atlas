@@ -3,7 +3,8 @@ package main
 import (
 	"os"
 
-	"atlas-portal-actions/database"
+	"atlas-portal-actions/action"
+	database "github.com/Chronicle20/atlas-database"
 	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
@@ -11,6 +12,7 @@ import (
 	"atlas-portal-actions/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -40,6 +42,9 @@ func GetServer() Server {
 func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
+
+	rc := atlas.Connect(l)
+	action.InitRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

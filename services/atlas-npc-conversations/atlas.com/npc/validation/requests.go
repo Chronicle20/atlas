@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"atlas-npc-conversations/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -12,5 +11,5 @@ func getBaseRequest() string {
 }
 
 func requestById(body RestModel) requests.Request[RestModel] {
-	return rest.MakePostRequest[RestModel](fmt.Sprint(getBaseRequest()+"validations"), body)
+	return requests.PostRequest[RestModel](fmt.Sprint(getBaseRequest()+"validations"), body)
 }

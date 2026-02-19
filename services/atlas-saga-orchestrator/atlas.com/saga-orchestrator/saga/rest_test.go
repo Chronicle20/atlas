@@ -14,7 +14,7 @@ func TestUnmarshalGenericPayload(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name: "Valid AwardInventory payload",
+			name: "Valid AwardAsset payload",
 			rawPayload: map[string]interface{}{
 				"characterId": float64(12345),
 				"item": map[string]interface{}{
@@ -36,8 +36,8 @@ func TestUnmarshalGenericPayload(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test unmarshalAwardInventoryPayload
-			result, err := unmarshalAwardInventoryPayload(tt.rawPayload)
+			// Test unmarshalAwardAssetPayload
+			result, err := unmarshalAwardAssetPayload(tt.rawPayload)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -53,7 +53,7 @@ func TestUnmarshalGenericPayload(t *testing.T) {
 				assert.True(t, ok)
 
 				// For the valid test case, verify the values
-				if tt.name == "Valid AwardInventory payload" {
+				if tt.name == "Valid AwardAsset payload" {
 					assert.Equal(t, uint32(12345), payload.CharacterId)
 					assert.Equal(t, uint32(2000), payload.Item.TemplateId)
 					assert.Equal(t, uint32(5), payload.Item.Quantity)
@@ -72,8 +72,8 @@ func TestUnmarshalPayload(t *testing.T) {
 		errorContains string
 	}{
 		{
-			name:   "AwardInventory action",
-			action: AwardInventory,
+			name:   "AwardAsset action",
+			action: AwardAsset,
 			rawPayload: map[string]interface{}{
 				"characterId": float64(12345),
 				"item": map[string]interface{}{

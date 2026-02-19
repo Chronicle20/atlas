@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-drops-information/continent"
 	drop2 "atlas-drops-information/continent/drop"
-	"atlas-drops-information/database"
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-drops-information/logger"
 	"atlas-drops-information/monster/drop"
 	"atlas-drops-information/reactor"

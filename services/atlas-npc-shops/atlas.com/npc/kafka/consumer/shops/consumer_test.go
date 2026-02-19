@@ -2,12 +2,22 @@ package shops
 
 import (
 	shop "atlas-npc/kafka/message/shops"
+	"atlas-npc/shops"
 	"atlas-npc/test"
 	"testing"
 
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )
+
+func setupTestRegistry(t *testing.T) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	shops.InitRegistry(client)
+}
 
 func TestHandleEnterCommand(t *testing.T) {
 	t.Run("wrong command type does nothing", func(t *testing.T) {
@@ -30,6 +40,7 @@ func TestHandleEnterCommand(t *testing.T) {
 	})
 
 	t.Run("correct command type processes enter", func(t *testing.T) {
+		setupTestRegistry(t)
 		// Create processor with test database
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
@@ -70,6 +81,7 @@ func TestHandleExitCommand(t *testing.T) {
 	})
 
 	t.Run("correct command type processes exit", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 
@@ -109,6 +121,7 @@ func TestHandleBuyCommand(t *testing.T) {
 	})
 
 	t.Run("correct command type processes buy", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 
@@ -152,6 +165,7 @@ func TestHandleSellCommand(t *testing.T) {
 	})
 
 	t.Run("correct command type processes sell", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 
@@ -192,6 +206,7 @@ func TestHandleRechargeCommand(t *testing.T) {
 	})
 
 	t.Run("correct command type processes recharge", func(t *testing.T) {
+		setupTestRegistry(t)
 		_, db, cleanup := test.CreateShopsProcessor(t)
 		defer cleanup()
 

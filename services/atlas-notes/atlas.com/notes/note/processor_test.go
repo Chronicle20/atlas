@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	database "github.com/Chronicle20/atlas-database"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -20,6 +21,9 @@ func testDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	l := testLogger()
+	database.RegisterTenantCallbacks(l, db)
 
 	var migrators []func(db *gorm.DB) error
 	migrators = append(migrators, note.Migration)

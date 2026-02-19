@@ -17,7 +17,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
 	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -50,10 +49,8 @@ func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.Statu
 			return
 		}
 
-		t := tenant.MustFromContext(ctx)
-
 		// Try to find and remove pending action
-		pendingAction, found := action.GetRegistry().Get(t.Id(), e.TransactionId)
+		pendingAction, found := action.GetRegistry().Get(ctx, e.TransactionId)
 		if !found {
 			// Not a portal action saga, ignore
 			return
@@ -65,7 +62,7 @@ func handleStatusEventCompleted(l logrus.FieldLogger) message.Handler[saga.Statu
 		}).Debug("Transport saga completed, cleaning up pending action")
 
 		// Cleanup - warp already happened via saga orchestrator
-		action.GetRegistry().Remove(t.Id(), e.TransactionId)
+		action.GetRegistry().Remove(ctx, e.TransactionId)
 	}
 }
 
@@ -77,10 +74,8 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 			return
 		}
 
-		t := tenant.MustFromContext(ctx)
-
 		// Try to find pending action
-		pendingAction, found := action.GetRegistry().Get(t.Id(), e.TransactionId)
+		pendingAction, found := action.GetRegistry().Get(ctx, e.TransactionId)
 		if !found {
 			// Not a portal action saga, ignore
 			return
@@ -108,7 +103,7 @@ func handleStatusEventFailed(l logrus.FieldLogger) message.Handler[saga.StatusEv
 		character.EnableActions(l)(ctx)(ch, pendingAction.CharacterId)
 
 		// Cleanup
-		action.GetRegistry().Remove(t.Id(), e.TransactionId)
+		action.GetRegistry().Remove(ctx, e.TransactionId)
 	}
 }
 

@@ -40,6 +40,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Proces
 	}
 }
 
+func (p *ProcessorImpl) ctxDb() *gorm.DB {
+	return p.db.WithContext(p.ctx)
+}
+
 func (p *ProcessorImpl) Seed() (CombinedSeedResult, error) {
 	p.l.Infof("Seeding drops for tenant [%s]", p.t.Id())
 
@@ -101,7 +105,7 @@ func (p *ProcessorImpl) seedMonsterDrops() (SeedResult, error) {
 	result := SeedResult{}
 
 	// Delete all existing monster drops for this tenant
-	deletedCount, err := monsterdrop.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := monsterdrop.DeleteAll(p.ctxDb())
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing monster drops: %w", err)
 	}
@@ -136,7 +140,7 @@ func (p *ProcessorImpl) seedMonsterDrops() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = monsterdrop.BulkCreateMonsterDrop(p.db, models)
+		err = monsterdrop.BulkCreateMonsterDrop(p.ctxDb(), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)
@@ -154,7 +158,7 @@ func (p *ProcessorImpl) seedContinentDrops() (SeedResult, error) {
 	result := SeedResult{}
 
 	// Delete all existing continent drops for this tenant
-	deletedCount, err := continentdrop.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := continentdrop.DeleteAll(p.ctxDb())
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing continent drops: %w", err)
 	}
@@ -188,7 +192,7 @@ func (p *ProcessorImpl) seedContinentDrops() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = continentdrop.BulkCreateContinentDrop(p.db, models)
+		err = continentdrop.BulkCreateContinentDrop(p.ctxDb(), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)
@@ -206,7 +210,7 @@ func (p *ProcessorImpl) seedReactorDrops() (SeedResult, error) {
 	result := SeedResult{}
 
 	// Delete all existing reactor drops for this tenant
-	deletedCount, err := reactordrop.DeleteAllForTenant(p.db, p.t.Id())
+	deletedCount, err := reactordrop.DeleteAll(p.ctxDb())
 	if err != nil {
 		return result, fmt.Errorf("failed to clear existing reactor drops: %w", err)
 	}
@@ -274,7 +278,7 @@ func (p *ProcessorImpl) seedReactorDrops() (SeedResult, error) {
 	}
 
 	if len(models) > 0 {
-		err = reactordrop.BulkCreateReactorDrop(p.db, models)
+		err = reactordrop.BulkCreateReactorDrop(p.ctxDb(), models)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("bulk create failed: %v", err))
 			result.FailedCount += len(models)

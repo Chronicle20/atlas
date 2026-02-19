@@ -1,6 +1,7 @@
 package main
 
 import (
+	database "github.com/Chronicle20/atlas-database"
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -20,9 +21,13 @@ import (
 	"atlas-saga-orchestrator/service"
 	"atlas-saga-orchestrator/tracing"
 	"os"
+	"strconv"
+	"time"
 
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-saga-orchestrator"
@@ -59,6 +64,24 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	// Initialize database connection
+	db := database.Connect(l, database.SetMigrations(saga.Migration))
+	l.Infoln("Database connected and migrated.")
+
+	// Initialize PostgreSQL-backed saga store
+	store := saga.NewPostgresStore(db, l)
+	saga.SetCache(store)
+	l.Infoln("PostgreSQL saga store initialized.")
+
+	// Configure saga timeout
+	defaultTimeout := 5 * time.Minute
+	if v, ok := os.LookupEnv("SAGA_DEFAULT_TIMEOUT"); ok {
+		if parsed, err := time.ParseDuration(v); err == nil {
+			defaultTimeout = parsed
+		}
+	}
+	saga.SetDefaultTimeout(defaultTimeout)
+
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	buddylist.InitConsumers(l)(cmf)(consumerGroupId)
@@ -89,6 +112,12 @@ func main() {
 	storage.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 	storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
+	// Recover active sagas from database
+	recoverSagas(l, store, tdm)
+
+	// Start the stale saga reaper
+	startReaper(l, store, tdm)
+
 	// Create the service with the router
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -102,4 +131,99 @@ func main() {
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")
+}
+
+// recoverSagas loads all active sagas from the database and re-drives them
+func recoverSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
+	enabled := true
+	if v, ok := os.LookupEnv("SAGA_RECOVERY_ENABLED"); ok {
+		if parsed, err := strconv.ParseBool(v); err == nil {
+			enabled = parsed
+		}
+	}
+
+	if !enabled {
+		l.Infoln("Saga recovery disabled via SAGA_RECOVERY_ENABLED=false")
+		return
+	}
+
+	entities := store.GetAllActive(tdm.Context())
+	if len(entities) == 0 {
+		l.Infoln("No active sagas to recover.")
+		return
+	}
+
+	l.Infof("Recovering %d active sagas from database.", len(entities))
+	for _, e := range entities {
+		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
+		ctx := tenant.WithContext(tdm.Context(), t)
+		processor := saga.NewProcessor(l, ctx)
+
+		l.Infof("Recovering saga [%s] type [%s] for tenant [%s]",
+			e.TransactionId.String(), e.SagaType, e.TenantId.String())
+
+		err := processor.Step(e.TransactionId)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to recover saga [%s]", e.TransactionId.String())
+		}
+	}
+	l.Infoln("Saga recovery complete.")
+}
+
+// startReaper starts a background goroutine that compensates timed-out sagas
+func startReaper(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
+	interval := 30 * time.Second
+	if v, ok := os.LookupEnv("SAGA_REAPER_INTERVAL"); ok {
+		if parsed, err := time.ParseDuration(v); err == nil {
+			interval = parsed
+		}
+	}
+
+	tdm.WaitGroup().Add(1)
+	go func() {
+		defer tdm.WaitGroup().Done()
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+
+		l.Infof("Saga reaper started (interval=%s)", interval)
+
+		for {
+			select {
+			case <-tdm.Context().Done():
+				l.Infoln("Saga reaper shutting down.")
+				return
+			case <-ticker.C:
+				reapTimedOutSagas(l, store, tdm)
+			}
+		}
+	}()
+}
+
+func reapTimedOutSagas(l logrus.FieldLogger, store *saga.PostgresStore, tdm *service.Manager) {
+	entities := store.GetTimedOut(tdm.Context())
+	if len(entities) == 0 {
+		return
+	}
+
+	l.Infof("Reaping %d timed-out sagas.", len(entities))
+	for _, e := range entities {
+		t, _ := tenant.Create(e.TenantId, e.TenantRegion, e.TenantMajor, e.TenantMinor)
+		ctx := tenant.WithContext(tdm.Context(), t)
+		processor := saga.NewProcessor(l, ctx)
+
+		l.Warnf("Saga [%s] type [%s] timed out, triggering compensation.",
+			e.TransactionId.String(), e.SagaType)
+
+		// Mark the earliest pending step as failed to trigger compensation
+		err := processor.MarkEarliestPendingStep(e.TransactionId, saga.Failed)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to mark timed-out saga [%s] step as failed", e.TransactionId.String())
+			continue
+		}
+
+		err = processor.Step(e.TransactionId)
+		if err != nil {
+			l.WithError(err).Errorf("Failed to compensate timed-out saga [%s]", e.TransactionId.String())
+		}
+	}
 }

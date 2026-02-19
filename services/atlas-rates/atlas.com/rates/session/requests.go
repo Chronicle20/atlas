@@ -1,7 +1,6 @@
 package session
 
 import (
-	"atlas-rates/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,7 +18,7 @@ func getBaseRequest() string {
 // RequestSessionsSince fetches sessions since the given Unix timestamp
 func RequestSessionsSince(characterId uint32, sinceUnix int64) requests.Request[[]SessionRestModel] {
 	url := fmt.Sprintf(getBaseRequest()+SessionsResource+"?since=%d", characterId, sinceUnix)
-	return rest.MakeGetRequest[[]SessionRestModel](url)
+	return requests.GetRequest[[]SessionRestModel](url)
 }
 
 // RequestPlaytimeSince fetches computed playtime since the given Unix timestamp

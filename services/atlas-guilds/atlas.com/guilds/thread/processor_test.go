@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -47,6 +48,9 @@ func setupTestDatabase(t *testing.T) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	l := setupTestLogger(t)
+	database.RegisterTenantCallbacks(l, db)
 
 	if err = Migration(db); err != nil {
 		t.Fatalf("Failed to migrate thread: %v", err)

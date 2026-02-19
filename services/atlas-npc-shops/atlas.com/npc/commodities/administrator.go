@@ -1,7 +1,7 @@
 package commodities
 
 import (
-	"atlas-npc/database"
+	database "github.com/Chronicle20/atlas-database"
 	"context"
 
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -34,11 +34,10 @@ func createCommodity(ctx context.Context, db *gorm.DB) func(npcId uint32, templa
 	}
 }
 
-func updateCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
+func updateCommodity(_ context.Context, db *gorm.DB) func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
 	return func(id uuid.UUID, templateId uint32, mesoPrice uint32, discountRate byte, tokenTemplateId uint32, tokenPrice uint32, period uint32, levelLimited uint32) (Model, error) {
-		t := tenant.MustFromContext(ctx)
 		var entity Entity
-		if err := db.Where(&Entity{Id: id, TenantId: t.Id()}).First(&entity).Error; err != nil {
+		if err := db.Where("id = ?", id).First(&entity).Error; err != nil {
 			return Model{}, err
 		}
 
@@ -58,24 +57,21 @@ func updateCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID, templa
 	}
 }
 
-func deleteCommodity(ctx context.Context, db *gorm.DB) func(id uuid.UUID) error {
+func deleteCommodity(_ context.Context, db *gorm.DB) func(id uuid.UUID) error {
 	return func(id uuid.UUID) error {
-		t := tenant.MustFromContext(ctx)
-		return db.Where(&Entity{Id: id, TenantId: t.Id()}).Delete(&Entity{}).Error
+		return db.Where("id = ?", id).Delete(&Entity{}).Error
 	}
 }
 
-func deleteAllCommoditiesByNpcId(ctx context.Context, db *gorm.DB) func(npcId uint32) error {
+func deleteAllCommoditiesByNpcId(_ context.Context, db *gorm.DB) func(npcId uint32) error {
 	return func(npcId uint32) error {
-		t := tenant.MustFromContext(ctx)
-		return db.Where(&Entity{NpcId: npcId, TenantId: t.Id()}).Delete(&Entity{}).Error
+		return db.Where("npc_id = ?", npcId).Delete(&Entity{}).Error
 	}
 }
 
-func deleteAllCommodities(ctx context.Context, db *gorm.DB) func() error {
+func deleteAllCommodities(_ context.Context, db *gorm.DB) func() error {
 	return func() error {
-		t := tenant.MustFromContext(ctx)
-		return db.Where(&Entity{TenantId: t.Id()}).Delete(&Entity{}).Error
+		return db.Where("1 = 1").Delete(&Entity{}).Error
 	}
 }
 

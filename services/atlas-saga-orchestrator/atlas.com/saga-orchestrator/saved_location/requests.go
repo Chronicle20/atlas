@@ -1,7 +1,6 @@
 package saved_location
 
 import (
-	"atlas-saga-orchestrator/rest"
 	"context"
 	"fmt"
 
@@ -23,20 +22,20 @@ func PutSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterI
 			PortalId: portalId,
 		}
 		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
-		return rest.MakePutRequest[RestModel](url, body)(l, ctx)
+		return requests.PutRequest[RestModel](url, body)(l, ctx)
 	}
 }
 
 func GetSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, locationType string) (RestModel, error) {
 	return func(characterId uint32, locationType string) (RestModel, error) {
 		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
-		return rest.MakeGetRequest[RestModel](url)(l, ctx)
+		return requests.GetRequest[RestModel](url)(l, ctx)
 	}
 }
 
 func DeleteSavedLocation(l logrus.FieldLogger, ctx context.Context) func(characterId uint32, locationType string) error {
 	return func(characterId uint32, locationType string) error {
 		url := fmt.Sprintf("%scharacters/%d/locations/%s", getBaseRequest(), characterId, locationType)
-		return rest.MakeDeleteRequest(url)(l, ctx)
+		return requests.DeleteRequest(url)(l, ctx)
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
@@ -22,12 +23,9 @@ func (t testServerInfo) GetBaseURL() string  { return "http://localhost:8080" }
 func TestHandlerDependency_Logger(t *testing.T) {
 	logger := logrus.New()
 	ctx := context.Background()
-	
-	hd := HandlerDependency{
-		l:   logger,
-		ctx: ctx,
-	}
-	
+
+	hd := server.NewHandlerDependency(logger, ctx)
+
 	if hd.Logger() != logger {
 		t.Error("Logger() did not return the expected logger")
 	}
@@ -36,12 +34,9 @@ func TestHandlerDependency_Logger(t *testing.T) {
 func TestHandlerDependency_Context(t *testing.T) {
 	logger := logrus.New()
 	ctx := context.Background()
-	
-	hd := HandlerDependency{
-		l:   logger,
-		ctx: ctx,
-	}
-	
+
+	hd := server.NewHandlerDependency(logger, ctx)
+
 	if hd.Context() != ctx {
 		t.Error("Context() did not return the expected context")
 	}
@@ -49,11 +44,9 @@ func TestHandlerDependency_Context(t *testing.T) {
 
 func TestHandlerContext_ServerInformation(t *testing.T) {
 	si := &testServerInfo{}
-	
-	hc := HandlerContext{
-		si: si,
-	}
-	
+
+	hc := server.NewHandlerContext(si)
+
 	if hc.ServerInformation() != si {
 		t.Error("ServerInformation() did not return the expected server information")
 	}
@@ -103,17 +96,12 @@ func (t *TestRequest) SetReferencedStructs(references map[string]map[string]json
 func TestParseInput_Success(t *testing.T) {
 	logger := logrus.New()
 	ctx := context.Background()
-	
-	hd := &HandlerDependency{
-		l:   logger,
-		ctx: ctx,
-	}
-	
+
+	hd := server.NewHandlerDependency(logger, ctx)
+
 	si := &testServerInfo{}
-	
-	hc := &HandlerContext{
-		si: si,
-	}
+
+	hc := server.NewHandlerContext(si)
 	
 	var receivedModel TestRequest
 	testHandler := func(d *HandlerDependency, c *HandlerContext, model TestRequest) http.HandlerFunc {
@@ -129,13 +117,13 @@ func TestParseInput_Success(t *testing.T) {
 	
 	w := httptest.NewRecorder()
 	
-	handler := ParseInput[TestRequest](hd, hc, testHandler)
+	handler := ParseInput[TestRequest](&hd, &hc, testHandler)
 	handler(w, req)
-	
+
 	if w.Code != http.StatusOK {
 		t.Errorf("Expected status 200, got %d", w.Code)
 	}
-	
+
 	if receivedModel.Name != "test name" {
 		t.Errorf("Expected name 'test name', got '%s'", receivedModel.Name)
 	}
@@ -144,17 +132,12 @@ func TestParseInput_Success(t *testing.T) {
 func TestParseInput_InvalidJSON(t *testing.T) {
 	logger := logrus.New()
 	ctx := context.Background()
-	
-	hd := &HandlerDependency{
-		l:   logger,
-		ctx: ctx,
-	}
-	
+
+	hd := server.NewHandlerDependency(logger, ctx)
+
 	si := &testServerInfo{}
-	
-	hc := &HandlerContext{
-		si: si,
-	}
+
+	hc := server.NewHandlerContext(si)
 	
 	testHandler := func(d *HandlerDependency, c *HandlerContext, model TestRequest) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
@@ -168,9 +151,9 @@ func TestParseInput_InvalidJSON(t *testing.T) {
 	
 	w := httptest.NewRecorder()
 	
-	handler := ParseInput[TestRequest](hd, hc, testHandler)
+	handler := ParseInput[TestRequest](&hd, &hc, testHandler)
 	handler(w, req)
-	
+
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("Expected status 400, got %d", w.Code)
 	}

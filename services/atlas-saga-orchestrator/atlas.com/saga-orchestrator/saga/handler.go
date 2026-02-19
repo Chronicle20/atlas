@@ -74,7 +74,6 @@ type Handler interface {
 
 	logActionError(s Saga, st Step[any], err error, errorMsg string)
 	handleAwardAsset(s Saga, st Step[any]) error
-	handleAwardInventory(s Saga, st Step[any]) error
 	handleWarpToRandomPortal(s Saga, st Step[any]) error
 	handleWarpToPortal(s Saga, st Step[any]) error
 	handleAwardExperience(s Saga, st Step[any]) error
@@ -700,8 +699,6 @@ type ActionHandler func(s Saga, st Step[any]) error
 
 func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 	switch action {
-	case AwardInventory:
-		return h.handleAwardInventory, true
 	case AwardAsset:
 		return h.handleAwardAsset, true
 	case WarpToRandomPortal:
@@ -864,7 +861,7 @@ func (h *HandlerImpl) logActionError(s Saga, st Step[any], err error, errorMsg s
 	}).WithError(err).Error(errorMsg)
 }
 
-// handleAwardAsset handles the AwardAsset and AwardInventory actions
+// handleAwardAsset handles the AwardAsset action
 func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	payload, ok := st.Payload().(AwardItemActionPayload)
 	if !ok {
@@ -879,12 +876,6 @@ func (h *HandlerImpl) handleAwardAsset(s Saga, st Step[any]) error {
 	}
 
 	return nil
-}
-
-// handleAwardInventory is a wrapper for handleAwardAsset for backward compatibility
-// Deprecated: Use handleAwardAsset instead
-func (h *HandlerImpl) handleAwardInventory(s Saga, st Step[any]) error {
-	return h.handleAwardAsset(s, st)
 }
 
 // handleWarpToRandomPortal handles the WarpToRandomPortal action
@@ -2221,7 +2212,7 @@ func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
 		}).Warn("Instance transport failed - emitting failure event")
 
 		// Remove saga from cache since this is a terminal failure
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		// Emit saga failed event with the transport-specific error code
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
@@ -2338,7 +2329,7 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 		"tier":           reward.Tier,
 	}).Infof("Gachapon reward selected.")
 
-	// Dynamically add AwardInventory step for the won item
+	// Dynamically add AwardAsset step for the won item
 	awardStep := NewStep[any](
 		fmt.Sprintf("award_gachapon_%s", st.StepId()),
 		Pending,
@@ -2391,7 +2382,9 @@ func (h *HandlerImpl) handleSelectGachaponReward(s Saga, st Step[any]) error {
 	}
 
 	// Update the saga in cache with the new steps
-	GetCache().Put(h.t.Id(), updatedSaga)
+	if err := GetCache().Put(h.ctx,updatedSaga); err != nil {
+		return err
+	}
 
 	// Mark current step as complete
 	_ = NewProcessor(h.l, h.ctx).StepCompleted(s.TransactionId(), true)
@@ -2408,7 +2401,7 @@ func (h *HandlerImpl) handleEmitGachaponWin(s Saga, st Step[any]) error {
 	// Find the AssetId from a completed AwardAsset step's result
 	var assetId uint32
 	for _, step := range s.Steps() {
-		if (step.Action() == AwardAsset || step.Action() == AwardInventory) && step.Status() == Completed && step.Result() != nil {
+		if step.Action() == AwardAsset && step.Status() == Completed && step.Result() != nil {
 			if id, ok := step.Result()["assetId"]; ok {
 				switch v := id.(type) {
 				case uint32:
@@ -2483,7 +2476,7 @@ func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest registration failed - emitting failure event")
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2532,7 +2525,7 @@ func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) err
 
 		errorCode := party_quest.GetErrorCode(err)
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
@@ -2588,7 +2581,7 @@ func (h *HandlerImpl) handleLeavePartyQuest(s Saga, st Step[any]) error {
 	err := h.partyQuestP.LeavePartyQuest(payload.CharacterId, payload.WorldId)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to leave party quest.")
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 		return err
 	}
 
@@ -2746,7 +2739,7 @@ func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
 			"error_code":     errorCode,
 		}).Warn("Party quest bonus entry failed - emitting failure event")
 
-		GetCache().Remove(h.t.Id(), s.TransactionId())
+		GetCache().Remove(h.ctx,s.TransactionId())
 
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(

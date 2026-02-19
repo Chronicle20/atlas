@@ -106,7 +106,7 @@ Represents a player character with stats, equipment, inventory, skills, pets, an
 None within channel. The character model is read-only; mutations are requested via Kafka commands.
 
 ### Processors
-- `Processor` - Retrieves character by ID or name via REST (CHARACTERS service). Supports decorators: InventoryDecorator, PetModelDecorator, SkillModelDecorator, QuestModelDecorator. Provides GetEquipableInSlot (looks up equip compartment by slot) and GetItemInSlot (looks up any compartment by type and slot). Issues commands for AP distribution, SP distribution, meso drop, HP/MP changes.
+- `Processor` - Retrieves character by ID or name via REST (CHARACTERS service). Supports decorators: InventoryDecorator, PetAssetEnrichmentDecorator, SkillModelDecorator, QuestModelDecorator. Provides GetEquipableInSlot (looks up equip compartment by slot) and GetItemInSlot (looks up any compartment by type and slot). Issues commands for AP distribution, SP distribution, meso drop, HP/MP changes.
 - `MockProcessor` - Test double with in-memory character lookup maps.
 
 ---

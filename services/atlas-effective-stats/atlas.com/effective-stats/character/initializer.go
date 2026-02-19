@@ -11,27 +11,24 @@ import (
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 // IsInitialized checks if a character has been initialized
-func IsInitialized(t tenant.Model, characterId uint32) bool {
-	return GetRegistry().IsInitialized(t, characterId)
+func IsInitialized(ctx context.Context, characterId uint32) bool {
+	return GetRegistry().IsInitialized(ctx, characterId)
 }
 
 // InitializeCharacter performs lazy initialization of a character's effective stats
 // This is called when stats are first requested for a character that hasn't been initialized
 func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model) error {
-	t := tenant.MustFromContext(ctx)
-
 	l.Debugf("Initializing effective stats for character [%d] on world [%d] channel [%d].", characterId, ch.WorldId(), ch.Id())
 
 	// Create or get existing model
-	m := GetRegistry().GetOrCreate(t, ch, characterId)
+	m := GetRegistry().GetOrCreate(ctx, ch, characterId)
 
 	// Mark as initialized first to prevent recursive initialization
-	if err := GetRegistry().MarkInitialized(t, characterId); err != nil {
+	if err := GetRegistry().MarkInitialized(ctx, characterId); err != nil {
 		l.WithError(err).Warnf("Failed to mark character [%d] as initialized.", characterId)
 	}
 
@@ -69,7 +66,7 @@ func InitializeCharacter(l logrus.FieldLogger, ctx context.Context, characterId 
 
 	// Compute final effective stats and update registry
 	m = m.Recompute().WithInitialized()
-	GetRegistry().Update(t, m)
+	GetRegistry().Update(ctx, m)
 
 	l.Debugf("Completed initialization for character [%d]. Effective stats: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
 		characterId, m.Computed().Strength(), m.Computed().Dexterity(), m.Computed().Intelligence(),

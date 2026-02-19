@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
@@ -22,6 +23,9 @@ func SetupTestDB(t *testing.T, migrations ...func(db *gorm.DB) error) *gorm.DB {
 	if err != nil {
 		t.Fatalf("Failed to connect to test database: %v", err)
 	}
+
+	// Register tenant callbacks for automatic tenant filtering
+	database.RegisterTenantCallbacks(logger, db)
 
 	// Run migrations
 	for _, migration := range migrations {

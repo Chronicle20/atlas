@@ -1,7 +1,6 @@
 package data
 
 import (
-	"atlas-asset-expiration/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-rest/requests"
@@ -19,17 +18,17 @@ func getBaseRequest() string {
 }
 
 func requestEquipment(templateId uint32) requests.Request[EquipmentRestModel] {
-	return rest.MakeGetRequest[EquipmentRestModel](fmt.Sprintf(getBaseRequest()+Equipment, templateId))
+	return requests.GetRequest[EquipmentRestModel](fmt.Sprintf(getBaseRequest()+Equipment, templateId))
 }
 
 func requestConsumable(templateId uint32) requests.Request[ConsumableRestModel] {
-	return rest.MakeGetRequest[ConsumableRestModel](fmt.Sprintf(getBaseRequest()+Consumables, templateId))
+	return requests.GetRequest[ConsumableRestModel](fmt.Sprintf(getBaseRequest()+Consumables, templateId))
 }
 
 func requestSetup(templateId uint32) requests.Request[SetupRestModel] {
-	return rest.MakeGetRequest[SetupRestModel](fmt.Sprintf(getBaseRequest()+Setup, templateId))
+	return requests.GetRequest[SetupRestModel](fmt.Sprintf(getBaseRequest()+Setup, templateId))
 }
 
 func requestEtc(templateId uint32) requests.Request[EtcRestModel] {
-	return rest.MakeGetRequest[EtcRestModel](fmt.Sprintf(getBaseRequest()+Etc, templateId))
+	return requests.GetRequest[EtcRestModel](fmt.Sprintf(getBaseRequest()+Etc, templateId))
 }

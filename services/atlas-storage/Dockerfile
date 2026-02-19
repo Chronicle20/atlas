@@ -13,6 +13,9 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-database/go.mod libs/atlas-database/go.sum libs/atlas-database/
+COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
+COPY libs/atlas-retry/go.mod libs/atlas-retry/
 # Copy service module definitions
 COPY services/atlas-storage/atlas.com/storage/go.mod services/atlas-storage/atlas.com/storage/go.sum services/atlas-storage/atlas.com/storage/
 
@@ -25,6 +28,9 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-database' >> go.work && \
+    echo '    ./libs/atlas-redis' >> go.work && \
+    echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./services/atlas-storage/atlas.com/storage' >> go.work && \
     echo ')' >> go.work
 
@@ -38,6 +44,9 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-database libs/atlas-database
+COPY libs/atlas-redis libs/atlas-redis
+COPY libs/atlas-retry libs/atlas-retry
 # Copy service source code
 COPY services/atlas-storage/atlas.com/storage services/atlas-storage/atlas.com/storage
 

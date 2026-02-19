@@ -1,7 +1,6 @@
 package monster
 
 import (
-	"atlas-channel/rest"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/field"
@@ -18,9 +17,9 @@ func getBaseRequest() string {
 }
 
 func requestInMap(f field.Model) requests.Request[[]RestModel] {
-	return rest.MakeGetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
+	return requests.GetRequest[[]RestModel](fmt.Sprintf(getBaseRequest()+mapMonstersResource, f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String()))
 }
 
 func requestById(uniqueId uint32) requests.Request[RestModel] {
-	return rest.MakeGetRequest[RestModel](fmt.Sprintf(getBaseRequest()+monstersResource, uniqueId))
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+monstersResource, uniqueId))
 }

@@ -68,12 +68,12 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(f field.Model, characterI
 				p.l.WithError(err).Errorf("Unable to retrieve needed character information from foreign service.")
 				return err
 			}
-			c = GetRegistry().Create(p.t, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
+			c = GetRegistry().Create(p.ctx, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 		}
 
 		p.l.Debugf("Setting character [%d] to online in registry.", characterId)
 		fn := func(m Model) Model { return Model.ChangeChannel(m, f.ChannelId()) }
-		c = GetRegistry().Update(p.t, c.Id(), Model.Login, fn)
+		c = GetRegistry().Update(p.ctx, c.Id(), Model.Login, fn)
 
 		if c.PartyId() != 0 {
 			err = mb.Put(EnvEventMemberStatusTopic, loginEventProvider(c.PartyId(), c.WorldId(), characterId))
@@ -102,7 +102,7 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(characterId uint32) erro
 		}
 
 		p.l.Debugf("Setting character [%d] to offline in registry.", characterId)
-		c = GetRegistry().Update(p.t, c.Id(), Model.Logout)
+		c = GetRegistry().Update(p.ctx, c.Id(), Model.Logout)
 
 		if c.PartyId() != 0 {
 			err = mb.Put(EnvEventMemberStatusTopic, logoutEventProvider(c.PartyId(), c.WorldId(), characterId))
@@ -125,7 +125,7 @@ func (p *ProcessorImpl) ChannelChange(characterId uint32, channelId channel.Id) 
 
 	p.l.Debugf("Setting character [%d] to be in channel [%d] in registry.", characterId, channelId)
 	fn := func(m Model) Model { return Model.ChangeChannel(m, channelId) }
-	c = GetRegistry().Update(p.t, c.Id(), fn)
+	c = GetRegistry().Update(p.ctx, c.Id(), fn)
 	return nil
 }
 
@@ -146,7 +146,7 @@ func (p *ProcessorImpl) LevelChange(mb *message.Buffer) func(characterId uint32,
 		oldLevel := c.Level()
 		p.l.Debugf("Updating character [%d] level from [%d] to [%d] in registry.", characterId, oldLevel, level)
 		fn := func(m Model) Model { return Model.ChangeLevel(m, level) }
-		c = GetRegistry().Update(p.t, c.Id(), fn)
+		c = GetRegistry().Update(p.ctx, c.Id(), fn)
 
 		// If character is in a party, emit party member level changed event
 		if c.PartyId() != 0 {
@@ -178,7 +178,7 @@ func (p *ProcessorImpl) JobChange(mb *message.Buffer) func(characterId uint32, j
 		oldJobId := c.JobId()
 		p.l.Debugf("Updating character [%d] job from [%d] to [%d] in registry.", characterId, oldJobId, jobId)
 		fn := func(m Model) Model { return Model.ChangeJob(m, jobId) }
-		c = GetRegistry().Update(p.t, c.Id(), fn)
+		c = GetRegistry().Update(p.ctx, c.Id(), fn)
 
 		// If character is in a party, emit party member job changed event
 		if c.PartyId() != 0 {
@@ -202,7 +202,7 @@ func (p *ProcessorImpl) MapChange(characterId uint32, mapId _map.Id) error {
 
 	p.l.Debugf("Setting character [%d] to be in map [%d] in registry.", characterId, mapId)
 	fn := func(m Model) Model { return Model.ChangeMap(m, mapId) }
-	c = GetRegistry().Update(p.t, c.Id(), fn)
+	c = GetRegistry().Update(p.ctx, c.Id(), fn)
 	return nil
 }
 
@@ -215,24 +215,24 @@ func (p *ProcessorImpl) JoinParty(characterId uint32, partyId uint32) error {
 
 	p.l.Debugf("Setting character [%d] to be in party [%d] in registry.", characterId, partyId)
 	fn := func(m Model) Model { return Model.JoinParty(m, partyId) }
-	c = GetRegistry().Update(p.t, c.Id(), fn)
+	c = GetRegistry().Update(p.ctx, c.Id(), fn)
 	return nil
 }
 
 func (p *ProcessorImpl) LeaveParty(characterId uint32) error {
-	c, err := GetRegistry().Get(p.t, characterId)
+	c, err := GetRegistry().Get(p.ctx, characterId)
 	if err != nil {
 		p.l.WithError(err).Warnf("Unable to locate character [%d] in registry.", characterId)
 		return err
 	}
 
 	p.l.Debugf("Setting character [%d] to no longer have a party in the registry.", characterId)
-	c = GetRegistry().Update(p.t, c.Id(), Model.LeaveParty)
+	c = GetRegistry().Update(p.ctx, c.Id(), Model.LeaveParty)
 	return nil
 }
 
 func (p *ProcessorImpl) Delete(characterId uint32) error {
-	c, err := GetRegistry().Get(p.t, characterId)
+	c, err := GetRegistry().Get(p.ctx, characterId)
 	if err != nil {
 		p.l.Warnf("Character [%d] not found in registry, may have already been deleted.", characterId)
 		return nil
@@ -248,7 +248,7 @@ func (p *ProcessorImpl) Delete(characterId uint32) error {
 	}
 
 	p.l.Debugf("Removing character [%d] from registry.", characterId)
-	err = GetRegistry().Delete(p.t, characterId)
+	err = GetRegistry().Delete(p.ctx, characterId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to delete character [%d] from registry.", characterId)
 		return err
@@ -259,14 +259,14 @@ func (p *ProcessorImpl) Delete(characterId uint32) error {
 
 func (p *ProcessorImpl) ByIdProvider(characterId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		c, err := GetRegistry().Get(p.t, characterId)
+		c, err := GetRegistry().Get(p.ctx, characterId)
 		if errors.Is(err, ErrNotFound) {
 			fm, ferr := p.GetForeignCharacterInfo(characterId)
 			if ferr != nil {
 				return Model{}, err
 			}
 			f := field.NewBuilder(fm.WorldId(), 0, fm.MapId()).Build()
-			c = GetRegistry().Create(p.t, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
+			c = GetRegistry().Create(p.ctx, f, characterId, fm.Name(), fm.Level(), fm.JobId(), fm.GM())
 		}
 		return c, nil
 	}

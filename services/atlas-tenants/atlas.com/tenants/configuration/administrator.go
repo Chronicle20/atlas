@@ -1,7 +1,7 @@
 package configuration
 
 import (
-	"atlas-tenants/database"
+	database "github.com/Chronicle20/atlas-database"
 	"encoding/json"
 	"errors"
 

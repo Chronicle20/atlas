@@ -1,26 +1,28 @@
 package retry
 
 import (
-	"errors"
-	"time"
+	"context"
+
+	retry2 "github.com/Chronicle20/atlas-retry"
 )
 
-type RepeatableFunc func(attempt int) (retry bool, err error)
+// Config re-exports the shared retry configuration.
+type Config = retry2.Config
 
-type RepeatableFuncWithResponse func(attempt int) (bool, interface{}, error)
+// DefaultConfig re-exports the shared default configuration.
+var DefaultConfig = retry2.DefaultConfig
 
-func Try(fn RepeatableFunc, retries int) error {
-	attempt := 1
-	for {
-		cont, err := fn(attempt)
-		if !cont || err == nil {
-			return err
-		}
-		attempt++
-		if attempt > retries {
-			return errors.New("max retry reached")
-		}
-		time.Sleep(1 * time.Second)
+// Try executes fn with exponential backoff and full jitter.
+var Try = retry2.Try
+
+// LegacyTry preserves the old (attempt int) (bool, error) signature with fixed
+// 1-second sleep and no backoff, for callers that have not yet been updated.
+func LegacyTry(fn func(attempt int) (bool, error), retries int) error {
+	cfg := retry2.Config{
+		MaxRetries:    retries,
+		InitialDelay:  1 * 1e9, // 1 second
+		MaxDelay:      1 * 1e9,
+		BackoffFactor: 1.0,
 	}
+	return retry2.Try(context.Background(), cfg, fn)
 }
-

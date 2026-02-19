@@ -147,8 +147,8 @@ func CreateCeremony(db *gorm.DB, log logrus.FieldLogger) func(marriageId, charac
 }
 
 // UpdateCeremony updates an existing ceremony in the database
-func UpdateCeremony(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, entity CeremonyEntity, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
-	return func(ceremonyId uint32, entity CeremonyEntity, tenantId uuid.UUID) model.Provider[CeremonyEntity] {
+func UpdateCeremony(db *gorm.DB, log logrus.FieldLogger) func(ceremonyId uint32, entity CeremonyEntity) model.Provider[CeremonyEntity] {
+	return func(ceremonyId uint32, entity CeremonyEntity) model.Provider[CeremonyEntity] {
 		return func() (CeremonyEntity, error) {
 			log.WithField("ceremonyId", ceremonyId).Debug("Updating ceremony entity")
 

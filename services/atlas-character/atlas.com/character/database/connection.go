@@ -1,11 +1,13 @@
 package database
 
 import (
-	"atlas-character/retry"
+	"context"
 	"fmt"
 	"os"
 	"strconv"
 	"time"
+
+	retry "github.com/Chronicle20/atlas-retry"
 
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/postgres"
@@ -132,7 +134,8 @@ func Connect(l logrus.FieldLogger, configurators ...Configurator) *gorm.DB {
 		return false, err
 	}
 
-	err := retry.Try(tryToConnect, 10)
+	cfg := retry.DefaultConfig().WithMaxRetries(10).WithInitialDelay(500 * time.Millisecond).WithMaxDelay(30 * time.Second)
+	err := retry.Try(context.Background(), cfg, tryToConnect)
 	if err != nil {
 		l.WithError(err).Fatalf("Failed to connect to database.")
 	}

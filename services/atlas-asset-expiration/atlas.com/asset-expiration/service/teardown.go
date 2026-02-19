@@ -37,8 +37,8 @@ func GetTeardownManager() *Manager {
 }
 
 func (m *Manager) TeardownFunc(f func()) {
+	m.waitGroup.Add(1)
 	go func() {
-		m.waitGroup.Add(1)
 		defer m.waitGroup.Done()
 		<-m.doneChan
 		f()

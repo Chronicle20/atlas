@@ -13,6 +13,7 @@ COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-script-core/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-retry/go.mod libs/atlas-retry/
 # Copy service module definitions
 COPY services/atlas-reactor-actions/atlas.com/reactor/go.mod services/atlas-reactor-actions/atlas.com/reactor/go.sum* services/atlas-reactor-actions/atlas.com/reactor/
 
@@ -27,6 +28,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-script-core' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./services/atlas-reactor-actions/atlas.com/reactor' >> go.work && \
     echo ')' >> go.work
 
@@ -42,6 +44,7 @@ COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-script-core libs/atlas-script-core
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-retry libs/atlas-retry
 # Copy service source code
 COPY services/atlas-reactor-actions/atlas.com/reactor services/atlas-reactor-actions/atlas.com/reactor
 

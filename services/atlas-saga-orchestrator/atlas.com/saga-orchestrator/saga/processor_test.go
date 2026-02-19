@@ -114,7 +114,7 @@ func TestCharacterCreationSagaIntegration(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Store saga in cache for processing
-			GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(te.Id(), saga)
 
 			// Execute saga processing
 			err = processor.Step(saga.TransactionId())
@@ -353,7 +353,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Store saga in cache for processing
-			GetCache().Put(te.Id(), saga)
+			_ = GetCache().Put(te.Id(), saga)
 
 			// Execute saga processing
 			err = processor.Step(saga.TransactionId())

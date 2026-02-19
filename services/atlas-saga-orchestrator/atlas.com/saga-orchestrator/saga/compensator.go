@@ -252,7 +252,9 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -312,7 +314,9 @@ func (c *CompensatorImpl) compensateEquipAsset(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -373,7 +377,9 @@ func (c *CompensatorImpl) compensateUnequipAsset(s Saga, failedStep Step[any]) e
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -429,7 +435,9 @@ func (c *CompensatorImpl) compensateCreateCharacter(s Saga, failedStep Step[any]
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -551,7 +559,9 @@ func (c *CompensatorImpl) compensateCreateAndEquipAsset(s Saga, failedStep Step[
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -607,7 +617,9 @@ func (c *CompensatorImpl) compensateChangeHair(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -663,7 +675,9 @@ func (c *CompensatorImpl) compensateChangeFace(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -719,7 +733,9 @@ func (c *CompensatorImpl) compensateChangeSkin(s Saga, failedStep Step[any]) err
 			return err
 		}
 
-		GetCache().Put(c.t.Id(), updatedSaga)
+		if err := GetCache().Put(c.t.Id(), updatedSaga); err != nil {
+			return err
+		}
 	}
 
 	return nil

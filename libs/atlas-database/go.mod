@@ -7,7 +7,7 @@ require (
 	github.com/Chronicle20/atlas-tenant v1.0.7
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1

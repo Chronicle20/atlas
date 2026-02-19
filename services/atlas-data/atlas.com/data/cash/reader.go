@@ -73,6 +73,10 @@ func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider
 				Spec: make(map[SpecType]int32),
 			}
 			m.SlotMax = uint32(i.GetIntegerWithDefault("slotMax", 0))
+			m.StateChangeItem = uint32(i.GetIntegerWithDefault("stateChangeItem", 0))
+			if i.GetIntegerWithDefault("isBgmOrEffect", 0) == 1 {
+				m.BgmPath = i.GetString("bgmPath", "")
+			}
 
 			// Parse rate multiplier from info/rate (used for coupon rate display and calculation)
 			if rate := i.GetIntegerWithDefault("rate", 0); rate != 0 {

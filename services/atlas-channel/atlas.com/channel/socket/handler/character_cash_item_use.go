@@ -4,10 +4,12 @@ import (
 	"atlas-channel/chalkboard"
 	character2 "atlas-channel/character"
 	"atlas-channel/consumable"
+	"atlas-channel/saga"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -15,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,6 +58,55 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), message)
 			return
 		}
+		if it == CashSlotItemTypeFieldEffect {
+			message := r.ReadAsciiString()
+			if !updateTimeFirst {
+				updateTime = r.ReadUint32()
+			}
+			_ = updateTime
+
+			transactionId := uuid.New()
+			now := time.Now()
+			f := s.Field()
+			steps := []saga.Step[any]{
+				{
+					StepId: "consume_field_effect_item",
+					Status: saga.Pending,
+					Action: saga.DestroyAsset,
+					Payload: saga.DestroyAssetPayload{
+						CharacterId: s.CharacterId(),
+						TemplateId:  uint32(itemId),
+						Quantity:    1,
+						RemoveAll:   false,
+					},
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+				{
+					StepId: "show_field_effect_weather",
+					Status: saga.Pending,
+					Action: saga.FieldEffectWeather,
+					Payload: saga.FieldEffectWeatherPayload{
+						WorldId:   f.WorldId(),
+						ChannelId: f.ChannelId(),
+						MapId:     f.MapId(),
+						Instance:  f.Instance(),
+						ItemId:    uint32(itemId),
+						Message:   message,
+						Duration:  20,
+					},
+					CreatedAt: now,
+					UpdatedAt: now,
+				},
+			}
+			_ = saga.NewProcessor(l, ctx).Create(saga.Saga{
+				TransactionId: transactionId,
+				SagaType:      saga.FieldEffectUse,
+				InitiatedBy:   "CASH_ITEM_USE",
+				Steps:         steps,
+			})
+			return
+		}
 
 		// TODO for v83 there is a trailing updateTime.
 
@@ -65,6 +117,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 type CashSlotItemType uint32
 
 const (
+	CashSlotItemTypeFieldEffect   = CashSlotItemType(16)
 	CashSlotItemTypePetConsumable = CashSlotItemType(30)
 	CashSlotItemTypeChalkboard    = CashSlotItemType(32)
 )
@@ -204,8 +257,8 @@ func GetCashSlotItemType(t tenant.Model) func(itemId item.Id) CashSlotItemType {
 		if category == item.ClassificationSongPlayer {
 			return CashSlotItemType(20)
 		}
-		if category == item.ClassificationMapEffect {
-			return CashSlotItemType(16)
+		if category == item.ClassificationFieldEffect {
+			return CashSlotItemTypeFieldEffect
 		}
 		if category == 513 {
 			return CashSlotItemType(7)

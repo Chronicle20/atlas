@@ -6,12 +6,12 @@ metadata:
 data:
   # Infrastructure
   BASE_SERVICE_URL: "http://atlas-ingress.atlas.svc.cluster.local:80/api/"
-  BOOTSTRAP_SERVERS: "kafka-broker.kafka.svc.cluster.local:9093"
+  BOOTSTRAP_SERVERS: "kafka.home:9093"
   DB_HOST: "postgres.home"
   DB_PORT: "5432"
-  REDIS_URL: "atlas-redis.atlas.svc.cluster.local:6379"
+  REDIS_URL: "redis.home:6379"
+  TRACE_ENDPOINT: "tempo.home:4317"
   REST_PORT: "8080"
-  TRACE_ENDPOINT: "192.168.23.237:4317"
   # Command Topics
   COMMAND_TOPIC_ACCOUNT: "COMMAND_TOPIC_ACCOUNT"
   COMMAND_TOPIC_ACCOUNT_LOGOUT: "COMMAND_TOPIC_ACCOUNT_LOGOUT"

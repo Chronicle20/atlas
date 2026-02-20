@@ -6,7 +6,7 @@ import (
 	"atlas-character-factory/kafka/consumer/character"
 	"atlas-character-factory/kafka/consumer/saga"
 	"atlas-character-factory/logger"
-	"atlas-character-factory/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-character-factory/tracing"
 	"os"
 
@@ -59,7 +59,9 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	character.RegisterPersistentHandlers(l, tdm.Context())
-	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := saga.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

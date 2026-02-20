@@ -10,11 +10,11 @@ import (
 
 func TestGetTeardownManager(t *testing.T) {
 	manager := GetTeardownManager()
-	
+
 	if manager == nil {
 		t.Error("GetTeardownManager() returned nil")
 	}
-	
+
 	// Test that we get the same instance (singleton)
 	manager2 := GetTeardownManager()
 	if manager != manager2 {
@@ -24,15 +24,15 @@ func TestGetTeardownManager(t *testing.T) {
 
 func TestTeardownManager_TeardownFunc(t *testing.T) {
 	manager := GetTeardownManager()
-	
+
 	called := false
 	teardownFunc := func() {
 		called = true
 	}
-	
+
 	// Test that TeardownFunc doesn't panic
 	manager.TeardownFunc(teardownFunc)
-	
+
 	// We can't directly test the teardown execution without calling Wait()
 	// But we can test that the function was registered without error
 	if called {
@@ -44,7 +44,7 @@ func TestTeardownManager_Wait(t *testing.T) {
 	// Create a separate context for testing
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	
+
 	manager := &Manager{
 		termChan:  make(chan os.Signal, 1),
 		doneChan:  make(chan struct{}),
@@ -52,14 +52,14 @@ func TestTeardownManager_Wait(t *testing.T) {
 		context:   ctx,
 		cancel:    cancel,
 	}
-	
+
 	called := false
 	teardownFunc := func() {
 		called = true
 	}
-	
+
 	manager.TeardownFunc(teardownFunc)
-	
+
 	// Test Wait with a timeout to avoid hanging
 	done := make(chan bool)
 	go func() {
@@ -68,7 +68,7 @@ func TestTeardownManager_Wait(t *testing.T) {
 		manager.Wait()
 		done <- true
 	}()
-	
+
 	// Give it a moment to process
 	select {
 	case <-done:
@@ -84,12 +84,12 @@ func TestTeardownManager_Wait(t *testing.T) {
 
 func TestTeardownManager_WaitGroup(t *testing.T) {
 	manager := GetTeardownManager()
-	
+
 	wg := manager.WaitGroup()
 	if wg == nil {
 		t.Error("WaitGroup() returned nil")
 	}
-	
+
 	// Test that we get the same instance
 	wg2 := manager.WaitGroup()
 	if wg != wg2 {
@@ -99,12 +99,12 @@ func TestTeardownManager_WaitGroup(t *testing.T) {
 
 func TestTeardownManager_Context(t *testing.T) {
 	manager := GetTeardownManager()
-	
+
 	ctx := manager.Context()
 	if ctx == nil {
 		t.Error("Context() returned nil")
 	}
-	
+
 	// Test that we get the same instance
 	ctx2 := manager.Context()
 	if ctx != ctx2 {

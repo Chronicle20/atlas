@@ -26,20 +26,37 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawnCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAttemptCommandCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardClosenessCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardFullnessCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevelCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetExcludeCommand(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawnCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAttemptCommandCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardClosenessCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardFullnessCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevelCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetExcludeCommand(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(pet2.EnvCommandTopicMovement)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementCommand(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

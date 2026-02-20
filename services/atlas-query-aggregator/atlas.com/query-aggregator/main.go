@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-query-aggregator/logger"
-	"atlas-query-aggregator/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-query-aggregator/tracing"
 	"atlas-query-aggregator/validation"
 	"os"

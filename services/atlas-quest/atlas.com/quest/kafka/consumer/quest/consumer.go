@@ -28,16 +28,27 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(quest2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStartQuestCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCompleteQuestCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitQuestCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateProgressCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreItemCommand())))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStartQuestCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCompleteQuestCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitQuestCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateProgressCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRestoreItemCommand()))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

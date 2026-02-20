@@ -7,7 +7,7 @@ import (
 	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
-	"atlas-marriages/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-marriages/tracing"
 	"os"
 
@@ -69,8 +69,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	marriage.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	marriage.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := marriage.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

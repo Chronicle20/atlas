@@ -9,7 +9,7 @@ import (
 	list2 "atlas-buddies/kafka/consumer/list"
 	"atlas-buddies/list"
 	"atlas-buddies/logger"
-	"atlas-buddies/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-buddies/tracing"
 	"os"
 
@@ -58,10 +58,18 @@ func main() {
 	list2.InitConsumers(l)(cmf)(consumerGroupId)
 	invite2.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	list2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	invite2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := list2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := invite2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

@@ -23,16 +23,27 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(shop2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExitCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleBuyCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSellCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeCommand(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExitCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBuyCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSellCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeCommand(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

@@ -39,7 +39,7 @@ func Init(l logrus.FieldLogger) func(ctx context.Context) func(serviceId uuid.UU
 				tenantConfig = make(map[uuid.UUID]tenant.RestModel)
 				tcs, err := requestAllTenants()(l, ctx)
 				if err != nil {
-					log.Fatalf("Could not retrieve tenant configuration.")
+					l.WithError(err).Fatalf("Could not retrieve tenant configuration.")
 				}
 
 				for _, tc := range tcs {

@@ -380,7 +380,7 @@ func (p *ProcessorImpl) positionAtPortal(mapId _map.Id, portalId uint32) model.O
 		if err != nil {
 			return err
 		}
-		GetTemporalRegistry().UpdatePosition(c.Id(), por.X(), por.Y())
+		GetTemporalRegistry().UpdatePosition(p.ctx, tenant.MustFromContext(p.ctx), c.Id(), por.X(), por.Y())
 		return nil
 	}
 }
@@ -670,7 +670,7 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 }
 
 func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) error {
-	GetTemporalRegistry().Update(characterId, x, y, stance)
+	GetTemporalRegistry().Update(p.ctx, tenant.MustFromContext(p.ctx), characterId, x, y, stance)
 	return nil
 }
 
@@ -735,7 +735,7 @@ func (p *ProcessorImpl) RequestDropMeso(transactionId uuid.UUID, field field.Mod
 		return txErr
 	}
 
-	tc := GetTemporalRegistry().GetById(characterId)
+	tc := GetTemporalRegistry().GetById(p.ctx, tenant.MustFromContext(p.ctx), characterId)
 
 	_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(field.WorldId(), field.ChannelId()), characterId, []stat.Type{stat.TypeMeso}, nil))
 	// TODO determine appropriate drop type and mod

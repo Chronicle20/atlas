@@ -6,7 +6,7 @@ import (
 	character2 "atlas-invites/kafka/consumer/character"
 	invite2 "atlas-invites/kafka/consumer/invite"
 	"atlas-invites/logger"
-	"atlas-invites/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-invites/tasks"
 	"atlas-invites/tracing"
 	"os"
@@ -57,8 +57,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	invite2.InitConsumers(l)(cmf)(consumerGroupId)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	invite2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := invite2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Create the service with the router
 	server.New(l).

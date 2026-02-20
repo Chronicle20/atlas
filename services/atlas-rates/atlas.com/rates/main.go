@@ -7,7 +7,7 @@ import (
 	character2 "atlas-rates/kafka/consumer/character"
 	rate2 "atlas-rates/kafka/consumer/rate"
 	"atlas-rates/logger"
-	"atlas-rates/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-rates/tracing"
 	"os"
 
@@ -60,19 +60,27 @@ func main() {
 
 	// Buff status events consumer
 	buff2.InitConsumers(l)(cmf)(consumerGroupId)
-	buff2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := buff2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// World/Channel rate events consumer
 	rate2.InitConsumers(l)(cmf)(consumerGroupId)
-	rate2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := rate2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Asset status events consumer (for item rate tracking)
 	asset2.InitConsumers(l)(cmf)(consumerGroupId)
-	asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Character status events consumer (for rate initialization on map enter)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Start REST server
 	server.New(l).

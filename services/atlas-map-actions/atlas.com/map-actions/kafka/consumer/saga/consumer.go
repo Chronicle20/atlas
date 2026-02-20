@@ -24,11 +24,16 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		t, _ := topic.EnvProvider(l)(saga.EnvStatusEventTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCompleted(l))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFailed(l))))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCompleted(l)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFailed(l)))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

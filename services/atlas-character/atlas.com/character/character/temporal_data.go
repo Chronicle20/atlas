@@ -1,6 +1,16 @@
 package character
 
-import "sync"
+import (
+	"context"
+	"encoding/json"
+	"strconv"
+	"sync"
+	"time"
+
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
+)
 
 type temporalData struct {
 	x      int16
@@ -8,28 +18,27 @@ type temporalData struct {
 	stance byte
 }
 
-func (d *temporalData) UpdatePosition(x int16, y int16) *temporalData {
-	return &temporalData{
-		x:      x,
-		y:      y,
-		stance: d.stance,
-	}
+func (d temporalData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		X      int16 `json:"x"`
+		Y      int16 `json:"y"`
+		Stance byte  `json:"stance"`
+	}{X: d.x, Y: d.y, Stance: d.stance})
 }
 
-func (d *temporalData) Update(x int16, y int16, stance byte) *temporalData {
-	return &temporalData{
-		x:      x,
-		y:      y,
-		stance: stance,
+func (d *temporalData) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		X      int16 `json:"x"`
+		Y      int16 `json:"y"`
+		Stance byte  `json:"stance"`
 	}
-}
-
-func (d *temporalData) UpdateStance(stance byte) *temporalData {
-	return &temporalData{
-		x:      d.x,
-		y:      d.y,
-		stance: stance,
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
 	}
+	d.x = raw.X
+	d.y = raw.Y
+	d.stance = raw.Stance
+	return nil
 }
 
 func (d *temporalData) X() int16 {
@@ -44,113 +53,55 @@ func (d *temporalData) Stance() byte {
 	return d.stance
 }
 
+// temporalRegistry wraps a TenantCoalescedRegistry to provide high-level
+// semantic methods for character temporal data (position, stance).
+// Writes are buffered locally and flushed to Redis periodically. Reads are
+// served from a local cache with bounded staleness.
 type temporalRegistry struct {
-	data           map[uint32]*temporalData
-	mutex          *sync.RWMutex
-	characterLocks map[uint32]*sync.RWMutex
+	reg *atlas.TenantCoalescedRegistry[uint32, temporalData]
 }
 
-func (r *temporalRegistry) UpdatePosition(characterId uint32, x int16, y int16) {
-	r.lockCharacter(characterId)
-	if val, ok := r.data[characterId]; ok {
-		r.data[characterId] = val.UpdatePosition(x, y)
-	} else {
-		r.data[characterId] = &temporalData{
-			x:      x,
-			y:      y,
-			stance: 0,
-		}
-	}
-	r.unlockCharacter(characterId)
+func (r *temporalRegistry) UpdatePosition(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16) {
+	existing, _ := r.reg.Get(ctx, t, characterId)
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, stance: existing.stance})
 }
 
-func (r *temporalRegistry) lockCharacter(characterId uint32) {
-	r.mutex.Lock()
-	lock, exists := r.characterLocks[characterId]
-	if !exists {
-		lock = &sync.RWMutex{}
-		r.characterLocks[characterId] = lock
-	}
-	r.mutex.Unlock()
-	lock.Lock()
+func (r *temporalRegistry) Update(ctx context.Context, t tenant.Model, characterId uint32, x int16, y int16, stance byte) {
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: x, y: y, stance: stance})
 }
 
-func (r *temporalRegistry) readLockCharacter(characterId uint32) {
-	r.mutex.Lock()
-	lock, exists := r.characterLocks[characterId]
-	if !exists {
-		lock = &sync.RWMutex{}
-		r.characterLocks[characterId] = lock
-	}
-	r.mutex.Unlock()
-	lock.RLock()
+func (r *temporalRegistry) UpdateStance(ctx context.Context, t tenant.Model, characterId uint32, stance byte) {
+	existing, _ := r.reg.Get(ctx, t, characterId)
+	_ = r.reg.Put(ctx, t, characterId, temporalData{x: existing.x, y: existing.y, stance: stance})
 }
 
-func (r *temporalRegistry) unlockCharacter(characterId uint32) {
-	if val, ok := r.characterLocks[characterId]; ok {
-		val.Unlock()
+func (r *temporalRegistry) GetById(ctx context.Context, t tenant.Model, characterId uint32) temporalData {
+	val, err := r.reg.Get(ctx, t, characterId)
+	if err != nil {
+		return temporalData{}
 	}
+	return val
 }
 
-func (r *temporalRegistry) readUnlockCharacter(characterId uint32) {
-	if val, ok := r.characterLocks[characterId]; ok {
-		val.RUnlock()
-	}
-}
-
-func (r *temporalRegistry) Update(characterId uint32, x int16, y int16, stance byte) {
-	r.lockCharacter(characterId)
-	if val, ok := r.data[characterId]; ok {
-		r.data[characterId] = val.Update(x, y, stance)
-	} else {
-		r.data[characterId] = &temporalData{
-			x:      x,
-			y:      y,
-			stance: stance,
-		}
-	}
-	r.unlockCharacter(characterId)
-}
-
-func (r *temporalRegistry) UpdateStance(characterId uint32, stance byte) {
-	r.lockCharacter(characterId)
-	if val, ok := r.data[characterId]; ok {
-		r.data[characterId] = val.UpdateStance(stance)
-	} else {
-		r.data[characterId] = &temporalData{
-			x:      0,
-			y:      0,
-			stance: stance,
-		}
-	}
-	r.unlockCharacter(characterId)
-}
-
-func (r *temporalRegistry) GetById(characterId uint32) *temporalData {
-	r.readLockCharacter(characterId)
-	defer r.readUnlockCharacter(characterId)
-
-	result := r.data[characterId]
-	if result != nil {
-		return result
-	}
-	return &temporalData{
-		x:      0,
-		y:      0,
-		stance: 0,
-	}
+func (r *temporalRegistry) Shutdown() {
+	r.reg.Shutdown()
 }
 
 var once sync.Once
 var instance *temporalRegistry
 
-func GetTemporalRegistry() *temporalRegistry {
+func InitTemporalRegistry(rc *goredis.Client) {
 	once.Do(func() {
 		instance = &temporalRegistry{
-			data:           make(map[uint32]*temporalData),
-			mutex:          &sync.RWMutex{},
-			characterLocks: make(map[uint32]*sync.RWMutex),
+			reg: atlas.NewTenantCoalescedRegistry[uint32, temporalData](
+				rc, "character-temporal",
+				func(k uint32) string { return strconv.FormatUint(uint64(k), 10) },
+				100*time.Millisecond, 100*time.Millisecond,
+			),
 		}
 	})
+}
+
+func GetTemporalRegistry() *temporalRegistry {
 	return instance
 }

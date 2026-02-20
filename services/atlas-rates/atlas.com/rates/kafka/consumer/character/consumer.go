@@ -23,11 +23,14 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(message.EnvEventTopicCharacterStatus)()
-		_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleMapChanged)))
+		if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleMapChanged))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

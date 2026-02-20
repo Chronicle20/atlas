@@ -23,15 +23,26 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(guild2.EnvStatusEventTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildRequestAgreementEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildCreatedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildDisbandedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildEmblemUpdatedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildCapacityUpdatedEvent)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildRequestAgreementEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildCreatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildDisbandedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildEmblemUpdatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGuildCapacityUpdatedEvent))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

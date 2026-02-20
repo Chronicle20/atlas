@@ -5,8 +5,10 @@ import (
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/producer"
 	"atlas-maps/map/character"
+	monster2 "atlas-maps/map/monster"
 	"context"
 	"encoding/json"
+	"os"
 	"sync"
 	"testing"
 
@@ -17,11 +19,26 @@ import (
 	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
+
+func TestMain(m *testing.M) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	monster2.InitRegistry(rc)
+
+	os.Exit(m.Run())
+}
 
 type mockCharacterProcessor struct {
 	mu                        sync.Mutex

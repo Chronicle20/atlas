@@ -323,7 +323,7 @@ func (p *ProcessorImpl) Move(petId uint32, f field.Model, ownerId uint32, x int1
 		return err
 	}
 	p.l.Infof("Recording pet [%d] movement. x [%d], y [%d], fh [%d].", petId, x, y, fh)
-	p.tr.Update(petId, x, y, stance, int16(fh.Id()))
+	p.tr.Update(p.ctx, p.t, petId, x, y, stance, int16(fh.Id()))
 	return nil
 }
 
@@ -414,10 +414,10 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(petId uint32) func(actorI
 						var fh position.Model
 						fh, err = p.pp.GetBelow(c.MapId(), c.X(), c.Y())()
 						if err == nil {
-							p.tr.Update(petId, c.X(), c.Y(), 0, int16(fh.Id()))
+							p.tr.Update(p.ctx, p.t, petId, c.X(), c.Y(), 0, int16(fh.Id()))
 						}
 					}
-					td := p.tr.GetById(pe.Id())
+					td := p.tr.GetById(p.ctx, p.t, pe.Id())
 					return mb.Put(pet.EnvStatusEventTopic, spawnEventProvider(pe, td))
 				})
 				if txErr != nil {
@@ -623,7 +623,7 @@ func (p *ProcessorImpl) ClearPositions(ownerId uint32) error {
 			return err
 		}
 		for _, pe := range ps {
-			p.tr.Remove(pe.Id())
+			p.tr.Remove(p.ctx, p.t, pe.Id())
 		}
 		return nil
 	})

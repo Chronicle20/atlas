@@ -9,7 +9,7 @@ import (
 	"atlas-drops-information/reactor"
 	drop3 "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/seed"
-	"atlas-drops-information/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-drops-information/tracing"
 	"os"
 

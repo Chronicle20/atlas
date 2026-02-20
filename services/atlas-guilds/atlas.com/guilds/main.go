@@ -11,7 +11,7 @@ import (
 	"atlas-guilds/kafka/consumer/invite"
 	thread2 "atlas-guilds/kafka/consumer/thread"
 	"atlas-guilds/logger"
-	"atlas-guilds/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
@@ -70,10 +70,18 @@ func main() {
 	invite.InitConsumers(l)(cmf)(consumerGroupId)
 	thread2.InitConsumers(l)(cmf)(consumerGroupId)
 
-	guild2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	invite.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	thread2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := guild2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := invite.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := thread2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

@@ -23,13 +23,18 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(account2.EnvEventSessionStatusTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedSessionEvent(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorSessionEvent(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedSessionEvent(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleErrorSessionEvent(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

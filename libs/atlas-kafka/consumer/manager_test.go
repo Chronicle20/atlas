@@ -411,6 +411,18 @@ func TestHandlerPanicPreventsCommit(t *testing.T) {
 	wg.Wait()
 }
 
+func TestRegisterHandlerUnknownTopicReturnsError(t *testing.T) {
+	consumer.ResetInstance()
+
+	cm := consumer.GetManager()
+	_, err := cm.RegisterHandler("nonexistent-topic", func(l logrus.FieldLogger, ctx context.Context, msg kafka.Message) (bool, error) {
+		return true, nil
+	})
+	if err == nil {
+		t.Fatal("Expected error when registering handler for unknown topic, got nil")
+	}
+}
+
 func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 	consumer.ResetInstance()
 

@@ -6,7 +6,7 @@ import (
 	drop2 "atlas-drops/kafka/consumer/drop"
 	"atlas-drops/logger"
 	_map "atlas-drops/map"
-	"atlas-drops/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-drops/tasks"
 	"atlas-drops/tracing"
 	"context"
@@ -67,7 +67,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	drop2.InitConsumers(l)(cmf)(consumerGroupId)
-	drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// CreateRoute and run server
 	server.New(l).

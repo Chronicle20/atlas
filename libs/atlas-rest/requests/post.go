@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"time"
 
@@ -25,10 +26,10 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				return result, err
 			}
 
-			var r *http.Response
+			var status string
+			var contentLength int64
+			var body []byte
 			post := func(attempt int) (bool, error) {
-				var err error
-
 				req, err := http.NewRequest(method, url, bytes.NewReader(jsonReq))
 				if err != nil {
 					l.WithError(err).Errorf("Error creating request.")
@@ -44,9 +45,18 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				req = req.WithContext(reqCtx)
 
 				l.Debugf("Issuing [%s] request to [%s].", method, req.URL)
-				r, err = client.Do(req)
+				r, err := client.Do(req)
 				if err != nil {
 					l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", method, url)
+					return true, err
+				}
+				defer r.Body.Close()
+
+				status = r.Status
+				contentLength = r.ContentLength
+				body, err = io.ReadAll(r.Body)
+				if err != nil {
+					l.WithError(err).Warnf("Failed reading response from [%s] on [%s], will retry.", method, url)
 					return true, err
 				}
 				return false, nil
@@ -58,14 +68,14 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				return result, err
 			}
 
-			if r.ContentLength == 0 {
-				l.WithFields(logrus.Fields{"method": method, "status": r.Status, "path": url, "input": input, "response": ""}).Debugf("Printing request.")
+			if contentLength == 0 {
+				l.WithFields(logrus.Fields{"method": method, "status": status, "path": url, "input": input, "response": ""}).Debugf("Printing request.")
 			} else {
-				result, err = processResponse[A](r)
+				result, err = unmarshalResponse[A](body)
 				if err != nil {
 					return result, err
 				}
-				l.WithFields(logrus.Fields{"method": method, "status": r.Status, "path": url, "input": input, "response": result}).Debugf("Printing request.")
+				l.WithFields(logrus.Fields{"method": method, "status": status, "path": url, "input": input, "response": result}).Debugf("Printing request.")
 			}
 
 			return result, nil

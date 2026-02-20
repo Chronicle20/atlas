@@ -1,24 +1,14 @@
 package requests
 
 import (
-	"io"
-	"net/http"
-
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
-func processResponse[A any](r *http.Response) (A, error) {
+func unmarshalResponse[A any](body []byte) (A, error) {
 	var result A
-	body, err := io.ReadAll(r.Body)
+	err := jsonapi.Unmarshal(body, &result)
 	if err != nil {
 		return result, err
 	}
-	defer r.Body.Close()
-
-	err = jsonapi.Unmarshal(body, &result)
-	if err != nil {
-		return result, err
-	}
-
 	return result, nil
 }

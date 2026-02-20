@@ -5,7 +5,7 @@ import (
 	"atlas-portals/kafka/consumer/character"
 	"atlas-portals/logger"
 	"atlas-portals/portal"
-	"atlas-portals/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-portals/tracing"
 	"os"
 
@@ -53,9 +53,13 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	portal.InitConsumers(l)(cmf)(consumerGroupId)
-	portal.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := portal.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Create the REST server
 	server.New(l).

@@ -2,6 +2,7 @@ package character_test
 
 import (
 	"atlas-character/character"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -9,8 +10,15 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/jtumidanski/api2go/jsonapi"
+	goredis "github.com/redis/go-redis/v9"
 )
+
+func testTenantContext() context.Context {
+	return tenant.WithContext(context.Background(), testTenant())
+}
 
 type Server struct {
 	baseUrl string
@@ -32,7 +40,16 @@ func GetServer() Server {
 	}
 }
 
+func setupTestRedis(t *testing.T) *goredis.Client {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	return goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+}
+
 func TestMarshalUnmarshalSunny(t *testing.T) {
+	rc := setupTestRedis(t)
+	character.InitTemporalRegistry(rc)
+
 	im := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
@@ -41,7 +58,8 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 		SetExperience(0).
 		Build()
 
-	res, err := model.Map(character.Transform)(model.FixedProvider(im))()
+	ctx := testTenantContext()
+	res, err := model.Map(character.Transform(ctx))(model.FixedProvider(im))()
 	if err != nil {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}
@@ -76,6 +94,9 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 }
 
 func TestTransformExtractMapIdAndGmFields(t *testing.T) {
+	rc := setupTestRedis(t)
+	character.InitTemporalRegistry(rc)
+
 	// Create a model with mapId and gm fields set
 	im := character.NewModelBuilder().
 		SetAccountId(1000).
@@ -88,7 +109,8 @@ func TestTransformExtractMapIdAndGmFields(t *testing.T) {
 		Build()
 
 	// Test Transform method
-	restModel, err := character.Transform(im)
+	ctx := testTenantContext()
+	restModel, err := character.Transform(ctx)(im)
 	if err != nil {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}

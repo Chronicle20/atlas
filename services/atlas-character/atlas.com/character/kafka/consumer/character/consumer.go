@@ -27,36 +27,83 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHair(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeFace(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeSkin(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevel(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeAp(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeSp(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSetHP(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDeductExperience(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleResetStats(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClampHP(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClampMP(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHair(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeFace(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeSkin(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardExperience(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAwardLevel(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeMeso(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDropMeso(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestChangeFame(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeAp(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestDistributeSp(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeHP(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMP(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSetHP(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeductExperience(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetStats(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampHP(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampMP(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(character2.EnvEventTopicCharacterStatus)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChangedStatusEvent(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJobChangedStatusEvent(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChangedStatusEvent(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleJobChangedStatusEvent(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

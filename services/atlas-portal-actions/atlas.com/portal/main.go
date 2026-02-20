@@ -8,7 +8,7 @@ import (
 	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
-	"atlas-portal-actions/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-portal-actions/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -62,8 +62,12 @@ func main() {
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Initialize Kafka handlers
-	script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := saga.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Initialize REST server
 	server.New(l).

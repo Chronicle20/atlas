@@ -25,13 +25,16 @@ func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(g
 }
 
 // InitHandlers initializes all character event handlers
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(characterMsg.EnvEventTopicStatus)()
 			// Character deleted event handler
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCharacterDeleted(db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCharacterDeleted(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

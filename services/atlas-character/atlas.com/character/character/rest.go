@@ -1,11 +1,13 @@
 package character
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
 
@@ -65,8 +67,15 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	td := GetTemporalRegistry().GetById(m.Id())
+func Transform(ctx context.Context) func(m Model) (RestModel, error) {
+	t := tenant.MustFromContext(ctx)
+	return func(m Model) (RestModel, error) {
+		td := GetTemporalRegistry().GetById(ctx, t, m.Id())
+		return transformWithTemporal(m, td)
+	}
+}
+
+func transformWithTemporal(m Model, td temporalData) (RestModel, error) {
 	rm := RestModel{
 		Id:                 m.Id(),
 		AccountId:          m.AccountId(),

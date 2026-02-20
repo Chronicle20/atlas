@@ -25,11 +25,14 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(monsterKafka.EnvEventTopicMonsterStatus)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -48,5 +51,5 @@ func handleStatusEventKilled(l logrus.FieldLogger, ctx context.Context, event mo
 		Field:  f,
 	}
 
-	monster2.GetRegistry().ResetCooldown(mapKey, event.MonsterId)
+	monster2.GetRegistry().ResetCooldown(ctx, mapKey, event.MonsterId)
 }

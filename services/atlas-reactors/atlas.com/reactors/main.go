@@ -5,7 +5,7 @@ import (
 	reactor2 "atlas-reactors/kafka/consumer/reactor"
 	"atlas-reactors/logger"
 	"atlas-reactors/reactor"
-	"atlas-reactors/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-reactors/tasks"
 	"atlas-reactors/tracing"
 	"os"
@@ -54,9 +54,13 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	reactor2.InitConsumers(l)(cmf)(consumerGroupId)
-	reactor2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := reactor2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 	drop2.InitConsumers(l)(cmf)(consumerGroupId)
-	drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := drop2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	go tasks.Register(tasks.NewCooldownCleanup(l))
 

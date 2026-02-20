@@ -6,7 +6,7 @@ import (
 	database "github.com/Chronicle20/atlas-database"
 	"atlas-reactor-actions/logger"
 	"atlas-reactor-actions/script"
-	"atlas-reactor-actions/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-reactor-actions/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -55,7 +55,9 @@ func main() {
 	script.InitConsumers(l)(cmf)(consumerGroupId)
 
 	// Initialize Kafka handlers
-	script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	if err := script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Initialize REST server
 	server.New(l).

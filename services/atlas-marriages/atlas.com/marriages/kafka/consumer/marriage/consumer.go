@@ -25,34 +25,63 @@ func NewConfig(l logrus.FieldLogger) func(name string) func(token string) func(g
 }
 
 // InitHandlers initializes all marriage command handlers
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(marriageMsg.EnvCommandTopic)()
 			// Proposal command handlers
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePropose(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAccept(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDecline(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancel(marriageService.NewProcessor, db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePropose(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAccept(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDecline(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancel(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
 
 			// Ceremony command handlers
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleScheduleCeremony(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleStartCeremony(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCompleteCeremony(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancelCeremony(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePostponeCeremony(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRescheduleCeremony(marriageService.NewProcessor, db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleScheduleCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleStartCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCompleteCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleCancelCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handlePostponeCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRescheduleCeremony(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
 
 			// Invitee command handlers
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAddInvitee(marriageService.NewProcessor, db))))
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRemoveInvitee(marriageService.NewProcessor, db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAddInvitee(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleRemoveInvitee(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
 
 			// Divorce command handler
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDivorce(marriageService.NewProcessor, db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleDivorce(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
 
 			// Advance ceremony state handler
-			_, _ = rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAdvanceCeremonyState(marriageService.NewProcessor, db))))
+			if _, err := rf(t, kafka.AdaptHandler(kafka.PersistentConfig(handleAdvanceCeremonyState(marriageService.NewProcessor, db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

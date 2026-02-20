@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-monster-death/kafka/consumer/monster"
 	"atlas-monster-death/logger"
-	"atlas-monster-death/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-monster-death/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -25,7 +25,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
-	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := monster.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

@@ -27,16 +27,25 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(thread2.EnvStatusEventTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadCreated(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadUpdated(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadReplyAdded(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadReplyDeleted(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadCreated(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadUpdated(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadReplyAdded(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleThreadReplyDeleted(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

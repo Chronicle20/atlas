@@ -15,6 +15,7 @@ COPY libs/atlas-socket/go.mod libs/atlas-socket/go.sum libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-service/go.mod libs/atlas-service/
 # Copy service module definitions
 COPY services/atlas-channel/atlas.com/channel/go.mod services/atlas-channel/atlas.com/channel/go.sum services/atlas-channel/atlas.com/channel/
 
@@ -29,6 +30,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-socket' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-channel/atlas.com/channel' >> go.work && \
     echo ')' >> go.work
 
@@ -44,6 +46,7 @@ COPY libs/atlas-socket libs/atlas-socket
 COPY libs/atlas-tenant libs/atlas-tenant
 
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-service libs/atlas-service
 # Copy service source code
 COPY services/atlas-channel/atlas.com/channel services/atlas-channel/atlas.com/channel
 

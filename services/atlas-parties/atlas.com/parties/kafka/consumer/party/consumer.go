@@ -21,15 +21,26 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeave)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestInvite)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleJoin))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLeave))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeLeader))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestInvite))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

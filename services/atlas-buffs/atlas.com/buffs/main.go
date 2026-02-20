@@ -4,7 +4,7 @@ import (
 	"atlas-buffs/character"
 	character2 "atlas-buffs/kafka/consumer/character"
 	"atlas-buffs/logger"
-	"atlas-buffs/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-buffs/tasks"
 	"atlas-buffs/tracing"
 	"os"
@@ -53,7 +53,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	go tasks.Register(tasks.NewExpiration(l, 10000))
 	go tasks.Register(tasks.NewPoisonTick(l, 1000))

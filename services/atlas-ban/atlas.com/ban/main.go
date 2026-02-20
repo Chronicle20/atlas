@@ -7,7 +7,7 @@ import (
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
 	"atlas-ban/logger"
-	"atlas-ban/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-ban/tasks"
 	"atlas-ban/tracing"
 	"os"
@@ -55,9 +55,13 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	ban2.InitConsumers(l)(cmf)(consumerGroupId)
-	ban2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := ban2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
-	account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

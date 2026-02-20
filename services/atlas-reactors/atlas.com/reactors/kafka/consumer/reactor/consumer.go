@@ -23,13 +23,20 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(reactor.EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleHit)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyInField)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreate))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleHit))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyInField))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

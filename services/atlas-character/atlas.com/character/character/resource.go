@@ -47,7 +47,7 @@ func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -82,7 +82,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -122,7 +122,7 @@ func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -151,7 +151,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		res, err := model.SliceMap(Transform)(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -173,7 +173,7 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			res, err := model.Map(Transform)(model.FixedProvider(cs))()
+			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(cs))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -207,7 +207,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Map(Transform)(model.FixedProvider(cs))()
+		res, err := model.Map(Transform(d.Context()))(model.FixedProvider(cs))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

@@ -24,16 +24,29 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(messageDropKafka.EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawn)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFromCharacter)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReservation)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelReservation)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestPickUp)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsume)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawn))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawnFromCharacter))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReservation))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelReservation))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestPickUp))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleConsume))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

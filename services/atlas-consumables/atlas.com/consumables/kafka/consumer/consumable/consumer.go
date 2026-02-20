@@ -24,14 +24,23 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(consumable2.EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelConsumableEffect)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestItemConsume))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestScroll))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyConsumableEffect))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelConsumableEffect))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

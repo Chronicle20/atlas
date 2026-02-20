@@ -6,7 +6,7 @@ import (
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/logger"
 	mapCharacter "atlas-consumables/map/character"
-	"atlas-consumables/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-consumables/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -34,8 +34,12 @@ func main() {
 	compartment.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

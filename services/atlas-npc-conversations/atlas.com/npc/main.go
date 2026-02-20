@@ -10,7 +10,7 @@ import (
 	questConsumer "atlas-npc-conversations/kafka/consumer/quest"
 	"atlas-npc-conversations/kafka/consumer/saga"
 	"atlas-npc-conversations/logger"
-	"atlas-npc-conversations/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-npc-conversations/tracing"
 	"os"
 
@@ -64,10 +64,18 @@ func main() {
 	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
-	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	npc.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	questConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	saga.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := npc.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := questConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := saga.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

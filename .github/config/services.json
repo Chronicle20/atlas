@@ -470,6 +470,12 @@
       "module_path": "libs/atlas-rest"
     },
     {
+      "name": "atlas-service",
+      "type": "go-library",
+      "path": "libs/atlas-service",
+      "module_path": "libs/atlas-service"
+    },
+    {
       "name": "atlas-socket",
       "type": "go-library",
       "path": "libs/atlas-socket",

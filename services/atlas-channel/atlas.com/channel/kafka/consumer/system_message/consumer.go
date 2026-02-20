@@ -26,23 +26,46 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(system_message2.EnvCommandTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessage(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayPortalSound(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfo(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfoText(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateAreaInfo(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUiDisable(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSendMessage(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePlayPortalSound(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfo(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowInfoText(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateAreaInfo(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowHint(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowGuideHint(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleShowIntro(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFieldEffect(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUiLock(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUiDisable(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

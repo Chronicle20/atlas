@@ -1,179 +1,298 @@
 package monster
 
 import (
-	monster2 "atlas-maps/data/map/monster"
-	"atlas-maps/map/character"
+	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"sync"
 	"time"
 
+	monster2 "atlas-maps/data/map/monster"
+	"atlas-maps/map/character"
+
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
-// SpawnPointRegistry is a singleton that manages spawn point cooldowns across all processor instances.
-// It ensures that spawn point cooldown state persists even when processors are recreated.
-//
-// Key Features:
-// - Singleton pattern ensures single instance per application
-// - Per-map spawn point registry scoped by MapKey (tenant/world/channel/map)
-// - Thread-safe concurrent access with per-map mutexes
-// - Lazy initialization from data provider on first access
-// - Maintains spawn point cooldown state across processor lifecycles
-type SpawnPointRegistry struct {
-	// spawnPointRegistry maintains the in-memory spawn point registry with cooldown tracking.
-	// Key: MapKey (tenant/world/channel/map combination)
-	// Value: Array of CooldownSpawnPoint instances for that map
-	// This registry is lazily initialized when first accessed for each map.
-	spawnPointRegistry map[character.MapKey][]*CooldownSpawnPoint
-
-	// spawnPointMu provides thread-safe access to the spawn point registry.
-	// Each MapKey has its own RWMutex to allow concurrent access across different maps
-	// while maintaining safety within each map's spawn point operations.
-	spawnPointMu map[character.MapKey]*sync.RWMutex
-
-	// registryMu protects the registry maps themselves during initialization
-	registryMu sync.RWMutex
+// storedSpawnPoint is the JSON-serializable format for Redis hash storage.
+type storedSpawnPoint struct {
+	Id          uint32 `json:"id"`
+	Template    uint32 `json:"template"`
+	MobTime     int32  `json:"mobTime"`
+	Team        int8   `json:"team"`
+	Cy          int16  `json:"cy"`
+	F           uint32 `json:"f"`
+	Fh          int16  `json:"fh"`
+	Rx0         int16  `json:"rx0"`
+	Rx1         int16  `json:"rx1"`
+	X           int16  `json:"x"`
+	Y           int16  `json:"y"`
+	NextSpawnAt int64  `json:"nextSpawnAt"`
 }
 
-// singleton instance
+// SpawnPointRegistry manages spawn point cooldowns backed by Redis hashes.
+// Each map's spawn points are stored as a Redis hash keyed by MapKey.
+// Hash field: spawn point ID (string)
+// Hash value: JSON-encoded storedSpawnPoint with NextSpawnAt as Unix milliseconds
+type SpawnPointRegistry struct {
+	client *goredis.Client
+}
+
 var (
 	registryInstance *SpawnPointRegistry
 	registryOnce     sync.Once
 )
 
-// GetRegistry returns the singleton instance of SpawnPointRegistry.
-// This ensures that spawn point cooldown state is maintained across processor instances.
-func GetRegistry() *SpawnPointRegistry {
+// InitRegistry initializes the singleton SpawnPointRegistry with a Redis client.
+func InitRegistry(rc *goredis.Client) {
 	registryOnce.Do(func() {
-		registryInstance = &SpawnPointRegistry{
-			spawnPointRegistry: make(map[character.MapKey][]*CooldownSpawnPoint),
-			spawnPointMu:       make(map[character.MapKey]*sync.RWMutex),
-		}
+		registryInstance = &SpawnPointRegistry{client: rc}
 	})
+}
+
+// GetRegistry returns the singleton SpawnPointRegistry instance.
+func GetRegistry() *SpawnPointRegistry {
 	return registryInstance
 }
 
-// InitializeForMap performs lazy initialization of the spawn point registry for a specific map.
-// This method is called on first access to ensure the registry is populated with spawn points
-// from the data provider and properly configured with cooldown tracking.
-//
-// Process:
-// 1. Check if registry already exists for this MapKey (avoid duplicate initialization)
-// 2. Fetch spawn points from the data provider
-// 3. Convert each SpawnPoint to CooldownSpawnPoint with NextSpawnAt = time.Now()
-// 4. Initialize the registry entry and per-map mutex for thread safety
-// 5. Log the initialization for debugging purposes
-//
-// The method is thread-safe and idempotent - multiple calls will not cause issues.
-func (r *SpawnPointRegistry) InitializeForMap(mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) error {
-	r.registryMu.Lock()
-	defer r.registryMu.Unlock()
+func spawnHashKey(mapKey character.MapKey) string {
+	return fmt.Sprintf("atlas:maps:spawn:%s:%d:%d:%d:%s",
+		mapKey.Tenant.String(),
+		mapKey.Field.WorldId(),
+		mapKey.Field.ChannelId(),
+		mapKey.Field.MapId(),
+		mapKey.Field.Instance().String(),
+	)
+}
 
-	// Check if already initialized
-	if _, exists := r.spawnPointRegistry[mapKey]; exists {
+func toStored(sp monster2.SpawnPoint, nextSpawnAt time.Time) storedSpawnPoint {
+	return storedSpawnPoint{
+		Id: sp.Id, Template: sp.Template, MobTime: sp.MobTime, Team: sp.Team,
+		Cy: sp.Cy, F: sp.F, Fh: sp.Fh, Rx0: sp.Rx0, Rx1: sp.Rx1, X: sp.X, Y: sp.Y,
+		NextSpawnAt: nextSpawnAt.UnixMilli(),
+	}
+}
+
+func fromStored(s storedSpawnPoint) *CooldownSpawnPoint {
+	return &CooldownSpawnPoint{
+		SpawnPoint: monster2.SpawnPoint{
+			Id: s.Id, Template: s.Template, MobTime: s.MobTime, Team: s.Team,
+			Cy: s.Cy, F: s.F, Fh: s.Fh, Rx0: s.Rx0, Rx1: s.Rx1, X: s.X, Y: s.Y,
+		},
+		NextSpawnAt: time.UnixMilli(s.NextSpawnAt),
+	}
+}
+
+// initializeScript atomically initializes spawn points for a map if not already present.
+var initializeScript = goredis.NewScript(`
+if redis.call('EXISTS', KEYS[1]) == 1 then
+    return 0
+end
+for i = 1, #ARGV, 2 do
+    redis.call('HSET', KEYS[1], ARGV[i], ARGV[i+1])
+end
+return 1
+`)
+
+// eligibleScript returns total spawn point count and eligible entries (NextSpawnAt <= now).
+// Returns: [totalCount, field1, value1, field2, value2, ...]
+var eligibleScript = goredis.NewScript(`
+local entries = redis.call('HGETALL', KEYS[1])
+local now = tonumber(ARGV[1])
+local total = math.floor(#entries / 2)
+local result = {tostring(total)}
+for i = 1, #entries, 2 do
+    local field = entries[i]
+    local value = entries[i+1]
+    local data = cjson.decode(value)
+    if data.nextSpawnAt <= now then
+        result[#result + 1] = field
+        result[#result + 1] = value
+    end
+end
+return result
+`)
+
+// updateCooldownsScript atomically updates NextSpawnAt for multiple spawn points.
+// ARGV: pairs of (spawnPointId, newNextSpawnAtMilli)
+var updateCooldownsScript = goredis.NewScript(`
+for i = 1, #ARGV, 2 do
+    local field = ARGV[i]
+    local newNextSpawnAt = tonumber(ARGV[i+1])
+    local value = redis.call('HGET', KEYS[1], field)
+    if value then
+        local data = cjson.decode(value)
+        data.nextSpawnAt = newNextSpawnAt
+        redis.call('HSET', KEYS[1], field, cjson.encode(data))
+    end
+end
+return 1
+`)
+
+// resetCooldownScript resets cooldown for spawn points matching a template ID with MobTime > 0.
+// Computes NextSpawnAt = nowMilli + (mobTime * 1000) per spawn point.
+var resetCooldownScript = goredis.NewScript(`
+local entries = redis.call('HGETALL', KEYS[1])
+local templateId = tonumber(ARGV[1])
+local nowMilli = tonumber(ARGV[2])
+for i = 1, #entries, 2 do
+    local field = entries[i]
+    local value = entries[i+1]
+    local data = cjson.decode(value)
+    if data.template == templateId and data.mobTime > 0 then
+        data.nextSpawnAt = nowMilli + (data.mobTime * 1000)
+        redis.call('HSET', KEYS[1], field, cjson.encode(data))
+    end
+end
+return 1
+`)
+
+// InitializeForMap initializes spawn points for a map if not already present in Redis.
+// Uses a Lua script for atomic check-and-initialize to prevent duplicate initialization.
+func (r *SpawnPointRegistry) InitializeForMap(ctx context.Context, mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) error {
+	key := spawnHashKey(mapKey)
+
+	exists, err := r.client.Exists(ctx, key).Result()
+	if err != nil {
+		return err
+	}
+	if exists > 0 {
 		return nil
 	}
 
-	// Get spawn points from the data provider
 	spawnPoints, err := dp.GetSpawnableSpawnPoints(mapKey.Field.MapId())
 	if err != nil {
 		return err
 	}
 
-	// Convert to CooldownSpawnPoint with initial NextSpawnAt
-	now := time.Now()
-	cooldownSpawnPoints := make([]*CooldownSpawnPoint, len(spawnPoints))
-	for i, sp := range spawnPoints {
-		cooldownSpawnPoints[i] = &CooldownSpawnPoint{
-			SpawnPoint:  sp,
-			NextSpawnAt: now,
-		}
+	if len(spawnPoints) == 0 {
+		return nil
 	}
 
-	// Initialize registry entry and mutex
-	r.spawnPointRegistry[mapKey] = cooldownSpawnPoints
-	r.spawnPointMu[mapKey] = &sync.RWMutex{}
+	now := time.Now()
+	args := make([]interface{}, 0, len(spawnPoints)*2)
+	for _, sp := range spawnPoints {
+		stored := toStored(sp, now)
+		data, err := json.Marshal(stored)
+		if err != nil {
+			return err
+		}
+		args = append(args, strconv.FormatUint(uint64(sp.Id), 10), string(data))
+	}
+
+	_, err = initializeScript.Run(ctx, r.client, []string{key}, args...).Result()
+	if err != nil {
+		return err
+	}
 
 	l.Debugf("Initialized spawn point registry for map key: Tenant [%s] World [%d] Channel [%d] Map [%d] with %d spawn points",
-		mapKey.Tenant.String(), mapKey.Field.WorldId(), mapKey.Field.ChannelId(), mapKey.Field.MapId(), len(cooldownSpawnPoints))
+		mapKey.Tenant.String(), mapKey.Field.WorldId(), mapKey.Field.ChannelId(), mapKey.Field.MapId(), len(spawnPoints))
 
 	return nil
 }
 
-// GetOrInitializeSpawnPoints is a helper function that ensures the spawn point registry
-// is initialized for the given MapKey and returns the spawn points and mutex for safe access.
-//
-// This function combines initialization and access in a single operation:
-// 1. Calls InitializeForMap to ensure registry exists (lazy initialization)
-// 2. Retrieves the spawn points array for the map
-// 3. Retrieves the associated mutex for thread-safe operations
-//
-// Returns:
-// - []*CooldownSpawnPoint: Array of spawn points with cooldown tracking
-// - *sync.RWMutex: Mutex for thread-safe access to the spawn points
-// - error: Any error that occurred during initialization
-//
-// Usage pattern:
-//
-//	spawnPoints, mutex, err := registry.GetOrInitializeSpawnPoints(mapKey, dp, l)
-//	if err != nil { handle error }
-//	mutex.RLock() // or mutex.Lock() for writes
-//	// access spawnPoints safely
-//	mutex.RUnlock() // or mutex.Unlock() for writes
-func (r *SpawnPointRegistry) GetOrInitializeSpawnPoints(mapKey character.MapKey, dp monster2.Processor, l logrus.FieldLogger) ([]*CooldownSpawnPoint, *sync.RWMutex, error) {
-	// Initialize if needed
-	if err := r.InitializeForMap(mapKey, dp, l); err != nil {
-		return nil, nil, err
+// GetEligibleSpawnPoints returns eligible spawn points and total count via Lua script.
+// A spawn point is eligible if its NextSpawnAt <= now.
+func (r *SpawnPointRegistry) GetEligibleSpawnPoints(ctx context.Context, mapKey character.MapKey) ([]*CooldownSpawnPoint, int, error) {
+	key := spawnHashKey(mapKey)
+	nowMilli := time.Now().UnixMilli()
+
+	result, err := eligibleScript.Run(ctx, r.client, []string{key}, nowMilli).Result()
+	if err != nil {
+		return nil, 0, err
 	}
 
-	// Get the spawn points and mutex (protected by read lock)
-	r.registryMu.RLock()
-	spawnPoints := r.spawnPointRegistry[mapKey]
-	mutex := r.spawnPointMu[mapKey]
-	r.registryMu.RUnlock()
-
-	return spawnPoints, mutex, nil
-}
-
-// ResetCooldown resets the cooldown for all spawn points matching the given template ID within a map.
-// This is called when a boss monster is killed to ensure the full MobTime delay applies from the kill time.
-// Only spawn points with MobTime > 0 (boss/special monsters) are affected.
-// This is a no-op if the mapKey is not in the registry (no players on map = no registry entry).
-func (r *SpawnPointRegistry) ResetCooldown(mapKey character.MapKey, templateId uint32) {
-	r.registryMu.RLock()
-	spawnPoints, exists := r.spawnPointRegistry[mapKey]
-	mutex, mutexExists := r.spawnPointMu[mapKey]
-	r.registryMu.RUnlock()
-
-	if !exists || !mutexExists {
-		return
+	arr, ok := result.([]interface{})
+	if !ok || len(arr) == 0 {
+		return nil, 0, nil
 	}
 
-	now := time.Now()
-	mutex.Lock()
-	defer mutex.Unlock()
+	totalStr, ok := arr[0].(string)
+	if !ok {
+		return nil, 0, fmt.Errorf("unexpected total count type")
+	}
+	totalCount, err := strconv.Atoi(totalStr)
+	if err != nil {
+		return nil, 0, err
+	}
 
-	for _, csp := range spawnPoints {
-		if csp.Template == templateId && csp.MobTime > 0 {
-			csp.NextSpawnAt = now.Add(time.Duration(csp.MobTime) * time.Second)
+	var eligible []*CooldownSpawnPoint
+	for i := 1; i+1 < len(arr); i += 2 {
+		valueStr, ok := arr[i+1].(string)
+		if !ok {
+			continue
 		}
+		var stored storedSpawnPoint
+		if err := json.Unmarshal([]byte(valueStr), &stored); err != nil {
+			continue
+		}
+		eligible = append(eligible, fromStored(stored))
+	}
+
+	return eligible, totalCount, nil
+}
+
+// UpdateCooldowns atomically updates NextSpawnAt for multiple spawn points.
+func (r *SpawnPointRegistry) UpdateCooldowns(ctx context.Context, mapKey character.MapKey, updates map[uint32]time.Time) error {
+	if len(updates) == 0 {
+		return nil
+	}
+	key := spawnHashKey(mapKey)
+	args := make([]interface{}, 0, len(updates)*2)
+	for spId, nextSpawnAt := range updates {
+		args = append(args, strconv.FormatUint(uint64(spId), 10), nextSpawnAt.UnixMilli())
+	}
+	_, err := updateCooldownsScript.Run(ctx, r.client, []string{key}, args...).Result()
+	return err
+}
+
+// ResetCooldown resets the cooldown for all spawn points matching the given template ID with MobTime > 0.
+// This is called when a boss monster is killed to enforce the full MobTime delay from the kill time.
+func (r *SpawnPointRegistry) ResetCooldown(ctx context.Context, mapKey character.MapKey, templateId uint32) {
+	key := spawnHashKey(mapKey)
+	nowMilli := time.Now().UnixMilli()
+	resetCooldownScript.Run(ctx, r.client, []string{key}, templateId, nowMilli)
+}
+
+// Reset clears all spawn point registries. Primarily used for testing.
+func (r *SpawnPointRegistry) Reset(ctx context.Context) {
+	iter := r.client.Scan(ctx, 0, "atlas:maps:spawn:*", 0).Iterator()
+	for iter.Next(ctx) {
+		r.client.Del(ctx, iter.Val())
 	}
 }
 
-// Reset clears all spawn point registries. This is primarily used for testing.
-func (r *SpawnPointRegistry) Reset() {
-	r.registryMu.Lock()
-	defer r.registryMu.Unlock()
+// GetSpawnPointsForMap returns the spawn points for a specific map key.
+// Primarily used for testing and debugging.
+func (r *SpawnPointRegistry) GetSpawnPointsForMap(ctx context.Context, mapKey character.MapKey) ([]*CooldownSpawnPoint, bool) {
+	key := spawnHashKey(mapKey)
+	entries, err := r.client.HGetAll(ctx, key).Result()
+	if err != nil || len(entries) == 0 {
+		return nil, false
+	}
 
-	r.spawnPointRegistry = make(map[character.MapKey][]*CooldownSpawnPoint)
-	r.spawnPointMu = make(map[character.MapKey]*sync.RWMutex)
+	var spawnPoints []*CooldownSpawnPoint
+	for _, value := range entries {
+		var stored storedSpawnPoint
+		if err := json.Unmarshal([]byte(value), &stored); err != nil {
+			continue
+		}
+		spawnPoints = append(spawnPoints, fromStored(stored))
+	}
+
+	return spawnPoints, true
 }
 
-// GetSpawnPointsForMap returns the spawn points for a specific map key (read-only access).
-// This is primarily used for testing and debugging.
-func (r *SpawnPointRegistry) GetSpawnPointsForMap(mapKey character.MapKey) ([]*CooldownSpawnPoint, bool) {
-	r.registryMu.RLock()
-	defer r.registryMu.RUnlock()
-
-	spawnPoints, exists := r.spawnPointRegistry[mapKey]
-	return spawnPoints, exists
+// SetSpawnPointsForMap sets spawn points for a map key directly. Primarily used for testing.
+func (r *SpawnPointRegistry) SetSpawnPointsForMap(ctx context.Context, mapKey character.MapKey, spawnPoints []*CooldownSpawnPoint) error {
+	key := spawnHashKey(mapKey)
+	pipe := r.client.Pipeline()
+	for _, csp := range spawnPoints {
+		stored := toStored(csp.SpawnPoint, csp.NextSpawnAt)
+		data, _ := json.Marshal(stored)
+		pipe.HSet(ctx, key, strconv.FormatUint(uint64(csp.SpawnPoint.Id), 10), string(data))
+	}
+	_, err := pipe.Exec(ctx)
+	return err
 }

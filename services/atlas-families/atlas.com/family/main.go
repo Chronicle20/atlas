@@ -7,7 +7,7 @@ import (
 	family2 "atlas-family/kafka/consumer/family"
 	"atlas-family/logger"
 	"atlas-family/scheduler"
-	"atlas-family/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-family/tracing"
 	"os"
 
@@ -58,9 +58,13 @@ func main() {
 	// Initialize and start Kafka consumers
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	family2.InitConsumers(l)(cmf)(consumerGroupId)
-	family2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := family2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Initialize and start reputation reset scheduler
 	reputationResetJob := scheduler.NewReputationResetJob(l, db)

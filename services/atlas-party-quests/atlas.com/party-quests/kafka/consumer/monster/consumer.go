@@ -23,13 +23,20 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(monsterMessage.EnvEventTopicMonsterStatus)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFriendlyDrop(db))))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDamaged(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventKilled(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFriendlyDrop(db)))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

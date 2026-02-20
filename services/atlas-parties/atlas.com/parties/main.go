@@ -7,7 +7,7 @@ import (
 	party2 "atlas-parties/kafka/consumer/party"
 	"atlas-parties/logger"
 	"atlas-parties/party"
-	"atlas-parties/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-parties/tracing"
 	"os"
 
@@ -58,9 +58,15 @@ func main() {
 	party2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	invite.InitConsumers(l)(cmf)(consumerGroupId)
-	party2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := party2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := invite.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

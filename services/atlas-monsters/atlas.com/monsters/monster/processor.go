@@ -113,7 +113,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	m := GetMonsterRegistry().CreateMonster(p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
+	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
 
 	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
 	if err == nil {
@@ -258,7 +258,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 
 	if s.Killed {
 		// Clear cooldowns and drop timer on death
-		GetCooldownRegistry().ClearCooldowns(id)
+		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
 		GetDropTimerRegistry().Unregister(p.t, id)
 
 		// Emit cancellation events for any active status effects before death
@@ -270,7 +270,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 		if err != nil {
 			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 		}
-		_, err = GetMonsterRegistry().RemoveMonster(p.t, s.Monster.UniqueId())
+		_, err = GetMonsterRegistry().RemoveMonster(p.ctx, p.t, s.Monster.UniqueId())
 		if err != nil {
 			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
 		}
@@ -349,7 +349,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 	}
 
 	if s.Killed {
-		GetCooldownRegistry().ClearCooldowns(uniqueId)
+		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 		GetDropTimerRegistry().Unregister(p.t, uniqueId)
 
 		for _, se := range s.Monster.StatusEffects() {
@@ -360,7 +360,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		if err != nil {
 			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but unable to emit killed event.", s.Monster.UniqueId())
 		}
-		_, err = GetMonsterRegistry().RemoveMonster(p.t, s.Monster.UniqueId())
+		_, err = GetMonsterRegistry().RemoveMonster(p.ctx, p.t, s.Monster.UniqueId())
 		if err != nil {
 			p.l.WithError(err).Errorf("Friendly monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
 		}
@@ -418,7 +418,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 	}
 
 	// Check cooldown
-	if GetCooldownRegistry().IsOnCooldown(uniqueId, skillId) {
+	if GetCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, skillId) {
 		p.l.Debugf("Monster [%d] skill [%d] is on cooldown.", uniqueId, skillId)
 		return
 	}
@@ -446,7 +446,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 
 	// Register cooldown
 	if sd.Interval() > 0 {
-		GetCooldownRegistry().SetCooldown(uniqueId, skillId, time.Duration(sd.Interval())*time.Second)
+		GetCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, skillId, time.Duration(sd.Interval())*time.Second)
 	}
 
 	// Probability check
@@ -736,7 +736,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 	GetDropTimerRegistry().Unregister(p.t, uniqueId)
-	m, err := GetMonsterRegistry().RemoveMonster(p.t, uniqueId)
+	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)
 	if err != nil {
 		return err
 	}

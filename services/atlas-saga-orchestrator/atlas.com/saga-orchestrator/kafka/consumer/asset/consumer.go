@@ -27,14 +27,23 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMovedEvent)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMovedEvent))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

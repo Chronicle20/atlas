@@ -4,21 +4,17 @@
 // This package provides a spawn point registry system that prevents over-spawning
 // by enforcing cooldown periods on individual spawn points. The key features include:
 //
-// - In-memory registry scoped by MapKey (tenant/world/channel/map)
+// - Redis-backed registry scoped by MapKey (tenant/world/channel/map)
 // - MobTime-based cooldown enforcement per spawn point (default 5s for normal monsters)
 // - Lazy initialization from REST provider
-// - Thread-safe concurrent access with per-map mutexes
+// - Lua scripts for atomic eligibility checks and cooldown updates
 // - Maintains existing spawn rate calculations
 //
 // Architecture:
 // - CooldownSpawnPoint: Extends SpawnPoint with NextSpawnAt timestamp
-// - ProcessorImpl: Maintains registry and implements spawn logic
-// - Thread safety: Per-map RWMutex for concurrent access
-// - Multi-tenant: Separate registries per MapKey
-//
-// Usage:
-// The system is transparent to existing code - SpawnMonsters() method
-// maintains the same interface while adding cooldown enforcement internally.
+// - ProcessorImpl: Implements spawn logic using Redis-backed SpawnPointRegistry
+// - Thread safety: Redis atomicity via Lua scripts
+// - Multi-tenant: Separate Redis hashes per MapKey
 package monster
 
 import (
@@ -40,19 +36,6 @@ type Processor interface {
 	SpawnMonsters(transactionId uuid.UUID, field field.Model) error
 }
 
-// ProcessorImpl implements the Processor interface with spawn point cooldown functionality.
-//
-// Spawn Point Cooldown Mechanism:
-// The ProcessorImpl uses a singleton SpawnPointRegistry to track spawn point cooldowns.
-// This ensures that spawn point state persists across processor instances.
-//
-// Key Features:
-// - Uses singleton SpawnPointRegistry for persistent state
-// - Per-map spawn point registry scoped by MapKey (tenant/world/channel/map)
-// - MobTime-based cooldown enforcement after each spawn (default 5s, bosses use MobTime seconds)
-// - Thread-safe concurrent access with per-map RWMutex
-// - Lazy initialization from data provider on first access
-// - Maintains existing spawn rate calculations and character-based logic
 type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
@@ -75,44 +58,29 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 // SpawnMonsters implements the core spawn logic with cooldown enforcement.
-// This method uses the spawn point registry to track cooldowns and prevent over-spawning.
 //
-// Cooldown Mechanism Implementation:
-// 1. Create MapKey for registry scope (tenant/world/channel/map)
-// 2. Initialize or retrieve spawn points registry for this map
-// 3. Filter spawn points by cooldown eligibility (NextSpawnAt.Before(now))
-// 4. Calculate spawn requirements based on character count and monster limits
-// 5. Randomly select from eligible spawn points
-// 6. Update cooldown (NextSpawnAt = now + MobTime seconds, default 5s) before spawning
-// 7. Spawn monsters asynchronously and log activity
-//
-// Thread Safety:
-// - Uses per-map RWMutex for safe concurrent access
-// - RLock for reading spawn points during filtering
-// - Lock for updating cooldowns after spawning
-// - Supports concurrent spawning across different maps
-//
-// The method maintains existing spawn rate calculations while adding cooldown enforcement.
-func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, field field.Model) error {
-	p.l.Debugf("Executing spawn mechanism for Tenant [%s] Field [%s].", p.t.String(), field.Id())
+// 1. Initialize spawn point registry for this map (lazy, from data provider)
+// 2. Get eligible spawn points from Redis via Lua script (NextSpawnAt <= now)
+// 3. Calculate spawn requirements based on character count and total spawn points
+// 4. Randomly select from eligible spawn points
+// 5. Batch update cooldowns in Redis and spawn monsters asynchronously
+func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, f field.Model) error {
+	p.l.Debugf("Executing spawn mechanism for Tenant [%s] Field [%s].", p.t.String(), f.Id())
 
-	// Create MapKey for registry access (non-instanced maps use uuid.Nil)
 	mapKey := character.MapKey{
 		Tenant: p.t,
-		Field:  field,
+		Field:  f,
 	}
 
-	// Get spawn points from singleton registry with initialization if needed
 	registry := GetRegistry()
-	spawnPoints, mutex, err := registry.GetOrInitializeSpawnPoints(mapKey, p.dp, p.l)
-	if err != nil {
-		p.l.WithError(err).Errorf("Failed to get spawn points for field [%s].", field.Id())
+	if err := registry.InitializeForMap(p.ctx, mapKey, p.dp, p.l); err != nil {
+		p.l.WithError(err).Errorf("Failed to initialize spawn points for field [%s].", f.Id())
 		return err
 	}
 
-	cs, err := p.cp.GetCharactersInMap(transactionId, field)
+	cs, err := p.cp.GetCharactersInMap(transactionId, f)
 	if err != nil {
-		p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for field [%s].", field.Id())
+		p.l.WithError(err).Errorf("Unable to retrieve characters in map. Aborting spawning for field [%s].", f.Id())
 		return err
 	}
 
@@ -121,33 +89,23 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, field field.Model
 		return nil
 	}
 
-	// Lock for reading spawn points
-	mutex.RLock()
-
-	// Filter spawn points by cooldown expiry
-	now := time.Now()
-	var eligibleSpawnPoints []monster2.SpawnPoint
-	var eligibleIndices []int
-	for i, csp := range spawnPoints {
-		if csp.NextSpawnAt.Before(now) || csp.NextSpawnAt.Equal(now) {
-			eligibleSpawnPoints = append(eligibleSpawnPoints, csp.SpawnPoint)
-			eligibleIndices = append(eligibleIndices, i)
-		}
+	eligibleSpawnPoints, totalCount, err := registry.GetEligibleSpawnPoints(p.ctx, mapKey)
+	if err != nil {
+		p.l.WithError(err).Errorf("Failed to get eligible spawn points for field [%s].", f.Id())
+		return err
 	}
 
-	mutex.RUnlock()
-
 	if len(eligibleSpawnPoints) == 0 {
-		p.l.Debugf("No eligible spawn points available (all on cooldown) for field [%s].", field.Id())
+		p.l.Debugf("No eligible spawn points available (all on cooldown) for field [%s].", f.Id())
 		return nil
 	}
 
-	monstersInMap, err := p.mp.CountInMap(transactionId, field)
+	monstersInMap, err := p.mp.CountInMap(transactionId, f)
 	if err != nil {
 		p.l.WithError(err).Warnf("Assuming no monsters in map.")
 	}
 
-	monstersMax := p.getMonsterMax(c, len(spawnPoints))
+	monstersMax := p.getMonsterMax(c, totalCount)
 
 	toSpawn := monstersMax - monstersInMap
 	if toSpawn <= 0 {
@@ -155,37 +113,44 @@ func (p *ProcessorImpl) SpawnMonsters(transactionId uuid.UUID, field field.Model
 	}
 
 	// Shuffle eligible spawn points
-	shuffledIndices := p.shuffleIndices(eligibleIndices)
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	r.Shuffle(len(eligibleSpawnPoints), func(i, j int) {
+		eligibleSpawnPoints[i], eligibleSpawnPoints[j] = eligibleSpawnPoints[j], eligibleSpawnPoints[i]
+	})
 
-	// Spawn monsters from eligible spawn points
+	// Spawn monsters and collect cooldown updates
 	spawned := 0
-	for _, idx := range shuffledIndices {
+	now := time.Now()
+	cooldownUpdates := make(map[uint32]time.Time)
+
+	for _, csp := range eligibleSpawnPoints {
 		if spawned >= toSpawn {
 			break
 		}
 
-		originalIdx := eligibleIndices[idx]
-		sp := spawnPoints[originalIdx].SpawnPoint
+		sp := csp.SpawnPoint
 
-		// Update cooldown before spawning
 		cooldown := 5 * time.Second
 		if sp.MobTime > 0 {
 			cooldown = time.Duration(sp.MobTime) * time.Second
 		}
-		mutex.Lock()
-		spawnPoints[originalIdx].NextSpawnAt = now.Add(cooldown)
-		mutex.Unlock()
+		cooldownUpdates[sp.Id] = now.Add(cooldown)
 
 		spawned++
 		p.l.Debugf("Spawning monster at spawn point [%d] with template [%d] at position (%d, %d)", sp.Id, sp.Template, sp.X, sp.Y)
 
 		go func(sp monster2.SpawnPoint) {
-			p.mp.CreateMonster(transactionId, field, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
+			p.mp.CreateMonster(transactionId, f, sp.Template, sp.X, sp.Y, sp.Fh, sp.Team)
 		}(sp)
 	}
 
+	// Batch update cooldowns in Redis
+	if err := registry.UpdateCooldowns(p.ctx, mapKey, cooldownUpdates); err != nil {
+		p.l.WithError(err).Errorf("Failed to update spawn point cooldowns for field [%s].", f.Id())
+	}
+
 	p.l.Debugf("Spawned %d monsters out of %d needed for field [%s]. %d spawn points were on cooldown.",
-		spawned, toSpawn, field.Id(), len(spawnPoints)-len(eligibleSpawnPoints))
+		spawned, toSpawn, f.Id(), totalCount-len(eligibleSpawnPoints))
 	return nil
 }
 

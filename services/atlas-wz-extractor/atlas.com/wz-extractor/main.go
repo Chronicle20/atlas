@@ -3,7 +3,7 @@ package main
 import (
 	"atlas-wz-extractor/extraction"
 	"atlas-wz-extractor/logger"
-	"atlas-wz-extractor/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-wz-extractor/tracing"
 	"os"
 

@@ -5,7 +5,7 @@ import (
 	"atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
 	"atlas-fame/logger"
-	"atlas-fame/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-fame/tracing"
 
 	database "github.com/Chronicle20/atlas-database"
@@ -30,9 +30,13 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	fame2.InitConsumers(l)(cmf)(consumerGroupId)
-	fame2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := fame2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

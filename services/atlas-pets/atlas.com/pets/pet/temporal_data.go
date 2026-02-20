@@ -1,6 +1,16 @@
 package pet
 
-import "sync"
+import (
+	"context"
+	"encoding/json"
+	"strconv"
+	"sync"
+	"time"
+
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-tenant"
+	goredis "github.com/redis/go-redis/v9"
+)
 
 type TemporalData struct {
 	x      int16
@@ -9,31 +19,30 @@ type TemporalData struct {
 	fh     int16
 }
 
-func (d *TemporalData) UpdatePosition(x int16, y int16, fh int16) *TemporalData {
-	return &TemporalData{
-		x:      x,
-		y:      y,
-		stance: d.stance,
-		fh:     fh,
-	}
+func (d TemporalData) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		X      int16 `json:"x"`
+		Y      int16 `json:"y"`
+		Stance byte  `json:"stance"`
+		FH     int16 `json:"fh"`
+	}{X: d.x, Y: d.y, Stance: d.stance, FH: d.fh})
 }
 
-func (d *TemporalData) Update(x int16, y int16, stance byte, fh int16) *TemporalData {
-	return &TemporalData{
-		x:      x,
-		y:      y,
-		stance: stance,
-		fh:     fh,
+func (d *TemporalData) UnmarshalJSON(data []byte) error {
+	var raw struct {
+		X      int16 `json:"x"`
+		Y      int16 `json:"y"`
+		Stance byte  `json:"stance"`
+		FH     int16 `json:"fh"`
 	}
-}
-
-func (d *TemporalData) UpdateStance(stance byte) *TemporalData {
-	return &TemporalData{
-		x:      d.x,
-		y:      d.y,
-		stance: stance,
-		fh:     d.fh,
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
 	}
+	d.x = raw.X
+	d.y = raw.Y
+	d.stance = raw.Stance
+	d.fh = raw.FH
+	return nil
 }
 
 func (d *TemporalData) X() int16 {
@@ -57,109 +66,62 @@ func NewTemporalData() *TemporalData {
 }
 
 type TemporalRegistry interface {
-	UpdatePosition(petId uint32, x int16, y int16, fh int16)
-	Update(petId uint32, x int16, y int16, stance byte, fh int16)
-	UpdateStance(petId uint32, stance byte)
-	GetById(petId uint32) *TemporalData
-	Remove(petId uint32)
+	UpdatePosition(ctx context.Context, t tenant.Model, petId uint32, x int16, y int16, fh int16)
+	Update(ctx context.Context, t tenant.Model, petId uint32, x int16, y int16, stance byte, fh int16)
+	UpdateStance(ctx context.Context, t tenant.Model, petId uint32, stance byte)
+	GetById(ctx context.Context, t tenant.Model, petId uint32) *TemporalData
+	Remove(ctx context.Context, t tenant.Model, petId uint32)
 }
 
 type temporalRegistryImpl struct {
-	data     map[uint32]*TemporalData
-	mutex    *sync.RWMutex
-	petLocks map[uint32]*sync.RWMutex
+	reg *atlas.TenantCoalescedRegistry[uint32, TemporalData]
 }
 
-func (r *temporalRegistryImpl) UpdatePosition(petId uint32, x int16, y int16, fh int16) {
-	r.lockPet(petId)
-	if val, ok := r.data[petId]; ok {
-		r.data[petId] = val.UpdatePosition(x, y, fh)
-	} else {
-		r.data[petId] = NewTemporalData()
+func (r *temporalRegistryImpl) UpdatePosition(ctx context.Context, t tenant.Model, petId uint32, x int16, y int16, fh int16) {
+	existing, _ := r.reg.Get(ctx, t, petId)
+	_ = r.reg.Put(ctx, t, petId, TemporalData{x: x, y: y, stance: existing.stance, fh: fh})
+}
+
+func (r *temporalRegistryImpl) Update(ctx context.Context, t tenant.Model, petId uint32, x int16, y int16, stance byte, fh int16) {
+	_ = r.reg.Put(ctx, t, petId, TemporalData{x: x, y: y, stance: stance, fh: fh})
+}
+
+func (r *temporalRegistryImpl) UpdateStance(ctx context.Context, t tenant.Model, petId uint32, stance byte) {
+	existing, _ := r.reg.Get(ctx, t, petId)
+	_ = r.reg.Put(ctx, t, petId, TemporalData{x: existing.x, y: existing.y, stance: stance, fh: existing.fh})
+}
+
+func (r *temporalRegistryImpl) GetById(ctx context.Context, t tenant.Model, petId uint32) *TemporalData {
+	val, err := r.reg.Get(ctx, t, petId)
+	if err != nil {
+		return NewTemporalData()
 	}
-	r.unlockPet(petId)
+	return &val
 }
 
-func (r *temporalRegistryImpl) lockPet(petId uint32) {
-	r.mutex.Lock()
-	lock, exists := r.petLocks[petId]
-	if !exists {
-		lock = &sync.RWMutex{}
-		r.petLocks[petId] = lock
-	}
-	r.mutex.Unlock()
-	lock.Lock()
+func (r *temporalRegistryImpl) Remove(ctx context.Context, t tenant.Model, petId uint32) {
+	_ = r.reg.Remove(ctx, t, petId)
 }
 
-func (r *temporalRegistryImpl) readLockPet(petId uint32) {
-	r.mutex.Lock()
-	lock, exists := r.petLocks[petId]
-	if !exists {
-		lock = &sync.RWMutex{}
-		r.petLocks[petId] = lock
-	}
-	r.mutex.Unlock()
-	lock.RLock()
-}
-
-func (r *temporalRegistryImpl) unlockPet(petId uint32) {
-	if val, ok := r.petLocks[petId]; ok {
-		val.Unlock()
-	}
-}
-
-func (r *temporalRegistryImpl) readUnlockPet(petId uint32) {
-	if val, ok := r.petLocks[petId]; ok {
-		val.RUnlock()
-	}
-}
-
-func (r *temporalRegistryImpl) Update(petId uint32, x int16, y int16, stance byte, fh int16) {
-	r.lockPet(petId)
-	if _, ok := r.data[petId]; !ok {
-		r.data[petId] = NewTemporalData()
-	}
-	r.data[petId] = r.data[petId].Update(x, y, stance, fh)
-	r.unlockPet(petId)
-}
-
-func (r *temporalRegistryImpl) UpdateStance(petId uint32, stance byte) {
-	r.lockPet(petId)
-	if val, ok := r.data[petId]; ok {
-		r.data[petId] = val.UpdateStance(stance)
-	} else {
-		r.data[petId] = NewTemporalData()
-	}
-	r.unlockPet(petId)
-}
-
-func (r *temporalRegistryImpl) GetById(petId uint32) *TemporalData {
-	r.readLockPet(petId)
-	defer r.readUnlockPet(petId)
-
-	result := r.data[petId]
-	if result != nil {
-		return result
-	}
-	return NewTemporalData()
-}
-
-func (r *temporalRegistryImpl) Remove(petId uint32) {
-	r.lockPet(petId)
-	defer r.unlockPet(petId)
-	delete(r.data, petId)
+func (r *temporalRegistryImpl) Shutdown() {
+	r.reg.Shutdown()
 }
 
 var once sync.Once
 var instance *temporalRegistryImpl
 
-func GetTemporalRegistry() TemporalRegistry {
+func InitTemporalRegistry(rc *goredis.Client) {
 	once.Do(func() {
 		instance = &temporalRegistryImpl{
-			data:     make(map[uint32]*TemporalData),
-			mutex:    &sync.RWMutex{},
-			petLocks: make(map[uint32]*sync.RWMutex),
+			reg: atlas.NewTenantCoalescedRegistry[uint32, TemporalData](
+				rc, "pet-temporal",
+				func(k uint32) string { return strconv.FormatUint(uint64(k), 10) },
+				100*time.Millisecond, 100*time.Millisecond,
+			),
 		}
 	})
+}
+
+func GetTemporalRegistry() TemporalRegistry {
 	return instance
 }

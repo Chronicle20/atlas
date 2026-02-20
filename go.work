@@ -9,11 +9,12 @@ use (
 	./libs/atlas-rest
 	./libs/atlas-retry
 	./libs/atlas-script-core
+	./libs/atlas-service
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./services/atlas-account/atlas.com/account
-	./services/atlas-ban/atlas.com/ban
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
+	./services/atlas-ban/atlas.com/ban
 	./services/atlas-buddies/atlas.com/buddies
 	./services/atlas-buffs/atlas.com/buffs
 	./services/atlas-cashshop/atlas.com/cashshop
@@ -30,8 +31,8 @@ use (
 	./services/atlas-effective-stats/atlas.com/effective-stats
 	./services/atlas-expressions/atlas.com/expressions
 	./services/atlas-fame/atlas.com/fame
-	./services/atlas-gachapons/atlas.com/gachapons
 	./services/atlas-families/atlas.com/family
+	./services/atlas-gachapons/atlas.com/gachapons
 	./services/atlas-guilds/atlas.com/guilds
 	./services/atlas-inventory/atlas.com/inventory
 	./services/atlas-invites/atlas.com/invites

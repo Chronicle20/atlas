@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ import (
 type Registry struct {
 	mutex sync.Mutex
 
-	idAllocators  map[tenant.Model]*TenantIdAllocator
 	mapMonsterReg map[MapKey][]MonsterKey
 	mapLocks      map[MapKey]*sync.RWMutex
 
@@ -28,7 +28,6 @@ func GetMonsterRegistry() *Registry {
 	once.Do(func() {
 		registry = &Registry{}
 
-		registry.idAllocators = make(map[tenant.Model]*TenantIdAllocator)
 		registry.mapMonsterReg = make(map[MapKey][]MonsterKey)
 		registry.mapLocks = make(map[MapKey]*sync.RWMutex)
 
@@ -51,30 +50,18 @@ func (r *Registry) getMapLock(key MapKey) *sync.RWMutex {
 	return cm
 }
 
-func (r *Registry) getOrCreateAllocator(t tenant.Model) *TenantIdAllocator {
-	r.mutex.Lock()
-	defer r.mutex.Unlock()
-
-	if allocator, ok := r.idAllocators[t]; ok {
-		return allocator
-	}
-	allocator := NewTenantIdAllocator()
-	r.idAllocators[t] = allocator
-	return allocator
-}
-
-func (r *Registry) CreateMonster(tenant tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
-	mapKey := NewMapKey(tenant, f)
+func (r *Registry) CreateMonster(ctx context.Context, t tenant.Model, f field.Model, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
+	mapKey := NewMapKey(t, f)
 
 	mapLock := r.getMapLock(mapKey)
 	mapLock.Lock()
 	defer mapLock.Unlock()
 
-	uniqueId := r.getOrCreateAllocator(tenant).Allocate()
+	uniqueId := GetIdAllocator().Allocate(ctx, t)
 
 	m := NewMonster(f, uniqueId, monsterId, x, y, fh, stance, team, hp, mp)
 
-	monKey := MonsterKey{Tenant: tenant, MonsterId: m.UniqueId()}
+	monKey := MonsterKey{Tenant: t, MonsterId: m.UniqueId()}
 	r.mapMonsterReg[mapKey] = append(r.mapMonsterReg[mapKey], monKey)
 
 	r.monsterLock.Lock()
@@ -177,8 +164,8 @@ func (r *Registry) ApplyDamage(tenant tenant.Model, characterId uint32, damage u
 	}
 }
 
-func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, error) {
-	monKey := MonsterKey{Tenant: tenant, MonsterId: uniqueId}
+func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
+	monKey := MonsterKey{Tenant: t, MonsterId: uniqueId}
 
 	// First, look up the monster to get its map info (read lock only)
 	r.monsterLock.RLock()
@@ -187,7 +174,7 @@ func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, e
 		r.monsterLock.RUnlock()
 		return Model{}, errors.New("monster not found")
 	}
-	mapKey := NewMapKey(tenant, val.Field())
+	mapKey := NewMapKey(t, val.Field())
 	r.monsterLock.RUnlock()
 
 	// Acquire locks in same order as CreateMonster: mapLock -> monsterLock
@@ -211,7 +198,7 @@ func (r *Registry) RemoveMonster(tenant tenant.Model, uniqueId uint32) (Model, e
 	delete(r.monsterReg, monKey)
 
 	// Release the ID back to the allocator for reuse
-	r.getOrCreateAllocator(tenant).Release(uniqueId)
+	GetIdAllocator().Release(ctx, t, uniqueId)
 
 	return val, nil
 }
@@ -342,8 +329,7 @@ func (r *Registry) UpdateMonster(t tenant.Model, uniqueId uint32, m Model) {
 	r.monsterReg[monKey] = m
 }
 
-func (r *Registry) Clear() {
-	r.idAllocators = make(map[tenant.Model]*TenantIdAllocator)
+func (r *Registry) Clear(ctx context.Context) {
 	r.mapMonsterReg = make(map[MapKey][]MonsterKey)
 	r.mapLocks = make(map[MapKey]*sync.RWMutex)
 	r.monsterReg = make(map[MonsterKey]Model)

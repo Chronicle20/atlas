@@ -9,7 +9,7 @@ import (
 	session2 "atlas-login/kafka/consumer/account/session"
 	"atlas-login/kafka/consumer/seed"
 	"atlas-login/logger"
-	"atlas-login/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-login/session"
 	"atlas-login/socket"
 	"atlas-login/socket/handler"
@@ -94,9 +94,15 @@ func main() {
 		wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
 		hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 
-		account2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
-		session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
-		seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler)
+		if err := account2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := session2.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, ten.Port)
 	}

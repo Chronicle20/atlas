@@ -3,6 +3,7 @@ package requests
 import (
 	"context"
 	"errors"
+	"io"
 	"net/http"
 	"time"
 
@@ -22,10 +23,10 @@ func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, conf
 			configurator(c)
 		}
 
-		var r *http.Response
+		var statusCode int
+		var status string
+		var body []byte
 		get := func(attempt int) (bool, error) {
-			var err error
-
 			req, err := http.NewRequest(http.MethodGet, url, nil)
 			if err != nil {
 				l.WithError(err).Errorf("Error creating request.")
@@ -41,9 +42,18 @@ func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, conf
 			req = req.WithContext(reqCtx)
 
 			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
-			r, err = client.Do(req)
+			r, err := client.Do(req)
 			if err != nil {
 				l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", http.MethodGet, url)
+				return true, err
+			}
+			defer r.Body.Close()
+
+			statusCode = r.StatusCode
+			status = r.Status
+			body, err = io.ReadAll(r.Body)
+			if err != nil {
+				l.WithError(err).Warnf("Failed reading response from [%s] on [%s], will retry.", http.MethodGet, url)
 				return true, err
 			}
 			return false, nil
@@ -56,18 +66,18 @@ func get[A any](l logrus.FieldLogger, ctx context.Context) func(url string, conf
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodGet, url)
 			return resp, err
 		}
-		if r.StatusCode == http.StatusOK || r.StatusCode == http.StatusAccepted {
-			resp, err = processResponse[A](r)
-			l.WithFields(logrus.Fields{"method": http.MethodGet, "status": r.Status, "path": url, "response": resp}).Debugf("Printing request.")
+		if statusCode == http.StatusOK || statusCode == http.StatusAccepted {
+			resp, err = unmarshalResponse[A](body)
+			l.WithFields(logrus.Fields{"method": http.MethodGet, "status": status, "path": url, "response": resp}).Debugf("Printing request.")
 			return resp, err
 		}
-		if r.StatusCode == http.StatusBadRequest {
+		if statusCode == http.StatusBadRequest {
 			return resp, ErrBadRequest
 		}
-		if r.StatusCode == http.StatusNotFound {
+		if statusCode == http.StatusNotFound {
 			return resp, ErrNotFound
 		}
-		l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", http.MethodGet, url, r.StatusCode)
+		l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", http.MethodGet, url, statusCode)
 		return resp, errors.New("unknown error")
 	}
 }

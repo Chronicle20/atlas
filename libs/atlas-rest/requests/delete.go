@@ -18,10 +18,8 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			configurator(c)
 		}
 
-		var r *http.Response
+		var status string
 		get := func(attempt int) (bool, error) {
-			var err error
-
 			req, err := http.NewRequest(http.MethodDelete, url, nil)
 			if err != nil {
 				l.WithError(err).Errorf("Error creating request.")
@@ -37,11 +35,14 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			req = req.WithContext(reqCtx)
 
 			l.Debugf("Issuing [%s] request to [%s].", req.Method, req.URL)
-			r, err = client.Do(req)
+			r, err := client.Do(req)
 			if err != nil {
 				l.WithError(err).Warnf("Failed calling [%s] on [%s], will retry.", http.MethodDelete, url)
 				return true, err
 			}
+			defer r.Body.Close()
+
+			status = r.Status
 			return false, nil
 		}
 		cfg := retry.DefaultConfig().WithMaxRetries(c.retries).WithInitialDelay(200 * time.Millisecond).WithMaxDelay(5 * time.Second)
@@ -50,7 +51,7 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodDelete, url)
 			return err
 		}
-		l.WithFields(logrus.Fields{"method": http.MethodDelete, "status": r.Status, "path": url}).Debugf("Printing request.")
+		l.WithFields(logrus.Fields{"method": http.MethodDelete, "status": status, "path": url}).Debugf("Printing request.")
 
 		return err
 	}

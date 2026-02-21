@@ -16,7 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 	"github.com/sirupsen/logrus"
 )
 
@@ -136,14 +136,14 @@ func resolveFailureMessage(pendingAction action.PendingAction, errorCode string)
 
 // sendFailureMessage creates a saga to send a message to the character
 func sendFailureMessage(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model, message string) {
-	s := scriptsaga.NewBuilder().
-		SetSagaType(scriptsaga.InventoryTransaction).
+	s := sharedsaga.NewBuilder().
+		SetSagaType(sharedsaga.InventoryTransaction).
 		SetInitiatedBy("portal-action-transport-failure").
 		AddStep(
 			fmt.Sprintf("message-%d", characterId),
-			scriptsaga.Pending,
-			scriptsaga.SendMessage,
-			scriptsaga.SendMessagePayload{
+			sharedsaga.Pending,
+			sharedsaga.SendMessage,
+			sharedsaga.SendMessagePayload{
 				CharacterId: characterId,
 				WorldId:     ch.WorldId(),
 				ChannelId:   ch.Id(),

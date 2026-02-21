@@ -3,11 +3,11 @@ package saga
 import (
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 	"github.com/segmentio/kafka-go"
 )
 
-func CreateCommandProvider(s scriptsaga.Saga) model.Provider[[]kafka.Message] {
+func CreateCommandProvider(s sharedsaga.Saga) model.Provider[[]kafka.Message] {
 	key := []byte(s.TransactionId.String())
 	return producer.SingleMessageProvider(key, &s)
 }

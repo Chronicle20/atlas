@@ -433,8 +433,8 @@ func TestBuildCharacterCreationOnlySaga_AllFieldsPresent(t *testing.T) {
 		if payload.Hair != expectedHair {
 			t.Errorf("Hair mismatch: expected %d, got %d", expectedHair, payload.Hair)
 		}
-		if payload.Skin != uint32(input.SkinColor) {
-			t.Errorf("Skin mismatch: expected %d, got %d", uint32(input.SkinColor), payload.Skin)
+		if payload.Skin != input.SkinColor {
+			t.Errorf("Skin mismatch: expected %d, got %d", input.SkinColor, payload.Skin)
 		}
 		if payload.Top != input.Top {
 			t.Errorf("Top mismatch: expected %d, got %d", input.Top, payload.Top)
@@ -1263,8 +1263,8 @@ func TestCharacterCreationOrchestrationFlow(t *testing.T) {
 			if payload.Hair != expectedHair {
 				t.Errorf("Character create payload missing combined Hair: expected %d, got %d", expectedHair, payload.Hair)
 			}
-			if payload.Skin != uint32(input.SkinColor) {
-				t.Errorf("Character create payload missing Skin: expected %d, got %d", uint32(input.SkinColor), payload.Skin)
+			if payload.Skin != input.SkinColor {
+				t.Errorf("Character create payload missing Skin: expected %d, got %d", input.SkinColor, payload.Skin)
 			}
 
 			// Verify equipment fields

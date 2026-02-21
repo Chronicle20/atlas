@@ -68,7 +68,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			transactionId := uuid.New()
 			now := time.Now()
 			f := s.Field()
-			steps := []saga.Step[any]{
+			steps := []saga.Step{
 				{
 					StepId: "consume_field_effect_item",
 					Status: saga.Pending,

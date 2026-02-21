@@ -16,16 +16,13 @@ func TestNewBuilder(t *testing.T) {
 		t.Fatal("NewBuilder() should not return nil")
 	}
 
-	if b.transactionId == uuid.Nil {
+	// Verify builder produces a saga with a valid UUID
+	s, err := b.SetSagaType(InventoryTransaction).SetInitiatedBy("test").AddStep("s1", Pending, AwardAsset, nil).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.TransactionId == uuid.Nil {
 		t.Error("NewBuilder() should initialize transactionId with a valid UUID")
-	}
-
-	if b.steps == nil {
-		t.Error("NewBuilder() should initialize steps slice")
-	}
-
-	if len(b.steps) != 0 {
-		t.Errorf("NewBuilder() should initialize empty steps slice, got %d steps", len(b.steps))
 	}
 }
 
@@ -40,8 +37,12 @@ func TestBuilder_SetTransactionId(t *testing.T) {
 		t.Error("SetTransactionId should return the same builder instance")
 	}
 
-	if b.transactionId != customId {
-		t.Errorf("Expected transactionId %v, got %v", customId, b.transactionId)
+	s, err := b.SetSagaType(InventoryTransaction).SetInitiatedBy("test").AddStep("s1", Pending, AwardAsset, nil).Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if s.TransactionId != customId {
+		t.Errorf("Expected transactionId %v, got %v", customId, s.TransactionId)
 	}
 }
 
@@ -73,8 +74,12 @@ func TestBuilder_SetSagaType(t *testing.T) {
 				t.Error("SetSagaType should return the same builder instance")
 			}
 
-			if b.sagaType != tc.sagaType {
-				t.Errorf("Expected sagaType %v, got %v", tc.sagaType, b.sagaType)
+			s, err := b.SetInitiatedBy("test").AddStep("s1", Pending, AwardAsset, nil).Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if s.SagaType != tc.sagaType {
+				t.Errorf("Expected sagaType %v, got %v", tc.sagaType, s.SagaType)
 			}
 		})
 	}
@@ -108,8 +113,12 @@ func TestBuilder_SetInitiatedBy(t *testing.T) {
 				t.Error("SetInitiatedBy should return the same builder instance")
 			}
 
-			if b.initiatedBy != tc.initiatedBy {
-				t.Errorf("Expected initiatedBy '%s', got '%s'", tc.initiatedBy, b.initiatedBy)
+			s, err := b.SetSagaType(InventoryTransaction).AddStep("s1", Pending, AwardAsset, nil).Build()
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if s.InitiatedBy != tc.initiatedBy {
+				t.Errorf("Expected initiatedBy '%s', got '%s'", tc.initiatedBy, s.InitiatedBy)
 			}
 		})
 	}
@@ -132,11 +141,16 @@ func TestBuilder_AddStep(t *testing.T) {
 		t.Error("AddStep should return the same builder instance")
 	}
 
-	if len(b.steps) != 1 {
-		t.Fatalf("Expected 1 step, got %d", len(b.steps))
+	s, err := b.SetSagaType(InventoryTransaction).SetInitiatedBy("test").Build()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
-	step := b.steps[0]
+	if len(s.Steps) != 1 {
+		t.Fatalf("Expected 1 step, got %d", len(s.Steps))
+	}
+
+	step := s.Steps[0]
 	if step.StepId != "test_step" {
 		t.Errorf("Expected stepId 'test_step', got '%s'", step.StepId)
 	}
@@ -159,20 +173,26 @@ func TestBuilder_AddStep(t *testing.T) {
 }
 
 func TestBuilder_AddStep_MultipleSteps(t *testing.T) {
-	b := NewBuilder()
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("step_1", Pending, AwardExperience, AwardExperiencePayload{CharacterId: 1}).
+		AddStep("step_2", Pending, AwardLevel, AwardLevelPayload{CharacterId: 2, Amount: 5}).
+		AddStep("step_3", Pending, AwardMesos, AwardMesosPayload{CharacterId: 3, Amount: 1000}).
+		Build()
 
-	b.AddStep("step_1", Pending, AwardExperience, AwardExperiencePayload{CharacterId: 1})
-	b.AddStep("step_2", Pending, AwardLevel, AwardLevelPayload{CharacterId: 2, Amount: 5})
-	b.AddStep("step_3", Pending, AwardMesos, AwardMesosPayload{CharacterId: 3, Amount: 1000})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
 
-	if len(b.steps) != 3 {
-		t.Fatalf("Expected 3 steps, got %d", len(b.steps))
+	if len(s.Steps) != 3 {
+		t.Fatalf("Expected 3 steps, got %d", len(s.Steps))
 	}
 
 	expectedIds := []string{"step_1", "step_2", "step_3"}
 	for i, expectedId := range expectedIds {
-		if b.steps[i].StepId != expectedId {
-			t.Errorf("Step %d: expected stepId '%s', got '%s'", i, expectedId, b.steps[i].StepId)
+		if s.Steps[i].StepId != expectedId {
+			t.Errorf("Step %d: expected stepId '%s', got '%s'", i, expectedId, s.Steps[i].StepId)
 		}
 	}
 }
@@ -263,18 +283,25 @@ func TestBuilder_AddStep_DifferentPayloadTypes(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			b := NewBuilder()
-			b.AddStep("test_step", Pending, tc.action, tc.payload)
+			s, err := NewBuilder().
+				SetSagaType(InventoryTransaction).
+				SetInitiatedBy("test").
+				AddStep("test_step", Pending, tc.action, tc.payload).
+				Build()
 
-			if len(b.steps) != 1 {
-				t.Fatalf("Expected 1 step, got %d", len(b.steps))
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 
-			if b.steps[0].Action != tc.action {
-				t.Errorf("Expected action %s, got %s", tc.action, b.steps[0].Action)
+			if len(s.Steps) != 1 {
+				t.Fatalf("Expected 1 step, got %d", len(s.Steps))
 			}
 
-			if b.steps[0].Payload == nil {
+			if s.Steps[0].Action != tc.action {
+				t.Errorf("Expected action %s, got %s", tc.action, s.Steps[0].Action)
+			}
+
+			if s.Steps[0].Payload == nil {
 				t.Error("Expected payload to be set")
 			}
 		})
@@ -367,10 +394,18 @@ func TestBuilder_FluentAPI(t *testing.T) {
 
 func TestBuilder_StepTimestamps(t *testing.T) {
 	before := time.Now()
-	b := NewBuilder().AddStep("test", Pending, AwardExperience, AwardExperiencePayload{})
+	s, err := NewBuilder().
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("test", Pending, AwardExperience, AwardExperiencePayload{}).
+		Build()
 	after := time.Now()
 
-	step := b.steps[0]
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	step := s.Steps[0]
 
 	if step.CreatedAt.Before(before) || step.CreatedAt.After(after) {
 		t.Error("CreatedAt should be set to current time")

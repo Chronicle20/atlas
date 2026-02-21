@@ -11,73 +11,65 @@ import (
 	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 )
 
 // ConditionType represents the type of condition to validate
 type ConditionType string
 
 const (
-	JobCondition                    ConditionType = "jobId"
-	MesoCondition                   ConditionType = "meso"
-	MapCondition                    ConditionType = "mapId"
-	FameCondition                   ConditionType = "fame"
-	ItemCondition                   ConditionType = "item"
-	GenderCondition                 ConditionType = "gender"
-	LevelCondition                  ConditionType = "level"
-	RebornsCondition                ConditionType = "reborns"
-	DojoPointsCondition             ConditionType = "dojoPoints"
-	VanquisherKillsCondition        ConditionType = "vanquisherKills"
-	GmLevelCondition                ConditionType = "gmLevel"
-	GuildIdCondition                ConditionType = "guildId"
-	GuildLeaderCondition            ConditionType = "guildLeader"
-	GuildRankCondition              ConditionType = "guildRank"
-	QuestStatusCondition            ConditionType = "questStatus"
-	QuestProgressCondition          ConditionType = "questProgress"
-	UnclaimedMarriageGiftsCondition ConditionType = "hasUnclaimedMarriageGifts"
-	StrengthCondition               ConditionType = "strength"
-	DexterityCondition              ConditionType = "dexterity"
-	IntelligenceCondition           ConditionType = "intelligence"
-	LuckCondition                   ConditionType = "luck"
-	BuddyCapacityCondition          ConditionType = "buddyCapacity"
-	PetCountCondition               ConditionType = "petCount"
-	MapCapacityCondition            ConditionType = "mapCapacity"
-	InventorySpaceCondition         ConditionType = "inventorySpace"
-	TransportAvailableCondition     ConditionType = "transportAvailable"
-	SkillLevelCondition             ConditionType = "skillLevel"
-	HpCondition                     ConditionType = "hp"
-	MaxHpCondition                  ConditionType = "maxHp"
-	BuffCondition                   ConditionType = "buff"
-	ExcessSPCondition               ConditionType = "excessSp"
-	PartyIdCondition                ConditionType = "partyId"
-	PartyLeaderCondition            ConditionType = "partyLeader"
-	PartySizeCondition              ConditionType = "partySize"
-	PqCustomDataCondition           ConditionType = "pqCustomData"
+	JobCondition                    ConditionType = ConditionType(sharedsaga.JobCondition)
+	MesoCondition                   ConditionType = ConditionType(sharedsaga.MesoCondition)
+	MapCondition                    ConditionType = ConditionType(sharedsaga.MapCondition)
+	FameCondition                   ConditionType = ConditionType(sharedsaga.FameCondition)
+	ItemCondition                   ConditionType = ConditionType(sharedsaga.ItemCondition)
+	GenderCondition                 ConditionType = ConditionType(sharedsaga.GenderCondition)
+	LevelCondition                  ConditionType = ConditionType(sharedsaga.LevelCondition)
+	RebornsCondition                ConditionType = ConditionType(sharedsaga.RebornsCondition)
+	DojoPointsCondition             ConditionType = ConditionType(sharedsaga.DojoPointsCondition)
+	VanquisherKillsCondition        ConditionType = ConditionType(sharedsaga.VanquisherKillsCondition)
+	GmLevelCondition                ConditionType = ConditionType(sharedsaga.GmLevelCondition)
+	GuildIdCondition                ConditionType = ConditionType(sharedsaga.GuildIdCondition)
+	GuildLeaderCondition            ConditionType = ConditionType(sharedsaga.GuildLeaderCondition)
+	GuildRankCondition              ConditionType = ConditionType(sharedsaga.GuildRankCondition)
+	QuestStatusCondition            ConditionType = ConditionType(sharedsaga.QuestStatusCondition)
+	QuestProgressCondition          ConditionType = ConditionType(sharedsaga.QuestProgressCondition)
+	UnclaimedMarriageGiftsCondition ConditionType = ConditionType(sharedsaga.UnclaimedMarriageGiftsCondition)
+	StrengthCondition               ConditionType = ConditionType(sharedsaga.StrengthCondition)
+	DexterityCondition              ConditionType = ConditionType(sharedsaga.DexterityCondition)
+	IntelligenceCondition           ConditionType = ConditionType(sharedsaga.IntelligenceCondition)
+	LuckCondition                   ConditionType = ConditionType(sharedsaga.LuckCondition)
+	BuddyCapacityCondition          ConditionType = ConditionType(sharedsaga.BuddyCapacityCondition)
+	PetCountCondition               ConditionType = ConditionType(sharedsaga.PetCountCondition)
+	MapCapacityCondition            ConditionType = ConditionType(sharedsaga.MapCapacityCondition)
+	InventorySpaceCondition         ConditionType = ConditionType(sharedsaga.InventorySpaceCondition)
+	TransportAvailableCondition     ConditionType = ConditionType(sharedsaga.TransportAvailableCondition)
+	SkillLevelCondition             ConditionType = ConditionType(sharedsaga.SkillLevelCondition)
+	HpCondition                     ConditionType = ConditionType(sharedsaga.HpCondition)
+	MaxHpCondition                  ConditionType = ConditionType(sharedsaga.MaxHpCondition)
+	BuffCondition                   ConditionType = ConditionType(sharedsaga.BuffCondition)
+	ExcessSPCondition               ConditionType = ConditionType(sharedsaga.ExcessSPCondition)
+	PartyIdCondition                ConditionType = ConditionType(sharedsaga.PartyIdCondition)
+	PartyLeaderCondition            ConditionType = ConditionType(sharedsaga.PartyLeaderCondition)
+	PartySizeCondition              ConditionType = ConditionType(sharedsaga.PartySizeCondition)
+	PqCustomDataCondition           ConditionType = ConditionType(sharedsaga.PqCustomDataCondition)
 )
 
 // Operator represents the comparison operator in a condition
 type Operator string
 
 const (
-	Equals       Operator = "="
-	GreaterThan  Operator = ">"
-	LessThan     Operator = "<"
-	GreaterEqual Operator = ">="
-	LessEqual    Operator = "<="
-	In           Operator = "in"
+	Equals       Operator = Operator(sharedsaga.Equals)
+	GreaterThan  Operator = Operator(sharedsaga.GreaterThan)
+	LessThan     Operator = Operator(sharedsaga.LessThan)
+	GreaterEqual Operator = Operator(sharedsaga.GreaterEqual)
+	LessEqual    Operator = Operator(sharedsaga.LessEqual)
+	In           Operator = Operator(sharedsaga.In)
 )
 
-// ConditionInput represents the structured input for creating a condition
-type ConditionInput struct {
-	Type            string     `json:"type"`                      // e.g., "jobId", "meso", "item"
-	Operator        string     `json:"operator"`                  // e.g., "=", ">=", "<", "in"
-	Value           int        `json:"value"`                     // Value or quantity (for single value operators)
-	Values          []int      `json:"values,omitempty"`          // Values for "in" operator
-	ReferenceId     uint32     `json:"referenceId,omitempty"`     // For quest validation, item checks, etc.
-	Step            string     `json:"step,omitempty"`            // For quest progress validation
-	WorldId         world.Id   `json:"worldId,omitempty"`         // For mapCapacity conditions
-	ChannelId       channel.Id `json:"channelId,omitempty"`       // For mapCapacity conditions
-	IncludeEquipped bool       `json:"includeEquipped,omitempty"` // For item conditions: also check equipped items
-}
+// ConditionInput is the wire format for validation condition inputs.
+// Re-exported from atlas-saga shared library.
+type ConditionInput = sharedsaga.ValidationConditionInput
 
 // ConditionResult represents the result of a condition evaluation
 type ConditionResult struct {

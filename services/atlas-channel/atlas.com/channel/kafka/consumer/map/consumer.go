@@ -459,7 +459,7 @@ func applyConsumableEffectSaga(l logrus.FieldLogger, sp saga.Processor, characte
 		TransactionId: uuid.New(),
 		SagaType:      saga.FieldEffectUse,
 		InitiatedBy:   "WEATHER",
-		Steps: []saga.Step[any]{
+		Steps: []saga.Step{
 			{
 				StepId:    "apply_consumable_effect",
 				Status:    saga.Pending,

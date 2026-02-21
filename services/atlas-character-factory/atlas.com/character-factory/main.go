@@ -3,16 +3,14 @@ package main
 import (
 	"atlas-character-factory/configuration"
 	"atlas-character-factory/factory"
-	"atlas-character-factory/kafka/consumer/character"
 	"atlas-character-factory/kafka/consumer/saga"
 	"atlas-character-factory/logger"
-	"atlas-character-factory/service"
 	"atlas-character-factory/tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas-service"
 	"github.com/google/uuid"
 )
 
@@ -45,9 +43,6 @@ func main() {
 
 	tdm := service.GetTeardownManager()
 
-	rc := atlas.Connect(l)
-	factory.InitCache(rc)
-
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
@@ -56,10 +51,10 @@ func main() {
 	configuration.Init(l)(tdm.Context())(uuid.MustParse(os.Getenv("SERVICE_ID")))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
-	character.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
-	character.RegisterPersistentHandlers(l, tdm.Context())
-	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := saga.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

@@ -106,7 +106,7 @@ func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint
 	compartmentType := byte(compartment.TypeExplorer)
 
 	// Create the high-level withdrawal step (will be expanded by saga-orchestrator)
-	step := saga.Step[any]{
+	step := saga.Step{
 		StepId: "withdraw_from_cash_shop",
 		Status: saga.Pending,
 		Action: saga.WithdrawFromCashShop,
@@ -126,7 +126,7 @@ func (p *ProcessorImpl) MoveFromCashInventory(accountId uint32, characterId uint
 		TransactionId: transactionId,
 		SagaType:      saga.CashShopOperation,
 		InitiatedBy:   "CASH_SHOP",
-		Steps:         []saga.Step[any]{step},
+		Steps:         []saga.Step{step},
 	}
 
 	err := sagaP.Create(sagaTx)
@@ -151,7 +151,7 @@ func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32
 	compartmentType := byte(compartment.TypeExplorer)
 
 	// Create the high-level transfer step (will be expanded by saga-orchestrator)
-	step := saga.Step[any]{
+	step := saga.Step{
 		StepId: "transfer_to_cash_shop",
 		Status: saga.Pending,
 		Action: saga.TransferToCashShop,
@@ -171,7 +171,7 @@ func (p *ProcessorImpl) MoveToCashInventory(accountId uint32, characterId uint32
 		TransactionId: transactionId,
 		SagaType:      saga.CashShopOperation,
 		InitiatedBy:   "CASH_SHOP",
-		Steps:         []saga.Step[any]{step},
+		Steps:         []saga.Step{step},
 	}
 
 	err := sagaP.Create(sagaTx)

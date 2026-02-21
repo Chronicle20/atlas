@@ -33,20 +33,37 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(pet2.EnvStatusEventTopic)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExcludeChanged(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSpawned(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDespawned(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandResponse(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClosenessChanged(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleFullnessChanged(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLevelChanged(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSlotChanged(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExcludeChanged(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

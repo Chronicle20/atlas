@@ -9,7 +9,7 @@ import (
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
 	"atlas-inventory/kafka/consumer/drop"
 	"atlas-inventory/logger"
-	"atlas-inventory/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-inventory/tracing"
 	"os"
 
@@ -63,9 +63,15 @@ func main() {
 	compartment2.InitConsumers(l)(cmf)(consumerGroupId)
 	drop.InitConsumers(l)(cmf)(consumerGroupId)
 
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

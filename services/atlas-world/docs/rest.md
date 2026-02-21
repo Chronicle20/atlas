@@ -35,6 +35,10 @@ Type: `worlds`
 | recommended | bool | Whether world is recommended |
 | recommendedMessage | string | Recommendation message |
 | capacityStatus | uint16 | Capacity status |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
 
 Relationships:
 - channels (to-many): Associated channel resources
@@ -81,6 +85,10 @@ Type: `worlds`
 | recommended | bool | Whether world is recommended |
 | recommendedMessage | string | Recommendation message |
 | capacityStatus | uint16 | Capacity status |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
 
 Relationships:
 - channels (to-many): Associated channel resources
@@ -127,6 +135,10 @@ Type: `channels`
 | currentCapacity | uint32 | Current player count |
 | maxCapacity | uint32 | Maximum player capacity |
 | createdAt | time | Registration timestamp |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
 
 #### Error Conditions
 
@@ -170,6 +182,10 @@ Type: `channels`
 | currentCapacity | uint32 | Current player count |
 | maxCapacity | uint32 | Maximum player capacity |
 | createdAt | time | Registration timestamp |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
 
 #### Error Conditions
 
@@ -221,4 +237,86 @@ Type: `channels`
 
 | Status | Condition |
 |--------|-----------|
+| 500 | Internal server error |
+
+---
+
+### GET /api/worlds/{worldId}/rates
+
+Returns current rate multipliers for a world.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|-----|------|----------|-------------|
+| worldId | path | byte | Yes | World identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | Yes | Tenant identifier UUID |
+| REGION | Yes | Region code |
+| MAJOR_VERSION | Yes | Major version number |
+| MINOR_VERSION | Yes | Minor version number |
+
+#### Response Model
+
+Type: `rates`
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | string | Rate identifier (format: world-{worldId}) |
+| expRate | float64 | Experience rate multiplier |
+| mesoRate | float64 | Meso rate multiplier |
+| itemDropRate | float64 | Item drop rate multiplier |
+| questExpRate | float64 | Quest experience rate multiplier |
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 500 | Internal server error |
+
+---
+
+### PATCH /api/worlds/{worldId}/rates
+
+Updates a rate multiplier for a world.
+
+#### Parameters
+
+| Name | In | Type | Required | Description |
+|------|-----|------|----------|-------------|
+| worldId | path | byte | Yes | World identifier |
+
+#### Request Headers
+
+| Name | Required | Description |
+|------|----------|-------------|
+| TENANT_ID | Yes | Tenant identifier UUID |
+| REGION | Yes | Region code |
+| MAJOR_VERSION | Yes | Major version number |
+| MINOR_VERSION | Yes | Minor version number |
+
+#### Request Model
+
+Type: `rates`
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| rateType | string | Yes | Rate type (exp, meso, item_drop, quest_exp) |
+| multiplier | float64 | Yes | New rate multiplier value |
+
+#### Response
+
+| Status | Description |
+|--------|-------------|
+| 204 | No Content |
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid rate type |
 | 500 | Internal server error |

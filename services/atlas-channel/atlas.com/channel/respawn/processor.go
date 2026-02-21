@@ -167,11 +167,11 @@ func (p *ProcessorImpl) calculateExpLoss(c character.Model, mapData map_.Model, 
 func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, targetMapId _map.Id, useWheelOfFortune bool, protectiveItemId *uint32, expLoss uint32) error {
 	transactionId := uuid.New()
 	now := time.Now()
-	steps := make([]saga.Step[any], 0)
+	steps := make([]saga.Step, 0)
 
 	// Step: Consume Wheel of Fortune if used
 	if useWheelOfFortune {
-		steps = append(steps, saga.Step[any]{
+		steps = append(steps, saga.Step{
 			StepId: "consume_wheel_of_fortune",
 			Status: saga.Pending,
 			Action: saga.DestroyAsset,
@@ -188,7 +188,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 
 	// Step: Consume protective item if used
 	if protectiveItemId != nil {
-		steps = append(steps, saga.Step[any]{
+		steps = append(steps, saga.Step{
 			StepId: "consume_protective_item",
 			Status: saga.Pending,
 			Action: saga.DestroyAsset,
@@ -204,7 +204,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 	}
 
 	// Step: Set HP to 50
-	steps = append(steps, saga.Step[any]{
+	steps = append(steps, saga.Step{
 		StepId: "set_hp",
 		Status: saga.Pending,
 		Action: saga.SetHP,
@@ -220,7 +220,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 
 	// Step: Deduct experience if applicable
 	if expLoss > 0 {
-		steps = append(steps, saga.Step[any]{
+		steps = append(steps, saga.Step{
 			StepId: "deduct_experience",
 			Status: saga.Pending,
 			Action: saga.DeductExperience,
@@ -236,7 +236,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 	}
 
 	// Step: Cancel all buffs
-	steps = append(steps, saga.Step[any]{
+	steps = append(steps, saga.Step{
 		StepId: "cancel_all_buffs",
 		Status: saga.Pending,
 		Action: saga.CancelAllBuffs,
@@ -250,7 +250,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 	})
 
 	// Step: Warp to target map (spawn point)
-	steps = append(steps, saga.Step[any]{
+	steps = append(steps, saga.Step{
 		StepId: "warp_to_spawn",
 		Status: saga.Pending,
 		Action: saga.WarpToPortal,
@@ -258,7 +258,7 @@ func (p *ProcessorImpl) createRespawnSaga(ch channel.Model, characterId uint32, 
 			CharacterId: characterId,
 			WorldId:     ch.WorldId(),
 			ChannelId:   ch.Id(),
-			MapId:       uint32(targetMapId),
+			MapId:       targetMapId,
 			PortalId:    0, // 0 = spawn point
 		},
 		CreatedAt: now,

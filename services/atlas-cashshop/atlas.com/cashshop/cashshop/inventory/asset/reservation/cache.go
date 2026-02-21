@@ -1,6 +1,7 @@
 package reservation
 
 import (
+	"context"
 	"sync"
 	"time"
 )
@@ -10,6 +11,7 @@ type ReservationCache struct {
 	mu           sync.Mutex
 	reservations map[uint32]uint32 // Maps item ID to character ID
 	expirations  map[uint32]time.Time
+	cancel       context.CancelFunc
 }
 
 var (
@@ -20,14 +22,22 @@ var (
 // GetInstance returns the singleton instance of the ReservationCache
 func GetInstance() *ReservationCache {
 	once.Do(func() {
+		ctx, cancel := context.WithCancel(context.Background())
 		instance = &ReservationCache{
 			reservations: make(map[uint32]uint32),
 			expirations:  make(map[uint32]time.Time),
+			cancel:       cancel,
 		}
-		// Start a goroutine to clean up expired reservations
-		go instance.cleanupExpired()
+		go instance.cleanupExpired(ctx)
 	})
 	return instance
+}
+
+// Stop cancels the background cleanup goroutine
+func (c *ReservationCache) Stop() {
+	if c.cancel != nil {
+		c.cancel()
+	}
 }
 
 // IsReserved checks if an item is already reserved
@@ -87,19 +97,24 @@ func (c *ReservationCache) Release(itemID uint32) {
 }
 
 // cleanupExpired periodically removes expired reservations
-func (c *ReservationCache) cleanupExpired() {
+func (c *ReservationCache) cleanupExpired(ctx context.Context) {
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		c.mu.Lock()
-		now := time.Now()
-		for itemID, expiration := range c.expirations {
-			if now.After(expiration) {
-				delete(c.reservations, itemID)
-				delete(c.expirations, itemID)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			c.mu.Lock()
+			now := time.Now()
+			for itemID, expiration := range c.expirations {
+				if now.After(expiration) {
+					delete(c.reservations, itemID)
+					delete(c.expirations, itemID)
+				}
 			}
+			c.mu.Unlock()
 		}
-		c.mu.Unlock()
 	}
 }

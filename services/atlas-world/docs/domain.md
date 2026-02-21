@@ -20,6 +20,10 @@ Represents an active channel server instance within a world.
 | currentCapacity | uint32 | Current player count |
 | maxCapacity | uint32 | Maximum player capacity |
 | createdAt | time.Time | Registration timestamp |
+| expRate | float64 | Experience rate multiplier (defaults to 1.0) |
+| mesoRate | float64 | Meso rate multiplier (defaults to 1.0) |
+| itemDropRate | float64 | Item drop rate multiplier (defaults to 1.0) |
+| questExpRate | float64 | Quest experience rate multiplier (defaults to 1.0) |
 
 ### Invariants
 
@@ -68,6 +72,10 @@ Represents a game world that contains multiple channel servers.
 | recommendedMessage | string | Recommendation message |
 | capacityStatus | Status | Capacity status indicator |
 | channels | []channel.Model | Associated channel servers |
+| expRate | float64 | Experience rate multiplier (defaults to 1.0) |
+| mesoRate | float64 | Meso rate multiplier (defaults to 1.0) |
+| itemDropRate | float64 | Item drop rate multiplier (defaults to 1.0) |
+| questExpRate | float64 | Quest experience rate multiplier (defaults to 1.0) |
 
 #### State
 
@@ -101,3 +109,40 @@ Represents a game world that contains multiple channel servers.
 | AllWorldProvider | Provider for all worlds |
 | GetWorld | Returns a specific world by ID |
 | ByWorldIdProvider | Provider for a specific world |
+
+---
+
+## Rate
+
+### Responsibility
+
+Represents per-world rate multipliers for experience, meso, item drop, and quest experience.
+
+### Core Models
+
+#### Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| expRate | float64 | Experience rate multiplier (defaults to 1.0) |
+| mesoRate | float64 | Meso rate multiplier (defaults to 1.0) |
+| itemDropRate | float64 | Item drop rate multiplier (defaults to 1.0) |
+| questExpRate | float64 | Quest experience rate multiplier (defaults to 1.0) |
+
+#### Type
+
+| Value | Description |
+|-------|-------------|
+| exp | Experience rate |
+| meso | Meso rate |
+| item_drop | Item drop rate |
+| quest_exp | Quest experience rate |
+
+### Processors
+
+#### Processor
+
+| Method | Description |
+|--------|-------------|
+| GetWorldRates | Returns current rate multipliers for a world |
+| UpdateWorldRate | Updates a rate multiplier for a world and emits a rate changed event |

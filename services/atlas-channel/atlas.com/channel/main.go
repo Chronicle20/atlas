@@ -47,7 +47,7 @@ import (
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
-	"atlas-channel/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-channel/session"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
@@ -175,45 +175,123 @@ func main() {
 					WithField("channel.id", sc.ChannelId())
 
 				wp := produceWriterProducer(fl)(tenantConfig.Socket.Writers, writerList, rw)
-				account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				asset.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler)
-				character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				compartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				_map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				shop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				member.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				party.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				party_quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				fame.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				thread.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				drop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				reactor.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				skill.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				chalkboard.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				cashshopCompartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				instance_transport.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
-				gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler)
+				if err = account2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = asset.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = buddylist.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = channel.InitHandlers(fl)(sc)(ten.IPAddress, c.Port)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = character.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = expression.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = guild.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = compartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = invite.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = _map.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = shop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = member.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = party.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = party_quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = session2.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = fame.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = thread.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = chair.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = drop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = reactor.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = skill.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = buff.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = chalkboard.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = messenger.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = pet.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = cashshop.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = cashshopCompartment.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = note3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = quest.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = route.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = instance_transport.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = saga.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = storage3.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, ten.IPAddress, c.Port)

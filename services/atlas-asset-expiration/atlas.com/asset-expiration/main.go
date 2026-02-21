@@ -3,7 +3,7 @@ package main
 import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
 	"atlas-asset-expiration/logger"
-	"atlas-asset-expiration/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-asset-expiration/task"
 	"atlas-asset-expiration/tracing"
 	"os"
@@ -32,7 +32,9 @@ func main() {
 
 	// Session status events consumer (for login/logout tracking)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
-	session2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := session2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Start periodic expiration check task
 	interval := getExpirationInterval()

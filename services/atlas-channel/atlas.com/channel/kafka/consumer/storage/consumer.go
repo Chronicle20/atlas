@@ -30,20 +30,33 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMesosUpdatedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleArrangedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageErrorEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleProjectionCreatedEvent(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMesosUpdatedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleArrangedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageErrorEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleProjectionCreatedEvent(sc, wp)))); err != nil {
+					return err
+				}
 
 				t, _ = topic.EnvProvider(l)(storage2.EnvEventTopicStorageCompartmentStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentAcceptedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentReleasedEvent(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentAcceptedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStorageCompartmentReleasedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

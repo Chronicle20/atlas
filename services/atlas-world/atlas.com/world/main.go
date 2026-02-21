@@ -6,7 +6,7 @@ import (
 	channel2 "atlas-world/kafka/consumer/channel"
 	"atlas-world/logger"
 	"atlas-world/rate"
-	"atlas-world/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-world/tasks"
 	"atlas-world/tracing"
 	"atlas-world/world"
@@ -62,7 +62,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	channel2.InitConsumers(l)(cmf)(consumerGroupId)
-	channel2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := channel2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

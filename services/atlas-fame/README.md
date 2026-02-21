@@ -14,7 +14,7 @@ The atlas-fame service manages character fame (reputation) transactions. It vali
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST | Jaeger host:port |
+| TRACE_ENDPOINT | OpenTelemetry collector endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | DB_USER | Postgres user name |
 | DB_PASSWORD | Postgres user password |

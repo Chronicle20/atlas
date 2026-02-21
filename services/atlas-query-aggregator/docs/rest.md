@@ -139,6 +139,7 @@ The REST input validation layer accepts the following condition types. Additiona
 | 400 | Missing operator |
 | 400 | Unsupported condition type |
 | 400 | Unsupported operator |
+| 400 | 'in' operator requires values array |
 | 400 | Missing required referenceId for item, quest, or other reference-requiring conditions |
 | 400 | Missing required step for questProgress |
 | 400 | Both itemId and referenceId specified (use referenceId only) |

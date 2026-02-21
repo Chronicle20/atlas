@@ -147,3 +147,5 @@ In-memory session state registry (singleton).
 | ALREADY_LOGGED_IN | Account already has active session |
 | INCORRECT_PASSWORD | Password validation failed |
 | TOO_MANY_ATTEMPTS | Login attempt limit exceeded |
+| INVALID_PIN | PIN validation failed |
+| INVALID_PIC | PIC validation failed |

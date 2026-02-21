@@ -2,81 +2,81 @@
 
 ## Tables
 
-This service uses no persistent storage. All state is held in-memory using thread-safe singleton registries.
+This service uses no relational database. All state is stored in Redis.
 
-## In-Memory Registries
+## Redis Registries
 
 ### transport.RouteRegistry (transport/route_registry.go)
 
-Stores scheduled route models keyed by tenant and route ID.
+Stores scheduled route models per tenant using `atlas.TenantRegistry`.
 
-| Key | Type | Description |
-|-----|------|-------------|
-| tenantId | uuid.UUID | Tenant identifier |
-| routeId | uuid.UUID | Route identifier |
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| transport-route:{tenantKey}:{routeId} | JSON | Route model |
 
-**Value:** `transport.Model`
+**Value:** `transport.Model` (JSON serialized)
 
-**Concurrency:** `sync.RWMutex`, singleton via `sync.Once`
+**Backed by:** `atlas.TenantRegistry[uuid.UUID, Model]`
 
 ### instance.RouteRegistry (instance/route_registry.go)
 
-Stores instance route models keyed by tenant and route ID.
+Stores instance route models per tenant using `atlas.TenantRegistry`.
 
-| Key | Type | Description |
-|-----|------|-------------|
-| tenantId | uuid.UUID | Tenant identifier |
-| routeId | uuid.UUID | Route identifier |
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| instance-route:{tenantKey}:{routeId} | JSON | Instance route model |
 
-**Value:** `instance.RouteModel`
+**Value:** `instance.RouteModel` (JSON serialized)
 
-**Concurrency:** `sync.RWMutex`, singleton via `sync.Once`
+**Backed by:** `atlas.TenantRegistry[uuid.UUID, RouteModel]`
 
 ### instance.InstanceRegistry (instance/instance_registry.go)
 
-Stores active transport instances. Indexed by instance ID and by route key (tenant + route).
+Stores active transport instances with multiple Redis structures.
 
-| Index | Key | Type |
-|-------|-----|------|
-| Primary | instanceId | uuid.UUID |
-| Secondary | RouteKey{TenantId, RouteId} | composite |
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| transport:instances | SET | Set of all active instance IDs |
+| transport:instance:{instanceId} | STRING | Instance metadata (JSON) |
+| transport:instance:{instanceId}:chars | HASH | Character entries keyed by character ID |
+| transport:route:{tenantId}:{routeId} | SET | Set of instance IDs for a route |
 
-**Value:** `*instance.TransportInstance`
+**Metadata Value:** `TransportInstance` (JSON serialized, excludes characters)
 
-**Concurrency:** `sync.RWMutex`, singleton via `sync.Once`
+**Character Entry Value:** `CharacterEntry` (JSON serialized)
 
 ### instance.CharacterRegistry (instance/character_registry.go)
 
 Maps character IDs to their active transport instance.
 
-| Key | Type | Description |
-|-----|------|-------------|
-| characterId | uint32 | Character identifier |
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| transport:characters | HASH | Character ID to instance ID mapping |
 
-**Value:** `uuid.UUID` (instance ID)
+**Field:** Character ID (string)
 
-**Concurrency:** `sync.RWMutex`, singleton via `sync.Once`
+**Value:** Instance ID (UUID string)
 
 ### channel.Registry (channel/registry.go)
 
-Stores active channel models keyed by tenant ID.
+Stores active channel models per tenant.
 
-| Key | Type | Description |
-|-----|------|-------------|
-| tenantId | uuid.UUID | Tenant identifier |
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| transport:channels:{tenantKey} | SET | Set of channel members (worldId:channelId) |
 
-**Value:** `[]channel.Model`
-
-**Concurrency:** `sync.RWMutex`, singleton via `sync.Once`
+**Member Format:** `{worldId}:{channelId}`
 
 ## Relationships
 
-No persistent relationships. Instance transport instances reference routes by route ID and tenants by tenant ID within the in-memory registries.
+Instance transport instances reference routes by route ID and tenants by tenant ID within the Redis structures. The `transport:route:{tenantId}:{routeId}` set provides a secondary index from route to instances.
 
 ## Indexes
 
-Not applicable. In-memory maps provide O(1) lookup by key.
+- `transport:instances`: Global index of all active instance IDs
+- `transport:route:{tenantId}:{routeId}`: Per-route index of instance IDs
+- `transport:characters`: Global index of character-to-instance mapping
 
 ## Migration Rules
 
-Not applicable. All state is ephemeral and reconstructed on startup from the configuration service.
+Not applicable. All state is ephemeral and reconstructed on startup from the configuration service. Redis keys have no expiration set; instances are explicitly released when completed, cancelled, or during graceful shutdown.

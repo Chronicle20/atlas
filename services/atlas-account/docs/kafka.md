@@ -120,7 +120,7 @@ Produced to COMMAND_TOPIC_BAN. Generic envelope with typed body.
 | Reason | string |
 | ReasonCode | byte |
 | Permanent | bool |
-| ExpiresAt | int64 |
+| ExpiresAt | time.Time |
 | IssuedBy | string |
 
 ### Events
@@ -185,7 +185,7 @@ Produced to EVENT_TOPIC_ACCOUNT_SESSION_STATUS. Generic envelope with typed body
 |-------|------|
 | Code | string |
 | Reason | byte |
-| Until | uint64 |
+| Until | time.Time |
 | IPAddress | string |
 | HWID | string |
 

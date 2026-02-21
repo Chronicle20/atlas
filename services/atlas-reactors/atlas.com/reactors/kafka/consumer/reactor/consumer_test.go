@@ -37,7 +37,10 @@ func TestInitHandlers(t *testing.T) {
 		return topic, nil
 	}
 
-	consumer2.InitHandlers(l)(rf)
+	err := consumer2.InitHandlers(l)(rf)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
 	if handlerCount != 3 {
 		t.Fatalf("Expected 3 handlers to be registered, got %d", handlerCount)
 	}

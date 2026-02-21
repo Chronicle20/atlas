@@ -8,7 +8,7 @@ import (
 	monsterConsumer "atlas-party-quests/kafka/consumer/monster"
 	pqConsumer "atlas-party-quests/kafka/consumer/party_quest"
 	"atlas-party-quests/logger"
-	"atlas-party-quests/service"
+	"github.com/Chronicle20/atlas-service"
 	tenant2 "atlas-party-quests/tenant"
 	"atlas-party-quests/tracing"
 	"os"
@@ -59,9 +59,15 @@ func main() {
 	pqConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	monsterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	pqConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	characterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	monsterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
+	if err := pqConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := characterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := monsterConsumer.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
 	if err != nil {

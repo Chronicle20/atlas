@@ -14,7 +14,7 @@ import (
 	party_quest "atlas-messages/command/party_quest"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
-	"atlas-messages/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-messages/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -58,7 +58,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	message2.InitConsumers(l)(cmf)(consumerGroupId)
-	message2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := message2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 

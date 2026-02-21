@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Manages reactor instances as in-memory volatile game objects. Reactors are interactive objects within maps that respond to player actions. This domain handles reactor lifecycle (creation, hit, destruction), state transitions, cooldown management, and item-reactor activation.
+Manages reactor instances as volatile game objects backed by Redis. Reactors are interactive objects within maps that respond to player actions. This domain handles reactor lifecycle (creation, hit, destruction), state transitions, cooldown management, and item-reactor activation.
 
 ## Core Models
 
@@ -81,23 +81,14 @@ Composite key for map-scoped operations.
 | mapId     | uint32    | Map identifier       |
 | instance  | uuid.UUID | Instance identifier  |
 
-### ReactorKey
-
-Composite key for reactor cooldown tracking.
-
-| Field          | Type   | Description                    |
-|----------------|--------|--------------------------------|
-| Classification | uint32 | Reactor type/classification ID |
-| X              | int16  | X coordinate position          |
-| Y              | int16  | Y coordinate position          |
-
 ## Invariants
 
 - Classification is required when building a reactor model
-- Reactor IDs are assigned from a running counter starting at 1000000001
+- Reactor IDs are assigned via atomic Redis increment starting at 1000000001
 - Reactor IDs wrap around to 1000000001 if they exceed 2000000000
 - A reactor cannot be created at the same location (classification, x, y) while on cooldown
 - Cooldown is recorded when a reactor is destroyed, based on its delay value
+- Cooldowns expire automatically via Redis TTL
 - Cooldowns are cleared when a reactor is successfully created at that location
 - Item reactor activation type is identified by state event type 100
 - Reactors with state event type 100 or type 999 persist at their final state rather than being destroyed
@@ -121,7 +112,7 @@ Reactors that contain state event type 100 (item reactor) or type 999 persist at
 
 ### GetById
 
-Retrieves a reactor by its unique ID from the in-memory registry.
+Retrieves a reactor by its unique ID from the registry.
 
 ### GetInField
 
@@ -133,7 +124,7 @@ Creates a new reactor instance:
 1. Checks cooldown status for the location
 2. Retrieves reactor game data from atlas-data service
 3. Sets reactor name from game data if not provided
-4. Registers reactor in the in-memory registry
+4. Registers reactor in the registry
 5. Clears any cooldown for that location
 6. Emits CREATED status event
 
@@ -198,4 +189,4 @@ Retrieves reactor game data from atlas-data service by classification ID.
 
 ### CooldownCleanup
 
-Runs every 60 seconds to remove expired cooldown entries from the registry.
+Runs every 60 seconds. No-op since Redis TTL handles cooldown expiration automatically.

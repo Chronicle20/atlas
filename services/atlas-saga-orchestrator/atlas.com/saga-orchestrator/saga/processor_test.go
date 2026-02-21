@@ -409,3 +409,181 @@ func TestTransformExperienceDistributions(t *testing.T) {
 		assert.Equal(t, s.Attr1, target[i].Attr1)
 	}
 }
+
+func TestForwardCharacterCreationResult(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+
+	t.Run("Rewrites pending AwardAsset step characterId", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("award-item", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 0, Item: ItemPayload{TemplateId: 100}}).
+			Build()
+		assert.NoError(t, err)
+
+		// Attach result to the completed step
+		s, err = s.WithStepResult(0, map[string]any{"characterId": uint32(42)})
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		step, ok := result.StepAt(1)
+		assert.True(t, ok)
+		payload := step.Payload().(AwardItemActionPayload)
+		assert.Equal(t, uint32(42), payload.CharacterId)
+		assert.Equal(t, uint32(100), payload.Item.TemplateId)
+	})
+
+	t.Run("Rewrites pending CreateAndEquipAsset step characterId", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("equip", Pending, CreateAndEquipAsset, CreateAndEquipAssetPayload{CharacterId: 0, Item: ItemPayload{TemplateId: 200}}).
+			Build()
+		assert.NoError(t, err)
+
+		s, err = s.WithStepResult(0, map[string]any{"characterId": uint32(77)})
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		step, _ := result.StepAt(1)
+		payload := step.Payload().(CreateAndEquipAssetPayload)
+		assert.Equal(t, uint32(77), payload.CharacterId)
+	})
+
+	t.Run("Rewrites pending CreateSkill step characterId", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("skill", Pending, CreateSkill, CreateSkillPayload{CharacterId: 0, SkillId: 1001}).
+			Build()
+		assert.NoError(t, err)
+
+		s, err = s.WithStepResult(0, map[string]any{"characterId": uint32(55)})
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		step, _ := result.StepAt(1)
+		payload := step.Payload().(CreateSkillPayload)
+		assert.Equal(t, uint32(55), payload.CharacterId)
+		assert.Equal(t, uint32(1001), payload.SkillId)
+	})
+
+	t.Run("Rewrites multiple pending steps", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("item1", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 0, Item: ItemPayload{TemplateId: 100}}).
+			AddStep("equip1", Pending, CreateAndEquipAsset, CreateAndEquipAssetPayload{CharacterId: 0, Item: ItemPayload{TemplateId: 200}}).
+			AddStep("skill1", Pending, CreateSkill, CreateSkillPayload{CharacterId: 0, SkillId: 300}).
+			Build()
+		assert.NoError(t, err)
+
+		s, err = s.WithStepResult(0, map[string]any{"characterId": uint32(99)})
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		step1, _ := result.StepAt(1)
+		assert.Equal(t, uint32(99), step1.Payload().(AwardItemActionPayload).CharacterId)
+
+		step2, _ := result.StepAt(2)
+		assert.Equal(t, uint32(99), step2.Payload().(CreateAndEquipAssetPayload).CharacterId)
+
+		step3, _ := result.StepAt(3)
+		assert.Equal(t, uint32(99), step3.Payload().(CreateSkillPayload).CharacterId)
+	})
+
+	t.Run("Skips completed steps", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("item1", Completed, AwardAsset, AwardItemActionPayload{CharacterId: 50}).
+			AddStep("item2", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 0}).
+			Build()
+		assert.NoError(t, err)
+
+		s, err = s.WithStepResult(0, map[string]any{"characterId": uint32(99)})
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		// Completed step should be untouched
+		step1, _ := result.StepAt(1)
+		assert.Equal(t, uint32(50), step1.Payload().(AwardItemActionPayload).CharacterId)
+
+		// Pending step should be rewritten
+		step2, _ := result.StepAt(2)
+		assert.Equal(t, uint32(99), step2.Payload().(AwardItemActionPayload).CharacterId)
+	})
+
+	t.Run("No-op when CreateCharacter has no result", func(t *testing.T) {
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(CharacterCreation).
+			SetInitiatedBy("test").
+			AddStep("create-char", Completed, CreateCharacter, CharacterCreatePayload{AccountId: 1}).
+			AddStep("item1", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 0}).
+			Build()
+		assert.NoError(t, err)
+
+		// No result attached
+		result := forwardCharacterCreationResult(logger, s)
+
+		step, _ := result.StepAt(1)
+		assert.Equal(t, uint32(0), step.Payload().(AwardItemActionPayload).CharacterId)
+	})
+
+	t.Run("No-op for non-CharacterCreation saga type steps", func(t *testing.T) {
+		// This tests the gate at the caller level, but we test the function directly
+		// with a saga that has CreateCharacter completed but no characterId in result
+		s, err := NewBuilder().
+			SetTransactionId(uuid.New()).
+			SetSagaType(InventoryTransaction).
+			SetInitiatedBy("test").
+			AddStep("award", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 5}).
+			Build()
+		assert.NoError(t, err)
+
+		result := forwardCharacterCreationResult(logger, s)
+
+		step, _ := result.StepAt(0)
+		assert.Equal(t, uint32(5), step.Payload().(AwardItemActionPayload).CharacterId)
+	})
+}
+
+func TestExtractUint32(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    map[string]any
+		key      string
+		expected uint32
+	}{
+		{"uint32 value", map[string]any{"id": uint32(42)}, "id", 42},
+		{"float64 value (JSON round-trip)", map[string]any{"id": float64(42)}, "id", 42},
+		{"int value", map[string]any{"id": int(42)}, "id", 42},
+		{"int64 value", map[string]any{"id": int64(42)}, "id", 42},
+		{"missing key", map[string]any{"other": uint32(42)}, "id", 0},
+		{"string value (unsupported)", map[string]any{"id": "42"}, "id", 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := extractUint32(tt.input, tt.key)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}

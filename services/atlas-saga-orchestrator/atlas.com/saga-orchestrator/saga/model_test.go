@@ -1049,3 +1049,70 @@ func TestSaga_CreateAndEquipAssetStateConsistency(t *testing.T) {
 		})
 	}
 }
+
+func TestSaga_WithStepPayload(t *testing.T) {
+	tests := []struct {
+		name        string
+		index       int
+		payload     any
+		expectError bool
+	}{
+		{
+			name:        "Valid index updates payload",
+			index:       0,
+			payload:     AwardItemActionPayload{CharacterId: 999},
+			expectError: false,
+		},
+		{
+			name:        "Negative index returns error",
+			index:       -1,
+			payload:     AwardItemActionPayload{CharacterId: 1},
+			expectError: true,
+		},
+		{
+			name:        "Out of bounds index returns error",
+			index:       5,
+			payload:     AwardItemActionPayload{CharacterId: 1},
+			expectError: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			saga, err := NewBuilder().
+				SetTransactionId(uuid.New()).
+				SetSagaType(CharacterCreation).
+				SetInitiatedBy("test").
+				AddStep("step1", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 0}).
+				Build()
+			if err != nil {
+				t.Fatalf("Failed to build saga: %v", err)
+			}
+
+			updated, err := saga.WithStepPayload(tt.index, tt.payload)
+			if tt.expectError {
+				if err == nil {
+					t.Error("Expected error but got nil")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("Unexpected error: %v", err)
+			}
+
+			// Verify original is unchanged (immutability)
+			step, _ := saga.StepAt(0)
+			originalPayload := step.Payload().(AwardItemActionPayload)
+			if originalPayload.CharacterId != 0 {
+				t.Errorf("Original saga was mutated: CharacterId = %d, want 0", originalPayload.CharacterId)
+			}
+
+			// Verify updated has new payload
+			updatedStep, _ := updated.StepAt(0)
+			updatedPayload := updatedStep.Payload().(AwardItemActionPayload)
+			if updatedPayload.CharacterId != 999 {
+				t.Errorf("Updated saga has CharacterId = %d, want 999", updatedPayload.CharacterId)
+			}
+		})
+	}
+}

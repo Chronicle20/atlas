@@ -99,6 +99,7 @@ func TestReservationCache_Expiration(t *testing.T) {
 func TestReservationCache_Singleton(t *testing.T) {
 	// Get the singleton instance
 	instance1 := GetInstance()
+	defer instance1.Stop()
 
 	// Reserve an asset
 	assetID := uint32(1)

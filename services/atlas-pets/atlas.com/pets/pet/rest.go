@@ -2,11 +2,13 @@ package pet
 
 import (
 	"atlas-pets/pet/exclude"
+	"context"
 	"errors"
 	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type RestModel struct {
@@ -46,35 +48,38 @@ func (r *RestModel) SetID(strId string) error {
 	return nil
 }
 
-func Transform(m Model) (RestModel, error) {
-	tm := GetTemporalRegistry().GetById(m.Id())
-	if tm == nil {
-		return RestModel{}, errors.New("temporal data not found")
-	}
-	es, err := model.SliceMap(exclude.Transform)(model.FixedProvider(m.Excludes()))(model.ParallelMap())()
-	if err != nil {
-		return RestModel{}, err
-	}
+func Transform(ctx context.Context) func(m Model) (RestModel, error) {
+	t := tenant.MustFromContext(ctx)
+	return func(m Model) (RestModel, error) {
+		tm := GetTemporalRegistry().GetById(ctx, t, m.Id())
+		if tm == nil {
+			return RestModel{}, errors.New("temporal data not found")
+		}
+		es, err := model.SliceMap(exclude.Transform)(model.FixedProvider(m.Excludes()))(model.ParallelMap())()
+		if err != nil {
+			return RestModel{}, err
+		}
 
-	return RestModel{
-		Id:         m.Id(),
-		CashId:     m.CashId(),
-		TemplateId: m.TemplateId(),
-		Name:       m.Name(),
-		Level:      m.Level(),
-		Closeness:  m.Closeness(),
-		Fullness:   m.Fullness(),
-		Expiration: m.Expiration(),
-		OwnerId:    m.OwnerId(),
-		Slot:       m.Slot(),
-		X:          tm.X(),
-		Y:          tm.Y(),
-		Stance:     tm.Stance(),
-		FH:         tm.FH(),
-		Excludes:   es,
-		Flag:       m.Flag(),
-		PurchaseBy: m.PurchaseBy(),
-	}, nil
+		return RestModel{
+			Id:         m.Id(),
+			CashId:     m.CashId(),
+			TemplateId: m.TemplateId(),
+			Name:       m.Name(),
+			Level:      m.Level(),
+			Closeness:  m.Closeness(),
+			Fullness:   m.Fullness(),
+			Expiration: m.Expiration(),
+			OwnerId:    m.OwnerId(),
+			Slot:       m.Slot(),
+			X:          tm.X(),
+			Y:          tm.Y(),
+			Stance:     tm.Stance(),
+			FH:         tm.FH(),
+			Excludes:   es,
+			Flag:       m.Flag(),
+			PurchaseBy: m.PurchaseBy(),
+		}, nil
+	}
 }
 
 func Extract(rm RestModel) (Model, error) {

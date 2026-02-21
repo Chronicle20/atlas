@@ -14,6 +14,8 @@ COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-scri
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
 COPY services/atlas-map-actions/atlas.com/map-actions/go.mod services/atlas-map-actions/atlas.com/map-actions/go.sum* services/atlas-map-actions/atlas.com/map-actions/
 
@@ -29,7 +31,9 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-script-core' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-map-actions/atlas.com/map-actions' >> go.work && \
+    echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
 
 # Download dependencies
@@ -45,6 +49,8 @@ COPY libs/atlas-script-core libs/atlas-script-core
 COPY libs/atlas-tenant libs/atlas-tenant
 
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
 COPY services/atlas-map-actions/atlas.com/map-actions services/atlas-map-actions/atlas.com/map-actions
 

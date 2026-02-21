@@ -1,21 +1,23 @@
 # atlas-portals
 
-Handles portal entry commands and character map transitions. Maintains an in-memory cache of blocked portals per character and coordinates with external services to determine portal behavior.
+Handles portal entry commands and character map transitions. Maintains blocked portal state per character in Redis and coordinates with external services to determine portal behavior.
 
 ## External Dependencies
 
 - **Kafka**: Consumes portal commands and character status events; produces character commands and status events
 - **DATA Service**: REST client for portal data lookup
-- **In-Memory Cache**: Blocked portal state per character (cleared on logout)
+- **Redis**: Blocked portal state per character (cleared on logout)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| `JAEGER_HOST` | Jaeger tracing endpoint |
+| `TRACE_ENDPOINT` | OpenTelemetry trace endpoint |
 | `LOG_LEVEL` | Logging level |
 | `REST_PORT` | REST server port |
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
+| `REDIS_URL` | Redis server address |
+| `REDIS_PASSWORD` | Redis password |
 | `DATA_SERVICE_URL` | DATA service base URL |
 | `COMMAND_TOPIC_PORTAL` | Portal command topic |
 | `COMMAND_TOPIC_PORTAL_ACTIONS` | Portal actions command topic |
@@ -27,3 +29,4 @@ Handles portal entry commands and character map transitions. Maintains an in-mem
 - [Domain](docs/domain.md)
 - [Kafka](docs/kafka.md)
 - [REST](docs/rest.md)
+- [Storage](docs/storage.md)

@@ -40,13 +40,13 @@ Singleton registry tracking character presence in maps. State is not persisted a
 |-----|-------|
 | MapKey | []uint32 (character IDs) |
 
-### Spawn Point Registry
+### Spawn Point Registry (Redis)
 
-Singleton registry tracking spawn point cooldowns. State is not persisted and is lazily initialized from atlas-data on first access per map. Per-map mutexes provide concurrent access across different maps.
+Redis-backed registry tracking spawn point cooldowns. Lazily initialized from atlas-data on first access per map. Uses Lua scripts for atomic eligibility checks and cooldown updates.
 
-| Key | Value |
-|-----|-------|
-| MapKey | []*CooldownSpawnPoint |
+| Key Pattern | Type | Value |
+|-------------|------|-------|
+| atlas:maps:spawn:{tenant}:{worldId}:{channelId}:{mapId}:{instance} | Hash | field: spawn point ID, value: JSON-encoded spawn point with NextSpawnAt (Unix ms) |
 
 ### Weather Registry
 

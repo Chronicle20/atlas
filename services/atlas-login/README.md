@@ -5,7 +5,7 @@ A stateful, multi-tenant, multi-version login service for a mushroom game. This 
 ## External Dependencies
 
 - Kafka (message broker)
-- Jaeger (distributed tracing)
+- OpenTelemetry (distributed tracing)
 - atlas-account service (REST)
 - atlas-character service (REST)
 - atlas-character-factory service (REST)
@@ -13,13 +13,13 @@ A stateful, multi-tenant, multi-version login service for a mushroom game. This 
 - atlas-channel service (REST)
 - atlas-inventory service (REST)
 - atlas-guild service (REST)
-- atlas-configuration service (REST)
+- atlas-configurations service (REST)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST | Jaeger host:port |
+| TRACE_ENDPOINT | OpenTelemetry collector gRPC endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | BOOTSTRAP_SERVERS | Kafka host:port |
 | SERVICE_ID | UUID identifying the service instance |

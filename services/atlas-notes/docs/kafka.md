@@ -31,12 +31,18 @@ Note status events emitted when notes change.
 | UPDATED | StatusEventUpdatedBody | Emitted when a note is updated |
 | DELETED | StatusEventDeletedBody | Emitted when a note is deleted |
 
+### COMMAND_TOPIC_SAGA
+
+Saga commands produced when discarding notes to award fame to the sender.
+
 ## Message Types
 
 ### Command[E]
 
 ```json
 {
+  "worldId": 0,
+  "channelId": 0,
   "characterId": 123,
   "type": "CREATE",
   "body": {}
@@ -108,3 +114,4 @@ Note status events emitted when notes change.
 - Messages are partitioned by characterId
 - Status events are emitted after successful database operations
 - Buffered emission ensures events are sent atomically with database changes
+- Required headers: span context and tenant headers on all consumed topics

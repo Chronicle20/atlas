@@ -7,7 +7,7 @@ import (
 	messenger2 "atlas-messengers/kafka/consumer/messenger"
 	"atlas-messengers/logger"
 	"atlas-messengers/messenger"
-	"atlas-messengers/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-messengers/tracing"
 	"os"
 
@@ -59,9 +59,15 @@ func main() {
 	messenger2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	invite.InitConsumers(l)(cmf)(consumerGroupId)
-	messenger2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	invite.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := messenger2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := invite.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// CreateRoute and run server
 	server.New(l).

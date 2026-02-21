@@ -26,6 +26,15 @@
 | skill_id_2 | uint32 | NOT NULL | Second skill ID |
 | skill_id_3 | uint32 | NOT NULL | Third skill ID |
 
+### Redis: Cooldown Registry
+
+Skill cooldowns are stored in Redis using a tenant-scoped registry.
+
+| Key Pattern | Value Type | Description |
+|-------------|-----------|-------------|
+| `atlas:cooldown:{tenantKey}:{characterId}:{skillId}` | JSON-encoded time.Time | Cooldown expiration timestamp |
+| `atlas:cooldown:_tenants` | Redis Set of JSON-encoded tenant models | Tracks tenants with active cooldowns |
+
 ## Relationships
 
 - Skills belong to a character within a tenant.
@@ -34,8 +43,8 @@
 
 ## Indexes
 
-- skills: Primary key on id; queries filter by tenant_id and character_id.
-- macros: Composite primary key on (character_id, id); queries filter by tenant_id and character_id.
+- skills: Primary key on id; queries filter by character_id.
+- macros: Composite primary key on (character_id, id); queries filter by character_id.
 
 ## Migration Rules
 

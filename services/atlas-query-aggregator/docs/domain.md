@@ -502,6 +502,13 @@ Represents guild data retrieved from the Guild service.
 
 The guild model provides a `MemberRank(characterId)` method that returns a member's rank value, or 0 if the character is not a member.
 
+### Title Model
+
+| Field | Type | Description |
+|-------|------|-------------|
+| name | string | Title name |
+| index | byte | Title index |
+
 ## Processors
 
 ### Processor

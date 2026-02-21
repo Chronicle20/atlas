@@ -8,6 +8,7 @@ WORKDIR /app
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
 # Copy service module definitions
@@ -20,6 +21,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./services/atlas-wz-extractor/atlas.com/wz-extractor' >> go.work && \
     echo ')' >> go.work
@@ -31,6 +33,7 @@ RUN go mod download -C services/atlas-wz-extractor/atlas.com/wz-extractor || tru
 COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-tenant libs/atlas-tenant
 # Copy service source code
 COPY services/atlas-wz-extractor/atlas.com/wz-extractor services/atlas-wz-extractor/atlas.com/wz-extractor

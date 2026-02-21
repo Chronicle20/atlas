@@ -11,6 +11,7 @@ import (
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
+	lifecycle "github.com/Chronicle20/atlas-service"
 	"atlas-storage/tracing"
 	"os"
 
@@ -54,7 +55,7 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	tdm := service.GetTeardownManager()
+	tdm := lifecycle.GetTeardownManager()
 
 	rc := atlas.Connect(l)
 	storage.InitNpcContextCache(rc)
@@ -74,10 +75,18 @@ func main() {
 		storage2.InitConsumers(l)(cmf)(consumerGroupId)
 		compartment.InitConsumers(l)(cmf)(consumerGroupId)
 		character.InitConsumers(l)(cmf)(consumerGroupId)
-		account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		storage2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		compartment.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+		if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := storage2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := compartment.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
 	}
 
 	server.New(l).

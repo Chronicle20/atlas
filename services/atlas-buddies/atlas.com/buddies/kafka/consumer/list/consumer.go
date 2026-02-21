@@ -23,15 +23,24 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(list2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateBuddyListCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyAddCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateBuddyListCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyAddCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestBuddyDeleteCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

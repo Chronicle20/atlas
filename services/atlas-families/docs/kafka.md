@@ -199,10 +199,11 @@ type Event[E any] struct {
 
 ```go
 type StatusEvent[E any] struct {
-    WorldId     byte   `json:"worldId"`
-    CharacterId uint32 `json:"characterId"`
-    Type        string `json:"type"`
-    Body        E      `json:"body"`
+    TransactionId uuid.UUID `json:"transactionId"`
+    WorldId       world.Id  `json:"worldId"`
+    CharacterId   uint32    `json:"characterId"`
+    Type          string    `json:"type"`
+    Body          E         `json:"body"`
 }
 ```
 
@@ -218,7 +219,8 @@ Empty body struct. Triggers family member removal.
 
 ## Transaction Semantics
 
-- Commands require transactionId header for idempotency
+- Commands include transactionId in the message body
 - Messages partitioned by characterId for ordering
-- Consumer groups: family_command, character_status
+- Consumer group ID: "Family Service"
+- Consumer names: family_command, character_status
 - Headers parsed: SpanHeaderParser, TenantHeaderParser

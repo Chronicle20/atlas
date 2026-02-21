@@ -18,6 +18,7 @@ Manages version-specific configuration templates that define schemas for game re
 - `Characters` - Character creation templates
 - `NPCs` - NPC implementation mappings
 - `Worlds` - World configuration list
+- `CashShop` - Cash shop configuration
 
 **Socket**
 - `Handlers` - List of socket handlers with opcode, validator, handler name, and options
@@ -36,6 +37,16 @@ Manages version-specific configuration templates that define schemas for game re
 - `ServerMessage` - Server message
 - `EventMessage` - Event message
 - `WhyAmIRecommended` - Recommendation text
+- `ExpRate` - Experience rate multiplier
+- `MesoRate` - Meso rate multiplier
+- `ItemDropRate` - Item drop rate multiplier
+- `QuestExpRate` - Quest experience rate multiplier
+
+**CashShop**
+- `Commodities` - Commodity configuration
+
+**Commodities**
+- `HourlyExpirations` - List of hourly expiration entries with template ID and hours
 
 ### Processors
 
@@ -67,6 +78,7 @@ Manages tenant-specific configurations derived from templates. Maintains history
 - `Characters` - Character creation templates
 - `NPCs` - NPC implementation mappings
 - `Worlds` - World configuration list
+- `CashShop` - Cash shop configuration
 
 ### Invariants
 
@@ -99,16 +111,19 @@ Manages service-specific configurations with type-specific data models.
 
 **LoginRestModel**
 - `Id` - UUID identifier
+- `Type` - Service type
 - `Tasks` - List of task configurations
 - `Tenants` - List of login tenant configurations with ID and port
 
 **ChannelRestModel**
 - `Id` - UUID identifier
+- `Type` - Service type
 - `Tasks` - List of task configurations
 - `Tenants` - List of channel tenant configurations with ID, IP address, and world/channel mappings
 
 **GenericRestModel**
 - `Id` - UUID identifier
+- `Type` - Service type
 - `Tasks` - List of task configurations
 
 **Task**
@@ -116,11 +131,19 @@ Manages service-specific configurations with type-specific data models.
 - `Interval` - Task interval in milliseconds
 - `Duration` - Task duration in milliseconds
 
+### Invariants
+
+- Updates and deletions create history records before modifying data
+- Service type must be one of the valid types (`login-service`, `channel-service`, `drops-service`)
+
 ### Processors
 
 **services.Processor**
 - `GetAll` - Retrieves all service configurations
 - `GetById` - Retrieves service configuration by UUID
+- `Create` - Creates a new service configuration (accepts optional ID)
+- `UpdateById` - Updates an existing service configuration (creates history record)
+- `DeleteById` - Deletes a service configuration (creates history record)
 
 ---
 

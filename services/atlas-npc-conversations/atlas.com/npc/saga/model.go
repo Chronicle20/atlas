@@ -3,233 +3,156 @@ package saga
 import (
 	"atlas-npc-conversations/validation"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 )
 
-// Re-export types from atlas-script-core/saga
+// Re-export types from atlas-saga shared library
 type (
-	Type   = scriptsaga.Type
-	Saga   = scriptsaga.Saga
-	Status = scriptsaga.Status
-	Action = scriptsaga.Action
+	Type   = sharedsaga.Type
+	Saga   = sharedsaga.Saga
+	Status = sharedsaga.Status
+	Action = sharedsaga.Action
 
 	// Payload types
-	AwardItemActionPayload       = scriptsaga.AwardItemActionPayload
-	ItemPayload                  = scriptsaga.ItemPayload
-	WarpToRandomPortalPayload    = scriptsaga.WarpToRandomPortalPayload
-	WarpToPortalPayload          = scriptsaga.WarpToPortalPayload
-	AwardExperiencePayload       = scriptsaga.AwardExperiencePayload
-	AwardLevelPayload            = scriptsaga.AwardLevelPayload
-	AwardMesosPayload            = scriptsaga.AwardMesosPayload
-	DestroyAssetPayload          = scriptsaga.DestroyAssetPayload
-	DestroyAssetFromSlotPayload  = scriptsaga.DestroyAssetFromSlotPayload
-	ChangeJobPayload             = scriptsaga.ChangeJobPayload
-	CreateSkillPayload           = scriptsaga.CreateSkillPayload
-	UpdateSkillPayload           = scriptsaga.UpdateSkillPayload
-	IncreaseBuddyCapacityPayload = scriptsaga.IncreaseBuddyCapacityPayload
-	GainClosenessPayload         = scriptsaga.GainClosenessPayload
-	ChangeHairPayload            = scriptsaga.ChangeHairPayload
-	ChangeFacePayload            = scriptsaga.ChangeFacePayload
-	ChangeSkinPayload            = scriptsaga.ChangeSkinPayload
-	SpawnMonsterPayload          = scriptsaga.SpawnMonsterPayload
-	CompleteQuestPayload         = scriptsaga.CompleteQuestPayload
-	SetQuestProgressPayload      = scriptsaga.SetQuestProgressPayload
-	ApplyConsumableEffectPayload = scriptsaga.ApplyConsumableEffectPayload
-	SendMessagePayload           = scriptsaga.SendMessagePayload
-	AwardFamePayload             = scriptsaga.AwardFamePayload
-	ShowStoragePayload           = scriptsaga.ShowStoragePayload
-	ExperienceDistributions      = scriptsaga.ExperienceDistributions
+	AwardItemActionPayload       = sharedsaga.AwardItemActionPayload
+	ItemPayload                  = sharedsaga.ItemPayload
+	WarpToRandomPortalPayload    = sharedsaga.WarpToRandomPortalPayload
+	WarpToPortalPayload          = sharedsaga.WarpToPortalPayload
+	AwardExperiencePayload       = sharedsaga.AwardExperiencePayload
+	AwardLevelPayload            = sharedsaga.AwardLevelPayload
+	AwardMesosPayload            = sharedsaga.AwardMesosPayload
+	DestroyAssetPayload          = sharedsaga.DestroyAssetPayload
+	DestroyAssetFromSlotPayload  = sharedsaga.DestroyAssetFromSlotPayload
+	ChangeJobPayload             = sharedsaga.ChangeJobPayload
+	CreateSkillPayload           = sharedsaga.CreateSkillPayload
+	UpdateSkillPayload           = sharedsaga.UpdateSkillPayload
+	IncreaseBuddyCapacityPayload = sharedsaga.IncreaseBuddyCapacityPayload
+	GainClosenessPayload         = sharedsaga.GainClosenessPayload
+	ChangeHairPayload            = sharedsaga.ChangeHairPayload
+	ChangeFacePayload            = sharedsaga.ChangeFacePayload
+	ChangeSkinPayload            = sharedsaga.ChangeSkinPayload
+	SpawnMonsterPayload          = sharedsaga.SpawnMonsterPayload
+	CompleteQuestPayload         = sharedsaga.CompleteQuestPayload
+	StartQuestPayload            = sharedsaga.StartQuestPayload
+	SetQuestProgressPayload      = sharedsaga.SetQuestProgressPayload
+	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
+	SendMessagePayload           = sharedsaga.SendMessagePayload
+	AwardFamePayload             = sharedsaga.AwardFamePayload
+	ShowStoragePayload           = sharedsaga.ShowStoragePayload
+	ExperienceDistributions      = sharedsaga.ExperienceDistributions
 
-	// Portal-specific payload types (re-exported for completeness)
-	PlayPortalSoundPayload = scriptsaga.PlayPortalSoundPayload
-	UpdateAreaInfoPayload  = scriptsaga.UpdateAreaInfoPayload
-	ShowInfoPayload        = scriptsaga.ShowInfoPayload
-	ShowInfoTextPayload    = scriptsaga.ShowInfoTextPayload
-	ShowHintPayload        = scriptsaga.ShowHintPayload
+	// Portal-specific payload types
+	PlayPortalSoundPayload = sharedsaga.PlayPortalSoundPayload
+	UpdateAreaInfoPayload  = sharedsaga.UpdateAreaInfoPayload
+	ShowInfoPayload        = sharedsaga.ShowInfoPayload
+	ShowInfoTextPayload    = sharedsaga.ShowInfoTextPayload
+	ShowHintPayload        = sharedsaga.ShowHintPayload
+	ShowGuideHintPayload   = sharedsaga.ShowGuideHintPayload
+	ShowIntroPayload       = sharedsaga.ShowIntroPayload
+	SetHPPayload           = sharedsaga.SetHPPayload
+	ResetStatsPayload      = sharedsaga.ResetStatsPayload
 
 	// Saved location payload types
-	SaveLocationPayload        = scriptsaga.SaveLocationPayload
-	WarpToSavedLocationPayload = scriptsaga.WarpToSavedLocationPayload
+	SaveLocationPayload        = sharedsaga.SaveLocationPayload
+	WarpToSavedLocationPayload = sharedsaga.WarpToSavedLocationPayload
 
 	// Gachapon payload types
-	SelectGachaponRewardPayload = scriptsaga.SelectGachaponRewardPayload
+	SelectGachaponRewardPayload = sharedsaga.SelectGachaponRewardPayload
+
+	// Party quest payload types
+	RegisterPartyQuestPayload         = sharedsaga.RegisterPartyQuestPayload
+	WarpPartyQuestMembersToMapPayload = sharedsaga.WarpPartyQuestMembersToMapPayload
+	LeavePartyQuestPayload            = sharedsaga.LeavePartyQuestPayload
+	StageClearAttemptPqPayload        = sharedsaga.StageClearAttemptPqPayload
+	EnterPartyQuestBonusPayload       = sharedsaga.EnterPartyQuestBonusPayload
+
+	// Transport payload types
+	StartInstanceTransportPayload = sharedsaga.StartInstanceTransportPayload
 )
 
-// ShowGuideHintPayload represents the payload required to show a pre-defined guide hint by ID.
-// This is local until added to atlas-script-core.
-type ShowGuideHintPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	HintId      uint32     `json:"hintId"`   // Pre-defined hint ID (maps to client's guide hint system)
-	Duration    uint32     `json:"duration"` // Duration in milliseconds (default 7000ms if 0)
-}
-
-// ShowIntroPayload represents the payload required to show an intro/direction effect to a character.
-// This is local until added to atlas-script-core.
-type ShowIntroPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	Path        string     `json:"path"` // Path to the intro effect (e.g., "Effect/Direction1.img/aranTutorial/ClickPoleArm")
-}
-
-// SetHPPayload represents the payload required to set a character's HP to an absolute value.
-// This is local until added to atlas-script-core.
-type SetHPPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	Amount      uint16     `json:"amount"`
-}
-
-// ResetStatsPayload represents the payload required to reset a character's stats.
-// This is used during job advancement to reset AP distribution.
-type ResetStatsPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-}
-
-// StartQuestPayload represents the payload required to start a quest.
-// This is local until added to atlas-script-core (requires WorldId field).
-type StartQuestPayload struct {
-	CharacterId uint32   `json:"characterId"`
-	WorldId     world.Id `json:"worldId"`
-	QuestId     uint32   `json:"questId"`
-	NpcId       uint32   `json:"npcId"`
-}
-
-// StartInstanceTransportPayload represents the payload required to start an instance-based transport.
-// This is a synchronous REST call to atlas-transports service.
-type StartInstanceTransportPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	RouteName   string     `json:"routeName"` // Route name (resolved to UUID at runtime by saga-orchestrator)
-}
-
-// RegisterPartyQuestPayload represents the payload required to register a party for a party quest.
-type RegisterPartyQuestPayload struct {
-	CharacterId uint32     `json:"characterId"`
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	MapId       _map.Id    `json:"mapId"`
-	QuestId     string     `json:"questId"` // Party quest definition ID (e.g., "henesys_pq")
-}
-
-// WarpPartyQuestMembersToMapPayload represents the payload required to warp all party quest members to a map.
-type WarpPartyQuestMembersToMapPayload struct {
-	CharacterId uint32     `json:"characterId"` // Character initiating the warp (must be in a party)
-	WorldId     world.Id   `json:"worldId"`
-	ChannelId   channel.Id `json:"channelId"`
-	MapId       _map.Id    `json:"mapId"`    // Destination map ID
-	PortalId    uint32     `json:"portalId"` // Destination portal ID
-}
-
-// LeavePartyQuestPayload represents the payload required to remove a character from their active party quest.
-type LeavePartyQuestPayload struct {
-	CharacterId uint32   `json:"characterId"`
-	WorldId     world.Id `json:"worldId"`
-}
-
-// StageClearAttemptPqPayload represents the payload required to attempt clearing the current PQ stage.
-type StageClearAttemptPqPayload struct {
-	CharacterId uint32 `json:"characterId"`
-}
-
-// EnterPartyQuestBonusPayload represents the payload for entering the bonus stage of a party quest.
-type EnterPartyQuestBonusPayload struct {
-	CharacterId uint32   `json:"characterId"` // CharacterId initiating bonus entry
-	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
-}
-
-// Re-export constants from atlas-script-core/saga
+// Re-export constants from atlas-saga shared library
 const (
 	// Saga types
-	InventoryTransaction = scriptsaga.InventoryTransaction
-	QuestReward          = scriptsaga.QuestReward
-	TradeTransaction     = scriptsaga.TradeTransaction
-	GachaponTransaction  = scriptsaga.GachaponTransaction
+	InventoryTransaction = sharedsaga.InventoryTransaction
+	QuestReward          = sharedsaga.QuestReward
+	TradeTransaction     = sharedsaga.TradeTransaction
+	GachaponTransaction  = sharedsaga.GachaponTransaction
 
 	// Status constants
-	Pending   = scriptsaga.Pending
-	Completed = scriptsaga.Completed
-	Failed    = scriptsaga.Failed
+	Pending   = sharedsaga.Pending
+	Completed = sharedsaga.Completed
+	Failed    = sharedsaga.Failed
 
 	// Action constants
-	AwardAsset             = scriptsaga.AwardAsset
-	AwardExperience        = scriptsaga.AwardExperience
-	AwardLevel             = scriptsaga.AwardLevel
-	AwardMesos             = scriptsaga.AwardMesos
-	WarpToRandomPortal     = scriptsaga.WarpToRandomPortal
-	WarpToPortal           = scriptsaga.WarpToPortal
-	DestroyAsset           = scriptsaga.DestroyAsset
-	DestroyAssetFromSlot   = scriptsaga.DestroyAssetFromSlot
-	ChangeJob              = scriptsaga.ChangeJob
-	CreateSkill            = scriptsaga.CreateSkill
-	UpdateSkill            = scriptsaga.UpdateSkill
-	ValidateCharacterState = scriptsaga.ValidateCharacterState
-	IncreaseBuddyCapacity  = scriptsaga.IncreaseBuddyCapacity
-	GainCloseness          = scriptsaga.GainCloseness
-	ChangeHair             = scriptsaga.ChangeHair
-	ChangeFace             = scriptsaga.ChangeFace
-	ChangeSkin             = scriptsaga.ChangeSkin
-	SpawnMonster           = scriptsaga.SpawnMonster
-	CompleteQuest          = scriptsaga.CompleteQuest
-	StartQuest             = scriptsaga.StartQuest
-	SetQuestProgress       = scriptsaga.SetQuestProgress
-	ApplyConsumableEffect  = scriptsaga.ApplyConsumableEffect
-	SendMessage            = scriptsaga.SendMessage
-	AwardFame              = scriptsaga.AwardFame
-	ShowStorage            = scriptsaga.ShowStorage
+	AwardAsset             = sharedsaga.AwardAsset
+	AwardExperience        = sharedsaga.AwardExperience
+	AwardLevel             = sharedsaga.AwardLevel
+	AwardMesos             = sharedsaga.AwardMesos
+	WarpToRandomPortal     = sharedsaga.WarpToRandomPortal
+	WarpToPortal           = sharedsaga.WarpToPortal
+	DestroyAsset           = sharedsaga.DestroyAsset
+	DestroyAssetFromSlot   = sharedsaga.DestroyAssetFromSlot
+	ChangeJob              = sharedsaga.ChangeJob
+	CreateSkill            = sharedsaga.CreateSkill
+	UpdateSkill            = sharedsaga.UpdateSkill
+	ValidateCharacterState = sharedsaga.ValidateCharacterState
+	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
+	GainCloseness          = sharedsaga.GainCloseness
+	ChangeHair             = sharedsaga.ChangeHair
+	ChangeFace             = sharedsaga.ChangeFace
+	ChangeSkin             = sharedsaga.ChangeSkin
+	SpawnMonster           = sharedsaga.SpawnMonster
+	CompleteQuest          = sharedsaga.CompleteQuest
+	StartQuest             = sharedsaga.StartQuest
+	SetQuestProgress       = sharedsaga.SetQuestProgress
+	ApplyConsumableEffect  = sharedsaga.ApplyConsumableEffect
+	SendMessage            = sharedsaga.SendMessage
+	AwardFame              = sharedsaga.AwardFame
+	ShowStorage            = sharedsaga.ShowStorage
 
-	// Portal-specific actions (re-exported for completeness)
-	PlayPortalSound = scriptsaga.PlayPortalSound
-	UpdateAreaInfo  = scriptsaga.UpdateAreaInfo
-	ShowInfo        = scriptsaga.ShowInfo
-	ShowInfoText    = scriptsaga.ShowInfoText
-	ShowHint        = scriptsaga.ShowHint
+	// Portal-specific actions
+	PlayPortalSound = sharedsaga.PlayPortalSound
+	UpdateAreaInfo  = sharedsaga.UpdateAreaInfo
+	ShowInfo        = sharedsaga.ShowInfo
+	ShowInfoText    = sharedsaga.ShowInfoText
+	ShowHint        = sharedsaga.ShowHint
 
-	// Character stat actions (local definition until added to atlas-script-core)
-	ShowGuideHint Action = "show_guide_hint"
-	ShowIntro     Action = "show_intro"
-	SetHP         Action = "set_hp"
-	ResetStats    Action = "reset_stats"
+	// Character stat actions
+	ShowGuideHint = sharedsaga.ShowGuideHint
+	ShowIntro     = sharedsaga.ShowIntro
+	SetHP         = sharedsaga.SetHP
+	ResetStats    = sharedsaga.ResetStats
 
 	// Transport actions
-	StartInstanceTransport Action = "start_instance_transport"
+	StartInstanceTransport = sharedsaga.StartInstanceTransport
 
 	// Party quest actions
-	RegisterPartyQuest         Action = "register_party_quest"
-	WarpPartyQuestMembersToMap Action = "warp_party_quest_members_to_map"
-	LeavePartyQuest            Action = "leave_party_quest"
-	StageClearAttemptPq        Action = "stage_clear_attempt_pq"
-	EnterPartyQuestBonus       Action = "enter_party_quest_bonus"
+	RegisterPartyQuest         = sharedsaga.RegisterPartyQuest
+	WarpPartyQuestMembersToMap = sharedsaga.WarpPartyQuestMembersToMap
+	LeavePartyQuest            = sharedsaga.LeavePartyQuest
+	StageClearAttemptPq        = sharedsaga.StageClearAttemptPq
+	EnterPartyQuestBonus       = sharedsaga.EnterPartyQuestBonus
 
 	// Gachapon actions
-	SelectGachaponReward = scriptsaga.SelectGachaponReward
+	SelectGachaponReward = sharedsaga.SelectGachaponReward
 
 	// Saved location actions
-	SaveLocation        = scriptsaga.SaveLocation
-	WarpToSavedLocation = scriptsaga.WarpToSavedLocation
+	SaveLocation        = sharedsaga.SaveLocation
+	WarpToSavedLocation = sharedsaga.WarpToSavedLocation
 )
 
-// ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput
-// This is NPC-specific and maps to the shared ValidationConditionInput
+// ValidateCharacterStatePayload uses the NPC service's validation.ConditionInput.
+// This is NPC-specific and wraps the shared ValidationConditionInput with the local type.
 type ValidateCharacterStatePayload struct {
 	CharacterId uint32                      `json:"characterId"`
 	Conditions  []validation.ConditionInput `json:"conditions"`
 }
 
 // ToSharedPayload converts to the shared saga payload type
-func (p ValidateCharacterStatePayload) ToSharedPayload() scriptsaga.ValidateCharacterStatePayload {
-	conditions := make([]scriptsaga.ValidationConditionInput, len(p.Conditions))
+func (p ValidateCharacterStatePayload) ToSharedPayload() sharedsaga.ValidateCharacterStatePayload {
+	conditions := make([]sharedsaga.ValidationConditionInput, len(p.Conditions))
 	for i, c := range p.Conditions {
-		conditions[i] = scriptsaga.ValidationConditionInput{
+		conditions[i] = sharedsaga.ValidationConditionInput{
 			Type:            c.Type,
 			Operator:        c.Operator,
 			Value:           c.Value,
@@ -240,7 +163,7 @@ func (p ValidateCharacterStatePayload) ToSharedPayload() scriptsaga.ValidateChar
 			IncludeEquipped: c.IncludeEquipped,
 		}
 	}
-	return scriptsaga.ValidateCharacterStatePayload{
+	return sharedsaga.ValidateCharacterStatePayload{
 		CharacterId: p.CharacterId,
 		Conditions:  conditions,
 	}

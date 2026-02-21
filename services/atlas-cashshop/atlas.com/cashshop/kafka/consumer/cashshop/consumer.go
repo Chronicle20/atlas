@@ -27,18 +27,33 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(cashshop.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestPurchase(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByType(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByItem(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncrease(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncreaseByItem(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCharacterSlotIncreaseByItem(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExpire(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestPurchase(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByType(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInventoryIncreaseByItem(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncrease(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestStorageIncreaseByItem(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCharacterSlotIncreaseByItem(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandExpire(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

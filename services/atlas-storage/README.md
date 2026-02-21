@@ -7,6 +7,7 @@ The atlas-storage service manages account-level storage (warehouse) for items an
 ## External Dependencies
 
 - **PostgreSQL**: Persistent storage for storages and assets
+- **Redis**: NPC context cache and projection manager (in-memory projection state)
 - **Kafka**: Command consumption and event production for storage operations
 - **atlas-data**: Item template data for consumables, setup items, and etc items (slotMax, rechargeable flag)
 

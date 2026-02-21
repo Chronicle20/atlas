@@ -1,36 +1,37 @@
 package saga
 
+import (
+	sharedsaga "github.com/Chronicle20/atlas-saga"
+)
+
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_SAGA"
 )
 
-// Action types supported by saga-orchestrator
-type Action string
-
-const (
-	AwardAsset      Action = "award_asset"
-	AwardExperience Action = "award_experience"
-	AwardMesos      Action = "award_mesos"
-	AwardFame       Action = "award_fame"
-	CreateSkill     Action = "create_skill"
-	UpdateSkill     Action = "update_skill"
-	ConsumeItem     Action = "destroy_asset"
+// Re-export types from atlas-saga shared library
+type (
+	Type   = sharedsaga.Type
+	Status = sharedsaga.Status
+	Action = sharedsaga.Action
 )
 
-// Status represents the status of a saga step
-type Status string
-
+// Re-export constants from atlas-saga shared library
 const (
-	Pending   Status = "pending"
-	Completed Status = "completed"
-	Failed    Status = "failed"
-)
+	Pending   = sharedsaga.Pending
+	Completed = sharedsaga.Completed
+	Failed    = sharedsaga.Failed
 
-// Type represents the type of saga
-type Type string
+	AwardAsset      = sharedsaga.AwardAsset
+	AwardExperience = sharedsaga.AwardExperience
+	AwardMesos      = sharedsaga.AwardMesos
+	AwardFame       = sharedsaga.AwardFame
+	CreateSkill     = sharedsaga.CreateSkill
+	UpdateSkill     = sharedsaga.UpdateSkill
 
-const (
-	QuestStart       Type = "quest_start"
-	QuestComplete    Type = "quest_complete"
-	QuestRestoreItem Type = "quest_restore_item"
+	// ConsumeItem maps to DestroyAsset action on the wire
+	ConsumeItem = sharedsaga.DestroyAsset
+
+	QuestStart       = sharedsaga.QuestStart
+	QuestComplete    = sharedsaga.QuestComplete
+	QuestRestoreItem = sharedsaga.QuestRestoreItem
 )

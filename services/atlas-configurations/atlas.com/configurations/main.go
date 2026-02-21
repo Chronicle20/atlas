@@ -4,7 +4,7 @@ import (
 	database "github.com/Chronicle20/atlas-database"
 	"atlas-configurations/logger"
 	"atlas-configurations/seeder"
-	"atlas-configurations/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"

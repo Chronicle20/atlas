@@ -6,7 +6,7 @@ import (
 	character2 "atlas-keys/kafka/consumer/character"
 	keymap "atlas-keys/key"
 	"atlas-keys/logger"
-	"atlas-keys/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-keys/tracing"
 	"os"
 
@@ -52,7 +52,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// CreateRoute and run server
 	server.New(l).

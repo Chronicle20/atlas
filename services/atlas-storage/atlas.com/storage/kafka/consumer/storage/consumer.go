@@ -25,19 +25,36 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(message.EnvCommandTopic)()
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleWithdrawCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleUpdateMesosCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositRollbackCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleArrangeCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleShowStorageCommand(db))))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleCloseStorageCommand())))
-			_, _ = rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleExpireCommand(db))))
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleWithdrawCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleUpdateMesosCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleDepositRollbackCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleArrangeCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleShowStorageCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleCloseStorageCommand()))); err != nil {
+				return err
+			}
+			if _, err := rf(t, kafkaMessage.AdaptHandler(kafkaMessage.PersistentConfig(handleExpireCommand(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

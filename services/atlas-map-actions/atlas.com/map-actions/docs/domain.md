@@ -93,6 +93,28 @@ Sends saga commands to the saga orchestrator for operation execution.
 
 Delegates character condition evaluation to atlas-query-aggregator via REST.
 
+### Core Models
+
+**ConditionInput** (`validation/model.go`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Type` | `string` | Condition type |
+| `Operator` | `string` | Comparison operator |
+| `Value` | `int` | Value to compare against |
+| `ReferenceId` | `uint32` | Reference identifier (optional) |
+| `Step` | `string` | Step identifier (optional) |
+| `WorldId` | `world.Id` | World identifier (optional) |
+| `ChannelId` | `channel.Id` | Channel identifier (optional) |
+| `IncludeEquipped` | `bool` | Whether to include equipped items (optional) |
+
+**ValidationResult** (`validation/model.go`)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `characterId` | `uint32` | Character that was validated |
+| `passed` | `bool` | Whether the validation passed |
+
 ### Processors
 
 **Processor** (`validation/processor.go`)

@@ -25,12 +25,15 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, de
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(ten tenant.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				t, _ := topic.EnvProvider(l)(seed.EnvEventTopicStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(ten, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreatedStatusEvent(ten, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

@@ -31,7 +31,7 @@ Stored items. All item type fields are stored inline in this single table. The r
 | deleted_at | TIMESTAMP | INDEX, NULLABLE | Soft delete timestamp |
 | quantity | UINT32 | | Item count (stackable/cash items) |
 | owner_id | UINT32 | | Owner character (stackable items) |
-| flag | UINT16 | | Item flags (stackable items) |
+| flag | UINT16 | | Item flags bitmask (lock, spikes, cold, karma, untradeable) |
 | rechargeable | UINT64 | | Rechargeable amount (consumable items) |
 | strength | UINT16 | | STR stat (equipment) |
 | dexterity | UINT16 | | DEX stat (equipment) |
@@ -49,11 +49,6 @@ Stored items. All item type fields are stored inline in this single table. The r
 | speed | UINT16 | | Speed stat (equipment) |
 | jump | UINT16 | | Jump stat (equipment) |
 | slots | UINT16 | | Upgrade slots remaining (equipment) |
-| locked | BOOL | | Lock status (equipment) |
-| spikes | BOOL | | Spikes flag (equipment) |
-| karma_used | BOOL | | Karma scroll used (equipment) |
-| cold | BOOL | | Cold protection (equipment) |
-| can_be_traded | BOOL | | Trade eligibility (equipment) |
 | level_type | BYTE | | Level type (equipment) |
 | level | BYTE | | Item level (equipment) |
 | experience | UINT32 | | Item experience (equipment) |
@@ -88,3 +83,4 @@ Stored items. All item type fields are stored inline in this single table. The r
 - Schema changes are applied automatically on service startup
 - Tables: storages, storage_assets
 - Soft deletes are enabled on storage_assets via GORM's DeletedAt field
+- storage_assets migration migrates legacy boolean columns (locked, spikes, cold, karma_used) into the flag bitmask before AutoMigrate

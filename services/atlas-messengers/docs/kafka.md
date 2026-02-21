@@ -19,6 +19,7 @@ Character status events.
 
 | Type | Description |
 |------|-------------|
+| DELETED | Character deleted |
 | LOGIN | Character logged in |
 | LOGOUT | Character logged out |
 | CHANNEL_CHANGED | Character changed channel |
@@ -144,7 +145,7 @@ Empty body.
 
 ```go
 type MemberStatusEvent[E any] struct {
-    TransactionID uuid.UUID `json:"transactionId"`
+    TransactionId uuid.UUID `json:"transactionId"`
     WorldId       world.Id  `json:"worldId"`
     MessengerId   uint32    `json:"messengerId"`
     CharacterId   uint32    `json:"characterId"`
@@ -167,7 +168,7 @@ Empty body.
 
 ```go
 type StatusEvent[E any] struct {
-    TransactionID uuid.UUID `json:"transactionId"`
+    TransactionId uuid.UUID `json:"transactionId"`
     WorldId       world.Id  `json:"worldId"`
     CharacterId   uint32    `json:"characterId"`
     Type          string    `json:"type"`
@@ -175,12 +176,17 @@ type StatusEvent[E any] struct {
 }
 ```
 
+#### StatusEventDeletedBody
+
+Empty body.
+
 #### StatusEventLoginBody
 
 | Field | Type | Description |
 |-------|------|-------------|
 | channelId | channel.Id | Channel ID |
 | mapId | map.Id | Map ID |
+| instance | uuid.UUID | Map instance ID |
 
 #### StatusEventLogoutBody
 
@@ -188,6 +194,7 @@ type StatusEvent[E any] struct {
 |-------|------|-------------|
 | channelId | channel.Id | Channel ID |
 | mapId | map.Id | Map ID |
+| instance | uuid.UUID | Map instance ID |
 
 #### StatusEventChannelChangedBody
 
@@ -196,18 +203,30 @@ type StatusEvent[E any] struct {
 | channelId | channel.Id | New channel ID |
 | oldChannelId | channel.Id | Previous channel ID |
 | mapId | map.Id | Map ID |
+| instance | uuid.UUID | Map instance ID |
+
+#### StatusEventMapChangedBody
+
+| Field | Type | Description |
+|-------|------|-------------|
+| channelId | channel.Id | Channel ID |
+| oldMapId | map.Id | Previous map ID |
+| oldInstance | uuid.UUID | Previous map instance ID |
+| targetMapId | map.Id | Target map ID |
+| targetInstance | uuid.UUID | Target map instance ID |
+| targetPortalId | uint32 | Target portal ID |
 
 ---
 
-### CommandEvent (Invite)
+### Command (Invite)
 
 ```go
-type CommandEvent[E any] struct {
-    TransactionID uuid.UUID `json:"transactionId"`
-    WorldId       world.Id  `json:"worldId"`
-    InviteType    string    `json:"inviteType"`
-    Type          string    `json:"type"`
-    Body          E         `json:"body"`
+type Command[E any] struct {
+    TransactionId uuid.UUID          `json:"transactionId"`
+    WorldId       world.Id           `json:"worldId"`
+    InviteType    invite.Type        `json:"inviteType"`
+    Type          invite.CommandType `json:"type"`
+    Body          E                  `json:"body"`
 }
 ```
 
@@ -215,9 +234,9 @@ type CommandEvent[E any] struct {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| originatorId | uint32 | Inviting character ID |
-| targetId | uint32 | Invited character ID |
-| referenceId | uint32 | Messenger ID |
+| originatorId | character.Id | Inviting character ID |
+| targetId | character.Id | Invited character ID |
+| referenceId | invite.Id | Messenger ID |
 
 ---
 
@@ -225,12 +244,12 @@ type CommandEvent[E any] struct {
 
 ```go
 type StatusEvent[E any] struct {
-    TransactionID uuid.UUID `json:"transactionId"`
-    WorldId       world.Id  `json:"worldId"`
-    InviteType    string    `json:"inviteType"`
-    ReferenceId   uint32    `json:"referenceId"`
-    Type          string    `json:"type"`
-    Body          E         `json:"body"`
+    TransactionId uuid.UUID         `json:"transactionId"`
+    WorldId       world.Id          `json:"worldId"`
+    InviteType    invite.Type       `json:"inviteType"`
+    ReferenceId   invite.Id         `json:"referenceId"`
+    Type          invite.StatusType `json:"type"`
+    Body          E                 `json:"body"`
 }
 ```
 
@@ -238,8 +257,8 @@ type StatusEvent[E any] struct {
 
 | Field | Type | Description |
 |-------|------|-------------|
-| originatorId | uint32 | Inviting character ID |
-| targetId | uint32 | Invited character ID |
+| originatorId | character.Id | Inviting character ID |
+| targetId | character.Id | Invited character ID |
 
 ---
 

@@ -7,14 +7,13 @@ The service manages gachapon machines, their item pools, and reward selection. E
 ## External Dependencies
 
 - PostgreSQL: Persistent storage for gachapons, items, and global items
-- Jaeger: Distributed tracing
+- OpenTelemetry Collector: Distributed tracing via OTLP/gRPC
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST | Jaeger host:port for distributed tracing |
-| JAEGER_HOST_PORT | Alternative Jaeger endpoint specification |
+| TRACE_ENDPOINT | OpenTelemetry Collector gRPC endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | HTTP server port |
 | DB_HOST | PostgreSQL host |

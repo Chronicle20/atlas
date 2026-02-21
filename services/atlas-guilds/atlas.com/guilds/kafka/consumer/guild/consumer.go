@@ -24,21 +24,42 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(guild2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCreate(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandCreationAgreement(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeEmblem(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeNotice(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandLeave(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInvite(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeTitles(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeMemberTitle(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestDisband(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCapacityIncrease(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCreate(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandCreationAgreement(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeEmblem(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeNotice(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandLeave(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestInvite(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeTitles(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandChangeMemberTitle(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestDisband(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestCapacityIncrease(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

@@ -83,12 +83,12 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 	now := time.Now()
 
 	// Build saga steps
-	steps := make([]saga.Step[any], 0, 2)
+	steps := make([]saga.Step, 0, 2)
 
 	// Step 1: Charge withdrawal fee (if applicable)
 	if withdrawFee > 0 {
 		l.Debugf("Storage withdrawal fee for NPC [%d]: %d mesos", s.StorageNpcId(), withdrawFee)
-		steps = append(steps, saga.Step[any]{
+		steps = append(steps, saga.Step{
 			StepId: "charge_withdrawal_fee",
 			Status: saga.Pending,
 			Action: saga.AwardMesos,
@@ -106,7 +106,7 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 	}
 
 	// Step 2: High-level withdrawal step (will be expanded by saga-orchestrator)
-	steps = append(steps, saga.Step[any]{
+	steps = append(steps, saga.Step{
 		StepId: "withdraw_from_storage",
 		Status: saga.Pending,
 		Action: saga.WithdrawFromStorage,
@@ -161,12 +161,12 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 	now := time.Now()
 
 	// Build saga steps
-	steps := make([]saga.Step[any], 0, 2)
+	steps := make([]saga.Step, 0, 2)
 
 	// Step 1: Charge deposit fee (if applicable)
 	if depositFee > 0 {
 		l.Debugf("Storage deposit fee for NPC [%d]: %d mesos", s.StorageNpcId(), depositFee)
-		steps = append(steps, saga.Step[any]{
+		steps = append(steps, saga.Step{
 			StepId: "charge_deposit_fee",
 			Status: saga.Pending,
 			Action: saga.AwardMesos,
@@ -184,7 +184,7 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 	}
 
 	// Step 2: High-level transfer step (will be expanded by saga-orchestrator)
-	steps = append(steps, saga.Step[any]{
+	steps = append(steps, saga.Step{
 		StepId: "transfer_to_storage",
 		Status: saga.Pending,
 		Action: saga.TransferToStorage,
@@ -241,7 +241,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 		l.Debugf("Character [%d] is attempting to deposit [%d] mesos to storage via saga [%s].", s.CharacterId(), mesos, transactionId.String())
 
 		// Step 1: Deduct mesos from character (negative amount)
-		step1 := saga.Step[any]{
+		step1 := saga.Step{
 			StepId: "deduct_character_mesos",
 			Status: saga.Pending,
 			Action: saga.AwardMesos,
@@ -258,7 +258,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 		}
 
 		// Step 2: Add mesos to storage
-		step2 := saga.Step[any]{
+		step2 := saga.Step{
 			StepId: "add_storage_mesos",
 			Status: saga.Pending,
 			Action: saga.UpdateStorageMesos,
@@ -277,7 +277,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 			TransactionId: transactionId,
 			SagaType:      saga.StorageOperation,
 			InitiatedBy:   "STORAGE",
-			Steps:         []saga.Step[any]{step1, step2},
+			Steps:         []saga.Step{step1, step2},
 		}
 
 		err := sagaP.Create(sagaTx)
@@ -291,7 +291,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 		l.Debugf("Character [%d] is attempting to withdraw [%d] mesos from storage via saga [%s].", s.CharacterId(), mesos, transactionId.String())
 
 		// Step 1: Deduct mesos from storage
-		step1 := saga.Step[any]{
+		step1 := saga.Step{
 			StepId: "subtract_storage_mesos",
 			Status: saga.Pending,
 			Action: saga.UpdateStorageMesos,
@@ -307,7 +307,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 		}
 
 		// Step 2: Add mesos to character
-		step2 := saga.Step[any]{
+		step2 := saga.Step{
 			StepId: "add_character_mesos",
 			Status: saga.Pending,
 			Action: saga.AwardMesos,
@@ -327,7 +327,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *r
 			TransactionId: transactionId,
 			SagaType:      saga.StorageOperation,
 			InitiatedBy:   "STORAGE",
-			Steps:         []saga.Step[any]{step1, step2},
+			Steps:         []saga.Step{step1, step2},
 		}
 
 		err := sagaP.Create(sagaTx)

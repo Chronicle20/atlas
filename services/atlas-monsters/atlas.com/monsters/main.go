@@ -5,7 +5,6 @@ import (
 	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
-	"atlas-monsters/service"
 	"atlas-monsters/tasks"
 	"atlas-monsters/tracing"
 	"atlas-monsters/world"
@@ -13,6 +12,8 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas-service"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -43,6 +44,12 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
+	rc := atlas.Connect(l)
+	monster.InitIdAllocator(rc)
+	monster.InitCooldownRegistry(rc)
+	monster.InitMonsterRegistry(rc)
+	monster.InitDropTimerRegistry(rc)
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(serviceName)
@@ -53,8 +60,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
-	monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

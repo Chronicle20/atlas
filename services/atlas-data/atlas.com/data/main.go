@@ -22,7 +22,7 @@ import (
 	"atlas-data/pet"
 	"atlas-data/quest"
 	"atlas-data/reactor"
-	"atlas-data/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
 	"atlas-data/tracing"
@@ -70,7 +70,9 @@ func main() {
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	data2.InitConsumers(l)(cmf)(consumerGroupId)
-	data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := data2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

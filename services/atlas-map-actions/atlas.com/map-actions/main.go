@@ -7,7 +7,7 @@ import (
 	saga "atlas-map-actions/kafka/consumer/saga"
 	"atlas-map-actions/logger"
 	"atlas-map-actions/script"
-	"atlas-map-actions/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-map-actions/tracing"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -54,8 +54,12 @@ func main() {
 	script.InitConsumers(l)(cmf)(consumerGroupId)
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 
-	script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	saga.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := script.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := saga.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

@@ -26,6 +26,7 @@ Consumed from COMMAND_TOPIC_CHAIR. Generic envelope with typed body.
 | WorldId | world.Id |
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 | Type | string |
 | Body | varies |
 
@@ -58,9 +59,10 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 
 | Field | Type |
 |-------|------|
+| TransactionId | uuid.UUID |
+| WorldId | world.Id |
 | CharacterId | uint32 |
 | Type | string |
-| WorldId | world.Id |
 | Body | varies |
 
 ##### Character Status Event Types
@@ -78,6 +80,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 |-------|------|
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 
 ##### StatusEventLogoutBody
 
@@ -85,6 +88,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 |-------|------|
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 
 ##### StatusEventMapChangedBody
 
@@ -92,7 +96,9 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 |-------|------|
 | ChannelId | channel.Id |
 | OldMapId | map.Id |
+| OldInstance | uuid.UUID |
 | TargetMapId | map.Id |
+| TargetInstance | uuid.UUID |
 | TargetPortalId | uint32 |
 
 ##### ChangeChannelEventLoginBody
@@ -102,6 +108,7 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 | ChannelId | channel.Id |
 | OldChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 
 ### Events Produced
 
@@ -114,6 +121,7 @@ Produced to EVENT_TOPIC_CHAIR_STATUS.
 | WorldId | world.Id |
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 | ChairType | string |
 | ChairId | uint32 |
 | Type | string |

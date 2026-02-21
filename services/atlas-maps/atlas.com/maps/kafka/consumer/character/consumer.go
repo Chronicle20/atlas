@@ -27,15 +27,26 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(characterKafka.EnvEventTopicCharacterStatus)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLoginFunc(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogoutFunc(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChangedFunc(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChangedFunc(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeletedFunc(l, db))))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLoginFunc(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLogoutFunc(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapChangedFunc(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventChannelChangedFunc(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeletedFunc(l, db)))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

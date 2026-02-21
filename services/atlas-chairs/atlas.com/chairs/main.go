@@ -6,7 +6,7 @@ import (
 	"atlas-chairs/kafka/consumer/chair"
 	"atlas-chairs/kafka/consumer/character"
 	"atlas-chairs/logger"
-	"atlas-chairs/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-chairs/tracing"
 	"os"
 
@@ -56,8 +56,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	chair.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
-	chair.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := chair.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Create the service with the router
 	server.New(l).

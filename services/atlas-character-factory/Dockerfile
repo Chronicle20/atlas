@@ -13,8 +13,9 @@ COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
-COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
 COPY services/atlas-character-factory/atlas.com/character-factory/go.mod services/atlas-character-factory/atlas.com/character-factory/go.sum services/atlas-character-factory/atlas.com/character-factory/
 
@@ -27,9 +28,10 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
-    echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-character-factory/atlas.com/character-factory' >> go.work && \
+    echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
 
 # Download dependencies
@@ -42,8 +44,9 @@ COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
 
-COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
 COPY services/atlas-character-factory/atlas.com/character-factory services/atlas-character-factory/atlas.com/character-factory
 

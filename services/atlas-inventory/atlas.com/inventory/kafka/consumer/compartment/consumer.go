@@ -28,28 +28,63 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(compartment2.EnvCommandTopic)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEquipItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUnequipItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReserveItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleConsumeItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAssetCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeItemCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMergeCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleExpireCommand(db))))
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleModifyEquipmentCommand(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEquipItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUnequipItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMoveItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDropItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRequestReserveItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleConsumeItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDestroyItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelItemReservationCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleIncreaseCapacityCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateAssetCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRechargeItemCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMergeCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSortCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAcceptCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleReleaseCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleExpireCommand(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleModifyEquipmentCommand(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

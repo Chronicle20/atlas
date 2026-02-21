@@ -83,7 +83,7 @@ Primary domain processor for buff operations.
 
 ### Registry
 
-In-memory buff storage (singleton). Thread-safe with per-tenant locking.
+Redis-backed buff storage (singleton). Per-tenant key isolation via TenantRegistry.
 
 | Method | Description |
 |--------|-------------|

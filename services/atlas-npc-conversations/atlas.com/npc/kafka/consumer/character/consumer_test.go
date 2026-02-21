@@ -128,16 +128,17 @@ func TestHandleStatusEventMapChangedHandlerRegistration(t *testing.T) {
 	assert.NotPanics(t, func() {
 		initHandlers := InitHandlers(logger, db)
 		assert.NotNil(t, initHandlers)
-		
+
 		// Test that the function can be called (though we can't easily verify the actual registration)
 		handlerCount := 0
 		mockRegisterFunc := func(topic string, h handler.Handler) (string, error) {
 			handlerCount++
 			return "test-handler", nil
 		}
-		
-		initHandlers(mockRegisterFunc)
-		
+
+		err := initHandlers(mockRegisterFunc)
+		assert.Nil(t, err)
+
 		// Verify that handlers were registered (should be 3: logout, channel changed, map changed)
 		assert.Equal(t, 3, handlerCount, "Expected 3 handlers to be registered")
 	})

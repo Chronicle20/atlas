@@ -46,16 +46,25 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(_map3.EnvEventTopicMapStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherStart(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherEnd(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterEnter(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCharacterExit(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherStart(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherEnd(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
@@ -450,7 +459,7 @@ func applyConsumableEffectSaga(l logrus.FieldLogger, sp saga.Processor, characte
 		TransactionId: uuid.New(),
 		SagaType:      saga.FieldEffectUse,
 		InitiatedBy:   "WEATHER",
-		Steps: []saga.Step[any]{
+		Steps: []saga.Step{
 			{
 				StepId:    "apply_consumable_effect",
 				Status:    saga.Pending,

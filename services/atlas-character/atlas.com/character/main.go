@@ -11,6 +11,7 @@ import (
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
+	lifecycle "github.com/Chronicle20/atlas-service"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
 	"atlas-character/tracing"
@@ -50,10 +51,11 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
-	tdm := service.GetTeardownManager()
+	tdm := lifecycle.GetTeardownManager()
 
 	rc := atlas.Connect(l)
 	session.InitRegistry(rc)
+	character.InitTemporalRegistry(rc)
 
 	tc, err := tracing.InitTracer(serviceName)
 	if err != nil {
@@ -68,10 +70,18 @@ func main() {
 		character2.InitConsumers(l)(cmf)(consumerGroupId)
 		session2.InitConsumers(l)(cmf)(consumerGroupId)
 		drop.InitConsumers(l)(cmf)(consumerGroupId)
-		account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-		drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+		if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := session2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
+		if err := drop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+			l.WithError(err).Fatal("Unable to register kafka handlers.")
+		}
 	}
 
 	server.New(l).

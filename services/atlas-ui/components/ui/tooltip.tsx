@@ -74,8 +74,11 @@ function TooltipContent({
       >
         <div className={cn("flex items-center", copyable ? "gap-2" : "")}>
           {copyable && (
-            <button 
-              onClick={() => copyToClipboard(getTextContent(children))}
+            <button
+              onPointerDown={(e) => {
+                e.preventDefault()
+                copyToClipboard(getTextContent(children))
+              }}
               className="text-primary-foreground opacity-70 hover:opacity-100 hover:bg-primary-foreground/20 hover:scale-110 p-1 rounded cursor-pointer transition-all duration-200"
               aria-label="Copy to clipboard"
             >

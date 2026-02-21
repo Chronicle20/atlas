@@ -47,6 +47,8 @@ func main() {
 	rc := atlas.Connect(l)
 	monster.InitIdAllocator(rc)
 	monster.InitCooldownRegistry(rc)
+	monster.InitMonsterRegistry(rc)
+	monster.InitDropTimerRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 

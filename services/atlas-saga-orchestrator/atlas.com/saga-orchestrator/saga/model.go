@@ -536,6 +536,33 @@ func (s Saga) WithStepResult(index int, result map[string]any) (Saga, error) {
 	}, nil
 }
 
+// WithStepPayload returns a new Saga with the specified step's payload updated
+func (s Saga) WithStepPayload(index int, payload any) (Saga, error) {
+	if index < 0 || index >= len(s.steps) {
+		return Saga{}, fmt.Errorf("invalid step index: %d", index)
+	}
+
+	newSteps := make([]Step[any], len(s.steps))
+	copy(newSteps, s.steps)
+
+	newSteps[index] = Step[any]{
+		stepId:    s.steps[index].stepId,
+		status:    s.steps[index].status,
+		action:    s.steps[index].action,
+		payload:   payload,
+		createdAt: s.steps[index].createdAt,
+		updatedAt: s.steps[index].updatedAt,
+		result:    s.steps[index].result,
+	}
+
+	return Saga{
+		transactionId: s.transactionId,
+		sagaType:      s.sagaType,
+		initiatedBy:   s.initiatedBy,
+		steps:         newSteps,
+	}, nil
+}
+
 // WithStep returns a new Saga with the step added at the end
 func (s Saga) WithStep(step Step[any]) (Saga, error) {
 	for _, existingStep := range s.steps {

@@ -45,9 +45,7 @@ const (
 	InventoryTransaction      = sharedsaga.InventoryTransaction
 	QuestReward               = sharedsaga.QuestReward
 	TradeTransaction          = sharedsaga.TradeTransaction
-	CharacterCreation         = sharedsaga.CharacterCreation
-	CharacterCreationOnly     = sharedsaga.CharacterCreationOnly
-	CharacterCreationFollowUp = sharedsaga.CharacterCreationFollowUp
+	CharacterCreation = sharedsaga.CharacterCreation
 
 	// Status constants
 	Pending   = sharedsaga.Pending

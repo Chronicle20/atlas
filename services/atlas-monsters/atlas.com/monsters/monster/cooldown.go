@@ -30,7 +30,7 @@ func GetCooldownRegistry() *cooldownRegistry {
 
 func cooldownKey(t tenant.Model, monsterId uint32, skillId uint16) string {
 	return fmt.Sprintf("atlas:monster-cooldown:%s:%s:%s",
-		t.String(),
+		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 		strconv.FormatUint(uint64(skillId), 10),
 	)
@@ -38,7 +38,7 @@ func cooldownKey(t tenant.Model, monsterId uint32, skillId uint16) string {
 
 func cooldownScanPattern(t tenant.Model, monsterId uint32) string {
 	return fmt.Sprintf("atlas:monster-cooldown:%s:%s:*",
-		t.String(),
+		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
 	)
 }

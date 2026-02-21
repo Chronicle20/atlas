@@ -128,7 +128,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		interval := time.Duration(ma.DropPeriod()/3) * time.Millisecond
 		p.l.Debugf("Registering friendly monster [%d] (template [%d]) with drop period [%s].", m.UniqueId(), m.MonsterId(), interval)
 		now := time.Now()
-		GetDropTimerRegistry().Register(p.t, m.UniqueId(), DropTimerEntry{
+		GetDropTimerRegistry().Register(p.ctx, p.t, m.UniqueId(), DropTimerEntry{
 			monsterId:    m.MonsterId(),
 			field:        f,
 			dropPeriod:   interval,
@@ -259,7 +259,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 	if s.Killed {
 		// Clear cooldowns and drop timer on death
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
-		GetDropTimerRegistry().Unregister(p.t, id)
+		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
 
 		// Emit cancellation events for any active status effects before death
 		for _, se := range s.Monster.StatusEffects() {
@@ -340,7 +340,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 	}
 
 	now := time.Now()
-	GetDropTimerRegistry().RecordHit(p.t, uniqueId, now)
+	GetDropTimerRegistry().RecordHit(p.ctx, p.t, uniqueId, now)
 
 	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId)
 	if err != nil {
@@ -350,7 +350,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 
 	if s.Killed {
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
-		GetDropTimerRegistry().Unregister(p.t, uniqueId)
+		GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 
 		for _, se := range s.Monster.StatusEffects() {
 			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(s.Monster, se))
@@ -735,7 +735,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
-	GetDropTimerRegistry().Unregister(p.t, uniqueId)
+	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)
 	if err != nil {
 		return err

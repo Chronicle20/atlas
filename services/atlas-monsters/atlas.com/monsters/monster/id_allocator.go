@@ -37,11 +37,11 @@ func GetIdAllocator() *IdAllocator {
 }
 
 func idCounterKey(t tenant.Model) string {
-	return fmt.Sprintf("atlas:monster-ids:%s:next", t.String())
+	return fmt.Sprintf("atlas:monster-ids:%s:next", t.Id().String())
 }
 
 func idFreeListKey(t tenant.Model) string {
-	return fmt.Sprintf("atlas:monster-ids:%s:free", t.String())
+	return fmt.Sprintf("atlas:monster-ids:%s:free", t.Id().String())
 }
 
 // Allocate returns the next available monster ID for the given tenant.

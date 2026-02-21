@@ -24,7 +24,7 @@ func NewDropTimerTask(l logrus.FieldLogger, ctx context.Context, interval time.D
 
 func (t *DropTimerTask) Run() {
 	now := time.Now()
-	entries := GetDropTimerRegistry().GetAll()
+	entries := GetDropTimerRegistry().GetAll(t.ctx)
 	for key, entry := range entries {
 		t.processEntry(now, key.Tenant, key.MonsterId, entry)
 	}
@@ -48,13 +48,13 @@ func (t *DropTimerTask) processEntry(now time.Time, ten tenant.Model, uniqueId u
 	// Verify monster is still alive
 	m, err := GetMonsterRegistry().GetMonster(ten, uniqueId)
 	if err != nil || !m.Alive() {
-		GetDropTimerRegistry().Unregister(ten, uniqueId)
+		GetDropTimerRegistry().Unregister(t.ctx, ten, uniqueId)
 		return
 	}
 
 	tctx := tenant.WithContext(t.ctx, ten)
 	t.produceDrop(tctx, m, e)
-	GetDropTimerRegistry().UpdateLastDrop(ten, uniqueId, now)
+	GetDropTimerRegistry().UpdateLastDrop(t.ctx, ten, uniqueId, now)
 }
 
 func (t *DropTimerTask) produceDrop(ctx context.Context, m Model, e DropTimerEntry) {

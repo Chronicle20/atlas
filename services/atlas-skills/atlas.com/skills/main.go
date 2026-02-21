@@ -7,7 +7,7 @@ import (
 	skill2 "atlas-skills/kafka/consumer/skill"
 	"atlas-skills/logger"
 	"atlas-skills/macro"
-	"atlas-skills/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
 	"atlas-skills/tracing"
@@ -61,9 +61,15 @@ func main() {
 	skill2.InitConsumers(l)(cmf)(consumerGroupId)
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	macro2.InitConsumers(l)(cmf)(consumerGroupId)
-	skill2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	macro2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := skill2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := macro2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	go tasks.Register(tasks.NewExpirationTask(l, db, 1000))
 

@@ -9,17 +9,21 @@ The service maintains the following in-memory registries:
 ### Session Registry
 - Stores active socket sessions per tenant
 - Keyed by tenant ID and session UUID
-- Contains connection state, encryption keys, and session metadata
+- Contains connection state, encryption keys, field location, and session metadata
+- Thread-safe via internal synchronization
 
 ### Account Registry
 - Tracks logged-in accounts per tenant
 - Keyed by tenant and account ID
 - Used to prevent duplicate logins
+- Initialized from external ACCOUNTS service on startup
 
 ### Server Registry
 - Stores registered server instances
-- Keyed by tenant, world ID, and channel ID
-- Contains IP address and port bindings
+- Singleton via `sync.Once`, thread-safe via `sync.RWMutex`
+- Contains a slice of `server.Model` entries
+- Each entry holds tenant, channel model, IP address, and port
+- Provides Register and GetAll operations
 
 ## Data Persistence
 
@@ -31,6 +35,23 @@ All persistent data is managed by external services accessed via REST APIs:
 - Map state: MAPS service
 - Monster state: MONSTERS service
 - Drop state: DROPS service
+- Reactor state: REACTORS service
+- Pet data: PETS service
+- Quest progress: QUESTS service
+- Skill data: SKILLS service
+- Storage data: STORAGE service
+- Buddy list: BUDDIES service
+- Buff data: BUFFS service
+- Cash shop: CASHSHOP service
+- Note data: NOTES service
+- Messenger data: MESSENGERS service
+- Chair state: CHAIRS service
+- Chalkboard state: CHALKBOARDS service
+- NPC shop data: NPC_SHOP service
+- Transport routes: ROUTES service
+- Weather state: WEATHER service
+- World data: WORLDS service
+- Static game data: DATA service
 
 ## Migration Rules
 

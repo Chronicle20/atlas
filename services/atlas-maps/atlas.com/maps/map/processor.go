@@ -15,6 +15,8 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -30,6 +32,7 @@ type Processor interface {
 	TransitionChannel(mb *message.Buffer) func(transactionId uuid.UUID, newField field.Model, oldChannelId channel.Id, characterId uint32)
 	TransitionChannelAndEmit(transactionId uuid.UUID, newField field.Model, oldChannelId channel.Id, characterId uint32) error
 	GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error)
+	GetCharactersInMapAllInstances(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error)
 }
 
 type ProcessorImpl struct {
@@ -138,4 +141,8 @@ func (p *ProcessorImpl) TransitionChannelAndEmit(transactionId uuid.UUID, newFie
 
 func (p *ProcessorImpl) GetCharactersInMap(transactionId uuid.UUID, f field.Model) ([]uint32, error) {
 	return p.cp.GetCharactersInMap(transactionId, f)
+}
+
+func (p *ProcessorImpl) GetCharactersInMapAllInstances(transactionId uuid.UUID, worldId world.Id, channelId channel.Id, mapId _map.Id) ([]uint32, error) {
+	return p.cp.GetCharactersInMapAllInstances(transactionId, worldId, channelId, mapId)
 }

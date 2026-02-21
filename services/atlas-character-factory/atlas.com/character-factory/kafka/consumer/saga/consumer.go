@@ -1,13 +1,14 @@
 package saga
 
 import (
-	"atlas-character-factory/factory"
 	consumer2 "atlas-character-factory/kafka/consumer"
 	"atlas-character-factory/kafka/message/saga"
 	seedMessage "atlas-character-factory/kafka/message/seed"
 	"atlas-character-factory/kafka/producer"
 	"atlas-character-factory/kafka/producer/seed"
 	"context"
+
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -25,11 +26,14 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(saga.EnvStatusEventTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleSagaCompletedEvent)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSagaCompletedEvent))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -38,26 +42,51 @@ func handleSagaCompletedEvent(l logrus.FieldLogger, ctx context.Context, e saga.
 		return
 	}
 
-	// Mark the saga as completed and check if both sagas are now complete
-	tracker, bothComplete := factory.MarkSagaCompleted(e.TransactionId)
-	if !bothComplete {
-		l.Debugf("Saga [%s] completed, but waiting for the other saga to complete", e.TransactionId.String())
+	// Only handle CharacterCreation saga completions
+	if e.Body.SagaType != string(sharedsaga.CharacterCreation) {
 		return
 	}
 
-	l.Debugf("Both character creation sagas completed for account [%d] character [%d], emitting seed completion event",
-		tracker.AccountId, tracker.CharacterId)
+	accountId := extractUint32(e.Body.Results, "accountId")
+	characterId := extractUint32(e.Body.Results, "characterId")
 
-	// Emit seed completion event
-	seedEventProvider := seed.CreatedEventStatusProvider(tracker.AccountId, tracker.CharacterId)
+	if accountId == 0 || characterId == 0 {
+		l.WithField("transaction_id", e.TransactionId.String()).
+			Warn("CharacterCreation saga completed but missing accountId or characterId in results")
+		return
+	}
+
+	l.Debugf("CharacterCreation saga [%s] completed for account [%d] character [%d], emitting seed completion event",
+		e.TransactionId.String(), accountId, characterId)
+
+	seedEventProvider := seed.CreatedEventStatusProvider(accountId, characterId)
 	seedProducer := producer.ProviderImpl(l)(ctx)(seedMessage.EnvEventTopicStatus)
 	err := seedProducer(seedEventProvider)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to emit seed completion event for account [%d] character [%d]",
-			tracker.AccountId, tracker.CharacterId)
+			accountId, characterId)
 		return
 	}
 
 	l.Debugf("Seed completion event emitted successfully for account [%d] character [%d]",
-		tracker.AccountId, tracker.CharacterId)
+		accountId, characterId)
+}
+
+func extractUint32(m map[string]any, key string) uint32 {
+	v, ok := m[key]
+	if !ok {
+		return 0
+	}
+	switch val := v.(type) {
+	case uint32:
+		return val
+	case float64:
+		return uint32(val)
+	case int:
+		return uint32(val)
+	case int64:
+		return uint32(val)
+	default:
+		return 0
+	}
 }

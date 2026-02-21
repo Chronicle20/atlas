@@ -34,20 +34,37 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(asset2.EnvEventTopicStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAcceptedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleasedEvent(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetExpiredEvent(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetCreatedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetUpdatedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetQuantityUpdatedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetMoveEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetDeletedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetAcceptedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetReleasedEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleAssetExpiredEvent(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}

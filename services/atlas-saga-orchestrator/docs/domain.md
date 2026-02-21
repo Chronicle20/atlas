@@ -196,7 +196,9 @@ A flat structure representing all asset properties, defined in `kafka/message/as
 3. On step completion: step marked completed (optionally with result data), next step executes
 4. On step failure: step marked failed, compensation begins
 5. Compensation reverses completed steps in reverse order
-6. Saga removed from cache on completion or full compensation
+6. Saga marked completed in store on completion or full compensation
+7. Active sagas are recovered from the store on startup
+8. Sagas exceeding the configured timeout are compensated by a background reaper
 
 ### Step State Machine
 
@@ -235,7 +237,7 @@ Manages saga execution lifecycle.
 | StepCompletedWithResult | Handles step completion with result data carried forward |
 | AddStep | Adds a step after the current step |
 | AddStepAfterCurrent | Adds a step after the first pending step |
-| Step | Executes the next pending step or triggers compensation |
+| Step | Executes the next pending step or triggers compensation; retries up to 3 times on version conflict |
 
 ### Handler
 
@@ -269,14 +271,19 @@ Compensation strategies by action type:
 
 ### Cache
 
-In-memory storage for active sagas, tenant-scoped.
+Interface for saga storage, tenant-scoped. Two implementations exist:
+
+| Implementation | Description |
+|---------------|-------------|
+| PostgresStore | PostgreSQL-backed persistent store with optimistic locking via version column |
+| InMemoryCache | In-memory map protected by read-write mutex |
 
 | Method | Description |
 |--------|-------------|
-| GetAll | Returns all sagas for a tenant |
-| GetById | Returns a saga by ID for a tenant |
-| Put | Stores a saga for a tenant |
-| Remove | Removes a saga from a tenant |
+| GetAll | Returns all active sagas for the tenant in context |
+| GetById | Returns a saga by transaction ID for the tenant in context |
+| Put | Adds or updates a saga; returns error on version conflict |
+| Remove | Removes a saga from the tenant in context |
 
 ### ErrorMapper
 

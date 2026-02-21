@@ -19,7 +19,7 @@ Immutable domain representation of a ban.
 | reason | string | Ban reason |
 | reasonCode | byte | Ban reason code |
 | permanent | bool | Whether the ban is permanent |
-| expiresAt | int64 | Unix timestamp of expiration (if not permanent) |
+| expiresAt | time.Time | Expiration time (if not permanent) |
 | issuedBy | string | Issuer of the ban |
 | createdAt | time.Time | Creation timestamp |
 | updatedAt | time.Time | Last update timestamp |
@@ -56,6 +56,8 @@ Primary domain processor providing ban operations.
 | CreateAndEmit | Create ban and emit status event |
 | Delete | Delete a ban by ID |
 | DeleteAndEmit | Delete ban and emit status event |
+| ExpireBan | Expire a temporary ban early |
+| ExpireBanAndEmit | Expire ban and emit status event |
 | GetById | Retrieve ban by ID |
 | GetByTenant | Retrieve all bans for tenant |
 | GetByType | Retrieve bans filtered by type |

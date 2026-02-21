@@ -14,7 +14,7 @@ func TestCreateCommandProvider(t *testing.T) {
 		TransactionId: transactionId,
 		SagaType:      InventoryTransaction,
 		InitiatedBy:   "atlas-messages",
-		Steps: []Step[any]{
+		Steps: []Step{
 			{
 				StepId:  "test_step",
 				Status:  Pending,
@@ -58,8 +58,8 @@ func TestCreateCommandProvider_DifferentTransactionIds(t *testing.T) {
 	id1 := uuid.New()
 	id2 := uuid.New()
 
-	saga1 := Saga{TransactionId: id1, Steps: []Step[any]{}}
-	saga2 := Saga{TransactionId: id2, Steps: []Step[any]{}}
+	saga1 := Saga{TransactionId: id1, Steps: []Step{}}
+	saga2 := Saga{TransactionId: id2, Steps: []Step{}}
 
 	provider1 := CreateCommandProvider(saga1)
 	provider2 := CreateCommandProvider(saga2)
@@ -76,8 +76,8 @@ func TestCreateCommandProvider_DifferentTransactionIds(t *testing.T) {
 func TestCreateCommandProvider_SameTransactionId(t *testing.T) {
 	id := uuid.New()
 
-	saga1 := Saga{TransactionId: id, Steps: []Step[any]{}}
-	saga2 := Saga{TransactionId: id, Steps: []Step[any]{}}
+	saga1 := Saga{TransactionId: id, Steps: []Step{}}
+	saga2 := Saga{TransactionId: id, Steps: []Step{}}
 
 	provider1 := CreateCommandProvider(saga1)
 	provider2 := CreateCommandProvider(saga2)
@@ -96,7 +96,7 @@ func TestCreateCommandProvider_WithEmptySteps(t *testing.T) {
 		TransactionId: uuid.New(),
 		SagaType:      QuestReward,
 		InitiatedBy:   "test",
-		Steps:         []Step[any]{},
+		Steps:         []Step{},
 	}
 
 	provider := CreateCommandProvider(saga)

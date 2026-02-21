@@ -161,6 +161,8 @@ Represents a condition to validate against character state.
 | Value | int | Comparison value |
 | ReferenceId | uint32 | Reference identifier |
 | Step | string | Quest step |
+| WorldId | world.Id | World identifier |
+| ChannelId | channel.Id | Channel identifier |
 | IncludeEquipped | bool | Include equipped items |
 
 ### ValidationResult
@@ -205,8 +207,8 @@ Represents a pending portal action awaiting saga completion.
 
 ## Invariants
 
-- Registry is a singleton via `sync.Once`
-- Thread-safe via `sync.RWMutex`
+- Registry is a package-level singleton initialized via `InitRegistry`
+- Backed by Redis via `atlas.TenantRegistry`
 - Keyed by tenant ID and saga transaction ID
 - Entries are removed on saga completion or failure
 

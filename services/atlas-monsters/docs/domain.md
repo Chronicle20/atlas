@@ -267,7 +267,7 @@ Interface defining monster processing operations.
 
 ### Registry
 
-Singleton in-memory store for monster instances.
+Singleton Redis-backed store for monster instances.
 
 **Operations:**
 - `CreateMonster`: Creates and stores a new monster instance with an allocated unique ID
@@ -290,7 +290,7 @@ Singleton in-memory store for monster instances.
 
 ### CooldownRegistry
 
-Singleton in-memory store for monster skill cooldowns.
+Singleton Redis-backed store for monster skill cooldowns.
 
 **Operations:**
 - `IsOnCooldown`: Checks if a skill is on cooldown for a monster
@@ -299,7 +299,7 @@ Singleton in-memory store for monster skill cooldowns.
 
 ### DropTimerRegistry
 
-Singleton in-memory store for friendly monster drop timers.
+Singleton Redis-backed store for friendly monster drop timers.
 
 **Operations:**
 - `Register`: Registers a friendly monster for periodic drop emission

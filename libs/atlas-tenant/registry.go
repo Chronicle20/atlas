@@ -45,7 +45,7 @@ func (r *Registry) Contains(id uuid.UUID) bool {
 
 func (r *Registry) GetAll() []Model {
 	r.mutex.RLock()
-	r.mutex.RUnlock()
+	defer r.mutex.RUnlock()
 	var values []Model
 	for _, v := range r.tenants {
 		values = append(values, v)

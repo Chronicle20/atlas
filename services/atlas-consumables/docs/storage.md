@@ -1,9 +1,22 @@
 # Storage
 
-This service does not use persistent storage. All state is either:
+This service does not use a relational database. All persistent domain state is owned by external services and communicated via Kafka commands.
 
-- Fetched on demand from external services via REST (character data, inventory data, pet data, reference data)
-- Maintained in-memory in the character location registry (populated from character status events, not persisted)
-- Communicated via Kafka commands to services that own the persistent state
+## Redis
 
-The character location registry is a volatile in-memory map that is rebuilt from character status events on service restart.
+The character location registry uses Redis via the `atlas-redis` `TenantRegistry` abstraction.
+
+| Key Prefix | Value Type | Description |
+|------------|------------|-------------|
+| `consumable-map-character` | field.Model | Maps character IDs to their current field context (world, channel, map, instance), scoped per tenant |
+
+The registry is populated from character status events (LOGIN, LOGOUT, MAP_CHANGED, CHANNEL_CHANGED). Data persists across service restarts via Redis.
+
+## External Data
+
+All other state is fetched on demand from external services via REST:
+
+- Character data (atlas-characters)
+- Inventory data (atlas-inventory)
+- Pet data (atlas-pets)
+- Reference data: consumable, equipable, cash item, map, portal, drop position (atlas-data)

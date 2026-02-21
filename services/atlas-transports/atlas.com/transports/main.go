@@ -10,7 +10,7 @@ import (
 	"atlas-transports/kafka/consumer/instance_transport"
 	_map "atlas-transports/kafka/consumer/map"
 	"atlas-transports/logger"
-	"atlas-transports/service"
+	"github.com/Chronicle20/atlas-service"
 	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
@@ -71,11 +71,21 @@ func main() {
 	configuration.InitConsumers(l)(cmf)(consumerGroupId)
 	instance_transport.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
-	channel.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	configuration.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	instance_transport.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := channel.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := configuration.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := instance_transport.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
 	if err != nil {

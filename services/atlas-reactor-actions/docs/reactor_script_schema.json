@@ -114,7 +114,8 @@
             "drop_message",
             "update_pq_state",
             "hit_reactor",
-            "broadcast_pq_message"
+            "broadcast_pq_message",
+            "stage_clear_attempt"
           ]
         },
         "params": {

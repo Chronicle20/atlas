@@ -356,5 +356,5 @@ Emitted when a drop is consumed by a game mechanic.
 - All events carry the same `transactionId` from the originating command
 - Messages are keyed by `dropId` for ordering guarantees within a drop's lifecycle
 - Tenant and span headers are attached to all produced messages for multi-tenancy and tracing support
-- Commands are consumed from a single consumer group (`drop_command`) on the `COMMAND_TOPIC_DROP` topic
+- Commands are consumed with consumer name `drop_command` in consumer group `Drops Service` on the `COMMAND_TOPIC_DROP` topic
 - All Kafka message production uses a buffered emit pattern: messages are collected during processing and flushed atomically after the operation completes

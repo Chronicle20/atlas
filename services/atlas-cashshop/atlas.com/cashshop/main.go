@@ -12,7 +12,7 @@ import (
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 	"atlas-cashshop/logger"
-	"atlas-cashshop/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-cashshop/tracing"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
@@ -65,12 +65,24 @@ func main() {
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	itemConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	walletConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	itemConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	walletConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := account.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := compartment2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := cashshop.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := itemConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := walletConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

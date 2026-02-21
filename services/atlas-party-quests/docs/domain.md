@@ -79,11 +79,21 @@ Represents a conditional check used in start requirements, fail requirements, an
 
 **condition.Model** — Immutable model with private fields and getters.
 
-- `Type` — `string`, one of: `item`, `monster_kill`, `custom_data`
-- `Operator` — `string`, one of: `=`, `>=`, `<=`, `>`, `<`
+- `Type` — `string`
+- `Operator` — `string`
 - `Value` — `uint32`
 - `ReferenceId` — `uint32`, contextual ID (item template ID, monster ID, etc.)
 - `ReferenceKey` — `string`, key name for `custom_data` conditions
+
+Valid values depend on usage context:
+
+**Start/fail requirements** (`startRequirements`, `failRequirements`):
+- Types: `party_size`, `level_min`, `level_max`
+- Operators: `eq`, `gte`, `lte`, `gt`, `lt`
+
+**Stage clear conditions** (`clearConditions`):
+- Types: `item`, `item_count`, `monster_kill`, `custom_data`
+- Operators: `>=`, `<=`, `=`, `>`, `<`
 
 ### Invariants
 
@@ -273,6 +283,8 @@ REST client for resolving party membership from `atlas-parties`.
 
 - `GetById(partyId)` — Fetches party with members
 - `GetByMemberId(memberId)` — Finds party containing a character
+- `ByIdProvider(partyId)` — Returns a provider for a single party by ID (includes members)
+- `ByMemberIdProvider(memberId)` — Returns a provider for parties containing a character
 - `GetMembers(partyId)` — Fetches party member list
 
 ---
@@ -288,6 +300,7 @@ REST client for resolving guild membership from `atlas-guilds`.
 **guild.Processor** — Interface + `ProcessorImpl`. Created via `NewProcessor(l, ctx)`.
 
 - `GetByMemberId(memberId)` — Finds guild containing a character
+- `ByMemberIdProvider(memberId)` — Returns a provider for guilds containing a character
 
 ---
 
@@ -301,6 +314,7 @@ REST client for loading all tenants from `atlas-tenants` at startup.
 
 **tenant.Processor** — Interface + `ProcessorImpl`. Created via `NewProcessor(l, ctx)`.
 
+- `AllProvider()` — Returns a provider for all registered tenants
 - `GetAll()` — Fetches all registered tenants
 
 ---

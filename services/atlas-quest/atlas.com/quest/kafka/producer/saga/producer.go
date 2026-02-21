@@ -52,7 +52,7 @@ func NewBuilder(sagaType saga.Type, initiatedBy string) *Builder {
 func (b *Builder) AddAwardItem(characterId uint32, templateId uint32, quantity uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.AwardAsset,
 		Payload: saga.AwardItemPayload{
@@ -70,7 +70,7 @@ func (b *Builder) AddAwardItem(characterId uint32, templateId uint32, quantity u
 func (b *Builder) AddAwardMesos(characterId uint32, ch channel.Model, amount int32, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.AwardMesos,
 		Payload: saga.AwardMesosPayload{
@@ -89,7 +89,7 @@ func (b *Builder) AddAwardMesos(characterId uint32, ch channel.Model, amount int
 func (b *Builder) AddAwardExperience(characterId uint32, ch channel.Model, amount int32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.AwardExperience,
 		Payload: saga.AwardExperiencePayload{
@@ -111,7 +111,7 @@ func (b *Builder) AddAwardExperience(characterId uint32, ch channel.Model, amoun
 func (b *Builder) AddAwardFame(characterId uint32, ch channel.Model, amount int16, actorId uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.AwardFame,
 		Payload: saga.AwardFamePayload{
@@ -130,7 +130,7 @@ func (b *Builder) AddAwardFame(characterId uint32, ch channel.Model, amount int1
 func (b *Builder) AddCreateSkill(characterId uint32, skillId uint32, level byte, masterLevel byte) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.CreateSkill,
 		Payload: saga.CreateSkillPayload{
@@ -147,7 +147,7 @@ func (b *Builder) AddCreateSkill(characterId uint32, skillId uint32, level byte,
 func (b *Builder) AddConsumeItem(characterId uint32, templateId uint32, quantity uint32) *Builder {
 	b.stepCounter++
 	b.steps = append(b.steps, saga.Step{
-		Id:     stepId(b.stepCounter),
+		StepId: stepId(b.stepCounter),
 		Status: saga.Pending,
 		Action: saga.ConsumeItem,
 		Payload: saga.ConsumeItemPayload{

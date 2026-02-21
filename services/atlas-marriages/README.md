@@ -24,13 +24,12 @@ The atlas-marriages service manages character relationships including proposals,
 | DB_USER | Database user |
 | DB_PASSWORD | Database password |
 | DB_SSL_MODE | SSL mode (disable/require) |
-| KAFKA_BROKERS | Kafka broker addresses |
+| BOOTSTRAP_SERVERS | Kafka broker addresses |
+| REST_PORT | REST server port |
 | COMMAND_TOPIC_MARRIAGE | Kafka topic for marriage commands |
 | EVENT_TOPIC_MARRIAGE_STATUS | Kafka topic for marriage events |
-| TENANT_ID | Tenant UUID |
-| REGION | Region identifier |
-| MAJOR_VERSION | Major version number |
-| MINOR_VERSION | Minor version number |
+| EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |
+| CHARACTERS | Base URL for character service REST calls |
 
 ## Documentation
 

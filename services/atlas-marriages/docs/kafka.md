@@ -7,6 +7,7 @@
 Marriage command topic for receiving marriage, proposal, and ceremony commands.
 
 **Environment Variable:** `COMMAND_TOPIC_MARRIAGE`
+**Consumer Group:** Marriage Service
 
 | Command | Body Type | Description |
 |---------|-----------|-------------|
@@ -30,6 +31,7 @@ Marriage command topic for receiving marriage, proposal, and ceremony commands.
 Character status event topic for receiving character deletion events.
 
 **Environment Variable:** `EVENT_TOPIC_CHARACTER_STATUS`
+**Consumer Group:** Marriage Service
 
 | Event | Body Type | Description |
 |-------|-----------|-------------|

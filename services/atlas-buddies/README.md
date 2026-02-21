@@ -25,6 +25,7 @@ Manages buddy lists for characters including adding/removing buddies, tracking o
 | DB_HOST | Postgres database host |
 | DB_PORT | Postgres database port |
 | DB_NAME | Postgres database name |
+| REST_PORT | HTTP server port |
 | BOOTSTRAP_SERVERS | Kafka host:port |
 | BASE_SERVICE_URL | Base URL for external service calls |
 | COMMAND_TOPIC_BUDDY_LIST | Kafka topic for buddy list commands |

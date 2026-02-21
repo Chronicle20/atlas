@@ -5,7 +5,7 @@ import (
 	expression2 "atlas-expressions/kafka/consumer/expression"
 	_map "atlas-expressions/kafka/consumer/map"
 	"atlas-expressions/logger"
-	"atlas-expressions/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-expressions/tasks"
 	"atlas-expressions/tracing"
 	"time"
@@ -34,8 +34,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	expression2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
-	expression2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	_map.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := expression2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	go tasks.Register(l, tdm.Context())(expression.NewRevertTask(l, time.Millisecond*50))
 

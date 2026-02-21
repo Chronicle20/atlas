@@ -18,7 +18,7 @@ import (
 	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
-	"atlas-saga-orchestrator/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-saga-orchestrator/tracing"
 	"os"
 	"strconv"
@@ -97,20 +97,48 @@ func main() {
 	skill.InitConsumers(l)(cmf)(consumerGroupId)
 	storage.InitConsumers(l)(cmf)(consumerGroupId)
 	storageCompartment.InitConsumers(l)(cmf)(consumerGroupId)
-	asset.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	buddylist.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	cashshopCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	compartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	guild.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	pet.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	quest.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	skill.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	storage.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := asset.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := buddylist.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := cashshopCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := compartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := consumable.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := guild.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := pet.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := quest.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := saga2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := skill.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := storage.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Recover active sagas from database
 	recoverSagas(l, store, tdm)

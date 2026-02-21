@@ -9,7 +9,7 @@ import (
 	"atlas-quest/logger"
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
-	"atlas-quest/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-quest/tracing"
 	"os"
 
@@ -57,19 +57,27 @@ func main() {
 
 	// Quest command consumer
 	questConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	questConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := questConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Monster kill event consumer (for quest progress tracking)
 	monsterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	monsterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := monsterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Asset/item creation event consumer (for quest progress tracking)
 	assetConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	assetConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := assetConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Character status event consumer (for map change quest progress)
 	characterConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	characterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := characterConsumer.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Create the service with the router
 	server.New(l).

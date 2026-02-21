@@ -7,7 +7,7 @@ import (
 	character2 "atlas-effective-stats/kafka/consumer/character"
 	session2 "atlas-effective-stats/kafka/consumer/session"
 	"atlas-effective-stats/logger"
-	"atlas-effective-stats/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-effective-stats/tracing"
 	"os"
 
@@ -58,19 +58,27 @@ func main() {
 
 	// Session status events consumer (login/logout)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
-	session2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := session2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Buff status events consumer (apply/expire)
 	buff2.InitConsumers(l)(cmf)(consumerGroupId)
-	buff2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := buff2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Asset status events consumer (equip/unequip)
 	asset2.InitConsumers(l)(cmf)(consumerGroupId)
-	asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := asset2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Character status events consumer (stat changes)
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// Start REST server
 	server.New(l).

@@ -14,7 +14,6 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -31,14 +30,19 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 }
 
 // InitHandlers initializes the route status event handlers
-func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) {
-			return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(sc server.Model) func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(wp writer.Producer) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+			return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 				var t string
 				t, _ = topic.EnvProvider(l)(route2.EnvEventTopicStatus)()
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventArrived(sc, wp))))
-				_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeparted(sc, wp))))
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventArrived(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeparted(sc, wp)))); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
@@ -55,8 +59,8 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 
 		l.Debugf("Transport route [%s] has arrived at map [%d].", e.RouteId, mapId)
 
-		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
+		// Broadcast to all characters in the map across all instances
+		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateEnter1, false)))
 
 		if err != nil {
@@ -76,8 +80,8 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 
 		l.Debugf("Transport route [%s] has departed from map [%d].", e.RouteId, mapId)
 
-		// Broadcast to all characters in the map
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(mapId, uuid.Nil),
+		// Broadcast to all characters in the map across all instances
+		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
 			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false)))
 
 		if err != nil {

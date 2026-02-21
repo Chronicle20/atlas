@@ -109,7 +109,7 @@
 | SKIN_COLOR_CHANGED | StatusEvent[StatusEventSkinColorChangedBody] | Skin color changed |
 | GM_CHANGED | StatusEvent[StatusEventGmChangedBody] | GM status changed |
 | DIED | StatusEvent[StatusEventDiedBody] | Character died |
-| ERROR | StatusEvent[StatusEventErrorBody[NotEnoughMesoErrorStatusBodyBody]] | Error event |
+| ERROR | StatusEvent[StatusEventMesoErrorBody] | Not enough meso error |
 
 ### Commands Produced
 

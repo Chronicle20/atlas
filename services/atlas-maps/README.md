@@ -9,8 +9,9 @@ A service that tracks character presence in maps, manages spawning of monsters a
 ## External Dependencies
 
 - PostgreSQL: Persistent storage for character map visit records
+- Redis: Spawn point cooldown registry storage
 - Kafka: Message consumption and production for character status events, map status events, cash shop events, monster status events, map commands, map action commands, and reactor commands
-- atlas-data service: REST API for map spawn point and reactor data
+- atlas-data service: REST API for map spawn point, reactor, and script data
 - atlas-monsters service: REST API for monster counts and creation
 - atlas-reactors service: REST API for reactor queries
 
@@ -18,7 +19,7 @@ A service that tracks character presence in maps, manages spawning of monsters a
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST_PORT | Jaeger host:port for distributed tracing |
+| TRACE_ENDPOINT | OTLP gRPC endpoint for distributed tracing |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | Port for REST interface |
 | BOOTSTRAP_SERVERS | Kafka host:port |
@@ -27,6 +28,8 @@ A service that tracks character presence in maps, manages spawning of monsters a
 | DB_USER | PostgreSQL user |
 | DB_PASSWORD | PostgreSQL password |
 | DB_NAME | PostgreSQL database name |
+| REDIS_URL | Redis host:port for spawn point registry |
+| REDIS_PASSWORD | Redis password |
 | EVENT_TOPIC_CHARACTER_STATUS | Topic for character status events (consumed) |
 | EVENT_TOPIC_MAP_STATUS | Topic for map status events (produced) |
 | EVENT_TOPIC_CASH_SHOP_STATUS | Topic for cash shop status events (consumed) |

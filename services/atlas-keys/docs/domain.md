@@ -17,16 +17,6 @@ Represents a key binding for a character.
 | theType     | int8   | Type of key binding                |
 | action      | int32  | Action associated with the binding |
 
-### RestModel
-
-REST representation of a key binding.
-
-| Field  | Type  | Description                        |
-|--------|-------|------------------------------------|
-| Key    | int32 | Key identifier (used as resource ID) |
-| Type   | int8  | Type of key binding                |
-| Action | int32 | Action associated with the binding |
-
 ## Invariants
 
 - A key binding is uniquely identified by tenant, character, and key.

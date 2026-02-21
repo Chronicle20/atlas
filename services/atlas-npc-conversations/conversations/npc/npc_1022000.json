@@ -1,0 +1,754 @@
+{
+  "npcId": 1022000,
+  "startState": "startRoute",
+  "states": [
+    {
+      "id": "startRoute",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "jobId", "operator": "=", "value": "0"}], "nextState": "firstJobIntro"},
+          {"conditions": [{"type": "jobId", "operator": "=", "value": "100"}], "nextState": "checkSecondJobLevel"},
+          {"conditions": [], "nextState": "checkThirdJobInit"}
+        ]
+      }
+    },
+
+    {
+      "id": "checkSecondJobLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "level", "operator": ">=", "value": "30"}], "nextState": "secondJobCheckItems"},
+          {"conditions": [], "nextState": "checkThirdJobInit"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobCheckItems",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "item", "operator": ">=", "value": "1", "referenceId": "4031012"}], "nextState": "secondJobHasProof"},
+          {"conditions": [{"type": "item", "operator": ">=", "value": "1", "referenceId": "4031008"}], "nextState": "secondJobHasLetter"},
+          {"conditions": [], "nextState": "secondJobNoItems"}
+        ]
+      }
+    },
+
+    {
+      "id": "checkThirdJobInit",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "questStatus", "operator": "=", "value": "1", "referenceId": "100100"}], "nextState": "checkThirdJobLevel"},
+          {"conditions": [], "nextState": "checkJBP"}
+        ]
+      }
+    },
+    {
+      "id": "checkThirdJobLevel",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "level", "operator": ">=", "value": "70"}], "nextState": "checkThirdJobClass"},
+          {"conditions": [], "nextState": "checkJBP"}
+        ]
+      }
+    },
+    {
+      "id": "checkThirdJobClass",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "jobId", "operator": "=", "value": "110"}], "nextState": "checkThirdJobNoJBP"},
+          {"conditions": [{"type": "jobId", "operator": "=", "value": "120"}], "nextState": "checkThirdJobNoJBP"},
+          {"conditions": [{"type": "jobId", "operator": "=", "value": "130"}], "nextState": "checkThirdJobNoJBP"},
+          {"conditions": [], "nextState": "checkJBP"}
+        ]
+      }
+    },
+    {
+      "id": "checkThirdJobNoJBP",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "questStatus", "operator": "=", "value": "0", "referenceId": "100101"}], "nextState": "thirdJobInitIntro"},
+          {"conditions": [], "nextState": "checkJBP"}
+        ]
+      }
+    },
+
+    {
+      "id": "checkJBP",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "questStatus", "operator": "=", "value": "1", "referenceId": "100101"}], "nextState": "checkJBPItem"},
+          {"conditions": [], "nextState": "defaultResponse"}
+        ]
+      }
+    },
+    {
+      "id": "checkJBPItem",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "item", "operator": ">=", "value": "1", "referenceId": "4031059"}], "nextState": "thirdJobCompleteIntro"},
+          {"conditions": [], "nextState": "thirdJobReminder"}
+        ]
+      }
+    },
+
+    {
+      "id": "defaultResponse",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "You have chosen wisely.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "firstJobIntro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Do you want to become a #rwarrior#k? You need to meet some criteria in order to do so.#b You should be at least in level 10, and at least STR 35#k. Let's see...",
+        "choices": [
+          {"text": "Next", "nextState": "firstJobCheckRequirements"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobCheckRequirements",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "level", "operator": ">=", "value": "10"}, {"type": "strength", "operator": ">=", "value": "35"}], "nextState": "firstJobOffer"},
+          {"conditions": [], "nextState": "firstJobRequirementsNotMet"}
+        ]
+      }
+    },
+    {
+      "id": "firstJobRequirementsNotMet",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Train a bit more until you reach the base requirements and I can show you the way of the #rWarrior#k.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobOffer",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "It is an important and final choice. You will not be able to turn back.",
+        "choices": [
+          {"text": "Previous", "nextState": "firstJobIntro"},
+          {"text": "Next", "nextState": "firstJobCheckInventory"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobCheckInventory",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "1302077"}], "nextState": "firstJobAdvance"},
+          {"conditions": [], "nextState": "firstJobNoSpace"}
+        ]
+      }
+    },
+    {
+      "id": "firstJobNoSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Make some room in your inventory and talk back to me.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobAdvance",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "change_job", "params": {"jobId": "100"}},
+          {"type": "award_item", "params": {"itemId": "1302077", "quantity": "1"}},
+          {"type": "reset_stats", "params": {}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "firstJobComplete1"}
+        ]
+      }
+    },
+    {
+      "id": "firstJobComplete1",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "From here on out, you are going to the Warrior path. This is not an easy job, but if you have discipline and confidence in your own body and skills, you will overcome any difficulties in your path. Go, young Warrior!",
+        "choices": [
+          {"text": "Next", "nextState": "firstJobComplete2"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobComplete2",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "You've gotten much stronger now. Plus every single one of your inventories have added slots. A whole row, to be exact. Go see for it yourself. I just gave you a little bit of #bSP#k. When you open up the #bSkill#k menu on the lower left corner of the screen, there are skills you can learn by using SP's. One warning, though: You can't raise it all together all at once. There are also skills you can acquire only after having learned a couple of skills first.",
+        "choices": [
+          {"text": "Previous", "nextState": "firstJobComplete1"},
+          {"text": "Next", "nextState": "firstJobComplete3"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "firstJobComplete3",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Now a reminder. Once you have chosen, you cannot change up your mind and try to pick another path. Go now, and live as a proud Warrior.",
+        "choices": [
+          {"text": "Previous", "nextState": "firstJobComplete2"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobHasLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Go and see the #b#p1072000##k.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobNoItems",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "The progress you have made is astonishing.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobGoodDecision"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobGoodDecision",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Good decision. You look strong, but I need to see if you really are strong enough to pass the test, it's not a difficult test, so you'll do just fine. Here, take my letter first... make sure you don't lose it!",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobStartQuest"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobStartQuest",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "start_quest", "params": {"questId": "100003"}}
+        ],
+        "outcomes": [
+          {"conditions": [{"type": "item", "operator": ">=", "value": "1", "referenceId": "4031008"}], "nextState": "secondJobGetLetter"},
+          {"conditions": [], "nextState": "secondJobCheckLetterSpace"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobCheckLetterSpace",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [],
+        "outcomes": [
+          {"conditions": [{"type": "inventorySpace", "operator": ">=", "value": "1", "referenceId": "4031008"}], "nextState": "secondJobAwardLetter"},
+          {"conditions": [], "nextState": "secondJobNoSpace"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobAwardLetter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "award_item", "params": {"itemId": "4031008", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "secondJobGetLetter"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobGetLetter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Please get this letter to #b#p1072000##k who's around #b#m102020300##k near Perion. He is taking care of the job of an instructor in place of me. Give him the letter and he'll test you in place of me. Best of luck to you.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobGoodDecision"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobNoSpace",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Please, make some space in your inventory.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobHasProof",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Oh... you came back safe! I knew you'd breeze through. I'll admit, you are a strong, formidable Warrior! Alright, I'll make you an even stronger Warrior than you already are. But before that, you need to choose one of the three paths that you'll be given. It isn't going to be easy, so if you have and questions, feel free to ask.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobChooseMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobChooseMenu",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Alright, when you have made your decision, click on [I'll choose my occupation] at the bottom.",
+        "choices": [
+          {"text": "Please explain to me what being the Fighter is all about.", "nextState": "secondJobExplainFighter"},
+          {"text": "Please explain to me what being the Page is all about.", "nextState": "secondJobExplainPage"},
+          {"text": "Please explain to me what being the Spearman is all about.", "nextState": "secondJobExplainSpearman"},
+          {"text": "I'll choose my occupation!", "nextState": "secondJobSelectJob"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobExplainFighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Warriors that master #rSwords or Axes#k.\r\n\r\n#rFighters#k get #bRage#k, which boosts your party's weapon attack by 10. During 2nd job this is strongly appreciated, as it is free (except for -10 wep def, which is not going to impact the damage you take much at all), takes no Use slots and increases each party member's damage (except Mages) by several hundreds. The other classes can give themselves a weapon attack boost as well, but need items to do so. #rFighters#k also get #bPower Guard#k, reducing touch damage by 40% and deals it back to the monster. This is the main reason why #rFighters#k are considered soloers is because this reduces pot costs immensely.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobChooseMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobExplainPage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Warriors that master #rSwords or Maces/Blunt weapons#k.\r\n\r\n#rPages#k get #bThreaten#k, a skill that lowers the enemies' weapon defense and weapon attack by 20; this is mostly used to lower damage dealt to you. Pages also get #bPower Guard#k, reducing touch damage by 40% and deals it back to the monster. This is one of the main reason why #bPages/WKs#k are considered soloers, that's because this reduces pot costs immensely. Of course, constant KB and #bIce Charge#k helps also to the soloing factor.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobChooseMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobExplainSpearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Warriors that master #rSpears or Polearms#k.\r\n\r\n#rSpearmen#k get #bHyper Body#k, which boosts your max HP/MP and that of your party by 60% when maxed. This skill is particularly useful for helping partied Thieves, Archers, and Mages to survive more hits from enemies and/or PQ bosses. They also get #bIron Will#k which gives +20 wep def and +20 mag def for 300 sec. It is basically a nerfed Bless with 100 seconds more duration but gives no accuracy or avoidability bonus. Even with this skill maxed, it isn't even close to being in the same league as Power Guard and is why Spearmen/Dark Knights are not considered a soloing class.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobChooseMenu"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobSelectJob",
+      "type": "listSelection",
+      "listSelection": {
+        "title": "Now... have you made up your mind? Please choose the job you'd like to select for your 2nd job advancement.",
+        "choices": [
+          {"text": "Fighter", "nextState": "secondJobConfirmFighter", "context": {"jobId": "110", "jobName": "Fighter", "jobNameLower": "fighter"}},
+          {"text": "Page", "nextState": "secondJobConfirmPage", "context": {"jobId": "120", "jobName": "Page", "jobNameLower": "page"}},
+          {"text": "Spearman", "nextState": "secondJobConfirmSpearman", "context": {"jobId": "130", "jobName": "Spearman", "jobNameLower": "spearman"}},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobConfirmFighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make the second job advancement as the #bFighter#k? You know you won't be able to choose a different job for the 2nd job advancement once you make your desicion here, right? Are you sure about this?",
+        "choices": [
+          {"text": "Yes", "nextState": "secondJobAdvanceFighter"},
+          {"text": "No", "nextState": "secondJobDecline"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobConfirmPage",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make the second job advancement as the #bPage#k? You know you won't be able to choose a different job for the 2nd job advancement once you make your desicion here, right? Are you sure about this?",
+        "choices": [
+          {"text": "Yes", "nextState": "secondJobAdvancePage"},
+          {"text": "No", "nextState": "secondJobDecline"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobConfirmSpearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendYesNo",
+        "text": "So you want to make the second job advancement as the #bSpearman#k? You know you won't be able to choose a different job for the 2nd job advancement once you make your desicion here, right? Are you sure about this?",
+        "choices": [
+          {"text": "Yes", "nextState": "secondJobAdvanceSpearman"},
+          {"text": "No", "nextState": "secondJobDecline"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobDecline",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendOk",
+        "text": "Make up your mind and visit me again.",
+        "choices": [
+          {"text": "Ok", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobAdvanceFighter",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4031012", "quantity": "1"}},
+          {"type": "complete_quest", "params": {"questId": "100005", "force": "true"}},
+          {"type": "change_job", "params": {"jobId": "110"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "secondJobComplete1Fighter"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobAdvancePage",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4031012", "quantity": "1"}},
+          {"type": "complete_quest", "params": {"questId": "100005", "force": "true"}},
+          {"type": "change_job", "params": {"jobId": "120"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "secondJobComplete1Page"}
+        ]
+      }
+    },
+    {
+      "id": "secondJobAdvanceSpearman",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "destroy_item", "params": {"itemId": "4031012", "quantity": "1"}},
+          {"type": "complete_quest", "params": {"questId": "100005", "force": "true"}},
+          {"type": "change_job", "params": {"jobId": "130"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "secondJobComplete1Spearman"}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobComplete1Fighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright, you have now become the #bFighter#k. A fighter strives to become the strongest of the strong, and never stops fighting. Don't ever lose that will to fight, and push forward 24/7. I'll help you become even stronger than you already are.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobComplete2Fighter"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete1Page",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright, you have now become a #bPage#k! Pages have high intelligence and bravery, which I hope you'll employ throughout your journey to the right path. I'll help you become much stronger than you already are.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobComplete2Page"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete1Spearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Alright, you have now become the #bSpearman#k. The Spearman use the power of darkness to take out the enemies, always in shadows... Please believe in yourself and your awesome power as you go in your journey. I'll help you become much stronger than you are right now.",
+        "choices": [
+          {"text": "Next", "nextState": "secondJobComplete2Spearman"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobComplete2Fighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have just given you a book that gives you the list of skills you can acquire as a fighter. Also your etc inventory has expanded by adding another row to it. Your max HP and MP have increased, too. Go check and see for it yourself.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete1Fighter"},
+          {"text": "Next", "nextState": "secondJobComplete3Fighter"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete2Page",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have just given you a book that gives you the list of skills you can acquire as a page. Also your etc inventory has expanded by adding another row to it. Your max HP and MP have increased, too. Go check and see for it yourself.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete1Page"},
+          {"text": "Next", "nextState": "secondJobComplete3Page"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete2Spearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have just given you a book that gives you the list of skills you can acquire as a spearman. Also your etc inventory has expanded by adding another row to it. Your max HP and MP have increased, too. Go check and see for it yourself.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete1Spearman"},
+          {"text": "Next", "nextState": "secondJobComplete3Spearman"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobComplete3Fighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. you'll be able to boost up the newer acquired 2nd level skills. A word of warning, though. You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure yo remember that.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete2Fighter"},
+          {"text": "Next", "nextState": "secondJobComplete4Fighter"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete3Page",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. you'll be able to boost up the newer acquired 2nd level skills. A word of warning, though. You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure yo remember that.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete2Page"},
+          {"text": "Next", "nextState": "secondJobComplete4Page"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete3Spearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "I have also given you a little bit of #bSP#k. Open the #bSkill Menu#k located at the bottomleft corner. you'll be able to boost up the newer acquired 2nd level skills. A word of warning, though. You can't boost them up all at once. Some of the skills are only available after you have learned other skills. Make sure yo remember that.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete2Spearman"},
+          {"text": "Next", "nextState": "secondJobComplete4Spearman"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "secondJobComplete4Fighter",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Fighter need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because... for you to use that the right way, that is much harden than just getting stronger. Please find me after you have advanced much further. I'll be waiting for you.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete3Fighter"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete4Page",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Page need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because... for you to use that the right way, that is much harden than just getting stronger. Please find me after you have advanced much further. I'll be waiting for you.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete3Page"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "secondJobComplete4Spearman",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "Spearman need to be strong. But remember that you can't abuse that power and use it on a weakling. Please use your enormous power the right way, because... for you to use that the right way, that is much harden than just getting stronger. Please find me after you have advanced much further. I'll be waiting for you.",
+        "choices": [
+          {"text": "Previous", "nextState": "secondJobComplete3Spearman"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "thirdJobInitIntro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "I was waiting for you. Few days ago, I heard about you from #b#p2020008##k in Ossyria. Well... I'd like to test your strength. There is a secret passage near the ant tunnel. Nobody but you can go into that passage. If you go into the passage, you will meat my the other self. Beat him and bring #b#t4031059##k to me.",
+        "choices": [
+          {"text": "Next", "nextState": "thirdJobInitAction"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "thirdJobInitAction",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "complete_quest", "params": {"questId": "100100", "force": "true"}},
+          {"type": "start_quest", "params": {"questId": "100101"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": "thirdJobInitBattle"}
+        ]
+      }
+    },
+    {
+      "id": "thirdJobInitBattle",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNextPrev",
+        "text": "My the other self is quite strong. He uses many special skills and you should fight with him 1 on 1. However, people cannot stay long in the secret passage, so it is important to beat him ASAP. Well... Good luck I will look forward to you bringing #b#t4031059##k to me.",
+        "choices": [
+          {"text": "Previous", "nextState": "thirdJobInitIntro"},
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "thirdJobReminder",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Please, bring me the #b#t4031059##k.",
+        "choices": [
+          {"text": "Next", "nextState": null},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+
+    {
+      "id": "thirdJobCompleteIntro",
+      "type": "dialogue",
+      "dialogue": {
+        "dialogueType": "sendNext",
+        "text": "Wow... You beat my the other self and brought #b#t4031059##k to me. Good! this surely proves your strength. In terms of strength, you are ready to advance to 3th job. As I promised, I will give #b#t4031057##k to you. Give this necklace to #b#p2020008##k in Ossyria and you will be able to take second test of 3rd job advancement. Good Luck~",
+        "choices": [
+          {"text": "Next", "nextState": "thirdJobCompleteAction"},
+          {"text": "Exit", "nextState": null}
+        ]
+      }
+    },
+    {
+      "id": "thirdJobCompleteAction",
+      "type": "genericAction",
+      "genericAction": {
+        "operations": [
+          {"type": "complete_quest", "params": {"questId": "100101", "force": "true"}},
+          {"type": "destroy_item", "params": {"itemId": "4031059", "quantity": "1"}},
+          {"type": "award_item", "params": {"itemId": "4031057", "quantity": "1"}}
+        ],
+        "outcomes": [
+          {"conditions": [], "nextState": null}
+        ]
+      }
+    }
+  ]
+}

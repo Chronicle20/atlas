@@ -127,7 +127,7 @@ Body types:
 - `ReleasedStatusEventBody` - embeds `AssetData` (all asset fields)
 - `ExpiredStatusEventBody` - isCash (bool), replaceItemId (uint32), replaceMessage (string)
 
-`AssetData` contains: expiration, createdAt, quantity, ownerId, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, locked, spikes, karmaUsed, cold, canBeTraded, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
+`AssetData` contains: expiration, createdAt, quantity, ownerId, flag, rechargeable, strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince, cashId, commodityId, purchaseBy, petId.
 
 ### Compartment Command
 
@@ -158,7 +158,7 @@ Body types:
 - `AcceptCommandBody` - transactionId (UUID), templateId (uint32), embeds AssetData
 - `ReleaseCommandBody` - transactionId (UUID), assetId (uint32), quantity (uint32)
 - `ExpireCommandBody` - assetId (uint32), templateId (uint32), slot (int16), replaceItemId (uint32), replaceMessage (string)
-- `ModifyEquipmentCommandBody` - assetId (uint32), all equipment stat fields, expiration (time)
+- `ModifyEquipmentCommandBody` - assetId (uint32), all equipment stat fields, flag (uint16), expiration (time)
 
 ### Compartment Status Event
 

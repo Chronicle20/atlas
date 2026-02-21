@@ -22,15 +22,26 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(EnvCommandTopicChat)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat)))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handlePetChat)))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleGeneralChat))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMultiChat))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleWhisperChat))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMessengerChat))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handlePetChat))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

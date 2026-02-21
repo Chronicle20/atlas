@@ -27,6 +27,7 @@ Consumed from COMMAND_TOPIC_CHALKBOARD. Generic envelope with typed body.
 | WorldId | world.Id |
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 | CharacterId | uint32 |
 | Type | string |
 | Body | varies |
@@ -56,9 +57,10 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 
 | Field | Type |
 |-------|------|
+| TransactionId | uuid.UUID |
+| WorldId | world.Id |
 | CharacterId | uint32 |
 | Type | string |
-| WorldId | byte |
 | Body | varies |
 
 ##### Character Status Event Types
@@ -74,32 +76,37 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS.
 
 | Field | Type |
 |-------|------|
-| ChannelId | byte |
-| MapId | uint32 |
+| ChannelId | channel.Id |
+| MapId | map.Id |
+| Instance | uuid.UUID |
 
 ##### StatusEventLogoutBody
 
 | Field | Type |
 |-------|------|
-| ChannelId | byte |
-| MapId | uint32 |
+| ChannelId | channel.Id |
+| MapId | map.Id |
+| Instance | uuid.UUID |
 
 ##### StatusEventMapChangedBody
 
 | Field | Type |
 |-------|------|
-| ChannelId | byte |
-| OldMapId | uint32 |
-| TargetMapId | uint32 |
+| ChannelId | channel.Id |
+| OldMapId | map.Id |
+| OldInstance | uuid.UUID |
+| TargetMapId | map.Id |
+| TargetInstance | uuid.UUID |
 | TargetPortalId | uint32 |
 
 ##### ChangeChannelEventLoginBody
 
 | Field | Type |
 |-------|------|
-| ChannelId | byte |
-| OldChannelId | byte |
-| MapId | uint32 |
+| ChannelId | channel.Id |
+| OldChannelId | channel.Id |
+| MapId | map.Id |
+| Instance | uuid.UUID |
 
 ### Events Produced
 
@@ -113,6 +120,7 @@ Produced to EVENT_TOPIC_CHALKBOARD_STATUS.
 | WorldId | world.Id |
 | ChannelId | channel.Id |
 | MapId | map.Id |
+| Instance | uuid.UUID |
 | CharacterId | uint32 |
 | Type | string |
 | Body | varies |

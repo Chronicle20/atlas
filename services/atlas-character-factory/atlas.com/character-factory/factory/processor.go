@@ -116,24 +116,12 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 	characterCreationId := uuid.New()
 	p.l.Debugf("Beginning character creation saga for account [%d] in world [%d] with transaction [%s].", input.AccountId, input.WorldId, characterCreationId.String())
 
-	// Build the character creation only saga
-	characterOnlySaga := buildCharacterCreationOnlySaga(characterCreationId, input)
-
-	// Store the template information for follow-up saga creation
-	// This will be used when the character created event is received
-	err = storeFollowUpSagaTemplate(ctx, input.Name, input, tmpl, characterCreationId)
-	if err != nil {
-		p.l.WithError(err).Errorf("Unable to store follow-up saga template for character [%s].", input.Name)
-		return "", err
-	}
-
-	// Store saga completion tracking information
-	sagaTrackerStore := GetSagaCompletionTrackerStore()
-	sagaTrackerStore.StoreTrackerForCharacterCreation(t.Id(), input.AccountId, characterCreationId)
+	// Build the unified character creation saga
+	characterCreationSaga := buildCharacterCreationSaga(characterCreationId, input, tmpl)
 
 	// Emit the character creation saga
 	sagaProcessor := saga.NewProcessor(p.l, ctx)
-	err = sagaProcessor.Create(characterOnlySaga)
+	err = sagaProcessor.Create(characterCreationSaga)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to emit character creation saga for character [%s].", input.Name)
 		return "", err
@@ -143,16 +131,18 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 	return characterCreationId.String(), nil
 }
 
-// buildCharacterCreationOnlySaga constructs a saga that only creates the character.
-// This saga will complete when the character is created and will emit a character created event.
-func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) saga.Saga {
+// buildCharacterCreationSaga constructs a unified saga that creates a character and awards
+// all items, equipment, and skills in a single transaction. Subsequent steps use characterId=0
+// as a sentinel value; the saga orchestrator's result forwarding will inject the actual
+// characterId after the CreateCharacter step completes.
+func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl template.RestModel) saga.Saga {
 	builder := saga.NewBuilder().
 		SetTransactionId(transactionId).
-		SetSagaType(saga.CharacterCreationOnly).
+		SetSagaType(saga.CharacterCreation).
 		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
 
 	// Step 1: Create character
-	createCharacterPayload := saga.CharacterCreatePayload{
+	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, saga.CharacterCreatePayload{
 		AccountId:    input.AccountId,
 		WorldId:      input.WorldId,
 		Name:         input.Name,
@@ -167,41 +157,23 @@ func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) sa
 		Mp:           input.Mp,
 		Face:         input.Face,
 		Hair:         input.Hair + input.HairColor,
-		Skin:         uint32(input.SkinColor),
+		Skin:         input.SkinColor,
 		Top:          input.Top,
 		Bottom:       input.Bottom,
 		Shoes:        input.Shoes,
 		Weapon:       input.Weapon,
 		MapId:        input.MapId,
-	}
+	})
 
-	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, createCharacterPayload)
-
-	return builder.Build()
-}
-
-// BuildCharacterCreationFollowUpSaga constructs a saga that awards items, equipment, and skills for a created character.
-// This saga will be created after the character creation event is received and will use the actual character ID.
-func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uint32, input RestModel, tmpl template.RestModel) saga.Saga {
-	builder := saga.NewBuilder().
-		SetTransactionId(transactionId).
-		SetSagaType(saga.CharacterCreationFollowUp).
-		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
-
-	// Step 1: Award assets for template items
+	// Steps 2-N: Award assets for template items (characterId=0, forwarded by orchestrator)
 	for i, templateId := range tmpl.Items {
-		stepId := fmt.Sprintf("award_item_%d", i)
-		awardAssetPayload := saga.AwardItemActionPayload{
-			CharacterId: characterId, // Use the actual character ID
-			Item: saga.ItemPayload{
-				TemplateId: templateId,
-				Quantity:   1,
-			},
-		}
-		builder.AddStep(stepId, saga.Pending, saga.AwardAsset, awardAssetPayload)
+		builder.AddStep(fmt.Sprintf("award_item_%d", i), saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
+			CharacterId: 0,
+			Item:        saga.ItemPayload{TemplateId: templateId, Quantity: 1},
+		})
 	}
 
-	// Step 2: Create and equip assets for equipment (Top, Bottom, Shoes, Weapon)
+	// Steps N+1-N+4: Create and equip assets for equipment (characterId=0, forwarded by orchestrator)
 	equipment := []struct {
 		templateId uint32
 		name       string
@@ -211,32 +183,24 @@ func BuildCharacterCreationFollowUpSaga(transactionId uuid.UUID, characterId uin
 		{input.Shoes, "shoes"},
 		{input.Weapon, "weapon"},
 	}
-
 	for _, eq := range equipment {
-		if eq.templateId != 0 { // Only add step if equipment is provided
-			stepId := fmt.Sprintf("equip_%s", eq.name)
-			createAndEquipPayload := saga.CreateAndEquipAssetPayload{
-				CharacterId: characterId, // Use the actual character ID
-				Item: saga.ItemPayload{
-					TemplateId: eq.templateId,
-					Quantity:   1,
-				},
-			}
-			builder.AddStep(stepId, saga.Pending, saga.CreateAndEquipAsset, createAndEquipPayload)
+		if eq.templateId != 0 {
+			builder.AddStep(fmt.Sprintf("equip_%s", eq.name), saga.Pending, saga.CreateAndEquipAsset, saga.CreateAndEquipAssetPayload{
+				CharacterId: 0,
+				Item:        saga.ItemPayload{TemplateId: eq.templateId, Quantity: 1},
+			})
 		}
 	}
 
-	// Step 3: Create skills for starter skills
+	// Steps N+5-M: Create skills for starter skills (characterId=0, forwarded by orchestrator)
 	for i, skillId := range tmpl.Skills {
-		stepId := fmt.Sprintf("create_skill_%d", i)
-		createSkillPayload := saga.CreateSkillPayload{
-			CharacterId: characterId, // Use the actual character ID
+		builder.AddStep(fmt.Sprintf("create_skill_%d", i), saga.Pending, saga.CreateSkill, saga.CreateSkillPayload{
+			CharacterId: 0,
 			SkillId:     skillId,
-			Level:       1,           // Default level
-			MasterLevel: 0,           // Default master level
-			Expiration:  time.Time{}, // No expiration
-		}
-		builder.AddStep(stepId, saga.Pending, saga.CreateSkill, createSkillPayload)
+			Level:       1,
+			MasterLevel: 0,
+			Expiration:  time.Time{},
+		})
 	}
 
 	return builder.Build()

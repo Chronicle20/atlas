@@ -9,7 +9,7 @@ import (
 	"atlas-pets/logger"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
-	"atlas-pets/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-pets/tasks"
 	"atlas-pets/tracing"
 	"os"
@@ -49,6 +49,7 @@ func main() {
 
 	rc := atlas.Connect(l)
 	charReg.InitRegistry(rc)
+	pet.InitTemporalRegistry(rc)
 
 	tdm := service.GetTeardownManager()
 
@@ -63,9 +64,15 @@ func main() {
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitConsumers(l)(cmf)(consumerGroupId)
 	pet2.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	asset.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	pet2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := asset.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := pet2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

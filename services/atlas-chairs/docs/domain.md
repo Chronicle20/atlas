@@ -22,9 +22,7 @@ Composite key for character location tracking.
 | Field | Type | Description |
 |-------|------|-------------|
 | Tenant | tenant.Model | Tenant context |
-| WorldId | world.Id | World identifier |
-| ChannelId | channel.Id | Channel identifier |
-| MapId | map.Id | Map identifier |
+| Field | field.Model | Field location (world, channel, map, instance) |
 
 ### data/map.Model
 
@@ -39,6 +37,7 @@ Map data retrieved from external data service.
 - A character can only sit on one chair at a time
 - Fixed chairs must have chairId less than map's seat count
 - Portable chairs must have item category 301 (chairId / 10000 == 301)
+- Portable chairs require character ownership of the corresponding item
 - Chair is automatically cleared on character logout, map change, or channel change
 
 ## Chair Types
@@ -46,7 +45,7 @@ Map data retrieved from external data service.
 | Type | Description |
 |------|-------------|
 | FIXED | Map-fixed chairs validated against map seat count |
-| PORTABLE | Item-based chairs validated by item category |
+| PORTABLE | Item-based chairs validated by item category and ownership |
 
 ## Processors
 
@@ -75,17 +74,25 @@ Tracks character locations for map-based queries.
 
 ### data/map.Processor
 
-Retrieves map data from external service.
+Retrieves map data from external data service.
 
 | Method | Description |
 |--------|-------------|
 | GetById | Retrieve map data by map ID |
 
+### validation.Processor
+
+Validates character item ownership via external query aggregator service.
+
+| Method | Description |
+|--------|-------------|
+| HasItem | Check if character owns at least one of the specified item |
+
 ## Registries
 
 ### chair.Registry
 
-In-memory chair assignment storage (singleton).
+Redis-backed chair assignment storage (singleton). Tenant-scoped.
 
 | Method | Description |
 |--------|-------------|
@@ -95,7 +102,7 @@ In-memory chair assignment storage (singleton).
 
 ### character.Registry
 
-In-memory character location storage (singleton). Thread-safe with per-map locking.
+Redis-backed character location storage (singleton). Tenant-scoped.
 
 | Method | Description |
 |--------|-------------|
@@ -110,3 +117,4 @@ In-memory character location storage (singleton). Thread-safe with per-map locki
 | INTERNAL | Internal system error |
 | ALREADY_SITING | Character already sitting on a chair |
 | DOES_NOT_EXIT | Chair does not exist |
+| NOT_OWNED | Character does not own the portable chair item |

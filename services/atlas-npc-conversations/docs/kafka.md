@@ -52,7 +52,7 @@
 - Message type: `npc.ConversationCommand[E]`
 - Produced command types:
   - `SIMPLE` — Body: `CommandSimpleBody` (type). Sends a simple dialogue message.
-  - `TEXT` — No body. Sends a text dialogue message (not used directly; SIMPLE with sub-type).
+  - `TEXT` — No body. Sends a text dialogue message.
   - `STYLE` — Body: `CommandStyleBody` (styles []uint32). Sends a style selection dialogue.
   - `NUMBER` — Body: `CommandNumberBody` (defaultValue, minValue, maxValue). Sends a number input dialogue.
   - `SLIDE_MENU` — Body: `CommandSlideMenuBody` (menuType). Sends a slide menu dialogue.

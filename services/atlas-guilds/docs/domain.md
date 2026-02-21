@@ -190,8 +190,7 @@ Manages in-memory guild creation agreement state.
 
 **Model**
 - `tenant` - Tenant model
-- `worldId` - World identifier
-- `channelId` - Channel identifier
+- `channel` - Channel model (contains world and channel identifiers)
 - `leaderId` - Leader character identifier
 - `name` - Proposed guild name
 - `requests` - List of character IDs requested to agree

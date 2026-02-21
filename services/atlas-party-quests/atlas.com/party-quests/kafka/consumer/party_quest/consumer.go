@@ -23,20 +23,41 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(pq.EnvCommandTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStartCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStageClearAttemptCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStageAdvanceCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleLeaveCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStageStateCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateCustomDataCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleBroadcastMessageCommand(db))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterBonusCommand(db))))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRegisterCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStartCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStageClearAttemptCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStageAdvanceCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleForfeitCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleLeaveCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateStageStateCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUpdateCustomDataCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleBroadcastMessageCommand(db)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleEnterBonusCommand(db)))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 

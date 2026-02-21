@@ -214,6 +214,8 @@ Records a PIN attempt result. On failure, increments the PIN attempt counter. If
 | Field | Type | JSON Key |
 |-------|------|----------|
 | Success | bool | success |
+| IpAddress | string | ipAddress |
+| HWID | string | hwid |
 
 Resource type: `pin-attempts`
 
@@ -252,6 +254,8 @@ Records a PIC attempt result. On failure, increments the PIC attempt counter. If
 | Field | Type | JSON Key |
 |-------|------|----------|
 | Success | bool | success |
+| IpAddress | string | ipAddress |
+| HWID | string | hwid |
 
 Resource type: `pic-attempts`
 

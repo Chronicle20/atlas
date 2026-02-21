@@ -102,9 +102,10 @@ Represents a stored item within storage. The asset model is a unified flat struc
 - `templateId`: uint32 - Item template identifier
 - `expiration`: time.Time - Expiration timestamp
 - Stackable fields: `quantity` (uint32), `ownerId` (uint32), `flag` (uint16), `rechargeable` (uint64)
-- Equipment fields: `strength`, `dexterity`, `intelligence`, `luck`, `hp`, `mp`, `weaponAttack`, `magicAttack`, `weaponDefense`, `magicDefense`, `accuracy`, `avoidability`, `hands`, `speed`, `jump`, `slots` (all uint16); `locked`, `spikes`, `karmaUsed`, `cold`, `canBeTraded` (all bool); `levelType`, `level` (byte); `experience`, `hammersApplied` (uint32)
+- Equipment fields: `strength`, `dexterity`, `intelligence`, `luck`, `hp`, `mp`, `weaponAttack`, `magicAttack`, `weaponDefense`, `magicDefense`, `accuracy`, `avoidability`, `hands`, `speed`, `jump`, `slots` (all uint16); `levelType`, `level` (byte); `experience`, `hammersApplied` (uint32)
 - Cash fields: `cashId` (int64), `commodityId` (uint32), `purchaseBy` (uint32)
 - Pet reference: `petId` (uint32)
+- Flag-derived helpers: `Locked()`, `Spikes()`, `KarmaUsed()`, `Cold()`, `CanBeTraded()` — computed from `flag` bitmask
 
 **ModelBuilder**
 - Constructs Model instances with builder pattern via `NewBuilder(storageId, templateId)`
@@ -196,12 +197,12 @@ A legacy singleton cache that tracks which NPC a character is interacting with f
 ### Core Models
 
 **NpcContextCache**
-- `data`: map[uint32]npcContextEntry - Maps characterId to NPC context
+- Redis-backed cache keyed by `atlas:npc-context:{characterId}`
 - `Get`: Retrieves NPC ID for a character if not expired
 - `Put`: Stores NPC context with TTL
 - `Remove`: Clears NPC context for a character
 
 ### Invariants
 
-- Entries expire based on TTL
+- Entries expire based on Redis TTL
 - Cleaned up on storage close, logout, channel change, and map change

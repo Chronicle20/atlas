@@ -6,7 +6,7 @@ Manages hierarchical character relationships (senior-junior) and reputation trac
 
 - PostgreSQL: Primary database (SQLite supported for testing)
 - Kafka: Message broker for command consumption and event production
-- Jaeger: Distributed tracing
+- OpenTelemetry: Distributed tracing (OTLP/gRPC export)
 
 ## Runtime Configuration
 
@@ -45,7 +45,7 @@ Manages hierarchical character relationships (senior-junior) and reputation trac
 | Variable | Description |
 |----------|-------------|
 | LOG_LEVEL | Logging level |
-| JAEGER_HOST | Jaeger tracer host:port |
+| TRACE_ENDPOINT | OpenTelemetry collector endpoint |
 | REST_PORT | REST server port |
 
 ## Documentation

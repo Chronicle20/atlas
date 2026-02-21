@@ -17,9 +17,13 @@ func NewRegistryAudit(l logrus.FieldLogger, interval time.Duration) *RegistryAud
 }
 
 func (t *RegistryAudit) Run() {
-	mapsTracked := len(GetMonsterRegistry().mapMonsterReg)
-	monsTracked := len(GetMonsterRegistry().monsterReg)
-	t.l.Debugf("Registry Audit. Maps [%d]. Monsters [%d].", mapsTracked, monsTracked)
+	monsters := GetMonsterRegistry().GetMonsters()
+	var mapCount, monsterCount int
+	for _, mons := range monsters {
+		monsterCount += len(mons)
+	}
+	mapCount = len(monsters)
+	t.l.Debugf("Registry Audit. Tenants [%d]. Monsters [%d].", mapCount, monsterCount)
 }
 
 func (t *RegistryAudit) SleepTime() time.Duration {

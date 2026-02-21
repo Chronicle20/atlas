@@ -6,7 +6,7 @@ import (
 	chalkboard2 "atlas-chalkboards/kafka/consumer/chalkboard"
 	"atlas-chalkboards/kafka/consumer/character"
 	"atlas-chalkboards/logger"
-	"atlas-chalkboards/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-chalkboards/tracing"
 	"os"
 
@@ -56,8 +56,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
 	chalkboard2.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	chalkboard2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := chalkboard2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	// CreateRoute and run server
 	server.New(l).

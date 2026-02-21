@@ -111,11 +111,6 @@ hands: uint16
 speed: uint16
 jump: uint16
 slots: uint16
-locked: bool
-spikes: bool
-karmaUsed: bool
-cold: bool
-canBeTraded: bool
 levelType: byte
 level: byte
 experience: uint32

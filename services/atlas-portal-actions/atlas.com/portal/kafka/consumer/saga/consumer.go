@@ -16,7 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,11 +33,16 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 }
 
 // InitHandlers initializes Kafka message handlers for saga status events
-func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		t, _ := topic.EnvProvider(l)(saga.EnvStatusEventTopic)()
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCompleted(l))))
-		_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFailed(l))))
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCompleted(l)))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventFailed(l)))); err != nil {
+			return err
+		}
+		return nil
 	}
 }
 
@@ -131,14 +136,14 @@ func resolveFailureMessage(pendingAction action.PendingAction, errorCode string)
 
 // sendFailureMessage creates a saga to send a message to the character
 func sendFailureMessage(l logrus.FieldLogger, ctx context.Context, characterId uint32, ch channel.Model, message string) {
-	s := scriptsaga.NewBuilder().
-		SetSagaType(scriptsaga.InventoryTransaction).
+	s := sharedsaga.NewBuilder().
+		SetSagaType(sharedsaga.InventoryTransaction).
 		SetInitiatedBy("portal-action-transport-failure").
 		AddStep(
 			fmt.Sprintf("message-%d", characterId),
-			scriptsaga.Pending,
-			scriptsaga.SendMessage,
-			scriptsaga.SendMessagePayload{
+			sharedsaga.Pending,
+			sharedsaga.SendMessage,
+			sharedsaga.SendMessagePayload{
 				CharacterId: characterId,
 				WorldId:     ch.WorldId(),
 				ChannelId:   ch.Id(),

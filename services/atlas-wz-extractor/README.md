@@ -160,7 +160,7 @@ Each `.img` entry in the WZ archive becomes a separate `.img.xml` file, preservi
 | `OUTPUT_IMG_DIR` | Yes | Root directory for PNG icon output |
 | `REST_PORT` | No | HTTP listen port (default: `8083`) |
 | `LOG_LEVEL` | No | Log level (default: `debug`) |
-| `JAEGER_HOST_PORT` | No | OTLP/gRPC endpoint for trace export |
+| `TRACE_ENDPOINT` | No | OTLP/gRPC endpoint for trace export |
 
 ## Kubernetes Storage
 

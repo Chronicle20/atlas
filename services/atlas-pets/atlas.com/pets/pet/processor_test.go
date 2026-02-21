@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -29,7 +30,9 @@ import (
 	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
@@ -37,6 +40,19 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+func TestMain(m *testing.M) {
+	mr, err := miniredis.Run()
+	if err != nil {
+		panic(err)
+	}
+	defer mr.Close()
+
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	pet.InitTemporalRegistry(rc)
+
+	os.Exit(m.Run())
+}
 
 func testLogger() logrus.FieldLogger {
 	l, _ := test.NewNullLogger()
@@ -312,7 +328,8 @@ func TestProcessor_Move(t *testing.T) {
 		return model.FixedProvider(mfh)
 	}
 
-	p := pet.NewProcessor(testLogger(), testContext(), testDatabase(t)).With(pet.WithPositionProcessor(pp))
+	ctx := testContext()
+	p := pet.NewProcessor(testLogger(), ctx, testDatabase(t)).With(pet.WithPositionProcessor(pp))
 
 	// test setup
 	i, err := p.Create(message.NewBuffer())(mustBuild(t, pet.NewModelBuilder(0, 7000000, 5000017, "Mr. Roboto 1", 1)))
@@ -330,7 +347,8 @@ func TestProcessor_Move(t *testing.T) {
 		t.Fatalf("Failed to move pet: %v", err)
 	}
 
-	td := pet.GetTemporalRegistry().GetById(i.Id())
+	tnt := tenant.MustFromContext(ctx)
+	td := pet.GetTemporalRegistry().GetById(ctx, tnt, i.Id())
 	if td == nil {
 		t.Fatalf("Failed to get temporal data")
 	}

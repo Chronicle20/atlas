@@ -25,12 +25,15 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	}
 }
 
-func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) {
-		return func(rf func(topic string, handler handler.Handler) (string, error)) {
+func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+	return func(db *gorm.DB) func(rf func(topic string, handler handler.Handler) (string, error)) error {
+		return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 			var t string
 			t, _ = topic.EnvProvider(l)(drop2.EnvEventTopicDropStatus)()
-			_, _ = rf(t, message.AdaptHandler(message.PersistentConfig(handleDropReservation(db))))
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDropReservation(db)))); err != nil {
+				return err
+			}
+			return nil
 		}
 	}
 }

@@ -7,7 +7,7 @@ import (
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"
 	"atlas-npc/seed"
-	"atlas-npc/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-npc/shops"
 	"atlas-npc/tracing"
 	"os"
@@ -60,8 +60,12 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character2.InitConsumers(l)(cmf)(consumerGroupId)
 	shops2.InitConsumers(l)(cmf)(consumerGroupId)
-	character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
-	shops2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler)
+	if err := character2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := shops2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	server.New(l).
 		WithContext(tdm.Context()).

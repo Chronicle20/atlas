@@ -17,6 +17,8 @@ COPY libs/atlas-script-core/go.mod libs/atlas-script-core/go.sum libs/atlas-scri
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
 COPY services/atlas-npc-conversations/atlas.com/npc/go.mod services/atlas-npc-conversations/atlas.com/npc/go.sum services/atlas-npc-conversations/atlas.com/npc/
 
@@ -33,7 +35,9 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-script-core' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
+    echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-npc-conversations/atlas.com/npc' >> go.work && \
+    echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
 
 # Download dependencies
@@ -50,6 +54,8 @@ COPY libs/atlas-script-core libs/atlas-script-core
 COPY libs/atlas-tenant libs/atlas-tenant
 
 COPY libs/atlas-retry libs/atlas-retry
+COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
 COPY services/atlas-npc-conversations/atlas.com/npc services/atlas-npc-conversations/atlas.com/npc
 

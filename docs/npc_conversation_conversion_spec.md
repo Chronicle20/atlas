@@ -825,6 +825,84 @@ Fetches a saved location for a character and stores the map ID and portal ID in 
 
 ---
 
+## 🔄 Cross-NPC State Tracking (PartyQuestItem Pattern)
+
+Many original scripts use `gotPartyQuestItem`, `setPartyQuestItemObtained`, and `removePartyQuestItem` as **persistent character-level progress flags** for tracking multi-step quest chains across multiple NPCs. Despite the name, these are NOT actual party quest items — they are simple key-value flags stored on the character.
+
+### The Pattern
+
+```javascript
+// NPC A (e.g., Ossyria NPC) sets a flag:
+cm.getPlayer().setPartyQuestItemObtained("JB3");
+
+// NPC B (e.g., Grendel) reads the flag:
+if (cm.getPlayer().gotPartyQuestItem("JB3")) { ... }
+
+// NPC B clears it and sets a new one:
+cm.getPlayer().removePartyQuestItem("JB3");
+cm.getPlayer().setPartyQuestItemObtained("JBP");
+
+// NPC B later checks the new flag:
+if (cm.getPlayer().gotPartyQuestItem("JBP") && cm.haveItem(4031059)) { ... }
+```
+
+### Atlas Mapping: Use Quest Status
+
+Map these flags to **quest status tracking** using `questStatus` conditions and `start_quest`/`complete_quest`/`set_quest_progress` operations.
+
+**General approach:**
+1. Each flag transition maps to a quest state change
+2. Use the quest IDs referenced in the script comments (e.g., "Custom Quest 100100, 100101")
+3. If no quest IDs are mentioned, assign logical quest IDs based on the NPC/job advancement
+
+**Function mapping:**
+
+| Original JS | Atlas JSON Equivalent |
+|---|---|
+| `gotPartyQuestItem("KEY")` | `questStatus` condition (check if quest is STARTED=2 or COMPLETED=3) |
+| `setPartyQuestItemObtained("KEY")` | `start_quest` operation (sets quest to STARTED) |
+| `removePartyQuestItem("KEY")` | `complete_quest` operation (sets quest to COMPLETED), or `set_quest_progress` to advance state |
+
+**Example — 3rd Job Advancement (Magician):**
+
+The script uses flags JB3 and JBP with quests 100100 and 100101:
+
+| Flag | Quest Mapping | Meaning |
+|---|---|---|
+| JB3 set | Quest 100100 STARTED (status=2) | Ossyria NPC sent character to job instructor |
+| JB3 removed + JBP set | Quest 100100 COMPLETED (status=3) + Quest 100101 STARTED (status=2) | Job instructor briefed character, go defeat clone |
+| JBP removed | Quest 100101 COMPLETED (status=3) | Character proved worthy, proceed to next step |
+
+**Condition examples:**
+```json
+// Check gotPartyQuestItem("JB3") — quest 100100 is STARTED
+{ "type": "questStatus", "operator": "=", "value": "2", "referenceId": "100100" }
+
+// Check !gotPartyQuestItem("JBP") — quest 100101 is NOT started
+{ "type": "questStatus", "operator": "<", "value": "2", "referenceId": "100101" }
+
+// Check gotPartyQuestItem("JBP") — quest 100101 is STARTED
+{ "type": "questStatus", "operator": "=", "value": "2", "referenceId": "100101" }
+```
+
+**Operation examples:**
+```json
+// setPartyQuestItemObtained("JBP") → start quest 100101
+{ "type": "start_quest", "params": { "questId": "100101" } }
+
+// removePartyQuestItem("JBP") → complete quest 100101
+{ "type": "complete_quest", "params": { "questId": "100101", "force": "true" } }
+```
+
+### Tips
+
+- Look for quest IDs in the script **comments** at the top of the file
+- When multiple flags are used in sequence, map them to sequential quest states
+- Use `force: "true"` on `complete_quest` when completing quests that have no formal requirements defined
+- The same pattern appears in all job advancement NPCs (warriors, bowmen, thieves, pirates) — the flag names change but the mechanism is identical
+
+---
+
 ## 🎯 Summary: The Golden Rule
 
 **"Read the implementation first, write the conversion second, ask when uncertain."**

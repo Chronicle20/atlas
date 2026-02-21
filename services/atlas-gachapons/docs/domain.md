@@ -61,7 +61,6 @@ Immutable representation of a selected reward.
 - Gachapon tenantId cannot be nil UUID
 - Gachapon id cannot be empty
 - Item tenantId cannot be nil UUID
-- Item gachaponId cannot be empty
 - Item tier must be one of: common, uncommon, rare
 - Global item tenantId cannot be nil UUID
 - Global item tier must be one of: common, uncommon, rare

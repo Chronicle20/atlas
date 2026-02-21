@@ -6,7 +6,7 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 
 - PostgreSQL database
 - Kafka message broker
-- Jaeger (optional, for distributed tracing)
+- OpenTelemetry-compatible trace collector (optional, for distributed tracing)
 
 ## Runtime Configuration
 
@@ -22,7 +22,7 @@ A RESTful microservice that provides tenant management for the Atlas game platfo
 
 ### Optional Environment Variables
 
-- `JAEGER_HOST_PORT` - Jaeger agent host and port for distributed tracing
+- `TRACE_ENDPOINT` - OpenTelemetry OTLP gRPC endpoint for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
 - `ROUTES_SEED_PATH` - Filesystem path to route seed JSON files (default: `/configurations/routes`)
 - `INSTANCE_ROUTES_SEED_PATH` - Filesystem path to instance route seed JSON files (default: `/configurations/instance-routes`)

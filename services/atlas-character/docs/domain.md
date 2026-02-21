@@ -176,6 +176,78 @@ Handles drop coordination.
 
 ---
 
+## Data Portal
+
+### Responsibility
+Retrieves portal position data from external data service for map change positioning.
+
+### Core Models
+
+#### Model
+Immutable representation of a map portal.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Portal identifier |
+| name | string | Portal name |
+| target | string | Target portal name |
+| portalType | uint8 | Portal type |
+| x | int16 | X position |
+| y | int16 | Y position |
+| targetMapId | map.Id | Target map |
+| scriptName | string | Script name |
+
+### Processors
+
+#### Processor
+Handles portal data retrieval from external data service.
+
+| Operation | Description |
+|-----------|-------------|
+| GetInMapById | Retrieve portal by map and portal ID |
+
+---
+
+## Data Skill
+
+### Responsibility
+Retrieves skill definition and effect data from external data service for stat calculations.
+
+### Core Models
+
+#### Model
+Immutable representation of a skill definition.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Skill identifier |
+| action | bool | Has action |
+| element | string | Element type |
+| animationTime | uint32 | Animation time |
+| effects | []effect.Model | Skill effects by level |
+
+#### Effect Model
+Immutable representation of a skill effect at a given level.
+
+Selected fields used by this service:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| x | int16 | X value (used for MP bonus) |
+| y | int16 | Y value (used for HP bonus) |
+
+### Processors
+
+#### Processor
+Handles skill data retrieval from external data service.
+
+| Operation | Description |
+|-----------|-------------|
+| GetById | Retrieve skill definition by ID |
+| GetEffect | Retrieve skill effect for a given skill and level |
+
+---
+
 ## Session History
 
 ### Responsibility

@@ -63,6 +63,13 @@ A fluent builder for constructing drop Models. Requires a valid tenant and field
 - Only the character that reserved a drop can have the reservation cancelled for them; cancellation by a different character is a no-op
 - Equipment drops carry all stats inline on the drop model (no separate equipment entity)
 - Pet slot defaults to -1 (no pet) and is reset to -1 on reservation cancellation
+- Ownership duration is 15 seconds; after this period, any character may reserve the drop
+- A drop can be reserved by a character if any of the following are true:
+  - The drop is a player drop
+  - The drop has no owner and no owner party
+  - The ownership duration has elapsed
+  - The requesting character is the owner
+  - The requesting character's party matches the owner party
 
 ### State Transitions
 

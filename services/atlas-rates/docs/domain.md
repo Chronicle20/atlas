@@ -142,7 +142,7 @@ Represents an item being tracked for time-based rate calculations.
 
 **Registry** (`character/registry.go`)
 
-Singleton in-memory cache for character rate models. Thread-safe with per-tenant locking.
+Singleton Redis-backed cache for character rate models. Uses `atlas.TenantRegistry` keyed by tenant and characterId.
 
 | Method | Description |
 |--------|-------------|
@@ -158,7 +158,7 @@ Singleton in-memory cache for character rate models. Thread-safe with per-tenant
 
 **ItemTracker** (`character/item_tracker.go`)
 
-Singleton in-memory tracker for time-based rate items. Thread-safe.
+Singleton Redis-backed tracker for time-based rate items. Uses `atlas.TenantRegistry` keyed by tenant and characterId:templateId.
 
 | Method | Description |
 |--------|-------------|

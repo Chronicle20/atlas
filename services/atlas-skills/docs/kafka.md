@@ -23,6 +23,8 @@
 
 ```json
 {
+  "transactionId": "uuid",
+  "worldId": "byte",
   "characterId": "uint32",
   "type": "string",
   "body": {}
@@ -60,6 +62,8 @@
 
 ```json
 {
+  "transactionId": "uuid",
+  "worldId": "byte",
   "characterId": "uint32",
   "skillId": "uint32",
   "type": "string",
@@ -99,6 +103,8 @@ No body fields.
 
 ```json
 {
+  "transactionId": "uuid",
+  "worldId": "byte",
   "characterId": "uint32",
   "type": "string",
   "body": {}
@@ -128,6 +134,8 @@ No body fields.
 
 ```json
 {
+  "transactionId": "uuid",
+  "worldId": "byte",
   "characterId": "uint32",
   "type": "string",
   "body": {}
@@ -146,6 +154,7 @@ No body fields.
 
 ```json
 {
+  "transactionId": "uuid",
   "worldId": "byte",
   "characterId": "uint32",
   "type": "string",
@@ -159,6 +168,7 @@ No body fields.
 |-------|------|-------------|
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid | Map instance identifier |
 
 Clears all cooldowns for the character.
 

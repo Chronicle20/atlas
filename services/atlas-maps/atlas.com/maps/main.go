@@ -8,8 +8,9 @@ import (
 	"atlas-maps/kafka/consumer/monster"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
+	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
-	"atlas-maps/service"
+	"github.com/Chronicle20/atlas-service"
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
 	"atlas-maps/visit"
@@ -17,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/Chronicle20/atlas-rest/server"
 )
 
@@ -47,6 +49,9 @@ func main() {
 	l := logger.CreateLogger(serviceName)
 	l.Infoln("Starting main service.")
 
+	rc := atlas.Connect(l)
+	spawnMonster.InitRegistry(rc)
+
 	tdm := service.GetTeardownManager()
 
 	tc, err := tracing.InitTracer(serviceName)
@@ -61,10 +66,18 @@ func main() {
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	mapConsumer.InitConsumers(l)(cmf)(consumerGroupId)
-	character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler)
-	cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	monster.InitHandlers(l)(consumer.GetManager().RegisterHandler)
-	mapConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler)
+	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := cashshop.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := monster.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := mapConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 	go tasks.Register(tasks.NewWeather(l, time.Second))

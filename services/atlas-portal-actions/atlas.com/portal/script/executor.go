@@ -12,7 +12,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-script-core/operation"
-	"github.com/Chronicle20/atlas-script-core/saga"
+	"github.com/Chronicle20/atlas-saga"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -280,7 +280,7 @@ func (e *OperationExecutor) executeBlockPortal(f field.Model, characterId uint32
 			saga.BlockPortal,
 			saga.BlockPortalPayload{
 				CharacterId: characterId,
-				MapId:       mapId,
+				MapId:       _map.Id(mapId),
 				PortalId:    portalId,
 			},
 		).Build()

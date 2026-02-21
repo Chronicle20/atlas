@@ -30,6 +30,7 @@ A RESTful service that provides note storage and retrieval for characters. Notes
 - `EVENT_TOPIC_NOTE_STATUS` - Topic for note status events
 - `COMMAND_TOPIC_NOTE` - Topic for note commands
 - `EVENT_TOPIC_CHARACTER_STATUS` - Topic for character status events
+- `COMMAND_TOPIC_SAGA` - Topic for saga commands
 
 ### REST
 - `REST_PORT` - HTTP server port

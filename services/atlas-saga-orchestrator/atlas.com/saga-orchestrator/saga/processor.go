@@ -534,6 +534,11 @@ func (p *ProcessorImpl) MarkEarliestPendingStepWithResult(transactionId uuid.UUI
 		}
 	}
 
+	// Forward result to subsequent step payloads for CharacterCreation sagas
+	if s.SagaType() == CharacterCreation && status == Completed {
+		s = forwardCharacterCreationResult(p.l, s)
+	}
+
 	// Validate state consistency before updating cache
 	if err := s.ValidateStateConsistency(); err != nil {
 		p.l.WithFields(logrus.Fields{
@@ -762,7 +767,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 		GetCache().Remove(p.ctx,s.TransactionId())
 
 		// Emit saga completion event
-		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s.TransactionId()))
+		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s))
 		if err != nil {
 			p.l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId().String(),
@@ -1230,6 +1235,82 @@ func assetDataFromCompartmentAsset(a *compartment.AssetRestModel) asset2.AssetDa
 		CommodityId:    a.CommodityId,
 		PurchaseBy:     a.PurchaseBy,
 		PetId:          a.PetId,
+	}
+}
+
+// forwardCharacterCreationResult extracts characterId from the completed CreateCharacter step
+// and injects it into all remaining pending step payloads that have a CharacterId field.
+// This enables a single unified CharacterCreation saga where subsequent steps (AwardAsset,
+// CreateAndEquipAsset, CreateSkill) are submitted with characterId=0 as a sentinel value,
+// then rewritten once the actual characterId is known.
+func forwardCharacterCreationResult(l logrus.FieldLogger, s Saga) Saga {
+	// Find the CreateCharacter step result
+	var characterId uint32
+	for _, step := range s.Steps() {
+		if step.Action() == CreateCharacter && step.Status() == Completed && step.Result() != nil {
+			characterId = extractUint32(step.Result(), "characterId")
+			break
+		}
+	}
+	if characterId == 0 {
+		return s
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   characterId,
+	}).Debug("Forwarding characterId from CreateCharacter step to pending steps.")
+
+	// Rewrite pending step payloads with the characterId
+	for i, step := range s.Steps() {
+		if step.Status() != Pending {
+			continue
+		}
+		var updated Saga
+		var err error
+		switch p := step.Payload().(type) {
+		case AwardItemActionPayload:
+			p.CharacterId = characterId
+			updated, err = s.WithStepPayload(i, p)
+		case CreateAndEquipAssetPayload:
+			p.CharacterId = characterId
+			updated, err = s.WithStepPayload(i, p)
+		case CreateSkillPayload:
+			p.CharacterId = characterId
+			updated, err = s.WithStepPayload(i, p)
+		default:
+			continue
+		}
+		if err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_index":     i,
+			}).Error("Failed to forward characterId to step payload")
+			continue
+		}
+		s = updated
+	}
+	return s
+}
+
+// extractUint32 extracts a uint32 value from a map[string]any, handling both uint32 and float64 types
+// (float64 occurs after JSON round-trip through PostgreSQL storage)
+func extractUint32(m map[string]any, key string) uint32 {
+	v, ok := m[key]
+	if !ok {
+		return 0
+	}
+	switch val := v.(type) {
+	case uint32:
+		return val
+	case float64:
+		return uint32(val)
+	case int:
+		return uint32(val)
+	case int64:
+		return uint32(val)
+	default:
+		return 0
 	}
 }
 

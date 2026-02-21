@@ -10,14 +10,43 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CompletedStatusEventProvider(transactionId uuid.UUID) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(transactionId.ID()))
+func CompletedStatusEventProvider(s Saga) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(s.TransactionId().ID()))
+
+	body := saga.StatusEventCompletedBody{
+		SagaType: string(s.SagaType()),
+	}
+
+	// For CharacterCreation sagas, include accountId and characterId in the results
+	if s.SagaType() == CharacterCreation {
+		body.Results = extractCharacterCreationResults(s)
+	}
+
 	value := &saga.StatusEvent[saga.StatusEventCompletedBody]{
-		TransactionId: transactionId,
+		TransactionId: s.TransactionId(),
 		Type:          saga.StatusEventTypeCompleted,
-		Body:          saga.StatusEventCompletedBody{},
+		Body:          body,
 	}
 	return producer.SingleMessageProvider(key, value)
+}
+
+// extractCharacterCreationResults extracts accountId and characterId from a CharacterCreation saga's steps
+func extractCharacterCreationResults(s Saga) map[string]any {
+	results := make(map[string]any)
+	for _, step := range s.Steps() {
+		if step.Action() == CreateCharacter {
+			if p, ok := step.Payload().(CharacterCreatePayload); ok {
+				results["accountId"] = p.AccountId
+			}
+			if step.Result() != nil {
+				if cid := extractUint32(step.Result(), "characterId"); cid != 0 {
+					results["characterId"] = cid
+				}
+			}
+			break
+		}
+	}
+	return results
 }
 
 func FailedStatusEventProvider(transactionId uuid.UUID, characterId uint32, sagaType string, errorCode string, reason string, failedStep string) model.Provider[[]kafka.Message] {

@@ -105,7 +105,7 @@ func handleCharacterCreatedEvent(l logrus.FieldLogger, ctx context.Context, e ch
 		"world_id":       e.WorldId,
 	}).Debug("Character created successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = saga.NewProcessor(l, ctx).StepCompletedWithResult(e.TransactionId, true, map[string]any{"characterId": e.CharacterId})
 }
 
 func handleCharacterCreationFailedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventCreationFailedBody]) {

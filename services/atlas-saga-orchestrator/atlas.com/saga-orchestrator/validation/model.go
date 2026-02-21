@@ -28,10 +28,10 @@ const (
 
 // ConditionInput represents the structured input for creating a condition
 type ConditionInput struct {
-	Type     string `json:"type"`             // e.g., "jobId", "meso", "item"
-	Operator string `json:"operator"`         // e.g., "=", ">=", "<"
-	Value    int    `json:"value"`            // Value or quantity
-	ItemId   uint32 `json:"itemId,omitempty"` // Only for item checks
+	Type        string `json:"type"`                  // e.g., "jobId", "meso", "item"
+	Operator    string `json:"operator"`              // e.g., "=", ">=", "<"
+	Value       int    `json:"value"`                 // Value or quantity
+	ReferenceId uint32 `json:"referenceId,omitempty"` // For item checks, quest validation, etc.
 }
 
 // ConditionResult represents the result of a condition evaluation
@@ -50,7 +50,7 @@ type Condition struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        uint32 // Used for item conditions
+	referenceId   uint32 // Used for item conditions, quest validation, etc.
 }
 
 // ConditionBuilder is used to safely construct Condition objects
@@ -58,7 +58,7 @@ type ConditionBuilder struct {
 	conditionType ConditionType
 	operator      Operator
 	value         int
-	itemId        *uint32
+	referenceId   *uint32
 	err           error
 }
 
@@ -107,13 +107,13 @@ func (b *ConditionBuilder) SetValue(value int) *ConditionBuilder {
 	return b
 }
 
-// SetItemId sets the item ID (only for item conditions)
-func (b *ConditionBuilder) SetItemId(itemId uint32) *ConditionBuilder {
+// SetReferenceId sets the reference ID (for item conditions, quest validation, etc.)
+func (b *ConditionBuilder) SetReferenceId(referenceId uint32) *ConditionBuilder {
 	if b.err != nil {
 		return b
 	}
 
-	b.itemId = &itemId
+	b.referenceId = &referenceId
 	return b
 }
 
@@ -123,10 +123,10 @@ func (b *ConditionBuilder) FromInput(input ConditionInput) *ConditionBuilder {
 	b.SetOperator(input.Operator)
 	b.SetValue(input.Value)
 
-	if input.ItemId != 0 {
-		b.SetItemId(input.ItemId)
+	if input.ReferenceId != 0 {
+		b.SetReferenceId(input.ReferenceId)
 	} else if ConditionType(input.Type) == ItemCondition {
-		b.err = fmt.Errorf("itemId is required for item conditions")
+		b.err = fmt.Errorf("referenceId is required for item conditions")
 	}
 
 	return b
@@ -150,9 +150,9 @@ func (b *ConditionBuilder) Validate() *ConditionBuilder {
 		return b
 	}
 
-	// Check if itemId is set for item conditions
-	if b.conditionType == ItemCondition && b.itemId == nil {
-		b.err = fmt.Errorf("itemId is required for item conditions")
+	// Check if referenceId is set for item conditions
+	if b.conditionType == ItemCondition && b.referenceId == nil {
+		b.err = fmt.Errorf("referenceId is required for item conditions")
 		return b
 	}
 
@@ -173,8 +173,8 @@ func (b *ConditionBuilder) Build() (Condition, error) {
 		value:         b.value,
 	}
 
-	if b.itemId != nil {
-		condition.itemId = *b.itemId
+	if b.referenceId != nil {
+		condition.referenceId = *b.referenceId
 	}
 
 	return condition, nil

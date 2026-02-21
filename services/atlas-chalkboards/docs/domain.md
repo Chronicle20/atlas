@@ -22,9 +22,7 @@ Composite key for character location tracking.
 | Field | Type | Description |
 |-------|------|-------------|
 | Tenant | tenant.Model | Tenant context |
-| WorldId | world.Id | World identifier |
-| ChannelId | channel.Id | Channel identifier |
-| MapId | map.Id | Map identifier |
+| Field | field.Model | Field location (world, channel, map, instance) |
 
 ## Invariants
 
@@ -61,7 +59,7 @@ Tracks character locations for map-based queries.
 
 ### chalkboard.Registry
 
-In-memory chalkboard message storage (singleton). Thread-safe.
+Redis-backed chalkboard message storage (singleton). Uses `atlas-redis` TenantRegistry with namespace `chalkboard`.
 
 | Method | Description |
 |--------|-------------|
@@ -71,10 +69,10 @@ In-memory chalkboard message storage (singleton). Thread-safe.
 
 ### character.Registry
 
-In-memory character location storage (singleton). Thread-safe with per-map locking.
+Redis-backed character location storage (singleton). Uses Redis sets with namespace `chalk-char`.
 
 | Method | Description |
 |--------|-------------|
-| AddCharacter | Add character to map |
-| RemoveCharacter | Remove character from map |
-| GetInMap | Get all characters in map |
+| AddCharacter | Add character to map set |
+| RemoveCharacter | Remove character from map set |
+| GetInMap | Get all characters in map set |

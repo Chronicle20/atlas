@@ -43,6 +43,7 @@ Evaluates monster drop tables and creates drops for a killed monster.
 - Filters quest-specific drops based on character's started quests
 - Retrieves character rate multipliers
 - Evaluates drop success based on chance and item drop rate (adjustedChance = chance * itemDropRate, success if rand < adjustedChance out of 999999)
+- Retrieves the killer's party membership for drop ownership assignment
 - Creates item or meso drops at calculated positions
 
 #### DistributeExperience

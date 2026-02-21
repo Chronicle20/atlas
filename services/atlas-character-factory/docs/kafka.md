@@ -2,36 +2,20 @@
 
 ## Topics Consumed
 
-| Topic Environment Variable     | Direction | Description                              |
-|--------------------------------|-----------|------------------------------------------|
-| EVENT_TOPIC_CHARACTER_STATUS   | Event     | Character status events (created)        |
-| EVENT_TOPIC_SAGA_STATUS        | Event     | Saga status events (completed)           |
+| Topic Environment Variable | Direction | Description                    |
+|----------------------------|-----------|--------------------------------|
+| EVENT_TOPIC_SAGA_STATUS    | Event     | Saga status events (completed) |
 
 ## Topics Produced
 
-| Topic Environment Variable | Direction | Description                              |
-|----------------------------|-----------|------------------------------------------|
-| COMMAND_TOPIC_SAGA         | Command   | Saga commands to orchestrator            |
-| EVENT_TOPIC_SEED_STATUS    | Event     | Seed completion status events            |
+| Topic Environment Variable | Direction | Description                   |
+|----------------------------|-----------|-------------------------------|
+| COMMAND_TOPIC_SAGA         | Command   | Saga commands to orchestrator |
+| EVENT_TOPIC_SEED_STATUS    | Event     | Seed completion status events |
 
 ## Message Types
 
 ### Consumed Messages
-
-#### StatusEvent[StatusEventCreatedBody] (Character Status)
-
-| Field       | Type   |
-|-------------|--------|
-| CharacterId | uint32 |
-| Type        | string |
-| WorldId     | byte   |
-| Body        | E      |
-
-StatusEventCreatedBody:
-
-| Field | Type   |
-|-------|--------|
-| Name  | string |
 
 #### StatusEvent[StatusEventCompletedBody] (Saga Status)
 
@@ -41,7 +25,14 @@ StatusEventCreatedBody:
 | Type          | string    |
 | Body          | E         |
 
-StatusEventCompletedBody: Empty struct.
+StatusEventCompletedBody:
+
+| Field    | Type           |
+|----------|----------------|
+| SagaType | string         |
+| Results  | map[string]any |
+
+Only events with `Type` = `"COMPLETED"` and `SagaType` = `"character_creation"` are processed. The handler extracts `accountId` and `characterId` from `Results` and emits a seed completion event.
 
 ### Produced Messages
 
@@ -72,6 +63,7 @@ CreatedStatusEventBody:
 
 - Saga commands are keyed by transaction ID for ordering
 - Seed status events are keyed by account ID
-- Character created events trigger follow-up saga creation
-- Saga completed events tracked for both character creation and follow-up sagas
-- Seed completion event emitted when both sagas complete
+- Saga completed events for `CharacterCreation` type trigger seed completion event emission
+- Required headers: tenant headers and span headers (set via producer decorators)
+- Consumer group: `"Character Factory Service"`
+- Consumer header parsers: SpanHeaderParser, TenantHeaderParser

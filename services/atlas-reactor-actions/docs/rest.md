@@ -206,7 +206,7 @@ The service makes REST API calls to the following services via `requests.RootUrl
 
 #### GET /party-quests/instances/character/{characterId}
 
-Retrieves the party quest instance for a character. Used by `pq_custom_data` condition evaluation and by `update_pq_state`, `broadcast_pq_message` operation execution.
+Retrieves the party quest instance for a character. Used by `pq_custom_data` condition evaluation and by `update_pq_state`, `broadcast_pq_message`, `stage_clear_attempt` operation execution.
 
 **Parameters**
 

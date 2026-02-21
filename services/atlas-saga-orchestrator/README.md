@@ -1,11 +1,12 @@
 # atlas-saga-orchestrator
 
-Coordinates distributed transactions across Atlas microservices using the saga pattern. Tracks step execution and performs compensation on failure to maintain data consistency. Sagas are stored in-memory and are not persisted across service restarts.
+Coordinates distributed transactions across Atlas microservices using the saga pattern. Tracks step execution and performs compensation on failure to maintain data consistency. Sagas are persisted in PostgreSQL with optimistic locking, recovered on startup, and reaped on timeout.
 
 The orchestrator receives saga commands via Kafka or REST, then executes each step sequentially by producing commands to downstream services and consuming their status events. High-level transfer actions (storage and cash shop transfers) are expanded at runtime into concrete accept/release step pairs by fetching asset data from the relevant inventory services.
 
 ## External Dependencies
 
+- PostgreSQL (saga persistence)
 - Kafka (message broker)
 - OpenTelemetry (distributed tracing)
 
@@ -37,6 +38,9 @@ This service makes REST calls to:
 | TRACE_ENDPOINT | OpenTelemetry collector endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | REST API server port |
+| SAGA_DEFAULT_TIMEOUT | Default saga timeout duration (default: 5m) |
+| SAGA_RECOVERY_ENABLED | Enable saga recovery on startup (default: true) |
+| SAGA_REAPER_INTERVAL | Interval between reaper sweeps (default: 30s) |
 | RATES | Base URL for rate service |
 | QUESTS | Base URL for quest service |
 | DROP_INFORMATION | Base URL for drop information service |
@@ -91,7 +95,7 @@ This service makes REST calls to:
 | EVENT_TOPIC_PET_STATUS | Pet status input |
 | EVENT_TOPIC_QUEST_STATUS | Quest status input |
 | EVENT_TOPIC_SKILL_STATUS | Skill status input |
-| EVENT_TOPIC_STORAGE_STATUS | Storage status input |
+| EVENT_TOPIC_STORAGE_STATUS | Storage service status input |
 | EVENT_TOPIC_STORAGE_COMPARTMENT_STATUS | Storage compartment status input |
 | EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward win events output |
 

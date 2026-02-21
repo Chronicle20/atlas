@@ -23,11 +23,11 @@ Location where monsters can spawn.
 |-------|------|-------------|
 | Id | uint32 | Spawn point identifier |
 | Template | uint32 | Monster template ID |
-| MobTime | uint32 | Spawn timing behavior |
-| Team | int32 | Team assignment |
+| MobTime | int32 | Spawn timing behavior (negative = non-spawnable) |
+| Team | int8 | Team assignment |
 | Cy | int16 | Y coordinate for behavior |
 | F | uint32 | Spawn flags |
-| Fh | uint16 | Foothold |
+| Fh | int16 | Foothold |
 | Rx0 | int16 | Left spawn boundary |
 | Rx1 | int16 | Right spawn boundary |
 | X | int16 | X coordinate |
@@ -74,6 +74,15 @@ Reactor data from atlas-data service.
 | delay | uint32 | Delay value |
 | direction | byte | Direction |
 
+### Data Script Model
+
+Map script data from atlas-data service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| onFirstUserEnter | string | Script name for first user entry |
+| onUserEnter | string | Script name for every user entry |
+
 ### FieldKey
 
 Composite key identifying a map instance for weather tracking.
@@ -108,12 +117,14 @@ Character map visit record. Immutable.
 - SpawnPoints with MobTime < 0 are not spawnable
 - Each MapKey maintains a separate character registry
 - Each MapKey maintains a separate spawn point registry
-- Spawn points have a 5-second cooldown after spawning
+- Spawn points with MobTime == 0 have a 5-second cooldown after spawning; spawn points with MobTime > 0 use MobTime seconds as cooldown
 - Only spawn points with NextSpawnAt <= now are eligible for spawning
+- When a monster with MobTime > 0 is killed, spawn point cooldown is reset to MobTime seconds from the kill time
 - Reactor name cannot be empty
 - Reactor classification must be positive
 - Visit records are unique per tenant, character, and map (upsert via FirstOrCreate)
 - Weather entries are keyed by FieldKey (tenant + field)
+- Weather duration is capped at 20 seconds
 - Weather entries are automatically removed after ExpiresAt
 
 ## Processors
@@ -130,13 +141,15 @@ Coordinates character entry and exit from maps.
 - TransitionMapAndEmit: Executes TransitionMap with Kafka emission
 - TransitionChannel: Exits old channel and enters new channel
 - TransitionChannelAndEmit: Executes TransitionChannel with Kafka emission
-- GetCharactersInMap: Returns character IDs in a map
+- GetCharactersInMap: Returns character IDs in a map instance
+- GetCharactersInMapAllInstances: Returns character IDs across all instances of a map
 
 ### Character Processor
 
 Manages in-memory character registry per map.
 
-- GetCharactersInMap: Returns character IDs in a map
+- GetCharactersInMap: Returns character IDs in a map instance
+- GetCharactersInMapAllInstances: Returns character IDs across all instances of a map
 - GetMapsWithCharacters: Returns all maps with active characters
 - Enter: Adds character to registry
 - Exit: Removes character from registry
@@ -146,11 +159,12 @@ Manages in-memory character registry per map.
 Manages monster spawn points with cooldown enforcement.
 
 - SpawnMonsters: Spawns monsters based on character count and spawn point availability
-  - Initializes spawn point registry on first access
-  - Filters spawn points by cooldown eligibility
+  - Initializes spawn point registry in Redis on first access (from atlas-data)
+  - Filters spawn points by cooldown eligibility via Lua script (NextSpawnAt <= now)
   - Calculates spawn count: ceil((0.70 + 0.05 * min(6, characterCount)) * spawnPointCount) - currentMonsters
   - Randomly selects from eligible spawn points
-  - Updates cooldown (NextSpawnAt = now + 5 seconds) after spawning
+  - Updates cooldown after spawning: 5 seconds for normal monsters (MobTime == 0), MobTime seconds for boss monsters (MobTime > 0)
+  - Batch updates cooldowns atomically in Redis
 
 ### Monster Processor (monster)
 
@@ -200,3 +214,9 @@ Retrieves spawn point data from atlas-data service.
 Retrieves reactor data from atlas-data service.
 
 - InMapProvider: Gets reactor data for a map
+
+#### Data Script Processor
+
+Retrieves map script data from atlas-data service.
+
+- GetScripts: Gets script names (onFirstUserEnter, onUserEnter) for a map

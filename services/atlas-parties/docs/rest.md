@@ -45,6 +45,7 @@ None
         "worldId": 0,
         "channelId": 1,
         "mapId": 100000000,
+        "instance": "00000000-0000-0000-0000-000000000000",
         "online": true
       }
     }
@@ -157,7 +158,22 @@ None
       }
     }
   },
-  "included": [...]
+  "included": [
+    {
+      "type": "members",
+      "id": "12345",
+      "attributes": {
+        "name": "CharacterName",
+        "level": 50,
+        "jobId": 100,
+        "worldId": 0,
+        "channelId": 1,
+        "mapId": 100000000,
+        "instance": "00000000-0000-0000-0000-000000000000",
+        "online": true
+      }
+    }
+  ]
 }
 ```
 
@@ -236,6 +252,7 @@ None
         "worldId": 0,
         "channelId": 1,
         "mapId": 100000000,
+        "instance": "00000000-0000-0000-0000-000000000000",
         "online": true
       }
     }
@@ -319,6 +336,7 @@ None
       "worldId": 0,
       "channelId": 1,
       "mapId": 100000000,
+      "instance": "00000000-0000-0000-0000-000000000000",
       "online": true
     }
   }

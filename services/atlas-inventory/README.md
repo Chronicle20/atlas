@@ -6,17 +6,26 @@ Inventory management service for character inventories, compartments, and assets
 
 - PostgreSQL (GORM)
 - Kafka
-- Jaeger (tracing)
+- Redis (distributed locks and reservation registry)
+- OpenTelemetry (OTLP gRPC tracing)
 - atlas-pets service (REST, for pet creation during cash item asset creation)
 - atlas-data services (REST, for consumable/setup/etc slot max lookups and equipment statistics)
 - atlas-drops service (Kafka commands, for item drop and pickup coordination)
 
 ## Runtime Configuration
 
-- `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace)
 - `REST_PORT` - Port for the REST server
+- `BASE_SERVICE_URL` - Base URL for outbound REST calls
 - `BOOTSTRAP_SERVERS` - Kafka bootstrap servers
+- `TRACE_ENDPOINT` - OpenTelemetry OTLP gRPC endpoint
+- `REDIS_URL` - Redis host:port
+- `REDIS_PASSWORD` - Redis password
+- `DB_NAME` - PostgreSQL database name
+- `DB_USER` - PostgreSQL user
+- `DB_PASSWORD` - PostgreSQL password
+- `DB_HOST` - PostgreSQL host
+- `DB_PORT` - PostgreSQL port
 
 ### Kafka Topics
 

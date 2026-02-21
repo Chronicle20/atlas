@@ -22,7 +22,7 @@ The channel service acts as the primary interface between game clients and the b
   - CHANNELS - Channel registration
   - CHARACTERS - Character data
   - CONFIGURATIONS - Service and tenant configuration
-  - DATA - Static game data (maps, NPCs, skills, portals, quests)
+  - DATA - Static game data (maps, NPCs, skills, portals, quests, cash items)
   - DROPS - Drop state
   - GUILDS - Guild data
   - GUILD_THREADS - Guild BBS
@@ -34,12 +34,14 @@ The channel service acts as the primary interface between game clients and the b
   - NOTES - Mail notes
   - NPC_SHOP - NPC shop data
   - PARTIES - Party data
+  - PARTY_QUESTS - Party quest timers
   - PETS - Pet data
   - QUESTS - Quest progress data
   - REACTORS - Reactor state
   - ROUTES - Transport routes
   - SKILLS - Character skills
   - STORAGE - Storage data and projections
+  - WEATHER - Weather state
   - WORLDS - World data
 
 ## Runtime Configuration
@@ -55,6 +57,7 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_ACCOUNT_STATUS | Account status events |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Account session status events |
 | EVENT_TOPIC_ASSET_STATUS | Asset status events |
+| EVENT_TOPIC_BUDDY_LIST_STATUS | Buddy list status events |
 | EVENT_TOPIC_CASH_COMPARTMENT_STATUS | Cash shop compartment status events |
 | EVENT_TOPIC_CASH_SHOP_STATUS | Cash shop status events |
 | EVENT_TOPIC_CHARACTER_BUFF_STATUS | Character buff status events |
@@ -68,10 +71,18 @@ The channel service acts as the primary interface between game clients and the b
 | EVENT_TOPIC_EXPRESSION | Expression events |
 | EVENT_TOPIC_FAME_STATUS | Fame status events |
 | EVENT_TOPIC_GACHAPON_REWARD_WON | Gachapon reward won events |
+| EVENT_TOPIC_GUILD_STATUS | Guild status events |
+| EVENT_TOPIC_GUILD_THREAD_STATUS | Guild thread status events |
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Instance transport events |
+| EVENT_TOPIC_INVITE_STATUS | Invite status events |
 | EVENT_TOPIC_MAP_STATUS | Map status events |
+| EVENT_TOPIC_MESSENGER_STATUS | Messenger status events |
 | EVENT_TOPIC_MONSTER_STATUS | Monster status events |
 | EVENT_TOPIC_NOTE_STATUS | Note status events |
+| EVENT_TOPIC_NPC_SHOP_STATUS | NPC shop status events |
+| EVENT_TOPIC_PARTY_STATUS | Party status events |
+| EVENT_TOPIC_PARTY_MEMBER_STATUS | Party member status events |
+| EVENT_TOPIC_PARTY_QUEST_STATUS | Party quest status events |
 | EVENT_TOPIC_PET_STATUS | Pet status events |
 | EVENT_TOPIC_QUEST_STATUS | Quest status events |
 | EVENT_TOPIC_REACTOR_STATUS | Reactor status events |

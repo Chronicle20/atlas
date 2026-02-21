@@ -1,12 +1,13 @@
 # atlas-reactors
 
-Manages reactor instances as in-memory volatile game objects. Reactors are interactive objects within maps that respond to player actions, transitioning through states when hit until reaching a terminal state where they trigger and are destroyed.
+Manages reactor instances as volatile game objects backed by Redis. Reactors are interactive objects within maps that respond to player actions, transitioning through states when hit until reaching a terminal state where they trigger and are destroyed.
 
-This service uses an in-memory registry pattern. Reactor instances exist only during active game sessions and are not persisted across service restarts.
+This service uses a Redis-backed registry pattern. Reactor instances exist only during active game sessions and are not persisted across service restarts. Redis provides shared state across replicas and atomic ID generation.
 
 ## External Dependencies
 
 - Kafka (BOOTSTRAP_SERVERS)
+- Redis (REDIS_URL)
 - OpenTelemetry Collector (TRACE_ENDPOINT)
 - atlas-data service (DATA root URL)
 
@@ -15,6 +16,8 @@ This service uses an in-memory registry pattern. Reactor instances exist only du
 | Variable                       | Description                              |
 |--------------------------------|------------------------------------------|
 | BOOTSTRAP_SERVERS              | Kafka broker addresses                   |
+| REDIS_URL                      | Redis server address                     |
+| REDIS_PASSWORD                 | Redis authentication password            |
 | TRACE_ENDPOINT                 | OpenTelemetry gRPC collector endpoint    |
 | LOG_LEVEL                      | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT                      | HTTP server port                         |

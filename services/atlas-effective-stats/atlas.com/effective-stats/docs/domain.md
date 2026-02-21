@@ -50,8 +50,8 @@ Holds base stats fetched from atlas-character.
 | dexterity | uint16 | Base dexterity |
 | luck | uint16 | Base luck |
 | intelligence | uint16 | Base intelligence |
-| maxHP | uint16 | Base maximum HP |
-| maxMP | uint16 | Base maximum MP |
+| maxHp | uint16 | Base maximum HP |
+| maxMp | uint16 | Base maximum MP |
 
 #### Computed
 
@@ -63,8 +63,8 @@ Holds all computed effective stats for a character.
 | dexterity | uint32 | Effective dexterity |
 | luck | uint32 | Effective luck |
 | intelligence | uint32 | Effective intelligence |
-| maxHP | uint32 | Effective maximum HP |
-| maxMP | uint32 | Effective maximum MP |
+| maxHp | uint32 | Effective maximum HP |
+| maxMp | uint32 | Effective maximum MP |
 | weaponAttack | uint32 | Effective physical attack |
 | weaponDefense | uint32 | Effective physical defense |
 | magicAttack | uint32 | Effective magic attack |
@@ -92,7 +92,7 @@ The `MapStatupType` function maps passive skill statup type strings to stat type
 
 ### Responsibility
 
-Manages the in-memory effective stats model for characters, including bonus tracking, computation, registry storage, and lazy initialization from external services.
+Manages the effective stats model for characters, including bonus tracking, computation, registry storage, and lazy initialization from external services.
 
 ### Core Models
 
@@ -181,7 +181,7 @@ Each fetch step is fail-safe; failures are logged as warnings and the character 
 
 ### Responsibility
 
-Thread-safe singleton in-memory cache for character effective stats, organized by tenant. Uses a two-level locking strategy: a top-level mutex guards tenant map creation, and per-tenant read-write locks guard character map access.
+Singleton Redis-backed tenant-scoped cache for character effective stats models. Uses `atlas.TenantRegistry` with the `effective-stats` namespace. Character IDs are used as keys.
 
 ### Operations
 

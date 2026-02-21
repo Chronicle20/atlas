@@ -9,13 +9,13 @@ This service provides centralized management of configuration templates, tenants
 ## External Dependencies
 
 - PostgreSQL database for persistent storage
-- Jaeger for distributed tracing
+- OpenTelemetry-compatible collector for distributed tracing (OTLP gRPC)
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| `JAEGER_HOST_PORT` | Jaeger host and port for distributed tracing |
+| `TRACE_ENDPOINT` | OpenTelemetry collector endpoint (OTLP gRPC) |
 | `LOG_LEVEL` | Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace) |
 | `DB_USER` | PostgreSQL database username |
 | `DB_PASSWORD` | PostgreSQL database password |
@@ -29,5 +29,6 @@ This service provides centralized management of configuration templates, tenants
 ## Documentation
 
 - [Domain](docs/domain.md)
+- [Kafka](docs/kafka.md)
 - [REST API](docs/rest.md)
 - [Storage](docs/storage.md)

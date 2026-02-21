@@ -25,6 +25,8 @@ The service manages ban records (IP address, HWID, account ID) with support for 
 | COMMAND_TOPIC_BAN | Topic for ban commands |
 | EVENT_TOPIC_BAN_STATUS | Topic for ban status events |
 | EVENT_TOPIC_ACCOUNT_SESSION_STATUS | Topic for account session status events |
+| REST_PORT | HTTP server port |
+| TRACE_ENDPOINT | OpenTelemetry trace endpoint |
 
 ## Documentation
 

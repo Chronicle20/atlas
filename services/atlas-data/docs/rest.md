@@ -632,6 +632,7 @@ Returns all NPCs.
 #### Query Parameters
 
 - filter[storebank]: Filter by storebank status (true)
+- search: Filter by NPC ID prefix or name substring (case-insensitive, limit 50 results)
 
 #### Response Model
 
@@ -664,13 +665,13 @@ Returns all pets.
 
 ---
 
-### GET /api/data/pets/{petId}
+### GET /api/data/pets/{itemId}
 
 Returns a specific pet.
 
 #### Parameters
 
-- petId (path): Pet ID
+- itemId (path): Pet item ID
 
 #### Response Model
 
@@ -718,6 +719,10 @@ Returns a specific quest.
 
 Returns all reactors.
 
+#### Query Parameters
+
+- search: Filter by reactor ID prefix or name substring (case-insensitive, limit 50 results)
+
 #### Response Model
 
 - 200: Array of reactors resources
@@ -749,13 +754,13 @@ Returns all setup items.
 
 ---
 
-### GET /api/data/setups/{setupId}
+### GET /api/data/setups/{itemId}
 
 Returns a specific setup item.
 
 #### Parameters
 
-- setupId (path): Setup ID
+- itemId (path): Setup item ID
 
 #### Response Model
 

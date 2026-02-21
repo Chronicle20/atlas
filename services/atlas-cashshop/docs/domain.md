@@ -232,6 +232,160 @@ Determines expiration timestamps for newly created cash assets based on commodit
 
 ---
 
+## Character (REST Client)
+
+### Responsibility
+Fetches character data from the external atlas-characters service. Used during purchase flows to resolve account ID, job type, and inventory state.
+
+### Core Models
+
+#### Model
+- `id` (uint32): Character ID
+- `accountId` (uint32): Associated account
+- `worldId` (world.Id): World
+- `jobId` (job.Id): Character job
+- `inventory` (inventory.Model): Character inventory (lazily decorated)
+- `equipment` (equipment.Model): Equipment slots (derived from inventory)
+- Additional fields: name, gender, skinColor, face, hair, level, stats, ap, sp, experience, fame, mapId, meso, x, y, stance
+
+#### Equipment Model
+- `slots` (map[slot.Type]slot.Model): Equipment slots indexed by type
+- Each slot holds a `Position`, optional `Equipable`, and optional `CashEquipable`
+
+### Processors
+
+#### Processor
+- `GetById`: Fetches character from atlas-characters via REST, applies optional decorators
+- `InventoryDecorator`: Decorates a character model with inventory data fetched from atlas-inventory
+
+---
+
+## Character Inventory (REST Client)
+
+### Responsibility
+Fetches character inventory data from the external atlas-inventory service.
+
+### Core Models
+
+#### Model
+- `characterId` (uint32): Owner character
+- `compartments` (map[inventory.Type]compartment.Model): Compartments indexed by type (Equip, Use, Setup, ETC, Cash)
+
+### Processors
+
+#### Processor
+- `ByCharacterIdProvider`: Provides character inventory by character ID via REST
+- `GetByCharacterId`: Retrieves inventory for a character
+
+---
+
+## Character Compartment (Command Emitter)
+
+### Responsibility
+Emits commands to increase character inventory compartment capacity. Used during inventory capacity increase purchases.
+
+### Core Models
+
+#### Model
+- `id` (uuid.UUID): Compartment ID
+- `characterId` (uint32): Owner character
+- `inventoryType` (inventory.Type): Inventory type
+- `capacity` (uint32): Current capacity
+- `assets` ([]asset.Model[any]): Assets in the compartment
+
+### Processors
+
+#### Processor
+- `IncreaseCapacity`: Emits an INCREASE_CAPACITY command to the character compartment command topic
+
+---
+
+## Commodity (REST Client)
+
+### Responsibility
+Fetches commodity catalog data from the external atlas-data service. Used during purchases to resolve item ID, price, count, and period.
+
+### Core Models
+
+#### Model
+- `id` (uint32): Commodity serial number
+- `itemId` (uint32): Item template ID
+- `count` (uint32): Item quantity
+- `price` (uint32): Cost in currency units
+- `period` (uint32): Expiration period in days (0 = permanent, 1 = check hourly config)
+- `priority` (uint32): Display priority
+- `gender` (byte): Gender restriction
+- `onSale` (bool): Whether currently on sale
+
+### Processors
+
+#### Processor
+- `GetById`: Fetches commodity by serial number from atlas-data via REST
+
+---
+
+## Configuration
+
+### Responsibility
+Thread-safe registry for tenant-specific configuration. Caches tenant config fetched from the configurations service. Provides hourly expiration mappings for asset expiration calculation.
+
+### Core Models
+
+#### Tenant Configuration
+- `CashShop.Commodities.HourlyExpirations` ([]HourlyExpiration): Per-template hourly expiration overrides
+  - `TemplateId` (uint32): Item template ID
+  - `Hours` (uint32): Expiration in hours
+
+### Invariants
+- Configurations are cached per tenant ID after first fetch
+- Cache uses double-checked locking (RWMutex)
+- If fetch fails, defaults to empty configuration
+
+### Processors
+- `GetTenantConfig`: Retrieves cached or fetches tenant configuration
+- `GetHourlyExpirations`: Returns a map of templateId to hours from tenant config
+
+---
+
+## Asset (Generic Model)
+
+### Responsibility
+Generic polymorphic asset model used to represent character inventory items fetched from external services. Parameterized by reference data type.
+
+### Core Models
+
+#### Model[E]
+- `id` (uint32): Asset ID
+- `slot` (int16): Inventory slot position
+- `templateId` (uint32): Item template ID
+- `expiration` (time.Time): Expiration time
+- `referenceId` (uint32): Reference identifier
+- `referenceType` (ReferenceType): Type discriminator
+- `referenceData` (E): Type-specific data
+
+#### ReferenceType
+- `ReferenceTypeEquipable` ("equipable")
+- `ReferenceTypeConsumable` ("consumable")
+- `ReferenceTypeSetup` ("setup")
+- `ReferenceTypeEtc` ("etc")
+- `ReferenceTypeCash` ("cash")
+- `ReferenceTypePet` ("pet")
+
+#### Reference Data Types
+- `EquipableReferenceData`: Stats, flags, level info, hammers, expiration
+- `CashEquipableReferenceData`: Same as equipable plus cashId
+- `ConsumableReferenceData`: Quantity, ownerId, flag, rechargeable
+- `SetupReferenceData`: Quantity, ownerId, flag
+- `EtcReferenceData`: Quantity, ownerId, flag
+- `CashReferenceData`: CashId, quantity, ownerId, flag, purchaseBy
+- `PetReferenceData`: CashId, ownerId, flag, purchaseBy, name, level, closeness, fullness, expiration, slot, attributes
+
+### Invariants
+- Quantity defaults to 1 unless the reference data implements `HasQuantity`
+- Type checks via `IsEquipable()`, `IsConsumable()`, `IsSetup()`, `IsEtc()`, `IsCash()`, `IsPet()`
+
+---
+
 ## Cash Shop (Purchase Orchestration)
 
 ### Responsibility

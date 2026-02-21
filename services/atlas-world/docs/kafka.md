@@ -12,6 +12,7 @@
 |-------|---------------------|-------------|
 | Channel Status Command | COMMAND_TOPIC_CHANNEL_STATUS | Channel status request commands |
 | Channel Status Event | EVENT_TOPIC_CHANNEL_STATUS | Channel started events |
+| World Rate Event | EVENT_TOPIC_WORLD_RATE | World rate change events |
 
 ## Message Types
 
@@ -43,6 +44,20 @@ Direction: Event (Consumed/Produced)
 Event Types:
 - `STARTED`: Channel server has started
 - `SHUTDOWN`: Channel server is shutting down
+
+### WorldRateEvent
+
+Direction: Event (Produced)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| type | string | Event type |
+| worldId | byte | World identifier |
+| rateType | string | Rate type (exp, meso, item_drop, quest_exp) |
+| multiplier | float64 | New rate multiplier value |
+
+Event Types:
+- `RATE_CHANGED`: A world rate multiplier has changed
 
 ## Transaction Semantics
 

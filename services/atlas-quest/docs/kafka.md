@@ -30,6 +30,7 @@ Generic command envelope.
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | characterId | uint32 | Character identifier |
 | type | string | Command type |
 | body | object | Command-specific payload |
@@ -169,6 +170,7 @@ Generic event envelope.
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | uniqueId | uint32 | Monster unique identifier |
 | monsterId | uint32 | Monster template identifier |
 | type | string | Event type |
@@ -222,7 +224,9 @@ Consumed from EVENT_TOPIC_CHARACTER_STATUS. Processes MAP_CHANGED events to:
 |-------|------|-------------|
 | channelId | channel.Id | Channel identifier |
 | oldMapId | map.Id | Previous map identifier |
+| oldInstance | uuid.UUID | Previous map instance identifier |
 | targetMapId | map.Id | New map identifier |
+| targetInstance | uuid.UUID | Target map instance identifier |
 | targetPortalId | uint32 | Target portal identifier |
 
 ### Saga Commands (Produced)

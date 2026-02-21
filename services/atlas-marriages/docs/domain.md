@@ -145,6 +145,7 @@ Handles marriage, proposal, and ceremony operations.
 - `DivorceAndEmit` - Divorces and emits events
 - `HandleCharacterDeletion` - Auto-divorces when character is deleted
 - `HandleCharacterDeletionAndEmit` - Handles deletion with events
+- `AcceptProposalWithTransactionAndEmit` - Accepts proposal with full database transactional consistency
 - `GetMarriageByCharacter` - Retrieves active marriage for character
 - `GetMarriageHistory` - Retrieves marriage history for character
 

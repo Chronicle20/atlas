@@ -35,7 +35,7 @@ Manages pet lifecycle, attributes, and state within the game. Pets are companion
 
 #### Temporal Data
 
-In-memory tracking for pet position and stance, managed by a singleton TemporalRegistry.
+Redis-backed tracking for pet position and stance, managed by a singleton TemporalRegistry.
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -139,7 +139,7 @@ In-memory tracking for pet position and stance, managed by a singleton TemporalR
 
 #### Hunger Task
 
-Background task that runs every 3 minutes. Iterates over all logged-in characters (tracked via the in-memory character registry) and evaluates hunger for each character's spawned pets concurrently.
+Background task that runs every 3 minutes. Iterates over all logged-in characters (tracked via the Redis-backed character registry) and evaluates hunger for each character's spawned pets concurrently.
 
 ## asset
 
@@ -286,7 +286,7 @@ Accessor methods: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Cash()`, `
 
 ### Responsibility
 
-Read-only projection of character data. Maintains an in-memory registry of logged-in characters for the hunger task. Provides an inventory decorator that enriches character models with inventory data.
+Read-only projection of character data. Maintains a Redis-backed registry of logged-in characters for the hunger task. Provides an inventory decorator that enriches character models with inventory data.
 
 ### Core Models
 
@@ -304,7 +304,7 @@ The model carries additional character fields (stats, job, etc.) for compatibili
 
 #### Character Registry
 
-In-memory singleton tracking logged-in characters. Keyed by character ID, values contain tenant and field (world/channel/map/instance) information.
+Redis-backed singleton tracking logged-in characters. Keyed by character ID, values contain tenant and field (world/channel/map/instance) information.
 
 ### Processors
 

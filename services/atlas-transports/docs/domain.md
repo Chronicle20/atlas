@@ -72,7 +72,7 @@ Represents an instance-based transport route configuration.
 | id | uuid.UUID | Route identifier |
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
-| transitMapId | map.Id | Transit map ID (instanced) |
+| transitMapIds | []map.Id | Transit map IDs |
 | destinationMapId | map.Id | Destination map ID |
 | capacity | uint32 | Maximum characters per instance |
 | boardingWindow | time.Duration | Duration boarding is open for each instance |
@@ -136,6 +136,7 @@ Enumeration of instance transport states.
 - Capacity must be greater than zero
 - Boarding window must be positive
 - Travel duration must not be negative
+- Transit map IDs must not be empty
 
 ## State Transitions
 

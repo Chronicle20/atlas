@@ -320,3 +320,82 @@ Single `services` resource
 |--------|-----------|
 | 400 | Invalid UUID format |
 | 500 | Database error or record not found |
+
+---
+
+### POST /api/configurations/services
+
+Creates a new service configuration.
+
+**Parameters**
+
+None
+
+**Request Model**
+
+JSON:API `services` resource with attributes:
+- `id` (string, optional - generated if not provided)
+- `type` (string, required - must be `login-service`, `channel-service`, or `drops-service`)
+- `tasks` (array)
+- `tenants` (object, optional - structure varies by service type)
+
+**Response Model**
+
+Created `services` resource
+
+**Error Conditions**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid service type |
+| 500 | Database error |
+
+---
+
+### PATCH /api/configurations/services/{serviceId}
+
+Updates an existing service configuration. Creates a history record before updating.
+
+**Parameters**
+
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| serviceId | UUID | path | yes |
+
+**Request Model**
+
+JSON:API `services` resource with attributes to update
+
+**Response Model**
+
+Updated `services` resource
+
+**Error Conditions**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid UUID format, invalid service type, or invalid JSON |
+| 500 | Database error or record not found |
+
+---
+
+### DELETE /api/configurations/services/{serviceId}
+
+Deletes a service configuration. Creates a history record before deleting.
+
+**Parameters**
+
+| Name | Type | Location | Required |
+|------|------|----------|----------|
+| serviceId | UUID | path | yes |
+
+**Response Model**
+
+None (204 No Content on success)
+
+**Error Conditions**
+
+| Status | Condition |
+|--------|-----------|
+| 400 | Invalid UUID format |
+| 500 | Database error or record not found |

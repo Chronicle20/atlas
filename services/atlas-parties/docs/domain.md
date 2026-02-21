@@ -29,6 +29,9 @@ Fluent builder for constructing party models with validation.
 - No duplicate member IDs
 - Member IDs must be greater than 0
 - Maximum party size is 6 members
+- Beginners cannot create parties
+- GMs cannot create parties
+- Character must not already be in a party to create or join one
 
 ### State Transitions
 
@@ -81,9 +84,7 @@ Maintains local cache of character state relevant to party operations. Tracks pa
 | name | string | Character name |
 | level | byte | Character level |
 | jobId | job.Id | Character job identifier |
-| worldId | byte | World identifier |
-| channelId | byte | Channel identifier |
-| mapId | uint32 | Current map identifier |
+| field | field.Model | Character location (worldId, channelId, mapId, instance) |
 | partyId | uint32 | Current party identifier (0 if none) |
 | online | bool | Online status |
 | gm | int | GM level |
@@ -95,8 +96,8 @@ Subset of character data retrieved from external character service.
 | Field | Type | Description |
 |-------|------|-------------|
 | id | uint32 | Character identifier |
-| worldId | byte | World identifier |
-| mapId | uint32 | Map identifier |
+| worldId | world.Id | World identifier |
+| mapId | _map.Id | Map identifier |
 | name | string | Character name |
 | level | byte | Character level |
 | jobId | job.Id | Job identifier |

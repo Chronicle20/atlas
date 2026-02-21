@@ -164,9 +164,9 @@ type StateChangedEventBody[E any] struct {
 
 ```go
 type ErrorStatusEventBody struct {
-    Code   string `json:"code"`
-    Reason byte   `json:"reason"`
-    Until  uint64 `json:"until"`
+    Code   string    `json:"code"`
+    Reason byte      `json:"reason"`
+    Until  time.Time `json:"until"`
 }
 ```
 

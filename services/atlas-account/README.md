@@ -7,16 +7,18 @@ The service manages user accounts including authentication, session state tracki
 ## External Dependencies
 
 - PostgreSQL: Persistent storage for account data
+- Redis: Session state registry
 - Kafka: Message-based command and event processing
-- Jaeger: Distributed tracing
+- OpenTelemetry (OTLP/gRPC): Distributed tracing
 - atlas-ban: Ban status verification via REST API
 
 ## Runtime Configuration
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST_PORT | Jaeger host:port for distributed tracing |
+| TRACE_ENDPOINT | OpenTelemetry OTLP/gRPC endpoint for distributed tracing |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
+| REST_PORT | HTTP server port |
 | DB_USER | PostgreSQL user name |
 | DB_PASSWORD | PostgreSQL user password |
 | DB_HOST | PostgreSQL database host |

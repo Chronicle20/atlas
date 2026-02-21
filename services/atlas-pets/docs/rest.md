@@ -4,7 +4,7 @@
 
 ### GET /api/pets/{petId}
 
-Retrieves a pet by identifier. Includes temporal position data (x, y, stance, fh) from the in-memory registry.
+Retrieves a pet by identifier. Includes temporal position data (x, y, stance, fh) from the Redis-backed temporal registry.
 
 #### Parameters
 

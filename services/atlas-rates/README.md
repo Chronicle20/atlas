@@ -4,6 +4,7 @@ Aggregates rate multipliers for characters from multiple sources (world settings
 
 ## External Dependencies
 
+- **Redis**: Stores character rate models, tracked items, and initialization state
 - **Kafka**: Consumes events from `EVENT_TOPIC_CHARACTER_BUFF_STATUS`, `EVENT_TOPIC_WORLD_RATE`, `EVENT_TOPIC_ASSET_STATUS`, `EVENT_TOPIC_CHARACTER_STATUS`
 - **atlas-inventory**: Queries equipped items and cash assets during lazy initialization
 - **atlas-data**: Queries equipment bonusExp properties and cash item rate properties
@@ -16,7 +17,10 @@ Aggregates rate multipliers for characters from multiple sources (world settings
 |----------|-------------|
 | `REST_PORT` | Port for REST API |
 | `BOOTSTRAP_SERVERS` | Kafka broker addresses |
-| `JAEGER_HOST_PORT` | Jaeger tracing endpoint |
+| `BASE_SERVICE_URL` | Base URL for outbound REST requests |
+| `REDIS_URL` | Redis connection address |
+| `REDIS_PASSWORD` | Redis password |
+| `TRACE_ENDPOINT` | OpenTelemetry tracing endpoint |
 | `LOG_LEVEL` | Logging level |
 | `EVENT_TOPIC_CHARACTER_BUFF_STATUS` | Kafka topic for buff events |
 | `EVENT_TOPIC_WORLD_RATE` | Kafka topic for world rate events |

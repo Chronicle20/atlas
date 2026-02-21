@@ -13,7 +13,7 @@
 | reason | string | NOT NULL, DEFAULT '' |
 | reason_code | byte | NOT NULL, DEFAULT 0 |
 | permanent | bool | NOT NULL, DEFAULT false |
-| expires_at | int64 | NOT NULL, DEFAULT 0 |
+| expires_at | time.Time | NOT NULL |
 | issued_by | string | NOT NULL, DEFAULT '' |
 | created_at | time.Time | GORM managed |
 | updated_at | time.Time | GORM managed |

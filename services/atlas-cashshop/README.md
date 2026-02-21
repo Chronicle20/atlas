@@ -11,6 +11,8 @@ Manages cash shop functionality including wallets, wishlists, and cash inventori
 - **PostgreSQL**: Persistent storage for wallets, wishlists, compartments, and assets
 - **Kafka**: Message broker for commands and events
 - **Jaeger**: Distributed tracing
+- **atlas-characters** (REST): Character data lookups (job type, account ID)
+- **atlas-inventory** (REST): Character inventory data lookups (compartment capacities)
 - **atlas-data** (REST): Commodity catalog lookups
 - **Configurations service** (REST): Tenant configuration including hourly expiration settings
 
@@ -27,6 +29,9 @@ Manages cash shop functionality including wallets, wishlists, and cash inventori
 | DB_PORT | Postgres database port |
 | DB_NAME | Postgres database name |
 | BOOTSTRAP_SERVERS | Kafka host:port |
+| CHARACTERS | Base URL for the atlas-characters service |
+| INVENTORY | Base URL for the atlas-inventory service |
+| DATA | Base URL for the atlas-data service (commodity lookups) |
 | CONFIGURATIONS | Base URL for the configurations service (tenant config / hourly expirations) |
 | EVENT_TOPIC_ACCOUNT_STATUS | Kafka topic for account status events |
 | EVENT_TOPIC_CHARACTER_STATUS | Kafka topic for character status events |

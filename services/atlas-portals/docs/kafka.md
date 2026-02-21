@@ -4,7 +4,7 @@
 
 | Topic | Environment Variable | Description |
 |-------|---------------------|-------------|
-| Portal Commands | `COMMAND_TOPIC_PORTAL` | Portal entry, block, and unblock commands |
+| Portal Commands | `COMMAND_TOPIC_PORTAL` | Portal enter, warp, block, and unblock commands |
 | Character Status Events | `EVENT_TOPIC_CHARACTER_STATUS` | Character status events (logout) |
 
 ## Topics Produced
@@ -26,9 +26,22 @@
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | portalId | uint32 | Portal identifier |
 | type | string | `ENTER` |
 | body.characterId | uint32 | Character identifier |
+
+**warpEvent** (Portal Commands)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| worldId | byte | World identifier |
+| channelId | byte | Channel identifier |
+| mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
+| type | string | `WARP` |
+| body.characterId | uint32 | Character identifier |
+| body.targetMapId | uint32 | Target map identifier |
 
 **commandEvent[blockBody]** (Portal Commands)
 
@@ -37,6 +50,7 @@
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | portalId | uint32 | Portal identifier |
 | type | string | `BLOCK` |
 | body.characterId | uint32 | Character identifier |
@@ -48,6 +62,7 @@
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | portalId | uint32 | Portal identifier |
 | type | string | `UNBLOCK` |
 | body.characterId | uint32 | Character identifier |
@@ -57,11 +72,12 @@
 | Field | Type | Description |
 |-------|------|-------------|
 | transactionId | uuid.UUID | Transaction identifier |
+| worldId | byte | World identifier |
 | characterId | uint32 | Character identifier |
 | type | string | `LOGOUT` |
-| worldId | world.Id | World identifier |
-| body.channelId | channel.Id | Channel identifier |
-| body.mapId | map.Id | Map identifier |
+| body.channelId | byte | Channel identifier |
+| body.mapId | uint32 | Map identifier |
+| body.instance | uuid.UUID | Map instance identifier |
 
 ### Produced
 
@@ -69,9 +85,10 @@
 
 | Field | Type | Description |
 |-------|------|-------------|
+| transactionId | uuid.UUID | Transaction identifier |
+| worldId | byte | World identifier |
 | characterId | uint32 | Character identifier |
 | type | string | `STAT_CHANGED` |
-| worldId | byte | World identifier |
 | body.channelId | byte | Channel identifier |
 | body.exclRequestSent | bool | Exclusive request sent flag |
 
@@ -84,6 +101,7 @@
 | type | string | `CHANGE_MAP` |
 | body.channelId | byte | Channel identifier |
 | body.mapId | uint32 | Target map identifier |
+| body.instance | uuid.UUID | Map instance identifier |
 | body.portalId | uint32 | Target portal identifier |
 
 **commandEvent[enterBody]** (Portal Actions Commands)
@@ -93,6 +111,7 @@
 | worldId | byte | World identifier |
 | channelId | byte | Channel identifier |
 | mapId | uint32 | Map identifier |
+| instance | uuid.UUID | Map instance identifier |
 | portalId | uint32 | Portal identifier |
 | type | string | `ENTER` |
 | body.characterId | uint32 | Character identifier |

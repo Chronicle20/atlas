@@ -6,7 +6,7 @@ Key binding service for characters. Manages keyboard mappings that associate key
 
 - PostgreSQL database
 - Kafka (consumes character status events)
-- Jaeger (distributed tracing)
+- OpenTelemetry (distributed tracing via OTLP gRPC)
 
 ## Runtime Configuration
 
@@ -25,7 +25,7 @@ Key binding service for characters. Manages keyboard mappings that associate key
 - `REST_PORT` - Port for REST API
 
 ### Observability
-- `JAEGER_HOST` - Jaeger host and port
+- `TRACE_ENDPOINT` - OpenTelemetry collector endpoint
 - `LOG_LEVEL` - Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace)
 
 ## Documentation

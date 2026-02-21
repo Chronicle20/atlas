@@ -10,7 +10,9 @@
 
 | Topic | Environment Variable | Direction |
 |-------|---------------------|-----------|
-| Asset Expire | `COMMAND_TOPIC_ASSET_EXPIRE` | Command |
+| Storage Expire | `COMMAND_TOPIC_STORAGE` | Command |
+| Cash Shop Expire | `COMMAND_TOPIC_CASH_SHOP` | Command |
+| Compartment Expire | `COMMAND_TOPIC_COMPARTMENT` | Command |
 
 ## Message Types
 
@@ -21,8 +23,8 @@
 | SessionId | uuid.UUID |
 | AccountId | uint32 |
 | CharacterId | uint32 |
-| WorldId | byte |
-| ChannelId | byte |
+| WorldId | world.Id |
+| ChannelId | channel.Id |
 | Issuer | string |
 | Type | string |
 
@@ -30,31 +32,69 @@ Issuer values: `LOGIN`, `CHANNEL`
 
 Type values: `CREATED`, `DESTROYED`
 
-### ExpireCommand (Produced)
+Only `LOGIN` + `CREATED` events trigger an immediate expiration check and session tracking. `DESTROYED` events remove the session from tracking.
+
+### StorageExpireCommand (Produced)
+
+| Field | Type |
+|-------|------|
+| TransactionId | uuid.UUID |
+| WorldId | world.Id |
+| AccountId | uint32 |
+| Type | string |
+| Body.CharacterId | uint32 |
+| Body.AssetId | uint32 |
+| Body.TemplateId | uint32 |
+| Body.InventoryType | int8 |
+| Body.Slot | int16 |
+| Body.ReplaceItemId | uint32 |
+| Body.ReplaceMessage | string |
+
+Type value: `EXPIRE`
+
+### CashShopExpireCommand (Produced)
+
+| Field | Type |
+|-------|------|
+| CharacterId | uint32 |
+| Type | string |
+| Body.AccountId | uint32 |
+| Body.WorldId | world.Id |
+| Body.AssetId | uint32 |
+| Body.TemplateId | uint32 |
+| Body.InventoryType | int8 |
+| Body.Slot | int16 |
+| Body.ReplaceItemId | uint32 |
+| Body.ReplaceMessage | string |
+
+Type value: `EXPIRE`
+
+### CompartmentExpireCommand (Produced)
 
 | Field | Type |
 |-------|------|
 | TransactionId | uuid.UUID |
 | CharacterId | uint32 |
-| AccountId | uint32 |
-| WorldId | byte |
-| AssetId | uint32 |
-| TemplateId | uint32 |
-| InventoryType | int8 |
-| Slot | int16 |
-| ReplaceItemId | uint32 |
-| ReplaceMessage | string |
-| Source | string |
+| InventoryType | byte |
+| Type | string |
+| Body.AssetId | uint32 |
+| Body.TemplateId | uint32 |
+| Body.Slot | int16 |
+| Body.ReplaceItemId | uint32 |
+| Body.ReplaceMessage | string |
 
-Source values: `INVENTORY`, `STORAGE`, `CASHSHOP`
+Type value: `EXPIRE`
 
 ## Transaction Semantics
 
-- Expire commands are keyed by AssetId
-- Each expire command includes a unique TransactionId
+- All expire commands are keyed by AssetId
+- `StorageExpireCommand` and `CompartmentExpireCommand` include a unique TransactionId
+- `CashShopExpireCommand` does not include a TransactionId
 - Commands are emitted independently (no batching)
 
 ## Required Headers
 
-- `TENANT_ID`: Propagated via TenantHeaderDecorator
-- Span context: Propagated via SpanHeaderDecorator
+- Tenant context: Propagated via `TenantHeaderDecorator`
+- Span context: Propagated via `SpanHeaderDecorator`
+
+Consumer header parsers: `SpanHeaderParser`, `TenantHeaderParser`

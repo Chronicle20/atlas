@@ -1,5 +1,17 @@
 # REST API
 
+## Resource Types
+
+### keys
+
+JSON:API resource type for key bindings. Resource ID is the key identifier.
+
+| Field  | Type  | JSON Field | Description                        |
+|--------|-------|------------|------------------------------------|
+| Key    | int32 | -          | Used as resource ID                |
+| Type   | int8  | type       | Type of key binding                |
+| Action | int32 | action     | Action associated with the binding |
+
 ## Endpoints
 
 ### GET /api/characters/{characterId}/keys

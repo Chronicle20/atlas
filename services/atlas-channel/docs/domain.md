@@ -12,7 +12,7 @@ Represents a single inventory item as a unified model. All item types (equipment
   - Stackable fields: quantity (uint32), ownerId (uint32), flag (uint16), rechargeable (uint64)
   - Equipment fields: strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots (all uint16), locked, spikes, karmaUsed, cold, canBeTraded (all bool), levelType (byte), level (byte), experience (uint32), hammersApplied (uint32), equippedSince (*time.Time)
   - Cash fields: cashId (int64), commodityId (uint32), purchaseBy (uint32)
-  - Pet fields: petId (uint32), petName (string), closeness (uint16), fullness (byte), petSlot (int8)
+  - Pet fields: petId (uint32), petName (string), petLevel (byte), closeness (uint16), fullness (byte), petSlot (int8)
 - `ModelBuilder` - Fluent builder with `SetX` methods for all fields. Validates that `id > 0` on Build.
 - `RestModel` - JSON:API representation with Transform/Extract functions for conversion. `BaseRestModel` is a type alias for `RestModel`.
 - `InventoryType` - Type alias for `inventory.Type`. Package-level variables provide convenience aliases: InventoryTypeEquip, InventoryTypeUse, InventoryTypeSetup, InventoryTypeEtc, InventoryTypeCash.
@@ -94,12 +94,13 @@ None. Equipment is built by `character.Model.SetInventory()` from the equip comp
 Represents a player character with stats, equipment, inventory, skills, pets, and quests. Provides character data retrieval, stat modification commands, and inventory decoration.
 
 ### Core Models
-- `Model` - Contains id, accountId, worldId, name, gender, skinColor, face, hair, level, jobId, stats (strength/dexterity/intelligence/luck/hp/mp/maxHp/maxMp), hpMpUsed, ap, sp, experience, fame, gachaponExperience, mapId, spawnPoint, gm, position (x, y, stance), meso, pets ([]pet.Model), equipment (equipment.Model), inventory (inventory.Model), skills ([]skill.Model), quests ([]quest.Model)
+- `Model` - Contains id (uint32), accountId (uint32), worldId (world.Id), name (string), gender (byte), skinColor (byte), face (uint32), hair (uint32), level (byte), jobId (job.Id), strength (uint16), dexterity (uint16), intelligence (uint16), luck (uint16), hp (uint16), maxHp (uint16), mp (uint16), maxMp (uint16), hpMpUsed (int), ap (uint16), sp (string), experience (uint32), fame (uint32), gachaponExperience (uint32), mapId (uint32), spawnPoint (uint32), gm (int), x (int16), y (int16), stance (byte), meso (uint32), pets ([]pet.Model), equipment (equipment.Model), inventory (inventory.Model), skills ([]skill.Model), quests ([]quest.Model)
 - `DistributePacket` - Contains Flag (uint32) and Value (uint32) for AP distribution
 
 ### Invariants
+- Character id must be greater than 0 (`ErrInvalidId`)
 - Character must belong to an account
-- SP table used for Evan job class (job IDs 2209-2218)
+- SP stored as comma-separated string; SP table used for Evan job class (job IDs 2200-2218)
 - SetInventory splits equip compartment assets into equipped items (slot <= 0) and inventory items (slot > 0), separating regular and cash equipment by the -100 offset rule
 
 ### State Transitions
@@ -117,10 +118,11 @@ None within channel. The character model is read-only; mutations are requested v
 Represents active temporary buffs applied to a character.
 
 ### Core Models
-- `Model` - Contains buffId, characterId, sourceId (skill/item), duration, stats
+- `Model` - Contains sourceId (int32), level (byte), duration (int32), changes ([]stat.Model), createdAt (time.Time), expiresAt (time.Time). Expired() checks if expiresAt is before current time.
+- `stat.Model` - Contains statType (string), amount (int32)
 
 ### Processors
-- `Processor` - Retrieves buffs by character ID
+- `Processor` - Retrieves buffs by character ID via REST (BUFFS service)
 
 ---
 
@@ -130,10 +132,10 @@ Represents active temporary buffs applied to a character.
 Represents key bindings for a character's keyboard configuration.
 
 ### Core Models
-- `Model` - Contains key, keyType, action
+- `Model` - Contains key (int32), theType (int8), action (int32)
 
 ### Processors
-- `Processor` - Retrieves key bindings by character ID
+- `Processor` - Retrieves key bindings by character ID via REST (KEYS service). Issues PATCH to update individual key bindings.
 
 ---
 
@@ -143,10 +145,10 @@ Represents key bindings for a character's keyboard configuration.
 Represents skills learned by a character.
 
 ### Core Models
-- `Model` - Contains skillId, level, masterLevel, expiration
+- `Model` - Contains id (skill.Id), level (byte), masterLevel (byte), expiration (time.Time), cooldownExpiresAt (time.Time). IsFourthJob() and OnCooldown() derived methods.
 
 ### Processors
-- `Processor` - Retrieves skills by character ID
+- `Processor` - Retrieves skills by character ID via REST (SKILLS service)
 
 ---
 
@@ -156,14 +158,13 @@ Represents skills learned by a character.
 Represents a game channel server instance within a world. Manages channel registration, capacity tracking, and identification.
 
 ### Core Models
-- `Model` - Immutable channel representation containing id, worldId, channelId, ipAddress, port, currentCapacity, maxCapacity, createdAt
+- `Model` - Immutable channel representation containing id (uuid.UUID), worldId (world.Id), channelId (channel.Id), ipAddress (string), port (int), currentCapacity (uint32), maxCapacity (uint32), createdAt (time.Time)
 
 ### Invariants
-- Channel must have a valid world and channel identifier
-- Channel must have a valid IP address and port
+- Channel id must not be uuid.Nil (`ErrInvalidId`)
 
 ### Processors
-- `Processor` - Registers channels, retrieves channel by world and channel ID
+- `Processor` - Registers channels via POST (CHANNELS service), retrieves channel by world and channel ID via GET
 
 ---
 
@@ -173,32 +174,33 @@ Represents a game channel server instance within a world. Manages channel regist
 Represents the runtime server context for a tenant's world and channel combination. Provides tenant-aware filtering for Kafka message handling.
 
 ### Core Models
-- `Model` - Contains tenant, worldId, channelId, ipAddress, port
+- `Model` - Contains tenant (tenant.Model), ch (channel.Model), ipAddress (string), port (int). Convenience methods: Tenant(), Channel(), WorldId(), ChannelId(), IpAddress(), Port(), Map(), Field(), Is(), IsWorld(), String()
 
 ### Invariants
 - Server must be bound to a valid tenant
 - Server must have valid world and channel identifiers
 
 ### Processors
-- `Register` - Creates a server model for a tenant/world/channel
+- `Register` - Creates a server model for a tenant/world/channel and adds it to the singleton registry
+- `GetAll` - Returns all registered server models
 
 ---
 
 ## Session
 
 ### Responsibility
-Manages active client socket connections. Tracks session state including account, character, world, channel, and map associations. Handles encrypted packet transmission.
+Manages active client socket connections. Tracks session state including account, character, field (world/channel/map/instance), and storage NPC associations. Handles encrypted packet transmission.
 
 ### Core Models
-- `Model` - Contains sessionId, accountId, characterId, worldId, channelId, mapId, gm flag, storageNpcId, connection, encryption state, lastPacket timestamp, locale
+- `Model` - Contains id (uuid.UUID), accountId (uint32), characterId (uint32), field (field.Model), gm (bool), storageNpcId (uint32), con (net.Conn), send (crypto.AESOFB), sendLock (*sync.Mutex), recv (crypto.AESOFB), encryptFunc (crypto.EncryptFunc), lastPacket (time.Time), locale (byte)
 
 ### Invariants
 - Session must have a valid connection
-- Session must be associated with a tenant
-- Character can only have one active session per world/channel
+- AESOFB cipher initialization varies based on tenant region/version: GMS v12 and below use FillIvZeroGenerator; JMS disables MapleEncryption
+- Session state is immutable; mutations produce new session instances via CloneSession
 
 ### Processors
-- `Processor` - Creates sessions, manages session lifecycle, handles encryption/decryption, broadcasts announcements, tracks session state changes
+- `Processor` - Creates sessions, manages session lifecycle via tenant-keyed registry, handles encryption/decryption, broadcasts announcements to sessions, tracks session state changes, provides ForEachByCharacterId for map-based iteration
 
 ---
 
@@ -208,14 +210,24 @@ Manages active client socket connections. Tracks session state including account
 Tracks account login state within the channel service. Maintains an in-memory registry of logged-in accounts per tenant.
 
 ### Core Models
+- `Model` - Contains id (string), name (string), password (string), pin (string), pic (string), loggedIn (int), lastLogin (uint64), gender (byte), banned (bool), tos (bool), language (string), country (string), characterSlots (int16)
 - `Key` - Composite key containing Tenant and account Id
-- Registry (internal) - Thread-safe map of logged-in accounts
 
 ### Invariants
 - Account can only be logged in once per tenant
 
 ### Processors
-- `Processor` - Initializes registry from external service on startup
+- `Processor` - Retrieves account by ID via REST (ACCOUNTS service). InitializeRegistry populates account state on startup. IsLoggedIn checks the in-memory registry.
+
+---
+
+## Account Session
+
+### Responsibility
+Manages account session lifecycle by producing Kafka commands for session state progression and logout.
+
+### Processors
+- `Processor` (interface) - Destroy(sessionId, accountId) emits LOGOUT command. UpdateState(sessionId, accountId, state, params) emits PROGRESS_STATE command.
 
 ---
 
@@ -225,24 +237,35 @@ Tracks account login state within the channel service. Maintains an in-memory re
 Represents a character's friend list.
 
 ### Core Models
-- `Model` - Contains characterId, capacity, buddies list
-- `Buddy Model` - Contains id, name, channelId, visible flag, group name
+- `Model` - Contains tenantId (uuid.UUID), id (uuid.UUID), characterId (uint32), capacity (byte), buddies ([]buddy.Model)
+- `buddy.Model` - Contains listId (uuid.UUID), characterId (uint32), group (string), characterName (string), channelId (int8), inShop (bool), pending (bool)
 
 ### Processors
-- `Processor` - Retrieves buddy list by character ID
+- `Processor` - Retrieves buddy list by character ID via REST (BUDDIES service). Issues RequestAdd and RequestDelete commands via Kafka.
 
 ---
 
 ## Guild
 
 ### Responsibility
-Represents player guilds including membership, ranks, and emblem.
+Represents player guilds including membership, ranks, emblem, and BBS threads.
 
 ### Core Models
-- `Model` - Contains id, name, notice, emblem, capacity, members, titles, threads
+- `Model` - Contains id (uint32), worldId (world.Id), name (string), notice (string), points (uint32), capacity (uint32), logo (uint16), logoColor (byte), logoBackground (uint16), logoBackgroundColor (byte), leaderId (uint32), members ([]member.Model), titles ([]title.Model)
+- `member.Model` - Contains characterId (uint32), name (string), jobId (uint16), level (byte), title (byte), online (bool), allianceTitle (byte)
+- `title.Model` - Contains name (string), index (byte)
+- `thread.Model` - Contains tenantId (uuid.UUID), guildId (uint32), id (uint32), posterId (uint32), emoticonId (uint32), title (string), message (string), notice (bool), createdAt (time.Time), replies ([]reply.Model)
+- `reply.Model` - Contains id (uint32), posterId (uint32), message (string), createdAt (time.Time)
+
+### Invariants
+- Members() returns members sorted by name
+- IsLeader() checks if characterId matches leaderId
+- IsLeadership() checks if member title <= 2
+- TitlePossible() validates leadership permission
 
 ### Processors
-- `Processor` - Retrieves guild by member ID
+- `Processor` - Retrieves guild by ID or by member ID via REST (GUILDS service). Issues guild commands via Kafka for creation, emblem, notice, titles, member title, and leave operations.
+- `thread.Processor` - Retrieves threads and thread details via REST (GUILD_THREADS service). Issues guild thread commands via Kafka for create, update, delete, add reply, and delete reply operations.
 
 ---
 
@@ -252,10 +275,11 @@ Represents player guilds including membership, ranks, and emblem.
 Represents player parties for cooperative gameplay.
 
 ### Core Models
-- `Model` - Contains id, leaderId, members list
+- `Model` - Contains id (uint32), leaderId (uint32), members ([]MemberModel)
+- `MemberModel` - Contains id (uint32), name (string), level (byte), jobId (job.Id), field (field.Model), online (bool). Provides WorldId(), ChannelId(), MapId(), Instance() convenience accessors.
 
 ### Processors
-- `Processor` - Retrieves party by member ID, provides member filtering
+- `Processor` - Retrieves party by member ID or by ID via REST (PARTIES service). Issues commands via Kafka for create, leave, expel, change leader, and request invite operations.
 
 ---
 
@@ -265,10 +289,11 @@ Represents player parties for cooperative gameplay.
 Represents in-game messenger rooms for private multi-character chat.
 
 ### Core Models
-- `Model` - Contains id, members list
+- `Model` - Contains id (uint32), members ([]MemberModel)
+- `MemberModel` - Contains id (uint32), name (string), worldId (world.Id), channelId (channel.Id), online (bool), slot (byte)
 
 ### Processors
-- `Processor` - Retrieves messenger by character ID
+- `Processor` - Retrieves messenger by ID or by character ID via REST (MESSENGERS service). Issues commands via Kafka for create, leave, and request invite operations.
 
 ---
 
@@ -277,11 +302,8 @@ Represents in-game messenger rooms for private multi-character chat.
 ### Responsibility
 Provides queries for characters present in a map. Coordinates session lookups for map-based broadcasts.
 
-### Core Models
-- Uses `_map.Model` from atlas-constants (worldId, channelId, mapId)
-
 ### Processors
-- `Processor` - Retrieves character IDs in map, iterates sessions in map, filters for other characters
+- `Processor` - CharacterIdsInMapModelProvider (retrieves character IDs in a field instance via REST from MAPS service), GetCharacterIdsInMap, ForSessionsInMap (iterates sessions for characters in a field), ForSessionsInSessionsMap (iterates sessions in the caller session's map), ForOtherSessionsInMap (excludes a reference character), CharacterIdsInMapAllInstancesModelProvider (retrieves across all instances), ForSessionsInMapAllInstances
 
 ---
 
@@ -291,7 +313,8 @@ Provides queries for characters present in a map. Coordinates session lookups fo
 Represents spawned monsters in a map. Provides monster data retrieval, damage application, skill usage, and status effect management.
 
 ### Core Models
-- `Model` - Contains field (field.Model), uniqueId (uint32), monsterId (uint32), maxHp (uint32), hp (uint32), mp (uint32), controlCharacterId (uint32), x (int16), y (int16), fh (int16), stance (byte), team (int8). Delegates WorldId(), ChannelId(), MapId(), Instance() to embedded field.Model. Controlled() returns true when controlCharacterId != 0.
+- `Model` - Contains field (field.Model), uniqueId (uint32), monsterId (uint32), maxHp (uint32), hp (uint32), mp (uint32), controlCharacterId (uint32), x (int16), y (int16), fh (int16), stance (byte), team (int8), statusEffects ([]StatusEffectEntry). Delegates WorldId(), ChannelId(), MapId(), Instance() to embedded field.Model. Controlled() returns true when controlCharacterId != 0.
+- `StatusEffectEntry` - Contains sourceSkillId (uint32), sourceSkillLevel (uint32), statuses (map[string]int32), expiresAt (time.Time)
 - `modelBuilder` - Constructor requires uniqueId, field, monsterId. Validates uniqueId > 0 (`ErrInvalidUniqueId`).
 
 ### Invariants
@@ -309,10 +332,13 @@ Represents spawned monsters in a map. Provides monster data retrieval, damage ap
 Represents items or meso dropped on the ground in a map.
 
 ### Core Models
-- `Model` - Contains id, itemId, equipmentId, quantity, meso, dropType, position (x, y), ownerId, ownerPartyId, dropTime, dropperId, dropperPosition, playerDrop flag
+- `Model` - Contains id (uint32), itemId (uint32), equipmentId (uint32), quantity (uint32), meso (uint32), dropType (byte), x (int16), y (int16), ownerId (uint32), ownerPartyId (uint32), dropTime (time.Time), dropperId (uint32), dropperX (int16), dropperY (int16), playerDrop (bool)
+
+### Invariants
+- Drop id must be greater than 0 (`ErrInvalidId`)
 
 ### Processors
-- `Processor` - Iterates drops in map
+- `Processor` - InMapModelProvider/ForEachInMap (retrieves and iterates drops in a field via REST from DROPS service). RequestReservation (emits drop pickup reservation command via Kafka).
 
 ---
 
@@ -322,10 +348,13 @@ Represents items or meso dropped on the ground in a map.
 Represents interactive objects in maps that respond to player actions.
 
 ### Core Models
-- `Model` - Contains id, worldId, channelId, mapId, classification, name, state, eventState, delay, direction, x, y, updateTime
+- `Model` - Contains id (uint32), field (field.Model), classification (uint32), name (string), state (int8), eventState (byte), delay (uint32), direction (byte), x (int16), y (int16), updateTime (time.Time)
+
+### Invariants
+- Reactor id must be greater than 0 (`ErrInvalidId`)
 
 ### Processors
-- `Processor` - Iterates reactors in map, issues hit commands
+- `Processor` - InMapModelProvider/ForEachInMap (retrieves and iterates reactors in a field via REST from REACTORS service). Hit (emits HIT command via Kafka).
 
 ---
 
@@ -335,10 +364,10 @@ Represents interactive objects in maps that respond to player actions.
 Tracks characters sitting in portable chairs.
 
 ### Core Models
-- `Model` - Contains characterId, chair id
+- `Model` - Contains id (uint32), chairType (string), characterId (uint32)
 
 ### Processors
-- `Processor` - Iterates chairs in map
+- `Processor` - InMapModelProvider/ForEachInMap (retrieves chairs in a field via REST from CHAIRS service). Use (emits USE command), Cancel (emits CANCEL command) via Kafka.
 
 ---
 
@@ -348,23 +377,28 @@ Tracks characters sitting in portable chairs.
 Tracks character chalkboard messages displayed above characters.
 
 ### Core Models
-- `Model` - Contains character id, message text
+- `Model` - Contains id (uint32), message (string)
 
 ### Processors
-- `Processor` - Iterates chalkboards in map
+- `Processor` - InMapModelProvider/ForEachInMap (retrieves chalkboards in a field via REST from CHALKBOARDS service). AttemptUse (emits SET command), Close (emits CLEAR command) via Kafka.
 
 ---
 
 ## Pet
 
 ### Responsibility
-Represents character pets.
+Represents character pets with position, stats, and exclude lists.
 
 ### Core Models
-- `Model` - Contains pet id, slot, name, template data
+- `Model` - Contains id (uint32), cashId (uint64), templateId (uint32), name (string), level (byte), closeness (uint16), fullness (byte), expiration (time.Time), ownerId (uint32), slot (int8), x (int16), y (int16), stance (byte), fh (int16), excludes ([]exclude.Model), flag (uint16), purchaseBy (uint32)
+- `exclude.Model` - Contains id (uint32), itemId (uint32)
+
+### Invariants
+- Pet id must be greater than 0 (`ErrInvalidId`)
+- Slot 0 indicates lead pet
 
 ### Processors
-- `Processor` - Retrieves pets by owner character ID
+- `Processor` - Retrieves pets by ID or by owner via REST (PETS service). Issues commands via Kafka for spawn, despawn, attempt command, and set exclude list.
 
 ---
 
@@ -374,10 +408,13 @@ Represents character pets.
 Represents in-game mail notes between characters.
 
 ### Core Models
-- `Model` - Contains id, senderId, message, timestamp, flag
+- `Model` - Contains id (uint32), characterId (uint32), senderId (uint32), message (string), timestamp (time.Time), flag (byte)
+
+### Invariants
+- Note id must be greater than 0 (`ErrInvalidId`)
 
 ### Processors
-- `Processor` - Retrieves notes by character ID
+- `Processor` - Retrieves notes by character ID or by note ID via REST (NOTES service). Issues commands via Kafka for SendNote and DiscardNotes.
 
 ---
 
@@ -387,23 +424,23 @@ Represents in-game mail notes between characters.
 Represents skill macros configured by characters.
 
 ### Core Models
-- `Model` - Contains id, name, shout flag, skillId1, skillId2, skillId3
+- `Model` - Contains id (uint32), name (string), shout (bool), skillId1 (skill.Id), skillId2 (skill.Id), skillId3 (skill.Id)
 
 ### Processors
-- `Processor` - Retrieves macros by character ID
+- `Processor` - Retrieves macros by character ID via REST (SKILLS service). Issues UPDATE command via Kafka.
 
 ---
 
 ## World
 
 ### Responsibility
-Represents a game world with configuration and message of the day.
+Represents a game world with configuration, channels, and rates.
 
 ### Core Models
-- `Model` - Contains worldId, message
+- `Model` - Contains id (world.Id), name (string), state (State: Normal/Event/New/Hot), message (string), eventMessage (string), recommendedMessage (string), capacityStatus (Status: Normal/HighlyPopulated/Full), channels ([]channel.Model)
 
 ### Processors
-- `Processor` - Retrieves world by ID
+- `Processor` - Retrieves world by ID via REST (WORLDS service)
 
 ---
 
@@ -415,43 +452,53 @@ Handles storage (warehouse) operations for depositing and withdrawing items. Ret
 ### Core Models
 - `StorageData` - Contains Capacity (byte), Mesos (uint32), Assets ([]asset.Model)
 - `ProjectionData` - Contains CharacterId (uint32), AccountId (uint32), WorldId (world.Id), Capacity (byte), Mesos (uint32), NpcId (uint32), Compartments (map[string][]asset.Model). Provides GetAllAssetsFromProjection() to retrieve all assets from the equip compartment.
-- `StorageRestModel` - JSON:API representation of storage with included assets via relationship
-- `AssetRestModel` - Storage asset with id (uint32), slot (int16), templateId (uint32), expiration (time.Time), referenceId (uint32), referenceType (string), referenceData (interface{}). Uses custom UnmarshalJSON with referenceType discriminator.
-- `ProjectionRestModel` - Storage projection with compartments as map[string]json.RawMessage, parsed via ParseCompartmentAssets()
-- Reference data types: EquipableRestData, ConsumableRestData, SetupRestData, EtcRestData, CashRestData, PetRestData (each embedding BaseData and type-specific fields)
+- `StorageRestModel` - JSON:API representation with included assets via relationship. Resource type: "storages".
+- `AssetRestModel` - Storage asset with id (uint32), slot (int16), templateId (uint32), expiration (time.Time), quantity (uint32), ownerId (uint32), flag (uint16), rechargeable (uint64), equipment stats, cashId (int64), commodityId (uint32), purchaseBy (uint32), petId (uint32). Resource type: "storage_assets".
+- `ProjectionRestModel` - Storage projection with characterId, accountId, worldId, storageId, capacity, mesos, npcId, and compartments (map[string]json.RawMessage). Resource type: "storage_projections". Parsed via ParseCompartmentAssets().
 
 ### Invariants
 - Default storage capacity is 4 slots (`DefaultStorageCapacity`)
 - If storage does not exist, an empty StorageData with default capacity is returned (fail-open)
-- Asset transformation from storage REST models uses a `referenceType` discriminator to map typed reference data (equipable, cash_equipable, consumable, setup, etc, cash, pet) into the unified asset.Model
 
 ### Processors
-- `Processor` - GetStorageData (fetches storage metadata and assets), GetProjectionData (fetches projection with compartment assets), Arrange (sends ARRANGE command), DepositMesos (sends UPDATE_MESOS with ADD), WithdrawMesos (sends UPDATE_MESOS with SUBTRACT), CloseStorage (sends CLOSE_STORAGE command)
+- `Processor` - GetStorageData (fetches storage metadata and assets via REST), GetProjectionData (fetches projection with compartment assets via REST), Arrange (sends ARRANGE command via Kafka), DepositMesos (sends UPDATE_MESOS with ADD), WithdrawMesos (sends UPDATE_MESOS with SUBTRACT), CloseStorage (sends CLOSE_STORAGE command)
 
 ---
 
 ## Cash Shop
 
 ### Responsibility
-Handles cash shop operations including inventory, wallet, and wishlist management.
+Handles cash shop operations including entry/exit, purchases, inventory management, and item transfers.
 
 ### Core Models
-- `Inventory Model` - Contains compartments with cash items
-- `Wallet Model` - Contains NX credit balances
-- `Wishlist Model` - Contains wish list item entries
+- `inventory.Model` - Contains accountId (uint32), compartments (map[CompartmentType]compartment.Model). AccountId must be > 0.
+- `compartment.Model` - Contains id (uuid.UUID), accountId (uint32), type_ (CompartmentType), capacity (uint32), assets ([]asset.Model). CompartmentType: TypeExplorer (1), TypeCygnus (2), TypeLegend (3).
+- `asset.Model` - Contains id (uuid.UUID), compartmentId (uuid.UUID), item (item.Model). Both id and compartmentId must not be uuid.Nil.
+- `item.Model` - Contains id (uint32), cashId (int64), templateId (uint32), commodityId (uint32), quantity (uint32), flag (uint16), purchasedBy (uint32), expiration (time.Time). Id must be > 0.
+- `wallet.Model` - Contains id (uuid.UUID), accountId (uint32), credit (uint32), points (uint32), prepaid (uint32)
+- `wishlist.Model` - Contains id (uuid.UUID), characterId (uint32), serialNumber (uint32)
 
 ### Processors
-- `Processor` - Manages cash shop state and operations
+- `Processor` - Enter/Exit (emits cash shop enter/exit commands), RequestPurchase, RequestInventoryIncreasePurchaseByType/ByItem, RequestStorageIncreasePurchase/ByItem, RequestCharacterSlotIncreasePurchaseByItem, MoveFromCashInventory, MoveToCashInventory
+- `inventory.asset.Processor` - ByIdProvider/GetById, ByCompartmentIdProvider/GetByCompartmentId, GetByItemId (retrieves cash shop assets via REST from CASHSHOP service)
+- `inventory.compartment.Processor` - ByTypeProvider/GetByType (retrieves compartments via REST from CASHSHOP service)
+- `wallet.Processor` - Retrieves wallet by account ID via REST (CASHSHOP service)
+- `wishlist.Processor` - Retrieves, adds, and clears wishlist via REST (CASHSHOP service)
 
 ---
 
 ## NPC
 
 ### Responsibility
-Provides NPC data and conversation handling.
+Provides NPC conversation handling and shop operations.
 
 ### Processors
-- `Processor` - Retrieves NPCs in map, handles shop and conversation operations
+- `Processor` - StartConversation (emits START_CONVERSATION command), ContinueConversation (emits CONTINUE_CONVERSATION command), DisposeConversation (emits END_CONVERSATION command) via Kafka
+- `shops.Processor` - Retrieves NPC shop by template ID via REST (NPC_SHOP service). EnterShop, ExitShop, BuyItem, SellItem, RechargeItem (emit NPC shop commands via Kafka)
+
+### NPC Shop Models
+- `shops.Model` - Contains npcId (uint32), commodities ([]commodities.Model). NpcId must be > 0.
+- `commodities.Model` - Contains id (uuid.UUID), templateId (uint32), mesoPrice (uint32), tokenPrice (uint32), period (uint32), levelLimit (uint32), discountRate (byte), tokenTemplateId (uint32), unitPrice (float64), slotMax (uint32). Id must not be uuid.Nil.
 
 ---
 
@@ -461,10 +508,15 @@ Provides NPC data and conversation handling.
 Manages transport (boat/train) routes and schedules between maps.
 
 ### Core Models
-- `Model` - Contains route state and map associations
+- `Model` - Contains id (uuid.UUID), name (string), startMapId (_map.Id), stagingMapId (_map.Id), destinationMapId (_map.Id), enRouteMapIds ([]_map.Id), state (RouteState), schedule ([]TripScheduleModel), boardingWindowDuration (time.Duration), preDepartureDuration (time.Duration), travelDuration (time.Duration), cycleInterval (time.Duration)
+- `RouteState` constants: OutOfService, Boarding, PreDeparture, InTransit, Arrived
+- `TripScheduleModel` - Contains tripId (uuid.UUID), routeId (uuid.UUID), boardingOpen (time.Time), boardingClosed (time.Time), departure (time.Time), arrival (time.Time)
+
+### Invariants
+- Route id must not be uuid.Nil (`ErrInvalidId`)
 
 ### Processors
-- `Processor` - Checks if transport is in map
+- `Processor` - Retrieves routes by ID, by state, by schedule via REST (ROUTES service). InTenantProvider retrieves all routes in tenant. IsBoatInMap checks if any route's stagingMapId or enRouteMapIds match the given map and the route is in Boarding/PreDeparture/InTransit state.
 
 ---
 
@@ -474,25 +526,46 @@ Manages transport (boat/train) routes and schedules between maps.
 Represents character quest progress and state.
 
 ### Core Models
-- `Model` - Contains id, characterId, questId, state, startedAt, completedAt, expirationTime, completedCount, forfeitCount, progress
-- `Progress` - Contains infoNumber, progress string
+- `Model` - Contains id (uint32), characterId (uint32), questId (uint32), state (State), startedAt (time.Time), completedAt (time.Time), expirationTime (time.Time), completedCount (uint32), forfeitCount (uint32), progress ([]Progress)
+- `Progress` - Contains infoNumber (uint32), progress (string)
+- `State` constants: NotStarted, Started, Completed
 
 ### State Transitions
-- StateNotStarted -> StateStarted -> StateCompleted
-- StateStarted -> StateNotStarted (forfeit)
+- NotStarted -> Started -> Completed
+- Started -> NotStarted (forfeit)
 
 ### Processors
-- `Processor` - Retrieves quests by character ID, issues start/complete/forfeit/restore item commands
+- `Processor` - Retrieves quests by character ID via REST (QUESTS service). Issues commands via Kafka: StartQuestConversation, StartQuest, CompleteQuest, ForfeitQuest, RestoreItem.
 
 ---
 
 ## Saga
 
 ### Responsibility
-Handles distributed transaction orchestration for multi-step operations.
+Handles distributed transaction orchestration for multi-step operations. Re-exports types from the atlas-saga shared library.
+
+### Core Models
+- `Saga` - Re-exported from shared library with Type, Status, Actions, Steps
+- Payload types: AwardMesosPayload, AwardAssetPayload, DestroyAssetPayload, SetHPPayload, and others from the shared library
+- Local `TransferToCashShopPayload` - Contains CashId (uint64), overriding the shared library's int64 type
+- Status constants: Pending, Completed, Failed
+- Action constants: AwardMesos, DestroyAsset, DepositToStorage, WithdrawFromStorage, and others
 
 ### Processors
-- `Processor` - Manages saga state and compensation
+- `Processor` - Create(s Saga) emits saga commands via Kafka
+
+---
+
+## Party Quest
+
+### Responsibility
+Provides party quest timer data for characters.
+
+### Core Models
+- `TimerModel` - Contains characterId (uint32), duration (time.Duration)
+
+### Processors
+- `Processor` - GetTimerByCharacterId (retrieves timer via REST from PARTY_QUESTS service)
 
 ---
 
@@ -538,7 +611,7 @@ Handles character death and respawn logic. Orchestrates experience loss calculat
 Handles portal entry and warp commands for map transitions.
 
 ### Processors
-- `Processor` (interface) - Enter(f, portalName, characterId) looks up portal by name in map data and emits ENTER command. Warp(f, characterId, targetMapId) emits WARP command with target map ID.
+- `Processor` (interface) - Enter(f, portalName, characterId) looks up portal by name in map data and emits ENTER command via Kafka. Warp(f, characterId, targetMapId) emits WARP command with target map ID.
 
 ---
 
@@ -548,7 +621,7 @@ Handles portal entry and warp commands for map transitions.
 Handles fame change requests between characters.
 
 ### Processors
-- `Processor` - RequestChange(f, characterId, targetId, amount) emits fame change command
+- `Processor` - RequestChange(f, characterId, targetId, amount) emits fame change command via Kafka
 
 ---
 
@@ -558,17 +631,17 @@ Handles fame change requests between characters.
 Handles item consumption and scroll use requests.
 
 ### Processors
-- `Processor` - RequestItemConsume(f, characterId, itemId, source, updateTime) emits item consume command. RequestScrollUse(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime) emits scroll use command.
+- `Processor` - RequestItemConsume(f, characterId, itemId, source, updateTime) emits item consume command via Kafka. RequestScrollUse(f, characterId, scrollSlot, equipSlot, whiteScroll, legendarySpirit, updateTime) emits scroll use command via Kafka.
 
 ---
 
 ## Invite
 
 ### Responsibility
-Handles invite accept and reject operations for party and guild invitations. Invites are world-scoped, not field-scoped.
+Handles invite accept and reject operations for party, guild, buddy, and messenger invitations. Invites are world-scoped, not field-scoped.
 
 ### Processors
-- `Processor` - Accept(actorId, worldId, inviteType, referenceId) emits accept invite command. Reject(actorId, worldId, inviteType, originatorId) emits reject invite command.
+- `Processor` - Accept(actorId, worldId, inviteType, referenceId) emits accept invite command. Reject(actorId, worldId, inviteType, originatorId) emits reject invite command. Invite types: PARTY, BUDDY, GUILD, MESSENGER.
 
 ---
 
@@ -578,7 +651,7 @@ Handles invite accept and reject operations for party and guild invitations. Inv
 Handles character expression (emote) changes.
 
 ### Processors
-- `Processor` (interface) - Change(characterId, f, expression) emits expression command
+- `Processor` (interface) - Change(characterId, f, expression) emits expression command via Kafka
 
 ---
 
@@ -589,6 +662,16 @@ Handles chat message production across multiple chat types. Provides type-specif
 
 ### Processors
 - `Processor` (interface) - GeneralChat (field-scoped, with balloonOnly flag), BuddyChat/PartyChat/GuildChat/AllianceChat (delegate to MultiChat with type string), MultiChat (with recipients list), WhisperChat (with recipientName), MessengerChat (with recipients list), PetChat (with ownerId, petSlot, type, action, balloon)
+
+---
+
+## Weather
+
+### Responsibility
+Provides active weather state for a field.
+
+### Processors
+- `Processor` - GetActive(f) retrieves active weather via REST (WEATHER service)
 
 ---
 
@@ -629,6 +712,7 @@ Represents a single skill effect level with stat modifications, resource costs, 
 
 ### Core Models
 - `Model` - Contains stat modifiers (weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, speed, jump as int16), resource fields (hp, mp as uint16, hpr, mpr as float64), rate fields (mhprRate, mmprRate as uint16, mhpR, mmpR as byte), mob skill fields (mobSkill, mobSkillLevel as uint16), combat fields (damage, attackCount as uint32, fixDamage as int32, bulletCount, bulletConsume as uint16), cost fields (hpCon, mpCon as uint16, moneyCon as uint32, itemCon as uint32, itemConNo as uint32), timing fields (duration as int32, cooldown as uint32), targeting fields (target as uint32, mobCount as uint32), effect fields (morphId, ghost, fatigue, berserk, booster as uint32, prop as float64, barrier as int32, moveTo as int32, cp, nuffSkill as uint32), flags (overtime, repeatEffect, skill as bool, mapProtection as byte), position (x, y as int16), collections (cureAbnormalStatuses as []string, statups as []statup.Model, monsterStatus as map[string]uint32)
+- `statup.Model` - Contains buffType (string), amount (int32). Mask() returns buffType.
 - Public getters: StatUps(), HPConsume(), MPConsume(), Duration(), Cooldown(), ItemConsume(), ItemConsumeAmount(), MonsterStatus(), CureAbnormalStatuses()
 
 ---
@@ -678,10 +762,10 @@ Provides static NPC positional data from the DATA service for map-spawned NPC in
 Provides NPC template metadata from the DATA service including storage-related configuration.
 
 ### Core Models
-- `Model` - Contains id (uint32), name (string), trunkPut (int32), trunkGet (int32), storebank (bool)
+- `Model` - Contains id (uint32), name (string), trunkPut (int32), trunkGet (int32), storebank (bool). IsStorageNpc(), GetDepositFee(), GetWithdrawFee() derived methods.
 
 ### Processors
-- `Processor` (interface) - GetById(npcId) fetches NPC template via REST
+- `Processor` (interface) - ByIdProvider(npcId) returns NPC template provider. GetById(npcId) fetches NPC template via REST.
 
 ---
 
@@ -702,3 +786,16 @@ Provides static quest definition data from the DATA service including requiremen
 
 ### Processors
 - `Processor` (interface) - GetById(questId) fetches single quest. GetAll() fetches all quests. GetAutoStart() fetches quests with autoStart enabled. ByIdProvider(questId) returns quest model provider.
+
+---
+
+## Data/Cash
+
+### Responsibility
+Provides static cash item data from the DATA service.
+
+### Core Models
+- `RestModel` - Contains id (uint32), stateChangeItem (uint32), bgmPath (string). Resource type: "cash_items".
+
+### Processors
+- `Processor` - GetById(itemId) fetches cash item data via REST

@@ -62,7 +62,13 @@ StatusEvent[E]
 
 #### Completed Body
 
-Empty body indicating successful completion.
+```
+StatusEventCompletedBody
+  sagaType: string (optional)
+  results: map[string]any (optional, present for character_creation sagas)
+```
+
+For `character_creation` sagas, the results map contains `accountId` and `characterId` extracted from the completed steps.
 
 #### Failed Body
 
@@ -523,7 +529,7 @@ RewardWonEvent
 
 - Each saga step produces a command with the saga's transactionId
 - Step completion is tracked by consuming status events with matching transactionId
-- Status events without matching transactionId are ignored (saga not found in cache)
+- Status events without matching transactionId are ignored (saga not found in store)
 - Failed status events trigger step failure and compensation
 - Synchronous actions (play_portal_sound, show_info, show_info_text, update_area_info, show_hint, show_guide_hint, show_intro, field_effect, ui_lock, block_portal, unblock_portal, emit_gachapon_win, send_message, field_effect_weather) complete immediately after command emission
 - REST-based synchronous actions (start_instance_transport, save_location, warp_to_saved_location, select_gachapon_reward, spawn_monster) complete after the REST call returns

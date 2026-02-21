@@ -4,16 +4,17 @@ A microservice that manages character skills and skill macros. It handles skill 
 
 ## External Dependencies
 
-- PostgreSQL database for persistent storage
+- PostgreSQL database for persistent skill and macro storage
+- Redis for skill cooldown tracking
 - Kafka for asynchronous command processing and event emission
-- Jaeger for distributed tracing
+- OpenTelemetry-compatible trace collector (OTLP gRPC) for distributed tracing
 
 ## Runtime Configuration
 
 | Environment Variable | Description |
 |---------------------|-------------|
 | `REST_PORT` | Port for the REST server |
-| `JAEGER_HOST_PORT` | Jaeger host and port in format [host]:[port] |
+| `TRACE_ENDPOINT` | OpenTelemetry collector endpoint in format [host]:[port] |
 | `LOG_LEVEL` | Logging level - Panic / Fatal / Error / Warn / Info / Debug / Trace |
 | `DB_USER` | Database username |
 | `DB_PASSWORD` | Database password |

@@ -326,6 +326,61 @@ Provides map existence validation and character lookup within maps.
 
 Provides read-only access to game data for validation.
 
+### Core Models
+
+#### Skill (data)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uint32 | Skill ID |
+| name | string | Skill name |
+| action | bool | Has action animation |
+| element | string | Element type |
+| animationTime | uint32 | Animation duration |
+| effects | []effect.Model | Skill effects per level |
+
+#### Effect
+
+| Field | Type | Description |
+|-------|------|-------------|
+| duration | int32 | Effect duration in milliseconds |
+| hpCon | uint16 | HP consumed |
+| mpCon | uint16 | MP consumed |
+| cooldown | uint32 | Cooldown in milliseconds |
+| statups | []statup.Model | Stat changes applied by the effect |
+
+#### Statup
+
+| Field | Type | Description |
+|-------|------|-------------|
+| buffType | string | Stat type identifier |
+| amount | int32 | Stat change amount |
+
+#### Equipable (data)
+
+| Field | Type | Description |
+|-------|------|-------------|
+| strength | uint16 | Strength bonus |
+| dexterity | uint16 | Dexterity bonus |
+| intelligence | uint16 | Intelligence bonus |
+| luck | uint16 | Luck bonus |
+| hp | uint16 | HP bonus |
+| mp | uint16 | MP bonus |
+| weaponAttack | uint16 | Weapon attack bonus |
+| magicAttack | uint16 | Magic attack bonus |
+| weaponDefense | uint16 | Weapon defense bonus |
+| magicDefense | uint16 | Magic defense bonus |
+| accuracy | uint16 | Accuracy bonus |
+| avoidability | uint16 | Avoidability bonus |
+| speed | uint16 | Speed bonus |
+| jump | uint16 | Jump bonus |
+| slots | uint16 | Upgrade slots |
+| cash | bool | Cash item flag |
+
+#### Map (data)
+
+Empty model. Used for existence validation only.
+
 ### Processors
 
 #### AssetProcessor
@@ -338,6 +393,7 @@ Provides read-only access to game data for validation.
 
 | Method | Responsibility |
 |--------|---------------|
+| ByIdModelProvider | Returns a provider for equipable item data by ID |
 | GetById | Retrieves equipable item data by ID |
 
 #### SkillProcessor (data)

@@ -252,6 +252,34 @@ Represents a guild member.
 |-------|------|-------------|
 | characterId | uint32 | Character identifier |
 
+### Channel Load
+
+Represents channel capacity data for display in the server list.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| channelId | channel.Id | Channel number |
+| capacity | uint32 | Current player count |
+
+### Channel Select
+
+Represents channel connection information returned after character selection.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| IPAddress | string | Channel server IP address |
+| Port | uint16 | Channel server port |
+| CharacterId | uint32 | Selected character identifier |
+
+### Recommendation
+
+Represents a world recommendation entry.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| worldId | world.Id | World identifier |
+| reason | string | Recommendation reason text |
+
 ## Invariants
 
 - Session model is immutable; state changes produce new instances via clone operations.
@@ -285,6 +313,7 @@ Manages session lifecycle within the login server.
 - DestroyById: Destroys a session by ID.
 - Destroy: Destroys a session and emits destroyed event.
 - Decrypt: Returns a decryption function for incoming packets.
+- WithContext: Creates a new processor with an updated context.
 
 ### Account Session Processor
 
@@ -367,4 +396,4 @@ Retrieves guild data via REST.
 
 - GetByMemberId: Retrieves a guild by member character ID.
 - ByMemberIdProvider: Provides guilds filtered by member ID.
-- IsGuildMaster: Checks if a character is the guild master.
+- IsGuildMaster: Checks if a character is the guild master. Returns false if the character has no guild.

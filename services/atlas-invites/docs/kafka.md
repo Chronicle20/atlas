@@ -5,6 +5,7 @@
 | Topic | Environment Variable | Direction |
 |-------|---------------------|-----------|
 | Invite Commands | COMMAND_TOPIC_INVITE | Command |
+| Character Status | EVENT_TOPIC_CHARACTER_STATUS | Event |
 
 ## Topics Produced
 
@@ -14,7 +15,7 @@
 
 ## Message Types
 
-### CommandEvent
+### Command
 
 Consumed from COMMAND_TOPIC_INVITE.
 
@@ -54,6 +55,24 @@ Produced to EVENT_TOPIC_INVITE_STATUS.
 | CREATED | CreatedEventBody | originatorId, targetId |
 | ACCEPTED | AcceptedEventBody | originatorId, targetId |
 | REJECTED | RejectedEventBody | originatorId, targetId |
+
+### Character StatusEvent
+
+Consumed from EVENT_TOPIC_CHARACTER_STATUS.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| transactionId | uuid.UUID | Transaction identifier |
+| worldId | byte | World identifier |
+| characterId | uint32 | Character identifier |
+| type | string | Status event type |
+| body | varies | Event-specific payload |
+
+#### Handled Event Types
+
+| Type | Body Struct | Effect |
+|------|-------------|--------|
+| DELETED | StatusEventDeletedBody | Removes all invites for the character |
 
 ## Transaction Semantics
 

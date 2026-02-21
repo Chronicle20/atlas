@@ -15,10 +15,10 @@ Retrieves all drop entries for a specific monster.
 **Response Model**
 - Resource type: `drops`
 - Attributes:
-  - `item_id` (uint32)
-  - `minimum_quantity` (uint32)
-  - `maximum_quantity` (uint32)
-  - `quest_id` (uint32)
+  - `itemId` (uint32)
+  - `minimumQuantity` (uint32)
+  - `maximumQuantity` (uint32)
+  - `questId` (uint32)
   - `chance` (uint32)
 
 **Error Conditions**
@@ -41,16 +41,15 @@ None
 
 **Response Model**
 - Resource type: `continents`
-- Attributes:
-  - `drops` (array of drop objects)
 - Relationships:
-  - `drops` - embedded drop resources
+  - `drops` - included drop resources
 
 **Drop Attributes**
-- `item_id` (uint32)
-- `minimum_quantity` (uint32)
-- `maximum_quantity` (uint32)
-- `quest_id` (uint32)
+- Resource type: `drops`
+- `itemId` (uint32)
+- `minimumQuantity` (uint32)
+- `maximumQuantity` (uint32)
+- `questId` (uint32)
 - `chance` (uint32)
 
 **Error Conditions**

@@ -400,25 +400,18 @@ None locally. Delegates to character.ChangeMap.
 
 ### Responsibility
 
-Manages an in-memory character location registry. Tracks which field (world, channel, map, instance) each character is currently in. This registry is populated by consuming character status events.
+Manages a Redis-backed character location registry. Tracks which field (world, channel, map, instance) each character is currently in. This registry is populated by consuming character status events.
 
 ### Core Models
 
-#### MapKey
-
-| Field | Type | Description |
-|-------|------|-------------|
-| Tenant | tenant.Model | Tenant context |
-| Field | field.Model | Field (world, channel, map, instance) |
-
 #### Registry
 
-Thread-safe singleton using sync.RWMutex. Maps character IDs to their current MapKey.
+Redis-backed tenant registry mapping character IDs to their current field context. Initialized via `InitRegistry(client)` with a Redis client. Uses the `atlas-redis` `TenantRegistry` with key prefix `consumable-map-character`.
 
 ### Invariants
 
-- The registry is a singleton initialized via sync.Once.
-- All access is synchronized via RWMutex.
+- The registry is initialized once via `InitRegistry` with a Redis client.
+- All access is scoped per tenant via `tenant.MustFromContext`.
 - `TransitionMap` and `TransitionChannel` both call `Enter`, overwriting the previous entry.
 
 ### State Transitions
@@ -555,7 +548,18 @@ Contains consumable template properties including success/cursed rates, stat inc
 | SpecTypeJump | jump | Jump buff |
 | SpecTypeTime | time | Buff duration (milliseconds) |
 | SpecTypeMorph | morph | Morph transformation |
+| SpecTypeThaw | thaw | Thaw status cure |
+| SpecTypePoison | poison | Poison status cure |
+| SpecTypeDarkness | darkness | Darkness status cure |
+| SpecTypeWeakness | weakness | Weakness status cure |
+| SpecTypeSeal | seal | Seal status cure |
+| SpecTypeCurse | curse | Curse status cure |
+| SpecTypeReturnMap | returnMapQR | Return map via quick return |
+| SpecTypeIgnoreContinent | ignoreContinent | Ignore continent restriction |
+| SpecTypeRandomMoveInFieldSet | randomMoveInFieldSet | Random move in field set |
+| SpecTypeExperienceBuff | expBuff | Experience buff |
 | SpecTypeInc | inc | Pet food fullness increment |
+| SpecTypeOnlyPickup | onlyPickup | Pickup-only flag |
 
 ### Invariants
 

@@ -17,12 +17,14 @@ import (
 )
 
 const (
-	getCharactersInMap = "get_characters_in_map"
+	getCharactersInMap             = "get_characters_in_map"
+	getCharactersInMapAllInstances = "get_characters_in_map_all_instances"
 )
 
 func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		r := router.PathPrefix("/worlds").Subrouter()
+		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/characters", rest.RegisterHandler(l)(si)(getCharactersInMapAllInstances, handleGetCharactersInMapAllInstances)).Methods(http.MethodGet)
 		r.HandleFunc("/{worldId}/channels/{channelId}/maps/{mapId}/instances/{instanceId}/characters", rest.RegisterHandler(l)(si)(getCharactersInMap, handleGetCharactersInMap)).Methods(http.MethodGet)
 	}
 }
@@ -51,6 +53,32 @@ func handleGetCharactersInMap(d *rest.HandlerDependency, c *rest.HandlerContext)
 						server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
 					}
 				})
+			})
+		})
+	})
+}
+
+func handleGetCharactersInMapAllInstances(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+		return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+			return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
+				return func(w http.ResponseWriter, r *http.Request) {
+					transactionId := uuid.New()
+					mp := NewProcessor(d.Logger(), d.Context(), nil, nil)
+					ids, err := mp.GetCharactersInMapAllInstances(transactionId, worldId, channelId, mapId)
+					if err != nil {
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+					res, err := model.SliceMap(Transform)(model.FixedProvider(ids))(model.ParallelMap())()
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Creating REST model.")
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
+
+					server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(res)
+				}
 			})
 		})
 	})

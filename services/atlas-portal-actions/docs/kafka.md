@@ -7,6 +7,15 @@
 | COMMAND_TOPIC_PORTAL_ACTIONS | command | Portal entry commands |
 | EVENT_TOPIC_SAGA_STATUS | event | Saga completion and failure events |
 
+### Required Headers
+
+Both consumed topics require the following Kafka headers:
+
+| Header | Parser | Description |
+|--------|--------|-------------|
+| span | SpanHeaderParser | Distributed tracing context |
+| tenant | TenantHeaderParser | Tenant context for multi-tenancy |
+
 ## Topics Produced
 
 | Environment Variable | Direction | Description |

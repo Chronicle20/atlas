@@ -1,6 +1,6 @@
 # Atlas Pets Service
 
-A microservice for managing in-game pets. This service handles pet creation, retrieval, spawning, despawning, attribute management, and lifecycle operations. It maintains an in-memory character registry to track logged-in characters for the periodic hunger evaluation task, and an in-memory temporal registry to track pet positions and stances.
+A microservice for managing in-game pets. This service handles pet creation, retrieval, spawning, despawning, attribute management, and lifecycle operations. It maintains a Redis-backed character registry to track logged-in characters for the periodic hunger evaluation task, and a Redis-backed temporal registry to track pet positions and stances.
 
 The service consumes character status events, asset status events, and pet commands via Kafka. It reads character and inventory data from external services via REST. Pet data is fetched from a reference data service for template-level attributes like hunger rate and command skills.
 
@@ -8,7 +8,8 @@ The service consumes character status events, asset status events, and pet comma
 
 - PostgreSQL database
 - Kafka cluster
-- Jaeger (tracing)
+- Redis
+- OpenTelemetry (tracing via OTLP)
 - atlas-characters service (REST)
 - atlas-inventory service (REST)
 - Pet reference data service (REST)
@@ -19,7 +20,7 @@ The service consumes character status events, asset status events, and pet comma
 
 | Variable | Description |
 |----------|-------------|
-| JAEGER_HOST | Jaeger host and port for tracing |
+| TRACE_ENDPOINT | OTLP trace exporter endpoint |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) |
 | REST_PORT | Port for the REST API |
 | DB_HOST | PostgreSQL database host |

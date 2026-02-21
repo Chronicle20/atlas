@@ -21,6 +21,7 @@ Fame command topic for requesting fame changes.
   "body": {
     "channelId": "byte",
     "mapId": "uint32",
+    "instance": "uuid",
     "targetId": "uint32",
     "amount": "int8"
   }
@@ -39,6 +40,7 @@ Character status event topic for character lifecycle events.
 
 ```json
 {
+  "transactionId": "uuid",
   "worldId": "byte",
   "characterId": "uint32",
   "type": "DELETED",
@@ -61,11 +63,11 @@ Fame status event topic for fame operation results.
 ```json
 {
   "transactionId": "uuid",
-  "worldId": "world.Id",
+  "worldId": "byte",
   "characterId": "uint32",
   "type": "ERROR",
   "body": {
-    "channelId": "channel.Id",
+    "channelId": "byte",
     "error": "string"
   }
 }
@@ -94,7 +96,7 @@ Character command topic for requesting character operations.
 ```json
 {
   "transactionId": "uuid",
-  "worldId": "world.Id",
+  "worldId": "byte",
   "characterId": "uint32",
   "type": "REQUEST_CHANGE_FAME",
   "body": {

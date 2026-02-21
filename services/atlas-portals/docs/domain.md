@@ -28,6 +28,10 @@ Represents a portal within a map. Portals transport characters between maps or t
 
 ### Processors
 
+**InMapProvider**
+
+Provides all portals in a map from the DATA service.
+
 **InMapByNameProvider**
 
 Provides portals in a map by name from the DATA service.
@@ -52,7 +56,15 @@ Processes a character entering a portal:
 3. Fetches portal data from DATA service.
 4. If portal has a script, emits a portal actions command.
 5. If portal has a target map, resolves the target portal and warps the character.
-6. Otherwise, enables character actions.
+6. If target portal name not found, falls back to portal 0.
+7. Otherwise, enables character actions.
+
+**Warp**
+
+Warps a character to a target map:
+1. Retrieves all portals in the target map.
+2. If no portals found, defaults to portal 0.
+3. Otherwise, selects a random portal from the target map.
 
 **WarpById**
 
@@ -84,14 +96,15 @@ Tracks portals that are temporarily blocked for specific characters.
 
 - Blocked state is scoped to a tenant.
 - Blocked state is cleared when a character logs out.
+- Blocking the same portal twice is idempotent.
 
 ### Processors
 
-**Cache**
+**Registry**
 
-In-memory cache interface for blocked portal state:
+Manages blocked portal state per character:
 - `IsBlocked`: Checks if a portal is blocked for a character.
-- `Block`: Adds a portal to the blocked list.
-- `Unblock`: Removes a portal from the blocked list.
+- `Block`: Marks a portal as blocked for a character.
+- `Unblock`: Removes a portal from the blocked list for a character.
 - `ClearForCharacter`: Removes all blocked portals for a character.
 - `GetForCharacter`: Returns all blocked portals for a character.

@@ -27,6 +27,8 @@ Shared domain models and processing logic for NPC and quest conversation state m
 - **ConditionModel** — A condition for outcome evaluation. Has `conditionType`, `operator`, `value`, `referenceId`, `step`, `worldId`, `channelId`, `includeEquipped`.
 - **OutcomeModel** — Determines state transition based on conditions. Has `conditions` and `nextState`.
 - **ConversationContext** — Runtime state for an active conversation. Has `field`, `characterId`, `npcId`, `currentState`, `conversation` (StateContainer), `context` (key-value map), `pendingSagaId`, `conversationType` (`"npc"` or `"quest"`), `sourceId`.
+- **OptionSetModel** — A named set of crafting options. Has `id` (string) and `options` ([]OptionModel).
+- **OptionModel** — A crafting option within an option set. Has `id` (uint32), `name` (string), `materials` ([]uint32), `quantities` ([]uint32), `meso` (uint32).
 
 ### Invariants
 
@@ -40,6 +42,8 @@ Shared domain models and processing logic for NPC and quest conversation state m
 - AskNumberModel requires `minValue <= defaultValue <= maxValue` and `maxValue > 0`.
 - AskStyleModel requires either static `styles` or `stylesContextKey` (not both empty), and non-empty `nextState`.
 - AskSlideMenuModel requires at least one choice.
+- OptionSetModel requires a non-empty `id` and at least one option.
+- OptionModel requires a non-empty `id`, non-empty `name`, and quantities matching materials length.
 - Only one conversation per character at a time. Starting a conversation fails if one already exists.
 - ConversationContext defaults to `NpcConversationType` if not set.
 
@@ -133,12 +137,87 @@ Saga model types and saga creation for distributed operations.
 
 ### Responsibility
 
-Hair, face, and skin style generation for cosmetic change conversations.
+Hair, face, and skin style generation and validation for cosmetic change conversations.
+
+### Core Models
+
+- **CosmeticType** — Enum: `hair`, `face`, `skin`.
+- **GenerationMode** — Enum: `preserveColor`, `colorVariants`, `baseOnly`.
+- **CharacterAppearance** — Character cosmetic state. Has `gender`, `skinColor`, `face`, `hair`. Provides derived accessors: `HairBase()` (hair / 10), `HairColor()` (hair % 10), `FaceBase()` (face % 100), `FaceColor()` ((face / 100) % 10), `IsMale()`, `IsFemale()`.
 
 ### Processors
 
-- Generates available styles based on character gender, current cosmetics, and WZ data validation.
-- Supports hair styles, hair colors, face styles, face colors.
+- **Processor** (cosmetic) — Interface: `GenerateHairStyles`, `GenerateHairColors`, `GenerateFaceStyles`, `GenerateFaceColors`, `GenerateFaceColorsForOnetimeLens`, `UpdateCharacterAppearance`.
+- **Generator** — Generates candidate style arrays based on character gender and generation mode. Hair style bases: male 3000–3099, female 3100+. Face style bases: male 20000–20999, female 21000–21999. Skin: 0–9.
+- **Validator** — Filters out already-equipped styles via `IsEquipped` and `FilterEquipped`.
+- **AppearanceProvider** — Fetches current character appearance via REST call to atlas-query-aggregator.
+- Filtering pipeline: generator → existence validation (REST to atlas-data) → equipped filter.
+
+## Pet
+
+### Responsibility
+
+Pet data retrieval for pet-related conversation operations.
+
+### Core Models
+
+- **Model** — A pet. Has `id` (uint32) and `slot` (int8). `IsSpawned()` returns true if slot >= 0.
+
+### Processors
+
+- **Processor** (pet) — Interface: `GetPets`, `GetPetIdBySlot`. Retrieves pet data via REST and locates pets by slot position.
+
+## Saved Location
+
+### Responsibility
+
+Saved location retrieval for warp-to-saved-location conversation operations.
+
+### Core Models
+
+- **Model** — A saved location. Has `characterId` (uint32), `locationType` (string), `mapId` (uint32), `portalId` (uint32).
+
+### Processors
+
+- **Processor** (saved_location) — Interface: `GetSavedLocation`. Retrieves a character's saved location by type via REST. Returns `ErrNotFound` when no location exists.
+
+## Map
+
+### Responsibility
+
+Map player count retrieval for map-capacity-related conversation conditions.
+
+### Processors
+
+- **Processor** (map) — Interface: `GetPlayerCountInField`, `GetPlayerCountsInMaps`. Queries player counts via REST. `GetPlayerCountsInMaps` issues parallel requests per map using `sync.WaitGroup` and `sync.Mutex`. Returns 0 on error for individual maps.
+
+## Validation
+
+### Responsibility
+
+Character state validation against condition sets. Delegates evaluation to atlas-query-aggregator.
+
+### Core Models
+
+- **ConditionType** — Enum: `jobId`, `meso`, `mapId`, `fame`, `item`, `buddyCapacity`, `questStatus`.
+- **Operator** — Enum: `=`, `>`, `<`, `>=`, `<=`.
+- **ConditionInput** — Condition specification. Has `type`, `operator`, `value`, `referenceId`, `step`, `worldId`, `channelId`, `includeEquipped`.
+- **ValidationResult** — Evaluation result. Has `passed`, `details`, `results` ([]ConditionResult), `characterId`.
+- **ConditionResult** — Per-condition result. Has `passed`, `description`, `type`, `operator`, `value`, `referenceId`, `actualValue`.
+
+### Processors
+
+- **Processor** (validation) — Interface: `ValidateCharacterState`. Sends condition inputs to atlas-query-aggregator via POST and returns a ValidationResult.
+
+## Message
+
+### Responsibility
+
+Formatted NPC dialogue text construction with MapleStory text codes.
+
+### Core Models
+
+- **Builder** — Chainable text builder wrapping `strings.Builder`. Supports text formatting (`BlueText`, `RedText`, `GreenText`, `PurpleText`, `BlackText`, `BoldText`, `NormalText`), entity references (`ShowItemName1`, `ShowItemName2`, `ShowItemImage1`, `ShowItemImage2`, `ShowItemCount`, `ShowMonsterName`, `ShowSkillImage`, `ShowNPC`, `ShowMap`, `ShowCharacterName`, `ShowProgressBar`), and menu construction (`OpenItem`, `CloseItem`, `DimensionalMirrorOption`).
 
 ## NPC Talk
 
@@ -148,4 +227,4 @@ Sends NPC dialogue messages to the client via Kafka.
 
 ### Processors
 
-- **Processor** (npc) — Sends dialogue commands: `SendSimple`, `SendNext`, `SendNextPrevious`, `SendPrevious`, `SendOk`, `SendYesNo`, `SendAcceptDecline`, `SendNumber`, `SendStyle`, `SendSlideMenu`, `Dispose`.
+- **Processor** (npc) — Sends dialogue commands: `SendSimple`, `SendNext`, `SendNextPrevious`, `SendPrevious`, `SendOk`, `SendYesNo`, `SendAcceptDecline`, `SendNumber`, `SendStyle`, `SendSlideMenu`, `Dispose`. Supports configurators: `WithSpeaker`, `WithEndChat`, `WithSecondaryNpcId`.

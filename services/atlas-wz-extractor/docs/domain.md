@@ -105,6 +105,7 @@ Dispatches by WZ file name:
 | `Reactor.wz` | `reactor` | `0/0` |
 | `Item.wz` | `item` | `{category}/{itemId}/info/icon` |
 | `Skill.wz` | `skill` | `{bookId}/skill/{skillId}/icon` |
+| `Character.wz` | `item` | `{equipType}/{equipId}/info/icon` |
 
 Canvas data is read from the WZ file, decompressed (zlib or encrypted block format), decoded from the pixel format, and written as PNG.
 

@@ -99,7 +99,10 @@ Records a PIN verification attempt.
 
 ```go
 type PinAttemptInputRestModel struct {
-    Success bool `json:"success"`
+    Id        string `json:"-"`
+    Success   bool   `json:"success"`
+    IpAddress string `json:"ipAddress"`
+    HWID      string `json:"hwid"`
 }
 ```
 
@@ -126,7 +129,10 @@ Records a PIC verification attempt.
 
 ```go
 type PicAttemptInputRestModel struct {
-    Success bool `json:"success"`
+    Id        string `json:"-"`
+    Success   bool   `json:"success"`
+    IpAddress string `json:"ipAddress"`
+    HWID      string `json:"hwid"`
 }
 ```
 

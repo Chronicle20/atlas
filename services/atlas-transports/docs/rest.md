@@ -96,7 +96,7 @@ Resource type: `instance-routes`
 | id | uuid.UUID | Route identifier |
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
-| transitMapId | map.Id | Transit map ID |
+| transitMapIds | []map.Id | Transit map IDs |
 | destinationMapId | map.Id | Destination map ID |
 | capacity | uint32 | Maximum characters per instance |
 | boardingWindow | time.Duration | Boarding window duration |
@@ -129,7 +129,7 @@ Resource type: `instance-routes`
 | id | uuid.UUID | Route identifier |
 | name | string | Route name |
 | startMapId | map.Id | Starting map ID |
-| transitMapId | map.Id | Transit map ID |
+| transitMapIds | []map.Id | Transit map IDs |
 | destinationMapId | map.Id | Destination map ID |
 | capacity | uint32 | Maximum characters per instance |
 | boardingWindow | time.Duration | Boarding window duration |

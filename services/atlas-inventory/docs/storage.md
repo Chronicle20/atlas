@@ -44,11 +44,6 @@
 | speed | uint16 | |
 | jump | uint16 | |
 | slots | uint16 | |
-| locked | bool | |
-| spikes | bool | |
-| karma_used | bool | |
-| cold | bool | |
-| can_be_traded | bool | |
 | level_type | byte | |
 | level | byte | |
 | experience | uint32 | |
@@ -81,3 +76,4 @@
 - Migration order: compartment, asset
 - Assets use soft delete via GORM `DeletedAt` field
 - UUID generation for compartment IDs handled in `BeforeCreate` hook
+- Boolean flag columns (`locked`, `spikes`, `cold`, `karma_used`) consolidated into `flag` uint16 bitmask via migration

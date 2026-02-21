@@ -42,7 +42,7 @@ Consumed from COMMAND_TOPIC_BAN. Generic envelope with typed body.
 | Reason | string |
 | ReasonCode | byte |
 | Permanent | bool |
-| ExpiresAt | int64 |
+| ExpiresAt | time.Time |
 | IssuedBy | string |
 
 ##### DeleteCommandBody
@@ -68,6 +68,7 @@ Produced to EVENT_TOPIC_BAN_STATUS.
 |--------|-------------|
 | CREATED | Ban created |
 | DELETED | Ban deleted |
+| EXPIRED | Ban expired |
 
 ### Consumed Events
 
@@ -103,7 +104,7 @@ Consumed from EVENT_TOPIC_ACCOUNT_SESSION_STATUS. Generic envelope with typed bo
 |-------|------|
 | Code | string |
 | Reason | byte |
-| Until | uint64 |
+| Until | time.Time |
 | IPAddress | string |
 | HWID | string |
 

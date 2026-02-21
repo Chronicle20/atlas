@@ -9,6 +9,7 @@ This service handles guild creation, member management, emblem customization, ti
 ## External Dependencies
 
 - **PostgreSQL**: Persistent storage for guilds, members, titles, threads, replies, and character-guild mappings
+- **Redis**: In-memory state for guild creation agreement coordination
 - **Kafka**: Asynchronous command/event messaging for guild operations, thread management, character status, and invite handling
 - **Jaeger**: Distributed tracing
 
@@ -18,6 +19,10 @@ This service handles guild creation, member management, emblem customization, ti
 - `JAEGER_HOST_PORT` - Jaeger host:port for distributed tracing
 - `LOG_LEVEL` - Logging level (Panic / Fatal / Error / Warn / Info / Debug / Trace)
 - `REST_PORT` - HTTP server port
+
+### REST Clients
+- `CHARACTERS` - Base URL for atlas-character REST API
+- `PARTIES` - Base URL for atlas-parties REST API
 
 ### Database
 - `DB_USER` - PostgreSQL user name

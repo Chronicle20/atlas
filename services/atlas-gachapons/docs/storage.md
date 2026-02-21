@@ -10,9 +10,9 @@
 | id | string | PRIMARY KEY, NOT NULL |
 | name | string | NOT NULL |
 | npc_ids | integer[] | NOT NULL |
-| common_weight | uint32 | NOT NULL, DEFAULT 70 |
-| uncommon_weight | uint32 | NOT NULL, DEFAULT 25 |
-| rare_weight | uint32 | NOT NULL, DEFAULT 5 |
+| common_weight | uint32 | NOT NULL |
+| uncommon_weight | uint32 | NOT NULL |
+| rare_weight | uint32 | NOT NULL |
 
 ### gachapon_items
 

@@ -2,15 +2,19 @@
 
 ## Tables
 
-None. This service uses in-memory state only.
+None. This service does not use a relational database.
 
-The following singleton structures hold all state:
+## Redis
 
-- **Registry** (`character/registry.go`): Maps tenant -> characterId -> Model. Stores rate factors per character.
-- **ItemTracker** (`character/item_tracker.go`): Maps tenant -> characterId -> templateId -> TrackedItem. Stores time-based rate items.
-- **initializedCharacters** (`character/initializer.go`): Maps tenant -> characterId -> bool. Tracks which characters have been lazily initialized.
+All state is stored in Redis via `atlas.TenantRegistry`.
 
-All state is lost on service restart and rebuilt lazily from external services on the next rate query or map change event.
+| Registry | Namespace | Key | Value | Description |
+|----------|-----------|-----|-------|-------------|
+| Registry | `rates` | `{tenant}:{characterId}` | `character.Model` (JSON) | Rate factors per character |
+| ItemTracker | `rates-items` | `{tenant}:{characterId}:{templateId}` | `character.TrackedItem` (JSON) | Time-based rate items |
+| initializedRegistry | `rates-init` | `{tenant}:{characterId}` | `bool` | Tracks which characters have been lazily initialized |
+
+State persists across service restarts via Redis. Lazy initialization re-queries external services only for characters not yet marked as initialized.
 
 ## Relationships
 

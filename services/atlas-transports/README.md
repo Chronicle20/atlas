@@ -7,7 +7,8 @@ Scheduled routes transition through states (awaiting return, open entry, locked 
 ## External Dependencies
 
 - Kafka: Message broker for event consumption and production
-- Jaeger: Distributed tracing
+- Redis: State storage for registries (routes, instances, characters, channels)
+- OpenTelemetry (OTLP): Distributed tracing
 - atlas-tenants: Tenant configuration service (routes, vessels, instance routes)
 - atlas-data: Portal and map data service
 - atlas-maps: Character map presence service
@@ -16,7 +17,7 @@ Scheduled routes transition through states (awaiting return, open entry, locked 
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| JAEGER_HOST | Jaeger host:port | - |
+| TRACE_ENDPOINT | OpenTelemetry OTLP gRPC endpoint | - |
 | LOG_LEVEL | Logging level (Panic/Fatal/Error/Warn/Info/Debug/Trace) | - |
 | REST_PORT | REST API server port | 8080 |
 | BOOTSTRAP_SERVERS | Comma-separated Kafka bootstrap servers | - |
@@ -27,6 +28,7 @@ Scheduled routes transition through states (awaiting return, open entry, locked 
 | EVENT_TOPIC_INSTANCE_TRANSPORT | Kafka topic for instance transport events | - |
 | COMMAND_TOPIC_CHARACTER | Kafka topic for character commands | - |
 | COMMAND_TOPIC_INSTANCE_TRANSPORT | Kafka topic for instance transport commands | - |
+| EVENT_TOPIC_CONFIGURATION_STATUS | Kafka topic for configuration status events | - |
 | TENANTS | Base URL for tenants service | - |
 | MAPS | Base URL for maps service | - |
 | DATA | Base URL for data service | - |

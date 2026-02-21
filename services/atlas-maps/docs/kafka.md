@@ -254,7 +254,9 @@ StatusEvent[E] {
 #### WeatherEnd
 
 ```
-{}
+{
+    itemId: uint32
+}
 ```
 
 ### Reactor Command (Produced)

@@ -7,11 +7,14 @@ The service coordinates with external services for skill management, drop handli
 ## External Dependencies
 
 - PostgreSQL database
+- Redis (session registry, temporal data)
 - Kafka message broker
 - Jaeger tracing (optional)
-- atlas-skill service (via Kafka)
+- atlas-skill service (via REST and Kafka)
 - atlas-drop service (via Kafka)
-- atlas-session service (via Kafka events)
+- atlas-data service (via REST for portal and skill data)
+- atlas-effective-stats service (via REST)
+- Session status events (via Kafka)
 
 ## Runtime Configuration
 
@@ -35,6 +38,7 @@ The service coordinates with external services for skill management, drop handli
 | EVENT_TOPIC_SESSION_STATUS | Session status events topic |
 | EVENT_TOPIC_DROP_STATUS | Drop status events topic |
 | EVENT_TOPIC_ACCOUNT_STATUS | Account status events topic (consumed) |
+| SERVICE_MODE | Service mode (READ_ONLY or MIXED, default MIXED) |
 
 ## Documentation
 

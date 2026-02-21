@@ -144,7 +144,7 @@ Provides typed accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Ca
 - Processes sell operations: validates shop membership, item ownership, and quantity; looks up item price from the data service by item type (equipable, consumable, setup, etc); emits meso change and destroy commands
 - Processes recharge operations: validates recharger flag, item existence in the consumable compartment, skill-based slot max bonuses (Claw Mastery, Gun Mastery), and meso balance; emits meso change and recharge commands
 - Decorates shops with rechargeable consumables when the shop is a recharger (RechargeableConsumablesDecorator)
-- Tracks characters currently in shops via a thread-safe in-memory Registry singleton
+- Tracks characters currently in shops via a Redis-backed Registry singleton
 
 #### Commodity Processor
 
@@ -164,6 +164,5 @@ Provides typed accessors: `Equipable()`, `Consumable()`, `Setup()`, `ETC()`, `Ca
 
 #### Consumable Cache
 
-- Singleton per-tenant cache of rechargeable consumable data fetched from the data service
-- Provides thread-safe read/write access
-- Lazily loads on first access per tenant
+- Redis-backed per-tenant cache of rechargeable consumable data fetched from the data service
+- Lazily loads on first access per tenant, persists to Redis for subsequent reads

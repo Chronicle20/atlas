@@ -142,6 +142,7 @@ type RequestCreateBody struct {
     WorldId   byte
     ChannelId byte
     MapId     uint32
+    Instance  uuid.UUID
     Name      string
 }
 
@@ -310,10 +311,47 @@ type ReplyDeletedStatusEventBody struct {
 }
 ```
 
+### Character Status Event Bodies
+
+```go
+type StatusEventLoginBody struct {
+    ChannelId byte
+    MapId     uint32
+    Instance  uuid.UUID
+}
+
+type StatusEventLogoutBody struct {
+    ChannelId byte
+    MapId     uint32
+    Instance  uuid.UUID
+}
+
+type StatusEventDeletedBody struct {}
+```
+
+### Invite Status Event Bodies
+
+```go
+type AcceptedEventBody struct {
+    OriginatorId uint32
+    TargetId     uint32
+}
+```
+
+### Invite Command Bodies
+
+```go
+type createCommandBody struct {
+    OriginatorId uint32
+    TargetId     uint32
+    ReferenceId  uint32
+}
+```
+
 ---
 
 ## Transaction Semantics
 
 - Guild commands include a `transactionId` field for correlation
-- Status events include `transactionId` for response correlation
-- Thread commands do not include transaction IDs
+- Guild status events include `transactionId` for response correlation
+- Thread commands and thread status events do not include transaction IDs

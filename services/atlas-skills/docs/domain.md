@@ -21,7 +21,7 @@ Represents a character's acquired skill with its current level, master level, ex
 ### Invariants
 
 - Skill id is required and must be non-zero.
-- Cooldown state is maintained in-memory via the CooldownRegistry, not persisted.
+- Cooldown state is maintained in Redis via the CooldownRegistry.
 
 ### Processors
 

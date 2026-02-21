@@ -49,13 +49,28 @@ Stores service configurations.
 
 | Column | Type | Constraints |
 |--------|------|-------------|
-| id | uuid | |
-| type | varchar | |
+| id | uuid | default uuid_generate_v4() |
+| type | varchar | not null |
 | data | json | not null |
+
+---
+
+### service_history
+
+Stores historical snapshots of service configurations.
+
+| Column | Type | Constraints |
+|--------|------|-------------|
+| id | uuid | default uuid_generate_v4() |
+| service_id | uuid | |
+| type | varchar | not null |
+| data | json | not null |
+| created_at | timestamp | not null |
 
 ## Relationships
 
 - `tenant_history.tenant_id` references `tenants.id`
+- `service_history.service_id` references `services.id`
 
 ## Indexes
 
@@ -66,4 +81,4 @@ None explicitly defined. GORM AutoMigrate creates default indexes.
 Migrations are executed via GORM AutoMigrate on startup in the following order:
 1. templates
 2. tenants and tenant_history
-3. services
+3. services and service_history

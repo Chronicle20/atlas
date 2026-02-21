@@ -259,6 +259,7 @@ Pet commands.
   "body": {
     "fromId": 0,
     "sourceId": -2000000,
+    "level": 0,
     "duration": 0,
     "changes": [
       {
@@ -314,11 +315,7 @@ Note: sourceId uses negative item ID for consumable buffs.
     "speed": 0,
     "jump": 0,
     "slots": 0,
-    "locked": false,
-    "spikes": false,
-    "karmaUsed": false,
-    "cold": false,
-    "canBeTraded": false,
+    "flag": 0,
     "levelType": 0,
     "level": 0,
     "experience": 0,

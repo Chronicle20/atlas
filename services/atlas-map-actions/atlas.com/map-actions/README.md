@@ -22,7 +22,9 @@ The service also provides REST endpoints for managing map scripts (CRUD, query b
 | `BOOTSTRAP_SERVERS` | Kafka bootstrap servers |
 | `REST_PORT` | REST server port |
 | `QUERY_AGGREGATOR_URL` | Base URL for atlas-query-aggregator |
-| `JAEGER_HOST` | OpenTelemetry collector host |
+| `TRACE_ENDPOINT` | OpenTelemetry collector gRPC endpoint |
+| `LOG_LEVEL` | Log level (e.g., `debug`, `info`) |
+| `MAP_SCRIPTS_DIR` | Override path for map script JSON files (default: `/scripts/map`) |
 
 ## Documentation
 

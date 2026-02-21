@@ -1,6 +1,6 @@
 # Storage
 
-This service does not use persistent storage.
+This service uses Redis as a tenant-scoped cache via `atlas.TenantRegistry`. No relational database is used.
 
 ## Tables
 
@@ -16,4 +16,4 @@ None.
 
 ## Migration Rules
 
-Not applicable. All state is held in-memory and rebuilt from external services on demand.
+Not applicable. All state is cached in Redis under the `effective-stats` namespace, keyed by character ID. State is rebuilt from external services on demand during lazy initialization.

@@ -178,5 +178,9 @@ Clears all quest conversations for the current tenant and loads from JSON files 
 - Parameters: None
 - Request model: None
 - Response model: `SeedResult` (JSON)
+  - `deletedCount` (int)
+  - `createdCount` (int)
+  - `failedCount` (int)
+  - `errors` ([]string)
 - Error conditions:
   - 500: Internal error

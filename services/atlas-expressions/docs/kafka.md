@@ -13,11 +13,14 @@ Expression change commands.
 | worldId | world.Id |
 | channelId | channel.Id |
 | mapId | map.Id |
+| instance | uuid.UUID |
 | expression | uint32 |
+
+Consumer group: `Expression Service`. Header parsers: span, tenant.
 
 ### EVENT_TOPIC_MAP_STATUS
 
-Map status events. Only CHARACTER_EXIT type is handled.
+Map status events. Only `CHARACTER_EXIT` type is handled.
 
 | Field | Type |
 |-------|------|
@@ -25,6 +28,7 @@ Map status events. Only CHARACTER_EXIT type is handled.
 | worldId | world.Id |
 | channelId | channel.Id |
 | mapId | map.Id |
+| instance | uuid.UUID |
 | type | string |
 | body | CharacterExit |
 
@@ -34,11 +38,15 @@ Map status events. Only CHARACTER_EXIT type is handled.
 |-------|------|
 | characterId | uint32 |
 
+Consumer group: `Expression Service`. Header parsers: span, tenant.
+
+On CHARACTER_EXIT, the expression for the exiting character is cleared.
+
 ## Topics Produced
 
 ### EVENT_TOPIC_EXPRESSION
 
-Expression status events.
+Expression status events. Emitted on expression change and on expiration revert.
 
 | Field | Type |
 |-------|------|
@@ -47,7 +55,10 @@ Expression status events.
 | worldId | world.Id |
 | channelId | channel.Id |
 | mapId | map.Id |
+| instance | uuid.UUID |
 | expression | uint32 |
+
+Partition key: characterId.
 
 ## Message Types
 
@@ -59,4 +70,4 @@ Expression status events.
 
 ## Transaction Semantics
 
-All messages include a transactionId header for correlation. Tenant context is propagated via header parsers.
+All messages include a transactionId for correlation. Tenant context is propagated via header parsers. The RevertTask generates a new transactionId for each expired expression revert.

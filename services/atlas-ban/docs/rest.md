@@ -28,7 +28,7 @@ Array of Ban resources.
 | Reason | string | reason |
 | ReasonCode | byte | reasonCode |
 | Permanent | bool | permanent |
-| ExpiresAt | int64 | expiresAt |
+| ExpiresAt | time.Time | expiresAt |
 | IssuedBy | string | issuedBy |
 
 Resource type: `bans`
@@ -88,7 +88,7 @@ None.
 | Reason | string | reason |
 | ReasonCode | byte | reasonCode |
 | Permanent | bool | permanent |
-| ExpiresAt | int64 | expiresAt |
+| ExpiresAt | time.Time | expiresAt |
 | IssuedBy | string | issuedBy |
 
 Resource type: `bans`
@@ -135,6 +135,34 @@ None.
 
 ---
 
+### POST /bans/{banId}/expire
+
+Expires a temporary ban early.
+
+#### Parameters
+
+| Name | Location | Type | Required |
+|------|----------|------|----------|
+| banId | path | uint32 | yes |
+
+#### Request Model
+
+None.
+
+#### Response Model
+
+None.
+
+#### Error Conditions
+
+| Status | Condition |
+|--------|-----------|
+| 204 No Content | Ban expired |
+| 400 Bad Request | Ban is permanent |
+| 500 Internal Server Error | Database error |
+
+---
+
 ### GET /bans/check
 
 Checks if an IP address, hardware ID, or account is currently banned.
@@ -163,7 +191,7 @@ Single BanCheck resource.
 | Reason | string | reason |
 | ReasonCode | byte | reasonCode |
 | Permanent | bool | permanent |
-| ExpiresAt | int64 | expiresAt |
+| ExpiresAt | time.Time | expiresAt |
 
 Resource type: `ban-checks`
 

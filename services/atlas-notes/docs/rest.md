@@ -36,6 +36,7 @@ Returns all notes for a character.
 **Response Model:** Array of RestModel
 
 **Error Conditions:**
+- 400: Invalid characterId
 - 500: Internal server error
 
 ---
@@ -50,6 +51,7 @@ Returns a specific note.
 **Response Model:** RestModel
 
 **Error Conditions:**
+- 400: Invalid noteId
 - 500: Internal server error
 
 ---
@@ -94,7 +96,7 @@ Updates an existing note.
 **Response Model:** RestModel
 
 **Error Conditions:**
-- 400: Invalid request body or note ID mismatch
+- 400: Invalid request body, invalid noteId, or note ID mismatch
 - 500: Internal server error
 
 ---
@@ -109,6 +111,7 @@ Deletes a note.
 **Response Model:** None (204 No Content)
 
 **Error Conditions:**
+- 400: Invalid noteId
 - 500: Internal server error
 
 ---
@@ -123,6 +126,7 @@ Deletes all notes for a character.
 **Response Model:** None (204 No Content)
 
 **Error Conditions:**
+- 400: Invalid characterId
 - 500: Internal server error
 
 ## Resource Model

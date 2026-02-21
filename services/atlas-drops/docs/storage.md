@@ -2,40 +2,43 @@
 
 ## Tables
 
-This service uses in-memory storage only. No database tables exist.
+This service uses Redis for storage. No relational database tables exist.
 
-## In-Memory Registry
+## Redis Key Structures
 
-Drops are stored in a thread-safe in-memory registry (singleton) with the following structures:
+| Key Pattern | Type | Description |
+|-------------|------|-------------|
+| `drops:next_id` | String (integer) | Counter for unique drop ID generation |
+| `drop:<id>` | String (JSON) | Serialized drop entry for a single drop |
+| `drops:all` | Set | Set of all drop ID strings |
+| `drops:map:<tenantId>:<worldId>:<channelId>:<mapId>:<instanceId>` | Set | Set of drop ID strings for a specific map instance |
 
-| Structure | Type | Description |
-|-----------|------|-------------|
-| dropMap | map[uint32]Model | Maps drop ID to drop model |
-| dropReservations | map[uint32]uint32 | Maps drop ID to reserving character ID |
-| dropLocks | map[uint32]*sync.Mutex | Per-drop locks for concurrent access |
-| mapLocks | map[mapKey]*sync.Mutex | Per-map locks for concurrent access |
-| dropsInMap | map[mapKey][]uint32 | Maps map key to list of drop IDs in that map |
+### Drop Entry Format
 
-### Map Key
+Each `drop:<id>` key stores a JSON-serialized `dropEntry`:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| tenantId | uuid.UUID | Tenant identifier |
-| field | field.Model | Field context (world, channel, map, instance) |
+| drop | Model (JSON) | Full drop model including tenant, field, item/meso data, equipment stats |
+| reservedBy | uint32 | Character ID that reserved the drop (0 if not reserved) |
 
 ## Relationships
 
 - Each drop belongs to exactly one field (identified by tenant + world + channel + map + instance)
+- A drop's membership in the global set (`drops:all`) and map set (`drops:map:...`) is maintained alongside the drop entry
 - Equipment drops carry all stats inline on the drop model; there is no separate equipment storage
-- Drop reservations are tracked separately from the drop model itself, mapping drop ID to the reserving character ID
+- Drop reservations are tracked within the drop entry itself, pairing the drop model with the reserving character ID
 
 ## Indexes
 
-In-memory indexes:
+- Drop by ID: direct key lookup via `drop:<id>`
+- Drops by map: set membership via `drops:map:<tenantId>:<worldId>:<channelId>:<mapId>:<instanceId>`
+- All drops: set membership via `drops:all`
 
-- Drop by ID (primary lookup via dropMap)
-- Drops by map key (tenant + field via dropsInMap)
+## ID Generation
+
+Drop IDs are generated using a Redis INCR operation on `drops:next_id` with a Lua script that wraps the counter back to 1000000001 when it exceeds 2000000000. The counter is initialized to 999999999 (one below the minimum) on first use via SETNX.
 
 ## Migration Rules
 
-Not applicable. This service uses ephemeral in-memory storage that is cleared on service restart. On shutdown, all drops are expired and corresponding EXPIRED events are emitted before the process exits.
+Not applicable. Drops are ephemeral and do not require schema migrations. On service shutdown, all drops are expired and corresponding EXPIRED events are emitted before the process exits.

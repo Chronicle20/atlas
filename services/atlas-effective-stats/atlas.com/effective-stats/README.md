@@ -4,10 +4,11 @@ Computes and maintains effective (temporary) character statistics in real-time b
 
 ## Responsibility
 
-This service provides computed effective stats for logged-in characters. It maintains an in-memory registry of character stat models that are lazily initialized on first query or session creation and kept up to date via Kafka events for equipment changes, buff application/expiry, and base stat modifications. The service does not persist data; state is rebuilt from external services on demand.
+This service provides computed effective stats for logged-in characters. It maintains a Redis-backed registry of character stat models that are lazily initialized on first query or session creation and kept up to date via Kafka events for equipment changes, buff application/expiry, and base stat modifications. State is rebuilt from external services on demand.
 
 ## External Dependencies
 
+- **Redis**: Tenant-scoped cache for character effective stats models
 - **atlas-character**: Source of base character stats (STR, DEX, INT, LUK, MaxHP, MaxMP)
 - **atlas-inventory**: Source of equipped item stats (flat asset fields in the equip compartment)
 - **atlas-buffs**: Source of active buff stat changes
@@ -19,15 +20,10 @@ This service provides computed effective stats for logged-in characters. It main
 
 | Variable | Description |
 |----------|-------------|
-| `REST_PORT` | HTTP server port (default: 8080) |
+| `REST_PORT` | HTTP server port |
 | `BOOTSTRAP_SERVERS` | Kafka broker addresses |
-| `CHARACTERS_SERVICE_URL` | atlas-character service URL |
-| `INVENTORY_SERVICE_URL` | atlas-inventory service URL |
-| `BUFFS_SERVICE_URL` | atlas-buffs service URL |
-| `SKILLS_SERVICE_URL` | atlas-skills service URL |
-| `DATA_SERVICE_URL` | atlas-data service URL |
-| `JAEGER_HOST_PORT` | Jaeger tracing endpoint |
-| `LOG_LEVEL` | Log level (default: info) |
+| `TRACE_ENDPOINT` | OpenTelemetry trace exporter endpoint |
+| `LOG_LEVEL` | Log level |
 
 ## Documentation
 

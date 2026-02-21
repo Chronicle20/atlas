@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Manages character expressions with automatic expiration. Expressions are stored in memory and revert to a default state after a fixed duration.
+Manages character facial expressions with automatic expiration. Expressions are stored in Redis with a TTL and revert to the default state (expression 0) after a fixed duration.
 
 ## Core Models
 
@@ -14,21 +14,22 @@ Represents an active expression for a character.
 |-------|------|-------------|
 | tenant | tenant.Model | Tenant context |
 | characterId | uint32 | Character identifier |
-| worldId | world.Id | World identifier |
-| channelId | channel.Id | Channel identifier |
-| mapId | map.Id | Map identifier |
+| field | field.Model | Location (worldId, channelId, mapId, instance) |
 | expression | uint32 | Expression identifier |
 | expiration | time.Time | When the expression expires |
 
-### Registry
+Convenience getters expose `WorldId()`, `ChannelId()`, `MapId()`, and `Instance()` from the embedded field.
 
-Singleton in-memory store for active expressions, keyed by tenant and character.
+### ModelBuilder
+
+Fluent builder for constructing Model instances. Requires tenant, characterId, and expiration. Supports `CloneModelBuilder` for deriving new models from existing ones.
 
 ## Invariants
 
 - Expressions expire 5 seconds after creation
 - One active expression per character per tenant
 - Setting a new expression replaces any existing expression for that character
+- Clearing an expression removes it from the registry without emitting a revert
 
 ## Processors
 
@@ -43,4 +44,4 @@ Singleton in-memory store for active expressions, keyed by tenant and character.
 
 ### RevertTask
 
-Background task that periodically checks for expired expressions and emits events to revert them to expression 0.
+Background task that runs every 50ms, checks for expired expressions across all tracked tenants, and emits events to revert them to expression 0.

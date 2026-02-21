@@ -54,8 +54,8 @@ Manages a typed inventory slot container with capacity limits. Handles asset ope
 - Destination asset must not already be at slotMax to be eligible for merge
 - Recharge operations are restricted to Use compartment type only
 - Equipment slot conflicts (overall vs. pants, top) are resolved during equip operations
-- Reservations have a 30-second timeout and are tracked in an in-memory registry
-- Inventory operations acquire per-character, per-inventory-type locks to prevent concurrent modification
+- Reservations have a 30-second timeout and are tracked in a Redis-backed registry
+- Inventory operations acquire per-character, per-inventory-type Redis-backed distributed locks to prevent concurrent modification
 
 ### State Transitions
 
@@ -108,7 +108,7 @@ Represents a unified inventory item in a compartment slot. All item types (equip
 - `Model` - Contains:
   - Identity: id (uint32), compartmentId (UUID), slot (int16), templateId (uint32), expiration, createdAt
   - Stackable fields: quantity, ownerId, flag, rechargeable
-  - Equipment fields: strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, locked, spikes, karmaUsed, cold, canBeTraded, levelType, level, experience, hammersApplied, equippedSince
+  - Equipment fields: strength, dexterity, intelligence, luck, hp, mp, weaponAttack, magicAttack, weaponDefense, magicDefense, accuracy, avoidability, hands, speed, jump, slots, levelType, level, experience, hammersApplied, equippedSince
   - Cash fields: cashId, commodityId, purchaseBy
   - Pet reference: petId
 - `ModelBuilder` - Builder with setters for all fields; constructed via `NewBuilder(compartmentId, templateId)` or `Clone(model)`

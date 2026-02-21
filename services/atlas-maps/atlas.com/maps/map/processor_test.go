@@ -67,6 +67,10 @@ func (m *mockCharacterProcessor) GetCharactersInMap(transactionId uuid.UUID, f f
 	return nil, nil
 }
 
+func (m *mockCharacterProcessor) GetCharactersInMapAllInstances(_ uuid.UUID, _ world.Id, _ channel.Id, _ _map.Id) ([]uint32, error) {
+	return nil, nil
+}
+
 func (m *mockCharacterProcessor) GetMapsWithCharacters() []character.MapKey {
 	if m.getMapsWithCharactersFunc != nil {
 		return m.getMapsWithCharactersFunc()

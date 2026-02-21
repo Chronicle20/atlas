@@ -833,6 +833,10 @@ func (m *mockCharacterProcessor) GetMapsWithCharacters() []character.MapKey {
 	return keys
 }
 
+func (m *mockCharacterProcessor) GetCharactersInMapAllInstances(_ uuid.UUID, _ world.Id, _ channel.Id, _ _map.Id) ([]uint32, error) {
+	return nil, nil
+}
+
 func (m *mockCharacterProcessor) Enter(_ uuid.UUID, _ field.Model, _ uint32) {
 }
 

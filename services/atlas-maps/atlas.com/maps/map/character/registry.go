@@ -2,6 +2,12 @@ package character
 
 import (
 	"sync"
+
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-tenant"
 )
 
 type Registry struct {
@@ -61,6 +67,21 @@ func (r *Registry) GetInMap(key MapKey) []uint32 {
 	r.mutex.RLock()
 	defer r.mutex.RUnlock()
 	return r.characterRegister[key]
+}
+
+func (r *Registry) GetInMapAllInstances(t tenant.Model, worldId world.Id, channelId channel.Id, mapId _map.Id) []uint32 {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+	result := make([]uint32, 0)
+	ref := field.NewBuilder(worldId, channelId, mapId).Build()
+	for mk, chars := range r.characterRegister {
+		if mk.Tenant == t && mk.Field.SameMap(ref) {
+			for _, c := range chars {
+				result = appendIfMissing(result, c)
+			}
+		}
+	}
+	return result
 }
 
 func (r *Registry) GetMapsWithCharacters() []MapKey {

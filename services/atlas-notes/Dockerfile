@@ -16,6 +16,7 @@ COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 COPY libs/atlas-database/go.mod libs/atlas-database/go.sum libs/atlas-database/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
 COPY services/atlas-notes/atlas.com/notes/go.mod services/atlas-notes/atlas.com/notes/go.sum services/atlas-notes/atlas.com/notes/
 
@@ -32,6 +33,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-notes/atlas.com/notes' >> go.work && \
+    echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
 
 # Download dependencies
@@ -47,6 +49,7 @@ COPY libs/atlas-tenant libs/atlas-tenant
 COPY libs/atlas-database libs/atlas-database
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
 COPY services/atlas-notes/atlas.com/notes services/atlas-notes/atlas.com/notes
 

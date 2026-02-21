@@ -15,6 +15,7 @@ COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
+COPY libs/atlas-saga/go.mod libs/atlas-saga/
 # Copy service module definitions
 COPY services/atlas-query-aggregator/atlas.com/query-aggregator/go.mod services/atlas-query-aggregator/atlas.com/query-aggregator/go.sum services/atlas-query-aggregator/atlas.com/query-aggregator/
 
@@ -30,6 +31,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-query-aggregator/atlas.com/query-aggregator' >> go.work && \
+    echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
 
 # Download dependencies
@@ -44,6 +46,7 @@ COPY libs/atlas-tenant libs/atlas-tenant
 
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-saga libs/atlas-saga
 # Copy service source code
 COPY services/atlas-query-aggregator/atlas.com/query-aggregator services/atlas-query-aggregator/atlas.com/query-aggregator
 

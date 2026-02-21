@@ -5,12 +5,12 @@ import (
 	"atlas-reactor-actions/kafka/producer"
 	"context"
 
-	scriptsaga "github.com/Chronicle20/atlas-script-core/saga"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 	"github.com/sirupsen/logrus"
 )
 
 type Processor interface {
-	Create(s scriptsaga.Saga) error
+	Create(s sharedsaga.Saga) error
 }
 
 type ProcessorImpl struct {
@@ -25,6 +25,6 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 	}
 }
 
-func (p *ProcessorImpl) Create(s scriptsaga.Saga) error {
+func (p *ProcessorImpl) Create(s sharedsaga.Saga) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(saga.EnvCommandTopic)(CreateCommandProvider(s))
 }

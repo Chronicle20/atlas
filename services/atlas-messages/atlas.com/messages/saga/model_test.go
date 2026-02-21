@@ -12,17 +12,17 @@ import (
 func TestSaga_Failing(t *testing.T) {
 	testCases := []struct {
 		name     string
-		steps    []Step[any]
+		steps    []Step
 		expected bool
 	}{
 		{
 			name:     "No steps - not failing",
-			steps:    []Step[any]{},
+			steps:    []Step{},
 			expected: false,
 		},
 		{
 			name: "All pending - not failing",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 				{StepId: "step2", Status: Pending},
 			},
@@ -30,7 +30,7 @@ func TestSaga_Failing(t *testing.T) {
 		},
 		{
 			name: "All completed - not failing",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Completed},
 			},
@@ -38,7 +38,7 @@ func TestSaga_Failing(t *testing.T) {
 		},
 		{
 			name: "One failed - failing",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Failed},
 			},
@@ -46,7 +46,7 @@ func TestSaga_Failing(t *testing.T) {
 		},
 		{
 			name: "First step failed - failing",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Failed},
 				{StepId: "step2", Status: Pending},
 			},
@@ -72,19 +72,19 @@ func TestSaga_Failing(t *testing.T) {
 func TestSaga_GetCurrentStep(t *testing.T) {
 	testCases := []struct {
 		name          string
-		steps         []Step[any]
+		steps         []Step
 		expectedId    string
 		expectedFound bool
 	}{
 		{
 			name:          "No steps",
-			steps:         []Step[any]{},
+			steps:         []Step{},
 			expectedId:    "",
 			expectedFound: false,
 		},
 		{
 			name: "All completed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Completed},
 			},
@@ -93,7 +93,7 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 		},
 		{
 			name: "First pending",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 				{StepId: "step2", Status: Pending},
 			},
@@ -102,7 +102,7 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 		},
 		{
 			name: "Second pending",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Pending},
 			},
@@ -134,17 +134,17 @@ func TestSaga_GetCurrentStep(t *testing.T) {
 func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 	testCases := []struct {
 		name     string
-		steps    []Step[any]
+		steps    []Step
 		expected int
 	}{
 		{
 			name:     "No steps",
-			steps:    []Step[any]{},
+			steps:    []Step{},
 			expected: -1,
 		},
 		{
 			name: "No completed steps",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 				{StepId: "step2", Status: Pending},
 			},
@@ -152,7 +152,7 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 		},
 		{
 			name: "First completed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Pending},
 			},
@@ -160,7 +160,7 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 		},
 		{
 			name: "All completed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Completed},
 				{StepId: "step3", Status: Completed},
@@ -169,7 +169,7 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 		},
 		{
 			name: "Middle completed, last failed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Completed},
 				{StepId: "step3", Status: Failed},
@@ -196,17 +196,17 @@ func TestSaga_FindFurthestCompletedStepIndex(t *testing.T) {
 func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 	testCases := []struct {
 		name     string
-		steps    []Step[any]
+		steps    []Step
 		expected int
 	}{
 		{
 			name:     "No steps",
-			steps:    []Step[any]{},
+			steps:    []Step{},
 			expected: -1,
 		},
 		{
 			name: "No pending steps",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Completed},
 			},
@@ -214,7 +214,7 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 		},
 		{
 			name: "First pending",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 				{StepId: "step2", Status: Pending},
 			},
@@ -222,7 +222,7 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 		},
 		{
 			name: "Second pending",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Completed},
 				{StepId: "step2", Status: Pending},
 				{StepId: "step3", Status: Pending},
@@ -249,7 +249,7 @@ func TestSaga_FindEarliestPendingStepIndex(t *testing.T) {
 func TestSaga_SetStepStatus(t *testing.T) {
 	testCases := []struct {
 		name           string
-		steps          []Step[any]
+		steps          []Step
 		index          int
 		newStatus      Status
 		expectedStatus Status
@@ -257,7 +257,7 @@ func TestSaga_SetStepStatus(t *testing.T) {
 	}{
 		{
 			name: "Valid index - change to completed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 			},
 			index:          0,
@@ -267,7 +267,7 @@ func TestSaga_SetStepStatus(t *testing.T) {
 		},
 		{
 			name: "Valid index - change to failed",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 			},
 			index:          0,
@@ -277,7 +277,7 @@ func TestSaga_SetStepStatus(t *testing.T) {
 		},
 		{
 			name: "Invalid negative index",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 			},
 			index:          -1,
@@ -287,7 +287,7 @@ func TestSaga_SetStepStatus(t *testing.T) {
 		},
 		{
 			name: "Invalid index beyond length",
-			steps: []Step[any]{
+			steps: []Step{
 				{StepId: "step1", Status: Pending},
 			},
 			index:          5,
@@ -327,7 +327,7 @@ func TestSagaJSON_Marshaling(t *testing.T) {
 		TransactionId: transactionId,
 		SagaType:      InventoryTransaction,
 		InitiatedBy:   "atlas-messages",
-		Steps: []Step[any]{
+		Steps: []Step{
 			{
 				StepId:    "give_item",
 				Status:    Pending,
@@ -385,7 +385,7 @@ func TestStep_UnmarshalJSON_AwardExperience(t *testing.T) {
 		"updatedAt": "2026-01-13T00:00:00Z"
 	}`
 
-	var step Step[any]
+	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal step: %v", err)
@@ -430,7 +430,7 @@ func TestStep_UnmarshalJSON_AwardAsset(t *testing.T) {
 		"updatedAt": "2026-01-13T00:00:00Z"
 	}`
 
-	var step Step[any]
+	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal step: %v", err)
@@ -471,7 +471,7 @@ func TestStep_UnmarshalJSON_AwardMesos(t *testing.T) {
 		"updatedAt": "2026-01-13T00:00:00Z"
 	}`
 
-	var step Step[any]
+	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal step: %v", err)
@@ -506,7 +506,7 @@ func TestStep_UnmarshalJSON_ChangeJob(t *testing.T) {
 		"updatedAt": "2026-01-13T00:00:00Z"
 	}`
 
-	var step Step[any]
+	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal step: %v", err)
@@ -527,16 +527,21 @@ func TestStep_UnmarshalJSON_UnknownAction(t *testing.T) {
 		"stepId": "unknown",
 		"status": "pending",
 		"action": "unknown_action",
-		"payload": {},
+		"payload": {"key": "value"},
 		"createdAt": "2026-01-13T00:00:00Z",
 		"updatedAt": "2026-01-13T00:00:00Z"
 	}`
 
-	var step Step[any]
+	var step Step
 	err := json.Unmarshal([]byte(jsonData), &step)
 
-	if err == nil {
-		t.Error("Expected error for unknown action, got nil")
+	// Shared library handles unknown actions gracefully by unmarshaling payload to map[string]any
+	if err != nil {
+		t.Errorf("Unexpected error for unknown action: %v", err)
+	}
+
+	if step.Action != "unknown_action" {
+		t.Errorf("Expected action 'unknown_action', got '%s'", step.Action)
 	}
 }
 
@@ -611,7 +616,7 @@ func TestStep_UnmarshalJSON_AllActions(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			var step Step[any]
+			var step Step
 			err := json.Unmarshal([]byte(tc.jsonData), &step)
 			if err != nil {
 				t.Fatalf("Failed to unmarshal %s: %v", tc.name, err)

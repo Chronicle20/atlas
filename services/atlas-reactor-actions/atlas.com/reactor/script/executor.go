@@ -10,7 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-script-core/operation"
-	"github.com/Chronicle20/atlas-script-core/saga"
+	"github.com/Chronicle20/atlas-saga"
 	"github.com/Chronicle20/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )

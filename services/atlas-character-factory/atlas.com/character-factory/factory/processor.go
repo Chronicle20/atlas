@@ -167,7 +167,7 @@ func buildCharacterCreationOnlySaga(transactionId uuid.UUID, input RestModel) sa
 		Mp:           input.Mp,
 		Face:         input.Face,
 		Hair:         input.Hair + input.HairColor,
-		Skin:         uint32(input.SkinColor),
+		Skin:         input.SkinColor,
 		Top:          input.Top,
 		Bottom:       input.Bottom,
 		Shoes:        input.Shoes,

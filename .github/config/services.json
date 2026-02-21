@@ -470,6 +470,12 @@
       "module_path": "libs/atlas-rest"
     },
     {
+      "name": "atlas-saga",
+      "type": "go-library",
+      "path": "libs/atlas-saga",
+      "module_path": "libs/atlas-saga"
+    },
+    {
       "name": "atlas-service",
       "type": "go-library",
       "path": "libs/atlas-service",

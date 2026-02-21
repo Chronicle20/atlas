@@ -1,18 +1,18 @@
 package validation
 
-import "strconv"
+import (
+	"strconv"
 
-const (
-	ItemCondition = "item"
+	sharedsaga "github.com/Chronicle20/atlas-saga"
 )
 
-// ConditionInput represents a validation condition to check against character state
-type ConditionInput struct {
-	Type        string `json:"type"`
-	Operator    string `json:"operator"`
-	Value       int    `json:"value"`
-	ReferenceId uint32 `json:"referenceId,omitempty"`
-}
+const (
+	ItemCondition = sharedsaga.ItemCondition
+)
+
+// ConditionInput is the wire format for validation condition inputs.
+// Re-exported from atlas-saga shared library.
+type ConditionInput = sharedsaga.ValidationConditionInput
 
 // RequestModel represents the validation request to query-aggregator
 type RequestModel struct {

@@ -41,6 +41,10 @@ data:
         proxy_set_header MAJOR_VERSION $http_major_version;
         proxy_set_header MINOR_VERSION $http_minor_version;
 
+        location ~ ^/api/merchants(/.*)?$ {
+          proxy_pass http://atlas-merchant.atlas.svc.cluster.local:8080;
+        }
+
         location ~ ^/api/messengers(/.*)?$ {
           proxy_pass http://atlas-messengers.atlas.svc.cluster.local:8080;
         }

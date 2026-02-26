@@ -42,6 +42,7 @@ use (
 	./services/atlas-map-actions/atlas.com/map-actions
 	./services/atlas-maps/atlas.com/maps
 	./services/atlas-marriages/atlas.com/marriages
+	./services/atlas-merchant/atlas.com/merchant
 	./services/atlas-messages/atlas.com/messages
 	./services/atlas-messengers/atlas.com/messengers
 	./services/atlas-monster-death/atlas.com/monster

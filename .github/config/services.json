@@ -244,6 +244,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-merchant",
+      "type": "go-service",
+      "path": "services/atlas-merchant",
+      "module_path": "services/atlas-merchant/atlas.com/merchant",
+      "docker_image": "ghcr.io/chronicle20/atlas-merchant/atlas-merchant",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-messages",
       "type": "go-service",
       "path": "services/atlas-messages",

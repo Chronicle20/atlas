@@ -20,7 +20,7 @@ type StatusEvent[E any] struct {
 
 type StatusEventAcceptedBody struct {
 	TransactionId uuid.UUID `json:"transactionId"`
-	AssetId       uuid.UUID `json:"assetId"`
+	AssetId       uint32    `json:"assetId"`
 }
 
 type StatusEventReleasedBody struct {

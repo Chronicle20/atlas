@@ -2,6 +2,7 @@ package asset
 
 import (
 	"atlas-channel/cashshop/item"
+	"strconv"
 
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -9,7 +10,7 @@ import (
 
 // RestModel represents a cash shop inventory asset for REST API
 type RestModel struct {
-	Id            uuid.UUID      `json:"-"`
+	Id            uint32         `json:"-"`
 	CompartmentId uuid.UUID      `json:"compartmentId"`
 	Item          item.RestModel `json:"-"`
 }
@@ -21,16 +22,19 @@ func (r RestModel) GetName() string {
 
 // GetID returns the resource ID
 func (r RestModel) GetID() string {
-	return r.Id.String()
+	return strconv.Itoa(int(r.Id))
 }
 
 // SetID sets the resource ID
 func (r *RestModel) SetID(strId string) error {
-	id, err := uuid.Parse(strId)
+	if strId == "" {
+		return nil
+	}
+	id, err := strconv.Atoi(strId)
 	if err != nil {
 		return err
 	}
-	r.Id = id
+	r.Id = uint32(id)
 	return nil
 }
 

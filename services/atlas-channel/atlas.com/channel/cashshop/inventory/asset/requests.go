@@ -16,8 +16,8 @@ func getBaseRequest() string {
 }
 
 // requestById creates a GET request for a specific asset by ID
-func requestById(accountId uint32, compartmentId uuid.UUID, assetId uuid.UUID) requests.Request[RestModel] {
-	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"/%s", accountId, compartmentId.String(), assetId.String()))
+func requestById(accountId uint32, compartmentId uuid.UUID, assetId uint32) requests.Request[RestModel] {
+	return requests.GetRequest[RestModel](fmt.Sprintf(getBaseRequest()+Resource+"/%d", accountId, compartmentId.String(), assetId))
 }
 
 // requestByCompartmentId creates a GET request for all assets in a compartment

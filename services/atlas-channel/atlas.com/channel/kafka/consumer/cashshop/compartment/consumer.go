@@ -61,13 +61,13 @@ func handleAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 			return
 		}
 
-		l.Debugf("Cash-shop compartment accepted item. CharacterId: [%d], AssetId: [%s].", e.CharacterId, e.Body.AssetId)
+		l.Debugf("Cash-shop compartment accepted item. CharacterId: [%d], AssetId: [%d].", e.CharacterId, e.Body.AssetId)
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
 			// Fetch the cash-shop asset that was just created
 			a, err := asset.NewProcessor(l, ctx).GetById(e.AccountId, e.CompartmentId, e.Body.AssetId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve cash-shop asset with ID [%s] for character [%d].", e.Body.AssetId, e.CharacterId)
+				l.WithError(err).Errorf("Unable to retrieve cash-shop asset with ID [%d] for character [%d].", e.Body.AssetId, e.CharacterId)
 				return err
 			}
 

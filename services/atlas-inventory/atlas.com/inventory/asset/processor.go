@@ -371,16 +371,26 @@ func (p *Processor) CreateFromModel(mb *message.Buffer) func(transactionId uuid.
 func (p *Processor) Accept(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, slot int16, m Model) (Model, error) {
 		p.l.Debugf("Character [%d] attempting to accept asset template [%d] in slot [%d] of compartment [%s].", characterId, m.TemplateId(), slot, compartmentId.String())
+
+		b := Clone(m).
+			SetCompartmentId(compartmentId).
+			SetSlot(slot).
+			SetCreatedAt(time.Now())
+
+		invType, ok := inventory.TypeFromItemId(item.Id(m.TemplateId()))
+		if ok && invType == inventory.TypeValueCash && item.GetClassification(item.Id(m.TemplateId())) == item.ClassificationPet && m.PetId() == 0 {
+			pe, err := p.petProcessor.Create(characterId, m.TemplateId())
+			if err != nil {
+				p.l.WithError(err).Errorf("Unable to create pet for template [%d] for character [%d].", m.TemplateId(), characterId)
+				return Model{}, err
+			}
+			b.SetPetId(pe.Id())
+		}
+
 		var a Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			nm := Clone(m).
-				SetCompartmentId(compartmentId).
-				SetSlot(slot).
-				SetCreatedAt(time.Now()).
-				Build()
-
 			var err error
-			a, err = create(tx, p.t.Id(), nm)
+			a, err = create(tx, p.t.Id(), b.Build())
 			if err != nil {
 				return err
 			}

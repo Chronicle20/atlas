@@ -1,9 +1,7 @@
 package compartment
 
 import (
-	charAsset "atlas-channel/asset"
 	"atlas-channel/cashshop/inventory/asset"
-	charCompartment "atlas-channel/compartment"
 	consumer2 "atlas-channel/kafka/consumer"
 	cashshopCompartment "atlas-channel/kafka/message/cashshop/compartment"
 	"atlas-channel/server"
@@ -11,8 +9,6 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -83,6 +79,8 @@ func handleAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 }
 
 // handleReleasedEvent handles when cash-shop compartment releases an item (item moved FROM cash-shop TO character)
+// Note: The client notification (CashShopCashItemMovedToInventory) is handled by the asset ACCEPTED event
+// consumer, which fires after the item has actually been accepted into the character's inventory.
 func handleReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[cashshopCompartment.StatusEvent[cashshopCompartment.StatusEventReleasedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e cashshopCompartment.StatusEvent[cashshopCompartment.StatusEventReleasedBody]) {
 		if e.Type != cashshopCompartment.StatusEventTypeReleased {
@@ -95,49 +93,5 @@ func handleReleasedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 		}
 
 		l.Debugf("Cash-shop compartment released item. CharacterId: [%d], CashId: [%d], TemplateId: [%d].", e.CharacterId, e.Body.CashId, e.Body.TemplateId)
-
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			// Determine the inventory type from the template ID
-			invType, ok := inventory.TypeFromItemId(item.Id(e.Body.TemplateId))
-			if !ok {
-				l.Errorf("Unable to determine inventory type for template [%d].", e.Body.TemplateId)
-				return nil
-			}
-
-			// Query the character's inventory compartment to find the asset with matching CashId
-			comp, err := charCompartment.NewProcessor(l, ctx).ByCharacterIdAndTypeProvider(e.CharacterId, invType)()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve character [%d] inventory compartment type [%d].", e.CharacterId, invType)
-				return err
-			}
-
-			// Find the asset with matching CashId
-			var foundAsset *charAsset.Model
-			for _, a := range comp.Assets() {
-				if a.CashId() == e.Body.CashId {
-					assetCopy := a
-					foundAsset = &assetCopy
-					break
-				}
-			}
-
-			if foundAsset == nil {
-				l.Errorf("Unable to find asset with CashId [%d] in character [%d] inventory.", e.Body.CashId, e.CharacterId)
-				return nil
-			}
-
-			// Notify the client that the item was moved to inventory
-			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashItemMovedToInventoryBody(l, t)(*foundAsset))(s)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to announce cash item moved to inventory for character [%d].", e.CharacterId)
-				return err
-			}
-			return nil
-		})
 	}
-}
-
-// getCashIdFromAsset extracts the CashId from a flat asset model
-func getCashIdFromAsset(a charAsset.Model) int64 {
-	return a.CashId()
 }

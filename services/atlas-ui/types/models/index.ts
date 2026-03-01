@@ -18,3 +18,4 @@ export * from './reactor';
 export * from './drop';
 export * from './portal';
 export * from './gachapon';
+export * from './wallet';

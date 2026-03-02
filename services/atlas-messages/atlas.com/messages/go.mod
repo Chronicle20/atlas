@@ -1,6 +1,6 @@
 module atlas-messages
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/Chronicle20/atlas-constants v1.0.20
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.40.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.40.0
 	go.opentelemetry.io/otel/sdk v1.40.0
-	golang.org/x/net v0.50.0
+	golang.org/x/net v0.51.0
 )
 
 require (

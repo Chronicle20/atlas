@@ -13,6 +13,7 @@ type RestModel struct {
 	CommodityId   uint32    `json:"commodityId"`
 	Quantity      uint32    `json:"quantity"`
 	Flag          uint16    `json:"flag"`
+	PetId         uint32    `json:"petId"`
 	PurchasedBy   uint32    `json:"purchasedBy"`
 	Expiration    time.Time `json:"expiration"`
 	CreatedAt     time.Time `json:"createdAt"`
@@ -47,6 +48,7 @@ func Transform(a Model) (RestModel, error) {
 		CommodityId:   a.CommodityId(),
 		Quantity:      a.Quantity(),
 		Flag:          a.Flag(),
+		PetId:         a.PetId(),
 		PurchasedBy:   a.PurchasedBy(),
 		Expiration:    a.Expiration(),
 		CreatedAt:     a.CreatedAt(),
@@ -61,6 +63,7 @@ func Extract(rm RestModel) (Model, error) {
 		commodityId: rm.CommodityId,
 		quantity:    rm.Quantity,
 		flag:        rm.Flag,
+		petId:       rm.PetId,
 		purchasedBy: rm.PurchasedBy,
 		expiration:  rm.Expiration,
 		createdAt:   rm.CreatedAt,

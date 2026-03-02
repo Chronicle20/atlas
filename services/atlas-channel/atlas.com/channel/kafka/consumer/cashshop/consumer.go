@@ -96,7 +96,7 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 			// Retrieve the asset that was purchased
 			a, err := asset.NewProcessor(l, ctx).GetById(s.AccountId(), e.Body.CompartmentId, e.Body.AssetId)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve asset [%s] for character [%d].", e.Body.AssetId, e.CharacterId)
+				l.WithError(err).Errorf("Unable to retrieve asset [%d] for character [%d].", e.Body.AssetId, e.CharacterId)
 				return err
 			}
 

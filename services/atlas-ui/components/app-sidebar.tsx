@@ -18,6 +18,7 @@ import {Cog, MonitorCog, Shield} from "lucide-react";
 import {Collapsible, CollapsibleContent, CollapsibleTrigger} from "@/components/ui/collapsible";
 import Link from "next/link";
 import Image from "next/image";
+import {usePathname} from "next/navigation";
 import {TenantSwitcher} from "@/components/app-tenant-switcher";
 import logoImage from "@/app/logo.png";
 
@@ -111,14 +112,16 @@ const items = [
 ]
 
 export function AppSidebar() {
+    const pathname = usePathname()
+
     return (
         <Sidebar>
             <SidebarHeader>
                 <Link key="/" href="/">
                 <div className="h-[210px] flex items-center justify-center">
-                    <Image 
-                        src={logoImage} 
-                        alt="Logo" 
+                    <Image
+                        src={logoImage}
+                        alt="Logo"
                         width={210}
                         height={210}
                         priority
@@ -131,33 +134,39 @@ export function AppSidebar() {
                 <SidebarGroup>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {items.map((item) => (
-                                <Collapsible key={item.title}>
+                            {items.map((item) => {
+                                const isGroupActive = item.children.some((child) =>
+                                    pathname === child.url || pathname.startsWith(child.url + "/")
+                                )
+                                return (
+                                <Collapsible key={item.title} defaultOpen={isGroupActive}>
                                 <SidebarMenuItem className="group/collapsible">
                                     <CollapsibleTrigger asChild>
-                                    <SidebarMenuButton asChild>
-                                        <a href={item.url}>
-                                            <item.icon />
-                                            <span>{item.title}</span>
-                                        </a>
+                                    <SidebarMenuButton>
+                                        <item.icon />
+                                        <span>{item.title}</span>
                                     </SidebarMenuButton>
                                     </CollapsibleTrigger>
                                     <CollapsibleContent>
                                     <SidebarMenuSub>
-                                        {item.children.map((child) => (
+                                        {item.children.map((child) => {
+                                            const isActive = pathname === child.url || pathname.startsWith(child.url + "/")
+                                            return (
                                             <SidebarMenuSubItem key={child.title}>
-                                                <SidebarMenuSubButton asChild>
+                                                <SidebarMenuSubButton asChild isActive={isActive}>
                                                     <Link href={child.url}>
                                                         <span>{child.title}</span>
                                                     </Link>
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>
-                                        ))}
+                                            )
+                                        })}
                                     </SidebarMenuSub>
                                     </CollapsibleContent>
                                 </SidebarMenuItem>
                                 </Collapsible>
-                            ))}
+                                )
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>

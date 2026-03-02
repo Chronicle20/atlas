@@ -7,21 +7,21 @@ import (
 	"github.com/google/uuid"
 )
 
-// ErrInvalidId is returned when the id is invalid (zero UUID)
-var ErrInvalidId = errors.New("id must not be zero UUID")
+// ErrInvalidId is returned when the id is invalid (zero)
+var ErrInvalidId = errors.New("id must not be zero")
 
 // ErrInvalidCompartmentId is returned when the compartmentId is invalid (zero UUID)
 var ErrInvalidCompartmentId = errors.New("compartmentId must not be zero UUID")
 
 // modelBuilder is a builder for the Model
 type modelBuilder struct {
-	id            uuid.UUID
+	id            uint32
 	compartmentId uuid.UUID
 	item          item.Model
 }
 
 // NewModelBuilder creates a new modelBuilder with required fields
-func NewModelBuilder(id uuid.UUID, compartmentId uuid.UUID, i item.Model) *modelBuilder {
+func NewModelBuilder(id uint32, compartmentId uuid.UUID, i item.Model) *modelBuilder {
 	return &modelBuilder{
 		id:            id,
 		compartmentId: compartmentId,
@@ -39,7 +39,7 @@ func CloneModel(m Model) *modelBuilder {
 }
 
 // SetId sets the id for this builder
-func (b *modelBuilder) SetId(id uuid.UUID) *modelBuilder {
+func (b *modelBuilder) SetId(id uint32) *modelBuilder {
 	b.id = id
 	return b
 }
@@ -58,7 +58,7 @@ func (b *modelBuilder) SetItem(i item.Model) *modelBuilder {
 
 // Build creates a Model from this builder
 func (b *modelBuilder) Build() (Model, error) {
-	if b.id == uuid.Nil {
+	if b.id == 0 {
 		return Model{}, ErrInvalidId
 	}
 	if b.compartmentId == uuid.Nil {

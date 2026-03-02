@@ -8,6 +8,7 @@ import {Button} from "@/components/ui/button";
 import {MoreHorizontal, LogOut, Shield, ShieldOff, Loader2} from "lucide-react";
 import {accountsService} from "@/services/api/accounts.service";
 import {Account} from "@/types/models/account";
+import Link from "next/link";
 import type {Tenant} from "@/types/models/tenant";
 import type {CheckBanAttributes} from "@/types/models/ban";
 import {toast} from "sonner";
@@ -205,6 +206,12 @@ function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount,
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                    <DropdownMenuItem asChild>
+                        <Link href={"/accounts/" + account.id}>
+                            View Account
+                        </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
                     <DropdownMenuItem disabled={account.attributes.loggedIn === 0} onClick={handleLogout}>
                         Logout
                     </DropdownMenuItem>

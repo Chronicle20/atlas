@@ -14,6 +14,7 @@ type Model struct {
 	commodityId   uint32
 	quantity      uint32
 	flag          uint16
+	petId         uint32
 	purchasedBy   uint32
 	expiration    time.Time
 	createdAt     time.Time
@@ -47,6 +48,10 @@ func (m Model) Flag() uint16 {
 	return m.flag
 }
 
+func (m Model) PetId() uint32 {
+	return m.petId
+}
+
 func (m Model) PurchasedBy() uint32 {
 	return m.purchasedBy
 }
@@ -68,6 +73,7 @@ func Clone(m Model) *ModelBuilder {
 		commodityId:   m.commodityId,
 		quantity:      m.quantity,
 		flag:          m.flag,
+		petId:         m.petId,
 		purchasedBy:   m.purchasedBy,
 		expiration:    m.expiration,
 		createdAt:     m.createdAt,
@@ -82,6 +88,7 @@ type ModelBuilder struct {
 	commodityId   uint32
 	quantity      uint32
 	flag          uint16
+	petId         uint32
 	purchasedBy   uint32
 	expiration    time.Time
 	createdAt     time.Time
@@ -129,6 +136,11 @@ func (b *ModelBuilder) SetFlag(flag uint16) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetPetId(petId uint32) *ModelBuilder {
+	b.petId = petId
+	return b
+}
+
 func (b *ModelBuilder) SetPurchasedBy(purchasedBy uint32) *ModelBuilder {
 	b.purchasedBy = purchasedBy
 	return b
@@ -153,6 +165,7 @@ func (b *ModelBuilder) Build() Model {
 		commodityId:   b.commodityId,
 		quantity:      b.quantity,
 		flag:          b.flag,
+		petId:         b.petId,
 		purchasedBy:   b.purchasedBy,
 		expiration:    b.expiration,
 		createdAt:     b.createdAt,

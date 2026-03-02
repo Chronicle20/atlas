@@ -2,12 +2,15 @@ package pet
 
 import (
 	"atlas-data/xml"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
 	"testing"
 
 	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -35,7 +38,13 @@ func GetServer() Server {
 func TestRest(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	input, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	input, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
 	if err != nil {
 		t.Fatal(err)
 	}

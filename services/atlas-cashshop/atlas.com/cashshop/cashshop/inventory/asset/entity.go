@@ -20,6 +20,7 @@ type Entity struct {
 	CommodityId   uint32         `gorm:"not null;default:0"`
 	Quantity      uint32         `gorm:"not null"`
 	Flag          uint16         `gorm:"not null"`
+	PetId         uint32         `gorm:"not null;default:0"`
 	PurchasedBy   uint32         `gorm:"not null"`
 	Expiration    time.Time      `gorm:"not null"`
 	CreatedAt     time.Time      `gorm:"not null"`
@@ -37,6 +38,7 @@ func Make(e Entity) (Model, error) {
 		SetCommodityId(e.CommodityId).
 		SetQuantity(e.Quantity).
 		SetFlag(e.Flag).
+		SetPetId(e.PetId).
 		SetPurchasedBy(e.PurchasedBy).
 		SetExpiration(e.Expiration).
 		SetCreatedAt(e.CreatedAt).

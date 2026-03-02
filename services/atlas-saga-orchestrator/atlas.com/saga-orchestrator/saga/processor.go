@@ -1158,6 +1158,7 @@ func (p *ProcessorImpl) expandWithdrawFromCashShop(st Step[any]) ([]Step[any], e
 		Flag:        foundAsset.Flag,
 		CashId:      foundAsset.CashId,
 		CommodityId: foundAsset.CommodityId,
+		PetId:       foundAsset.PetId,
 		PurchaseBy:  foundAsset.PurchasedBy,
 		Expiration:  foundAsset.Expiration,
 	}

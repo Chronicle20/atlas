@@ -96,7 +96,7 @@ func handleCreateAsset(db *gorm.DB) rest.InputHandler[RestModel] {
 				return
 			}
 
-			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.CompartmentId(), im.TemplateId(), im.CommodityId(), im.Quantity(), im.PurchasedBy())
+			m, err := NewProcessor(d.Logger(), d.Context(), db).CreateAndEmit(im.CompartmentId(), im.TemplateId(), im.CommodityId(), im.Quantity(), im.PetId(), im.PurchasedBy())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating asset.")
 				w.WriteHeader(http.StatusInternalServerError)

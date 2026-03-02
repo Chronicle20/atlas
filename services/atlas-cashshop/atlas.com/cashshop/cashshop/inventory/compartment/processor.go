@@ -283,7 +283,7 @@ func (p *ProcessorImpl) Accept(mb *message.Buffer) func(accountId uint32, charac
 		}
 
 		// Create the flattened asset directly with preserved cashId
-		createdAsset, err := p.astP.CreateWithCashId(mb)(id, cashId, templateId, commodityId, quantity, purchasedBy)
+		createdAsset, err := p.astP.CreateWithCashId(mb)(id, cashId, templateId, commodityId, quantity, 0, purchasedBy)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to create asset for compartment [%s] with cashId [%d] template ID [%d].", id, cashId, templateId)
 			_ = mb.Put(compartment.EnvEventTopicStatus, compartmentProducer.ErrorStatusEventProvider(id, byte(type_), "ASSET_CREATION_FAILED", transactionId))

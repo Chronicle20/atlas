@@ -10,15 +10,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type Processor struct {
+type Processor interface {
+	SendMessage(shopId uuid.UUID, characterId uint32, content string) error
+	GetMessages(shopId uuid.UUID) ([]Model, error)
+}
+
+type ProcessorImpl struct {
 	l   logrus.FieldLogger
 	ctx context.Context
 	db  *gorm.DB
 	t   tenant.Model
 }
 
-func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
-	return &Processor{
+func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
+	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		db:  db,
@@ -27,12 +32,12 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 }
 
 // SendMessage persists a chat message for a shop.
-func (p *Processor) SendMessage(shopId uuid.UUID, characterId uint32, content string) error {
+func (p *ProcessorImpl) SendMessage(shopId uuid.UUID, characterId uint32, content string) error {
 	_, err := create(p.t.Id(), shopId, characterId, content)(p.db.WithContext(p.ctx))()
 	return err
 }
 
 // GetMessages retrieves all messages for a shop.
-func (p *Processor) GetMessages(shopId uuid.UUID) ([]Model, error) {
+func (p *ProcessorImpl) GetMessages(shopId uuid.UUID) ([]Model, error) {
 	return model.SliceMap(Make)(getByShopId(shopId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }

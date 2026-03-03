@@ -6,6 +6,7 @@ import (
 	"atlas-merchant/kafka/message/compartment"
 	message "atlas-merchant/kafka/message"
 	merchant "atlas-merchant/kafka/message/merchant"
+	"atlas-merchant/listing"
 	"encoding/json"
 	"errors"
 
@@ -109,6 +110,24 @@ func (p *ProcessorImpl) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) er
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
 		return buf.Put(merchant.EnvStatusEventTopic, StatusEventVisitorExitedProvider(characterId, shopId))
 	})
+}
+
+func (p *ProcessorImpl) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+	created, err := p.AddListing(shopId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag)
+	if err != nil {
+		return listing.Model{}, err
+	}
+
+	quantity := uint32(bundleSize) * uint32(bundleCount)
+	err = message.Emit(p.producer)(func(buf *message.Buffer) error {
+		transactionId := uuid.New()
+		return buf.Put(compartment.EnvCommandTopic, ReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId, quantity))
+	})
+	if err != nil {
+		return created, err
+	}
+
+	return created, nil
 }
 
 func (p *ProcessorImpl) PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {

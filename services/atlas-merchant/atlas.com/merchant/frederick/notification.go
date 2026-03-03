@@ -101,9 +101,13 @@ func processNotifications(l logrus.FieldLogger, ctx context.Context, db *gorm.DB
 		// Advance to next notification tier or delete if final.
 		next, hasNext := nextTier(n.NextDay)
 		if hasNext {
-			db.WithContext(noTenantCtx).Model(&NotificationEntity{}).Where("id = ?", n.Id).Update("next_day", next)
+			if _, err := advanceNotification(n.Id, next)(db.WithContext(noTenantCtx))(); err != nil {
+				l.WithError(err).Errorf("Error advancing notification [%s] to tier %d.", n.Id, next)
+			}
 		} else {
-			db.WithContext(noTenantCtx).Where("id = ?", n.Id).Delete(&NotificationEntity{})
+			if _, err := deleteNotification(n.Id)(db.WithContext(noTenantCtx))(); err != nil {
+				l.WithError(err).Errorf("Error deleting final notification [%s].", n.Id)
+			}
 		}
 	}
 }

@@ -50,6 +50,7 @@ type Processor interface {
 	ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
+	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
 	PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error)
 }
 

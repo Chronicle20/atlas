@@ -1,0 +1,11 @@
+meta {
+  name: Get Merchant By Id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/merchants/{{shopId}}
+  body: none
+  auth: none
+}

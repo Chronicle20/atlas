@@ -158,18 +158,13 @@ func handleAddListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merc
 		}
 
 		p := shop.NewProcessor(l, ctx, db)
-		created, err := p.AddListing(shopId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, flag)
+		created, err := p.AddListingAndEmit(shopId, e.CharacterId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, flag, e.Body.InventoryType, e.Body.AssetId)
 		if err != nil {
 			l.WithError(err).Errorf("Error adding listing to shop [%s].", shopId)
 			return
 		}
 
-		// Release item from owner's inventory.
-		transactionId := uuid.New()
-		kp := producer.ProviderImpl(l)(ctx)
 		quantity := uint32(e.Body.BundleSize) * uint32(e.Body.BundleCount)
-		_ = kp(compartment.EnvCommandTopic)(shop.ReleaseAssetCommandProvider(transactionId, e.CharacterId, e.Body.InventoryType, e.Body.AssetId, quantity))
-
 		l.Infof("Listing [%s] added to shop [%s], releasing asset [%d] (qty %d) from inventory.", created.Id(), shopId, e.Body.AssetId, quantity)
 	}
 }

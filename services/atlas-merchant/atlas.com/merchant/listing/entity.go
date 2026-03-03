@@ -19,7 +19,6 @@ type Entity struct {
 	BundlesRemaining uint16    `gorm:"not null"`
 	PricePerBundle   uint32    `gorm:"not null"`
 	ItemSnapshot     []byte    `gorm:"type:jsonb"`
-	TransactionId    uuid.UUID `gorm:"type:uuid"`
 	DisplayOrder     uint16    `gorm:"not null;default:0"`
 	Version          uint32    `gorm:"not null;default:1"`
 	ListedAt         time.Time `gorm:"not null"`

@@ -118,6 +118,26 @@ func cleanupExpiredItems(cutoff time.Time) database.EntityProvider[int64] {
 	}
 }
 
+func advanceNotification(id uuid.UUID, nextDay uint16) database.EntityProvider[bool] {
+	return func(db *gorm.DB) model.Provider[bool] {
+		err := db.Model(&NotificationEntity{}).Where("id = ?", id).Update("next_day", nextDay).Error
+		if err != nil {
+			return model.ErrorProvider[bool](err)
+		}
+		return model.FixedProvider(true)
+	}
+}
+
+func deleteNotification(id uuid.UUID) database.EntityProvider[bool] {
+	return func(db *gorm.DB) model.Provider[bool] {
+		err := db.Where("id = ?", id).Delete(&NotificationEntity{}).Error
+		if err != nil {
+			return model.ErrorProvider[bool](err)
+		}
+		return model.FixedProvider(true)
+	}
+}
+
 func cleanupExpiredMesos(cutoff time.Time) database.EntityProvider[int64] {
 	return func(db *gorm.DB) model.Provider[int64] {
 		result := db.Where("stored_at < ?", cutoff).Delete(&MesoEntity{})

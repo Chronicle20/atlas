@@ -7,10 +7,10 @@ import (
 )
 
 const (
-	Equipment   = "equipment/%d"
-	Consumables = "consumables/%d"
-	Setup       = "setup/%d"
-	Etc         = "etc/%d"
+	Equipment   = "data/equipment/%d"
+	Consumables = "data/consumables/%d"
+	Setup       = "data/setups/%d"
+	Etc         = "data/etcs/%d"
 )
 
 func getBaseRequest() string {

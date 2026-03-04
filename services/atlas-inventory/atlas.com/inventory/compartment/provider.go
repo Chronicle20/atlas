@@ -18,12 +18,12 @@ func getById(id uuid.UUID) database.EntityProvider[Entity] {
 
 func getByCharacter(characterId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
-		return database.SliceQuery[Entity](db, &Entity{CharacterId: characterId})
+		return database.SliceQuery[Entity](db.Where("character_id = ?", characterId), &Entity{})
 	}
 }
 
 func getByCharacterAndType(characterId uint32, inventoryType inventory.Type) database.EntityProvider[Entity] {
 	return func(db *gorm.DB) model.Provider[Entity] {
-		return database.Query[Entity](db, &Entity{CharacterId: characterId, InventoryType: inventoryType})
+		return database.Query[Entity](db.Where("character_id = ? AND inventory_type = ?", characterId, inventoryType), &Entity{})
 	}
 }

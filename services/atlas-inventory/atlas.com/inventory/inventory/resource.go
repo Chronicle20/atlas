@@ -31,6 +31,11 @@ func handleGetInventory(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
+				if characterId == 0 {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
 				m, err := NewProcessor(d.Logger(), d.Context(), db).GetByCharacterId(characterId)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)

@@ -53,6 +53,12 @@ func handleSessionCreated(l logrus.FieldLogger, ctx context.Context, e message.S
 		return
 	}
 
+	// Skip pre-character-selection sessions where no character is selected yet
+	if e.CharacterId == 0 {
+		l.Debugf("Skipping expiration check for session with no character selected. Account [%d].", e.AccountId)
+		return
+	}
+
 	l.Infof("Session created for character [%d], account [%d], world [%d].", e.CharacterId, e.AccountId, e.WorldId)
 
 	// Extract tenant info from context

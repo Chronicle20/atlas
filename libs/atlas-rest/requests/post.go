@@ -3,6 +3,7 @@ package requests
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -26,6 +27,7 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				return result, err
 			}
 
+			var statusCode int
 			var status string
 			var contentLength int64
 			var body []byte
@@ -52,6 +54,7 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 				}
 				defer r.Body.Close()
 
+				statusCode = r.StatusCode
 				status = r.Status
 				contentLength = r.ContentLength
 				body, err = io.ReadAll(r.Body)
@@ -66,6 +69,17 @@ func createOrUpdate[A any](l logrus.FieldLogger, ctx context.Context) func(metho
 			if err != nil {
 				l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", method, url)
 				return result, err
+			}
+
+			if statusCode == http.StatusBadRequest {
+				return result, ErrBadRequest
+			}
+			if statusCode == http.StatusNotFound {
+				return result, ErrNotFound
+			}
+			if statusCode != http.StatusOK && statusCode != http.StatusCreated && statusCode != http.StatusAccepted && statusCode != http.StatusNoContent {
+				l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", method, url, statusCode)
+				return result, errors.New("unknown error")
 			}
 
 			if contentLength == 0 {

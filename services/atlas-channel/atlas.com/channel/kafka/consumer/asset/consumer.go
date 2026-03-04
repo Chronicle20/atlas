@@ -407,7 +407,7 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 	}
 }
 
-// handleAssetAcceptedEvent handles ACCEPTED events when an asset is accepted into inventory (e.g., from storage)
+// handleAssetAcceptedEvent handles ACCEPTED events when an asset is accepted into inventory (e.g., from storage or cash shop)
 func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[asset2.StatusEvent[asset2.AcceptedStatusEventBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e asset2.StatusEvent[asset2.AcceptedStatusEventBody]) {
 		if e.Type != asset2.StatusEventTypeAccepted {
@@ -420,14 +420,25 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			a := buildAssetFromAcceptedBody(e)
+			a = enrichPetAsset(l, ctx, a)
+
+			if a.CashId() != 0 {
+				// Cash shop withdrawal - notify the cash shop UI
+				err := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashItemMovedToInventoryBody(l, t)(a))(s)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to announce cash item moved to inventory for character [%d].", e.CharacterId)
+					return err
+				}
+				return nil
+			}
+
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 			if !ok {
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
 			}
 
-			a := buildAssetFromAcceptedBody(e)
-			a = enrichPetAsset(l, ctx, a)
 			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
 			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
 			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)

@@ -1,15 +1,19 @@
 package item
 
-import "strconv"
+import (
+	"strconv"
+	"time"
+)
 
 type RestModel struct {
-	Id          uint32 `json:"-"`
-	CashId      int64  `json:"cashId,string"`
-	TemplateId  uint32 `json:"templateId"`
-	CommodityId uint32 `json:"commodityId"`
-	Quantity    uint32 `json:"quantity"`
-	Flag        uint16 `json:"flag"`
-	PurchasedBy uint32 `json:"purchasedBy"`
+	Id          uint32    `json:"-"`
+	CashId      int64     `json:"cashId,string"`
+	TemplateId  uint32    `json:"templateId"`
+	CommodityId uint32    `json:"commodityId"`
+	Quantity    uint32    `json:"quantity"`
+	Flag        uint16    `json:"flag"`
+	PurchasedBy uint32    `json:"purchasedBy"`
+	Expiration  time.Time `json:"expiration"`
 }
 
 func (r RestModel) GetName() string {
@@ -38,6 +42,7 @@ func Transform(m Model) (RestModel, error) {
 		Quantity:    m.quantity,
 		Flag:        m.flag,
 		PurchasedBy: m.purchasedBy,
+		Expiration:  m.expiration,
 	}, nil
 }
 
@@ -50,5 +55,6 @@ func Extract(rm RestModel) (Model, error) {
 		quantity:    rm.Quantity,
 		flag:        rm.Flag,
 		purchasedBy: rm.PurchasedBy,
+		expiration:  rm.Expiration,
 	}, nil
 }

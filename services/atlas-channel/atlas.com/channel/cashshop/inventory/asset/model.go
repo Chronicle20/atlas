@@ -9,13 +9,13 @@ import (
 
 // Model represents a cash shop inventory asset
 type Model struct {
-	id            uuid.UUID
+	id            uint32
 	compartmentId uuid.UUID
 	item          item.Model
 }
 
 // Id returns the unique identifier of this asset
-func (m Model) Id() uuid.UUID {
+func (m Model) Id() uint32 {
 	return m.id
 }
 

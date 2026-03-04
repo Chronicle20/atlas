@@ -7,16 +7,19 @@ import (
 	"atlas-cashshop/character"
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
+	dataPet "atlas-cashshop/data/pet"
 	database "github.com/Chronicle20/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
 	cashshop2 "atlas-cashshop/kafka/producer/cashshop"
+	"atlas-cashshop/pet"
 	"atlas-cashshop/wallet"
 	"context"
 	"errors"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -36,34 +39,38 @@ type Processor interface {
 }
 
 type ProcessorImpl struct {
-	l       logrus.FieldLogger
-	ctx     context.Context
-	db      *gorm.DB
-	t       tenant.Model
-	p       producer.Provider
-	chaP    character.Processor
-	comP    commodity.Processor
-	cicP    compartment.Processor
-	chaInvP inventory2.Processor
-	chaComP compartment2.Processor
-	walP    wallet.Processor
-	astP    asset.Processor
+	l        logrus.FieldLogger
+	ctx      context.Context
+	db       *gorm.DB
+	t        tenant.Model
+	p        producer.Provider
+	chaP     character.Processor
+	comP     commodity.Processor
+	cicP     compartment.Processor
+	chaInvP  inventory2.Processor
+	chaComP  compartment2.Processor
+	walP     wallet.Processor
+	astP     asset.Processor
+	petP     pet.Processor
+	dataPetP dataPet.Processor
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) Processor {
 	p := &ProcessorImpl{
-		l:       l,
-		ctx:     ctx,
-		db:      db,
-		t:       tenant.MustFromContext(ctx),
-		p:       producer.ProviderImpl(l)(ctx),
-		chaP:    character.NewProcessor(l, ctx),
-		comP:    commodity.NewProcessor(l, ctx),
-		cicP:    compartment.NewProcessor(l, ctx, db),
-		chaInvP: inventory2.NewProcessor(l, ctx),
-		chaComP: compartment2.NewProcessor(l, ctx),
-		walP:    wallet.NewProcessor(l, ctx, db),
-		astP:    asset.NewProcessor(l, ctx, db),
+		l:        l,
+		ctx:      ctx,
+		db:       db,
+		t:        tenant.MustFromContext(ctx),
+		p:        producer.ProviderImpl(l)(ctx),
+		chaP:     character.NewProcessor(l, ctx),
+		comP:     commodity.NewProcessor(l, ctx),
+		cicP:     compartment.NewProcessor(l, ctx, db),
+		chaInvP:  inventory2.NewProcessor(l, ctx),
+		chaComP:  compartment2.NewProcessor(l, ctx),
+		walP:     wallet.NewProcessor(l, ctx, db),
+		astP:     asset.NewProcessor(l, ctx, db),
+		petP:     pet.NewProcessor(l, ctx),
+		dataPetP: dataPet.NewProcessor(l, ctx),
 	}
 	return p
 }
@@ -126,8 +133,28 @@ func (p *ProcessorImpl) Purchase(mb *message.Buffer) func(characterId uint32, cu
 				return err
 			}
 
+			var petId uint32
+			if item.GetClassification(item.Id(ci.ItemId())) == item.ClassificationPet {
+				petData, pdErr := p.dataPetP.GetById(ci.ItemId())
+				petName := "Pet"
+				if pdErr == nil {
+					petName = petData.Name()
+				} else {
+					p.l.WithError(pdErr).Warnf("Unable to retrieve pet data for template [%d], using default name.", ci.ItemId())
+				}
+
+				pe, peErr := p.petP.Create(characterId, ci.ItemId(), petName)
+				if peErr != nil {
+					p.l.WithError(peErr).Errorf("Unable to create pet for character [%d] template [%d].", characterId, ci.ItemId())
+					_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))
+					return peErr
+				}
+				petId = pe.Id()
+				p.l.Debugf("Created pet [%d] for character [%d] with name [%s].", petId, characterId, petName)
+			}
+
 			// Create the flattened asset directly (no separate item creation)
-			am, err := p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), characterId)
+			am, err := p.astP.Create(mb)(ccm.Id(), ci.ItemId(), serialNumber, ci.Count(), petId, characterId)
 			if err != nil {
 				p.l.WithError(err).Errorf("Unable to create asset for character [%d].", characterId)
 				_ = mb.Put(cashshop.EnvEventTopicStatus, cashshop2.ErrorStatusEventProvider(characterId, "UNKNOWN_ERROR"))

@@ -10,7 +10,7 @@ import (
 )
 
 func TestNewModelBuilder(t *testing.T) {
-	id := uuid.New()
+	var id uint32 = 1
 	compartmentId := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
@@ -21,7 +21,7 @@ func TestNewModelBuilder(t *testing.T) {
 }
 
 func TestBuild_AllFieldsSet(t *testing.T) {
-	id := uuid.New()
+	var id uint32 = 1
 	compartmentId := uuid.New()
 	testItem := item.NewModelBuilder().
 		SetId(1).
@@ -49,7 +49,7 @@ func TestBuild_MissingId(t *testing.T) {
 	compartmentId := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	_, err := asset.NewModelBuilder(uuid.Nil, compartmentId, testItem).Build()
+	_, err := asset.NewModelBuilder(0, compartmentId, testItem).Build()
 
 	if !errors.Is(err, asset.ErrInvalidId) {
 		t.Errorf("Build() error = %v, want ErrInvalidId", err)
@@ -57,7 +57,7 @@ func TestBuild_MissingId(t *testing.T) {
 }
 
 func TestBuild_MissingCompartmentId(t *testing.T) {
-	id := uuid.New()
+	var id uint32 = 1
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
 	_, err := asset.NewModelBuilder(id, uuid.Nil, testItem).Build()
@@ -68,7 +68,7 @@ func TestBuild_MissingCompartmentId(t *testing.T) {
 }
 
 func TestCloneModel(t *testing.T) {
-	id := uuid.New()
+	var id uint32 = 1
 	compartmentId := uuid.New()
 	testItem1 := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 	testItem2 := item.NewModelBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
@@ -109,7 +109,7 @@ func TestMustBuild_Success(t *testing.T) {
 		}
 	}()
 
-	id := uuid.New()
+	var id uint32 = 1
 	compartmentId := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
@@ -130,5 +130,5 @@ func TestMustBuild_Panics(t *testing.T) {
 	compartmentId := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
 
-	asset.NewModelBuilder(uuid.Nil, compartmentId, testItem).MustBuild() // Missing ID, should panic
+	asset.NewModelBuilder(0, compartmentId, testItem).MustBuild() // Missing ID, should panic
 }

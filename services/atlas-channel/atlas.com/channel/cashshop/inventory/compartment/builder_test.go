@@ -21,7 +21,7 @@ func TestNewModelBuilder(t *testing.T) {
 func TestBuild_AllFieldsSet(t *testing.T) {
 	id := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(uuid.New(), id, testItem).MustBuild()
+	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
 
 	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset).
@@ -67,7 +67,7 @@ func TestBuild_MissingAccountId(t *testing.T) {
 func TestCloneModel(t *testing.T) {
 	id := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(uuid.New(), id, testItem).MustBuild()
+	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
 
 	original, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset).
@@ -128,9 +128,9 @@ func TestMustBuild_Panics(t *testing.T) {
 func TestAddAsset(t *testing.T) {
 	id := uuid.New()
 	testItem1 := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset1 := asset.NewModelBuilder(uuid.New(), id, testItem1).MustBuild()
+	testAsset1 := asset.NewModelBuilder(1, id, testItem1).MustBuild()
 	testItem2 := item.NewModelBuilder().SetId(2).SetTemplateId(5000001).MustBuild()
-	testAsset2 := asset.NewModelBuilder(uuid.New(), id, testItem2).MustBuild()
+	testAsset2 := asset.NewModelBuilder(2, id, testItem2).MustBuild()
 
 	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		AddAsset(testAsset1).
@@ -148,7 +148,7 @@ func TestAddAsset(t *testing.T) {
 func TestSetAssets(t *testing.T) {
 	id := uuid.New()
 	testItem := item.NewModelBuilder().SetId(1).SetTemplateId(5000000).MustBuild()
-	testAsset := asset.NewModelBuilder(uuid.New(), id, testItem).MustBuild()
+	testAsset := asset.NewModelBuilder(1, id, testItem).MustBuild()
 
 	model, err := compartment.NewModelBuilder(id, 100, compartment.TypeExplorer, 50).
 		SetAssets([]asset.Model{testAsset}).

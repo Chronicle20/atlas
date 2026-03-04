@@ -52,6 +52,7 @@ func handleCommandCreate(db *gorm.DB) message.Handler[itemMessage.Command[itemMe
 			command.Body.TemplateId,
 			command.Body.CommodityId,
 			command.Body.Quantity,
+			0,
 			command.Body.PurchasedBy,
 		)
 

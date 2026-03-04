@@ -2,6 +2,7 @@ package requests
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"time"
 
@@ -18,6 +19,7 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			configurator(c)
 		}
 
+		var statusCode int
 		var status string
 		get := func(attempt int) (bool, error) {
 			req, err := http.NewRequest(http.MethodDelete, url, nil)
@@ -42,6 +44,7 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			}
 			defer r.Body.Close()
 
+			statusCode = r.StatusCode
 			status = r.Status
 			return false, nil
 		}
@@ -51,9 +54,20 @@ func delete(l logrus.FieldLogger, ctx context.Context) func(url string, configur
 			l.WithError(err).Errorf("Unable to successfully call [%s] on [%s].", http.MethodDelete, url)
 			return err
 		}
+		if statusCode == http.StatusBadRequest {
+			return ErrBadRequest
+		}
+		if statusCode == http.StatusNotFound {
+			return ErrNotFound
+		}
+		if statusCode != http.StatusOK && statusCode != http.StatusAccepted && statusCode != http.StatusNoContent {
+			l.Debugf("Unable to successfully call [%s] on [%s], returned status code [%d].", http.MethodDelete, url, statusCode)
+			return errors.New("unknown error")
+		}
+
 		l.WithFields(logrus.Fields{"method": http.MethodDelete, "status": status, "path": url}).Debugf("Printing request.")
 
-		return err
+		return nil
 	}
 }
 

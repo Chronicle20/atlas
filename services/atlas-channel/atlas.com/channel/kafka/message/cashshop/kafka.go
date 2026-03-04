@@ -98,7 +98,7 @@ type PurchaseEventBody struct {
 	TemplateId    uint32    `json:"templateId"`
 	Price         uint32    `json:"price"`
 	CompartmentId uuid.UUID `json:"compartmentId"`
-	AssetId       uuid.UUID `json:"assetId"`
+	AssetId       uint32    `json:"assetId"`
 	ItemId        uint32    `json:"itemId"`
 }
 

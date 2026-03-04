@@ -50,7 +50,7 @@ func (m Model) Assets() []asset.Model {
 }
 
 // FindById finds an asset by its ID
-func (m Model) FindById(id uuid.UUID) (*asset.Model, bool) {
+func (m Model) FindById(id uint32) (*asset.Model, bool) {
 	for _, a := range m.Assets() {
 		if a.Id() == id {
 			return &a, true

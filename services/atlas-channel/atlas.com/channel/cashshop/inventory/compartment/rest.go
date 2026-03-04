@@ -78,11 +78,11 @@ func (r *RestModel) SetToOneReferenceID(_, _ string) error {
 func (r *RestModel) SetToManyReferenceIDs(name string, IDs []string) error {
 	if name == "assets" {
 		for _, idStr := range IDs {
-			id, err := uuid.Parse(idStr)
-			if err != nil {
+			var a asset.RestModel
+			if err := a.SetID(idStr); err != nil {
 				return err
 			}
-			r.Assets = append(r.Assets, asset.RestModel{Id: id})
+			r.Assets = append(r.Assets, a)
 		}
 	}
 	return nil

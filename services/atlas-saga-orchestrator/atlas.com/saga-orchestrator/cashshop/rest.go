@@ -17,6 +17,7 @@ type AssetRestModel struct {
 	CommodityId   uint32    `json:"commodityId"`
 	Quantity      uint32    `json:"quantity"`
 	Flag          uint16    `json:"flag"`
+	PetId         uint32    `json:"petId"`
 	PurchasedBy   uint32    `json:"purchasedBy"`
 	Expiration    time.Time `json:"expiration"`
 	CreatedAt     time.Time `json:"createdAt"`

@@ -1,13 +1,16 @@
 package pet
 
 import (
+	"atlas-data/item"
 	"atlas-data/xml"
+	"context"
 	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/Chronicle20/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,47 +27,54 @@ func parsePetId(filePath string) (uint32, error) {
 	return uint32(id), nil
 }
 
-func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider[RestModel] {
-	return func(np model.Provider[xml.Node]) model.Provider[RestModel] {
-		exml, err := np()
-		if err != nil {
-			return model.ErrorProvider[RestModel](err)
-		}
-
-		petId, err := parsePetId(exml.Name)
-		if err != nil {
-			return model.ErrorProvider[RestModel](err)
-		}
-		l.Debugf("Processing pet [%d].", petId)
-
-		i, err := exml.ChildByName("info")
-		if err != nil {
-			return model.ErrorProvider[RestModel](err)
-		}
-
-		m := RestModel{Id: petId}
-		m.Hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
-		m.Cash = i.GetBool("cash", true)
-		m.Life = uint32(i.GetIntegerWithDefault("life", 0))
-
-		it, err := exml.ChildByName("interact")
-		if err != nil {
-			return model.ErrorProvider[RestModel](err)
-		}
-
-		for _, s := range it.ChildNodes {
-			var sid int
-			sid, err = strconv.Atoi(s.Name)
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[RestModel] {
+	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[RestModel] {
+		return func(np model.Provider[xml.Node]) model.Provider[RestModel] {
+			exml, err := np()
 			if err != nil {
 				return model.ErrorProvider[RestModel](err)
 			}
-			sm := SkillRestModel{
-				Id:          fmt.Sprintf("%d-%d", petId, sid),
-				Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
-				Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
+
+			petId, err := parsePetId(exml.Name)
+			if err != nil {
+				return model.ErrorProvider[RestModel](err)
 			}
-			m.Skills = append(m.Skills, sm)
+			l.Debugf("Processing pet [%d].", petId)
+
+			i, err := exml.ChildByName("info")
+			if err != nil {
+				return model.ErrorProvider[RestModel](err)
+			}
+
+			m := RestModel{Id: petId}
+			t := tenant.MustFromContext(ctx)
+			ns, nerr := item.GetStringModelRegistry().Get(t, strconv.Itoa(int(petId)))
+			if nerr == nil {
+				m.Name = ns.Name
+			}
+			m.Hungry = uint32(i.GetIntegerWithDefault("hungry", 0))
+			m.Cash = i.GetBool("cash", true)
+			m.Life = uint32(i.GetIntegerWithDefault("life", 0))
+
+			it, err := exml.ChildByName("interact")
+			if err != nil {
+				return model.ErrorProvider[RestModel](err)
+			}
+
+			for _, s := range it.ChildNodes {
+				var sid int
+				sid, err = strconv.Atoi(s.Name)
+				if err != nil {
+					return model.ErrorProvider[RestModel](err)
+				}
+				sm := SkillRestModel{
+					Id:          fmt.Sprintf("%d-%d", petId, sid),
+					Increase:    uint16(s.GetIntegerWithDefault("inc", 0)),
+					Probability: uint16(s.GetIntegerWithDefault("prob", 0)),
+				}
+				m.Skills = append(m.Skills, sm)
+			}
+			return model.FixedProvider(m)
 		}
-		return model.FixedProvider(m)
 	}
 }

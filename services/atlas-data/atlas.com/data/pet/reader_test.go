@@ -2,8 +2,11 @@ package pet
 
 import (
 	"atlas-data/xml"
+	"context"
 	"testing"
 
+	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
@@ -1036,7 +1039,13 @@ const testXML = `
 func TestReader(t *testing.T) {
 	l, _ := test.NewNullLogger()
 
-	rm, err := Read(l)(xml.FromByteArrayProvider([]byte(testXML)))()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(testXML)))()
 	if err != nil {
 		t.Fatal(err)
 	}

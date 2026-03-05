@@ -50,6 +50,7 @@ func StorageOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 			handleClose(l, ctx, s)
 			return
 		}
+		l.Warnf("Character [%d] issued a unhandled storage operation [%d].", s.CharacterId(), mode)
 	}
 }
 

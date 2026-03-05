@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/asset"
+	model2 "atlas-channel/socket/model"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -96,7 +97,7 @@ func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tena
 			}
 
 			w.WriteByte(byte(len(filteredAssets)))
-			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), WriteAssetInfo(t)(true)(w))
+			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), model2.NewAssetWriter(l, t, options, w)(true))
 			return w.Bytes()
 		}
 	}
@@ -124,7 +125,7 @@ func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId u
 			w.WriteInt(meso)
 			w.WriteShort(0) // ??
 			w.WriteByte(byte(len(assets)))
-			_ = model.ForEachSlice(model.FixedProvider(assets), WriteAssetInfo(t)(true)(w))
+			_ = model.ForEachSlice(model.FixedProvider(assets), model2.NewAssetWriter(l, t, options, w)(true))
 			w.WriteShort(0)
 			w.WriteByte(0)
 			return w.Bytes()

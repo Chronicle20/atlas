@@ -2,11 +2,13 @@ package writer
 
 import (
 	"atlas-channel/asset"
+	model2 "atlas-channel/socket/model"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 const CharacterInventoryChange = "CharacterInventoryChange"
@@ -88,9 +90,12 @@ func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) Invento
 	}
 }
 
-func CharacterInventoryRefreshAsset(t tenant.Model) func(inventoryType inventory.Type, a asset.Model) BodyProducer {
+func CharacterInventoryRefreshAsset(l logrus.FieldLogger, t tenant.Model) func(inventoryType inventory.Type, a asset.Model) BodyProducer {
 	return func(inventoryType inventory.Type, a asset.Model) BodyProducer {
-		pw := model.FlipOperator(WriteAssetInfo(t)(true))(a)
-		return CharacterInventoryChangeBody(false, InventoryRemoveBodyWriter(inventoryType, a.Slot()), InventoryAddBodyWriter(inventoryType, a.Slot(), pw))
+		return func(w *response.Writer, options map[string]interface{}) []byte {
+			return CharacterInventoryChangeBody(false, InventoryRemoveBodyWriter(inventoryType, a.Slot()), InventoryAddBodyWriter(inventoryType, a.Slot(), func(writer *response.Writer) error {
+				return model2.NewAssetWriter(l, t, options, w)(true)(a)
+			}))(w, options)
+		}
 	}
 }

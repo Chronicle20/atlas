@@ -5,6 +5,7 @@ import (
 	asset2 "atlas-channel/asset"
 	"atlas-channel/cashshop/inventory/asset"
 	"atlas-channel/cashshop/wishlist"
+	model2 "atlas-channel/socket/model"
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -181,7 +182,7 @@ func CashShopCashItemMovedToInventoryBody(l logrus.FieldLogger, t tenant.Model) 
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory))
 			w.WriteShort(uint16(a.Slot()))
-			_ = WriteAssetInfo(t)(true)(w)(a)
+			_ = model2.NewAssetWriter(l, t, options, w)(true)(a)
 			return w.Bytes()
 		}
 	}

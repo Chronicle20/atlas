@@ -10,6 +10,7 @@ import (
 	"atlas-channel/pet"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -21,6 +22,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -223,9 +225,11 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 
 			a := buildAssetFromCreatedBody(e)
 			a = enrichPetAsset(l, ctx, a)
-			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
-			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(func(w *response.Writer, options map[string]interface{}) []byte {
+				return writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, func(w *response.Writer) error {
+					return model2.NewAssetWriter(l, t, options, w)(false)(a)
+				}))(w, options)
+			})(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 			}
@@ -253,7 +257,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			}
 
 			a := buildAssetFromUpdatedBody(e)
-			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(sc.Tenant())(inventoryType, a))
+			so := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(l, sc.Tenant())(inventoryType, a))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
@@ -438,10 +442,11 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
 			}
-
-			itemWriter := model.FlipOperator(writer.WriteAssetInfo(t)(true))(a)
-			bp := writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, itemWriter))
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(bp)(s)
+			err := session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(func(w *response.Writer, options map[string]interface{}) []byte {
+				return writer.CharacterInventoryChangeBody(false, writer.InventoryAddBodyWriter(inventoryType, e.Slot, func(w *response.Writer) error {
+					return model2.NewAssetWriter(l, t, options, w)(false)(a)
+				}))(w, options)
+			})(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add accepted asset [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 				return err

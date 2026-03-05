@@ -47,7 +47,6 @@ import (
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
-	"github.com/Chronicle20/atlas-service"
 	"atlas-channel/session"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
@@ -58,6 +57,8 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas-service"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -414,6 +415,8 @@ func produceWriters() []string {
 		writer.MonsterStatReset,
 		writer.MonsterDamage,
 		writer.FieldEffectWeather,
+		writer.HiredMerchantOperation,
+		writer.CharacterInteraction,
 	}
 }
 
@@ -487,6 +490,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[handler.PongHandle] = handler.PongHandleFunc
 	handlerMap[handler.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
+	handlerMap[handler.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
+	handlerMap[handler.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
 	return handlerMap
 }
 

@@ -334,6 +334,11 @@
         }
       },
       {
+        "opCode": "0x3F",
+        "validator": "LoggedInValidator",
+        "handler": "HiredMerchantOperationHandle"
+      },
+      {
         "opCode": "0x45",
         "validator": "LoggedInValidator",
         "handler": "CompartmentMergeHandle"
@@ -469,6 +474,61 @@
             "INVITE": 3,
             "DECLINE_INVITE": 5,
             "CHAT": 6
+          }
+        }
+      },
+      {
+        "opCode": "0x7B",
+        "validator": "LoggedInValidator",
+        "handler": "CharacterInteractionHandle",
+        "options": {
+          "operations": {
+            "CREATE": 0,
+            "INVITE": 2,
+            "INVITE_DECLINE": 3,
+            "VISIT": 4,
+            "CHAT": 6,
+            "EXIT": 10,
+            "OPEN": 11,
+            "CASH_TRADE_OPEN": 14,
+            "TRADE_PUT_ITEM": 15,
+            "TRADE_ADD_MESO": 16,
+            "TRADE_CONFIRM": 17,
+            "TRANSACTION": 20,
+            "PERSONAL_STORE_PUT_ITEM": 22,
+            "PERSONAL_STORE_BUY": 23,
+            "PERSONAL_STORE_REMOVE_ITEM": 27,
+            "PERSONAL_STORE_ADD_TO_BLACKLIST": 28,
+            "PERSONAL_STORE_SET_VISITOR": 29,
+            "PERSONAL_STORE_SET_BLACK_LIST": 30,
+            "FIELD_ADD_TO_BLACK_LIST": 31,
+            "FIELD_REMOVE_FROM_BLACK_LIST": 32,
+            "MERCHANT_PUT_ITEM": 33,
+            "MERCHANT_BUY": 34,
+            "MERCHANT_REMOVE_ITEM": 38,
+            "MERCHANT_MERCHANT_OFF": 39,
+            "MERCHANT_ORGANIZE": 40,
+            "MERCHANT_EXIT": 41,
+            "MERCHANT_WITHDRAW_MESO": 43,
+            "MERCHANT_NAME_CHANGE": 45,
+            "MERCHANT_VIEW_VISIT_LIST": 46,
+            "MERCHANT_VIEW_BLACK_LIST": 47,
+            "MERCHANT_ADD_TO_BLACK_LIST": 48,
+            "MERCHANT_REMOVE_FROM_BLACK_LIST": 49,
+            "MEMORY_GAME_ASK_TIE": 50,
+            "MEMORY_GAME_TIE_ANSWER": 51,
+            "MEMORY_GAME_FORFEIT": 52,
+            "MEMORY_GAME_ASK_RETREAT": 54,
+            "MEMORY_GAME_RETREAT_ANSWER": 55,
+            "MEMORY_GAME_EXIT_AFTER_GAME": 56,
+            "MEMORY_GAME_CANCEL_EXIT_AFTER_GAME": 57,
+            "MEMORY_GAME_READY": 58,
+            "MEMORY_GAME_UNREADY": 59,
+            "MEMORY_GAME_EXPEL": 60,
+            "MEMORY_GAME_START": 61,
+            "MEMORY_GAME_SKIP": 63,
+            "MEMORY_GAME_MOVE_STONE": 64,
+            "MEMORY_GAME_FIP_CARD": 68
           }
         }
       },
@@ -1271,6 +1331,25 @@
             "RECEIVER_ONLINE": 0,
             "RECEIVER_UNKNOWN": 1,
             "RECEIVER_INBOX_FULL": 2
+          }
+        }
+      },
+      {
+        "opCode": "0x32",
+        "writer": "HiredMerchantOperation",
+        "options": {
+          "operations": {
+            "OPEN_SHOP": 7,
+            "ERROR_UNKNOWN": 8,
+            "ERROR_RETRIEVE_FROM_FREDRICK": 9,
+            "ERROR_ANOTHER_CHARACTER_IS_USING_THE_ITEM": 10,
+            "ERROR_UNABLE_TO_OPEN_THE_STORE": 11,
+            "SHOP_SEARCH": 13,
+            "SHOP_RENAME": 14,
+            "ERROR_RETRIEVE_FROM_FREDRICK_2": 15,
+            "REMOTE_SHOP_WARP": 16,
+            "CONFIRM_MANAGE": 17,
+            "FREE_FORM_NOTICE": 18
           }
         }
       },
@@ -2228,6 +2307,14 @@
             "INVITE_DECLINED": 5,
             "CHAT": 6,
             "UPDATE": 7
+          }
+        }
+      },
+      {
+        "opCode": "0x13A",
+        "writer": "CharacterInteraction",
+        "options": {
+          "operations": {
           }
         }
       },

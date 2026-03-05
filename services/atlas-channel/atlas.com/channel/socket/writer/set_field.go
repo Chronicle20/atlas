@@ -1,23 +1,21 @@
 package writer
 
 import (
-	"atlas-channel/asset"
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	slot2 "atlas-channel/equipment/slot"
 	"atlas-channel/quest"
-	"errors"
-	"math"
+	model2 "atlas-channel/socket/model"
 	"math/rand"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-constants/item"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 const SetField = "SetField"
@@ -55,7 +53,7 @@ func WarpToMapBody(tenant tenant.Model) func(channelId channel.Id, mapId _map.Id
 	}
 }
 
-func SetFieldBody(tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
+func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
 	return func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
@@ -81,7 +79,7 @@ func SetFieldBody(tenant tenant.Model) func(channelId channel.Id, c character.Mo
 				w.WriteInt(rand.Uint32())
 			}
 
-			WriteCharacterInfo(tenant)(w)(c, bl)
+			WriteCharacterInfo(l, tenant, options)(w)(c, bl)
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
 				w.WriteInt(0) // logout gifts
 				w.WriteInt(0)
@@ -94,7 +92,7 @@ func SetFieldBody(tenant tenant.Model) func(channelId channel.Id, c character.Mo
 	}
 }
 
-func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
+func WriteCharacterInfo(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
 	return func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
 		return func(c character.Model, bl buddylist.Model) {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
@@ -122,7 +120,7 @@ func WriteCharacterInfo(tenant tenant.Model) func(w *response.Writer) func(c cha
 				w.WriteInt(0) // dama / gachapon items
 				w.WriteInt(0)
 			}
-			WriteInventoryInfo(tenant)(w, c)
+			WriteInventoryInfo(l, tenant, options)(w, c)
 			WriteSkillInfo(tenant)(w, c)
 			WriteQuestInfo(tenant)(w, c)
 			WriteMiniGameInfo()(w, c)
@@ -276,7 +274,7 @@ func timeNow() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character character.Model) {
+func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, character character.Model) {
 	return func(w *response.Writer, character character.Model) {
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
@@ -294,7 +292,7 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		// regular equipment
 		for _, t := range slot.Slots {
 			if s, ok := character.Equipment().Get(t.Type); ok {
-				WriteEquipableIfPresent(tenant)(w, s)
+				WriteEquipableIfPresent(l, tenant, options)(w, s)
 			}
 		}
 
@@ -307,7 +305,7 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		// cash equipment
 		for _, t := range slot.Slots {
 			if s, ok := character.Equipment().Get(t.Type); ok {
-				WriteCashEquipableIfPresent(tenant)(w, s)
+				WriteCashEquipableIfPresent(l, tenant, options)(w, s)
 			}
 		}
 
@@ -321,7 +319,7 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Equipable().Assets()), WriteAssetInfo(tenant)(false)(w))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Equipable().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteInt(0)
 		} else {
@@ -332,290 +330,44 @@ func WriteInventoryInfo(tenant tenant.Model) func(w *response.Writer, character 
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Consumable().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Consumable().Assets()), WriteAssetInfo(tenant)(false)(w))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Consumable().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
 		w.WriteByte(0)
 
 		// setup inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Setup().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Setup().Assets()), WriteAssetInfo(tenant)(false)(w))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Setup().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
 		w.WriteByte(0)
 
 		// etc inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().ETC().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().ETC().Assets()), WriteAssetInfo(tenant)(false)(w))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().ETC().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
 		w.WriteByte(0)
 
 		// cash inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Cash().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Cash().Assets()), WriteAssetInfo(tenant)(false)(w))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Cash().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
 		w.WriteByte(0)
 	}
 }
 
-func WriteCashEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot2.Model) {
+func WriteCashEquipableIfPresent(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
 	return func(w *response.Writer, model slot2.Model) {
 		if model.CashEquipable != nil {
-			_ = WriteCashEquipableInfo(tenant)(w, false)(*model.CashEquipable)
+			_ = model2.NewAssetWriter(l, tenant, options, w)(false)(*model.CashEquipable)
 		}
 	}
 }
 
-func WriteCashEquipableInfo(tenant tenant.Model) func(w *response.Writer, zeroPosition bool) model.Operator[asset.Model] {
-	return func(w *response.Writer, zeroPosition bool) model.Operator[asset.Model] {
-		return func(e asset.Model) error {
-			slot := e.Slot()
-			if !zeroPosition {
-				slot = int16(math.Abs(float64(slot)))
-				if slot > 100 {
-					slot -= 100
-				}
-				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-					w.WriteShort(uint16(slot))
-				} else {
-					w.WriteByte(byte(slot))
-				}
-			}
-
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-				w.WriteByte(1)
-			}
-			w.WriteInt(e.TemplateId())
-			w.WriteBool(true)
-			if true {
-				w.WriteInt64(e.CashId())
-			}
-			w.WriteInt64(msTime(e.Expiration()))
-			w.WriteByte(byte(e.Slots()))
-			w.WriteByte(e.Level())
-			if tenant.Region() == "JMS" {
-				w.WriteByte(0)
-			}
-			w.WriteShort(e.Strength())
-			w.WriteShort(e.Dexterity())
-			w.WriteShort(e.Intelligence())
-			w.WriteShort(e.Luck())
-			w.WriteShort(e.Hp())
-			w.WriteShort(e.Mp())
-			w.WriteShort(e.WeaponAttack())
-			w.WriteShort(e.MagicAttack())
-			w.WriteShort(e.WeaponDefense())
-			w.WriteShort(e.MagicDefense())
-			w.WriteShort(e.Accuracy())
-			w.WriteShort(e.Avoidability())
-			w.WriteShort(e.Hands())
-			w.WriteShort(e.Speed())
-			w.WriteShort(e.Jump())
-
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-				w.WriteAsciiString("") // TODO retrieve owner name from id
-				w.WriteShort(e.Flag())
-
-				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-					for i := 0; i < 10; i++ {
-						w.WriteByte(0x40)
-					}
-					w.WriteLong(uint64(getTime(-2)))
-					w.WriteInt32(-1)
-				}
-			}
-			return nil
-		}
-	}
-}
-
-func WriteCashItemInfo(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-	return func(w *response.Writer) model.Operator[asset.Model] {
-		return func(i asset.Model) error {
-			if !zeroPosition {
-				w.WriteInt8(int8(i.Slot()))
-			}
-			w.WriteByte(2)
-			w.WriteInt(i.TemplateId())
-			w.WriteBool(true)
-			w.WriteInt64(i.CashId())
-			w.WriteInt64(msTime(i.Expiration()))
-			w.WriteShort(uint16(i.Quantity()))
-			w.WriteAsciiString("") // TODO
-			w.WriteShort(i.Flag())
-			return nil
-		}
-	}
-}
-
-func WritePetCashItemInfo(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-	return func(w *response.Writer) model.Operator[asset.Model] {
-		return func(i asset.Model) error {
-			if !zeroPosition {
-				w.WriteInt8(int8(i.Slot()))
-			}
-			w.WriteByte(3)
-			w.WriteInt(i.TemplateId())
-			w.WriteBool(true)
-			w.WriteLong(uint64(i.PetId()))
-			w.WriteInt64(msTime(time.Time{}))
-			WritePaddedString(w, i.PetName(), 13)
-			w.WriteByte(i.PetLevel())
-			w.WriteShort(i.Closeness())
-			w.WriteByte(i.Fullness())
-			w.WriteInt64(msTime(i.Expiration()))
-			w.WriteShort(0)   // attribute
-			w.WriteShort(0)   // skill
-			w.WriteInt(18000) // remaining life
-			w.WriteShort(0)   // attribute
-			return nil
-		}
-	}
-}
-
-func WriteAssetInfo(t tenant.Model) func(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-	return func(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-		return func(w *response.Writer) model.Operator[asset.Model] {
-			return func(a asset.Model) error {
-				if a.IsEquipment() && !a.IsCashEquipment() {
-					return WriteEquipableInfo(t)(zeroPosition)(w)(a)
-				}
-				if a.IsCashEquipment() {
-					return WriteCashEquipableInfo(t)(w, zeroPosition)(a)
-				}
-				if a.IsConsumable() {
-					if !zeroPosition {
-						w.WriteInt8(int8(a.Slot()))
-					}
-					w.WriteByte(2)
-					w.WriteInt(a.TemplateId())
-					w.WriteBool(false)
-					w.WriteInt64(msTime(a.Expiration()))
-					w.WriteShort(uint16(a.Quantity()))
-					w.WriteAsciiString("") // TODO
-					w.WriteShort(a.Flag())
-					if item.IsBullet(item.Id(a.TemplateId())) || item.IsThrowingStar(item.Id(a.TemplateId())) {
-						w.WriteLong(a.Rechargeable())
-					}
-					return nil
-				}
-				if a.IsSetup() {
-					if !zeroPosition {
-						w.WriteInt8(int8(a.Slot()))
-					}
-					w.WriteByte(2)
-					w.WriteInt(a.TemplateId())
-					w.WriteBool(false)
-					w.WriteInt64(msTime(a.Expiration()))
-					w.WriteShort(uint16(a.Quantity()))
-					w.WriteAsciiString("") // TODO
-					w.WriteShort(a.Flag())
-					return nil
-				}
-				if a.IsEtc() {
-					if !zeroPosition {
-						w.WriteInt8(int8(a.Slot()))
-					}
-					w.WriteByte(2)
-					w.WriteInt(a.TemplateId())
-					w.WriteBool(false)
-					w.WriteInt64(msTime(a.Expiration()))
-					w.WriteShort(uint16(a.Quantity()))
-					w.WriteAsciiString("") // TODO
-					w.WriteShort(a.Flag())
-					return nil
-				}
-				if a.IsPet() {
-					return WritePetCashItemInfo(zeroPosition)(w)(a)
-				}
-				if a.IsCash() {
-					return WriteCashItemInfo(zeroPosition)(w)(a)
-				}
-				return errors.New("unknown item type")
-			}
-		}
-	}
-}
-
-func WriteEquipableIfPresent(tenant tenant.Model) func(w *response.Writer, model slot2.Model) {
+func WriteEquipableIfPresent(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
 	return func(w *response.Writer, model slot2.Model) {
 		if model.Equipable != nil {
-			_ = WriteEquipableInfo(tenant)(false)(w)(*model.Equipable)
-		}
-	}
-}
-
-func WriteEquipableInfo(tenant tenant.Model) func(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-	return func(zeroPosition bool) func(w *response.Writer) model.Operator[asset.Model] {
-		return func(w *response.Writer) model.Operator[asset.Model] {
-			return func(e asset.Model) error {
-				slot := e.Slot()
-				if !zeroPosition {
-					slot = int16(math.Abs(float64(slot)))
-					if slot > 100 {
-						slot -= 100
-					}
-					if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-						w.WriteShort(uint16(slot))
-					} else {
-						w.WriteByte(byte(slot))
-					}
-				}
-
-				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-					w.WriteByte(1)
-				}
-				w.WriteInt(e.TemplateId())
-				w.WriteBool(false)
-				w.WriteInt64(msTime(e.Expiration()))
-				w.WriteByte(byte(e.Slots()))
-				w.WriteByte(e.Level())
-				if tenant.Region() == "JMS" {
-					w.WriteByte(0)
-				}
-				w.WriteShort(e.Strength())
-				w.WriteShort(e.Dexterity())
-				w.WriteShort(e.Intelligence())
-				w.WriteShort(e.Luck())
-				w.WriteShort(e.Hp())
-				w.WriteShort(e.Mp())
-				w.WriteShort(e.WeaponAttack())
-				w.WriteShort(e.MagicAttack())
-				w.WriteShort(e.WeaponDefense())
-				w.WriteShort(e.MagicDefense())
-				w.WriteShort(e.Accuracy())
-				w.WriteShort(e.Avoidability())
-				w.WriteShort(e.Hands())
-				w.WriteShort(e.Speed())
-				w.WriteShort(e.Jump())
-
-				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-					w.WriteAsciiString("") // TODO retrieve owner name from id
-					w.WriteShort(e.Flag())
-				}
-
-				if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-					w.WriteByte(e.LevelType())
-					w.WriteByte(e.Level())
-					w.WriteInt(e.Experience())
-					w.WriteInt(e.HammersApplied())
-
-					if tenant.Region() == "JMS" {
-						w.WriteByte(0)
-						w.WriteShort(0)
-						w.WriteShort(0)
-						w.WriteShort(0)
-						w.WriteShort(0)
-						w.WriteShort(0)
-						w.WriteInt(0)
-					}
-
-					w.WriteLong(0)
-					w.WriteLong(uint64(getTime(-2)))
-					w.WriteInt32(-1)
-				}
-				return nil
-			}
+			_ = model2.NewAssetWriter(l, tenant, options, w)(false)(*model.Equipable)
 		}
 	}
 }

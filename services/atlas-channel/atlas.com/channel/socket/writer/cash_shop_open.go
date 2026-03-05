@@ -26,7 +26,7 @@ func Skip(amount int) func(w *response.Writer) {
 func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
 	return func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
-			WriteCharacterInfo(tenant)(w)(c, bl)
+			WriteCharacterInfo(l, tenant, options)(w)(c, bl)
 
 			if tenant.Region() == "GMS" {
 				var bCashShopAuthorized = true

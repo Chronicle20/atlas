@@ -7,6 +7,7 @@ import (
 	gachapon2 "atlas-channel/kafka/message/gachapon"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -78,10 +79,6 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
-		itemOperator := func(w *response.Writer) error {
-			return writer.WriteAssetInfo(t)(true)(w)(*a)
-		}
-
 		l.WithFields(logrus.Fields{
 			"character_name": c.Name(),
 			"item_id":        event.ItemId,
@@ -89,17 +86,19 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			"gachapon_name":  event.GachaponName,
 		}).Infof("Broadcasting gachapon reward won.")
 
-		bodyProducer := writer.WorldMessageGachaponMegaphoneBody(l)("", c.Name(), sc.ChannelId(), event.GachaponName, itemOperator)
-
 		sessions, err := session.NewProcessor(l, ctx).AllInChannelProvider(sc.WorldId(), sc.ChannelId())
 		if err != nil {
 			l.WithError(err).Error("Unable to get sessions for gachapon broadcast.")
 			return
 		}
 
-		announceOp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(bodyProducer)
+		announceOp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(func(w *response.Writer, options map[string]interface{}) []byte {
+			return writer.WorldMessageGachaponMegaphoneBody(l)("", c.Name(), sc.ChannelId(), event.GachaponName, func(w *response.Writer) error {
+				return model2.NewAssetWriter(l, t, options, w)(true)(*a)
+			})(w, options)
+		})
 		for _, s := range sessions {
-			err := announceOp(s)
+			err = announceOp(s)
 			if err != nil {
 				l.WithError(err).Warnf("Unable to send gachapon announcement to session.")
 			}

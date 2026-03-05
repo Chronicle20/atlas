@@ -219,7 +219,7 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 						return errors.New("pet not found")
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(tenant.MustFromContext(ctx))(inventory2.TypeValueCash, *a))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(l, tenant.MustFromContext(ctx))(inventory2.TypeValueCash, *a))
 			}
 		}
 	}

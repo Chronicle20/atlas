@@ -1,8 +1,6 @@
 package writer
 
 import (
-	"atlas-channel/asset"
-	"atlas-channel/character"
 	"atlas-channel/socket/model"
 	"context"
 
@@ -72,29 +70,12 @@ func CharacterInteractionInviteResultBody(l logrus.FieldLogger) func(result byte
 	}
 }
 
-func CharacterInteractionEnterBody(l logrus.FieldLogger, ctx context.Context) func(roomType model.MiniRoomType, slot byte, c character.Model) BodyProducer {
+func CharacterInteractionEnterBody(l logrus.FieldLogger, ctx context.Context) func(visitor model.MiniRoomVisitor) BodyProducer {
 	t := tenant.MustFromContext(ctx)
-	return func(roomType model.MiniRoomType, slot byte, c character.Model) BodyProducer {
+	return func(visitor model.MiniRoomVisitor) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnter))
-			w.WriteByte(slot)
-			WriteCharacterLook(t)(w, c, false)
-			w.WriteAsciiString(c.Name())
-			return w.Bytes()
-		}
-	}
-}
-
-func CharacterInteractionEnterMiniGameBody(l logrus.FieldLogger, ctx context.Context) func(roomType model.MiniRoomType, slot byte, c character.Model, mgr model.MiniGameRecord) BodyProducer {
-	t := tenant.MustFromContext(ctx)
-	return func(roomType model.MiniRoomType, slot byte, c character.Model, mgr model.MiniGameRecord) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnter))
-			w.WriteByte(slot)
-			WriteCharacterLook(t)(w, c, false)
-			w.WriteAsciiString(c.Name())
-			w.WriteShort(uint16(c.JobId()))
-			mgr.Encode(l, t, options)(w)
+			visitor.Enter(l, t, options)(w)
 			return w.Bytes()
 		}
 	}
@@ -105,72 +86,7 @@ func CharacterInteractionEnterResultSuccessBody(l logrus.FieldLogger, ctx contex
 	return func(characterId uint32, mr model.MiniRoom) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult))
-			w.WriteByte(byte(mr.Type))
-			w.WriteByte(mr.MaxUsers)
-			if mr.IsMerchant() {
-				w.WriteByte(0)
-				w.WriteInt(uint32(mr.ItemId))
-				w.WriteAsciiString("Hired Merchant") // TODO
-			}
-			for _, v := range mr.Visitors {
-				w.WriteByte(v.Slot)
-				WriteCharacterLook(t)(w, v.Character, false)
-				w.WriteAsciiString(v.Character.Name())
-			}
-			w.WriteByte(-1)
-			if mr.Type == model.OmokMiniRoom || mr.Type == model.MatchCardMiniRoom {
-				// write omok standings
-				nGameKind := byte(0)
-				bTournament := false
-				for _, v := range mr.Visitors {
-					mgr := model.MiniGameRecord{}
-					w.WriteByte(v.Slot)
-					mgr.Encode(l, t, options)(w)
-				}
-				w.WriteByte(-1)
-				w.WriteAsciiString("description")
-				w.WriteByte(nGameKind)
-				w.WriteBool(bTournament)
-				if bTournament {
-					nRound := byte(0)
-					w.WriteByte(nRound)
-				}
-				return w.Bytes()
-			}
-			if mr.Type == model.PersonalShopMiniRoom {
-				w.WriteAsciiString("description")
-				w.WriteByte(16) // max item count
-				w.WriteByte(0)  // item count
-				for range 0 {
-					w.WriteShort(0) // per bundle
-					w.WriteShort(0) // quantity
-					w.WriteInt(0)   // price
-					_ = WriteAssetInfo(t)(true)(w)(asset.Model{})
-				}
-				return w.Bytes()
-			}
-			if mr.Type == model.MerchantShopMiniRoom {
-				// only written to owner
-				messages := uint16(0)
-				w.WriteShort(messages)
-				for range messages {
-					w.WriteAsciiString("message")
-					fromSlot := byte(0)
-					w.WriteByte(fromSlot)
-				}
-				w.WriteAsciiString("owner name")
-				w.WriteByte(16) // max item count
-				w.WriteInt(0)   // characters meso
-				w.WriteByte(0)  // item count
-				for range 0 {
-					w.WriteShort(0) // per bundle
-					w.WriteShort(0) // quantity
-					w.WriteInt(0)   // price
-					_ = WriteAssetInfo(t)(true)(w)(asset.Model{})
-				}
-				return w.Bytes()
-			}
-
+			mr.Enter(l, t, options)(w)
 			return w.Bytes()
 		}
 	}

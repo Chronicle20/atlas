@@ -2,19 +2,21 @@ package writer
 
 import (
 	"atlas-login/character"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const AddCharacterEntry = "AddCharacterEntry"
 
-func AddCharacterEntryBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model) BodyProducer {
-	return func(c character.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func AddCharacterEntryBody(c character.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options))
-			WriteCharacter(l, t)(w, options)(c, false)
+			WriteCharacter(l, ctx)(w, options)(c, false)
 			return w.Bytes()
 		}
 	}
@@ -30,9 +32,10 @@ const (
 	AddCharacterCodeUnknownError             AddCharacterCode = "UNKNOWN_ERROR"
 )
 
-func AddCharacterErrorBody(l logrus.FieldLogger, _ tenant.Model) func(code AddCharacterCode) BodyProducer {
-	return func(code AddCharacterCode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func AddCharacterErrorBody(code AddCharacterCode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(AddCharacterEntry, string(code), "codes", options))
 			return w.Bytes()
 		}

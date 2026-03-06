@@ -17,7 +17,6 @@ const CharacterViewAllHandle = "CharacterViewAllHandle"
 
 func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	viewAllFunc := session.Announce(l)(wp)(writer.CharacterViewAll)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode byte
 		var nexonPassport string
@@ -37,7 +36,7 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {
 			l.Debugf("Unable to retrieve available worlds.")
-			err = viewAllFunc(s, writer.CharacterViewAllErrorBody(l)())
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllErrorBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write view error.")
 			}
@@ -59,21 +58,21 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 
 		l.Debugf("Located [%d] characters for account [%d].", count, s.AccountId())
 		if count == 0 {
-			err = viewAllFunc(s, writer.CharacterViewAllSearchFailedBody(l)())
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllSearchFailedBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}
 			return
 		}
 
-		err = viewAllFunc(s, writer.CharacterViewAllCountBody(l)(uint32(len(ws)), uint32(count)))
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllCountBody(uint32(len(ws)), uint32(count)))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write count.")
 			return
 		}
 
 		for w, cs := range wcs {
-			err = viewAllFunc(s, writer.CharacterViewAllCharacterBody(l, t)(w, cs))
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllCharacterBody(w, cs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}

@@ -2,10 +2,12 @@ package writer
 
 import (
 	"atlas-login/character"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,9 +24,10 @@ const (
 	CharacterViewAllCodeErrorViewAll2  CharacterViewAllCode = "ERROR_VIEW_ALL_2"
 )
 
-func CharacterViewAllCountBody(l logrus.FieldLogger) func(worldCount uint32, unk uint32) BodyProducer {
-	return func(worldCount uint32, unk uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterViewAllCountBody(worldCount uint32, unk uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeCharacterCount), "codes", options))
 			w.WriteInt(worldCount)
 			w.WriteInt(unk)
@@ -33,32 +36,36 @@ func CharacterViewAllCountBody(l logrus.FieldLogger) func(worldCount uint32, unk
 	}
 }
 
-func CharacterViewAllSearchFailedBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterViewAllSearchFailedBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeSearchFailed), "codes", options))
 			return w.Bytes()
 		}
 	}
 }
 
-func CharacterViewAllErrorBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterViewAllErrorBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeErrorViewAll), "codes", options))
 			return w.Bytes()
 		}
 	}
 }
 
-func CharacterViewAllCharacterBody(l logrus.FieldLogger, t tenant.Model) func(worldId world.Id, characters []character.Model) BodyProducer {
-	return func(worldId world.Id, characters []character.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterViewAllCharacterBody(worldId world.Id, characters []character.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeNormal), "codes", options))
 			w.WriteByte(byte(worldId))
 			w.WriteByte(byte(len(characters)))
 			for _, c := range characters {
-				WriteCharacter(l, t)(w, options)(c, true)
+				WriteCharacter(l, ctx)(w, options)(c, true)
 			}
 
 			if t.Region() == "GMS" && t.MajorVersion() > 87 {

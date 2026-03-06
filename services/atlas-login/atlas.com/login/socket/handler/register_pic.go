@@ -18,8 +18,6 @@ const RegisterPicHandle = "RegisterPicHandle"
 
 func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	ap := account.NewProcessor(l, ctx)
-	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
@@ -31,7 +29,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 
 		l.Debugf("Attempting to register PIC. opt [%d], character [%d].", opt, characterId)
 
-		a, err := ap.GetById(s.AccountId())
+		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to get account by id [%d].", s.AccountId())
 			//TODO
@@ -42,7 +40,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			//TODO
 			return
 		}
-		err = ap.UpdatePic(s.AccountId(), pic)
+		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), pic)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to register PIC for account [%d].", s.AccountId())
 		}
@@ -50,7 +48,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
+			err = session.Announce(l)(ctx)(wp)(writer.ServerIP)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 				return

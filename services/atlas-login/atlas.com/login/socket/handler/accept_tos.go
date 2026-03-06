@@ -16,7 +16,6 @@ import (
 const AcceptTosHandle = "AcceptTosHandle"
 
 func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	ap := account.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		accepted := r.ReadBool()
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
@@ -26,11 +25,11 @@ func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			return
 		}
 
-		err := ap.UpdateTos(s.AccountId(), accepted)
+		err := account.NewProcessor(l, ctx).UpdateTos(s.AccountId(), accepted)
 		if err != nil {
 			// TODO
 		}
-		ap.ForAccountById(s.AccountId(), issueSuccess(l)(ctx)(wp)(s))
+		account.NewProcessor(l, ctx).ForAccountById(s.AccountId(), issueSuccess(l)(ctx)(wp)(s))
 	}
 }
 
@@ -38,7 +37,7 @@ func issueSuccess(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[account.Model] {
 		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(s session.Model) model.Operator[account.Model] {
-			authSuccessFunc := session.Announce(l)(wp)(writer.AuthSuccess)
+			authSuccessFunc := session.Announce(l)(ctx)(wp)(writer.AuthSuccess)
 			return func(s session.Model) model.Operator[account.Model] {
 				return func(a account.Model) error {
 					sc, err := configuration.GetTenantConfig(t.Id())
@@ -47,7 +46,7 @@ func issueSuccess(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 						return err
 					}
 
-					err = authSuccessFunc(s, writer.AuthSuccessBody(t)(a.Id(), a.Name(), a.Gender(), sc.UsesPin, a.PIC()))
+					err = authSuccessFunc(writer.AuthSuccessBody(a.Id(), a.Name(), a.Gender(), sc.UsesPin, a.PIC()))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 					}

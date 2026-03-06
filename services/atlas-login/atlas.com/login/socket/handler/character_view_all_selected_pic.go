@@ -20,7 +20,6 @@ import (
 const CharacterViewAllSelectedPicHandle = "CharacterViewAllSelectedPicHandle"
 
 func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	sp := session.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()
@@ -39,13 +38,13 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 
 		if c.WorldId() != worldId {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			_ = sp.Destroy(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
 		if c.AccountId() != s.AccountId() {
 			l.Errorf("Character is not part of account provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
-			_ = sp.Destroy(s)
+			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
@@ -73,7 +72,7 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 			_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false, ipAddress, "")
 			if limitReached {
 				l.Warnf("Account [%d] has exceeded PIC attempt limit. Terminating session.", s.AccountId())
-				_ = sp.Destroy(s)
+				_ = session.NewProcessor(l, ctx).Destroy(s)
 			}
 			return
 		}
@@ -93,10 +92,10 @@ func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Con
 			return
 		}
 
-		s = sp.SetWorldId(s.SessionId(), worldId)
+		s = session.NewProcessor(l, ctx).SetWorldId(s.SessionId(), worldId)
 
 		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(worldId)
-		s = sp.SetChannelId(s.SessionId(), ch.ChannelId())
+		s = session.NewProcessor(l, ctx).SetChannelId(s.SessionId(), ch.ChannelId())
 
 		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: characterId})
 		if err != nil {

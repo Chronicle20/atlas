@@ -19,8 +19,6 @@ const CharacterListWorldHandle = "CharacterListWorldHandle"
 
 func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
-	characterListFunc := session.Announce(l)(wp)(writer.CharacterList)
 	return func(s session.Model, r *request.Reader) {
 		var gameStartMode = byte(0)
 
@@ -47,7 +45,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		}
 
 		if w.CapacityStatus() == world.StatusFull {
-			err = serverStatusFunc(s, writer.ServerStatusBody(world.StatusFull))
+			err = session.Announce(l)(ctx)(wp)(writer.ServerStatus)(writer.ServerStatusBody(world.StatusFull))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show that world %d is full", w.Id())
 			}
@@ -70,7 +68,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		err = characterListFunc(s, writer.CharacterListBody(l, t)(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterList)(writer.CharacterListBody(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

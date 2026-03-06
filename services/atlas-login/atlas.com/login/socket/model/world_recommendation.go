@@ -1,9 +1,10 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,9 +25,11 @@ func NewWorldRecommendation(worldId world.Id, reason string) Recommendation {
 	return Recommendation{worldId, reason}
 }
 
-func (r *Recommendation) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (r *Recommendation) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(uint32(r.WorldId()))
 		w.WriteAsciiString(r.Reason())
+		return w.Bytes()
 	}
 }

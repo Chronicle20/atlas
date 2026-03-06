@@ -79,7 +79,7 @@ func CreateCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		err := factory.NewProcessor(l, ctx).SeedCharacter(s.AccountId(), s.WorldId(), name, jobIndex, subJobIndex, face, hair, hairColor, skinColor, gender, top, bottom, shoes, weapon, strength, dexterity, intelligence, luck)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating character from seed.")
-			err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
+			err = session.Announce(l)(ctx)(wp)(writer.AddCharacterEntry)(writer.AddCharacterErrorBody(writer.AddCharacterCodeUnknownError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}

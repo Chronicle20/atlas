@@ -1,16 +1,21 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/sirupsen/logrus"
 )
 
 const LoginAuth = "LoginAuth"
 
-func LoginAuthBody(screen string) BodyProducer {
-	return func(w *response.Writer, _ map[string]interface{}) []byte {
-		w.WriteAsciiString(screen)
-		rtn := w.Bytes()
-		//l.Debugf("Writing [%s] message. opcode [0x%02X]. body={screen=%s}.", LoginAuth, op&0xFF, screen)
-		return rtn
+func LoginAuthBody(screen string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteAsciiString(screen)
+			return w.Bytes()
+		}
 	}
 }

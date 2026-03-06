@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -35,13 +37,15 @@ const (
 	FullClientNotice           = "FULL_CLIENT_NOTICE"
 )
 
-func AuthSuccessBody(tenant tenant.Model) func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
-	return func(accountId uint32, name string, gender byte, usesPin bool, pic string) BodyProducer {
-		return func(w *response.Writer, _ map[string]interface{}) []byte {
+func AuthSuccessBody(accountId uint32, name string, gender byte, usesPin bool, pic string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(0) // success
 			w.WriteByte(0)
 
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				w.WriteInt(0)
 			}
 
@@ -56,14 +60,14 @@ func AuthSuccessBody(tenant tenant.Model) func(accountId uint32, name string, ge
 			// Admin Byte. 0x80,0x40,0x20.. Rubbish.
 			w.WriteByte(0)
 
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				// country code
-				if tenant.MajorVersion() > 12 {
+				if t.MajorVersion() > 12 {
 					w.WriteByte(0)
 				}
 				w.WriteAsciiString(name)
 
-				if tenant.MajorVersion() > 12 {
+				if t.MajorVersion() > 12 {
 					w.WriteByte(0)
 					// quiet ban
 					w.WriteByte(0)
@@ -87,10 +91,10 @@ func AuthSuccessBody(tenant tenant.Model) func(accountId uint32, name string, ge
 					w.WriteLong(0)
 				}
 
-				if tenant.MajorVersion() >= 87 {
+				if t.MajorVersion() >= 87 {
 					w.WriteLong(0)
 				}
-			} else if tenant.Region() == "JMS" {
+			} else if t.Region() == "JMS" {
 				w.WriteAsciiString(name)
 				w.WriteAsciiString(name)
 				w.WriteByte(0)
@@ -102,29 +106,27 @@ func AuthSuccessBody(tenant tenant.Model) func(accountId uint32, name string, ge
 				w.WriteLong(0)
 				w.WriteAsciiString(name)
 			}
-
-			//l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthSuccess, op&0xFF)
 			return w.Bytes()
 		}
 	}
 }
 
-func AuthTemporaryBanBody(l logrus.FieldLogger, tenant tenant.Model) func(until time.Time, reason byte) BodyProducer {
-	return func(until time.Time, reason byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func AuthTemporaryBanBody(until time.Time, reason byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
 			w.WriteByte(code)
 			w.WriteByte(0)
 
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				w.WriteInt(0)
 			}
 
 			w.WriteByte(reason)
 			w.WriteLong(uint64(msTime(until)))
-
-			rtn := w.Bytes()
-			return rtn
+			return w.Bytes()
 		}
 	}
 }
@@ -136,39 +138,39 @@ func msTime(t time.Time) int64 {
 	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }
 
-func AuthPermanentBanBody(l logrus.FieldLogger, tenant tenant.Model) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
-		w.WriteByte(code)
-		w.WriteByte(0)
+func AuthPermanentBanBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
+			code := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
+			w.WriteByte(code)
+			w.WriteByte(0)
 
-		if tenant.Region() == "GMS" {
-			w.WriteInt(0)
+			if t.Region() == "GMS" {
+				w.WriteInt(0)
+			}
+
+			w.WriteByte(0)
+			w.WriteLong(0)
+			return w.Bytes()
 		}
-
-		w.WriteByte(0)
-		w.WriteLong(0)
-
-		rtn := w.Bytes()
-		//l.Debugf("Writing [%s] message. opcode [0x%02X].", AuthPermanentBan, op&0xFF)
-		return rtn
 	}
 }
 
-func AuthLoginFailedBody(l logrus.FieldLogger, tenant tenant.Model) func(reason string) BodyProducer {
-	return func(reason string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func AuthLoginFailedBody(reason string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			code := getCode(l)(AuthLoginFailed, reason, "failedReasonCodes", options)
 			w.WriteByte(code)
 			w.WriteByte(0)
 
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				w.WriteInt(0)
 			}
-
-			rtn := w.Bytes()
-			//l.Debugf("Writing [%s] message. opcode [0x%02X]. reason=[%s]. body={reason=%d}.", AuthLoginFailed, op&0xFF, reason, code)
-			return rtn
+			return w.Bytes()
 		}
 	}
 }

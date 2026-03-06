@@ -4,19 +4,20 @@ import (
 	"atlas-login/socket/model"
 	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const ServerListRecommendations = "ServerListRecommendations"
 
-func ServerListRecommendationsBody(l logrus.FieldLogger, ctx context.Context) func(wrs []model.Recommendation) BodyProducer {
-	return func(wrs []model.Recommendation) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func ServerListRecommendationsBody(wrs []model.Recommendation) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(len(wrs)))
 			for _, x := range wrs {
-				_ = x.Encode(l, tenant.MustFromContext(ctx), options)
+				w.WriteByteArray(x.Encode(l, ctx)(options))
 				w.WriteInt(uint32(x.WorldId()))
 				w.WriteAsciiString(x.Reason())
 			}

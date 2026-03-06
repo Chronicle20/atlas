@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -18,33 +21,32 @@ const (
 	PinOperationModeAlreadyLoggedIn  PinOperationMode = "ALREADY_LOGGED_IN"
 )
 
-func RegisterPinBody(l logrus.FieldLogger) BodyProducer {
-	return PinOperationBody(l)(PinOperationModeRegister)
+func RegisterPinBody() packet.Encode {
+	return PinOperationBody(PinOperationModeRegister)
 }
 
-func RequestPinBody(l logrus.FieldLogger) BodyProducer {
-	return PinOperationBody(l)(PinOperationModeEnterEnterPin)
+func RequestPinBody() packet.Encode {
+	return PinOperationBody(PinOperationModeEnterEnterPin)
 }
 
-func AcceptPinBody(l logrus.FieldLogger) BodyProducer {
-	return PinOperationBody(l)(PinOperationModeOk)
+func AcceptPinBody() packet.Encode {
+	return PinOperationBody(PinOperationModeOk)
 }
 
-func InvalidPinBody(l logrus.FieldLogger) BodyProducer {
-	return PinOperationBody(l)(PinOperationModeInvalid)
+func InvalidPinBody() packet.Encode {
+	return PinOperationBody(PinOperationModeInvalid)
 }
 
-func PinConnectionFailedBody(l logrus.FieldLogger) BodyProducer {
-	return PinOperationBody(l)(PinOperationModeConnectionFailed)
+func PinConnectionFailedBody() packet.Encode {
+	return PinOperationBody(PinOperationModeConnectionFailed)
 }
 
-func PinOperationBody(l logrus.FieldLogger) func(mode PinOperationMode) BodyProducer {
-	return func(mode PinOperationMode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func PinOperationBody(mode PinOperationMode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(PinOperation, string(mode), "modes", options))
-			rtn := w.Bytes()
-			//l.Debugf("Writing [%s] message. opcode [0x%02X]. body={mode=%s}.", PinOperation, op&0xFF, mode)
-			return rtn
+			return w.Bytes()
 		}
 	}
 }

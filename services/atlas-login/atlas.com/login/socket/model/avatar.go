@@ -2,6 +2,7 @@ package model
 
 import (
 	"atlas-login/character"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -60,8 +61,10 @@ func NewFromCharacter(c character.Model, mega bool) Avatar {
 	}
 }
 
-func (m *Avatar) Encode(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
 			// older versions don't write gender / skin color / face / mega / hair a second time
 		} else {
@@ -121,5 +124,6 @@ func (m *Avatar) Encode(_ logrus.FieldLogger, t tenant.Model, _ map[string]inter
 				w.WriteLong(0)
 			}
 		}
+		return w.Bytes()
 	}
 }

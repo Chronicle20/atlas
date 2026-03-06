@@ -3,24 +3,29 @@ package writer
 import (
 	"atlas-login/socket/model"
 	"atlas-login/world"
+	"context"
 	"fmt"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 const ServerListEntry = "ServerListEntry"
 const ServerListEnd = "ServerListEnd"
 
-func ServerListEntryBody(tenant tenant.Model) func(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
-	return func(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func ServerListEntryBody(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(worldId))
 			w.WriteAsciiString(worldName)
 
-			if tenant.Region() == "GMS" {
-				if tenant.MajorVersion() > 12 {
+			if t.Region() == "GMS" {
+				if t.MajorVersion() > 12 {
 					w.WriteByte(byte(state))
 					w.WriteAsciiString(eventMessage)
 					w.WriteShort(100) // eventExpRate 100 = 1x
@@ -29,7 +34,7 @@ func ServerListEntryBody(tenant tenant.Model) func(worldId world2.Id, worldName 
 					//support blocking character creation
 					w.WriteByte(0)
 				}
-			} else if tenant.Region() == "JMS" {
+			} else if t.Region() == "JMS" {
 				w.WriteByte(byte(state))
 				w.WriteAsciiString(eventMessage)
 				w.WriteShort(100) // eventExpRate 100 = 1x
@@ -46,11 +51,11 @@ func ServerListEntryBody(tenant tenant.Model) func(worldId world2.Id, worldName 
 			}
 
 			//balloon size
-			if tenant.Region() == "GMS" {
-				if tenant.MajorVersion() > 12 {
+			if t.Region() == "GMS" {
+				if t.MajorVersion() > 12 {
 					w.WriteShort(0)
 				}
-			} else if tenant.Region() == "JMS" {
+			} else if t.Region() == "JMS" {
 				w.WriteShort(0)
 			}
 
@@ -63,7 +68,12 @@ func ServerListEntryBody(tenant tenant.Model) func(worldId world2.Id, worldName 
 	}
 }
 
-func ServerListEndBody(w *response.Writer, _ map[string]interface{}) []byte {
-	w.WriteByte(byte(0xFF))
-	return w.Bytes()
+func ServerListEndBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(byte(0xFF))
+			return w.Bytes()
+		}
+	}
 }

@@ -1,16 +1,19 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const DeleteCharacterResponse = "DeleteCharacterResponse"
 
-func DeleteCharacterResponseBody(l logrus.FieldLogger, _ tenant.Model) func(characterId uint32) BodyProducer {
-	return func(characterId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func DeleteCharacterResponseBody(characterId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
 			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(DeleteCharacterCodeOk), "codes", options))
 			return w.Bytes()
@@ -36,9 +39,10 @@ const (
 	DeleteCharacterCodeCannotDeleteInFamily           DeleteCharacterCode = "CANNOT_DELETE_WITH_FAMILY"
 )
 
-func DeleteCharacterErrorBody(l logrus.FieldLogger, _ tenant.Model) func(characterId uint32, code DeleteCharacterCode) BodyProducer {
-	return func(characterId uint32, code DeleteCharacterCode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func DeleteCharacterErrorBody(characterId uint32, code DeleteCharacterCode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
 			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(code), "codes", options))
 			return w.Bytes()

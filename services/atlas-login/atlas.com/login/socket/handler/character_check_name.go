@@ -13,13 +13,12 @@ import (
 const CharacterCheckNameHandle = "CharacterCheckNameHandle"
 
 func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	characterNameResponseFunc := session.Announce(l)(wp)(writer.CharacterNameResponse)
 	return func(s session.Model, r *request.Reader) {
 		name := r.ReadAsciiString()
 		ok, err := character.NewProcessor(l, ctx).IsValidName(name)
 		if err != nil {
 			l.Debugf("Error determining if name [%s] is valid.", name)
-			err = characterNameResponseFunc(s, writer.CharacterNameResponseBody(l)(name, writer.CharacterNameResponseCodeSystemError))
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeSystemError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character name response due to error.")
 				return
@@ -29,7 +28,7 @@ func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 
 		if !ok {
 			l.Debugf("Name [%s] is not allowed.", name)
-			err = characterNameResponseFunc(s, writer.CharacterNameResponseBody(l)(name, writer.CharacterNameResponseCodeNotAllowed))
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeNotAllowed))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character name response due to error.")
 				return
@@ -38,7 +37,7 @@ func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		}
 
 		l.Debugf("Allowing character creation with the name of [%s].", name)
-		err = characterNameResponseFunc(s, writer.CharacterNameResponseBody(l)(name, writer.CharacterNameResponseCodeOk))
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeOk))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character name response due to error.")
 			return

@@ -19,7 +19,6 @@ const CharacterSelectedPicHandle = "CharacterSelectedPicHandle"
 
 func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
 	return func(s session.Model, r *request.Reader) {
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()
@@ -46,7 +45,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve account [%d] for PIC validation.", s.AccountId())
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
+			err = session.Announce(l)(ctx)(wp)(writer.ServerIP)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			}
@@ -61,7 +60,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeIncorrectPassword))
+			err = session.Announce(l)(ctx)(wp)(writer.ServerIP)(writer.ServerIPBodySimpleError(writer.ServerIPCodeIncorrectPassword))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			}
@@ -73,7 +72,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
-			err = serverIpFunc(s, writer.ServerIPBodySimpleError(l)(writer.ServerIPCodeServerUnderInspection))
+			err = session.Announce(l)(ctx)(wp)(writer.ServerIP)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 				return

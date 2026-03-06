@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	socket "github.com/Chronicle20/atlas-socket"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -200,15 +201,19 @@ func (p *ProcessorImpl) Decrypt(hasAes bool, hasMapleEncryption bool) func(sessi
 	}
 }
 
-func Announce(l logrus.FieldLogger) func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-	return func(writerProducer writer.Producer) func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-		return func(writerName string) func(s Model, bodyProducer writer.BodyProducer) error {
-			return func(s Model, bodyProducer writer.BodyProducer) error {
-				w, err := writerProducer(l, writerName)
-				if err != nil {
-					return err
+func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+		return func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+			return func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+				return func(encoder packet.Encode) model.Operator[Model] {
+					return func(s Model) error {
+						w, err := writerProducer(writerName)
+						if err != nil {
+							return err
+						}
+						return s.announceEncrypted(w(l, ctx)(encoder))
+					}
 				}
-				return s.announceEncrypted(w(l)(bodyProducer))
 			}
 		}
 	}
@@ -226,13 +231,14 @@ func Teardown(l logrus.FieldLogger) func() {
 	}
 }
 
-func SendPing(l logrus.FieldLogger, t tenant.Model, wp writer.Producer) socket.IdleNotifier {
+func SendPing(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) socket.IdleNotifier {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID) {
 		s, ok := getRegistry().Get(t.Id(), sessionId)
 		if !ok {
 			return
 		}
 		l.Debugf("Session [%s] idle, sending PING.", sessionId)
-		_ = Announce(l)(wp)(writer.Ping)(s, writer.PingBody())
+		_ = Announce(l)(ctx)(wp)(writer.Ping)(writer.PingBody())(s)
 	}
 }

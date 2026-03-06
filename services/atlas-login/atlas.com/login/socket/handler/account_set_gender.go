@@ -14,7 +14,6 @@ import (
 const SetGenderHandle = "SetGenderHandle"
 
 func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	setAccountResultFunc := session.Announce(l)(wp)(writer.SetAccountResult)
 	return func(s session.Model, r *request.Reader) {
 		confirmed := r.ReadBool()
 		gender := r.ReadByte()
@@ -34,7 +33,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			as.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
 		}
 
-		err := setAccountResultFunc(s, writer.SetAccountResultBody(gender, success))
+		err := session.Announce(l)(ctx)(wp)(writer.SetAccountResult)(writer.SetAccountResultBody(gender, success))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue set account result")
 		}

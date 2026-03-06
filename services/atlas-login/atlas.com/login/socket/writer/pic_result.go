@@ -1,16 +1,21 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/sirupsen/logrus"
 )
 
 const PicResult = "PicResult"
 
-func PicResultBody() BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(0)
-		rtn := w.Bytes()
-		//l.Debugf("Writing [%s] message. opcode [0x%02X].", PicResult, op&0xFF)
-		return rtn
+func PicResultBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(0)
+			return w.Bytes()
+		}
 	}
 }

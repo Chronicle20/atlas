@@ -11,12 +11,11 @@ import (
 
 const WorldSelectHandle = "WorldSelectHandle"
 
-func WorldSelectHandleFunc(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverLoadFunc := session.Announce(l)(wp)(writer.ServerLoad)
+func WorldSelectHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	return func(s session.Model, r *request.Reader) {
 		worldId := r.ReadByte()
 		l.Debugf("Reading [%s] message. body={worldId=%d}", WorldSelectHandle, worldId)
-		err := serverLoadFunc(s, writer.ServerLoadBody(l)(writer.ServerLoadCodeOk))
+		err := session.Announce(l)(ctx)(wp)(writer.ServerLoad)(writer.ServerLoadBody(writer.ServerLoadCodeOk))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue request server load")
 		}

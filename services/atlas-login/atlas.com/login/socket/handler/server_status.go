@@ -14,12 +14,11 @@ import (
 const ServerStatusHandle = "ServerStatusHandle"
 
 func ServerStatusHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	serverStatusFunc := session.Announce(l)(wp)(writer.ServerStatus)
 	return func(s session.Model, r *request.Reader) {
 		worldId := world2.Id(r.ReadUint16())
 
 		cs := world.NewProcessor(l, ctx).GetCapacityStatus(worldId)
-		err := serverStatusFunc(s, writer.ServerStatusBody(cs))
+		err := session.Announce(l)(ctx)(wp)(writer.ServerStatus)(writer.ServerStatusBody(cs))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue world capacity status information")
 		}

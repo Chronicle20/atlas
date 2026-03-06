@@ -18,8 +18,6 @@ const DeleteCharacterHandle = "DeleteCharacterHandle"
 
 func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
 	t := tenant.MustFromContext(ctx)
-	deleteCharacterResponseFunc := session.Announce(l)(wp)(writer.DeleteCharacterResponse)
-	cp := character.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader) {
 		var verifyPic = false
 		var pic string
@@ -51,7 +49,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			a, err := ap.GetById(s.AccountId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve account performing deletion.")
-				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
+				err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeUnknownError))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Failed to write delete character response body.")
 				}
@@ -66,7 +64,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 					_ = session.NewProcessor(l, ctx).Destroy(s)
 					return
 				}
-				err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeSecondaryPinMismatch))
+				err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeSecondaryPinMismatch))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Failed to write delete character response body.")
 				}
@@ -76,10 +74,10 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			ap.RecordPicAttempt(s.AccountId(), true, ipAddress, "")
 		}
 
-		_, err := cp.GetById()(characterId)
+		_, err := character.NewProcessor(l, ctx).GetById()(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being deleted.", characterId)
-			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
+			err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeUnknownError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to write delete character response body.")
 			}
@@ -89,7 +87,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		isGuildMaster, err := guild.NewProcessor(l, ctx).IsGuildMaster(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to check if character [%d] is a guild master.", characterId)
-			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
+			err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeUnknownError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to write delete character response body.")
 			}
@@ -98,7 +96,7 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 
 		if isGuildMaster {
 			l.Debugf("Failing character deletion because character [%d] is a guild master.", characterId)
-			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeCannotDeleteGuildMaster))
+			err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeCannotDeleteGuildMaster))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to write delete character response body.")
 			}
@@ -108,17 +106,17 @@ func DeleteCharacterHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		// TODO - verify the character is not engaged.
 		// TODO - verify the character is not part of a family.
 
-		err = cp.DeleteById(characterId)
+		err = character.NewProcessor(l, ctx).DeleteById(characterId)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to delete character [%d].", characterId)
-			err = deleteCharacterResponseFunc(s, writer.DeleteCharacterErrorBody(l, t)(characterId, writer.DeleteCharacterCodeUnknownError))
+			err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterErrorBody(characterId, writer.DeleteCharacterCodeUnknownError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Failed to write delete character response body.")
 			}
 			return
 		}
 
-		err = deleteCharacterResponseFunc(s, writer.DeleteCharacterResponseBody(l, t)(characterId))
+		err = session.Announce(l)(ctx)(wp)(writer.DeleteCharacterResponse)(writer.DeleteCharacterResponseBody(characterId))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Failed to write delete character response body.")
 		}

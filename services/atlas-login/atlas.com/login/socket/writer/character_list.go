@@ -4,8 +4,10 @@ import (
 	"atlas-login/character"
 	"atlas-login/pet"
 	"atlas-login/socket/model"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -13,9 +15,11 @@ import (
 
 const CharacterList = "CharacterList"
 
-func CharacterListBody(l logrus.FieldLogger, t tenant.Model) func(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
-	return func(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterListBody(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(status))
 
 			if t.Region() == "JMS" {
@@ -24,7 +28,7 @@ func CharacterListBody(l logrus.FieldLogger, t tenant.Model) func(characters []c
 
 			w.WriteByte(byte(len(characters)))
 			for _, x := range characters {
-				WriteCharacter(l, t)(w, options)(x, false)
+				WriteCharacter(l, ctx)(w, options)(x, false)
 			}
 			if t.Region() == "GMS" && t.MajorVersion() <= 28 {
 				// no trailing information
@@ -48,12 +52,13 @@ func CharacterListBody(l logrus.FieldLogger, t tenant.Model) func(characters []c
 	}
 }
 
-func WriteCharacter(l logrus.FieldLogger, t tenant.Model) func(w *response.Writer, options map[string]interface{}) func(character character.Model, viewAll bool) {
+func WriteCharacter(l logrus.FieldLogger, ctx context.Context) func(w *response.Writer, options map[string]interface{}) func(character character.Model, viewAll bool) {
+	t := tenant.MustFromContext(ctx)
 	return func(w *response.Writer, options map[string]interface{}) func(character character.Model, viewAll bool) {
 		return func(character character.Model, viewAll bool) {
 			WriteCharacterStatistics(t)(w, character)
 			ava := model.NewFromCharacter(character, false)
-			ava.Encode(l, t, options)(w)
+			w.WriteByteArray(ava.Encode(l, ctx)(options))
 			if !viewAll {
 				w.WriteByte(0)
 			}

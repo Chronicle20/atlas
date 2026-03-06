@@ -345,7 +345,8 @@ func (p *Processor) GetSessionByCharacterId(characterId uint32) (Model, bool) {
 	return getRegistry().GetByCharacterId(p.t.Id(), characterId)
 }
 
-func SendPing(l logrus.FieldLogger, ctx context.Context, t tenant.Model, wp writer.Producer) socket.IdleNotifier {
+func SendPing(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) socket.IdleNotifier {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID) {
 		s, ok := getRegistry().Get(t.Id(), sessionId)
 		if !ok {

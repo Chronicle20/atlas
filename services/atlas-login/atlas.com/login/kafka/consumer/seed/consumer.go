@@ -54,13 +54,13 @@ func handleCreatedStatusEvent(t tenant.Model, wp writer.Producer) message.Handle
 			c, err := cp.GetById(cp.InventoryDecorator())(e.Body.CharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve newly created character [%d] for account [%d].", e.Body.CharacterId, e.AccountId)
-				err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterErrorBody(l, t)(writer.AddCharacterCodeUnknownError))
+				err = session.Announce(l)(ctx)(wp)(writer.AddCharacterEntry)(writer.AddCharacterErrorBody(writer.AddCharacterCodeUnknownError))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to show character creation error.")
 				}
 				return err
 			}
-			err = session.Announce(l)(wp)(writer.AddCharacterEntry)(s, writer.AddCharacterEntryBody(l, t)(c))
+			err = session.Announce(l)(ctx)(wp)(writer.AddCharacterEntry)(writer.AddCharacterEntryBody(c))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}

@@ -1,36 +1,31 @@
 package writer
 
 import (
+	"context"
 	"errors"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
-type OpWriterProducer[E uint8 | uint16] func(op E) OpWriter
+type BodyFunc func(l logrus.FieldLogger, ctx context.Context) func(encoder packet.Encode) []byte
 
-type OpWriter func(w *response.Writer)
-
-type BodyProducer func(w *response.Writer, options map[string]interface{}) []byte
-
-type BodyFunc func(l logrus.FieldLogger) func(rem BodyProducer) []byte
-
-type HeaderFunc func(opWriter OpWriter, options map[string]interface{}) BodyFunc
-
-func MessageGetter(opWriter OpWriter, options map[string]interface{}) BodyFunc {
-	return func(l logrus.FieldLogger) func(rem BodyProducer) []byte {
-		return func(rem BodyProducer) []byte {
+func MessageGetter(opWriter func(w *response.Writer), options map[string]interface{}) BodyFunc {
+	return func(l logrus.FieldLogger, ctx context.Context) func(encoder packet.Encode) []byte {
+		return func(encoder packet.Encode) []byte {
 			w := response.NewWriter(l)
 			opWriter(w)
-			return rem(w, options)
+			w.WriteByteArray(encoder(l, ctx)(options))
+			return w.Bytes()
 		}
 	}
 }
 
-type Producer func(l logrus.FieldLogger, name string) (BodyFunc, error)
+type Producer func(name string) (BodyFunc, error)
 
 func ProducerGetter(wm map[string]BodyFunc) Producer {
-	return func(l logrus.FieldLogger, name string) (BodyFunc, error) {
+	return func(name string) (BodyFunc, error) {
 		if w, ok := wm[name]; ok {
 			return w, nil
 		}

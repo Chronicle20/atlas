@@ -19,8 +19,8 @@ import (
 
 const CharacterViewAllSelectedPicHandle = "CharacterViewAllSelectedPicHandle"
 
-func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func CharacterViewAllSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()
 		worldId := world2.Id(r.ReadUint32())

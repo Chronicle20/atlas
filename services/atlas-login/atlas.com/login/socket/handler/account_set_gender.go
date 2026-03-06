@@ -13,8 +13,8 @@ import (
 
 const SetGenderHandle = "SetGenderHandle"
 
-func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		confirmed := r.ReadBool()
 		gender := r.ReadByte()
 		l.Debugf("Reading [%s] message. body={confirmed=%t, gender=%d}", SetGenderHandle, confirmed, gender)

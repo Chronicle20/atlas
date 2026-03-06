@@ -11,8 +11,8 @@ import (
 
 const ClientStartHandle = "ClientStartHandle"
 
-func ClientStartHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func ClientStartHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		l.Debugf("Client has started.")
 	}
 }

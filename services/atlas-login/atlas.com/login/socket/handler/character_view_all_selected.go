@@ -17,8 +17,8 @@ import (
 
 const CharacterViewAllSelectedHandle = "CharacterViewAllSelectedHandle"
 
-func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func CharacterViewAllSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		characterId := r.ReadUint32()
 		worldId := world2.Id(r.ReadUint32())
 		macAddress := r.ReadAsciiString()

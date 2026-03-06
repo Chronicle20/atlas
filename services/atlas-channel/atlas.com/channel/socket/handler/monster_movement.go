@@ -3,7 +3,7 @@ package handler
 import (
 	"atlas-channel/movement"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-packet/model"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -28,8 +28,8 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		multiTargetForBall := model.MultiTargetForBall{}
 		randTimeForAreaAttack := model.RandTimeForAreaAttack{}
 		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-			multiTargetForBall.Decode(l, t, readerOptions)(r)
-			randTimeForAreaAttack.Decode(l, t, readerOptions)(r)
+			multiTargetForBall.Decode(l, ctx)(r, readerOptions)
+			randTimeForAreaAttack.Decode(l, ctx)(r, readerOptions)
 		}
 
 		r.ReadByte()   // moveFlags

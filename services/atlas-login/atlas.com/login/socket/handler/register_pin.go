@@ -13,8 +13,8 @@ import (
 
 const RegisterPinHandle = "RegisterPinHandle"
 
-func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func RegisterPinHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		opt := r.ReadByte()
 		if opt == 0 {
 			l.Debugf("Account [%d] opted out of PIN registration. Terminating session.", s.AccountId())

@@ -2,7 +2,7 @@ package writer
 
 import (
 	"atlas-channel/pet"
-	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-packet/model"
 	"context"
 
 	"github.com/Chronicle20/atlas-socket/packet"

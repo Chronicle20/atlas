@@ -11,8 +11,8 @@ import (
 
 const CharacterViewAllPongHandle = "CharacterViewAllPongHandle"
 
-func CharacterViewAllPongHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func CharacterViewAllPongHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var opt = r.ReadBool()
 		var mode = "RESET"
 		if opt {

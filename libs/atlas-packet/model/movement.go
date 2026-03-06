@@ -70,8 +70,8 @@ type Element struct {
 	ElemType    byte
 }
 
-func (m *Element) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
-	return func(r *request.Reader, options map[string]interface{}) {
+func (m *Element) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, _ map[string]interface{}) {
 		m.BMoveAction = r.ReadByte()
 		m.TElapse = r.ReadInt16()
 	}
@@ -164,8 +164,8 @@ func (m *JumpElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 	}
 }
 
-func (m *StatChangeElement) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
-	return func(r *request.Reader, options map[string]interface{}) {
+func (m *StatChangeElement) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, _ map[string]interface{}) {
 		m.BStat = r.ReadByte()
 	}
 }
@@ -184,9 +184,9 @@ func (m *Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 	}
 }
 
-func (m *Element) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m *Element) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
+	return func(_ map[string]interface{}) []byte {
 		w.WriteByte(m.BMoveAction)
 		w.WriteInt16(m.TElapse)
 		return w.Bytes()
@@ -260,7 +260,7 @@ func (m *JumpElement) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 
 func (m *StatChangeElement) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
+	return func(_ map[string]interface{}) []byte {
 		w.WriteByte(m.BStat)
 		return w.Bytes()
 	}

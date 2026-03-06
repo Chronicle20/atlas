@@ -24,6 +24,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
+	sw "github.com/Chronicle20/atlas-socket/writer"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -204,11 +205,11 @@ func getWriterProducer(l logrus.FieldLogger) func(writerConfig []writer2.RestMod
 
 			for _, wn := range wl {
 				if wn == wc.Writer {
-					rwm[wc.Writer] = writer.MessageGetter(w.Write(uint16(op)), wc.Options)
+					rwm[wc.Writer] = sw.MessageGetter(w.Write(uint16(op)), wc.Options)
 				}
 			}
 		}
-		return writer.ProducerGetter(rwm)
+		return sw.ProducerGetter(rwm)
 	}
 }
 

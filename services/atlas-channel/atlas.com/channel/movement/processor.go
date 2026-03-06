@@ -8,7 +8,7 @@ import (
 	"atlas-channel/monster"
 	"atlas-channel/pet"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-packet/model"
 	"atlas-channel/socket/writer"
 	"context"
 

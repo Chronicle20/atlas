@@ -5,7 +5,6 @@ import (
 
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,13 +12,13 @@ type MultiTargetForBall struct {
 	Targets []Position
 }
 
-func (m *MultiTargetForBall) Decode(l logrus.FieldLogger, t tenant.Model, ops map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *MultiTargetForBall) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		size := r.ReadUint32()
 		m.Targets = make([]Position, size)
 		for i := 0; i < int(size); i++ {
 			p := Position{}
-			p.Decode(l, t, ops)(r)
+			p.Decode(l, ctx)(r, options)
 			m.Targets[i] = p
 		}
 	}

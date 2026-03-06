@@ -5,7 +5,6 @@ import (
 
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,8 +17,8 @@ func NewPosition(x int32, y int32) Position {
 	return Position{x: x, y: y}
 }
 
-func (m *Position) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *Position) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, _ map[string]interface{}) {
 		m.x = r.ReadInt32()
 		m.y = r.ReadInt32()
 	}
@@ -27,7 +26,7 @@ func (m *Position) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]int
 
 func (m *Position) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
-	return func(options map[string]interface{}) []byte {
+	return func(_ map[string]interface{}) []byte {
 		w.WriteInt32(m.x)
 		w.WriteInt32(m.y)
 		return w.Bytes()

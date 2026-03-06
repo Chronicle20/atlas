@@ -16,9 +16,9 @@ import (
 
 const RegisterPicHandle = "RegisterPicHandle"
 
-func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		opt := r.ReadByte()
 		characterId := r.ReadUint32()
 		if t.Region() == "GMS" {

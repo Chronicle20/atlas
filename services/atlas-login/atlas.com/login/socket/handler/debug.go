@@ -11,8 +11,8 @@ import (
 
 const DebugHandle = "DebugHandle"
 
-func DebugHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func DebugHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		l.Warnf("[%s] in use. Read [%s].", DebugHandle, r.GetRestAsBytes())
 	}
 }

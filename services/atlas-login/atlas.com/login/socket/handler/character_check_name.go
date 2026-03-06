@@ -12,8 +12,8 @@ import (
 
 const CharacterCheckNameHandle = "CharacterCheckNameHandle"
 
-func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		name := r.ReadAsciiString()
 		ok, err := character.NewProcessor(l, ctx).IsValidName(name)
 		if err != nil {

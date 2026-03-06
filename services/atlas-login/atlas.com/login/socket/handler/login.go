@@ -57,8 +57,8 @@ func ReadLoginRequest(reader *request.Reader) *LoginRequest {
 	}
 }
 
-func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		p := ReadLoginRequest(r)
 		l.Debugf("Reading [%s] message. body={name=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.GameRoomClient(), p.GameStartMode())
 

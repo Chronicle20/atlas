@@ -15,9 +15,9 @@ import (
 
 const CharacterViewAllHandle = "CharacterViewAllHandle"
 
-func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var gameStartMode byte
 		var nexonPassport string
 		var machineId string

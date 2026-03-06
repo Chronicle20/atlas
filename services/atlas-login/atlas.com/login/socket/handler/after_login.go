@@ -13,8 +13,8 @@ import (
 
 const AfterLoginHandle = "AfterLoginHandle"
 
-func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		opt1 := r.ReadByte()
 		opt2 := byte(0)
 		pin := ""

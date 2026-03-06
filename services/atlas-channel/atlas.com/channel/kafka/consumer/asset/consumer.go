@@ -378,9 +378,10 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func updateAppearance(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
+		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 			return func(c character.Model) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterAppearanceUpdate)(writer.CharacterAppearanceUpdateBody(tenant.MustFromContext(ctx))(c))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterAppearanceUpdate)(writer.CharacterAppearanceUpdateBody(l, t)(c))
 			}
 		}
 	}

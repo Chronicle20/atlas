@@ -3,13 +3,10 @@ package writer
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
-	"atlas-channel/equipment"
-	slot2 "atlas-channel/equipment/slot"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
 
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -47,7 +44,8 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 
 			w.WriteShort(uint16(c.JobId()))
 
-			WriteCharacterLook(t)(w, c, false)
+			ava := model.NewFromCharacter(c, false)
+			ava.Encode(l, t, options)(w)
 
 			if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 				w.WriteInt(0) // driver id
@@ -124,118 +122,6 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 			return w.Bytes()
 		}
 	}
-}
-
-func WriteCharacterLook(tenant tenant.Model) func(w *response.Writer, character character.Model, mega bool) {
-	return func(w *response.Writer, character character.Model, mega bool) {
-		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
-			// older versions don't write gender / skin color / face / mega / hair a second time
-		} else {
-			w.WriteByte(character.Gender())
-			w.WriteByte(character.SkinColor())
-			w.WriteInt(character.Face())
-			w.WriteBool(!mega)
-			w.WriteInt(character.Hair())
-		}
-		WriteCharacterEquipment(tenant)(w, character)
-	}
-}
-func WriteCharacterEquipment(tenant tenant.Model) func(w *response.Writer, character character.Model) {
-	return func(w *response.Writer, character character.Model) {
-		var equips = getEquippedItemSlotMap(character.Equipment())
-		var maskedEquips = getMaskedEquippedItemSlotMap(character.Equipment())
-		writeEquips(tenant)(w, equips, maskedEquips)
-
-		//var weapon *inventory.EquippedItem
-		//for _, x := range character.Equipment() {
-		//	if x.InWeaponSlot() {
-		//		weapon = &x
-		//		break
-		//	}
-		//}
-		//if weapon != nil {
-		//	w.WriteInt(weapon.ItemId())
-		//} else {
-		w.WriteInt(0)
-		//}
-
-		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
-			writeForEachPet(w, character.Pets(), writePetItemId, writeEmptyPetItemId)
-		} else {
-			if len(character.Pets()) > 0 {
-				w.WriteLong(uint64(character.Pets()[0].Id())) // pet cash id
-			} else {
-				w.WriteLong(0)
-			}
-		}
-	}
-}
-
-func writeEquips(tenant tenant.Model) func(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
-	return func(w *response.Writer, equips map[slot.Position]uint32, maskedEquips map[slot.Position]uint32) {
-		for k, v := range equips {
-			w.WriteKeyValue(byte(k), v)
-		}
-		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
-			w.WriteByte(0)
-		} else {
-			w.WriteByte(0xFF)
-		}
-		for k, v := range maskedEquips {
-			w.WriteKeyValue(byte(k), v)
-		}
-		if tenant.Region() == "GMS" && tenant.MajorVersion() <= 28 {
-			w.WriteByte(0)
-		} else {
-			w.WriteByte(0xFF)
-		}
-	}
-}
-
-func getEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
-	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Slots {
-		if s, ok := e.Get(t.Type); ok {
-			addEquipmentIfPresent(equips, s)
-		}
-	}
-	return equips
-}
-
-func getMaskedEquippedItemSlotMap(e equipment.Model) map[slot.Position]uint32 {
-	var equips = make(map[slot.Position]uint32)
-	for _, t := range slot.Slots {
-		if s, ok := e.Get(t.Type); ok {
-			addMaskedEquippedItemIfPresent(equips, s)
-		}
-	}
-	return equips
-}
-
-func addMaskedEquippedItemIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
-	if pi.CashEquipable != nil {
-		if pi.Equipable != nil {
-			slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
-		}
-	}
-}
-
-func addEquipmentIfPresent(slotMap map[slot.Position]uint32, pi slot2.Model) {
-	if pi.CashEquipable != nil {
-		slotMap[pi.Position*-1] = pi.CashEquipable.TemplateId()
-		return
-	}
-	if pi.Equipable != nil {
-		slotMap[pi.Position*-1] = pi.Equipable.TemplateId()
-	}
-}
-
-func writePetItemId(w *response.Writer, p pet.Model) {
-	w.WriteInt(p.TemplateId())
-}
-
-func writeEmptyPetItemId(w *response.Writer) {
-	w.WriteInt(0)
 }
 
 func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {

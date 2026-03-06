@@ -10,11 +10,11 @@ import (
 
 const AddCharacterEntry = "AddCharacterEntry"
 
-func AddCharacterEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(c character.Model) BodyProducer {
+func AddCharacterEntryBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model) BodyProducer {
 	return func(c character.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options))
-			WriteCharacter(tenant)(w, c, false)
+			WriteCharacter(l, t)(w, options)(c, false)
 			return w.Bytes()
 		}
 	}

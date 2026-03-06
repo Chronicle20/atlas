@@ -2,6 +2,7 @@ package writer
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/socket/model"
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
@@ -28,7 +29,8 @@ func MessengerOperationAddBody(l logrus.FieldLogger, ctx context.Context) func(p
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeAdd))
 			w.WriteByte(position)
-			WriteCharacterLook(t)(w, c, true)
+			ava := model.NewFromCharacter(c, true)
+			ava.Encode(l, t, options)(w)
 			w.WriteAsciiString(c.Name())
 			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)
@@ -108,7 +110,8 @@ func MessengerOperationUpdateBody(l logrus.FieldLogger, ctx context.Context) fun
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeUpdate))
 			w.WriteByte(position)
-			WriteCharacterLook(t)(w, c, true)
+			ava := model.NewFromCharacter(c, true)
+			ava.Encode(l, t, options)(w)
 			w.WriteAsciiString(c.Name())
 			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)

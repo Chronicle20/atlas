@@ -51,17 +51,17 @@ func CharacterViewAllErrorBody(l logrus.FieldLogger) func() BodyProducer {
 	}
 }
 
-func CharacterViewAllCharacterBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId world.Id, characters []character.Model) BodyProducer {
+func CharacterViewAllCharacterBody(l logrus.FieldLogger, t tenant.Model) func(worldId world.Id, characters []character.Model) BodyProducer {
 	return func(worldId world.Id, characters []character.Model) BodyProducer {
 		return func(w *response.Writer, options map[string]interface{}) []byte {
 			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeNormal), "codes", options))
 			w.WriteByte(byte(worldId))
 			w.WriteByte(byte(len(characters)))
 			for _, c := range characters {
-				WriteCharacter(tenant)(w, c, true)
+				WriteCharacter(l, t)(w, options)(c, true)
 			}
 
-			if tenant.Region() == "GMS" && tenant.MajorVersion() > 87 {
+			if t.Region() == "GMS" && t.MajorVersion() > 87 {
 				w.WriteByte(1) // PIC handling
 			}
 			return w.Bytes()

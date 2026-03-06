@@ -2,7 +2,6 @@ package model
 
 import (
 	"atlas-channel/asset"
-	"atlas-channel/character"
 
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -23,14 +22,14 @@ const (
 
 type MiniRoom interface {
 	Type() MiniRoomType
-	Is(MiniRoomType) bool
+	Is(mrt MiniRoomType) bool
 	Capacity() byte
 	Visitors() []MiniRoomVisitor
-	Enter(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer)
+	Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer)
 }
 
 type MiniRoomVisitor interface {
-	Enter(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer)
+	Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer)
 }
 
 type MiniRoomBase struct {
@@ -76,7 +75,7 @@ func (m *GameMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, options map[s
 		for _, v := range m.Visitors() {
 			v.Enter(l, t, options)
 		}
-		w.WriteByte(-1)
+		w.WriteByte(0xFF)
 		w.WriteAsciiString(m.description)
 		w.WriteByte(m.gameKind)
 		w.WriteBool(m.tournament)
@@ -134,7 +133,7 @@ func (m *PersonalShopMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, optio
 		for _, v := range m.Visitors() {
 			v.Enter(l, t, options)
 		}
-		w.WriteByte(-1)
+		w.WriteByte(0xFF)
 		w.WriteAsciiString(m.description)
 		w.WriteByte(m.maxItemCount)
 		w.WriteByte(byte(len(m.items)))
@@ -189,7 +188,7 @@ func (m *MerchantShopMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, optio
 		for _, v := range m.Visitors() {
 			v.Enter(l, t, options)
 		}
-		w.WriteByte(-1)
+		w.WriteByte(0xFF)
 		// todo only if owner
 		w.WriteShort(uint16(len(m.messages)))
 		for _, i := range m.messages {
@@ -233,15 +232,16 @@ func NewCashTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
 }
 
 type MiniRoomVisitorBase struct {
-	slot      byte
-	character character.Model
+	name   string
+	slot   byte
+	avatar Avatar
 }
 
-func (m *MiniRoomVisitorBase) Enter(t logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
+func (m *MiniRoomVisitorBase) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		w.WriteByte(m.slot)
-		WriteCharacterLook(t)(w, m.character, false)
-		w.WriteAsciiString(m.character.Name())
+		m.avatar.Encode(l, t, options)(w)
+		w.WriteAsciiString(m.name)
 	}
 }
 

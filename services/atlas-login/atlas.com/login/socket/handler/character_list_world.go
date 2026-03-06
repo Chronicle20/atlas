@@ -70,7 +70,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		err = characterListFunc(s, writer.CharacterListBody(t)(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
+		err = characterListFunc(s, writer.CharacterListBody(l, t)(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

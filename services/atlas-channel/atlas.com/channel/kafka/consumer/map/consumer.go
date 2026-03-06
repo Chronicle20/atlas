@@ -87,7 +87,6 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 }
 
 func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model) model.Operator[session.Model] {
-	t := tenant.MustFromContext(ctx)
 	return func(f field.Model) model.Operator[session.Model] {
 		return func(s session.Model) error {
 			l.Debugf("Processing character [%d] entering map [%d] instance [%s].", s.CharacterId(), f.MapId(), f.Instance())
@@ -132,7 +131,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					if k != s.CharacterId() {
 						for _, p := range v.Pets() {
 							if p.Slot() >= 0 {
-								err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p))(s)
+								err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(p))(s)
 								if err != nil {
 									l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 								}
@@ -146,7 +145,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				for k := range cms {
 					for _, p := range cms[s.CharacterId()].Pets() {
 						if p.Slot() >= 0 {
-							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(p)))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
@@ -222,7 +221,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				if md.Clock() {
-					_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TownClockBody(l, t)(time.Now()))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TownClockBody(time.Now()))(s)
 				}
 			}()
 
@@ -234,9 +233,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				if hasShip {
-					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateEnter1, false))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(writer.TransportStateEnter1, false))(s)
 				} else {
-					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(writer.TransportStateMove1, false))(s)
 				}
 			}()
 
@@ -248,7 +247,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				if timer.Duration() <= 0 {
 					return
 				}
-				_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(l, t)(timer.Duration()))(s)
+				_ = session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(timer.Duration()))(s)
 			}()
 
 			go func() {
@@ -256,14 +255,14 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				if werr != nil {
 					return
 				}
-				_ = session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(l)(we.ItemId, we.Message))(s)
+				_ = session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(we.ItemId, we.Message))(s)
 
 				ci, cerr := cashData.NewProcessor(l, ctx).GetById(we.ItemId)
 				if cerr != nil {
 					return
 				}
 				if ci.BgmPath != "" {
-					_ = session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(l)(ci.BgmPath))(s)
+					_ = session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
 				}
 				if ci.StateChangeItem > 0 {
 					applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
@@ -284,7 +283,7 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 						bs = make([]buff.Model, 0)
 					}
 
-					return session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)(writer.CharacterSpawnBody(l, tenant.MustFromContext(ctx))(c, bs, g, enteringField))(s)
+					return session.Announce(l)(ctx)(wp)(writer.CharacterSpawn)(writer.CharacterSpawnBody(c, bs, g, enteringField))(s)
 				}
 			}
 		}
@@ -334,11 +333,11 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 		return func(wp writer.Producer) func(s session.Model) model.Operator[npc2.Model] {
 			return func(s session.Model) model.Operator[npc2.Model] {
 				return func(n npc2.Model) error {
-					err := session.Announce(l)(ctx)(wp)(writer.SpawnNPC)(writer.SpawnNPCBody(l)(n))(s)
+					err := session.Announce(l)(ctx)(wp)(writer.SpawnNPC)(writer.SpawnNPCBody(n))(s)
 					if err != nil {
 						return err
 					}
-					return session.Announce(l)(ctx)(wp)(writer.SpawnNPCRequestController)(writer.SpawnNPCRequestControllerBody(l)(n, true))(s)
+					return session.Announce(l)(ctx)(wp)(writer.SpawnNPCRequestController)(writer.SpawnNPCRequestControllerBody(n, true))(s)
 				}
 			}
 		}
@@ -350,7 +349,7 @@ func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 			return func(s session.Model) model.Operator[monster.Model] {
 				return func(m monster.Model) error {
-					return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(l, tenant.MustFromContext(ctx))(m, false))(s)
+					return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(m, false))(s)
 				}
 			}
 		}
@@ -362,7 +361,7 @@ func spawnDropsForSession(l logrus.FieldLogger) func(ctx context.Context) func(w
 		return func(wp writer.Producer) func(s session.Model) model.Operator[drop.Model] {
 			return func(s session.Model) model.Operator[drop.Model] {
 				return func(d drop.Model) error {
-					return session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeExisting, 0))(s)
+					return session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(d, writer.DropEnterTypeExisting, 0))(s)
 				}
 			}
 		}
@@ -374,7 +373,7 @@ func spawnReactorsForSession(l logrus.FieldLogger) func(ctx context.Context) fun
 		return func(wp writer.Producer) func(s session.Model) model.Operator[reactor.Model] {
 			return func(s session.Model) model.Operator[reactor.Model] {
 				return func(r reactor.Model) error {
-					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody()(r))(s)
+					return session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(r))(s)
 				}
 			}
 		}
@@ -417,7 +416,7 @@ func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l l
 
 		l.Debugf("Weather started in map [%d] instance [%s] with item [%d].", e.MapId, e.Instance, e.Body.ItemId)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(l)(e.Body.ItemId, e.Body.Message)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherStartBody(e.Body.ItemId, e.Body.Message)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
@@ -434,7 +433,7 @@ func applyWeatherEffects(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 	}
 
 	if ci.BgmPath != "" {
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(l)(ci.BgmPath)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectBackgroundMusicBody(ci.BgmPath)))
 	}
 
 	if ci.StateChangeItem == 0 {
@@ -488,7 +487,7 @@ func handleStatusEventWeatherEnd(sc server.Model, wp writer.Producer) func(l log
 
 		l.Debugf("Weather ended in map [%d] instance [%s].", e.MapId, e.Instance)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherEndBody(l)(e.Body.ItemId)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(writer.FieldEffectWeather)(writer.FieldEffectWeatherEndBody(e.Body.ItemId)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast weather end to map [%d] instance [%s].", e.MapId, e.Instance)
 		}

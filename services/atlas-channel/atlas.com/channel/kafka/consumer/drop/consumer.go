@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -73,7 +74,7 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(l, tenant.MustFromContext(ctx))(d, writer.DropEnterTypeFresh, int16(e.Body.Mod))))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(d, writer.DropEnterTypeFresh, int16(e.Body.Mod))))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn drop [%d] for characters in map [%d].", d.Id(), e.MapId)
 		}
@@ -91,7 +92,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
+			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy drop [%d] for characters in map [%d].", e.DropId, e.MapId)
@@ -109,7 +110,7 @@ func handleStatusEventConsumed(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, writer.DropDestroyTypeExplode, 0, -1)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, writer.DropDestroyTypeExplode, 0, -1)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy consumed drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 		}
@@ -130,13 +131,13 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 
 		go func() {
 			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
-				var bp writer.BodyProducer
+				var bp packet.Encode
 				if e.Body.Meso > 0 {
-					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(l)(false, e.Body.Meso, 0)
+					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Meso, 0)
 				} else if e.Body.EquipmentId > 0 {
-					bp = writer.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(l)(e.Body.ItemId)
+					bp = writer.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(e.Body.ItemId)
 				} else {
-					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(l)(e.Body.ItemId, e.Body.Quantity)
+					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
 				}
 
 				err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(bp)(s)
@@ -153,7 +154,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 				dt = writer.DropDestroyTypePetPickUp
 			}
 
-			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(l, tenant.MustFromContext(ctx))(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
+			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}

@@ -1,8 +1,9 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,12 +15,14 @@ type MiniGameRecord struct {
 	Points  uint32
 }
 
-func (m *MiniGameRecord) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *MiniGameRecord) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.Unknown)
 		w.WriteInt(m.Wins)
 		w.WriteInt(m.Ties)
 		w.WriteInt(m.Losses)
 		w.WriteInt(m.Points)
+		return w.Bytes()
 	}
 }

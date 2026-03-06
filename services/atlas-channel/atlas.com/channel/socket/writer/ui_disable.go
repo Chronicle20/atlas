@@ -1,17 +1,21 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 const (
 	UiDisable = "UiDisable"
 )
 
-func UiDisableBody(_ tenant.Model) func(enable bool) BodyProducer {
-	return func(enable bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func UiDisableBody(enable bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteBool(enable)
 			return w.Bytes()
 		}

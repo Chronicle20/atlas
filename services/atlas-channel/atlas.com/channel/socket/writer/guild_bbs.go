@@ -2,9 +2,11 @@ package writer
 
 import (
 	"atlas-channel/guild/thread"
+	"context"
 	"math"
 	"time"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -13,9 +15,10 @@ const (
 	GuildBBS = "GuildBBS"
 )
 
-func GuildBBSThreadsBody(l logrus.FieldLogger) func(ts []thread.Model, startIndex uint32) BodyProducer {
-	return func(ts []thread.Model, startIndex uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(0x06)
 			if len(ts) == 0 {
 				w.WriteByte(0)
@@ -56,9 +59,10 @@ func GuildBBSThreadsBody(l logrus.FieldLogger) func(ts []thread.Model, startInde
 	}
 }
 
-func GuildBBSThreadBody(l logrus.FieldLogger) func(t thread.Model) BodyProducer {
-	return func(t thread.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildBBSThreadBody(t thread.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(0x07)
 			w.WriteInt(t.Id())
 			w.WriteInt(t.PosterId())

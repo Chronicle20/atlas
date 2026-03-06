@@ -2,6 +2,7 @@ package model
 
 import (
 	"atlas-channel/tool"
+	"context"
 	"errors"
 	"math"
 	"sort"
@@ -171,14 +172,16 @@ type MonsterBurnedInfo struct {
 	dotCount    uint32
 }
 
-func (m *MonsterBurnedInfo) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *MonsterBurnedInfo) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
 		w.WriteInt(m.skillId)
 		w.WriteInt(m.damage)
 		w.WriteInt(m.interval)
 		w.WriteInt(m.end)
 		w.WriteInt(m.dotCount)
+		return w.Bytes()
 	}
 }
 
@@ -223,9 +226,11 @@ func (m *MonsterTemporaryStat) EncodeMask(_ logrus.FieldLogger, _ tenant.Model, 
 	}
 }
 
-func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		m.EncodeMask(l, tenant, ops)(w)
+func (m *MonsterTemporaryStat) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
+		m.EncodeMask(l, t, options)(w)
 
 		keys := make([]MonsterTemporaryStatType, 0)
 		for _, v := range m.stats {
@@ -249,7 +254,7 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, tenant tenant.Model,
 			if tst == monster.TemporaryStatTypeBurned {
 				w.WriteInt(uint32(len(m.burnedInfo)))
 				for _, b := range m.burnedInfo {
-					b.Encode(l, tenant, ops)(w)
+					w.WriteByteArray(b.Encoder(l, ctx)(options))
 				}
 				continue
 			}
@@ -280,6 +285,7 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, tenant tenant.Model,
 		if weaponCounter != -1 || magicCounter != -1 {
 			w.WriteInt32(int32(math.Max(float64(weaponCounter), float64(magicCounter))))
 		}
+		return w.Bytes()
 	}
 }
 
@@ -357,10 +363,12 @@ func NewMonster(x int16, y int16, stance byte, fh int16, appearType MonsterAppea
 	}
 }
 
-func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-			m.monsterTemporaryStat.Encode(l, tenant, ops)(w)
+func (m *Monster) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
+		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+			w.WriteByteArray(m.monsterTemporaryStat.Encoder(l, ctx)(options))
 		}
 		w.WriteInt16(m.x)
 		w.WriteInt16(m.y)
@@ -371,15 +379,16 @@ func (m *Monster) Encode(l logrus.FieldLogger, tenant tenant.Model, ops map[stri
 		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
 			w.WriteInt(m.appearTypeOption)
 		}
-		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 			w.WriteInt8(m.team)
 			w.WriteInt(m.effectItemId)
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 				w.WriteInt(m.phase)
 			}
 		} else {
 			// TODO proper temp stat encoding for GMS v12
 			w.WriteInt(0)
 		}
+		return w.Bytes()
 	}
 }

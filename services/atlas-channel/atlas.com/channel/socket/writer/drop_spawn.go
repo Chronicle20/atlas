@@ -2,9 +2,10 @@ package writer
 
 import (
 	"atlas-channel/drop"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,9 +18,10 @@ const (
 	DropEnterTypeDisappear = DropEnterType(3)
 )
 
-func DropSpawnBody(l logrus.FieldLogger, t tenant.Model) func(d drop.Model, enterType DropEnterType, delay int16) BodyProducer {
-	return func(d drop.Model, enterType DropEnterType, delay int16) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func DropSpawnBody(d drop.Model, enterType DropEnterType, delay int16) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(enterType))
 			w.WriteInt(d.Id())
 			if d.Meso() > 0 {

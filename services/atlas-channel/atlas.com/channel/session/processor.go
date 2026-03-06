@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	socket "github.com/Chronicle20/atlas-socket"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -163,17 +164,17 @@ func (p *Processor) ForEachByCharacterId(ch channel.Model) func(provider model.P
 	}
 }
 
-func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-		return func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-			return func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-				return func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+		return func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+			return func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+				return func(encoder packet.Encode) model.Operator[Model] {
 					return func(s Model) error {
 						w, err := writerProducer(writerName)
 						if err != nil {
 							return err
 						}
-						return s.announceEncrypted(w(l)(bodyProducer))
+						return s.announceEncrypted(w(l, ctx)(encoder))
 					}
 				}
 			}

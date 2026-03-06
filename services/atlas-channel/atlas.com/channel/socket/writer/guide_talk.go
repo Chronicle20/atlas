@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -9,9 +12,10 @@ const (
 	GuideTalk = "GuideTalk"
 )
 
-func GuideTalkMessageBody(_ logrus.FieldLogger) func(message string, width uint32, duration uint32) BodyProducer {
-	return func(message string, width uint32, duration uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuideTalkMessageBody(message string, width uint32, duration uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			// default width is 200
 			// default duration is 4000 (ms?)
 			w.WriteBool(true)
@@ -23,9 +27,10 @@ func GuideTalkMessageBody(_ logrus.FieldLogger) func(message string, width uint3
 	}
 }
 
-func GuideTalkIdxBody(_ logrus.FieldLogger) func(hintId uint32, duration uint32) BodyProducer {
-	return func(hintId uint32, duration uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuideTalkIdxBody(hintId uint32, duration uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			// default duration is 7000 (ms?)
 			w.WriteBool(false)
 			w.WriteInt(hintId)

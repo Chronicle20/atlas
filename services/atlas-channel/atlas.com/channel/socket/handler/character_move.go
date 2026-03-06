@@ -48,7 +48,7 @@ func CharacterMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 		l.Debugf("Character [%d] has moved. dr0 [%d], dr1 [%d], fieldKey [%d], dr2 [%d], dr3 [%d], crc [%d], dwKey [%d], crc32 [%d].", s.CharacterId(), dr0, dr1, fieldKey, dr2, dr3, crc, dwKey, crc32)
 
 		mp := model.Movement{}
-		mp.Decode(l, t, readerOptions)(r)
+		mp.Decode(l, ctx)(r, readerOptions)
 		_ = movement.NewProcessor(l, ctx, wp).ForCharacter(s.Field(), s.CharacterId(), mp)
 	}
 }

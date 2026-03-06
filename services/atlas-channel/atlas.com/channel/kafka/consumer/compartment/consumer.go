@@ -59,7 +59,7 @@ func handleCompartmentItemReservationCancelledEvent(sc server.Model, wp writer.P
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(make([]model2.StatUpdate, 0), true)))
 	}
 }
 
@@ -116,7 +116,7 @@ func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) mes
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(make([]model2.StatUpdate, 0), true))
 		}
 	}
 }

@@ -6,8 +6,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,14 +23,14 @@ const (
 	MessengerOperationModeUpdate         = "UPDATE"
 )
 
-func MessengerOperationAddBody(l logrus.FieldLogger, ctx context.Context) func(position byte, c character.Model, channelId channel.Id) BodyProducer {
-	t := tenant.MustFromContext(ctx)
-	return func(position byte, c character.Model, channelId channel.Id) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationAddBody(position byte, c character.Model, channelId channel.Id) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeAdd))
 			w.WriteByte(position)
 			ava := model.NewFromCharacter(c, true)
-			ava.Encode(l, t, options)(w)
+			w.WriteByteArray(ava.Encoder(l, ctx)(options))
 			w.WriteAsciiString(c.Name())
 			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)
@@ -39,9 +39,10 @@ func MessengerOperationAddBody(l logrus.FieldLogger, ctx context.Context) func(p
 	}
 }
 
-func MessengerOperationJoinBody(l logrus.FieldLogger) func(position byte) BodyProducer {
-	return func(position byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationJoinBody(position byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeJoin))
 			w.WriteByte(position)
 			return w.Bytes()
@@ -49,9 +50,10 @@ func MessengerOperationJoinBody(l logrus.FieldLogger) func(position byte) BodyPr
 	}
 }
 
-func MessengerOperationRemoveBody(l logrus.FieldLogger) func(position byte) BodyProducer {
-	return func(position byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationRemoveBody(position byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeRemove))
 			w.WriteByte(position)
 			return w.Bytes()
@@ -59,9 +61,10 @@ func MessengerOperationRemoveBody(l logrus.FieldLogger) func(position byte) Body
 	}
 }
 
-func MessengerOperationInviteBody(l logrus.FieldLogger) func(fromName string, messengerId uint32) BodyProducer {
-	return func(fromName string, messengerId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationInviteBody(fromName string, messengerId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeRequestInvite))
 			w.WriteAsciiString(fromName)
 			w.WriteByte(0)
@@ -72,9 +75,10 @@ func MessengerOperationInviteBody(l logrus.FieldLogger) func(fromName string, me
 	}
 }
 
-func MessengerOperationInviteSentBody(l logrus.FieldLogger) func(message string, success bool) BodyProducer {
-	return func(message string, success bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationInviteSentBody(message string, success bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeInviteSent))
 			w.WriteAsciiString(message)
 			w.WriteBool(success)
@@ -83,9 +87,10 @@ func MessengerOperationInviteSentBody(l logrus.FieldLogger) func(message string,
 	}
 }
 
-func MessengerOperationInviteDeclinedBody(l logrus.FieldLogger) func(message string, mode byte) BodyProducer {
-	return func(message string, mode byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationInviteDeclinedBody(message string, mode byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeInviteDeclined))
 			w.WriteAsciiString(message)
 			w.WriteByte(mode)
@@ -94,9 +99,10 @@ func MessengerOperationInviteDeclinedBody(l logrus.FieldLogger) func(message str
 	}
 }
 
-func MessengerOperationChatBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationChatBody(message string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeChat))
 			w.WriteAsciiString(message)
 			return w.Bytes()
@@ -104,14 +110,14 @@ func MessengerOperationChatBody(l logrus.FieldLogger) func(message string) BodyP
 	}
 }
 
-func MessengerOperationUpdateBody(l logrus.FieldLogger, ctx context.Context) func(position byte, c character.Model, channelId channel.Id) BodyProducer {
-	t := tenant.MustFromContext(ctx)
-	return func(position byte, c character.Model, channelId channel.Id) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MessengerOperationUpdateBody(position byte, c character.Model, channelId channel.Id) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getMessengerOperation(l)(options, MessengerOperationModeUpdate))
 			w.WriteByte(position)
 			ava := model.NewFromCharacter(c, true)
-			ava.Encode(l, t, options)(w)
+			w.WriteByteArray(ava.Encoder(l, ctx)(options))
 			w.WriteAsciiString(c.Name())
 			w.WriteByte(byte(channelId))
 			w.WriteByte(0x00)

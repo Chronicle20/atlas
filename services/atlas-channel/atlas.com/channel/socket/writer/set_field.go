@@ -6,6 +6,7 @@ import (
 	slot2 "atlas-channel/equipment/slot"
 	"atlas-channel/quest"
 	model2 "atlas-channel/socket/model"
+	"context"
 	"math/rand"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -20,27 +22,29 @@ import (
 
 const SetField = "SetField"
 
-func WarpToMapBody(tenant tenant.Model) func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
-	return func(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+func WarpToMapBody(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s
 			}
 			w.WriteInt(uint32(channelId))
-			if tenant.Region() == "JMS" {
+			if t.Region() == "JMS" {
 				w.WriteByte(0)
 				w.WriteInt(0)
 			}
 			w.WriteByte(0) // sNotifierMessage
 			w.WriteByte(0) // bCharacterData
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 				w.WriteShort(0) // nNotifierCheck
 				w.WriteByte(0)  // revive
 			}
 			w.WriteInt(uint32(mapId))
 			w.WriteByte(byte(portalId))
 			w.WriteShort(hp)
-			if tenant.Region() == "GMS" && tenant.MajorVersion() > 28 {
+			if t.Region() == "GMS" && t.MajorVersion() > 28 {
 				w.WriteBool(false) // Chasing?
 				if false {
 					w.WriteInt(0)
@@ -53,14 +57,16 @@ func WarpToMapBody(tenant tenant.Model) func(channelId channel.Id, mapId _map.Id
 	}
 }
 
-func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
-	return func(channelId channel.Id, c character.Model, bl buddylist.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+func SetFieldBody(channelId channel.Id, c character.Model, bl buddylist.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 				w.WriteShort(0) // decode opt, loop with 2 decode 4s
 			}
 			w.WriteInt(uint32(channelId))
-			if tenant.Region() == "JMS" {
+			if t.Region() == "JMS" {
 				w.WriteByte(0)
 				w.WriteInt(0)
 			}
@@ -68,7 +74,7 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId chan
 			w.WriteByte(1) // bCharacterData
 
 			var seedSize = 3
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
 				w.WriteShort(0) // nNotifierCheck, if non zero STRs are encoded
 			} else {
 				seedSize = 4
@@ -79,8 +85,8 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId chan
 				w.WriteInt(rand.Uint32())
 			}
 
-			WriteCharacterInfo(l, tenant, options)(w)(c, bl)
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+			WriteCharacterInfo(l, ctx, options)(w)(c, bl)
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 				w.WriteInt(0) // logout gifts
 				w.WriteInt(0)
 				w.WriteInt(0)
@@ -92,7 +98,8 @@ func SetFieldBody(l logrus.FieldLogger, tenant tenant.Model) func(channelId chan
 	}
 }
 
-func WriteCharacterInfo(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
+func WriteCharacterInfo(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}) func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
+	tenant := tenant.MustFromContext(ctx)
 	return func(w *response.Writer) func(c character.Model, bl buddylist.Model) {
 		return func(c character.Model, bl buddylist.Model) {
 			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
@@ -120,7 +127,7 @@ func WriteCharacterInfo(l logrus.FieldLogger, tenant tenant.Model, options map[s
 				w.WriteInt(0) // dama / gachapon items
 				w.WriteInt(0)
 			}
-			WriteInventoryInfo(l, tenant, options)(w, c)
+			WriteInventoryInfo(l, ctx, options)(w, c)
 			WriteSkillInfo(tenant)(w, c)
 			WriteQuestInfo(tenant)(w, c)
 			WriteMiniGameInfo()(w, c)
@@ -274,7 +281,8 @@ func timeNow() int64 {
 	return time.Now().UnixNano() / int64(time.Millisecond)
 }
 
-func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, character character.Model) {
+func WriteInventoryInfo(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}) func(w *response.Writer, character character.Model) {
+	tenant := tenant.MustFromContext(ctx)
 	return func(w *response.Writer, character character.Model) {
 
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
@@ -292,7 +300,7 @@ func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[s
 		// regular equipment
 		for _, t := range slot.Slots {
 			if s, ok := character.Equipment().Get(t.Type); ok {
-				WriteEquipableIfPresent(l, tenant, options)(w, s)
+				WriteEquipableIfPresent(l, ctx, options)(w, s)
 			}
 		}
 
@@ -305,7 +313,7 @@ func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[s
 		// cash equipment
 		for _, t := range slot.Slots {
 			if s, ok := character.Equipment().Get(t.Type); ok {
-				WriteCashEquipableIfPresent(l, tenant, options)(w, s)
+				WriteCashEquipableIfPresent(l, ctx, options)(w, s)
 			}
 		}
 
@@ -319,7 +327,7 @@ func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[s
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Equipable().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Equipable().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Equipable().Assets()), model2.NewAssetWriter(l, ctx, options, w)(false))
 		if (tenant.Region() == "GMS" && tenant.MajorVersion() > 28) || tenant.Region() == "JMS" {
 			w.WriteInt(0)
 		} else {
@@ -330,44 +338,44 @@ func WriteInventoryInfo(l logrus.FieldLogger, tenant tenant.Model, options map[s
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Consumable().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Consumable().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Consumable().Assets()), model2.NewAssetWriter(l, ctx, options, w)(false))
 		w.WriteByte(0)
 
 		// setup inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Setup().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Setup().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Setup().Assets()), model2.NewAssetWriter(l, ctx, options, w)(false))
 		w.WriteByte(0)
 
 		// etc inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().ETC().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().ETC().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().ETC().Assets()), model2.NewAssetWriter(l, ctx, options, w)(false))
 		w.WriteByte(0)
 
 		// cash inventory
 		if tenant.Region() == "GMS" && tenant.MajorVersion() < 28 {
 			w.WriteByte(byte(character.Inventory().Cash().Capacity()))
 		}
-		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Cash().Assets()), model2.NewAssetWriter(l, tenant, options, w)(false))
+		_ = model.ForEachSlice(model.FixedProvider(character.Inventory().Cash().Assets()), model2.NewAssetWriter(l, ctx, options, w)(false))
 		w.WriteByte(0)
 	}
 }
 
-func WriteCashEquipableIfPresent(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
+func WriteCashEquipableIfPresent(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
 	return func(w *response.Writer, model slot2.Model) {
 		if model.CashEquipable != nil {
-			_ = model2.NewAssetWriter(l, tenant, options, w)(false)(*model.CashEquipable)
+			_ = model2.NewAssetWriter(l, ctx, options, w)(false)(*model.CashEquipable)
 		}
 	}
 }
 
-func WriteEquipableIfPresent(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
+func WriteEquipableIfPresent(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}) func(w *response.Writer, model slot2.Model) {
 	return func(w *response.Writer, model slot2.Model) {
 		if model.Equipable != nil {
-			_ = model2.NewAssetWriter(l, tenant, options, w)(false)(*model.Equipable)
+			_ = model2.NewAssetWriter(l, ctx, options, w)(false)(*model.Equipable)
 		}
 	}
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -99,7 +100,7 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 		// Handle storage operation failures by sending appropriate error packets
 		if e.Body.SagaType == saga.SagaTypeStorageOperation {
 			// Get the appropriate error body producer based on the error code
-			errorBody := getStorageErrorBodyProducer(l, e.Body.ErrorCode)
+			errorBody := getStorageErrorBodyProducer(e.Body.ErrorCode)
 			if errorBody == nil {
 				l.WithField("error_code", e.Body.ErrorCode).Warn("No error body producer for error code, skipping notification.")
 				return
@@ -121,12 +122,12 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 }
 
 // getStorageErrorBodyProducer returns the appropriate BodyProducer for the given error code
-func getStorageErrorBodyProducer(l logrus.FieldLogger, errorCode string) writer.BodyProducer {
+func getStorageErrorBodyProducer(errorCode string) packet.Encode {
 	switch errorCode {
 	case saga.ErrorCodeNotEnoughMesos:
-		return writer.StorageOperationErrorNotEnoughMesoBody(l)
+		return writer.StorageOperationErrorNotEnoughMesoBody()
 	case saga.ErrorCodeInventoryFull, saga.ErrorCodeStorageFull:
-		return writer.StorageOperationErrorInventoryFullBody(l)
+		return writer.StorageOperationErrorInventoryFullBody()
 	default:
 		return nil
 	}

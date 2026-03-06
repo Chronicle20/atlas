@@ -1,27 +1,27 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
 const FieldEffectWeather = "FieldEffectWeather"
 
-func FieldEffectWeatherStartBody(l logrus.FieldLogger) func(itemId uint32, message string) BodyProducer {
-	return func(itemId uint32, message string) BodyProducer {
-		return FieldEffectWeatherBody(l)(true, itemId, message)
-	}
+func FieldEffectWeatherStartBody(itemId uint32, message string) packet.Encode {
+	return FieldEffectWeatherBody(true, itemId, message)
 }
 
-func FieldEffectWeatherEndBody(l logrus.FieldLogger) func(itemId uint32) BodyProducer {
-	return func(itemId uint32) BodyProducer {
-		return FieldEffectWeatherBody(l)(false, itemId, "")
-	}
+func FieldEffectWeatherEndBody(itemId uint32) packet.Encode {
+	return FieldEffectWeatherBody(false, itemId, "")
 }
 
-func FieldEffectWeatherBody(l logrus.FieldLogger) func(active bool, itemId uint32, message string) BodyProducer {
-	return func(active bool, itemId uint32, message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectWeatherBody(active bool, itemId uint32, message string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteBool(!active)
 			w.WriteInt(itemId)
 			if active {

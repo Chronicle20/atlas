@@ -68,7 +68,7 @@ func handleAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 			}
 
 			// Notify the client that the item was moved to the cash inventory
-			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashItemMovedToCashInventoryBody(l, t)(e.AccountId, e.CharacterId, a))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashItemMovedToCashInventoryBody(e.AccountId, e.CharacterId, a))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash item moved to cash inventory for character [%d].", e.CharacterId)
 				return err

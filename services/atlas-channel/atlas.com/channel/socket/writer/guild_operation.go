@@ -3,10 +3,11 @@ package writer
 import (
 	"atlas-channel/guild"
 	"atlas-channel/socket/model"
+	"context"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,17 +50,18 @@ const (
 	GuildOperationSetSkillResponse               = "SET_SKILL_RESPONSE"
 )
 
-func RequestGuildNameBody(l logrus.FieldLogger) BodyProducer {
-	return GuildErrorBody(l)(GuildOperationRequestName)
+func RequestGuildNameBody() packet.Encode {
+	return GuildErrorBody(GuildOperationRequestName)
 }
 
-func RequestGuildEmblemBody(l logrus.FieldLogger) BodyProducer {
-	return GuildErrorBody(l)(GuildOperationRequestEmblem)
+func RequestGuildEmblemBody() packet.Encode {
+	return GuildErrorBody(GuildOperationRequestEmblem)
 }
 
-func GuildRequestAgreement(l logrus.FieldLogger) func(partyId uint32, leaderName string, guildName string) BodyProducer {
-	return func(partyId uint32, leaderName string, guildName string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildRequestAgreement(partyId uint32, leaderName string, guildName string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationRequestAgreement))
 			w.WriteInt(partyId)
 			w.WriteAsciiString(leaderName)
@@ -69,18 +71,20 @@ func GuildRequestAgreement(l logrus.FieldLogger) func(partyId uint32, leaderName
 	}
 }
 
-func GuildErrorBody(l logrus.FieldLogger) func(code string) BodyProducer {
-	return func(code string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildErrorBody(code string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, code))
 			return w.Bytes()
 		}
 	}
 }
 
-func GuildErrorBody2(l logrus.FieldLogger) func(code string, target string) BodyProducer {
-	return func(code string, target string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildErrorBody2(code string, target string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, code))
 			w.WriteAsciiString(target)
 			return w.Bytes()
@@ -88,9 +92,10 @@ func GuildErrorBody2(l logrus.FieldLogger) func(code string, target string) Body
 	}
 }
 
-func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) BodyProducer {
-	return func(g guild.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildInfoBody(g guild.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(0x1A) // TODO
 
 			inGuild := g.Id() != 0
@@ -121,7 +126,7 @@ func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) Bod
 					Signature:     0,
 					AllianceTitle: mm.AllianceTitle(),
 				}
-				gm.Encode(l, t, options)(w)
+				w.WriteByteArray(gm.Encoder(l, ctx)(options))
 			}
 			w.WriteInt(g.Capacity())
 			w.WriteShort(g.LogoBackground())
@@ -136,9 +141,10 @@ func GuildInfoBody(l logrus.FieldLogger, t tenant.Model) func(g guild.Model) Bod
 	}
 }
 
-func GuildEmblemChangedBody(l logrus.FieldLogger) func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) BodyProducer {
-	return func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildEmblemChangedBody(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationEmblemChange))
 			w.WriteInt(guildId)
 			w.WriteShort(logoBackground)
@@ -150,9 +156,10 @@ func GuildEmblemChangedBody(l logrus.FieldLogger) func(guildId uint32, logo uint
 	}
 }
 
-func GuildMemberStatusUpdatedBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, online bool) BodyProducer {
-	return func(guildId uint32, characterId uint32, online bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildMemberStatusUpdatedBody(guildId uint32, characterId uint32, online bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberOnline))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
@@ -162,9 +169,10 @@ func GuildMemberStatusUpdatedBody(l logrus.FieldLogger) func(guildId uint32, cha
 	}
 }
 
-func GuildMemberTitleUpdatedBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, title byte) BodyProducer {
-	return func(guildId uint32, characterId uint32, title byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildMemberTitleUpdatedBody(guildId uint32, characterId uint32, title byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberTitleChange))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
@@ -174,9 +182,10 @@ func GuildMemberTitleUpdatedBody(l logrus.FieldLogger) func(guildId uint32, char
 	}
 }
 
-func GuildNoticeChangedBody(l logrus.FieldLogger) func(guildId uint32, notice string) BodyProducer {
-	return func(guildId uint32, notice string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildNoticeChangedBody(guildId uint32, notice string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationNoticeChange))
 			w.WriteInt(guildId)
 			w.WriteAsciiString(notice)
@@ -185,9 +194,10 @@ func GuildNoticeChangedBody(l logrus.FieldLogger) func(guildId uint32, notice st
 	}
 }
 
-func GuildMemberLeftBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, name string) BodyProducer {
-	return func(guildId uint32, characterId uint32, name string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildMemberLeftBody(guildId uint32, characterId uint32, name string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberQuitSuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
@@ -197,9 +207,10 @@ func GuildMemberLeftBody(l logrus.FieldLogger) func(guildId uint32, characterId 
 	}
 }
 
-func GuildMemberExpelBody(l logrus.FieldLogger) func(guildId uint32, characterId uint32, name string) BodyProducer {
-	return func(guildId uint32, characterId uint32, name string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildMemberExpelBody(guildId uint32, characterId uint32, name string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationMemberExpelledSuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
@@ -209,9 +220,10 @@ func GuildMemberExpelBody(l logrus.FieldLogger) func(guildId uint32, characterId
 	}
 }
 
-func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) BodyProducer {
-	return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationJoinSuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
@@ -224,15 +236,16 @@ func GuildMemberJoinedBody(l logrus.FieldLogger, t tenant.Model) func(guildId ui
 				Signature:     0,
 				AllianceTitle: allianceTitle,
 			}
-			gm.Encode(l, t, options)(w)
+			w.WriteByteArray(gm.Encoder(l, ctx)(options))
 			return w.Bytes()
 		}
 	}
 }
 
-func GuildInviteBody(l logrus.FieldLogger) func(guildId uint32, originatorName string) BodyProducer {
-	return func(guildId uint32, originatorName string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildInviteBody(guildId uint32, originatorName string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationInvite))
 			w.WriteInt(guildId)
 			w.WriteAsciiString(originatorName)
@@ -241,9 +254,10 @@ func GuildInviteBody(l logrus.FieldLogger) func(guildId uint32, originatorName s
 	}
 }
 
-func GuildTitleChangedBody(l logrus.FieldLogger) func(guildId uint32, titles []string) BodyProducer {
-	return func(guildId uint32, titles []string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildTitleChangedBody(guildId uint32, titles []string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationTitleUpdate))
 			w.WriteInt(guildId)
 			for i := range 5 {
@@ -254,9 +268,10 @@ func GuildTitleChangedBody(l logrus.FieldLogger) func(guildId uint32, titles []s
 	}
 }
 
-func GuildDisbandBody(l logrus.FieldLogger) func(guildId uint32) BodyProducer {
-	return func(guildId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildDisbandBody(guildId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationDisbandSuccess))
 			w.WriteInt(guildId)
 			return w.Bytes()
@@ -264,9 +279,10 @@ func GuildDisbandBody(l logrus.FieldLogger) func(guildId uint32) BodyProducer {
 	}
 }
 
-func GuildCapacityChangedBody(l logrus.FieldLogger) func(guildId uint32, capacity uint32) BodyProducer {
-	return func(guildId uint32, capacity uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GuildCapacityChangedBody(guildId uint32, capacity uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationIncreaseCapacitySuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(capacity)

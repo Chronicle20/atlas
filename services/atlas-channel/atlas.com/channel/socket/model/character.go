@@ -2,11 +2,13 @@ package model
 
 import (
 	"atlas-channel/tool"
+	"context"
 	"errors"
 	"sort"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/character"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -282,14 +284,16 @@ func writeTime(t int64) func(w *response.Writer) {
 	}
 }
 
-func (m CharacterTemporaryStatBase) Encode(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m CharacterTemporaryStatBase) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt32(m.nOption)
 		w.WriteInt32(m.rOption)
 		writeTime(m.tLastUpdated)(w)
 		if m.bDynamicTermSet {
 			w.WriteInt16(m.usExpireItem)
 		}
+		return w.Bytes()
 	}
 }
 
@@ -298,11 +302,13 @@ type SpeedInfusionTemporaryStat struct {
 	tCurrentTime int32
 }
 
-func (m SpeedInfusionTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		m.CharacterTemporaryStatBase.Encode(l, t, options)(w)
+func (m SpeedInfusionTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByteArray(m.CharacterTemporaryStatBase.Encode(l, ctx)(options))
 		writeTime(int64(m.tCurrentTime))(w)
 		w.WriteInt16(m.usExpireItem)
+		return w.Bytes()
 	}
 }
 
@@ -324,10 +330,12 @@ type GuidedBulletTemporaryStat struct {
 	dwMobId uint32
 }
 
-func (m GuidedBulletTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		m.CharacterTemporaryStatBase.Encode(l, t, options)(w)
+func (m GuidedBulletTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByteArray(m.CharacterTemporaryStatBase.Encode(l, ctx)(options))
 		w.WriteInt(m.dwMobId)
+		return w.Bytes()
 	}
 }
 
@@ -408,8 +416,10 @@ func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model
 	}
 }
 
-func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *CharacterTemporaryStat) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		m.EncodeMask(l, t, options)(w)
 
 		keys := make([]CharacterTemporaryStatType, 0)
@@ -439,13 +449,16 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, t tenant.Model, op
 
 		var baseTemporaryStats = m.getBaseTemporaryStats()
 		for _, bts := range baseTemporaryStats {
-			bts.Encode(l, t, options)(w)
+			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		m.EncodeMask(l, t, options)(w)
 
 		keys := make([]CharacterTemporaryStatType, 0)
@@ -473,13 +486,14 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, t tenant.Mo
 
 		var baseTemporaryStats = m.getBaseTemporaryStats()
 		for _, bts := range baseTemporaryStats {
-			bts.Encode(l, t, options)(w)
+			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *CharacterTemporaryStat) getBaseTemporaryStats() []Encoder {
-	var list = make([]Encoder, 0)
+func (m *CharacterTemporaryStat) getBaseTemporaryStats() []packet.Encoder {
+	var list = make([]packet.Encoder, 0)
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Energy Charge 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Speed 15
 	list = append(list, NewCharacterTemporaryStatBase(true)) // Dash Jump 15

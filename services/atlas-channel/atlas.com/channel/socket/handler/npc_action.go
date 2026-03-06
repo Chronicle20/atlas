@@ -9,14 +9,12 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const NPCActionHandle = "NPCActionHandle"
 
 func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		objectId := r.ReadUint32()
 		unk := r.ReadByte()
@@ -26,7 +24,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 		rest := r.GetRestAsBytes()
 		if len(rest) > 0 {
 			mp := model.Movement{}
-			mp.Decode(l, t, readerOptions)(r)
+			mp.Decode(l, ctx)(r, readerOptions)
 			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Field(), s.CharacterId(), objectId, unk, unk2, mp)
 			return
 		}
@@ -36,7 +34,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(l)(objectId, unk, unk2))(s)
+		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(objectId, unk, unk2))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", n.Template(), s.CharacterId())
 			return

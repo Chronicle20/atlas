@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,39 +25,44 @@ const (
 	NPCShopOperationGenericErrorWithReason = "GENERIC_ERROR_WITH_REASON"
 )
 
-func NPCShopOperationBody(l logrus.FieldLogger, t tenant.Model) func(code string) BodyProducer {
-	return func(code string) BodyProducer {
+func NPCShopOperationBody(code string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		if code == NPCShopOperationOverLevelRequirement {
 			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationOverLevelRequirementBody(l, t)(200)
+			return NPCShopOperationOverLevelRequirementBody(200)(l, ctx)
 		} else if code == NPCShopOperationUnderLevelRequirement {
 			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationUnderLevelRequirementBody(l, t)(0)
+			return NPCShopOperationUnderLevelRequirementBody(0)(l, ctx)
 		} else if code == NPCShopOperationGenericError {
 			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationGenericErrorBody(l, t)
+			return NPCShopOperationGenericErrorBody()(l, ctx)
 		} else if code == NPCShopOperationGenericErrorWithReason {
 			l.Warnf("Should be using non generic function for this code.")
-			return NPCShopOperationGenericErrorWithReasonBody(l, t)("generic error")
+			return NPCShopOperationGenericErrorWithReasonBody("generic error")(l, ctx)
 		}
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			w := response.NewWriter(l)
 			w.WriteByte(getNpcShopOperation(l)(options, code))
 			return w.Bytes()
 		}
 	}
 }
 
-func NPCShopOperationGenericErrorBody(l logrus.FieldLogger, _ tenant.Model) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationGenericError))
-		w.WriteBool(false)
-		return w.Bytes()
+func NPCShopOperationGenericErrorBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationGenericError))
+			w.WriteBool(false)
+			return w.Bytes()
+		}
 	}
 }
 
-func NPCShopOperationGenericErrorWithReasonBody(l logrus.FieldLogger, _ tenant.Model) func(reason string) BodyProducer {
-	return func(reason string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCShopOperationGenericErrorWithReasonBody(reason string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationGenericErrorWithReason))
 			w.WriteBool(true)
 			w.WriteAsciiString(reason)
@@ -64,9 +71,10 @@ func NPCShopOperationGenericErrorWithReasonBody(l logrus.FieldLogger, _ tenant.M
 	}
 }
 
-func NPCShopOperationOverLevelRequirementBody(l logrus.FieldLogger, _ tenant.Model) func(levelLimit uint32) BodyProducer {
-	return func(levelLimit uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCShopOperationOverLevelRequirementBody(levelLimit uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationOverLevelRequirement))
 			w.WriteInt(levelLimit)
 			return w.Bytes()
@@ -74,9 +82,10 @@ func NPCShopOperationOverLevelRequirementBody(l logrus.FieldLogger, _ tenant.Mod
 	}
 }
 
-func NPCShopOperationUnderLevelRequirementBody(l logrus.FieldLogger, _ tenant.Model) func(levelLimit uint32) BodyProducer {
-	return func(levelLimit uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCShopOperationUnderLevelRequirementBody(levelLimit uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationUnderLevelRequirement))
 			w.WriteInt(levelLimit)
 			return w.Bytes()

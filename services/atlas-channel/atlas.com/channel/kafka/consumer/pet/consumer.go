@@ -102,7 +102,6 @@ func handleSpawned(sc server.Model, wp writer.Producer) message.Handler[pet2.Sta
 
 func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(p pet.Model) model.Operator[session.Model] {
 			return func(p pet.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -110,11 +109,11 @@ func announceSpawn(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 					}
-					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(p))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to character.")
 					}
-					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(l)(t)(p)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetSpawnBody(p)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet spawned to other characters.")
 					}
@@ -153,11 +152,11 @@ func announceDespawn(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
 					}
-					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), slot, reason))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to character.")
 					}
-					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(l)(s.CharacterId(), slot, reason)))
+					err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.PetActivated)(writer.PetDespawnBody(s.CharacterId(), slot, reason)))
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write pet despawned to other characters.")
 					}
@@ -219,7 +218,7 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 						return errors.New("pet not found")
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(l, tenant.MustFromContext(ctx))(inventory2.TypeValueCash, *a))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterInventoryChange)(writer.CharacterInventoryRefreshAsset(inventory2.TypeValueCash, *a))
 			}
 		}
 	}
@@ -303,13 +302,13 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 
 			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
-					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(l)(byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPetEffectBody(byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}
 					return err
 				} else {
-					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterPetEffectForeignBody(l)(s.CharacterId(), byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterPetEffectForeignBody(s.CharacterId(), byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}
@@ -354,7 +353,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 				sn = int64(e.PetId)
 			}
 
-			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)([]model2.StatUpdate{model2.NewStatUpdate(statType, sn)}, true))(s)
+			err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody([]model2.StatUpdate{model2.NewStatUpdate(statType, sn)}, true))(s)
 			if err != nil {
 				return err
 			}
@@ -378,7 +377,7 @@ func handleSlotChanged(sc server.Model, wp writer.Producer) message.Handler[pet2
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(make([]model2.StatUpdate, 0), true))
 		}
 	}
 }

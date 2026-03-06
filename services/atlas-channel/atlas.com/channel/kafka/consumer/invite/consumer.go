@@ -83,7 +83,7 @@ func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32, originatorName string) model.Operator[session.Model] {
 			return func(partyId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyInviteBody(l)(partyId, originatorName))
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyInviteBody(partyId, originatorName))
 			}
 		}
 	}
@@ -91,10 +91,9 @@ func handlePartyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 
 func handleBuddyCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(actorId uint32, originatorId uint32, originatorName string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(actorId uint32, originatorId uint32, originatorName string) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(actorId uint32, originatorId uint32, originatorName string) model.Operator[session.Model] {
 			return func(actorId uint32, originatorId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyInviteBody(l, t)(actorId, originatorId, originatorName))
+				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyInviteBody(actorId, originatorId, originatorName))
 			}
 		}
 	}
@@ -104,7 +103,7 @@ func handleGuildCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Contex
 	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInviteBody(l)(originatorId, originatorName))
+				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInviteBody(originatorId, originatorName))
 			}
 		}
 	}
@@ -114,7 +113,7 @@ func handleMessengerCreatedStatusEvent(l logrus.FieldLogger) func(ctx context.Co
 	return func(ctx context.Context) func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(originatorId uint32, originatorName string) model.Operator[session.Model] {
 			return func(originatorId uint32, originatorName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(l)(originatorName, originatorId))
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteBody(originatorName, originatorId))
 			}
 		}
 	}
@@ -157,7 +156,7 @@ func handlePartyRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("HAVE_DENIED_REQUEST_TO_THE_PARTY", targetName))
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("HAVE_DENIED_REQUEST_TO_THE_PARTY", targetName))
 			}
 		}
 	}
@@ -167,7 +166,7 @@ func handleGuildRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.Conte
 	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildErrorBody2(l)(writer.GuildOperationInviteDenied, targetName))
+				return session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildErrorBody2(writer.GuildOperationInviteDenied, targetName))
 			}
 		}
 	}
@@ -177,7 +176,7 @@ func handleMessengerRejectedStatusEvent(l logrus.FieldLogger) func(ctx context.C
 	return func(ctx context.Context) func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(targetName string) model.Operator[session.Model] {
 			return func(targetName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(l)(targetName, 0))
+				return session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteDeclinedBody(targetName, 0))
 			}
 		}
 	}

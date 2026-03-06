@@ -3,11 +3,12 @@ package writer
 import (
 	"atlas-channel/buddylist/buddy"
 	"atlas-channel/socket/model"
+	"context"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,9 +32,10 @@ const (
 	BuddyOperationErrorUnknownError4     = "UNKNOWN_ERROR_4"
 )
 
-func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {
-	return func(actorId uint32, originatorId uint32, originatorName string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyInviteBody(actorId uint32, originatorId uint32, originatorName string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationInvite))
 			w.WriteInt(originatorId)
 			w.WriteAsciiString(originatorName)
@@ -45,16 +47,17 @@ func BuddyInviteBody(l logrus.FieldLogger, t tenant.Model) func(actorId uint32, 
 				ChannelId:   0,
 				FriendGroup: "Default Group",
 			}
-			b.Encode(l, t, options)(w)
+			w.WriteByteArray(b.Encoder(l, ctx)(options))
 			w.WriteByte(0) // 0 no, 1 true m_aInShop
 			return w.Bytes()
 		}
 	}
 }
 
-func BuddyListUpdateBody(l logrus.FieldLogger, t tenant.Model) func(buddies []buddy.Model) BodyProducer {
-	return func(buddies []buddy.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyListUpdateBody(buddies []buddy.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationUpdate))
 			w.WriteByte(byte(len(buddies)))
 			for _, b := range buddies {
@@ -65,7 +68,7 @@ func BuddyListUpdateBody(l logrus.FieldLogger, t tenant.Model) func(buddies []bu
 					ChannelId:   channel.Id(b.ChannelId()),
 					FriendGroup: b.Group(),
 				}
-				m.Encode(l, t, options)(w)
+				w.WriteByteArray(m.Encoder(l, ctx)(options))
 			}
 			for _, b := range buddies {
 				if b.InShop() {
@@ -79,9 +82,10 @@ func BuddyListUpdateBody(l logrus.FieldLogger, t tenant.Model) func(buddies []bu
 	}
 }
 
-func BuddyUpdateBody(l logrus.FieldLogger, t tenant.Model) func(characterId uint32, group string, characterName string, channelId int8, inShop bool) BodyProducer {
-	return func(characterId uint32, group string, characterName string, channelId int8, inShop bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyUpdateBody(characterId uint32, group string, characterName string, channelId int8, inShop bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationBuddyUpdate))
 			w.WriteInt(characterId)
 			m := model.Buddy{
@@ -91,16 +95,17 @@ func BuddyUpdateBody(l logrus.FieldLogger, t tenant.Model) func(characterId uint
 				ChannelId:   channel.Id(channelId),
 				FriendGroup: group,
 			}
-			m.Encode(l, t, options)(w)
+			w.WriteByteArray(m.Encoder(l, ctx)(options))
 			w.WriteBool(inShop)
 			return w.Bytes()
 		}
 	}
 }
 
-func BuddyErrorBody(l logrus.FieldLogger) func(errorCode string) BodyProducer {
-	return func(errorCode string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyErrorBody(errorCode string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, errorCode))
 			if errorCode == BuddyOperationErrorUnknownError {
 				w.WriteByte(0)
@@ -110,9 +115,10 @@ func BuddyErrorBody(l logrus.FieldLogger) func(errorCode string) BodyProducer {
 	}
 }
 
-func BuddyChannelChangeBody(l logrus.FieldLogger) func(characterId uint32, channelId int8) BodyProducer {
-	return func(characterId uint32, channelId int8) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyChannelChangeBody(characterId uint32, channelId int8) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationBuddyChannelChange))
 			w.WriteInt(characterId)
 			w.WriteByte(0) // TODO m_aInShop
@@ -122,9 +128,10 @@ func BuddyChannelChangeBody(l logrus.FieldLogger) func(characterId uint32, chann
 	}
 }
 
-func BuddyCapacityUpdateBody(l logrus.FieldLogger) func(capacity byte) BodyProducer {
-	return func(capacity byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func BuddyCapacityUpdateBody(capacity byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationCapacityUpdate))
 			w.WriteByte(capacity)
 			return w.Bytes()

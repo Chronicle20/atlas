@@ -86,7 +86,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			cs, err := character.NewProcessor(l, ctx).GetByName(name)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", name)
-				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_CHARACTER", name))(s)
+				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_CHARACTER", name))(s)
 				if err != nil {
 					return
 				}
@@ -95,7 +95,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
-				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(l)("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)
+				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)
 				if err != nil {
 				}
 				return

@@ -2,16 +2,19 @@ package writer
 
 import (
 	"atlas-channel/data/npc"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
 const SpawnNPCRequestController = "SpawnNPCRequestController"
 
-func SpawnNPCRequestControllerBody(l logrus.FieldLogger) func(npc npc.Model, miniMap bool) BodyProducer {
-	return func(npc npc.Model, miniMap bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func SpawnNPCRequestControllerBody(npc npc.Model, miniMap bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(1)
 			w.WriteInt(npc.Id())
 			w.WriteInt(npc.Template())

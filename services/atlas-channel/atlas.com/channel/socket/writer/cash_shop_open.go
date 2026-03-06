@@ -5,7 +5,9 @@ import (
 	"atlas-channel/buddylist"
 	"atlas-channel/character"
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -13,35 +15,27 @@ import (
 
 const CashShopOpen = "CashShopOpen"
 
-func Skip(amount int) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		ba := make([]byte, 0)
-		for i := 0; i < amount; i++ {
-			ba = append(ba, 0)
-		}
-		w.WriteByteArray(ba)
-	}
-}
+func CashShopOpenBody(a account.Model, c character.Model, bl buddylist.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
+			WriteCharacterInfo(l, ctx, options)(w)(c, bl)
 
-func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
-	return func(tenant tenant.Model, a account.Model, c character.Model, bl buddylist.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			WriteCharacterInfo(l, tenant, options)(w)(c, bl)
-
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				var bCashShopAuthorized = true
 				w.WriteBool(bCashShopAuthorized)
 				if bCashShopAuthorized {
 					w.WriteAsciiString(a.Name())
 				}
-			} else if tenant.Region() == "JMS" {
+			} else if t.Region() == "JMS" {
 				w.WriteAsciiString(a.Name())
 			}
 
 			// CWvsContext::SetSaleInfo
-			if tenant.Region() == "GMS" {
+			if t.Region() == "GMS" {
 				var nNotSaleCount = uint32(0)
-				if tenant.MajorVersion() <= 12 {
+				if t.MajorVersion() <= 12 {
 					w.WriteShort(uint16(nNotSaleCount)) // nNotSaleCount
 					for i := uint32(0); i < nNotSaleCount; i++ {
 						w.WriteInt(0)
@@ -54,32 +48,32 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 				}
 			}
 
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				var scis []model.SpecialCashItem
 				w.WriteShort(uint16(len(scis)))
 				for _, sci := range scis {
-					sci.Encode(l, tenant, options)(w)
+					w.WriteByteArray(sci.Encoder(l, ctx)(options))
 				}
 			}
 
-			if tenant.Region() == "JMS" {
+			if t.Region() == "JMS" {
 				w.WriteShort(0)
 				//w.WriteInt(0)
 				//w.WriteAsciiString("")
 			}
 
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				var cds []model.CategoryDiscount
 				w.WriteByte(byte(len(cds)))
 				for _, cd := range cds {
-					cd.Encode(l, tenant, options)(w)
+					w.WriteByteArray(cd.Encoder(l, ctx)(options))
 				}
 			}
 
 			// Decode Best
 			// TODO figure out why this does this so many times
 			var categories uint32 = 8
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				categories = 9
 			}
 
@@ -98,19 +92,19 @@ func CashShopOpenBody(l logrus.FieldLogger) func(tenant tenant.Model, a account.
 			w.WriteShort(0)
 
 			// CCashShop::DecodeLimitGoods
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				w.WriteShort(0)
 			}
 
 			// CCashShop::DecodeZeroGoods
-			if tenant.Region() == "GMS" && tenant.MajorVersion() > 12 {
+			if t.Region() == "GMS" && t.MajorVersion() > 12 {
 				w.WriteShort(0)
 			}
 
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
 				w.WriteBool(false) // bEventOn
 
-				if tenant.Region() == "GMS" {
+				if t.Region() == "GMS" {
 					w.WriteInt(200) // nHighestCharacterLevelInThisAccount
 				}
 			}

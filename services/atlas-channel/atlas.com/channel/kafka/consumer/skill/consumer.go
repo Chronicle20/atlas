@@ -91,7 +91,7 @@ func announceSkillUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(writer.CharacterSkillChangeBody(l, tenant.MustFromContext(ctx))(true, skillId, level, masterLevel, expiration, true))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(writer.CharacterSkillChangeBody(true, skillId, level, masterLevel, expiration, true))
 			}
 		}
 	}
@@ -119,7 +119,7 @@ func announceSkillCooldown(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, cooldownExpiresAt))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(skillId, cooldownExpiresAt))
 			}
 		}
 	}
@@ -147,7 +147,7 @@ func announceSkillCooldownReset(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 			return func(skillId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, time.Time{}))
+				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(skillId, time.Time{}))
 			}
 		}
 	}

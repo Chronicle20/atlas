@@ -1,9 +1,10 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,12 +16,14 @@ func NewMacros(macros ...Macro) Macros {
 	return Macros{macros: macros}
 }
 
-func (m *Macros) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Macros) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteByte(byte(len(m.macros)))
 		for _, v := range m.macros {
-			v.Encode(l, t, options)(w)
+			w.WriteByteArray(v.Encoder(l, ctx)(options))
 		}
+		return w.Bytes()
 	}
 }
 
@@ -42,12 +45,14 @@ func NewMacro(name string, shout bool, skillId1 skill.Id, skillId2 skill.Id, ski
 	}
 }
 
-func (m *Macro) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Macro) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteAsciiString(m.name)
 		w.WriteBool(m.shout)
 		w.WriteInt(uint32(m.skillId1))
 		w.WriteInt(uint32(m.skillId2))
 		w.WriteInt(uint32(m.skillId3))
+		return w.Bytes()
 	}
 }

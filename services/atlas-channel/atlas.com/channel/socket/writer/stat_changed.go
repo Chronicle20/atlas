@@ -2,18 +2,21 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"context"
 	"sort"
 
 	"github.com/Chronicle20/atlas-constants/stat"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
 const StatChanged = "StatChanged"
 
-func StatChangedBody(l logrus.FieldLogger) func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
-	return func(updates []model.StatUpdate, exclRequestSent bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func StatChangedBody(updates []model.StatUpdate, exclRequestSent bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteBool(exclRequestSent)
 
 			sort.Slice(updates, func(i, j int) bool {

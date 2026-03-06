@@ -61,7 +61,7 @@ func handleStatusEventArrived(sc server.Model, wp writer.Producer) message.Handl
 
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
-			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateEnter1, false)))
+			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(writer.TransportStateEnter1, false)))
 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport arrival to characters in map [%d].", mapId)
@@ -82,7 +82,7 @@ func handleStatusEventDeparted(sc server.Model, wp writer.Producer) message.Hand
 
 		// Broadcast to all characters in the map across all instances
 		err := _map.NewProcessor(l, ctx).ForSessionsInMapAllInstances(sc.WorldId(), sc.ChannelId(), mapId,
-			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(l)(writer.TransportStateMove1, false)))
+			session.Announce(l)(ctx)(wp)(writer.FieldTransportState)(writer.FieldTransportStateBody(writer.TransportStateMove1, false)))
 
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast transport departure to characters in map [%d].", mapId)

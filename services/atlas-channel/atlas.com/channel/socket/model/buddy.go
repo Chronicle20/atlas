@@ -1,9 +1,10 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -15,13 +16,15 @@ type Buddy struct {
 	FriendGroup string
 }
 
-func (b *Buddy) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (b *Buddy) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(b.FriendId)
 		WritePaddedString(w, b.FriendName, 13)
 		w.WriteByte(b.Flag)
 		w.WriteInt32(int32(b.ChannelId))
 		WritePaddedString(w, b.FriendGroup, 17)
+		return w.Bytes()
 	}
 }
 

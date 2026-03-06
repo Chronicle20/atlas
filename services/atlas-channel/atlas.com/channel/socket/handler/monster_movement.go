@@ -41,7 +41,7 @@ func MonsterMovementHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 		}
 
 		mp := model.Movement{}
-		mp.Decode(l, t, readerOptions)(r)
+		mp.Decode(l, ctx)(r, readerOptions)
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			r.ReadByte()   // bChasing

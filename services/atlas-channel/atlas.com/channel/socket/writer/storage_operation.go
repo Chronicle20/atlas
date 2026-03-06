@@ -3,10 +3,11 @@ package writer
 import (
 	"atlas-channel/asset"
 	model2 "atlas-channel/socket/model"
+	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,24 +38,33 @@ const (
 	StorageFlagCash        StorageFlag = 64
 )
 
-func StorageOperationErrorInventoryFullBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorInventoryFull))
-		return w.Bytes()
+func StorageOperationErrorInventoryFullBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorInventoryFull))
+			return w.Bytes()
+		}
 	}
 }
 
-func StorageOperationErrorNotEnoughMesoBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorNotEnoughMesos))
-		return w.Bytes()
+func StorageOperationErrorNotEnoughMesoBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorNotEnoughMesos))
+			return w.Bytes()
+		}
 	}
 }
 
-func StorageOperationErrorOneOfAKindBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorOneOfAKind))
-		return w.Bytes()
+func StorageOperationErrorOneOfAKindBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorOneOfAKind))
+			return w.Bytes()
+		}
 	}
 }
 
@@ -78,9 +88,10 @@ func inventoryTypeToFlag(inventoryType asset.InventoryType) StorageFlag {
 
 // StorageOperationUpdateAssetsForCompartmentBody sends storage assets filtered by compartment type
 // The flag is derived from the inventory type, and only assets of that type are sent
-func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tenant.Model) func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model) BodyProducer {
-	return func(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func StorageOperationUpdateAssetsForCompartmentBody(op StorageOperationMode, slots byte, inventoryType asset.InventoryType, assets []asset.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, op))
 			w.WriteByte(slots)
 
@@ -97,15 +108,16 @@ func StorageOperationUpdateAssetsForCompartmentBody(l logrus.FieldLogger, t tena
 			}
 
 			w.WriteByte(byte(len(filteredAssets)))
-			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), model2.NewAssetWriter(l, t, options, w)(true))
+			_ = model.ForEachSlice(model.FixedProvider(filteredAssets), model2.NewAssetWriter(l, ctx, options, w)(true))
 			return w.Bytes()
 		}
 	}
 }
 
-func StorageOperationUpdateMesoBody(l logrus.FieldLogger) func(slots byte, meso uint32) BodyProducer {
-	return func(slots byte, meso uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func StorageOperationUpdateMesoBody(slots byte, meso uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeUpdateMeso))
 			w.WriteByte(slots)
 			w.WriteLong(uint64(StorageFlagCurrency))
@@ -115,9 +127,10 @@ func StorageOperationUpdateMesoBody(l logrus.FieldLogger) func(slots byte, meso 
 	}
 }
 
-func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId uint32, slots byte, meso uint32, assets []asset.Model) BodyProducer {
-	return func(npcId uint32, slots byte, meso uint32, assets []asset.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func StorageOperationShowBody(npcId uint32, slots byte, meso uint32, assets []asset.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeShow))
 			w.WriteInt(npcId)
 			w.WriteByte(slots)
@@ -125,7 +138,7 @@ func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId u
 			w.WriteInt(meso)
 			w.WriteShort(0) // ??
 			w.WriteByte(byte(len(assets)))
-			_ = model.ForEachSlice(model.FixedProvider(assets), model2.NewAssetWriter(l, t, options, w)(true))
+			_ = model.ForEachSlice(model.FixedProvider(assets), model2.NewAssetWriter(l, ctx, options, w)(true))
 			w.WriteShort(0)
 			w.WriteByte(0)
 			return w.Bytes()
@@ -133,9 +146,10 @@ func StorageOperationShowBody(l logrus.FieldLogger, t tenant.Model) func(npcId u
 	}
 }
 
-func StorageOperationErrorMessageBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func StorageOperationErrorMessageBody(message string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getStorageOperationMode(l)(options, StorageOperationModeErrorMessage))
 			w.WriteBool(true)
 			w.WriteAsciiString(message)

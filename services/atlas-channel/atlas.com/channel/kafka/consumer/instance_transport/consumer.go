@@ -63,7 +63,7 @@ func handleTransitEnteredEvent(sc server.Model, wp writer.Producer) message.Hand
 		// Send CLOCK packet
 		duration := time.Duration(e.Body.DurationSeconds) * time.Second
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(l, t)(duration)))
+			session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(duration)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send clock to character [%d].", e.CharacterId)
 		}

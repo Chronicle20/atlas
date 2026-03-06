@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"context"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -18,9 +20,10 @@ const (
 	FameResponseErrorTypeUnexpected      = "UNEXPECTED"
 )
 
-func ReceiveFameResponseBody(l logrus.FieldLogger) func(fromName string, amount int8) BodyProducer {
-	return func(fromName string, amount int8) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func ReceiveFameResponseBody(fromName string, amount int8) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFameOperation(l)(options, FameResponseReceive))
 			w.WriteAsciiString(fromName)
 			mode := (amount + 1) / 2
@@ -30,9 +33,10 @@ func ReceiveFameResponseBody(l logrus.FieldLogger) func(fromName string, amount 
 	}
 }
 
-func GiveFameResponseBody(l logrus.FieldLogger) func(toName string, amount int8, total int16) BodyProducer {
-	return func(toName string, amount int8, total int16) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func GiveFameResponseBody(toName string, amount int8, total int16) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFameOperation(l)(options, FameResponseGive))
 			w.WriteAsciiString(toName)
 			mode := (amount + 1) / 2
@@ -44,9 +48,10 @@ func GiveFameResponseBody(l logrus.FieldLogger) func(toName string, amount int8,
 	}
 }
 
-func FameResponseErrorBody(l logrus.FieldLogger) func(errCode string) BodyProducer {
-	return func(errCode string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FameResponseErrorBody(errCode string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFameOperation(l)(options, errCode))
 			return w.Bytes()
 		}

@@ -1,10 +1,11 @@
 package writer
 
 import (
+	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,9 +34,10 @@ func DurationToUint32Seconds(d time.Duration) uint32 {
 }
 
 // EventClockBody writes an event clock payload with a given duration in seconds.
-func EventClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Duration) BodyProducer {
-	return func(duration time.Duration) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func EventClockBody(duration time.Duration) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(EventClock))
 			w.WriteInt(DurationToUint32Seconds(duration))
 			return w.Bytes()
@@ -43,9 +45,10 @@ func EventClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Dur
 	}
 }
 
-func TownClockBody(l logrus.FieldLogger, t tenant.Model) func(time time.Time) BodyProducer {
-	return func(time time.Time) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func TownClockBody(time time.Time) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(TownClock))
 			w.WriteByte(byte(time.Hour()))
 			w.WriteByte(byte(time.Minute()))
@@ -55,9 +58,10 @@ func TownClockBody(l logrus.FieldLogger, t tenant.Model) func(time time.Time) Bo
 	}
 }
 
-func TimerClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Duration) BodyProducer {
-	return func(duration time.Duration) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func TimerClockBody(duration time.Duration) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(TimerClock))
 			w.WriteInt(DurationToUint32Seconds(duration))
 			return w.Bytes()
@@ -65,9 +69,10 @@ func TimerClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Dur
 	}
 }
 
-func EventTimerClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Duration) BodyProducer {
-	return func(duration time.Duration) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func EventTimerClockBody(duration time.Duration) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(EventTimerClock))
 			w.WriteBool(true) // not sure what this is used for. will skip set/start if false
 			w.WriteInt(DurationToUint32Seconds(duration))
@@ -76,9 +81,10 @@ func EventTimerClockBody(l logrus.FieldLogger, t tenant.Model) func(duration tim
 	}
 }
 
-func CakePieEventTimerClockBody(l logrus.FieldLogger, t tenant.Model) func(duration time.Duration) BodyProducer {
-	return func(duration time.Duration) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CakePieEventTimerClockBody(duration time.Duration) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(CakePieEventTimerClock))
 			w.WriteBool(true) // not sure what this is used for. will skip set/start if false
 			w.WriteBool(true) // adjusts height/width of timer window?

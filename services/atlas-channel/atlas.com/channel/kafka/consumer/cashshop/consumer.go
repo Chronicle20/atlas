@@ -61,7 +61,7 @@ func handleStatusEventInventoryCapacityIncreased(sc server.Model, wp writer.Prod
 		}
 
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			err := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseSuccessBody(l)(e.Body.InventoryType, e.Body.Capacity))(s)
+			err := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseSuccessBody(e.Body.InventoryType, e.Body.Capacity))(s)
 			if err != nil {
 				return err
 			}
@@ -70,7 +70,7 @@ func handleStatusEventInventoryCapacityIncreased(sc server.Model, wp writer.Prod
 				l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 				w = wallet.Model{}
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(w.Credit(), w.Points(), w.Prepaid()))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(w.Credit(), w.Points(), w.Prepaid()))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
 				return err
@@ -101,7 +101,7 @@ func handleStatusEventPurchase(sc server.Model, wp writer.Producer) message.Hand
 			}
 
 			// Announce the purchase success to the character session
-			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryPurchaseSuccessBody(l)(s.AccountId(), e.CharacterId, a))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryPurchaseSuccessBody(s.AccountId(), e.CharacterId, a))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash shop purchase success to character [%d].", e.CharacterId)
 				return err
@@ -124,7 +124,7 @@ func handleStatusEventError(sc server.Model, wp writer.Producer) message.Handler
 		}
 
 		// Use the generic error handler
-		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(l)(e.Body.Error))
+		op := session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopInventoryCapacityIncreaseFailedBody(e.Body.Error))
 		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, op)
 		return
 	}

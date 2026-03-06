@@ -15,6 +15,7 @@ import (
 
 	skill3 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
@@ -77,19 +78,19 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
 						var writerName string
-						var bodyProducer writer.BodyProducer
+						var bodyProducer packet.Encode
 						if ai.AttackType() == model2.AttackTypeMelee {
 							writerName = writer.CharacterAttackMelee
-							bodyProducer = writer.CharacterAttackMeleeBody(l)(ctx)(c, ai)
+							bodyProducer = writer.CharacterAttackMeleeBody(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeRanged {
 							writerName = writer.CharacterAttackRanged
-							bodyProducer = writer.CharacterAttackRangedBody(l)(ctx)(c, ai)
+							bodyProducer = writer.CharacterAttackRangedBody(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeMagic {
 							writerName = writer.CharacterAttackMagic
-							bodyProducer = writer.CharacterAttackMagicBody(l)(ctx)(c, ai)
+							bodyProducer = writer.CharacterAttackMagicBody(c, ai)
 						} else if ai.AttackType() == model2.AttackTypeEnergy {
 							writerName = writer.CharacterAttackEnergy
-							bodyProducer = writer.CharacterAttackEnergyBody(l)(ctx)(c, ai)
+							bodyProducer = writer.CharacterAttackEnergyBody(c, ai)
 						} else {
 							return errors.New("unhandled attack type")
 						}

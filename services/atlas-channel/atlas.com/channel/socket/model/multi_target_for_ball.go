@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -23,11 +25,13 @@ func (m *MultiTargetForBall) Decode(l logrus.FieldLogger, t tenant.Model, ops ma
 	}
 }
 
-func (m *MultiTargetForBall) Encode(l logrus.FieldLogger, t tenant.Model, ops map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *MultiTargetForBall) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt32(int32(len(m.Targets)))
 		for _, target := range m.Targets {
-			target.Encode(l, t, ops)(w)
+			w.WriteByteArray(target.Encoder(l, ctx)(options))
 		}
+		return w.Bytes()
 	}
 }

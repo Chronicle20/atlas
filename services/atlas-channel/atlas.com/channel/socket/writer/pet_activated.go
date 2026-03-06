@@ -3,9 +3,10 @@ package writer
 import (
 	"atlas-channel/pet"
 	model2 "atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,35 +22,35 @@ const (
 	PetDespawnModeUnk2    = "UNKNOWN_2"
 )
 
-func PetSpawnBody(l logrus.FieldLogger) func(t tenant.Model) func(p pet.Model) BodyProducer {
-	return func(t tenant.Model) func(p pet.Model) BodyProducer {
-		return func(p pet.Model) BodyProducer {
-			return func(w *response.Writer, options map[string]interface{}) []byte {
-				w.WriteInt(p.OwnerId())
-				w.WriteInt8(p.Slot())
-				w.WriteBool(true)
-				w.WriteBool(true) // show?
-				m := model2.Pet{
-					TemplateId:  p.TemplateId(),
-					Name:        p.Name(),
-					Id:          p.Id(),
-					X:           p.X(),
-					Y:           p.Y(),
-					Stance:      p.Stance(),
-					Foothold:    p.Fh(),
-					NameTag:     0,
-					ChatBalloon: 0,
-				}
-				m.Encode(l, t, options)(w)
-				return w.Bytes()
+func PetSpawnBody(p pet.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteInt(p.OwnerId())
+			w.WriteInt8(p.Slot())
+			w.WriteBool(true)
+			w.WriteBool(true) // show?
+			m := model2.Pet{
+				TemplateId:  p.TemplateId(),
+				Name:        p.Name(),
+				Id:          p.Id(),
+				X:           p.X(),
+				Y:           p.Y(),
+				Stance:      p.Stance(),
+				Foothold:    p.Fh(),
+				NameTag:     0,
+				ChatBalloon: 0,
 			}
+			w.WriteByteArray(m.Encoder(l, ctx)(options))
+			return w.Bytes()
 		}
 	}
 }
 
-func PetDespawnBody(l logrus.FieldLogger) func(characterId uint32, slot int8, reason string) BodyProducer {
-	return func(characterId uint32, slot int8, reason string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func PetDespawnBody(characterId uint32, slot int8, reason string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(characterId)
 			w.WriteInt8(slot)
 			w.WriteBool(false)

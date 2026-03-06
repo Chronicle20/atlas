@@ -6,17 +6,21 @@ import (
 	"atlas-channel/guild"
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterSpawn = "CharacterSpawn"
 
-func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) BodyProducer {
-	return func(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
 			w.WriteAsciiString(c.Name())
@@ -40,12 +44,11 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.Level(), b.ExpiresAt())
 				}
 			}
-			cts.EncodeForeign(l, t, options)(w)
-
+			w.WriteByteArray(cts.EncodeForeign(l, ctx)(options))
 			w.WriteShort(uint16(c.JobId()))
 
 			ava := model.NewFromCharacter(c, false)
-			ava.Encode(l, t, options)(w)
+			w.WriteByteArray(ava.Encoder(l, ctx)(options))
 
 			if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 				w.WriteInt(0) // driver id
@@ -85,7 +88,7 @@ func CharacterSpawnBody(l logrus.FieldLogger, t tenant.Model) func(c character.M
 					ChatBalloon: 0,
 				}
 				w.WriteBool(true)
-				m.Encode(l, t, options)(w)
+				w.WriteByteArray(m.Encoder(l, ctx)(options))
 			}, func(w *response.Writer) {
 			})
 			w.WriteByte(0) // end of pets

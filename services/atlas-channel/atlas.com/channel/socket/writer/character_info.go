@@ -5,8 +5,11 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/guild"
 	"atlas-channel/pet"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/sirupsen/logrus"
 
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -14,9 +17,11 @@ import (
 
 const CharacterInfo = "CharacterInfo"
 
-func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Model, wl []wishlist.Model) BodyProducer {
-	return func(c character.Model, g guild.Model, wl []wishlist.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(c.Id())
 			w.WriteByte(c.Level())
 			w.WriteShort(uint16(c.JobId()))
@@ -51,7 +56,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 				w.WriteInt(i.SerialNumber())
 			}
 
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() < 87) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() < 87) || t.Region() == "JMS" {
 				w.WriteInt(0) // monster book level
 				w.WriteInt(0) // normal card
 				w.WriteInt(0) // special card
@@ -71,7 +76,7 @@ func CharacterInfoBody(tenant tenant.Model) func(c character.Model, g guild.Mode
 			w.WriteInt(medalId)
 
 			w.WriteShort(0) // medal quests
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 83) || tenant.Region() == "JMS" {
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 				w.WriteInt(0) // chair
 			}
 			return w.Bytes()

@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,9 +15,10 @@ var DestroyMonsterTypeFadeOut DestroyMonsterType = 1
 
 const DestroyMonster = "DestroyMonster"
 
-func DestroyMonsterBody(_ logrus.FieldLogger, _ tenant.Model) func(uniqueId uint32, destroyType DestroyMonsterType) BodyProducer {
-	return func(uniqueId uint32, destroyType DestroyMonsterType) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func DestroyMonsterBody(uniqueId uint32, destroyType DestroyMonsterType) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
 			w.WriteByte(byte(destroyType))
 			return w.Bytes()

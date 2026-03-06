@@ -63,7 +63,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			tc, err := character.NewProcessor(l, ctx).GetByName(targetCharacter)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", targetCharacter)
-				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, false))(s)
+				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, false))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 				}
@@ -75,7 +75,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 
-			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, true))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(targetCharacter, true))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}

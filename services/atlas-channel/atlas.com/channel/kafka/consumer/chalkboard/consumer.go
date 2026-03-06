@@ -91,7 +91,7 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(make([]model2.StatUpdate, 0), true))
 		}
 	}
 }

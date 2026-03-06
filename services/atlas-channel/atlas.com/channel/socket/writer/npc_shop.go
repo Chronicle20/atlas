@@ -3,10 +3,12 @@ package writer
 import (
 	"atlas-channel/character/skill"
 	"atlas-channel/npc/shops/commodities"
+	"context"
 	"math"
 
 	"github.com/Chronicle20/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -14,9 +16,11 @@ import (
 
 const NPCShop = "NPCShop"
 
-func NPCShopBody(_ logrus.FieldLogger, t tenant.Model) func(templateId uint32, commodities []commodities.Model, skills []skill.Model) BodyProducer {
-	return func(templateId uint32, commodities []commodities.Model, skills []skill.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCShopBody(templateId uint32, commodities []commodities.Model, skills []skill.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(templateId)
 			w.WriteShort(uint16(len(commodities)))
 			for _, c := range commodities {

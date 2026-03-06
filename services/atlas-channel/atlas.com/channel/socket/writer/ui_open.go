@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -32,9 +35,10 @@ const (
 	UiWindowSkillsEx             UiWindow = "SKILLS_EX"             // 33
 )
 
-func UiOpenBody(l logrus.FieldLogger) func(window UiWindow) BodyProducer {
-	return func(window UiWindow) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func UiOpenBody(window UiWindow) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getUiWindowMode(l)(options, window))
 			return w.Bytes()
 		}

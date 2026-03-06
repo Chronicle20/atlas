@@ -3,11 +3,12 @@ package writer
 import (
 	"atlas-channel/asset"
 	model2 "atlas-channel/socket/model"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,21 +26,24 @@ const (
 
 type InventoryChangeWriter func(w *response.Writer) (int8, error)
 
-func CharacterInventoryChangeBody(silent bool, writers ...InventoryChangeWriter) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteBool(!silent)
-		w.WriteByte(byte(len(writers)))
-		addMov := int8(-1)
-		for _, wf := range writers {
-			tMov, _ := wf(w)
-			if tMov > -1 {
-				addMov = tMov
+func CharacterInventoryChangeBody(silent bool, writers ...InventoryChangeWriter) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteBool(!silent)
+			w.WriteByte(byte(len(writers)))
+			addMov := int8(-1)
+			for _, wf := range writers {
+				tMov, _ := wf(w)
+				if tMov > -1 {
+					addMov = tMov
+				}
 			}
+			if addMov > -1 {
+				w.WriteInt8(addMov)
+			}
+			return w.Bytes()
 		}
-		if addMov > -1 {
-			w.WriteInt8(addMov)
-		}
-		return w.Bytes()
 	}
 }
 
@@ -90,12 +94,14 @@ func InventoryRemoveBodyWriter(inventoryType inventory.Type, slot int16) Invento
 	}
 }
 
-func CharacterInventoryRefreshAsset(l logrus.FieldLogger, t tenant.Model) func(inventoryType inventory.Type, a asset.Model) BodyProducer {
-	return func(inventoryType inventory.Type, a asset.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			return CharacterInventoryChangeBody(false, InventoryRemoveBodyWriter(inventoryType, a.Slot()), InventoryAddBodyWriter(inventoryType, a.Slot(), func(writer *response.Writer) error {
-				return model2.NewAssetWriter(l, t, options, w)(true)(a)
-			}))(w, options)
+func CharacterInventoryRefreshAsset(inventoryType inventory.Type, a asset.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			writers := make([]InventoryChangeWriter, 0)
+			writers = append(writers, InventoryAddBodyWriter(inventoryType, a.Slot(), func(writer *response.Writer) error {
+				return model2.NewAssetWriter(l, ctx, options, writer)(true)(a)
+			}))
+			return CharacterInventoryChangeBody(false, writers...)(l, ctx)(options)
 		}
 	}
 }

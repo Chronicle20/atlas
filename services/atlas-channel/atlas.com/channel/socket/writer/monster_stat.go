@@ -2,7 +2,9 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -11,11 +13,13 @@ import (
 const MonsterStatSet = "MonsterStatSet"
 const MonsterStatReset = "MonsterStatReset"
 
-func MonsterStatSetBody(l logrus.FieldLogger, t tenant.Model) func(uniqueId uint32, stat *model.MonsterTemporaryStat) BodyProducer {
-	return func(uniqueId uint32, stat *model.MonsterTemporaryStat) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MonsterStatSetBody(uniqueId uint32, stat *model.MonsterTemporaryStat) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
-			stat.Encode(l, t, options)(w)
+			w.WriteByteArray(stat.Encoder(l, ctx)(options))
 			w.WriteInt16(0) // tDelay
 			w.WriteByte(0)  // m_nCalcDamageStatIndex
 			if stat.IsMovementAffectingStat(t) {
@@ -26,11 +30,13 @@ func MonsterStatSetBody(l logrus.FieldLogger, t tenant.Model) func(uniqueId uint
 	}
 }
 
-func MonsterStatResetBody(l logrus.FieldLogger, t tenant.Model) func(uniqueId uint32, stat *model.MonsterTemporaryStat) BodyProducer {
-	return func(uniqueId uint32, stat *model.MonsterTemporaryStat) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func MonsterStatResetBody(uniqueId uint32, stat *model.MonsterTemporaryStat) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
-			stat.Encode(l, t, options)(w)
+			w.WriteByteArray(stat.Encoder(l, ctx)(options))
 			w.WriteInt16(0) // tDelay
 			w.WriteByte(0)  // m_nCalcDamageStatIndex
 			if stat.IsMovementAffectingStat(t) {

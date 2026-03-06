@@ -2,6 +2,7 @@ package model
 
 import (
 	"atlas-channel/asset"
+	"context"
 	"math"
 	"time"
 
@@ -24,38 +25,40 @@ func NewAsset(zeroPosition bool, asset asset.Model) Asset {
 	}
 }
 
-func NewAssetWriter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}, w *response.Writer) func(zeroPosition bool) model.Operator[asset.Model] {
+func NewAssetWriter(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, w *response.Writer) func(zeroPosition bool) model.Operator[asset.Model] {
 	return func(zeroPosition bool) model.Operator[asset.Model] {
 		return func(a asset.Model) error {
 			am := NewAsset(zeroPosition, a)
-			am.Encode(l, t, options)(w)
+			w.WriteByteArray(am.Encoder(l, ctx)(options))
 			return nil
 		}
 	}
 }
 
-func (m *Asset) Encode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
+func (m *Asset) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	if m.asset.IsEquipment() && !m.asset.IsCashEquipment() {
-		return m.EncodeEquipableInfo(l, t, options)
+		return m.EncodeEquipableInfo(l, ctx)
 	}
 	if m.asset.IsCashEquipment() {
-		return m.EncodeCashEquipableInfo(l, t, options)
+		return m.EncodeCashEquipableInfo(l, ctx)
 	}
 	if m.asset.IsConsumable() || m.asset.IsSetup() || m.asset.IsEtc() {
-		return m.EncodeStackableInfo(l, t, options)
+		return m.EncodeStackableInfo(l, ctx)
 	}
 	if m.asset.IsPet() {
-		return m.EncodePetCashItemInfo(l, t, options)
+		return m.EncodePetCashItemInfo(l, ctx)
 	}
 	if m.asset.IsCash() {
-		return m.EncodeCashItemInfo(l, t, options)
+		return m.EncodeCashItemInfo(l, ctx)
 	}
 	l.Fatalf("unknown item type")
 	return nil
 }
 
-func (m *Asset) EncodeEquipableInfo(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Asset) EncodeEquipableInfo(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		slot := m.asset.Slot()
 		if !m.zeroPosition {
 			slot = int16(math.Abs(float64(slot)))
@@ -118,14 +121,18 @@ func (m *Asset) EncodeEquipableInfo(_ logrus.FieldLogger, t tenant.Model, _ map[
 			}
 
 			w.WriteLong(0)
-			w.WriteLong(uint64(getTime(-2)))
+			// TODO make sure this is ok
+			w.WriteInt64(94354848000000000)
 			w.WriteInt32(-1)
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *Asset) EncodeCashEquipableInfo(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Asset) EncodeCashEquipableInfo(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		slot := m.asset.Slot()
 		if !m.zeroPosition {
 			slot = int16(math.Abs(float64(slot)))
@@ -177,15 +184,18 @@ func (m *Asset) EncodeCashEquipableInfo(_ logrus.FieldLogger, t tenant.Model, _ 
 				for i := 0; i < 10; i++ {
 					w.WriteByte(0x40)
 				}
-				w.WriteLong(uint64(getTime(-2)))
+				// TODO make sure this is ok
+				w.WriteInt64(94354848000000000)
 				w.WriteInt32(-1)
 			}
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *Asset) EncodeStackableInfo(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Asset) EncodeStackableInfo(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		if !m.zeroPosition {
 			w.WriteInt8(int8(m.asset.Slot()))
 		}
@@ -199,11 +209,13 @@ func (m *Asset) EncodeStackableInfo(_ logrus.FieldLogger, _ tenant.Model, _ map[
 		if item.IsBullet(item.Id(m.asset.TemplateId())) || item.IsThrowingStar(item.Id(m.asset.TemplateId())) {
 			w.WriteLong(m.asset.Rechargeable())
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *Asset) EncodePetCashItemInfo(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Asset) EncodePetCashItemInfo(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		if !m.zeroPosition {
 			w.WriteInt8(int8(m.asset.Slot()))
 		}
@@ -221,12 +233,13 @@ func (m *Asset) EncodePetCashItemInfo(_ logrus.FieldLogger, _ tenant.Model, _ ma
 		w.WriteShort(0)   // skill
 		w.WriteInt(18000) // remaining life
 		w.WriteShort(0)   // attribute
-		return
+		return w.Bytes()
 	}
 }
 
-func (m *Asset) EncodeCashItemInfo(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Asset) EncodeCashItemInfo(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		if !m.zeroPosition {
 			w.WriteInt8(int8(m.asset.Slot()))
 		}
@@ -238,6 +251,6 @@ func (m *Asset) EncodeCashItemInfo(_ logrus.FieldLogger, _ tenant.Model, _ map[s
 		w.WriteShort(uint16(m.asset.Quantity()))
 		w.WriteAsciiString("") // TODO
 		w.WriteShort(m.asset.Flag())
-		return
+		return w.Bytes()
 	}
 }

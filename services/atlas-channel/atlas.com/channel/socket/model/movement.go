@@ -1,27 +1,34 @@
 package model
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
+type MovementCodec interface {
+	packet.Codec
+	EncodeType(w *response.Writer)
+}
 type Movement struct {
 	StartX   int16
 	StartY   int16
-	Elements []EncoderDecoder
+	Elements []MovementCodec
 }
 
-func (m *Movement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.StartX = r.ReadInt16()
 		m.StartY = r.ReadInt16()
 
 		numElems := r.ReadByte()
-		var elems = make([]EncoderDecoder, numElems)
+		var elems = make([]MovementCodec, numElems)
 		for i := byte(0); i < numElems; i++ {
-			var elem EncoderDecoder
+			var elem MovementCodec
 			var elemType = r.ReadByte()
 
 			if isMovementType(l)(elemType, options, "NORMAL") {
@@ -39,7 +46,7 @@ func (m *Movement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map
 			} else {
 				elem = &Element{ElemType: elemType}
 			}
-			elem.Decode(l, tenant, options)(r)
+			elem.Decode(l, ctx)(r, options)
 			elems[i] = elem
 		}
 		m.Elements = elems
@@ -63,8 +70,8 @@ type Element struct {
 	ElemType    byte
 }
 
-func (m *Element) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *Element) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.BMoveAction = r.ReadByte()
 		m.TElapse = r.ReadInt16()
 	}
@@ -98,8 +105,9 @@ type StatChangeElement struct {
 	Element
 }
 
-func (m *NormalElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *NormalElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Vx = r.ReadInt16()
@@ -108,81 +116,87 @@ func (m *NormalElement) Decode(l logrus.FieldLogger, tenant tenant.Model, option
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			m.FhFallStart = r.ReadInt16()
 		}
-		if tenant.Region() != "GMS" || tenant.MajorVersion() > 83 {
+		if t.Region() != "GMS" || t.MajorVersion() > 83 {
 			m.XOffset = r.ReadInt16()
 			m.YOffset = r.ReadInt16()
 		}
-		m.Element.Decode(l, tenant, options)(r)
+		m.Element.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *TeleportElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *TeleportElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Fh = r.ReadInt16()
-		m.Element.Decode(l, tenant, options)(r)
+		m.Element.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *StartFallDownElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *StartFallDownElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.X = m.StartX
 		m.Y = m.StartY
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
 		m.FhFallStart = r.ReadInt16()
-		m.Element.Decode(l, tenant, options)(r)
+		m.Element.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *FlyingBlockElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *FlyingBlockElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.X = r.ReadInt16()
 		m.Y = r.ReadInt16()
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
-		m.Element.Decode(l, tenant, options)(r)
+		m.Element.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *JumpElement) Decode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *JumpElement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.X = m.StartX
 		m.Y = m.StartY
 		m.Vx = r.ReadInt16()
 		m.Vy = r.ReadInt16()
-		m.Element.Decode(l, tenant, options)(r)
+		m.Element.Decode(l, ctx)(r, options)
 	}
 }
 
-func (m *StatChangeElement) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *StatChangeElement) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.BStat = r.ReadByte()
 	}
 }
 
-func (m *Movement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.StartX)
 		w.WriteInt16(m.StartY)
 		w.WriteByte(byte(len(m.Elements)))
 		for _, element := range m.Elements {
 			element.EncodeType(w)
-			element.Encode(l, tenant, options)(w)
+			w.WriteByteArray(element.Encode(l, ctx)(options))
 		}
+		return w.Bytes()
 	}
 }
 
-func (m *Element) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Element) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.BMoveAction)
 		w.WriteInt16(m.TElapse)
+		return w.Bytes()
 	}
 }
 
-func (m *NormalElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *NormalElement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.X)
 		w.WriteInt16(m.Y)
 		w.WriteInt16(m.Vx)
@@ -191,53 +205,64 @@ func (m *NormalElement) Encode(l logrus.FieldLogger, tenant tenant.Model, option
 		if isMovementName(l)(m.ElemType, options, "FALL_DOWN") {
 			w.WriteInt16(m.FhFallStart)
 		}
-		if tenant.Region() != "GMS" || tenant.MajorVersion() > 87 {
+		if t.Region() != "GMS" || t.MajorVersion() > 87 {
 			w.WriteInt16(m.XOffset)
 			w.WriteInt16(m.YOffset)
 		}
-		m.Element.Encode(l, tenant, options)(w)
+		w.WriteByteArray(m.Element.Encode(l, ctx)(options))
+		return w.Bytes()
 	}
 }
 
-func (m *TeleportElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *TeleportElement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.X)
 		w.WriteInt16(m.Y)
 		w.WriteInt16(m.Fh)
-		m.Element.Encode(l, tenant, options)(w)
+		w.WriteByteArray(m.Element.Encode(l, ctx)(options))
+		return w.Bytes()
 	}
 }
 
-func (m *StartFallDownElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *StartFallDownElement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.Vx)
 		w.WriteInt16(m.Vy)
 		w.WriteInt16(m.FhFallStart)
-		m.Element.Encode(l, tenant, options)(w)
+		w.WriteByteArray(m.Element.Encode(l, ctx)(options))
+		return w.Bytes()
 	}
 }
 
-func (m *FlyingBlockElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *FlyingBlockElement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.X)
 		w.WriteInt16(m.Y)
 		w.WriteInt16(m.Vx)
 		w.WriteInt16(m.Vy)
-		m.Element.Encode(l, tenant, options)(w)
+		w.WriteByteArray(m.Element.Encode(l, ctx)(options))
+		return w.Bytes()
 	}
 }
 
-func (m *JumpElement) Encode(l logrus.FieldLogger, tenant tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *JumpElement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt16(m.Vx)
 		w.WriteInt16(m.Vy)
-		m.Element.Encode(l, tenant, options)(w)
+		w.WriteByteArray(m.Element.Encode(l, ctx)(options))
+		return w.Bytes()
 	}
 }
 
-func (m *StatChangeElement) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *StatChangeElement) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.BStat)
+		return w.Bytes()
 	}
 }
 

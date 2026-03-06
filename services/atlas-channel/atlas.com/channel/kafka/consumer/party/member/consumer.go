@@ -117,7 +117,7 @@ func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyUpdateBody(l)(p, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyUpdateBody(p, tc, forChannel))
 			}
 		}
 	}

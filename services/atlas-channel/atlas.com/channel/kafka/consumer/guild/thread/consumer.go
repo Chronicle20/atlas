@@ -128,7 +128,7 @@ func refreshThread(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						return err
 					}
-					return session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadBody(l)(t))(s)
+					return session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadBody(t))(s)
 				}
 			}
 		}

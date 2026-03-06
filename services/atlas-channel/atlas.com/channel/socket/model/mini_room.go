@@ -2,10 +2,11 @@ package model
 
 import (
 	"atlas-channel/asset"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -25,16 +26,24 @@ type MiniRoom interface {
 	Is(mrt MiniRoomType) bool
 	Capacity() byte
 	Visitors() []MiniRoomVisitor
-	Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer)
+	Spawn(characterId uint32) packet.Encode
+	Despawn(characterId uint32) packet.Encode
+	Enter(characterId uint32) packet.Encode
 }
 
 type MiniRoomVisitor interface {
-	Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer)
+	Enter() packet.Encode
 }
 
 type MiniRoomBase struct {
 	miniRoomType MiniRoomType
+	id           uint32
+	title        string
+	private      bool
+	gameKind     byte
+	gameOn       bool
 	capacity     byte
+	ownerId      uint32
 	visitors     []MiniRoomVisitor
 }
 
@@ -54,33 +63,75 @@ func (m *MiniRoomBase) Visitors() []MiniRoomVisitor {
 	return m.visitors
 }
 
-func (m *MiniRoomBase) Enter(l logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		l.Fatalf("concrete implementation needed")
+func (m *MiniRoomBase) Spawn(characterId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			w.WriteByte(byte(m.Type()))
+			w.WriteInt(m.id)
+			w.WriteAsciiString(m.title)
+			w.WriteBool(m.private)
+			w.WriteByte(m.gameKind)
+			w.WriteByte(byte(len(m.visitors)))
+			w.WriteByte(m.capacity)
+			w.WriteBool(m.gameOn)
+			return w.Bytes()
+		}
+	}
+}
+
+func (m *MiniRoomBase) Despawn(characterId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteInt(characterId)
+			w.WriteByte(0)
+			return w.Bytes()
+		}
+	}
+}
+
+func (m *MiniRoomBase) Enter(_ uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			l.Fatalf("concrete implementation needed")
+			return []byte{}
+		}
 	}
 }
 
 type GameMiniRoom struct {
 	*MiniRoomBase
-	description string
-	gameKind    byte
-	tournament  bool
-	round       byte
+	tournament bool
+	round      byte
 }
 
-func (m *GameMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteByte(byte(m.Type()))
-		w.WriteByte(m.Capacity())
-		for _, v := range m.Visitors() {
-			v.Enter(l, t, options)
+func (m *GameMiniRoom) Spawn(_ uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			return []byte{}
 		}
-		w.WriteByte(0xFF)
-		w.WriteAsciiString(m.description)
-		w.WriteByte(m.gameKind)
-		w.WriteBool(m.tournament)
-		if m.tournament {
-			w.WriteByte(m.round)
+	}
+}
+
+func (m *GameMiniRoom) Enter(_ uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(byte(m.Type()))
+			w.WriteByte(m.Capacity())
+			for _, v := range m.Visitors() {
+				w.WriteByteArray(v.Enter()(l, ctx)(options))
+			}
+			w.WriteByte(0xFF)
+			w.WriteAsciiString(m.title)
+			w.WriteByte(m.gameKind)
+			w.WriteBool(m.tournament)
+			if m.tournament {
+				w.WriteByte(m.round)
+			}
+			return w.Bytes()
 		}
 	}
 }
@@ -121,27 +172,30 @@ func NewTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
 
 type PersonalShopMiniRoom struct {
 	*MiniRoomBase
-	description  string
 	maxItemCount byte
 	items        []ShopItem
 }
 
-func (m *PersonalShopMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteByte(byte(m.Type()))
-		w.WriteByte(m.Capacity())
-		for _, v := range m.Visitors() {
-			v.Enter(l, t, options)
-		}
-		w.WriteByte(0xFF)
-		w.WriteAsciiString(m.description)
-		w.WriteByte(m.maxItemCount)
-		w.WriteByte(byte(len(m.items)))
-		for _, i := range m.items {
-			w.WriteShort(i.perBundle)
-			w.WriteShort(i.quantity)
-			w.WriteInt(i.price)
-			_ = NewAssetWriter(l, t, options, w)(true)(i.asset)
+func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(byte(m.Type()))
+			w.WriteByte(m.Capacity())
+			for _, v := range m.Visitors() {
+				w.WriteByteArray(v.Enter()(l, ctx)(options))
+			}
+			w.WriteByte(0xFF)
+			w.WriteAsciiString(m.title)
+			w.WriteByte(m.maxItemCount)
+			w.WriteByte(byte(len(m.items)))
+			for _, i := range m.items {
+				w.WriteShort(i.perBundle)
+				w.WriteShort(i.quantity)
+				w.WriteInt(i.price)
+				_ = NewAssetWriter(l, ctx, options, w)(true)(i.asset)
+			}
+			return w.Bytes()
 		}
 	}
 }
@@ -175,35 +229,41 @@ type MerchantShopMiniRoom struct {
 	*MiniRoomBase
 	ownerName    string
 	meso         uint32
-	description  string
 	maxItemCount byte
 	messages     []MiniRoomMessage
 	items        []ShopItem
 }
 
-func (m *MerchantShopMiniRoom) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteByte(byte(m.Type()))
-		w.WriteByte(m.Capacity())
-		for _, v := range m.Visitors() {
-			v.Enter(l, t, options)
-		}
-		w.WriteByte(0xFF)
-		// todo only if owner
-		w.WriteShort(uint16(len(m.messages)))
-		for _, i := range m.messages {
-			w.WriteAsciiString(i.message)
-			w.WriteByte(i.slot)
-		}
-		w.WriteAsciiString(m.ownerName)
-		w.WriteByte(m.maxItemCount)
-		w.WriteInt(m.meso)
-		w.WriteByte(byte(len(m.items)))
-		for _, i := range m.items {
-			w.WriteShort(i.perBundle)
-			w.WriteShort(i.quantity)
-			w.WriteInt(i.price)
-			_ = NewAssetWriter(l, t, options, w)(true)(i.asset)
+func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(byte(m.Type()))
+			w.WriteByte(m.Capacity())
+			for _, v := range m.Visitors() {
+				w.WriteByteArray(v.Enter()(l, ctx)(options))
+			}
+			w.WriteByte(0xFF)
+			if characterId == m.ownerId {
+				w.WriteShort(uint16(len(m.messages)))
+				for _, i := range m.messages {
+					w.WriteAsciiString(i.message)
+					w.WriteByte(i.slot)
+				}
+			} else {
+				w.WriteShort(0)
+			}
+			w.WriteAsciiString(m.ownerName)
+			w.WriteByte(m.maxItemCount)
+			w.WriteInt(m.meso)
+			w.WriteByte(byte(len(m.items)))
+			for _, i := range m.items {
+				w.WriteShort(i.perBundle)
+				w.WriteShort(i.quantity)
+				w.WriteInt(i.price)
+				_ = NewAssetWriter(l, ctx, options, w)(true)(i.asset)
+			}
+			return w.Bytes()
 		}
 	}
 }
@@ -237,11 +297,15 @@ type MiniRoomVisitorBase struct {
 	avatar Avatar
 }
 
-func (m *MiniRoomVisitorBase) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteByte(m.slot)
-		m.avatar.Encode(l, t, options)(w)
-		w.WriteAsciiString(m.name)
+func (m *MiniRoomVisitorBase) Enter() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(m.slot)
+			w.WriteByteArray(m.avatar.Encoder(l, ctx)(options))
+			w.WriteAsciiString(m.name)
+			return w.Bytes()
+		}
 	}
 }
 
@@ -250,10 +314,14 @@ type MiniGameRoomVisitor struct {
 	record MiniGameRecord
 }
 
-func (m *MiniGameRoomVisitor) Enter(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		m.mrb.Enter(l, t, options)(w)
-		m.record.Encode(l, t, options)(w)
+func (m *MiniGameRoomVisitor) Enter() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByteArray(m.mrb.Enter()(l, ctx)(options))
+			w.WriteByteArray(m.record.Encoder(l, ctx)(options))
+			return w.Bytes()
+		}
 	}
 }
 
@@ -262,10 +330,14 @@ type MerchantOwnerVisitor struct {
 	merchantName string
 }
 
-func (m *MerchantOwnerVisitor) Enter(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
-		w.WriteByte(0)
-		w.WriteInt(uint32(m.itemId))
-		w.WriteAsciiString(m.merchantName)
+func (m *MerchantOwnerVisitor) Enter() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(0)
+			w.WriteInt(uint32(m.itemId))
+			w.WriteAsciiString(m.merchantName)
+			return w.Bytes()
+		}
 	}
 }

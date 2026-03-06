@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -82,7 +83,7 @@ func handleMesosUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 		// Find the session by account and send the meso update
 		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.Channel())(e.AccountId,
 			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationUpdateMesoBody(l)(0, e.Body.NewMesos)))
+				writer.StorageOperationUpdateMesoBody(0, e.Body.NewMesos)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send meso update to account [%d].", e.AccountId)
 		}
@@ -115,7 +116,7 @@ func handleArrangedEvent(sc server.Model, wp writer.Producer) message.Handler[st
 
 			// Send refreshed storage view
 			return session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationShowBody(l, sc.Tenant())(0, storageData.Capacity, storageData.Mesos, storageData.Assets))(s)
+				writer.StorageOperationShowBody(0, storageData.Capacity, storageData.Mesos, storageData.Assets))(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to refresh storage for account [%d].", e.AccountId)
@@ -141,16 +142,16 @@ func handleStorageErrorEvent(sc server.Model, wp writer.Producer) message.Handle
 		l.Debugf("Received storage error event for account [%d]. Code: [%s], Message: [%s]", e.AccountId, e.Body.ErrorCode, e.Body.Message)
 
 		// Map error code to appropriate writer
-		var writerBody writer.BodyProducer
+		var writerBody packet.Encode
 		switch e.Body.ErrorCode {
 		case storage2.ErrorCodeStorageFull:
-			writerBody = writer.StorageOperationErrorInventoryFullBody(l)
+			writerBody = writer.StorageOperationErrorInventoryFullBody()
 		case storage2.ErrorCodeNotEnoughMesos:
-			writerBody = writer.StorageOperationErrorNotEnoughMesoBody(l)
+			writerBody = writer.StorageOperationErrorNotEnoughMesoBody()
 		case storage2.ErrorCodeOneOfAKind:
-			writerBody = writer.StorageOperationErrorOneOfAKindBody(l)
+			writerBody = writer.StorageOperationErrorOneOfAKindBody()
 		default:
-			writerBody = writer.StorageOperationErrorMessageBody(l)(e.Body.Message)
+			writerBody = writer.StorageOperationErrorMessageBody(e.Body.Message)
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByAccountId(sc.Channel())(e.AccountId,
@@ -197,9 +198,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, storageData.Capacity, inventoryType, storageData.Assets)))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writer.StorageOperationUpdateAssetsForCompartmentBody(writer.StorageOperationModeStoreAssets, storageData.Capacity, inventoryType, storageData.Assets)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 			}
@@ -211,9 +210,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeStoreAssets, projData.Capacity, inventoryType, assets)))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writer.StorageOperationUpdateAssetsForCompartmentBody(writer.StorageOperationModeStoreAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
@@ -256,9 +253,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 				return
 			}
 
-			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-				session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-					writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, storageData.Capacity, inventoryType, storageData.Assets)))
+			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writer.StorageOperationUpdateAssetsForCompartmentBody(writer.StorageOperationModeRetrieveAssets, storageData.Capacity, inventoryType, storageData.Assets)))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 			}
@@ -270,9 +265,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 		assets := projData.Compartments[compartmentName]
 
 		// Send updated storage assets for the affected compartment only
-		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationUpdateAssetsForCompartmentBody(l, sc.Tenant())(writer.StorageOperationModeRetrieveAssets, projData.Capacity, inventoryType, assets)))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StorageOperation)(writer.StorageOperationUpdateAssetsForCompartmentBody(writer.StorageOperationModeRetrieveAssets, projData.Capacity, inventoryType, assets)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send storage update to character [%d].", e.CharacterId)
 		}
@@ -322,7 +315,7 @@ func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.H
 			})
 
 			return session.Announce(l)(ctx)(wp)(writer.StorageOperation)(
-				writer.StorageOperationShowBody(l, sc.Tenant())(e.Body.NpcId, projData.Capacity, projData.Mesos, assets))(s)
+				writer.StorageOperationShowBody(e.Body.NpcId, projData.Capacity, projData.Mesos, assets))(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show storage to character [%d].", e.Body.CharacterId)

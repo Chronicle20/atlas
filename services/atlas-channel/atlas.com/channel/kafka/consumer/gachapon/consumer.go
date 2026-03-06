@@ -92,10 +92,12 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
-		announceOp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(func(w *response.Writer, options map[string]interface{}) []byte {
-			return writer.WorldMessageGachaponMegaphoneBody(l)("", c.Name(), sc.ChannelId(), event.GachaponName, func(w *response.Writer) error {
-				return model2.NewAssetWriter(l, t, options, w)(true)(*a)
-			})(w, options)
+		announceOp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+			return func(options map[string]interface{}) []byte {
+				return writer.WorldMessageGachaponMegaphoneBody("", c.Name(), sc.ChannelId(), event.GachaponName, func(w *response.Writer) error {
+					return model2.NewAssetWriter(l, ctx, options, w)(true)(*a)
+				})(l, ctx)(options)
+			}
 		})
 		for _, s := range sessions {
 			err = announceOp(s)

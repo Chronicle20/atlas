@@ -417,6 +417,7 @@ func produceWriters() []string {
 		writer.FieldEffectWeather,
 		writer.HiredMerchantOperation,
 		writer.CharacterInteraction,
+		writer.MiniRoom,
 	}
 }
 

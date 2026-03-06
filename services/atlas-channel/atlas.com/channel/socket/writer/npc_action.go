@@ -2,17 +2,19 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const NPCAction = "NPCAction"
 
-func NPCActionAnimationBody(l logrus.FieldLogger) func(objectId uint32, unk byte, unk2 byte) BodyProducer {
-	return func(objectId uint32, unk byte, unk2 byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCActionAnimationBody(objectId uint32, unk byte, unk2 byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(objectId)
 			w.WriteByte(unk)
 			w.WriteByte(unk2)
@@ -21,13 +23,14 @@ func NPCActionAnimationBody(l logrus.FieldLogger) func(objectId uint32, unk byte
 	}
 }
 
-func NPCActionMoveBody(l logrus.FieldLogger, tenant tenant.Model) func(objectId uint32, unk byte, unk2 byte, movePath model.Movement) BodyProducer {
-	return func(objectId uint32, unk byte, unk2 byte, movePath model.Movement) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NPCActionMoveBody(objectId uint32, unk byte, unk2 byte, movePath model.Movement) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(objectId)
 			w.WriteByte(unk)
 			w.WriteByte(unk2)
-			movePath.Encode(l, tenant, options)(w)
+			w.WriteByteArray(movePath.Encode(l, ctx)(options))
 			return w.Bytes()
 		}
 	}

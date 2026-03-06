@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -19,9 +22,10 @@ const (
 	TransportStateEnter3  = TransportState(6)
 )
 
-func FieldTransportStateBody(_ logrus.FieldLogger) func(state TransportState, overrideAppear bool) BodyProducer {
-	return func(state TransportState, overrideAppear bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldTransportStateBody(state TransportState, overrideAppear bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(state))
 			w.WriteBool(overrideAppear)
 			return w.Bytes()

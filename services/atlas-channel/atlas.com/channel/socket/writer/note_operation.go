@@ -2,9 +2,10 @@ package writer
 
 import (
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -20,29 +21,34 @@ const (
 	NoteSendErrorReceiverInboxFull = "RECEIVER_INBOX_FULL"
 )
 
-func NoteDisplayBody(l logrus.FieldLogger, t tenant.Model) func(notes []model.Note) BodyProducer {
-	return func(notes []model.Note) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NoteDisplayBody(notes []model.Note) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getNoteOperation(l)(options, NoteOperationShow))
 			w.WriteByte(byte(len(notes)))
 			for _, n := range notes {
-				n.Encode(l, t, options)(w)
+				w.WriteByteArray(n.Encoder(l, ctx)(options))
 			}
 			return w.Bytes()
 		}
 	}
 }
 
-func NoteSendSuccess(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getNoteOperation(l)(options, NoteOperationSendSuccess))
-		return w.Bytes()
+func NoteSendSuccess() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getNoteOperation(l)(options, NoteOperationSendSuccess))
+			return w.Bytes()
+		}
 	}
 }
 
-func NoteSendError(l logrus.FieldLogger) func(error string) BodyProducer {
-	return func(error string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func NoteSendError(error string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getNoteOperation(l)(options, NoteOperationSendSuccess))
 			w.WriteByte(getNoteError(l)(options, error))
 			return w.Bytes()
@@ -50,10 +56,13 @@ func NoteSendError(l logrus.FieldLogger) func(error string) BodyProducer {
 	}
 }
 
-func NoteRefresh(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getNoteOperation(l)(options, NoteOperationRefresh))
-		return w.Bytes()
+func NoteRefresh() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getNoteOperation(l)(options, NoteOperationRefresh))
+			return w.Bytes()
+		}
 	}
 }
 

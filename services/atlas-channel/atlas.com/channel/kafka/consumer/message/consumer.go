@@ -174,7 +174,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 		}
 
 		for _, cid := range e.Body.Recipients {
-			bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationChatBody(l)(e.Message))
+			bp := session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationChatBody(e.Message))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)
@@ -222,7 +222,7 @@ func handlePinkChat(sc server.Model, wp writer.Producer) message.Handler[message
 
 		// TODO retrieve medal name
 		for _, cid := range e.Body.Recipients {
-			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody(l)("", characterName, e.Message))
+			bp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessagePinkTextBody("", characterName, e.Message))
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)

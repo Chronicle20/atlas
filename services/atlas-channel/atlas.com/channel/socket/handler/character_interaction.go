@@ -72,7 +72,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 			roomType := model.MiniRoomType(r.ReadByte())
 			title := ""
 			private := false
-			if roomType == model.OmokMiniRoom || roomType == model.MatchCardMiniRoom {
+			if roomType == model.OmokMiniRoomType || roomType == model.MatchCardMiniRoomType {
 				// CWvsContext::SendCreateMiniGameRequest
 				title = r.ReadAsciiString()
 				private = r.ReadBool()
@@ -84,13 +84,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 				l.Debugf("Character [%d] has created a mini-room. roomType [%d], title [%s], private [%t], password [%s], nGameSpec [%d].", s.CharacterId(), roomType, title, private, password, nGameSpec)
 				return
 			}
-			if roomType == model.TradeMiniRoom {
+			if roomType == model.TradeMiniRoomType {
 				// CField::SendInviteTradingRoomMsg
 				private = r.ReadBool()
 				l.Debugf("Character [%d] has created a trade-room. roomType [%d], title [%s], private [%t].", s.CharacterId(), roomType, title, private)
 				return
 			}
-			if roomType == model.PersonalShopMiniRoom || roomType == model.MerchantShopMiniRoom {
+			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
 				// CWvsContext::SendOpenShopRequest
 				title = r.ReadAsciiString()
 				private = r.ReadBool()
@@ -99,7 +99,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, title, private, slot, itemId)
 				return
 			}
-			if roomType == model.CashTradeMiniRoom {
+			if roomType == model.CashTradeMiniRoomType {
 				// CMiniRoomBaseDlg::OnCheckSSN2Static
 				private = r.ReadBool()
 				l.Debugf("Character [%d] has created a store. roomType [%d], private [%t].", s.CharacterId(), roomType, private)
@@ -152,13 +152,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 			// CMiniRoomBaseDlg::OnCheckSSN2Static
 			nProc := r.ReadByte() // can be greater than 0
 			roomType := model.MiniRoomType(r.ReadByte())
-			if nProc == 0 && roomType == model.CashTradeMiniRoom {
+			if nProc == 0 && roomType == model.CashTradeMiniRoomType {
 				// CField::SendInviteTradingRoomMsg
 				targetCharacterId := r.ReadUint32()
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], targetCharacterId [%d].", s.CharacterId(), nProc, roomType, targetCharacterId)
 				return
 			}
-			if nProc == 4 && roomType == model.CashTradeMiniRoom {
+			if nProc == 4 && roomType == model.CashTradeMiniRoomType {
 				// CMiniRoomBaseDlg::SendCashInviteResult
 				spw := r.ReadUint32()
 				dwSN := r.ReadUint32()
@@ -166,7 +166,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], dwSN [%d], unk2 [%d].", s.CharacterId(), nProc, roomType, spw, dwSN, unk2)
 				return
 			}
-			if nProc == 4 && roomType == model.MerchantShopMiniRoom {
+			if nProc == 4 && roomType == model.MerchantShopMiniRoomType {
 				// CWvsContext::OnEntrustedShopCheckResult
 				// TODO This immediately triggered from a hired_merchant_operation ConfirmManage
 				spw := r.ReadUint32()
@@ -177,7 +177,7 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ w
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], shopId [%d], unk2 [%d], position [%d], serialNumber [%d].", s.CharacterId(), nProc, roomType, spw, shopId, unk2, position, serialNumber)
 				return
 			}
-			if nProc == 11 && (roomType == model.PersonalShopMiniRoom || roomType == model.MerchantShopMiniRoom) {
+			if nProc == 11 && (roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType) {
 				// CPersonalShopDlg::CheckCashItemInList
 				birthday := r.ReadUint32()
 				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], birthday [%d].", s.CharacterId(), nProc, roomType, birthday)

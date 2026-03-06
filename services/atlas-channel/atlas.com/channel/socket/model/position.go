@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -23,10 +25,12 @@ func (m *Position) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]int
 	}
 }
 
-func (m *Position) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (m *Position) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt32(m.x)
 		w.WriteInt32(m.y)
+		return w.Bytes()
 	}
 }
 

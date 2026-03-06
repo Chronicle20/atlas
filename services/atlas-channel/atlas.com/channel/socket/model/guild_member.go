@@ -1,8 +1,9 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -16,8 +17,9 @@ type GuildMember struct {
 	AllianceTitle byte
 }
 
-func (b *GuildMember) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (b *GuildMember) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		WritePaddedString(w, b.Name, 13)
 		w.WriteInt(uint32(b.JobId))
 		w.WriteInt(uint32(b.Level))
@@ -29,5 +31,6 @@ func (b *GuildMember) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]
 		}
 		w.WriteInt(b.Signature)
 		w.WriteInt(uint32(b.AllianceTitle))
+		return w.Bytes()
 	}
 }

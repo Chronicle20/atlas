@@ -10,7 +10,6 @@ import (
 
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,7 +32,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			tc, err := character.NewProcessor(l, ctx).GetByName(toName)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", toName)
-				_ = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteSendError(l)(writer.NoteSendErrorReceiverUnknown))(s)
+				_ = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteSendError(writer.NoteSendErrorReceiverUnknown))(s)
 				return
 			}
 
@@ -117,7 +116,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				}, nil
 			})(model.FixedProvider(nms))(model.ParallelMap())()
 
-			err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
+			err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(wnms))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 			}

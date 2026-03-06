@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -22,9 +25,10 @@ const (
 	FieldEffectRewardRullet    FieldEffectMode = "REWARD_RULLET"    // 7
 )
 
-func FieldEffectSummonBody(l logrus.FieldLogger) func(effect byte, x int32, y int32) BodyProducer {
-	return func(effect byte, x int32, y int32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectSummonBody(effect byte, x int32, y int32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectSummon))
 			w.WriteByte(effect)
 			w.WriteInt32(x)
@@ -34,9 +38,10 @@ func FieldEffectSummonBody(l logrus.FieldLogger) func(effect byte, x int32, y in
 	}
 }
 
-func FieldEffectTrembleBody(l logrus.FieldLogger) func(bHeavyNShortTremble bool, delay uint32) BodyProducer {
-	return func(bHeavyNShortTremble bool, delay uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectTrembleBody(bHeavyNShortTremble bool, delay uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectTremble))
 			w.WriteBool(bHeavyNShortTremble)
 			w.WriteInt(delay)
@@ -45,9 +50,10 @@ func FieldEffectTrembleBody(l logrus.FieldLogger) func(bHeavyNShortTremble bool,
 	}
 }
 
-func FieldEffectObjectBody(l logrus.FieldLogger) func(name string) BodyProducer {
-	return func(name string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectObjectBody(name string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectObject))
 			w.WriteAsciiString(name)
 			return w.Bytes()
@@ -56,9 +62,10 @@ func FieldEffectObjectBody(l logrus.FieldLogger) func(name string) BodyProducer 
 }
 
 // FieldEffectScreenBody - path parameter is in relation to Map.wz/Effect.img
-func FieldEffectScreenBody(l logrus.FieldLogger) func(path string) BodyProducer {
-	return func(path string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectScreenBody(path string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectScreen))
 			w.WriteAsciiString(path)
 			return w.Bytes()
@@ -66,9 +73,10 @@ func FieldEffectScreenBody(l logrus.FieldLogger) func(path string) BodyProducer 
 	}
 }
 
-func FieldEffectSoundBody(l logrus.FieldLogger) func(path string) BodyProducer {
-	return func(path string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectSoundBody(path string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectSound))
 			w.WriteAsciiString(path)
 			return w.Bytes()
@@ -76,9 +84,10 @@ func FieldEffectSoundBody(l logrus.FieldLogger) func(path string) BodyProducer {
 	}
 }
 
-func FieldEffectBossHpBody(l logrus.FieldLogger) func(monsterId uint32, currentHp uint32, maxHp uint32, tagColor byte, tagBackgroundColor byte) BodyProducer {
-	return func(monsterId uint32, currentHp uint32, maxHp uint32, tagColor byte, tagBackgroundColor byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectBossHpBody(monsterId uint32, currentHp uint32, maxHp uint32, tagColor byte, tagBackgroundColor byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectBossHp))
 			w.WriteInt(monsterId)
 			w.WriteInt(currentHp)
@@ -90,9 +99,10 @@ func FieldEffectBossHpBody(l logrus.FieldLogger) func(monsterId uint32, currentH
 	}
 }
 
-func FieldEffectBackgroundMusicBody(l logrus.FieldLogger) func(name string) BodyProducer {
-	return func(name string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectBackgroundMusicBody(name string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectBackgroundMusic))
 			w.WriteAsciiString(name)
 			return w.Bytes()
@@ -100,9 +110,10 @@ func FieldEffectBackgroundMusicBody(l logrus.FieldLogger) func(name string) Body
 	}
 }
 
-func FieldEffectRewardRulletBody(l logrus.FieldLogger) func(nRewardJobIdx uint32, nRewardPartIdx uint32, nRewardLevIdx uint32) BodyProducer {
-	return func(nRewardJobIdx uint32, nRewardPartIdx uint32, nRewardLevIdx uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func FieldEffectRewardRulletBody(nRewardJobIdx uint32, nRewardPartIdx uint32, nRewardLevIdx uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getFieldEffect(l)(options, FieldEffectRewardRullet))
 			w.WriteInt(nRewardJobIdx)
 			w.WriteInt(nRewardPartIdx)

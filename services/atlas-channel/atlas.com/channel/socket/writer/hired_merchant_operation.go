@@ -1,6 +1,9 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -24,37 +27,50 @@ const (
 	HiredMerchantOperationModeFreeFormNotice                      = "FREE_FORM_NOTICE"                          // 18
 )
 
-func HiredMerchantOperationOpenShopBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeOpenShop))
-		return w.Bytes()
+func HiredMerchantOperationOpenShopBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeOpenShop))
+			return w.Bytes()
+		}
 	}
 }
 
-func HiredMerchantOperationErrorRetrieveFromFredrickBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorRetrieveFromFredrick))
-		return w.Bytes()
+func HiredMerchantOperationErrorRetrieveFromFredrickBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorRetrieveFromFredrick))
+			return w.Bytes()
+		}
 	}
 }
 
-func HiredMerchantOperationErrorAnotherCharacterIsUsingTheItemBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorAnotherCharacterIsUsingTheItem))
-		return w.Bytes()
+func HiredMerchantOperationErrorAnotherCharacterIsUsingTheItemBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorAnotherCharacterIsUsingTheItem))
+			return w.Bytes()
+		}
 	}
 }
 
-func HiredMerchantOperationErrorUnableToOpenTheStoreBody(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorUnableToOpenTheStore))
-		return w.Bytes()
+func HiredMerchantOperationErrorUnableToOpenTheStoreBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorUnableToOpenTheStore))
+			return w.Bytes()
+		}
 	}
 }
 
-func HiredMerchantOperationShopSearchBody(l logrus.FieldLogger) func(shopId uint32) BodyProducer {
-	return func(shopId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func HiredMerchantOperationShopSearchBody(shopId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeShopSearch))
 			w.WriteInt(shopId)
 			return w.Bytes()
@@ -62,9 +78,10 @@ func HiredMerchantOperationShopSearchBody(l logrus.FieldLogger) func(shopId uint
 	}
 }
 
-func HiredMerchantOperationShopRenameBody(l logrus.FieldLogger) func(success bool) BodyProducer {
-	return func(success bool) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func HiredMerchantOperationShopRenameBody(success bool) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeShopRename))
 			w.WriteBool(success)
 			return w.Bytes()
@@ -72,16 +89,20 @@ func HiredMerchantOperationShopRenameBody(l logrus.FieldLogger) func(success boo
 	}
 }
 
-func HiredMerchantOperationErrorRetrieveFromFredrick2Body(l logrus.FieldLogger) BodyProducer {
-	return func(w *response.Writer, options map[string]interface{}) []byte {
-		w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorRetrieveFromFredrick2))
-		return w.Bytes()
+func HiredMerchantOperationErrorRetrieveFromFredrick2Body() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
+			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeErrorRetrieveFromFredrick2))
+			return w.Bytes()
+		}
 	}
 }
 
-func HiredMerchantOperationRemoteShopWarpBody(l logrus.FieldLogger) func(shopId uint32, channelId byte) BodyProducer {
-	return func(shopId uint32, channelId byte) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func HiredMerchantOperationRemoteShopWarpBody(shopId uint32, channelId byte) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeRemoteShopWarp))
 			w.WriteInt(shopId)
 			w.WriteByte(channelId)
@@ -90,13 +111,14 @@ func HiredMerchantOperationRemoteShopWarpBody(l logrus.FieldLogger) func(shopId 
 	}
 }
 
-func HiredMerchantOperationRemoteShopWarpErrorBody(l logrus.FieldLogger) BodyProducer {
-	return HiredMerchantOperationRemoteShopWarpBody(l)(0, 255)
+func HiredMerchantOperationRemoteShopWarpErrorBody() packet.Encode {
+	return HiredMerchantOperationRemoteShopWarpBody(0, 255)
 }
 
-func HiredMerchantOperationConfirmManageBody(l logrus.FieldLogger) func(shopId uint32, position uint16, serialNumber uint64) BodyProducer {
-	return func(shopId uint32, position uint16, serialNumber uint64) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func HiredMerchantOperationConfirmManageBody(shopId uint32, position uint16, serialNumber uint64) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			// TODO This immediately triggers a PLAYER_INTERACTION after retrieving birthday from the client, need to confirm variable naming
 			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeConfirmManage))
 			w.WriteInt(shopId)
@@ -107,9 +129,10 @@ func HiredMerchantOperationConfirmManageBody(l logrus.FieldLogger) func(shopId u
 	}
 }
 
-func HiredMerchantOperationFreeFormNoticeBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func HiredMerchantOperationFreeFormNoticeBody(message string) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getHiredMerchantOperationMode(l)(options, HiredMerchantOperationModeFreeFormNotice))
 			w.WriteBool(true)
 			w.WriteAsciiString(message)

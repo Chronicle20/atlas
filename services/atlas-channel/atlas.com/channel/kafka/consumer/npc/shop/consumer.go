@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -72,7 +73,7 @@ func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			l.WithError(err).Errorf("Unable to get shop for NPC [%d].", e.Body.NpcTemplateId)
 			return
 		}
-		bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(e.Body.NpcTemplateId, nsm.Commodities(), sms)
+		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms)
 		_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
 	}
 }
@@ -93,17 +94,17 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		var bp writer.BodyProducer
+		var bp packet.Encode
 		if e.Body.Error == writer.NPCShopOperationOverLevelRequirement {
-			bp = writer.NPCShopOperationOverLevelRequirementBody(l, t)(e.Body.LevelLimit)
+			bp = writer.NPCShopOperationOverLevelRequirementBody(e.Body.LevelLimit)
 		} else if e.Body.Error == writer.NPCShopOperationUnderLevelRequirement {
-			bp = writer.NPCShopOperationUnderLevelRequirementBody(l, t)(e.Body.LevelLimit)
+			bp = writer.NPCShopOperationUnderLevelRequirementBody(e.Body.LevelLimit)
 		} else if e.Body.Error == writer.NPCShopOperationGenericError {
-			bp = writer.NPCShopOperationGenericErrorBody(l, t)
+			bp = writer.NPCShopOperationGenericErrorBody()
 		} else if e.Body.Error == writer.NPCShopOperationGenericErrorWithReason {
-			bp = writer.NPCShopOperationGenericErrorWithReasonBody(l, t)(e.Body.Reason)
+			bp = writer.NPCShopOperationGenericErrorWithReasonBody(e.Body.Reason)
 		} else {
-			bp = writer.NPCShopOperationBody(l, tenant.MustFromContext(ctx))(e.Body.Error)
+			bp = writer.NPCShopOperationBody(e.Body.Error)
 		}
 		_ = session.Announce(l)(ctx)(wp)(writer.NPCShopOperation)(bp)(s)
 	}

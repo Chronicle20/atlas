@@ -1,8 +1,10 @@
 package writer
 
 import (
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,9 +20,10 @@ const (
 	DropDestroyTypePetPickUp = DropDestroyType(5)
 )
 
-func DropDestroyBody(l logrus.FieldLogger, t tenant.Model) func(dropId uint32, destroyType DropDestroyType, characterId uint32, petSlot int8) BodyProducer {
-	return func(dropId uint32, destroyType DropDestroyType, characterId uint32, petSlot int8) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func DropDestroyBody(dropId uint32, destroyType DropDestroyType, characterId uint32, petSlot int8) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteByte(byte(destroyType))
 			w.WriteInt(dropId)
 			if destroyType >= 2 {

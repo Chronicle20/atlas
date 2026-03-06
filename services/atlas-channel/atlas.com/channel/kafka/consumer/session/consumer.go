@@ -131,7 +131,6 @@ func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[s
 func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 		sp := session.NewProcessor(l, ctx)
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 			return func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -159,12 +158,12 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					sp.SessionCreated(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(l, t)(s.ChannelId(), c, bl))(s)
+					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(s.ChannelId(), c, bl))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(l, t)(bl.Buddies()))(s)
+						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(bl.Buddies()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -172,7 +171,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())
 						if g.Id() != 0 {
-							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(l, t)(g))(s)
+							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(g))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
@@ -220,7 +219,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(bs))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -231,7 +230,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l)(w.Message()))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(w.Message()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -250,7 +249,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						for _, sm := range sms {
 							mms = append(mms, model2.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(l, tenant.MustFromContext(ctx))(model2.NewMacros(mms...)))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(model2.NewMacros(mms...)))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
@@ -292,7 +291,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							}, nil
 						})(model.FixedProvider(nms))(model.ParallelMap())()
 
-						err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(wnms))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

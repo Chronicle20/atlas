@@ -1,8 +1,9 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -18,8 +19,9 @@ type Pet struct {
 	ChatBalloon byte
 }
 
-func (b *Pet) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (b *Pet) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(b.TemplateId)
 		w.WriteAsciiString(b.Name)
 		w.WriteLong(uint64(b.Id))
@@ -29,5 +31,6 @@ func (b *Pet) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interfac
 		w.WriteInt16(b.Foothold)
 		w.WriteByte(b.NameTag)
 		w.WriteByte(b.ChatBalloon)
+		return w.Bytes()
 	}
 }

@@ -3,20 +3,22 @@ package writer
 import (
 	"atlas-channel/pet"
 	"atlas-channel/socket/model"
+	"context"
 
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const PetMovement = "PetMovement"
 
-func PetMovementBody(l logrus.FieldLogger, t tenant.Model) func(p pet.Model, movement model.Movement) BodyProducer {
-	return func(p pet.Model, movement model.Movement) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
+func PetMovementBody(p pet.Model, movement model.Movement) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		w := response.NewWriter(l)
+		return func(options map[string]interface{}) []byte {
 			w.WriteInt(p.OwnerId())
 			w.WriteInt8(p.Slot())
-			movement.Encode(l, t, options)(w)
+			w.WriteByteArray(movement.Encode(l, ctx)(options))
 			return w.Bytes()
 		}
 	}

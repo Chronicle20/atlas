@@ -12,10 +12,10 @@ import (
 
 const CreateSecurityHandle = "CreateSecurityHandle"
 
-func CreateSecurityHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CreateSecurityHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	loginAuthFunc := session.Announce(l)(ctx)(wp)(writer.LoginAuth)
 
-	return func(s session.Model, _ *request.Reader) {
+	return func(s session.Model, _ *request.Reader, readerOptions map[string]interface{}) {
 		loginScreen := [2]string{"MapLogin", "MapLogin1"}
 		randomIndex := rand.Intn(len(loginScreen))
 

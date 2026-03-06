@@ -15,9 +15,9 @@ import (
 
 const CharacterSelectedHandle = "CharacterSelectedHandle"
 
-func CharacterSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterSelectedHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		characterId := r.ReadUint32()
 		var sMacAddressWithHDDSerial = ""
 		var sMacAddressWithHDDSerial2 = ""

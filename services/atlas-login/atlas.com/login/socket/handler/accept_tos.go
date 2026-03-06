@@ -15,8 +15,8 @@ import (
 
 const AcceptTosHandle = "AcceptTosHandle"
 
-func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		accepted := r.ReadBool()
 		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
 		if !accepted {

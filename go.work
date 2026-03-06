@@ -5,6 +5,7 @@ use (
 	./libs/atlas-database
 	./libs/atlas-kafka
 	./libs/atlas-model
+	./libs/atlas-packet
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry

@@ -4,7 +4,7 @@ import (
 	"atlas-channel/data/npc"
 	"atlas-channel/movement"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
+	"github.com/Chronicle20/atlas-packet/model"
 	"atlas-channel/socket/writer"
 	"context"
 

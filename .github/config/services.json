@@ -472,6 +472,12 @@
       "coverage_threshold": 75
     },
     {
+      "name": "atlas-packet",
+      "type": "go-library",
+      "path": "libs/atlas-packet",
+      "module_path": "libs/atlas-packet"
+    },
+    {
       "name": "atlas-rest",
       "type": "go-library",
       "path": "libs/atlas-rest",

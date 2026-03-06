@@ -17,9 +17,9 @@ import (
 
 const CharacterSelectedPicHandle = "CharacterSelectedPicHandle"
 
-func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		pic := r.ReadAsciiString()
 		characterId := r.ReadUint32()
 

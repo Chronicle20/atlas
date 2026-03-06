@@ -17,9 +17,9 @@ import (
 
 const CharacterListWorldHandle = "CharacterListWorldHandle"
 
-func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
+func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	return func(s session.Model, r *request.Reader) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		var gameStartMode = byte(0)
 
 		if t.Region() == "GMS" && t.MajorVersion() > 28 {

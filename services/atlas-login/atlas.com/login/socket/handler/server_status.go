@@ -13,8 +13,8 @@ import (
 
 const ServerStatusHandle = "ServerStatusHandle"
 
-func ServerStatusHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func ServerStatusHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 		worldId := world2.Id(r.ReadUint16())
 
 		cs := world.NewProcessor(l, ctx).GetCapacityStatus(worldId)

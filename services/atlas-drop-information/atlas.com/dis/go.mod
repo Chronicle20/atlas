@@ -1,6 +1,6 @@
 module atlas-drops-information
 
-go 1.24.4
+go 1.25.0
 
 require (
 	github.com/Chronicle20/atlas-model v1.2.5
@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.41.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.41.0
 	go.opentelemetry.io/otel/sdk v1.41.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.1
 )

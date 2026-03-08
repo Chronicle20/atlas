@@ -8,59 +8,16 @@ import (
 	"encoding/hex"
 	"net"
 
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const LoginHandle = "LoginHandle"
-
-type LoginRequest struct {
-	name           string
-	password       string
-	hwid           []byte
-	gameRoomClient uint32
-	gameStartMode  byte
-	unknown1       byte
-}
-
-func (l *LoginRequest) Name() string {
-	return l.name
-}
-
-func (l *LoginRequest) Password() string {
-	return l.password
-}
-
-func (l *LoginRequest) GameRoomClient() uint32 {
-	return l.gameRoomClient
-}
-
-func (l *LoginRequest) GameStartMode() byte {
-	return l.gameStartMode
-}
-
-func ReadLoginRequest(reader *request.Reader) *LoginRequest {
-	name := reader.ReadAsciiString()
-	password := reader.ReadAsciiString()
-	hwid := reader.ReadBytes(16)
-	gameRoomClient := reader.ReadUint32()
-	gameStartMode := reader.ReadByte()
-	unknown1 := reader.ReadByte()
-
-	return &LoginRequest{
-		name:           name,
-		password:       password,
-		hwid:           hwid,
-		gameRoomClient: gameRoomClient,
-		gameStartMode:  gameStartMode,
-		unknown1:       unknown1,
-	}
-}
-
 func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := ReadLoginRequest(r)
-		l.Debugf("Reading [%s] message. body={name=%s, gameRoomClient=%d, gameStartMode=%d}", LoginHandle, p.Name(), p.GameRoomClient(), p.GameStartMode())
+		p := login.Request{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ipAddress := ""
 		if addr := s.GetRemoteAddress(); addr != nil {
@@ -73,7 +30,7 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 				}
 			}
 		}
-		hwid := hex.EncodeToString(p.hwid)
+		hwid := hex.EncodeToString(p.HWID())
 
 		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), ipAddress, hwid)
 		if err != nil {

@@ -7,23 +7,18 @@ import (
 	"context"
 	"net"
 
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const AfterLoginHandle = "AfterLoginHandle"
-
 func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		opt1 := r.ReadByte()
-		opt2 := byte(0)
-		pin := ""
-		if opt1 != 0 {
-			opt2 = r.ReadByte()
-			pin = r.ReadAsciiString()
-		}
-		l.Debugf("AfterLogin handling opt1 [%d] opt2 [%d].", opt1, opt2)
-		if opt1 == 0 && opt2 == 0 {
+		p := login.AfterLogin{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		if p.PinMode() == 0 && p.Opt2() == 0 {
 			l.Debugf("Account [%d] has chosen not to input PIN. Terminating session.", s.AccountId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
@@ -47,7 +42,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			return
 		}
 
-		if opt1 == 1 && opt2 == 1 {
+		if p.PinMode() == 1 && p.Opt2() == 1 {
 			if a.PIN() == "" {
 				l.Debugf("Requesting account [%d] to create PIN.", s.AccountId())
 				err = session.Announce(l)(ctx)(wp)(writer.PinOperation)(writer.RegisterPinBody())(s)
@@ -65,8 +60,8 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			}
 			return
 		}
-		if opt1 == 1 && opt2 == 0 {
-			if pin == a.PIN() {
+		if p.PinMode() == 1 && p.Opt2() == 0 {
+			if p.Pin() == a.PIN() {
 				l.Debugf("Validated account [%d] PIN.", s.AccountId())
 				_, _, err = account.NewProcessor(l, ctx).RecordPinAttempt(s.AccountId(), true, ipAddress, "")
 				if err != nil {
@@ -96,8 +91,8 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 			}
 			return
 		}
-		if opt1 == 2 && opt2 == 0 {
-			if pin == a.PIN() {
+		if p.PinMode() == 2 && p.Opt2() == 0 {
+			if p.Pin() == a.PIN() {
 				l.Debugf("Requesting account [%d] to create PIN.", s.AccountId())
 				_, _, err = account.NewProcessor(l, ctx).RecordPinAttempt(s.AccountId(), true, ipAddress, "")
 				if err != nil {

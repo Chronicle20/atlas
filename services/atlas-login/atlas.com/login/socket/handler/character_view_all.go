@@ -8,30 +8,16 @@ import (
 	"context"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterViewAllHandle = "CharacterViewAllHandle"
-
 func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		var gameStartMode byte
-		var nexonPassport string
-		var machineId string
-		var gameRoomClient uint32
-		var gameStartMode2 byte
-
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
-			gameStartMode = r.ReadByte()
-			nexonPassport = r.ReadAsciiString()
-			machineId = r.ReadAsciiString()
-			gameRoomClient = r.ReadUint32()
-			gameStartMode2 = r.ReadByte()
-		}
-		l.Debugf("Processing request to view all characters. GameStartMode [%d], NexonPassport [%s], MachineId [%s], GameRoomClient [%d], GameStartMode2 [%d]", gameStartMode, nexonPassport, machineId, gameRoomClient, gameStartMode2)
+		p := login.AllCharacterListRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {

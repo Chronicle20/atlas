@@ -24,7 +24,7 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
-	instance_transport "atlas-channel/kafka/consumer/instance_transport"
+	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
 	"atlas-channel/kafka/consumer/message"
@@ -35,7 +35,7 @@ import (
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
-	party_quest "atlas-channel/kafka/consumer/party_quest"
+	"atlas-channel/kafka/consumer/party_quest"
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
@@ -58,6 +58,7 @@ import (
 	"strconv"
 	"time"
 
+	socket3 "github.com/Chronicle20/atlas-packet/socket"
 	"github.com/Chronicle20/atlas-service"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
@@ -425,7 +426,7 @@ func produceWriters() []string {
 func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
-	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
+	handlerMap[socket3.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
 	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
@@ -490,7 +491,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
 	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
 	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
-	handlerMap[handler.PongHandle] = handler.PongHandleFunc
+	handlerMap[socket3.PongHandle] = handler.PongHandleFunc
 	handlerMap[handler.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[handler.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[handler.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc

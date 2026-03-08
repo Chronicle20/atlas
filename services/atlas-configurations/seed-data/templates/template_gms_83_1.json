@@ -98,7 +98,7 @@
       {
         "opCode": "0x19",
         "validator": "NoOpValidator",
-        "handler": "NoOpHandler"
+        "handler": "StartErrorHandle"
       },
       {
         "opCode": "0x1D",

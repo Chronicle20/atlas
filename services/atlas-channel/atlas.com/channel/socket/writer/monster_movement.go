@@ -1,8 +1,9 @@
 package writer
 
 import (
-	"github.com/Chronicle20/atlas-packet/model"
 	"context"
+
+	"github.com/Chronicle20/atlas-packet/model"
 
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -27,8 +28,8 @@ func MoveMonsterBody(uniqueId uint32, bNotForceLandingWhenDiscard bool, bNotChan
 			w.WriteInt16(skillId)
 			w.WriteInt16(skillLevel)
 			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-				w.WriteByteArray(multiTargets.Encoder(l, ctx)(options))
-				w.WriteByteArray(randTimeForAreaAttack.Encoder(l, ctx)(options))
+				w.WriteByteArray(multiTargets.Encode(l, ctx)(options))
+				w.WriteByteArray(randTimeForAreaAttack.Encode(l, ctx)(options))
 			}
 			w.WriteByteArray(movement.Encode(l, ctx)(options))
 			return w.Bytes()

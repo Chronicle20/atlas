@@ -22,7 +22,7 @@ func (m *RandTimeForAreaAttack) Decode(_ logrus.FieldLogger, _ context.Context) 
 	}
 }
 
-func (m *RandTimeForAreaAttack) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m *RandTimeForAreaAttack) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(_ map[string]interface{}) []byte {
 		w.WriteInt32(int32(len(m.Times)))

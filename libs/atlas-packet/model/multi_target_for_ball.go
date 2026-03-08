@@ -24,12 +24,12 @@ func (m *MultiTargetForBall) Decode(l logrus.FieldLogger, ctx context.Context) f
 	}
 }
 
-func (m *MultiTargetForBall) Encoder(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m *MultiTargetForBall) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt32(int32(len(m.Targets)))
 		for _, target := range m.Targets {
-			w.WriteByteArray(target.Encoder(l, ctx)(options))
+			w.WriteByteArray(target.Encode(l, ctx)(options))
 		}
 		return w.Bytes()
 	}

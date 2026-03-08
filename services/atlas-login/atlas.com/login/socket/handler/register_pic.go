@@ -9,25 +9,16 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	account2 "github.com/Chronicle20/atlas-packet/account"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const RegisterPicHandle = "RegisterPicHandle"
-
 func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		opt := r.ReadByte()
-		characterId := r.ReadUint32()
-		if t.Region() == "GMS" {
-			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial - not logged for security
-			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial2 - not logged for security
-		}
-		pic := r.ReadAsciiString()
-
-		l.Debugf("Attempting to register PIC. opt [%d], character [%d].", opt, characterId)
+		p := account2.RegisterPic{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
@@ -40,7 +31,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			//TODO
 			return
 		}
-		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), pic)
+		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), p.Pic())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to register PIC for account [%d].", s.AccountId())
 		}
@@ -56,7 +47,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 			return
 		}
 
-		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: c.IpAddress(), Port: uint16(c.Port()), CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: c.IpAddress(), Port: uint16(c.Port()), CharacterId: p.CharacterId()})
 		if err != nil {
 			return
 		}

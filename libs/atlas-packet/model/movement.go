@@ -10,6 +10,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const (
+	TypeNormal        = "NORMAL"
+	TypeTeleport      = "TELEPORT"
+	TypeStartFallDown = "START_FALL_DOWN"
+	TypeFlyingBlock   = "FLYING_BLOCK"
+	TypeJump          = "JUMP"
+	TypeStatChange    = "STAT_CHANGE"
+)
+
 type MovementCodec interface {
 	packet.Codec
 	EncodeType(w *response.Writer)
@@ -31,17 +40,17 @@ func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *req
 			var elem MovementCodec
 			var elemType = r.ReadByte()
 
-			if isMovementType(l)(elemType, options, "NORMAL") {
+			if isMovementType(l)(elemType, options, TypeNormal) {
 				elem = &NormalElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
-			} else if isMovementType(l)(elemType, options, "TELEPORT") {
+			} else if isMovementType(l)(elemType, options, TypeTeleport) {
 				elem = &TeleportElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
-			} else if isMovementType(l)(elemType, options, "START_FALL_DOWN") {
+			} else if isMovementType(l)(elemType, options, TypeStartFallDown) {
 				elem = &StartFallDownElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
-			} else if isMovementType(l)(elemType, options, "FLYING_BLOCK") {
+			} else if isMovementType(l)(elemType, options, TypeFlyingBlock) {
 				elem = &FlyingBlockElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
-			} else if isMovementType(l)(elemType, options, "JUMP") {
+			} else if isMovementType(l)(elemType, options, TypeJump) {
 				elem = &JumpElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
-			} else if isMovementType(l)(elemType, options, "STAT_CHANGE") {
+			} else if isMovementType(l)(elemType, options, TypeStatChange) {
 				elem = &StatChangeElement{Element{ElemType: elemType, StartX: m.StartX, StartY: m.StartY}}
 			} else {
 				elem = &Element{ElemType: elemType}

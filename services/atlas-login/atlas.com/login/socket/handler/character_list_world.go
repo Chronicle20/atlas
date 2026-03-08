@@ -8,37 +8,18 @@ import (
 	"atlas-login/world"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	world2 "github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterListWorldHandle = "CharacterListWorldHandle"
-
 func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		var gameStartMode = byte(0)
+		p := login.WorldCharacterListRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		if t.Region() == "GMS" && t.MajorVersion() > 28 {
-			// GMS v28 is not definite here, but this is not present in 28.
-			gameStartMode = r.ReadByte()
-		}
-		worldId := world2.Id(r.ReadByte())
-		channelId := channel.Id(r.ReadByte())
-
-		var socketAddr int32
-		if t.Region() == "GMS" && t.MajorVersion() > 12 {
-			socketAddr = r.ReadInt32()
-		} else if t.Region() == "JMS" {
-			socketAddr = r.ReadInt32()
-		}
-
-		l.Debugf("Handling [CharacterListWorld]. gameStartMode=[%d], worldId=[%d], channelId=[%d], socketAddr=[%d]", gameStartMode, worldId, channelId, socketAddr)
-
-		w, err := world.NewProcessor(l, ctx).GetById(worldId)
+		w, err := world.NewProcessor(l, ctx).GetById(p.WorldId())
 		if err != nil {
 			l.WithError(err).Errorf("Received a character list request for a world we do not have")
 			return
@@ -53,8 +34,8 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		}
 
 		sp := session.NewProcessor(l, ctx)
-		s = sp.SetWorldId(s.SessionId(), worldId)
-		s = sp.SetChannelId(s.SessionId(), channelId)
+		s = sp.SetWorldId(s.SessionId(), p.WorldId())
+		s = sp.SetChannelId(s.SessionId(), p.ChannelId())
 
 		a, err := account.NewProcessor(l, ctx).GetById(s.AccountId())
 		if err != nil {
@@ -68,7 +49,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CharacterList)(writer.CharacterListBody(cs, worldId, 0, a.PIC(), int16(1), a.CharacterSlots()))(s)
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterList)(writer.CharacterListBody(cs, p.WorldId(), 0, a.PIC(), int16(1), a.CharacterSlots()))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show character list")
 		}

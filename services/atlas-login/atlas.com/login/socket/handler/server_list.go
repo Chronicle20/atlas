@@ -9,14 +9,16 @@ import (
 	"sort"
 
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const ServerListRequestHandle = "ServerListRequestHandle"
-
 func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := login.ServerListRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = announceServerInformation(l)(ctx)(wp)(s)
 	}
 }

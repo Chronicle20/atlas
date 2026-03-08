@@ -8,24 +8,25 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
+	account2 "github.com/Chronicle20/atlas-packet/account"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const AcceptTosHandle = "AcceptTosHandle"
-
 func AcceptTosHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		accepted := r.ReadBool()
-		l.Debugf("Account [%d] responded to the TOS dialog with [%t].", s.AccountId(), accepted)
-		if !accepted {
+		p := account2.AcceptTos{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		if !p.Accepted() {
 			l.Debugf("Account [%d] has chosen not to accept TOS. Terminating session.", s.AccountId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
 		}
 
-		err := account.NewProcessor(l, ctx).UpdateTos(s.AccountId(), accepted)
+		err := account.NewProcessor(l, ctx).UpdateTos(s.AccountId(), p.Accepted())
 		if err != nil {
 			// TODO
 		}

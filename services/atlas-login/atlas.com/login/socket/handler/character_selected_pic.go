@@ -10,24 +10,16 @@ import (
 	"context"
 	"net"
 
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterSelectedPicHandle = "CharacterSelectedPicHandle"
-
 func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		pic := r.ReadAsciiString()
-		characterId := r.ReadUint32()
-
-		if t.Region() == "GMS" {
-			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial
-			_ = r.ReadAsciiString() // sMacAddressWithHDDSerial2
-		}
-		l.Debugf("Character [%d] selected for login to channel [%d:%d].", characterId, s.WorldId(), s.ChannelId())
+		p := login.CharacterSelectWithPic{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ap := account.NewProcessor(l, ctx)
 		ipAddress := ""
@@ -52,7 +44,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
-		if a.PIC() != pic {
+		if a.PIC() != p.Pic() {
 			l.Debugf("Incorrect PIC for account [%d].", s.AccountId())
 			_, limitReached, _ := ap.RecordPicAttempt(s.AccountId(), false, ipAddress, "")
 			if limitReached {
@@ -80,7 +72,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			return
 		}
 
-		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: c.IpAddress(), Port: uint16(c.Port()), CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: c.IpAddress(), Port: uint16(c.Port()), CharacterId: p.CharacterId()})
 		if err != nil {
 			return
 		}

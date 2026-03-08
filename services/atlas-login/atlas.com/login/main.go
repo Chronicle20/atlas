@@ -9,7 +9,6 @@ import (
 	session2 "atlas-login/kafka/consumer/account/session"
 	"atlas-login/kafka/consumer/seed"
 	"atlas-login/logger"
-	"github.com/Chronicle20/atlas-service"
 	"atlas-login/session"
 	"atlas-login/socket"
 	"atlas-login/socket/handler"
@@ -20,6 +19,12 @@ import (
 	"os"
 	"strconv"
 	"time"
+
+	account3 "github.com/Chronicle20/atlas-packet/account"
+	"github.com/Chronicle20/atlas-packet/character"
+	"github.com/Chronicle20/atlas-packet/login"
+	socket3 "github.com/Chronicle20/atlas-packet/socket"
+	"github.com/Chronicle20/atlas-service"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	socket2 "github.com/Chronicle20/atlas-socket"
@@ -32,7 +37,7 @@ import (
 )
 
 const serviceName = "atlas-login"
-const consumerGroupIdTemplate = "Login Service - %s"
+const consumerGroupIdTemplate = "ChannelConnect Service - %s"
 
 func main() {
 	l := logger.CreateLogger(serviceName)
@@ -161,28 +166,29 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.DebugHandle] = handler.DebugHandleFunc
 	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
-	handlerMap[handler.LoginHandle] = handler.LoginHandleFunc
-	handlerMap[handler.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
-	handlerMap[handler.ServerStatusHandle] = handler.ServerStatusHandleFunc
-	handlerMap[handler.CharacterListWorldHandle] = handler.CharacterListWorldHandleFunc
-	handlerMap[handler.CharacterCheckNameHandle] = handler.CharacterCheckNameHandleFunc
-	handlerMap[handler.CreateCharacterHandle] = handler.CreateCharacterHandleFunc
-	handlerMap[handler.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
-	handlerMap[handler.AfterLoginHandle] = handler.AfterLoginHandleFunc
-	handlerMap[handler.RegisterPinHandle] = handler.RegisterPinHandleFunc
-	handlerMap[handler.RegisterPicHandle] = handler.RegisterPicHandleFunc
-	handlerMap[handler.AcceptTosHandle] = handler.AcceptTosHandleFunc
-	handlerMap[handler.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
-	handlerMap[handler.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
+	handlerMap[login.LoginHandle] = handler.LoginHandleFunc
+	handlerMap[login.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
+	handlerMap[login.ServerStatusHandle] = handler.ServerStatusHandleFunc
+	handlerMap[login.WorldCharacterListHandle] = handler.CharacterListWorldHandleFunc
+	handlerMap[character.CharacterCheckNameHandle] = handler.CharacterCheckNameHandleFunc
+	handlerMap[character.CreateCharacterHandle] = handler.CreateCharacterHandleFunc
+	handlerMap[character.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
+	handlerMap[login.AfterLoginHandle] = handler.AfterLoginHandleFunc
+	handlerMap[account3.RegisterPinHandle] = handler.RegisterPinHandleFunc
+	handlerMap[account3.RegisterPicHandle] = handler.RegisterPicHandleFunc
+	handlerMap[account3.AcceptTosHandle] = handler.AcceptTosHandleFunc
+	handlerMap[login.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
+	handlerMap[login.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
 	handlerMap[handler.WorldSelectHandle] = handler.WorldSelectHandleFunc
-	handlerMap[handler.SetGenderHandle] = handler.SetGenderHandleFunc
-	handlerMap[handler.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
-	handlerMap[handler.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
+	handlerMap[account3.SetGenderHandle] = handler.SetGenderHandleFunc
+	handlerMap[login.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
+	handlerMap[login.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
 	handlerMap[handler.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
 	handlerMap[handler.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
-	handlerMap[handler.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
+	handlerMap[login.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
 	handlerMap[handler.ClientStartHandle] = handler.ClientStartHandleFunc
-	handlerMap[handler.PongHandle] = handler.PongHandleFunc
+	handlerMap[socket3.PongHandle] = handler.PongHandleFunc
+	handlerMap[socket3.StartErrorHandle] = handler.StartErrorHandleFunc
 	return handlerMap
 }
 

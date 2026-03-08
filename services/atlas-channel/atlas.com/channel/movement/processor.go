@@ -8,9 +8,9 @@ import (
 	"atlas-channel/monster"
 	"atlas-channel/pet"
 	"atlas-channel/session"
-	"github.com/Chronicle20/atlas-packet/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-packet/model"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas-model/model"
@@ -164,15 +164,6 @@ func summaryProvider(x int16, y int16, stance byte) model2.Provider[summary] {
 		}, nil
 	}
 }
-
-const (
-	TypeNormal        = "NORMAL"
-	TypeTeleport      = "TELEPORT"
-	TypeStartFallDown = "START_FALL_DOWN"
-	TypeFlyingBlock   = "FLYING_BLOCK"
-	TypeJump          = "JUMP"
-	TypeStatChange    = "STAT_CHANGE"
-)
 
 func folder(s summary, e model.MovementCodec) (summary, error) {
 	return foldMovementSummary(s, e)

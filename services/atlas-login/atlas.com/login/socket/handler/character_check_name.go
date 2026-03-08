@@ -6,19 +6,21 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	character2 "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterCheckNameHandle = "CharacterCheckNameHandle"
-
 func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		name := r.ReadAsciiString()
-		ok, err := character.NewProcessor(l, ctx).IsValidName(name)
+		p := character2.CheckName{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		ok, err := character.NewProcessor(l, ctx).IsValidName(p.Name())
 		if err != nil {
-			l.Debugf("Error determining if name [%s] is valid.", name)
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeSystemError))(s)
+			l.Debugf("Error determining if name [%s] is valid.", p.Name())
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(p.Name(), writer.CharacterNameResponseCodeSystemError))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character name response due to error.")
 				return
@@ -27,8 +29,8 @@ func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		}
 
 		if !ok {
-			l.Debugf("Name [%s] is not allowed.", name)
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeNotAllowed))(s)
+			l.Debugf("Name [%s] is not allowed.", p.Name())
+			err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(p.Name(), writer.CharacterNameResponseCodeNotAllowed))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character name response due to error.")
 				return
@@ -36,8 +38,8 @@ func CharacterCheckNameHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 
-		l.Debugf("Allowing character creation with the name of [%s].", name)
-		err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(name, writer.CharacterNameResponseCodeOk))(s)
+		l.Debugf("Allowing character creation with the name of [%s].", p.Name())
+		err = session.Announce(l)(ctx)(wp)(writer.CharacterNameResponse)(writer.CharacterNameResponseBody(p.Name(), writer.CharacterNameResponseCodeOk))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character name response due to error.")
 			return

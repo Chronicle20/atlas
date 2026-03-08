@@ -24,7 +24,7 @@ func (m *Position) Decode(_ logrus.FieldLogger, _ context.Context) func(r *reque
 	}
 }
 
-func (m *Position) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m *Position) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(_ map[string]interface{}) []byte {
 		w.WriteInt32(m.x)

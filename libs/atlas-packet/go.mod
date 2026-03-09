@@ -9,6 +9,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas-constants v1.0.20 // indirect
 	github.com/Chronicle20/atlas-model v1.2.5 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	golang.org/x/sys v0.25.0 // indirect

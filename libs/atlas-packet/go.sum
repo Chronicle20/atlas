@@ -1,3 +1,5 @@
+github.com/Chronicle20/atlas-constants v1.0.20 h1:9vSoOGgMOPJDgxcQMR1knufQltBk37wSSZO08aXdiOQ=
+github.com/Chronicle20/atlas-constants v1.0.20/go.mod h1:mcEZWtptkgYIE844YCo+cYkLMqmSBdDRtTIeQ/hG91c=
 github.com/Chronicle20/atlas-model v1.2.5 h1:qNnPQGDNaPOg2DtT40WqK75MKDkMf9hbsfFe1YTVaE8=
 github.com/Chronicle20/atlas-model v1.2.5/go.mod h1:9dtC1uZtPTk9GfuxijS5JIr9HUyRJRUEnn+BbN5Az1E=
 github.com/Chronicle20/atlas-socket v1.2.7 h1:ySXGRN1TON12K6G3CQNd8vQ+V5WkFX77XuVRE16LzSA=

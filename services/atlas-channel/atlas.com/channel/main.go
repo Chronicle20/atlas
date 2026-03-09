@@ -72,6 +72,7 @@ import (
 	merchant2 "github.com/Chronicle20/atlas-packet/merchant"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	messenger2 "github.com/Chronicle20/atlas-packet/messenger"
+	monster2 "github.com/Chronicle20/atlas-packet/monster"
 	note4 "github.com/Chronicle20/atlas-packet/note"
 	npc2 "github.com/Chronicle20/atlas-packet/npc"
 	party2 "github.com/Chronicle20/atlas-packet/party"
@@ -449,13 +450,13 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[socket3.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
-	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
+	handlerMap[npc2.NPCActionHandle] = handler.NPCActionHandleFunc
 	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
 	handlerMap[field2.MapChangeHandle] = handler.MapChangeHandleFunc
-	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
+	handlerMap[character2.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
 	handlerMap[channel4.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cash2.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
-	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[monster2.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[chat2.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
 	handlerMap[character2.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
 	handlerMap[inventory2.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
@@ -490,7 +491,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[character2.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
 	handlerMap[chat2.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
 	handlerMap[messenger2.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
-	handlerMap[handler.PetMovementHandle] = handler.PetMovementHandleFunc
+	handlerMap[pet2.PetMovementHandle] = handler.PetMovementHandleFunc
 	handlerMap[pet2.PetSpawnHandle] = handler.PetSpawnHandleFunc
 	handlerMap[pet2.PetCommandHandle] = handler.PetCommandHandleFunc
 	handlerMap[pet2.PetChatHandle] = handler.PetChatHandleFunc

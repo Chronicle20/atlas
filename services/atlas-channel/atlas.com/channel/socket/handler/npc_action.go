@@ -4,37 +4,31 @@ import (
 	"atlas-channel/data/npc"
 	"atlas-channel/movement"
 	"atlas-channel/session"
-	"github.com/Chronicle20/atlas-packet/model"
 	"atlas-channel/socket/writer"
 	"context"
 
+	npcpacket "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const NPCActionHandle = "NPCActionHandle"
-
 func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		objectId := r.ReadUint32()
-		unk := r.ReadByte()
-		unk2 := r.ReadByte()
+		p := npcpacket.Action{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		// TODO could validate NPC has ability to move
-		rest := r.GetRestAsBytes()
-		if len(rest) > 0 {
-			mp := model.Movement{}
-			mp.Decode(l, ctx)(r, readerOptions)
-			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Field(), s.CharacterId(), objectId, unk, unk2, mp)
+		if p.HasMovement() {
+			_ = movement.NewProcessor(l, ctx, wp).ForNPC(s.Field(), s.CharacterId(), p.ObjectId(), p.Unk(), p.Unk2(), p.MovementData())
 			return
 		}
 
-		n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), objectId)
+		n, err := npc.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), p.ObjectId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(objectId, unk, unk2))(s)
+		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(p.ObjectId(), p.Unk(), p.Unk2()))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", n.Template(), s.CharacterId())
 			return

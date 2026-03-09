@@ -7,18 +7,18 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/inventory"
+	inventory2 "github.com/Chronicle20/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	CompartmentSort = "CompartmentSort"
-)
-
 func CompartmentSortHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTime := r.ReadUint32()
-		compartmentType := inventory.Type(r.ReadByte())
+		p := inventory2.CompartmentSort{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		compartmentType := inventory.Type(p.CompartmentType())
 
 		isValid := false
 		for _, validType := range inventory.Types {
@@ -33,7 +33,7 @@ func CompartmentSortHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writ
 			return
 		}
 
-		err := compartment.NewProcessor(l, ctx).Sort(s.CharacterId(), compartmentType, updateTime)
+		err := compartment.NewProcessor(l, ctx).Sort(s.CharacterId(), compartmentType, p.UpdateTime())
 		if err != nil {
 			l.WithError(err).Errorf("Failed to send compartment sort command for character [%d].", s.CharacterId())
 		}

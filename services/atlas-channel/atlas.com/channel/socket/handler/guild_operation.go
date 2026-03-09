@@ -9,12 +9,12 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
+	guild2 "github.com/Chronicle20/atlas-packet/guild"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	GuildOperationHandle            = "GuildOperationHandle"
 	GuildOperationLoad              = "LOAD"
 	GuildOperationInputName         = "INPUT_NAME"
 	GuildOperationRequestCreate     = "REQUEST_CREATE"
@@ -36,7 +36,10 @@ const (
 
 func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := guild2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		if isGuildOperation(l)(readerOptions, op, GuildOperationRequestCreate) {
 			name := r.ReadAsciiString()
 			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Field(), s.CharacterId(), name)

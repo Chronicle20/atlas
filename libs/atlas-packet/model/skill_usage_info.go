@@ -1,9 +1,10 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,8 +20,8 @@ type SkillUsageInfo struct {
 	delay                     uint16
 }
 
-func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.updateTime = r.ReadUint32()
 		m.skillId = r.ReadUint32()
 		m.skillLevel = r.ReadByte()
@@ -38,7 +39,7 @@ func (m *SkillUsageInfo) Decode(_ logrus.FieldLogger, _ tenant.Model, _ map[stri
 				m.delay = r.ReadUint16()
 			}
 		}
-			if isMobAffectingBuff(skill.Id(m.skillId)) {
+		if isMobAffectingBuff(skill.Id(m.skillId)) {
 			nMobCount := r.ReadByte()
 			m.affectedMobIds = make([]uint32, 0, nMobCount)
 			for range nMobCount {

@@ -8,45 +8,21 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	pet2 "github.com/Chronicle20/atlas-packet/pet"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const PetDropPickUpHandle = "PetDropPickUpHandle"
-
 func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		petId := r.ReadUint64()
-		fieldKey := r.ReadByte()
-		updateTime := r.ReadUint32()
-		x := r.ReadInt16()
-		y := r.ReadInt16()
-		dropId := r.ReadUint32()
-		crc := r.ReadUint32()
-		bPickupOthers := r.ReadBool()
-		bSweepForDrop := r.ReadBool()
-		bLongRange := r.ReadBool()
-		ownerX := int16(0)
-		ownerY := int16(0)
-		posCrc := uint32(0)
-		rectCrc := uint32(0)
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
-			if dropId%13 != 0 {
-				ownerX = r.ReadInt16()
-				ownerY = r.ReadInt16()
-				posCrc = r.ReadUint32()
-				rectCrc = r.ReadUint32()
-			}
-		}
+		pk := pet2.DropPickUp{}
+		pk.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
 
-		p, err := pet.NewProcessor(l, ctx).GetById(uint32(petId))
+		p, err := pet.NewProcessor(l, ctx).GetById(uint32(pk.PetId()))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to find pet [%d]", petId)
+			l.WithError(err).Errorf("Unable to find pet [%d]", pk.PetId())
 		}
-
-		l.Debugf("Character [%d] pet [%d] attempting to pick up drop [%d]. fieldKey [%d], updateTime [%d], x [%d], y[%d], crc [%d], bPickupOthers [%t], bSweepForDrop [%t], bLongRange [%t], ownerX [%d], ownerY [%d], posCrc [%d], rectCrc[%d].", s.CharacterId(), petId, dropId, fieldKey, updateTime, x, y, crc, bPickupOthers, bSweepForDrop, bLongRange, ownerX, ownerY, posCrc, rectCrc)
 
 		var partyId uint32
 		pp, perr := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
@@ -54,6 +30,6 @@ func PetDropPickUpHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 			partyId = pp.Id()
 		}
 
-		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), dropId, s.CharacterId(), partyId, x, y, p.Slot())
+		_ = drop.NewProcessor(l, ctx).RequestReservation(s.Field(), pk.DropId(), s.CharacterId(), partyId, pk.X(), pk.Y(), p.Slot())
 	}
 }

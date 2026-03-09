@@ -19,7 +19,7 @@ func CharacterAppearanceUpdateBody(c character.Model) packet.Encode {
 			w.WriteInt(c.Id())
 			w.WriteByte(1) // mode, 1, 2, 4
 			ava := model.NewFromCharacter(c, false)
-			w.WriteByteArray(ava.Encoder(l, ctx)(options))
+			w.WriteByteArray(ava.Encode(l, ctx)(options))
 			w.WriteByte(0) // crush ring
 			w.WriteByte(0) // friendship ring
 			w.WriteByte(0) // marriage ring

@@ -13,18 +13,17 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const CharacterUseSkillHandle = "CharacterUseSkillHandle"
 
 func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		sui := &model.SkillUsageInfo{}
-		sui.Decode(l, t, readerOptions)(r)
+		sui := &packetmodel.SkillUsageInfo{}
+		sui.Decode(l, ctx)(r, readerOptions)
 
 		cp := character.NewProcessor(l, ctx)
 		c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())

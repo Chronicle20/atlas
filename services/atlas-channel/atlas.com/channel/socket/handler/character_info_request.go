@@ -10,47 +10,45 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
+	character2 "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterInfoRequestHandle = "CharacterInfoRequestHandle"
-
 func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTime := r.ReadUint32()
-		characterId := r.ReadUint32()
-		petInfo := r.ReadBool()
-		l.Debugf("Received info request for character [%d]. UpdateTime [%d]. PetInfo [%t].", characterId, updateTime, petInfo)
+		p := character2.InfoRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		cp := character.NewProcessor(l, ctx)
 		decorators := make([]model.Decorator[character.Model], 0)
-		if petInfo {
+		if p.PetInfo() {
 			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
 		}
-		c, err := cp.GetById(decorators...)(characterId)
+		c, err := cp.GetById(decorators...)(p.CharacterId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", characterId)
+			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", p.CharacterId())
 			return
 		}
-		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(characterId)
+		g, _ := guild.NewProcessor(l, ctx).GetByMemberId(p.CharacterId())
 
 		var wl []wishlist.Model
-		wl, err = wishlist.NewProcessor(l, ctx).GetByCharacterId(characterId)
+		wl, err = wishlist.NewProcessor(l, ctx).GetByCharacterId(p.CharacterId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", characterId)
+			l.WithError(err).Errorf("Unable to retrieve wishlist for character [%d].", p.CharacterId())
 			wl = make([]wishlist.Model, 0)
 		}
 
-		if characterId != s.CharacterId() {
+		if p.CharacterId() != s.CharacterId() {
 			var ps []pet.Model
-			ps, err = pet.NewProcessor(l, ctx).GetByOwner(characterId)
+			ps, err = pet.NewProcessor(l, ctx).GetByOwner(p.CharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve pet [%d] being requested.", characterId)
+				l.WithError(err).Errorf("Unable to retrieve pet [%d] being requested.", p.CharacterId())
 			}
 
-			for _, p := range ps {
-				_ = session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(p))(s)
+			for _, pe := range ps {
+				_ = session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(pe))(s)
 			}
 		}
 

@@ -139,7 +139,7 @@ func (m CreateCharacter) Encode(l logrus.FieldLogger, ctx context.Context) func(
 	}
 }
 
-func (m CreateCharacter) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CreateCharacter) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.name = r.ReadAsciiString()

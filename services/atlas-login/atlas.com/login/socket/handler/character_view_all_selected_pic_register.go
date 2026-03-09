@@ -11,31 +11,25 @@ import (
 	"atlas-login/world"
 	"context"
 
-	world2 "github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterViewAllSelectedPicRegisterHandle = "CharacterViewAllSelectedPicRegisterHandle"
-
 func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		opt := r.ReadByte()
-		characterId := r.ReadUint32()
-		worldId := world2.Id(r.ReadUint32())
-		_ = r.ReadAsciiString() // macAddress - not logged for security
-		_ = r.ReadAsciiString() // macAddressWithHDDSerial - not logged for security
-		pic := r.ReadAsciiString()
-		l.Debugf("Character [%d] attempting to login via view all. opt [%d], worldId [%d].", characterId, opt, worldId)
+		p := login.AllCharacterListSelectWithPicRegister{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		c, err := character.NewProcessor(l, ctx).GetById(character.NewProcessor(l, ctx).InventoryDecorator())(characterId)
+		c, err := character.NewProcessor(l, ctx).GetById(character.NewProcessor(l, ctx).InventoryDecorator())(p.CharacterId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to get character [%d].", characterId)
+			l.WithError(err).Errorf("Unable to get character [%d].", p.CharacterId())
 			// TODO issue error
 			return
 		}
 
-		if c.WorldId() != worldId {
+		if c.WorldId() != p.WorldId() {
 			l.Errorf("Character is not part of world provided by client. Potential packet exploit from [%d]. Terminating session.", s.AccountId())
 			_ = session.NewProcessor(l, ctx).Destroy(s)
 			return
@@ -47,32 +41,32 @@ func CharacterViewAllSelectedPicRegisterHandleFunc(l logrus.FieldLogger, ctx con
 			return
 		}
 
-		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), pic)
+		err = account.NewProcessor(l, ctx).UpdatePic(s.AccountId(), p.Pic())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to PIC for account [%d].", s.AccountId())
 			// TODO issue error
 			return
 		}
 
-		w, err := world.NewProcessor(l, ctx).GetById(worldId)
+		w, err := world.NewProcessor(l, ctx).GetById(p.WorldId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to get world [%d].", worldId)
+			l.WithError(err).Errorf("Unable to get world [%d].", p.WorldId())
 			// TODO issue error
 			return
 		}
 
 		if w.CapacityStatus() == world.StatusFull {
-			l.Errorf("World [%d] has capacity status [%d].", worldId, w.CapacityStatus())
+			l.Errorf("World [%d] has capacity status [%d].", p.WorldId(), w.CapacityStatus())
 			// TODO issue error
 			return
 		}
 
-		s = session.NewProcessor(l, ctx).SetWorldId(s.SessionId(), worldId)
+		s = session.NewProcessor(l, ctx).SetWorldId(s.SessionId(), p.WorldId())
 
-		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(worldId)
+		ch, err := channel.NewProcessor(l, ctx).GetRandomInWorld(p.WorldId())
 		s = session.NewProcessor(l, ctx).SetChannelId(s.SessionId(), ch.ChannelId())
 
-		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: characterId})
+		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelSelect{IPAddress: ch.IpAddress(), Port: uint16(ch.Port()), CharacterId: p.CharacterId()})
 		if err != nil {
 			return
 		}

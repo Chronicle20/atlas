@@ -60,7 +60,7 @@ func (m ChannelConnect) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	}
 }
 
-func (m ChannelConnect) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ChannelConnect) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.machineId = r.ReadBytes(16)

@@ -58,7 +58,7 @@ func (m CharacterSelectWithPic) Encode(l logrus.FieldLogger, ctx context.Context
 	}
 }
 
-func (m CharacterSelectWithPic) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterSelectWithPic) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.pic = r.ReadAsciiString()

@@ -2,13 +2,13 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/socket/model"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 )
 
 const CharacterAttackEnergy = "CharacterAttackEnergy"
 
-func CharacterAttackEnergyBody(c character.Model, ai model.AttackInfo) packet.Encode {
+func CharacterAttackEnergyBody(c character.Model, ai packetmodel.AttackInfo) packet.Encode {
 	return WriteCommonAttackBody(c, ai)
 }

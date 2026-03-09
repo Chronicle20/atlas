@@ -9,13 +9,12 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
+	note2 "github.com/Chronicle20/atlas-packet/note"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	NoteOperationHandle = "NoteOperationHandle"
-
 	NoteOperationSend    = "SEND"
 	NoteOperationDiscard = "DISCARD"
 	NoteOperationRequest = "REQUEST"
@@ -23,7 +22,10 @@ const (
 
 func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := note2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		np := note.NewProcessor(l, ctx)
 		if isNoteOperation(l)(readerOptions, op, NoteOperationSend) {
 			toName := r.ReadAsciiString()

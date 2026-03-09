@@ -58,7 +58,29 @@ import (
 	"strconv"
 	"time"
 
+	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
+	cash2 "github.com/Chronicle20/atlas-packet/cash"
+	channel4 "github.com/Chronicle20/atlas-packet/channel"
+	character2 "github.com/Chronicle20/atlas-packet/character"
+	chat2 "github.com/Chronicle20/atlas-packet/chat"
+	drop2 "github.com/Chronicle20/atlas-packet/drop"
+	fame2 "github.com/Chronicle20/atlas-packet/fame"
+	field2 "github.com/Chronicle20/atlas-packet/field"
+	guild2 "github.com/Chronicle20/atlas-packet/guild"
+	interaction2 "github.com/Chronicle20/atlas-packet/interaction"
+	inventory2 "github.com/Chronicle20/atlas-packet/inventory"
+	merchant2 "github.com/Chronicle20/atlas-packet/merchant"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	messenger2 "github.com/Chronicle20/atlas-packet/messenger"
+	note4 "github.com/Chronicle20/atlas-packet/note"
+	npc2 "github.com/Chronicle20/atlas-packet/npc"
+	party2 "github.com/Chronicle20/atlas-packet/party"
+	pet2 "github.com/Chronicle20/atlas-packet/pet"
+	portal2 "github.com/Chronicle20/atlas-packet/portal"
+	quest2 "github.com/Chronicle20/atlas-packet/quest"
+	reactor2 "github.com/Chronicle20/atlas-packet/reactor"
 	socket3 "github.com/Chronicle20/atlas-packet/socket"
+	storage2 "github.com/Chronicle20/atlas-packet/storage"
 	"github.com/Chronicle20/atlas-service"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
@@ -428,73 +450,73 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[socket3.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
 	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
-	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
-	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
+	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
+	handlerMap[field2.MapChangeHandle] = handler.MapChangeHandleFunc
 	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
-	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
-	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
+	handlerMap[channel4.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
+	handlerMap[cash2.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
-	handlerMap[handler.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
-	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
-	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
-	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
-	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
-	handlerMap[handler.CharacterChatMultiHandle] = handler.CharacterChatMultiHandleFunc
-	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
-	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
-	handlerMap[handler.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
-	handlerMap[handler.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
-	handlerMap[handler.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
-	handlerMap[handler.GuildOperationHandle] = handler.GuildOperationHandleFunc
-	handlerMap[handler.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
-	handlerMap[handler.FameChangeHandle] = handler.FameChangeHandleFunc
-	handlerMap[handler.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
-	handlerMap[handler.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
-	handlerMap[handler.GuildBBSHandle] = handler.GuildBBSHandleFunc
-	handlerMap[handler.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
-	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
-	handlerMap[handler.DropPickUpHandle] = handler.DropPickUpHandleFunc
-	handlerMap[handler.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
+	handlerMap[chat2.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[character2.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
+	handlerMap[inventory2.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
+	handlerMap[party2.PartyOperationHandle] = handler.PartyOperationHandleFunc
+	handlerMap[party2.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
+	handlerMap[chat2.CharacterChatMultiHandle] = handler.CharacterChatMultiHandleFunc
+	handlerMap[character2.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
+	handlerMap[buddy2.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
+	handlerMap[character2.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
+	handlerMap[npc2.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
+	handlerMap[npc2.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
+	handlerMap[guild2.GuildOperationHandle] = handler.GuildOperationHandleFunc
+	handlerMap[guild2.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
+	handlerMap[fame2.FameChangeHandle] = handler.FameChangeHandleFunc
+	handlerMap[character2.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
+	handlerMap[character2.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
+	handlerMap[guild2.GuildBBSHandle] = handler.GuildBBSHandleFunc
+	handlerMap[character2.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
+	handlerMap[character2.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
+	handlerMap[drop2.DropPickUpHandle] = handler.DropPickUpHandleFunc
+	handlerMap[character2.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
 	handlerMap[handler.CharacterMeleeAttackHandle] = handler.CharacterMeleeAttackHandleFunc
 	handlerMap[handler.CharacterRangedAttackHandle] = handler.CharacterRangedAttackHandleFunc
 	handlerMap[handler.CharacterMagicAttackHandle] = handler.CharacterMagicAttackHandleFunc
 	handlerMap[handler.CharacterTouchAttackHandle] = handler.CharacterTouchAttackHandleFunc
-	handlerMap[handler.CharacterHealOverTimeHandle] = handler.CharacterHealOverTimeHandleFunc
-	handlerMap[handler.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
-	handlerMap[handler.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
+	handlerMap[character2.CharacterHealOverTimeHandle] = handler.CharacterHealOverTimeHandleFunc
+	handlerMap[packetmodel.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
+	handlerMap[character2.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
-	handlerMap[handler.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
-	handlerMap[handler.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
-	handlerMap[handler.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
-	handlerMap[handler.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
-	handlerMap[handler.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[character2.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[cash2.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
+	handlerMap[character2.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
+	handlerMap[chat2.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
+	handlerMap[messenger2.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
 	handlerMap[handler.PetMovementHandle] = handler.PetMovementHandleFunc
-	handlerMap[handler.PetSpawnHandle] = handler.PetSpawnHandleFunc
-	handlerMap[handler.PetCommandHandle] = handler.PetCommandHandleFunc
-	handlerMap[handler.PetChatHandle] = handler.PetChatHandleFunc
-	handlerMap[handler.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
-	handlerMap[handler.PetFoodHandle] = handler.PetFoodHandleFunc
-	handlerMap[handler.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
-	handlerMap[handler.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
-	handlerMap[handler.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
-	handlerMap[handler.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
-	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
-	handlerMap[handler.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
-	handlerMap[handler.PetItemUseHandle] = handler.PetItemUseHandleFunc
-	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
-	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
-	handlerMap[handler.NPCShopHandle] = handler.NPCShopHandleFunc
-	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
-	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
-	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
-	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
-	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
-	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
-	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
+	handlerMap[pet2.PetSpawnHandle] = handler.PetSpawnHandleFunc
+	handlerMap[pet2.PetCommandHandle] = handler.PetCommandHandleFunc
+	handlerMap[pet2.PetChatHandle] = handler.PetChatHandleFunc
+	handlerMap[pet2.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
+	handlerMap[pet2.PetFoodHandle] = handler.PetFoodHandleFunc
+	handlerMap[inventory2.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
+	handlerMap[character2.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
+	handlerMap[inventory2.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
+	handlerMap[inventory2.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
+	handlerMap[character2.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
+	handlerMap[pet2.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
+	handlerMap[pet2.PetItemUseHandle] = handler.PetItemUseHandleFunc
+	handlerMap[cash2.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
+	handlerMap[cash2.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
+	handlerMap[npc2.NPCShopHandle] = handler.NPCShopHandleFunc
+	handlerMap[inventory2.CompartmentMergeHandle] = handler.CompartmentMergeHandleFunc
+	handlerMap[inventory2.CompartmentSortHandle] = handler.CompartmentSortHandleFunc
+	handlerMap[inventory2.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[note4.NoteOperationHandle] = handler.NoteOperationHandleFunc
+	handlerMap[quest2.QuestActionHandle] = handler.QuestActionHandleFunc
+	handlerMap[storage2.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[reactor2.ReactorHitHandle] = handler.ReactorHitHandleFunc
 	handlerMap[socket3.PongHandle] = handler.PongHandleFunc
-	handlerMap[handler.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
-	handlerMap[handler.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
-	handlerMap[handler.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[character2.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
+	handlerMap[interaction2.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
+	handlerMap[merchant2.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
 	return handlerMap
 }
 

@@ -36,7 +36,7 @@ func (m ServerStatusRequest) Encode(l logrus.FieldLogger, _ context.Context) fun
 	}
 }
 
-func (m ServerStatusRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ServerStatusRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.worldId = world.Id(r.ReadByte())
 	}

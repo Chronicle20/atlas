@@ -7,12 +7,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	guild2 "github.com/Chronicle20/atlas-packet/guild"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	GuildBBSHandle                      = "GuildBBSHandle"
 	GuildBBSOperationCreateOrEditThread = "CREATE_OR_EDIT_THREAD"
 	GuildBBSOperationDeleteThread       = "DELETE_THREAD"
 	GuildBBSOperationListThreads        = "LIST_THREADS"
@@ -30,7 +30,10 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 
-		op := r.ReadByte()
+		p := guild2.BBS{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationCreateOrEditThread) {
 			modify := r.ReadBool()
 			if modify {

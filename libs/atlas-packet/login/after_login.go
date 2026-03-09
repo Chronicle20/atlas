@@ -50,10 +50,10 @@ func (m AfterLogin) Encode(l logrus.FieldLogger, _ context.Context) func(options
 	}
 }
 
-func (m AfterLogin) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *AfterLogin) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.pinMode = r.ReadByte()
-		if m.PinMode() > 0 {
+		if m.pinMode > 0 {
 			m.opt2 = r.ReadByte()
 			m.pin = r.ReadAsciiString()
 		}

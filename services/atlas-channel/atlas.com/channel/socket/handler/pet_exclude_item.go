@@ -7,21 +7,20 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	pet2 "github.com/Chronicle20/atlas-packet/pet"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const PetItemExcludeHandle = "PetItemExcludeHandle"
-
 func PetItemExcludeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		petId := r.ReadUint64()
-		items := make([]exclude.Model, 0)
-		count := r.ReadByte()
-		for i := range count {
-			itemId := r.ReadInt32()
+		p := pet2.ExcludeItem{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		items := make([]exclude.Model, 0, len(p.ItemIds()))
+		for i, itemId := range p.ItemIds() {
 			items = append(items, exclude.NewModel(uint32(i), uint32(itemId)))
 		}
-		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), uint32(petId), items)
+		_ = pet.NewProcessor(l, ctx).SetExcludeItems(s.CharacterId(), uint32(p.PetId()), items)
 	}
 }

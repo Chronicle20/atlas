@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -67,8 +69,9 @@ type AttackInfo struct {
 	bulletY              uint16
 }
 
-func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.fieldKey = r.ReadByte()
 		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
 			m.dr0 = r.ReadUint32()
@@ -158,7 +161,7 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, t tenant.Model, options map[st
 
 		for range m.damage {
 			di := NewDamageInfo(m.hits)
-			di.Decode(l, t, options)(r)
+			di.Decode(l, ctx)(r, options)
 			m.damageInfo = append(m.damageInfo, *di)
 		}
 

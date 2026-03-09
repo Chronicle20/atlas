@@ -44,10 +44,10 @@ func (m SetGender) Encode(l logrus.FieldLogger, _ context.Context) func(options 
 	}
 }
 
-func (m SetGender) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *SetGender) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.set = r.ReadBool()
-		if !m.set {
+		if m.set {
 			m.gender = r.ReadByte()
 		}
 	}

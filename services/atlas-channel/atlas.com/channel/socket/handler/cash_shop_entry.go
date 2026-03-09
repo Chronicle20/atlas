@@ -13,16 +13,16 @@ import (
 	"atlas-channel/storage"
 	"context"
 
+	cash2 "github.com/Chronicle20/atlas-packet/cash"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CashShopEntryHandle = "CashShopEntryHandle"
-
 func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTime := r.ReadUint32()
-		l.Debugf("Character [%d] is attempting to enter the cash shop. update_time [%d].", s.CharacterId(), updateTime)
+		p := cash2.ShopEntry{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		// TODO block when performing vega scrolling
 		// TODO block when in event

@@ -52,7 +52,7 @@ func (m CharacterSelected) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	}
 }
 
-func (m CharacterSelected) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterSelected) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()

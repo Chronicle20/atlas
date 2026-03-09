@@ -6,18 +6,17 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	fame2 "github.com/Chronicle20/atlas-packet/fame"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const FameChangeHandle = "FameChangeHandle"
-
 func FameChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		tid := r.ReadUint32()
-		mode := r.ReadInt8()
-		amount := 2*mode - 1
-		l.Debugf("Character [%d] attempting to change [%d] fame by amount [%d]", s.CharacterId(), tid, amount)
-		_ = fame.NewProcessor(l, ctx).RequestChange(s.Field(), s.CharacterId(), tid, amount)
+		p := fame2.Change{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		amount := 2*p.Mode() - 1
+		_ = fame.NewProcessor(l, ctx).RequestChange(s.Field(), s.CharacterId(), p.TargetId(), amount)
 	}
 }

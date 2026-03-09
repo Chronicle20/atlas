@@ -15,25 +15,24 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
+	cash2 "github.com/Chronicle20/atlas-packet/cash"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
-
 func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		p := cash2.ItemUse{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTime := uint32(0)
-		if updateTimeFirst {
-			updateTime = r.ReadUint32()
-		}
-		source := slot.Position(r.ReadInt16())
-		itemId := item.Id(r.ReadUint32())
+		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		updateTime := p.UpdateTime()
+		source := slot.Position(p.Source())
+		itemId := item.Id(p.ItemId())
 
 		a, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, int16(source))()
 		if err != nil || item.Id(a.TemplateId()) != itemId {

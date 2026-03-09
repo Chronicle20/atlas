@@ -55,10 +55,10 @@ func (m AllCharacterListSelect) Encode(l logrus.FieldLogger, _ context.Context) 
 	}
 }
 
-func (m AllCharacterListSelect) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *AllCharacterListSelect) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
-		m.worldId = world.Id(r.ReadByte())
+		m.worldId = world.Id(r.ReadUint32())
 		m.mac = r.ReadAsciiString()
 		m.hwid = r.ReadAsciiString()
 	}

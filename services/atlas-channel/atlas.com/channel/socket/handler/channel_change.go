@@ -9,18 +9,18 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	channel3 "github.com/Chronicle20/atlas-packet/channel"
+
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const ChannelChangeHandle = "ChannelChangeHandle"
-
 func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		channelId := channel2.Id(r.ReadByte())
-		updateTime := r.ReadUint32()
-		l.Debugf("Character [%d] attempting to change to channel [%d]. update_time [%d].", s.CharacterId(), channelId, updateTime)
+		p := channel3.ChannelChange{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ch, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
 		if err != nil {
@@ -34,7 +34,7 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 
 		// TODO verify not in mini dungeon
 
-		c, err := channel.NewProcessor(l, ctx).GetById(channel2.NewModel(s.WorldId(), channelId))
+		c, err := channel.NewProcessor(l, ctx).GetById(channel2.NewModel(s.WorldId(), p.ChannelId()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			// TODO send server notice.

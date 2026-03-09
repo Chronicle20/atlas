@@ -35,7 +35,7 @@ func (m AllCharacterListPong) Encode(l logrus.FieldLogger, ctx context.Context) 
 	}
 }
 
-func (m AllCharacterListPong) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *AllCharacterListPong) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.render = r.ReadBool()
 	}

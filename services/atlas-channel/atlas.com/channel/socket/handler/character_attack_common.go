@@ -8,21 +8,21 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
 
 	skill3 "github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(ai model2.AttackInfo) model.Operator[session.Model] {
-			return func(ai model2.AttackInfo) model.Operator[session.Model] {
+func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
+			return func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					cp := character.NewProcessor(l, ctx)
 					c, err := cp.GetById(cp.InventoryDecorator, cp.SkillModelDecorator)(s.CharacterId())
@@ -79,16 +79,16 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
 						var writerName string
 						var bodyProducer packet.Encode
-						if ai.AttackType() == model2.AttackTypeMelee {
+						if ai.AttackType() == packetmodel.AttackTypeMelee {
 							writerName = writer.CharacterAttackMelee
 							bodyProducer = writer.CharacterAttackMeleeBody(c, ai)
-						} else if ai.AttackType() == model2.AttackTypeRanged {
+						} else if ai.AttackType() == packetmodel.AttackTypeRanged {
 							writerName = writer.CharacterAttackRanged
 							bodyProducer = writer.CharacterAttackRangedBody(c, ai)
-						} else if ai.AttackType() == model2.AttackTypeMagic {
+						} else if ai.AttackType() == packetmodel.AttackTypeMagic {
 							writerName = writer.CharacterAttackMagic
 							bodyProducer = writer.CharacterAttackMagicBody(c, ai)
-						} else if ai.AttackType() == model2.AttackTypeEnergy {
+						} else if ai.AttackType() == packetmodel.AttackTypeEnergy {
 							writerName = writer.CharacterAttackEnergy
 							bodyProducer = writer.CharacterAttackEnergyBody(c, ai)
 						} else {

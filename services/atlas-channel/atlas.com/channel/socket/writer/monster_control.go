@@ -48,7 +48,7 @@ func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.
 				mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), model.MonsterAppearTypeRegen, m.Team())
 				stat := buildMonsterTemporaryStat(l, t, m)
 				mem.SetTemporaryStat(stat)
-				w.WriteByteArray(mem.Encoder(l, ctx)(options))
+				w.WriteByteArray(mem.Encode(l, ctx)(options))
 				return w.Bytes()
 			}
 			return w.Bytes()

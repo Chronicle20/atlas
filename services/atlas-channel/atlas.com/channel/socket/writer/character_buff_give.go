@@ -25,7 +25,7 @@ func CharacterBuffGiveBody(buffs []buff.Model) packet.Encode {
 					cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Level(), b.ExpiresAt())
 				}
 			}
-			w.WriteByteArray(cts.Encoder(l, ctx)(options))
+			w.WriteByteArray(cts.Encode(l, ctx)(options))
 			w.WriteShort(0) // tDelay
 			w.WriteByte(0)  // MovementAffectingStat
 			return w.Bytes()

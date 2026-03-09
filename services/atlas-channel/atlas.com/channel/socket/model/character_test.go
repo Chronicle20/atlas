@@ -34,8 +34,8 @@ func validateCharacterTemporaryStatTypeByName(t *testing.T) func(tenant tenant.M
 		var ctst CharacterTemporaryStatType
 		var err error
 		ctst, err = CharacterTemporaryStatTypeByName(tenant)(name)
-		if err != nil || ctst.shift != shift {
-			t.Fatalf("Failed to get correct shift for [%s]. Got [%d], Expected [%d]", name, ctst.shift, shift)
+		if err != nil || ctst.Shift() != shift {
+			t.Fatalf("Failed to get correct shift for [%s]. Got [%d], Expected [%d]", name, ctst.Shift(), shift)
 		}
 	}
 }

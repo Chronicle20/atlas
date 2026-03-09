@@ -50,7 +50,7 @@ func SpawnMonsterWithEffectBody(m monster.Model, newSpawn bool, effect byte) pac
 			mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), appearType, m.Team())
 			stat := buildMonsterTemporaryStat(l, t, m)
 			mem.SetTemporaryStat(stat)
-			w.WriteByteArray(mem.Encoder(l, ctx)(options))
+			w.WriteByteArray(mem.Encode(l, ctx)(options))
 			return w.Bytes()
 		}
 	}

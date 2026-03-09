@@ -19,7 +19,7 @@ func MonsterStatSetBody(uniqueId uint32, stat *model.MonsterTemporaryStat) packe
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
-			w.WriteByteArray(stat.Encoder(l, ctx)(options))
+			w.WriteByteArray(stat.Encode(l, ctx)(options))
 			w.WriteInt16(0) // tDelay
 			w.WriteByte(0)  // m_nCalcDamageStatIndex
 			if stat.IsMovementAffectingStat(t) {
@@ -36,7 +36,7 @@ func MonsterStatResetBody(uniqueId uint32, stat *model.MonsterTemporaryStat) pac
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
 			w.WriteInt(uniqueId)
-			w.WriteByteArray(stat.Encoder(l, ctx)(options))
+			w.WriteByteArray(stat.Encode(l, ctx)(options))
 			w.WriteInt16(0) // tDelay
 			w.WriteByte(0)  // m_nCalcDamageStatIndex
 			if stat.IsMovementAffectingStat(t) {

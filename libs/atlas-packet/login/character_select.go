@@ -12,34 +12,34 @@ import (
 
 const CharacterSelectedHandle = "CharacterSelectedHandle"
 
-// CharacterSelected - CLogin::SendSelectCharPacket
-type CharacterSelected struct {
+// CharacterSelect - CLogin::SendSelectCharPacket
+type CharacterSelect struct {
 	characterId uint32
 	mac         string
 	hwid        string
 }
 
-func (m CharacterSelected) CharacterId() uint32 {
+func (m CharacterSelect) CharacterId() uint32 {
 	return m.characterId
 }
 
-func (m CharacterSelected) Mac() string {
+func (m CharacterSelect) Mac() string {
 	return m.mac
 }
 
-func (m CharacterSelected) Hwid() string {
+func (m CharacterSelect) Hwid() string {
 	return m.hwid
 }
 
-func (m CharacterSelected) Operation() string {
+func (m CharacterSelect) Operation() string {
 	return CharacterSelectedHandle
 }
 
-func (m CharacterSelected) String() string {
+func (m CharacterSelect) String() string {
 	return fmt.Sprintf("characterId [%d], mac [%s], hwid [%s]", m.characterId, m.mac, m.hwid)
 }
 
-func (m CharacterSelected) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m CharacterSelect) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -52,7 +52,7 @@ func (m CharacterSelected) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	}
 }
 
-func (m *CharacterSelected) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterSelect) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()

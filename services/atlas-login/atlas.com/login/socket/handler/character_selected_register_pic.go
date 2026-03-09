@@ -9,14 +9,14 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
-	account2 "github.com/Chronicle20/atlas-packet/account"
+	account2 "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := account2.RegisterPic{}
+		p := account2.CharacterSelectRegisterPic{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 

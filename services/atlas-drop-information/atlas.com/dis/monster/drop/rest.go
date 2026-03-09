@@ -4,6 +4,7 @@ import "strconv"
 
 type RestModel struct {
 	Id              uint32 `json:"-"`
+	MonsterId       uint32 `json:"monsterId"`
 	ItemId          uint32 `json:"itemId"`
 	MinimumQuantity uint32 `json:"minimumQuantity"`
 	MaximumQuantity uint32 `json:"maximumQuantity"`
@@ -31,6 +32,7 @@ func (r *RestModel) SetID(idStr string) error {
 func Transform(model Model) (RestModel, error) {
 	rm := RestModel{
 		Id:              model.Id(),
+		MonsterId:       model.MonsterId(),
 		ItemId:          model.ItemId(),
 		MinimumQuantity: model.MinimumQuantity(),
 		MaximumQuantity: model.MaximumQuantity(),

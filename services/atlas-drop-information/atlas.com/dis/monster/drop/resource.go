@@ -17,8 +17,12 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 	return func(db *gorm.DB) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerGet := rest.RegisterHandler(l)(db)(si)
+
 			r := router.PathPrefix("/monsters/{monsterId}/drops").Subrouter()
 			r.HandleFunc("", registerGet("get_all_drops", handleGetAllDrops)).Methods(http.MethodGet)
+
+			ir := router.PathPrefix("/items/{itemId}/drops").Subrouter()
+			ir.HandleFunc("", registerGet("get_item_drops", handleGetItemDrops)).Methods(http.MethodGet)
 		}
 	}
 }
@@ -33,6 +37,34 @@ func handleGetAllDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.H
 					return
 				}
 				d.Logger().WithError(err).Errorf("Retrieving drops for monster [%d].", monsterId)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			res, err := model.SliceMap(Transform)(model.FixedProvider(ms))(model.ParallelMap())()
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Creating REST model.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			query := r.URL.Query()
+			queryParams := jsonapi.ParseQueryFields(&query)
+			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+		}
+	})
+}
+
+func handleGetItemDrops(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			ms, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForItem(itemId)()
+			if err != nil {
+				if errors.Is(err, ErrNotFound) {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+				d.Logger().WithError(err).Errorf("Retrieving drops for item [%d].", itemId)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}

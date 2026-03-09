@@ -7,6 +7,7 @@ export const dropKeys = {
   all: ['drops'] as const,
   monster: (monsterId: string) => [...dropKeys.all, 'monster', monsterId] as const,
   reactor: (reactorId: string) => [...dropKeys.all, 'reactor', reactorId] as const,
+  item: (itemId: string) => [...dropKeys.all, 'item', itemId] as const,
 };
 
 export function useMonsterDrops(monsterId: string): UseQueryResult<DropData[], Error> {
@@ -15,6 +16,17 @@ export function useMonsterDrops(monsterId: string): UseQueryResult<DropData[], E
     queryKey: dropKeys.monster(monsterId),
     queryFn: () => dropsService.getMonsterDrops(monsterId, activeTenant!),
     enabled: !!monsterId && !!activeTenant,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+}
+
+export function useItemDrops(itemId: string): UseQueryResult<DropData[], Error> {
+  const { activeTenant } = useTenant();
+  return useQuery({
+    queryKey: dropKeys.item(itemId),
+    queryFn: () => dropsService.getItemDrops(itemId, activeTenant!),
+    enabled: !!itemId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });

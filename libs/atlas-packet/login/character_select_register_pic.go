@@ -1,4 +1,4 @@
-package account
+package login
 
 import (
 	"context"
@@ -12,8 +12,8 @@ import (
 
 const RegisterPicHandle = "RegisterPicHandle"
 
-// RegisterPic - CLogin::SendSelectCharPacket
-type RegisterPic struct {
+// CharacterSelectRegisterPic - CLogin::SendSelectCharPacket
+type CharacterSelectRegisterPic struct {
 	mode        byte
 	characterId uint32
 	mac         string
@@ -21,35 +21,35 @@ type RegisterPic struct {
 	pic         string
 }
 
-func (m RegisterPic) Mode() byte {
+func (m CharacterSelectRegisterPic) Mode() byte {
 	return m.mode
 }
 
-func (m RegisterPic) CharacterId() uint32 {
+func (m CharacterSelectRegisterPic) CharacterId() uint32 {
 	return m.characterId
 }
 
-func (m RegisterPic) Mac() string {
+func (m CharacterSelectRegisterPic) Mac() string {
 	return m.mac
 }
 
-func (m RegisterPic) Hwid() string {
+func (m CharacterSelectRegisterPic) Hwid() string {
 	return m.hwid
 }
 
-func (m RegisterPic) Pic() string {
+func (m CharacterSelectRegisterPic) Pic() string {
 	return m.pic
 }
 
-func (m RegisterPic) Operation() string {
+func (m CharacterSelectRegisterPic) Operation() string {
 	return RegisterPicHandle
 }
 
-func (m RegisterPic) String() string {
+func (m CharacterSelectRegisterPic) String() string {
 	return fmt.Sprintf("mode [%d], characterId [%d], mac [%s], hwid [%s], pic [%s]", m.mode, m.characterId, m.mac, m.hwid, m.pic)
 }
 
-func (m RegisterPic) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m CharacterSelectRegisterPic) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -64,7 +64,7 @@ func (m RegisterPic) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	}
 }
 
-func (m RegisterPic) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m CharacterSelectRegisterPic) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()

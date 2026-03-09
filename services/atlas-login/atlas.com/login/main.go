@@ -175,7 +175,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[character.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
 	handlerMap[login.AfterLoginHandle] = handler.AfterLoginHandleFunc
 	handlerMap[account3.RegisterPinHandle] = handler.RegisterPinHandleFunc
-	handlerMap[account3.RegisterPicHandle] = handler.RegisterPicHandleFunc
+	handlerMap[login.RegisterPicHandle] = handler.RegisterPicHandleFunc
 	handlerMap[account3.AcceptTosHandle] = handler.AcceptTosHandleFunc
 	handlerMap[login.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
 	handlerMap[login.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc

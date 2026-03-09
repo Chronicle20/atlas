@@ -7,18 +7,18 @@ import (
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/monster"
 	"atlas-channel/party"
-	"atlas-channel/socket/model"
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/sirupsen/logrus"
 )
 
-func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, info model.SkillUsageInfo, e effect.Model) error {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, info model.SkillUsageInfo, e effect.Model) error {
-		return func(f field.Model, characterId uint32, info model.SkillUsageInfo, e effect.Model) error {
+func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+	return func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+		return func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -42,7 +42,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 	}
 }
 
-func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, info model.SkillUsageInfo, e effect.Model) {
+func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) {
 	mobIds := info.AffectedMobIds()
 	if len(mobIds) == 0 {
 		return

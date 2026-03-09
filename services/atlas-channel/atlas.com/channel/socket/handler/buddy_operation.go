@@ -8,13 +8,13 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	BuddyOperationHandle = "BuddyOperationHandle"
 	BuddyOperationReload = "RELOAD"
 	BuddyOperationAdd    = "ADD"
 	BuddyOperationAccept = "ACCEPT"
@@ -23,7 +23,10 @@ const (
 
 func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := buddy2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationReload) {
 			l.Debugf("Character [%d] attempting to reload buddy list.", s.CharacterId())
 			return

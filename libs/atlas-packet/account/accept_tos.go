@@ -36,7 +36,7 @@ func (m AcceptTos) Encode(l logrus.FieldLogger, _ context.Context) func(options 
 	}
 }
 
-func (m AcceptTos) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *AcceptTos) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.accepted = r.ReadBool()
 	}

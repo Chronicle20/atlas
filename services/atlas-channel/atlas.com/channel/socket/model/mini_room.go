@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/item"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -294,7 +295,7 @@ func NewCashTradeMiniRoom(owner MiniRoomVisitorBase) MiniRoom {
 type MiniRoomVisitorBase struct {
 	name   string
 	slot   byte
-	avatar Avatar
+	avatar packetmodel.Avatar
 }
 
 func (m *MiniRoomVisitorBase) Enter() packet.Encode {
@@ -302,7 +303,7 @@ func (m *MiniRoomVisitorBase) Enter() packet.Encode {
 		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
 			w.WriteByte(m.slot)
-			w.WriteByteArray(m.avatar.Encoder(l, ctx)(options))
+			w.WriteByteArray(m.avatar.Encode(l, ctx)(options))
 			w.WriteAsciiString(m.name)
 			return w.Bytes()
 		}

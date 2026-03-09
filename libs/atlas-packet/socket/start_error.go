@@ -43,9 +43,9 @@ func (m StartError) Encode(l logrus.FieldLogger, _ context.Context) func(options
 	}
 }
 
-func (m StartError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *StartError) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.length = r.ReadUint16()
-		m.bytes = r.ReadBytes(int(m.Length()))
+		m.bytes = r.ReadBytes(int(m.length))
 	}
 }

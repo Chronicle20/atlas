@@ -9,6 +9,7 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
+	party2 "github.com/Chronicle20/atlas-packet/party"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -16,7 +17,6 @@ import (
 type PartyOperation byte
 
 const (
-	PartyOperationHandle       = "PartyOperationHandle"
 	PartyOperationCreate       = "CREATE"
 	PartyOperationLeave        = "LEAVE"
 	PartyOperationExpel        = "EXPEL"
@@ -27,7 +27,10 @@ const (
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := PartyOperation(r.ReadByte())
+		p := party2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := PartyOperation(p.Op())
 		if isPartyOperation(l)(readerOptions, op, PartyOperationCreate) {
 			err := party.NewProcessor(l, ctx).Create(s.CharacterId())
 			if err != nil {

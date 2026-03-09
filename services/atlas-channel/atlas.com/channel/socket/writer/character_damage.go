@@ -2,9 +2,9 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/socket/model"
 	"context"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -13,7 +13,7 @@ import (
 
 const CharacterDamage = "CharacterDamage"
 
-func CharacterDamageBody(c character.Model, di model.DamageTakenInfo) packet.Encode {
+func CharacterDamageBody(c character.Model, di packetmodel.DamageTakenInfo) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		w := response.NewWriter(l)
 		t := tenant.MustFromContext(ctx)
@@ -21,7 +21,7 @@ func CharacterDamageBody(c character.Model, di model.DamageTakenInfo) packet.Enc
 			w.WriteInt(c.Id())
 			w.WriteByte(byte(di.AttackIdx()))
 			w.WriteInt32(di.Damage())
-			if di.AttackIdx() == model.DamageTypePhysical || di.AttackIdx() == model.DamageTypeMagic {
+			if di.AttackIdx() == packetmodel.DamageTypePhysical || di.AttackIdx() == packetmodel.DamageTypeMagic {
 				w.WriteInt(di.MonsterTemplateId())
 				w.WriteBool(di.Left())
 

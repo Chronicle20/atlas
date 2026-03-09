@@ -27,7 +27,7 @@ func (m ServerListRequest) Encode(_ logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
-func (m ServerListRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ServerListRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		return
 	}

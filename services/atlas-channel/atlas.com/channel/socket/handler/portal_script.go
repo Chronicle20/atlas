@@ -6,20 +6,17 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	portal2 "github.com/Chronicle20/atlas-packet/portal"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const PortalScriptHandle = "PortalScriptHandle"
-
 func PortalScriptHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		fieldKey := r.ReadByte()
-		portalName := r.ReadAsciiString()
-		x := r.ReadInt16()
-		y := r.ReadInt16()
-		l.Debugf("Character [%d] attempting to execute portal script for [%s] at [%d,%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, fieldKey)
+		p := portal2.Script{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
+		_ = portal.NewProcessor(l, ctx).Enter(s.Field(), p.PortalName(), s.CharacterId())
 	}
 }

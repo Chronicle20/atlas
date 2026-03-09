@@ -4,7 +4,6 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
 	skill3 "atlas-channel/data/skill"
-	"atlas-channel/socket/model"
 	"context"
 	"math"
 
@@ -12,13 +11,14 @@ import (
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/job"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-func WriteCommonAttackBody(c character.Model, ai model.AttackInfo) packet.Encode {
+func WriteCommonAttackBody(c character.Model, ai packetmodel.AttackInfo) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		w := response.NewWriter(l)
 		t := tenant.MustFromContext(ctx)
@@ -109,7 +109,7 @@ func WriteCommonAttackBody(c character.Model, ai model.AttackInfo) packet.Encode
 				}
 			}
 
-			if ai.AttackType() == model.AttackTypeRanged {
+			if ai.AttackType() == packetmodel.AttackTypeRanged {
 				w.WriteShort(ai.BulletX())
 				w.WriteShort(ai.BulletY())
 			}

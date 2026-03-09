@@ -10,6 +10,7 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
+	messenger2 "github.com/Chronicle20/atlas-packet/messenger"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +18,6 @@ import (
 type MessengerOperation byte
 
 const (
-	MessengerOperationHandle        = "MessengerOperationHandle"
 	MessengerOperationAnswerInvite  = "ANSWER_INVITE"
 	MessengerOperationCreate        = "CREATE"
 	MessengerOperationClose         = "CLOSE"
@@ -28,7 +28,10 @@ const (
 
 func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		mode := MessengerOperation(r.ReadByte())
+		p := messenger2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		mode := MessengerOperation(p.Mode())
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationAnswerInvite) {
 			messengerId := r.ReadUint32()
 			l.Debugf("Character [%d] answered messenger [%d] invite.", s.CharacterId(), messengerId)

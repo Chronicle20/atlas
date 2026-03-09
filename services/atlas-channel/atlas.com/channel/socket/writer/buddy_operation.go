@@ -2,11 +2,11 @@ package writer
 
 import (
 	"atlas-channel/buddylist/buddy"
-	"atlas-channel/socket/model"
 	"context"
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -40,14 +40,14 @@ func BuddyInviteBody(actorId uint32, originatorId uint32, originatorName string)
 			w.WriteInt(originatorId)
 			w.WriteAsciiString(originatorName)
 
-			b := model.Buddy{
+			b := packetmodel.Buddy{
 				FriendId:    actorId,
 				FriendName:  originatorName,
 				Flag:        0,
 				ChannelId:   0,
 				FriendGroup: "Default Group",
 			}
-			w.WriteByteArray(b.Encoder(l, ctx)(options))
+			w.WriteByteArray(b.Encode(l, ctx)(options))
 			w.WriteByte(0) // 0 no, 1 true m_aInShop
 			return w.Bytes()
 		}
@@ -61,14 +61,14 @@ func BuddyListUpdateBody(buddies []buddy.Model) packet.Encode {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationUpdate))
 			w.WriteByte(byte(len(buddies)))
 			for _, b := range buddies {
-				m := model.Buddy{
+				m := packetmodel.Buddy{
 					FriendId:    b.CharacterId(),
 					FriendName:  b.Name(),
 					Flag:        0,
 					ChannelId:   channel.Id(b.ChannelId()),
 					FriendGroup: b.Group(),
 				}
-				w.WriteByteArray(m.Encoder(l, ctx)(options))
+				w.WriteByteArray(m.Encode(l, ctx)(options))
 			}
 			for _, b := range buddies {
 				if b.InShop() {
@@ -88,14 +88,14 @@ func BuddyUpdateBody(characterId uint32, group string, characterName string, cha
 		return func(options map[string]interface{}) []byte {
 			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationBuddyUpdate))
 			w.WriteInt(characterId)
-			m := model.Buddy{
+			m := packetmodel.Buddy{
 				FriendId:    characterId,
 				FriendName:  characterName,
 				Flag:        0,
 				ChannelId:   channel.Id(channelId),
 				FriendGroup: group,
 			}
-			w.WriteByteArray(m.Encoder(l, ctx)(options))
+			w.WriteByteArray(m.Encode(l, ctx)(options))
 			w.WriteBool(inShop)
 			return w.Bytes()
 		}

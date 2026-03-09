@@ -18,6 +18,7 @@ import (
 	"context"
 	"sort"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -245,11 +246,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						sort.Slice(sms, func(i, j int) bool {
 							return sms[i].Id() < sms[j].Id()
 						})
-						mms := make([]model2.Macro, 0)
+						mms := make([]packetmodel.Macro, 0)
 						for _, sm := range sms {
-							mms = append(mms, model2.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
+							mms = append(mms, packetmodel.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(model2.NewMacros(mms...)))(s)
+						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(packetmodel.NewMacros(mms...)))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

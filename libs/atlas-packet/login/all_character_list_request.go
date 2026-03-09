@@ -64,7 +64,7 @@ func (m AllCharacterListRequest) Encode(l logrus.FieldLogger, ctx context.Contex
 	}
 }
 
-func (m AllCharacterListRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *AllCharacterListRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		if t.Region() == "GMS" && t.MajorVersion() > 83 {

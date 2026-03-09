@@ -6,27 +6,23 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	reactor2 "github.com/Chronicle20/atlas-packet/reactor"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const ReactorHitHandle = "ReactorHitHandle"
-
 func ReactorHitHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		oid := r.ReadUint32()
-		isSkill := r.ReadUint32() == 1
-		dwHitOption := r.ReadUint32()
-		bMoveAction := dwHitOption & 1
-		direction := (dwHitOption >> 1) & 1
-		delay := r.ReadUint16()
-		skillId := r.ReadUint32()
-		l.Debugf("Character [%d] has hit reactor oid [%d]. isSkill [%t], bMoveAction [%d], direction [%d], delay [%d], skillId [%d].", s.CharacterId(), oid, isSkill, bMoveAction, direction, delay, skillId)
+		p := reactor2.Hit{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
+		bMoveAction := p.DwHitOption() & 1
+		direction := (p.DwHitOption() >> 1) & 1
 		stance := uint16(bMoveAction) | uint16(direction<<1)
-		err := reactor.NewProcessor(l, ctx).Hit(s.Field(), oid, s.CharacterId(), stance, skillId)
+		err := reactor.NewProcessor(l, ctx).Hit(s.Field(), p.Oid(), s.CharacterId(), stance, p.SkillId())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to send hit command for reactor [%d].", oid)
+			l.WithError(err).Errorf("Unable to send hit command for reactor [%d].", p.Oid())
 		}
 	}
 }

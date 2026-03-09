@@ -6,6 +6,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	interaction2 "github.com/Chronicle20/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -13,8 +14,6 @@ import (
 type CharacterInteractionMode string
 
 const (
-	CharacterInteractionHandle = "CharacterInteractionHandle"
-
 	CharacterInteractionModeCreate                        CharacterInteractionMode = "CREATE"                             // 00 - 0
 	CharacterInteractionModeInvite                        CharacterInteractionMode = "INVITE"                             // 02 - 2
 	CharacterInteractionModeInviteDecline                 CharacterInteractionMode = "INVITE_DECLINE"                     // 03 - 3
@@ -63,9 +62,12 @@ const (
 	CharacterInteractionModeMemoryGameFlipCard            CharacterInteractionMode = "MEMORY_GAME_FIP_CARD"               // 68 - 44
 )
 
-func CharacterInteractionHandleFunc(l logrus.FieldLogger, _ context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		mode := r.ReadByte()
+		p := interaction2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		mode := p.Mode()
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeCreate) {
 			// CMiniRoomBaseDlg::OnCheckSSN2Static
 			// 1 - Omok, 2 - Match Card, 3 - Trade, 4 - Shop, 5 - Merchant, 6 Cash Shop?

@@ -2,10 +2,10 @@ package writer
 
 import (
 	"atlas-channel/guild"
-	"atlas-channel/socket/model"
 	"context"
 	"strconv"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -117,7 +117,7 @@ func GuildInfoBody(g guild.Model) packet.Encode {
 				w.WriteInt(mm.CharacterId())
 			}
 			for _, mm := range g.Members() {
-				gm := model.GuildMember{
+				gm := packetmodel.GuildMember{
 					Name:          mm.Name(),
 					JobId:         mm.JobId(),
 					Level:         mm.Level(),
@@ -126,7 +126,7 @@ func GuildInfoBody(g guild.Model) packet.Encode {
 					Signature:     0,
 					AllianceTitle: mm.AllianceTitle(),
 				}
-				w.WriteByteArray(gm.Encoder(l, ctx)(options))
+				w.WriteByteArray(gm.Encode(l, ctx)(options))
 			}
 			w.WriteInt(g.Capacity())
 			w.WriteShort(g.LogoBackground())
@@ -227,7 +227,7 @@ func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobI
 			w.WriteByte(getGuildOperation(l)(options, GuildOperationJoinSuccess))
 			w.WriteInt(guildId)
 			w.WriteInt(characterId)
-			gm := model.GuildMember{
+			gm := packetmodel.GuildMember{
 				Name:          name,
 				JobId:         jobId,
 				Level:         level,
@@ -236,7 +236,7 @@ func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobI
 				Signature:     0,
 				AllianceTitle: allianceTitle,
 			}
-			w.WriteByteArray(gm.Encoder(l, ctx)(options))
+			w.WriteByteArray(gm.Encode(l, ctx)(options))
 			return w.Bytes()
 		}
 	}

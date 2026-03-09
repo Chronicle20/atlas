@@ -36,7 +36,7 @@ func (m CheckName) Encode(l logrus.FieldLogger, _ context.Context) func(options 
 	}
 }
 
-func (m CheckName) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CheckName) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.name = r.ReadAsciiString()
 	}

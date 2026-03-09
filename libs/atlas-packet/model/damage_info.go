@@ -1,6 +1,8 @@
 package model
 
 import (
+	"context"
+
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -26,8 +28,9 @@ type DamageInfo struct {
 	crc                 uint32
 }
 
-func (m *DamageInfo) Decode(_ logrus.FieldLogger, t tenant.Model, _ map[string]interface{}) func(r *request.Reader) {
-	return func(r *request.Reader) {
+func (m *DamageInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
 		m.monsterId = r.ReadUint32()
 		m.hitAction = r.ReadByte()
 		m.forceAction = r.ReadByte()

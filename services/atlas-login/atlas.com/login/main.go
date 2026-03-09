@@ -179,12 +179,12 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[account3.AcceptTosHandle] = handler.AcceptTosHandleFunc
 	handlerMap[login.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
 	handlerMap[login.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
-	handlerMap[handler.WorldSelectHandle] = handler.WorldSelectHandleFunc
+	handlerMap[login.WorldSelectHandle] = handler.WorldSelectHandleFunc
 	handlerMap[account3.SetGenderHandle] = handler.SetGenderHandleFunc
 	handlerMap[login.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
 	handlerMap[login.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
-	handlerMap[handler.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
-	handlerMap[handler.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
+	handlerMap[login.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
+	handlerMap[login.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
 	handlerMap[login.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
 	handlerMap[handler.ClientStartHandle] = handler.ClientStartHandleFunc
 	handlerMap[socket3.PongHandle] = handler.PongHandleFunc

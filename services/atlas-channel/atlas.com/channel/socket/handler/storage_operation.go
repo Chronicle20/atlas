@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
+	storage2 "github.com/Chronicle20/atlas-packet/storage"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -19,7 +20,6 @@ import (
 type StorageOperationMode string
 
 const (
-	StorageOperationHandle       = "StorageOperationHandle"
 	StorageOperationModeRetrieve = "RETRIEVE_ASSET" // 4
 	StorageOperationModeStore    = "STORE_ASSET"    // 5
 	StorageOperationModeArrange  = "ARRANGE_ASSET"  // 6
@@ -29,7 +29,10 @@ const (
 
 func StorageOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		mode := r.ReadByte()
+		p := storage2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		mode := p.Mode()
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeRetrieve) {
 			handleRetrieveAsset(l, ctx, s, r)
 			return

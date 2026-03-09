@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
@@ -48,7 +49,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 			w.WriteShort(uint16(c.JobId()))
 
 			ava := model.NewFromCharacter(c, false)
-			w.WriteByteArray(ava.Encoder(l, ctx)(options))
+			w.WriteByteArray(ava.Encode(l, ctx)(options))
 
 			if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
 				w.WriteInt(0) // driver id
@@ -76,7 +77,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 
 			// TODO clean this up.
 			writeForEachPet(w, c.Pets(), func(w *response.Writer, p pet.Model) {
-				m := model.Pet{
+				m := packetmodel.Pet{
 					TemplateId:  p.TemplateId(),
 					Name:        p.Name(),
 					Id:          p.Id(),
@@ -88,7 +89,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 					ChatBalloon: 0,
 				}
 				w.WriteBool(true)
-				w.WriteByteArray(m.Encoder(l, ctx)(options))
+				w.WriteByteArray(m.Encode(l, ctx)(options))
 			}, func(w *response.Writer) {
 			})
 			w.WriteByte(0) // end of pets

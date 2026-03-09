@@ -6,16 +6,18 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	npc2 "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const NPCContinueConversationHandle = "NPCContinueConversationHandle"
-
 func NPCContinueConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		lastMessageType := r.ReadByte()
-		action := r.ReadByte()
+		p := npc2.ContinueConversation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		lastMessageType := p.LastMessageType()
+		action := p.Action()
 		//returnText := ""
 		selection := int32(-1)
 

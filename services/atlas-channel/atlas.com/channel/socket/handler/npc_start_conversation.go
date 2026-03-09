@@ -8,19 +8,17 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	npc2 "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const NPCStartConversationHandle = "NPCStartConversationHandle"
-
 func NPCStartConversationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		oid := r.ReadUint32()
-		x := r.ReadInt16()
-		y := r.ReadInt16()
-
-		l.Debugf("Character [%d] starting conversation with object [%d] at x,y [%d,%d]", x, oid, x, y)
+		p := npc2.StartConversation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		oid := p.Oid()
 
 		n, err := npcData.NewProcessor(l, ctx).GetInMapByObjectId(s.MapId(), oid)
 		if err != nil {

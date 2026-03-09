@@ -6,12 +6,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	npc2 "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	NPCShopHandle            = "NPCShopHandle"
 	NPCShopOperationBuy      = "BUY"
 	NPCShopOperationSell     = "SELL"
 	NPCShopOperationRecharge = "RECHARGE"
@@ -21,7 +21,10 @@ const (
 func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	sp := shops.NewProcessor(l, ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		pk := npc2.Shop{}
+		pk.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
+		op := pk.Op()
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationBuy) {
 			slot := r.ReadUint16()
 			itemId := r.ReadUint32()

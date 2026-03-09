@@ -7,11 +7,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	quest3 "github.com/Chronicle20/atlas-packet/quest"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
-
-const QuestActionHandle = "QuestActionHandle"
 
 // Quest action types
 const (
@@ -25,8 +24,11 @@ const (
 
 func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		action := r.ReadByte()
-		questId := uint32(r.ReadUint16())
+		p := quest3.Action{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		action := p.ActionType()
+		questId := uint32(p.QuestId())
 
 		q, err := quest2.NewProcessor(l, ctx).GetById(questId)
 		if err != nil {

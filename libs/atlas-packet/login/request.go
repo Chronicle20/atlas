@@ -68,7 +68,7 @@ func (m Request) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	}
 }
 
-func (m Request) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Request) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.name = r.ReadAsciiString()

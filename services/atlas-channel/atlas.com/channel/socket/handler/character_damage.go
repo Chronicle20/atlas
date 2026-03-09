@@ -4,22 +4,19 @@ import (
 	"atlas-channel/character"
 	_map "atlas-channel/map"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterDamageHandle = "CharacterDamageHandle"
-
 func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		di := model.NewDamageTakenInfo(s.CharacterId())
-		di.Decode(l, t, readerOptions)(r)
+		p := packetmodel.NewDamageTakenInfo(s.CharacterId())
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		// TODO process mana reflection
 		// TODO process achilles
@@ -37,11 +34,11 @@ func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wri
 			return
 		}
 
-		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(writer.CharacterDamageBody(c, *di)))
+		err = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterDamage)(writer.CharacterDamageBody(c, p)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] has been damaged to foreign characters in map [%d].", s.CharacterId(), s.MapId())
 		}
 
-		_ = character.NewProcessor(l, ctx).ChangeHP(s.Field(), s.CharacterId(), -int16(di.Damage()))
+		_ = character.NewProcessor(l, ctx).ChangeHP(s.Field(), s.CharacterId(), -int16(p.Damage()))
 	}
 }

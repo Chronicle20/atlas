@@ -44,10 +44,10 @@ func (m RegisterPin) Encode(l logrus.FieldLogger, _ context.Context) func(option
 	}
 }
 
-func (m RegisterPin) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *RegisterPin) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.pinInput = r.ReadBool()
-		if m.PinInput() {
+		if m.pinInput {
 			m.pin = r.ReadAsciiString()
 		}
 	}

@@ -6,15 +6,16 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	character2 "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterExpressionHandle = "CharacterExpressionHandle"
-
 func CharacterExpressionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		emote := r.ReadUint32()
-		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), emote)
+		p := character2.Expression{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), p.Emote())
 	}
 }

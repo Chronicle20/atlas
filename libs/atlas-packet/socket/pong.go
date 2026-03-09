@@ -26,7 +26,7 @@ func (m Pong) Encode(l logrus.FieldLogger, ctx context.Context) func(options map
 	}
 }
 
-func (m Pong) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Pong) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 	}
 }

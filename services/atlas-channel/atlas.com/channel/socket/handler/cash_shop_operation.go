@@ -7,12 +7,12 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	cash2 "github.com/Chronicle20/atlas-packet/cash"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	CashShopOperationHandle                = "CashShopOperationHandle"
 	CashShopOperationBuy                   = "BUY"                      // 3
 	CashShopOperationGift                  = "GIFT"                     // 4
 	CashShopOperationSetWishlist           = "SET_WISHLIST"             // 5
@@ -36,7 +36,10 @@ const (
 
 func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := cash2.ShopOperation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		var err error
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
 			isPoints := r.ReadBool()

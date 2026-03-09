@@ -107,3 +107,17 @@ func ParseMonsterId(l logrus.FieldLogger, next MonsterIdHandler) http.HandlerFun
 		next(uint32(monsterId))(w, r)
 	}
 }
+
+type ItemIdHandler func(itemId uint32) http.HandlerFunc
+
+func ParseItemId(l logrus.FieldLogger, next ItemIdHandler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		itemId, err := strconv.Atoi(mux.Vars(r)["itemId"])
+		if err != nil {
+			l.WithError(err).Errorf("Unable to properly parse itemId from path.")
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next(uint32(itemId))(w, r)
+	}
+}

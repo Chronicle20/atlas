@@ -25,6 +25,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { shouldUnoptimizeImageSrc } from "@/lib/utils/image";
+import { useItemDrops } from "@/lib/hooks/api/useDrops";
+import {
+  Table,
+  TableBody,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { DroppedByTableRow } from "@/components/features/drops/DroppedByTableRow";
 
 export default function ItemDetailPage() {
   const { activeTenant } = useTenant();
@@ -36,6 +45,7 @@ export default function ItemDetailPage() {
   const [detail, setDetail] = useState<ItemDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { data: drops, isLoading: dropsLoading } = useItemDrops(itemId);
 
   useEffect(() => {
     if (!activeTenant || !itemId) return;
@@ -135,6 +145,39 @@ export default function ItemDetailPage() {
       </Card>
 
       {detail && renderTypeSpecificSection(itemType, detail)}
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">
+            Dropped By {drops && `(${drops.length})`}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {dropsLoading ? (
+            <p className="text-sm text-muted-foreground">Loading drop sources...</p>
+          ) : drops && drops.length > 0 ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Monster ID</TableHead>
+                  <TableHead>Monster Name</TableHead>
+                  <TableHead>Chance</TableHead>
+                  <TableHead>Min Qty</TableHead>
+                  <TableHead>Max Qty</TableHead>
+                  <TableHead>Quest ID</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {drops.map((drop) => (
+                  <DroppedByTableRow key={drop.id} drop={drop} />
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <p className="text-sm text-muted-foreground">No monsters drop this item.</p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

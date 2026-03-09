@@ -12,6 +12,11 @@ class DropsService {
     api.setTenant(tenant);
     return api.getList<ReactorDropData>(`/api/reactors/${reactorId}/drops`);
   }
+
+  async getItemDrops(itemId: string, tenant: Tenant): Promise<DropData[]> {
+    api.setTenant(tenant);
+    return api.getList<DropData>(`/api/items/${itemId}/drops`);
+  }
 }
 
 export const dropsService = new DropsService();

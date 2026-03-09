@@ -43,26 +43,24 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		it := GetCashSlotItemType(t)(itemId)
 
 		if it == CashSlotItemTypePetConsumable {
+			sp := cash2.NewItemUsePetConsumable(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
 			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
+				updateTime = sp.UpdateTime()
 			}
 			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
-			message := r.ReadAsciiString()
-			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
-			}
-			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), message)
+			sp := cash2.NewItemUseChalkboard(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
 			return
 		}
 		if it == CashSlotItemTypeFieldEffect {
-			message := r.ReadAsciiString()
-			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
-			}
-			_ = updateTime
+			sp := cash2.NewItemUseFieldEffect(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			message := sp.Message()
 
 			transactionId := uuid.New()
 			now := time.Now()

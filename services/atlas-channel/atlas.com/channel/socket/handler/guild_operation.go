@@ -41,15 +41,16 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := p.Op()
 		if isGuildOperation(l)(readerOptions, op, GuildOperationRequestCreate) {
-			name := r.ReadAsciiString()
-			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Field(), s.CharacterId(), name)
+			sp := &guild2.RequestCreate{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Field(), s.CharacterId(), sp.Name())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationAgreementResponse) {
-			unk := r.ReadUint32()
-			agreed := r.ReadBool()
-			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), agreed, unk)
-			_ = guild.NewProcessor(l, ctx).CreationAgreement(s.CharacterId(), agreed)
+			sp := &guild2.AgreementResponse{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), sp.Agreed(), sp.Unk())
+			_ = guild.NewProcessor(l, ctx).CreationAgreement(s.CharacterId(), sp.Agreed())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetEmblem) {
@@ -60,17 +61,16 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			logoBackground := r.ReadUint16()
-			logoBackgroundColor := r.ReadByte()
-			logo := r.ReadUint16()
-			logoColor := r.ReadByte()
+			sp := &guild2.SetEmblem{}
+			sp.Decode(l, ctx)(r, readerOptions)
 
-			_ = guild.NewProcessor(l, ctx).RequestEmblemUpdate(g.Id(), s.CharacterId(), logoBackground, logoBackgroundColor, logo, logoColor)
+			_ = guild.NewProcessor(l, ctx).RequestEmblemUpdate(g.Id(), s.CharacterId(), sp.LogoBackground(), sp.LogoBackgroundColor(), sp.Logo(), sp.LogoColor())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetNotice) {
-			notice := r.ReadAsciiString()
-			if len(notice) > 100 {
+			sp := &guild2.SetNotice{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			if len(sp.Notice()) > 100 {
 				l.Errorf("Character [%d] setting a guild notice longer than possible.", s.CharacterId())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
@@ -83,21 +83,21 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			_ = guild.NewProcessor(l, ctx).RequestNoticeUpdate(g.Id(), s.CharacterId(), notice)
+			_ = guild.NewProcessor(l, ctx).RequestNoticeUpdate(g.Id(), s.CharacterId(), sp.Notice())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationWithdraw) {
-			cid := r.ReadUint32()
-			name := r.ReadAsciiString()
-			if cid != s.CharacterId() {
-				l.Errorf("Character [%d] attempting to have [%d] leave guild.", s.CharacterId(), cid)
+			sp := &guild2.Withdraw{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			if sp.Cid() != s.CharacterId() {
+				l.Errorf("Character [%d] attempting to have [%d] leave guild.", s.CharacterId(), sp.Cid())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			c, err := character.NewProcessor(l, ctx).GetById()(cid)
-			if err != nil || c.Name() != name {
-				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), name)
+			c, err := character.NewProcessor(l, ctx).GetById()(sp.Cid())
+			if err != nil || c.Name() != sp.Name() {
+				l.Errorf("Character [%d] attempting to have [%s] leave guild.", s.CharacterId(), sp.Name())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
@@ -113,8 +113,8 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationKick) {
-			cid := r.ReadUint32()
-			name := r.ReadAsciiString()
+			sp := &guild2.Kick{}
+			sp.Decode(l, ctx)(r, readerOptions)
 
 			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if !g.IsLeadership(s.CharacterId()) {
@@ -123,7 +123,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			_ = guild.NewProcessor(l, ctx).Expel(g.Id(), s.CharacterId(), cid, name)
+			_ = guild.NewProcessor(l, ctx).Expel(g.Id(), s.CharacterId(), sp.Cid(), sp.Name())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationInvite) {
@@ -133,11 +133,12 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			target := r.ReadAsciiString()
+			sp := &guild2.Invite{}
+			sp.Decode(l, ctx)(r, readerOptions)
 
-			c, err := character.NewProcessor(l, ctx).GetByName(target)
+			c, err := character.NewProcessor(l, ctx).GetByName(sp.Target())
 			if err != nil {
-				l.Errorf("Unable to locate character [%s] to invite.", target)
+				l.Errorf("Unable to locate character [%s] to invite.", sp.Target())
 				// TODO announce error
 				return
 			}
@@ -145,15 +146,15 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationJoin) {
-			guildId := r.ReadUint32()
-			characterId := r.ReadUint32()
-			if s.CharacterId() != characterId {
-				l.Errorf("Character [%d] attempting to have [%d] join guild.", s.CharacterId(), characterId)
+			sp := &guild2.Join{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			if s.CharacterId() != sp.CharacterId() {
+				l.Errorf("Character [%d] attempting to have [%d] join guild.", s.CharacterId(), sp.CharacterId())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeGuild), guildId)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeGuild), sp.GuildId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
@@ -166,30 +167,28 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			titles := make([]string, 5)
-			for i := range 5 {
-				titles[i] = r.ReadAsciiString()
-			}
-			_ = guild.NewProcessor(l, ctx).RequestTitleChanges(g.Id(), s.CharacterId(), titles)
+			sp := &guild2.SetTitleNames{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = guild.NewProcessor(l, ctx).RequestTitleChanges(g.Id(), s.CharacterId(), sp.Titles())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetMemberTitle) {
-			targetId := r.ReadUint32()
-			newTitle := r.ReadByte()
+			sp := &guild2.SetMemberTitle{}
+			sp.Decode(l, ctx)(r, readerOptions)
 
-			if newTitle <= 1 || newTitle > 5 {
-				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
+			if sp.NewTitle() <= 1 || sp.NewTitle() > 5 {
+				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), sp.TargetId(), sp.NewTitle())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
-			if !g.TitlePossible(s.CharacterId(), newTitle) {
-				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), targetId, newTitle)
+			if !g.TitlePossible(s.CharacterId(), sp.NewTitle()) {
+				l.Errorf("Character [%d] attempting to change [%d] to a title [%d] outside of bounds.", s.CharacterId(), sp.TargetId(), sp.NewTitle())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			_ = guild.NewProcessor(l, ctx).RequestMemberTitleUpdate(g.Id(), s.CharacterId(), targetId, newTitle)
+			_ = guild.NewProcessor(l, ctx).RequestMemberTitleUpdate(g.Id(), s.CharacterId(), sp.TargetId(), sp.NewTitle())
 			return
 		}
 		l.Warnf("Character [%d] issued unhandled guild operation with operation [%d].", s.CharacterId(), op)

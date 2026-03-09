@@ -34,11 +34,15 @@ func StorageOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		mode := p.Mode()
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeRetrieve) {
-			handleRetrieveAsset(l, ctx, s, r)
+			sp := &storage2.OperationRetrieveAsset{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleRetrieveAsset(l, ctx, s, sp)
 			return
 		}
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeStore) {
-			handleStoreAsset(l, ctx, s, r)
+			sp := &storage2.OperationStoreAsset{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleStoreAsset(l, ctx, s, sp)
 			return
 		}
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeArrange) {
@@ -46,7 +50,9 @@ func StorageOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 			return
 		}
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeMeso) {
-			handleMeso(l, ctx, s, r)
+			sp := &storage2.OperationMeso{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			handleMeso(l, ctx, s, sp)
 			return
 		}
 		if isStorageOperation(l)(readerOptions, mode, StorageOperationModeClose) {
@@ -73,9 +79,9 @@ func getStorageNpcFees(l logrus.FieldLogger, ctx context.Context, npcId uint32) 
 }
 
 // handleRetrieveAsset withdraws an item from storage to character inventory via saga
-func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
-	it := inventory.Type(r.ReadByte())
-	slot := r.ReadByte()
+func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, sp *storage2.OperationRetrieveAsset) {
+	it := inventory.Type(sp.InventoryType())
+	slot := sp.Slot()
 	l.Debugf("Character [%d] is attempting to retrieve an item from storage inventory type [%d] slot [%d].", s.CharacterId(), it, slot)
 
 	// Get storage NPC fees
@@ -143,10 +149,10 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 }
 
 // handleStoreAsset deposits an item from character inventory to storage via saga
-func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
-	slot := r.ReadInt16()
-	itemId := r.ReadUint32()
-	quantity := r.ReadUint16()
+func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model, sp *storage2.OperationStoreAsset) {
+	slot := sp.Slot()
+	itemId := sp.ItemId()
+	quantity := sp.Quantity()
 	l.Debugf("Character [%d] is attempting to store [%d] of item [%d] from inventory slot [%d].", s.CharacterId(), quantity, itemId, slot)
 
 	// Get storage NPC fees
@@ -232,8 +238,8 @@ func handleArrangeAsset(l logrus.FieldLogger, ctx context.Context, s session.Mod
 }
 
 // handleMeso handles meso deposit/withdrawal operations via saga
-func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, r *request.Reader) {
-	amount := r.ReadInt32()
+func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, sp *storage2.OperationMeso) {
+	amount := sp.Amount()
 	sagaP := saga.NewProcessor(l, ctx)
 	transactionId := uuid.New()
 	now := time.Now()

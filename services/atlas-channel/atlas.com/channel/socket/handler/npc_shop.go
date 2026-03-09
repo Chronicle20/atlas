@@ -26,29 +26,27 @@ func NPCShopHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Produ
 		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
 		op := pk.Op()
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationBuy) {
-			slot := r.ReadUint16()
-			itemId := r.ReadUint32()
-			quantity := r.ReadUint16()
-			discountPrice := r.ReadUint32()
-			err := sp.BuyItem(s.CharacterId(), slot, itemId, uint32(quantity), discountPrice)
+			sb := &npc2.ShopBuy{}
+			sb.Decode(l, ctx)(r, readerOptions)
+			err := sp.BuyItem(s.CharacterId(), sb.Slot(), sb.ItemId(), uint32(sb.Quantity()), sb.DiscountPrice())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to send shop buy command for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationSell) {
-			slot := r.ReadInt16()
-			itemId := r.ReadUint32()
-			quantity := r.ReadUint16()
-			err := sp.SellItem(s.CharacterId(), slot, itemId, uint32(quantity))
+			ss := &npc2.ShopSell{}
+			ss.Decode(l, ctx)(r, readerOptions)
+			err := sp.SellItem(s.CharacterId(), ss.Slot(), ss.ItemId(), uint32(ss.Quantity()))
 			if err != nil {
 				l.WithError(err).Errorf("Failed to send shop sell command for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isNPCShopOperation(l)(readerOptions, op, NPCShopOperationRecharge) {
-			slot := r.ReadUint16()
-			err := sp.RechargeItem(s.CharacterId(), slot)
+			sr := &npc2.ShopRecharge{}
+			sr.Decode(l, ctx)(r, readerOptions)
+			err := sp.RechargeItem(s.CharacterId(), sr.Slot())
 			if err != nil {
 				l.WithError(err).Errorf("Failed to send shop recharge command for character [%d].", s.CharacterId())
 			}

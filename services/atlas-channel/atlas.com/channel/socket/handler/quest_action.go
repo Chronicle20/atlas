@@ -38,52 +38,39 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 
 		switch action {
 		case QuestActionStart:
-			npcId := r.ReadUint32()
-			x := int16(-1)
-			y := int16(-1)
-			if q.AutoStart() {
-				x = r.ReadInt16()
-				y = r.ReadInt16()
-			}
-			l.Debugf("Character [%d] starting quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuest(s.Field(), s.CharacterId(), questId, npcId, false)
+			sp := quest3.NewActionStart(q.AutoStart())
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] starting quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, sp.NpcId(), sp.X(), sp.Y())
+			err := quest.NewProcessor(l, ctx).StartQuest(s.Field(), s.CharacterId(), questId, sp.NpcId(), false)
 			if err != nil {
-				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
+				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), sp.NpcId())
 			}
 			return
 		case QuestActionScriptStart:
-			npcId := r.ReadUint32()
-			x := r.ReadInt16()
-			y := r.ReadInt16()
-			l.Debugf("Character [%d] starting scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, npcId, s.CharacterId())
+			sp := &quest3.ActionScriptStart{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] starting scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, sp.NpcId(), sp.X(), sp.Y())
+			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, sp.NpcId(), s.CharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
+				l.WithError(err).Errorf("Failed to start quest [%d] conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), sp.NpcId())
 			}
 			return
 		case QuestActionComplete:
-			npcId := r.ReadUint32()
-			x := int16(-1)
-			y := int16(-1)
-			if q.AutoStart() {
-				x = r.ReadInt16()
-				y = r.ReadInt16()
-			}
-			selection := r.ReadInt32()
-			l.Debugf("Character [%d] completing quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).CompleteQuest(s.Field(), s.CharacterId(), questId, npcId, selection, false)
+			sp := quest3.NewActionComplete(q.AutoStart())
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] completing quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, sp.NpcId(), sp.X(), sp.Y())
+			err := quest.NewProcessor(l, ctx).CompleteQuest(s.Field(), s.CharacterId(), questId, sp.NpcId(), sp.Selection(), false)
 			if err != nil {
-				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
+				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), sp.NpcId())
 			}
 			return
 		case QuestActionScriptEnd:
-			npcId := r.ReadUint32()
-			x := r.ReadInt16()
-			y := r.ReadInt16()
-			l.Debugf("Character [%d] completing scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, npcId, x, y)
-			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, npcId, s.CharacterId())
+			sp := &quest3.ActionScriptEnd{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] completing scripted quest [%d] conversation with NPC [%d]. x,y [%d,%d]", s.CharacterId(), questId, sp.NpcId(), sp.X(), sp.Y())
+			err := quest.NewProcessor(l, ctx).StartQuestConversation(s.Field(), questId, sp.NpcId(), s.CharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), npcId)
+				l.WithError(err).Errorf("Failed to start quest [%d] completion conversation for character [%d] with NPC [%d].", questId, s.CharacterId(), sp.NpcId())
 			}
 			return
 		case QuestActionForfeit:
@@ -94,12 +81,12 @@ func QuestActionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.P
 			}
 			return
 		case QuestActionRestoreLostItem:
-			unk1 := r.ReadUint32()
-			itemId := r.ReadUint32()
-			l.Debugf("Character [%d] restoring lost item [%d] for quest [%d]. unk1 [%d]. rem [%d]", s.CharacterId(), itemId, questId, unk1, r.Available())
-			err := quest.NewProcessor(l, ctx).RestoreItem(s.Field(), s.CharacterId(), questId, itemId)
+			sp := &quest3.ActionRestoreLostItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] restoring lost item [%d] for quest [%d]. unk1 [%d]. rem [%d]", s.CharacterId(), sp.ItemId(), questId, sp.Unk1(), r.Available())
+			err := quest.NewProcessor(l, ctx).RestoreItem(s.Field(), s.CharacterId(), questId, sp.ItemId())
 			if err != nil {
-				l.WithError(err).Errorf("Failed to restore item [%d] for quest [%d] for character [%d].", itemId, questId, s.CharacterId())
+				l.WithError(err).Errorf("Failed to restore item [%d] for quest [%d] for character [%d].", sp.ItemId(), questId, s.CharacterId())
 			}
 			return
 		}

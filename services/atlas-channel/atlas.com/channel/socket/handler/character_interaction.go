@@ -69,76 +69,48 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		mode := p.Mode()
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeCreate) {
-			// CMiniRoomBaseDlg::OnCheckSSN2Static
-			// 1 - Omok, 2 - Match Card, 3 - Trade, 4 - Shop, 5 - Merchant, 6 Cash Shop?
-			roomType := model.MiniRoomType(r.ReadByte())
-			title := ""
-			private := false
+			sp := &interaction2.OperationCreate{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			roomType := model.MiniRoomType(sp.RoomType())
 			if roomType == model.OmokMiniRoomType || roomType == model.MatchCardMiniRoomType {
-				// CWvsContext::SendCreateMiniGameRequest
-				title = r.ReadAsciiString()
-				private = r.ReadBool()
-				password := ""
-				if private {
-					password = r.ReadAsciiString()
-				}
-				nGameSpec := r.ReadByte()
-				l.Debugf("Character [%d] has created a mini-room. roomType [%d], title [%s], private [%t], password [%s], nGameSpec [%d].", s.CharacterId(), roomType, title, private, password, nGameSpec)
+				l.Debugf("Character [%d] has created a mini-room. roomType [%d], title [%s], private [%t], password [%s], nGameSpec [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Password(), sp.NGameSpec())
 				return
 			}
 			if roomType == model.TradeMiniRoomType {
-				// CField::SendInviteTradingRoomMsg
-				private = r.ReadBool()
-				l.Debugf("Character [%d] has created a trade-room. roomType [%d], title [%s], private [%t].", s.CharacterId(), roomType, title, private)
+				l.Debugf("Character [%d] has created a trade-room. roomType [%d], title [%s], private [%t].", s.CharacterId(), roomType, sp.Title(), sp.Private())
 				return
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
-				// CWvsContext::SendOpenShopRequest
-				title = r.ReadAsciiString()
-				private = r.ReadBool()
-				slot := r.ReadInt16()
-				itemId := r.ReadUint32()
-				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, title, private, slot, itemId)
+				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Slot(), sp.ItemId())
 				return
 			}
 			if roomType == model.CashTradeMiniRoomType {
-				// CMiniRoomBaseDlg::OnCheckSSN2Static
-				private = r.ReadBool()
-				l.Debugf("Character [%d] has created a store. roomType [%d], private [%t].", s.CharacterId(), roomType, private)
+				l.Debugf("Character [%d] has created a store. roomType [%d], private [%t].", s.CharacterId(), roomType, sp.Private())
 			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeInvite) {
-			targetCharacterId := r.ReadUint32()
-			l.Debugf("Character [%d] is sending character [%d] a trade invite.", s.CharacterId(), targetCharacterId)
+			sp := &interaction2.OperationInvite{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is sending character [%d] a trade invite.", s.CharacterId(), sp.TargetCharacterId())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeInviteDecline) {
-			serialNumber := r.ReadUint32()
-			errorCode := r.ReadByte() // 3 - birthday failed
-			l.Debugf("Character [%d] is declining trade invite. serialNumber [%d], errorCode [%d].", s.CharacterId(), serialNumber, errorCode)
+			sp := &interaction2.OperationInviteDecline{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is declining trade invite. serialNumber [%d], errorCode [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeVisit) {
-			serialNumber := r.ReadUint32()
-			errorCode := r.ReadByte() // should be 0
-			errorMessage := ""
-			if errorCode != 0 {
-				errorMessage = r.ReadAsciiString()
-			}
-			something := r.ReadBool()
-			unk1 := int16(0)
-			cashSerialNumber := uint64(0)
-			if something {
-				unk1 = r.ReadInt16() // position?
-				cashSerialNumber = r.ReadUint64()
-			}
-			l.Debugf("Character [%d] is accepting a trade invite. serialNumber [%d], errorCode [%d], errorMessage [%s], something [%t], unk1 [%d], cashSerialNumber [%d].", s.CharacterId(), serialNumber, errorCode, errorMessage, something, unk1, cashSerialNumber)
+			sp := &interaction2.OperationVisit{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is accepting a trade invite. serialNumber [%d], errorCode [%d], errorMessage [%s], something [%t], unk1 [%d], cashSerialNumber [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode(), sp.ErrorMessage(), sp.Something(), sp.Unk1(), sp.CashSerialNumber())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeChat) {
-			message := r.ReadAsciiString()
-			l.Debugf("Character [%d] is sending chat [%s].", s.CharacterId(), message)
+			sp := &interaction2.OperationChat{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is sending chat [%s].", s.CharacterId(), sp.Message())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeExit) {
@@ -146,147 +118,127 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeOpen) {
-			success := r.ReadBool()
-			l.Debugf("Character [%d] has opened (something). success [%t].", s.CharacterId(), success)
+			sp := &interaction2.OperationOpen{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] has opened (something). success [%t].", s.CharacterId(), sp.Success())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeCashTradeOpen) {
-			// CMiniRoomBaseDlg::OnCheckSSN2Static
-			nProc := r.ReadByte() // can be greater than 0
-			roomType := model.MiniRoomType(r.ReadByte())
+			sp := &interaction2.OperationCashTradeOpen{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			nProc := sp.NProc()
+			roomType := model.MiniRoomType(sp.RoomType())
 			if nProc == 0 && roomType == model.CashTradeMiniRoomType {
-				// CField::SendInviteTradingRoomMsg
-				targetCharacterId := r.ReadUint32()
-				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], targetCharacterId [%d].", s.CharacterId(), nProc, roomType, targetCharacterId)
+				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], targetCharacterId [%d].", s.CharacterId(), nProc, roomType, sp.TargetCharacterId())
 				return
 			}
 			if nProc == 4 && roomType == model.CashTradeMiniRoomType {
-				// CMiniRoomBaseDlg::SendCashInviteResult
-				spw := r.ReadUint32()
-				dwSN := r.ReadUint32()
-				unk2 := r.ReadByte()
-				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], dwSN [%d], unk2 [%d].", s.CharacterId(), nProc, roomType, spw, dwSN, unk2)
+				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], dwSN [%d], unk2 [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.DwSN(), sp.Unk2())
 				return
 			}
 			if nProc == 4 && roomType == model.MerchantShopMiniRoomType {
-				// CWvsContext::OnEntrustedShopCheckResult
 				// TODO This immediately triggered from a hired_merchant_operation ConfirmManage
-				spw := r.ReadUint32()
-				shopId := r.ReadUint32()
-				unk2 := r.ReadByte()
-				position := r.ReadUint16()
-				serialNumber := r.ReadUint64()
-				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], shopId [%d], unk2 [%d], position [%d], serialNumber [%d].", s.CharacterId(), nProc, roomType, spw, shopId, unk2, position, serialNumber)
+				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], shopId [%d], unk2 [%d], position [%d], serialNumber [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.ShopId(), sp.Unk2(), sp.Position(), sp.SerialNumber())
 				return
 			}
 			if nProc == 11 && (roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType) {
-				// CPersonalShopDlg::CheckCashItemInList
-				birthday := r.ReadUint32()
-				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], birthday [%d].", s.CharacterId(), nProc, roomType, birthday)
+				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], birthday [%d].", s.CharacterId(), nProc, roomType, sp.Birthday())
 				return
 			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTradePutItem) {
-			it := r.ReadByte()
-			slot := r.ReadInt16()
-			quantity := r.ReadUint16()
-			targetSlot := r.ReadByte()
-			l.Debugf("Character [%d] attempting to put [%d] item(s) from inventory compartment [%d] slot [%d] up for trade. target [%d].", s.CharacterId(), quantity, it, slot, targetSlot)
+			sp := &interaction2.OperationTradePutItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to put [%d] item(s) from inventory compartment [%d] slot [%d] up for trade. target [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.TargetSlot())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTradeAddMeso) {
-			amount := r.ReadInt32()
-			l.Debugf("Character [%d] attempting to put [%d] meso up for trade.", s.CharacterId(), amount)
+			sp := &interaction2.OperationTradeAddMeso{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to put [%d] meso up for trade.", s.CharacterId(), sp.Amount())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTradeConfirm) {
-			size := r.ReadByte()
-			for range size {
-				data := r.ReadUint32()
-				crc := r.ReadUint32()
-				l.Debugf("Character [%d] confirmed trade includes [%d]. crc [%d].", s.CharacterId(), data, crc)
+			sp := &interaction2.OperationTradeConfirm{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			for _, e := range sp.Entries() {
+				l.Debugf("Character [%d] confirmed trade includes [%d]. crc [%d].", s.CharacterId(), e.Data(), e.Crc())
 			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeTransaction) {
-			size := r.ReadByte()
-			for range size {
-				data := r.ReadUint32()
-				crc := r.ReadUint32()
-				l.Debugf("Character [%d] transaction includes [%d]. crc [%d].", s.CharacterId(), data, crc)
+			sp := &interaction2.OperationTransaction{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			for _, e := range sp.Entries() {
+				l.Debugf("Character [%d] transaction includes [%d]. crc [%d].", s.CharacterId(), e.Data(), e.Crc())
 			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStorePutItem) {
-			it := r.ReadByte()
-			slot := r.ReadInt16()
-			quantity := r.ReadUint16()
-			set := r.ReadUint16()
-			price := r.ReadUint32()
-			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to store. set [%d], price [%d].", s.CharacterId(), quantity, it, slot, set, price)
+			sp := &interaction2.OperationPersonalStorePutItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to store. set [%d], price [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.Set(), sp.Price())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreBuy) {
-			index := r.ReadByte()
-			quantity := r.ReadUint16()
-			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from store.", s.CharacterId(), quantity, index)
+			sp := &interaction2.OperationPersonalStoreBuy{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from store.", s.CharacterId(), sp.Quantity(), sp.Index())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreRemoveItem) {
-			index := r.ReadUint16()
-			l.Debugf("Character [%d] attempting to remove item index [%d] from store.", s.CharacterId(), index)
+			sp := &interaction2.OperationPersonalStoreRemoveItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to remove item index [%d] from store.", s.CharacterId(), sp.Index())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreAddToBlackList) {
-			slot := r.ReadByte()
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] is adding [%s] to field black list from slot [%d].", s.CharacterId(), name, slot)
+			sp := &interaction2.OperationPersonalStoreAddToBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is adding [%s] to field black list from slot [%d].", s.CharacterId(), sp.Name(), sp.Slot())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreSetVisitor) {
-			slot := r.ReadByte()
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] has [%s] in their store at slot [%d]", s.CharacterId(), name, slot)
+			sp := &interaction2.OperationPersonalStoreSetVisitor{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] has [%s] in their store at slot [%d]", s.CharacterId(), sp.Name(), sp.Slot())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreSetBlackList) {
-			names := make([]string, 0)
-			size := r.ReadUint16()
-			for range size {
-				names = append(names, string(r.ReadByte()))
-			}
-			l.Debugf("Character [%d] has set store black list. size [%d]", s.CharacterId(), size)
+			sp := &interaction2.OperationPersonalStoreSetBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] has set store black list. size [%d]", s.CharacterId(), len(sp.Entries()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeFieldAddToBlackList) {
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] is adding [%s] to field black list.", s.CharacterId(), name)
+			sp := &interaction2.OperationFieldAddToBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is adding [%s] to field black list.", s.CharacterId(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeFieldRemoveFromBlackList) {
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] is removing [%s] from field black list.", s.CharacterId(), name)
+			sp := &interaction2.OperationFieldRemoveFromBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is removing [%s] from field black list.", s.CharacterId(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantPutItem) {
-			it := r.ReadByte()
-			slot := r.ReadInt16()
-			quantity := r.ReadUint16()
-			set := r.ReadUint16()
-			price := r.ReadUint32()
-			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to merchant. set [%d], price [%d].", s.CharacterId(), quantity, it, slot, set, price)
+			sp := &interaction2.OperationMerchantPutItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to merchant. set [%d], price [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.Set(), sp.Price())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantBuy) {
-			index := r.ReadByte()
-			quantity := r.ReadUint16()
-			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from merchant.", s.CharacterId(), quantity, index)
+			sp := &interaction2.OperationMerchantBuy{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from merchant.", s.CharacterId(), sp.Quantity(), sp.Index())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveItem) {
-			index := r.ReadUint16()
-			l.Debugf("Character [%d] attempting to remove item index [%d] from merchant.", s.CharacterId(), index)
+			sp := &interaction2.OperationMerchantRemoveItem{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to remove item index [%d] from merchant.", s.CharacterId(), sp.Index())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantMaintenanceOff) {
@@ -306,8 +258,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantNameChange) {
-			unk1 := r.ReadUint32()
-			l.Debugf("Character [%d] wants to change their merchant shop name. unk1 [%d].", s.CharacterId(), unk1)
+			sp := &interaction2.OperationMerchantNameChange{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] wants to change their merchant shop name. unk1 [%d].", s.CharacterId(), sp.Unk1())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantViewVisitList) {
@@ -319,13 +272,15 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantAddToBlackList) {
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] is adding [%s] to merchant black list.", s.CharacterId(), name)
+			sp := &interaction2.OperationMerchantAddToBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is adding [%s] to merchant black list.", s.CharacterId(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveFromBlackList) {
-			name := r.ReadAsciiString()
-			l.Debugf("Character [%d] is removing [%s] from merchant black list.", s.CharacterId(), name)
+			sp := &interaction2.OperationMerchantRemoveFromBlackList{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] is removing [%s] from merchant black list.", s.CharacterId(), sp.Name())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameAskTie) {
@@ -333,8 +288,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameTieAnswer) {
-			response := r.ReadBool()
-			l.Debugf("Character [%d] in memory game, is answering tie request. response [%t].", s.CharacterId(), response)
+			sp := &interaction2.OperationMemoryGameTieAnswer{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] in memory game, is answering tie request. response [%t].", s.CharacterId(), sp.Response())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameForfeit) {
@@ -346,8 +302,9 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameRetreatAnswer) {
-			response := r.ReadBool()
-			l.Debugf("Character [%d] in memory game, is answering retreat request. response [%t].", s.CharacterId(), response)
+			sp := &interaction2.OperationMemoryGameRetreatAnswer{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] in memory game, is answering retreat request. response [%t].", s.CharacterId(), sp.Response())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameExitAfterGame) {
@@ -379,15 +336,15 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameMoveStone) {
-			point := r.ReadInt64()
-			color := r.ReadByte()
-			l.Debugf("Character [%d] in memory game, is moving stone. point [%d], color [%d].", s.CharacterId(), point, color)
+			sp := &interaction2.OperationMemoryGameMoveStone{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] in memory game, is moving stone. point [%d], color [%d].", s.CharacterId(), sp.Point(), sp.Color())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMemoryGameFlipCard) {
-			first := r.ReadBool()
-			index := r.ReadByte()
-			l.Debugf("Character [%d] in memory game, is flipping card [%d]. first [%t].", s.CharacterId(), index, first)
+			sp := &interaction2.OperationMemoryGameFlipCard{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] in memory game, is flipping card [%d]. first [%t].", s.CharacterId(), sp.Index(), sp.First())
 			return
 		}
 		l.Warnf("Character [%d] issued a unhandled character interaction [%d].", s.CharacterId(), mode)

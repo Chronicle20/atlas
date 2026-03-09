@@ -39,8 +39,9 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
-			partyId := r.ReadUint32()
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeParty), partyId)
+			sp := &party2.OperationJoin{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeParty), sp.PartyId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
@@ -59,37 +60,40 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationExpel) {
-			targetCharacterId := r.ReadUint32()
+			sp := &party2.OperationExpel{}
+			sp.Decode(l, ctx)(r, readerOptions)
 			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
 				return
 			}
-			err = party.NewProcessor(l, ctx).Expel(p.Id(), s.CharacterId(), targetCharacterId)
+			err = party.NewProcessor(l, ctx).Expel(p.Id(), s.CharacterId(), sp.TargetCharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), targetCharacterId)
+				l.WithError(err).Errorf("Character [%d] unable to attempt expelling [%d] from party.", s.CharacterId(), sp.TargetCharacterId())
 			}
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
-			targetCharacterId := r.ReadUint32()
+			sp := &party2.OperationChangeLeader{}
+			sp.Decode(l, ctx)(r, readerOptions)
 			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate party for character [%d] to leave.", s.CharacterId())
 				return
 			}
-			err = party.NewProcessor(l, ctx).ChangeLeader(p.Id(), s.CharacterId(), targetCharacterId)
+			err = party.NewProcessor(l, ctx).ChangeLeader(p.Id(), s.CharacterId(), sp.TargetCharacterId())
 			if err != nil {
-				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), targetCharacterId)
+				l.WithError(err).Errorf("Character [%d] unable to pass leadership to [%d] in party.", s.CharacterId(), sp.TargetCharacterId())
 			}
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationInvite) {
-			name := r.ReadAsciiString()
-			cs, err := character.NewProcessor(l, ctx).GetByName(name)
+			sp := &party2.OperationInvite{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			cs, err := character.NewProcessor(l, ctx).GetByName(sp.Name())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", name)
-				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_CHARACTER", name))(s)
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", sp.Name())
+				err := session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_CHARACTER", sp.Name()))(s)
 				if err != nil {
 					return
 				}
@@ -98,7 +102,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
-				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", name))(s)
+				err = session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", sp.Name()))(s)
 				if err != nil {
 				}
 				return

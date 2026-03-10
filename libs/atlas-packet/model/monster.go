@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/monster"
 	"github.com/Chronicle20/atlas-packet/tool"
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -185,6 +186,17 @@ func (m MonsterBurnedInfo) Encode(l logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
+func (m *MonsterBurnedInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.skillId = r.ReadUint32()
+		m.damage = r.ReadUint32()
+		m.interval = r.ReadUint32()
+		m.end = r.ReadUint32()
+		m.dotCount = r.ReadUint32()
+	}
+}
+
 type MonsterTemporaryStat struct {
 	burnedInfo []MonsterBurnedInfo
 	stats      map[monster.TemporaryStatType]MonsterTemporaryStatValue
@@ -285,6 +297,116 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context)
 			w.WriteInt32(int32(math.Max(float64(weaponCounter), float64(magicCounter))))
 		}
 		return w.Bytes()
+	}
+}
+
+func (m *MonsterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
+		var mask tool.Uint128
+		h1 := uint64(r.ReadUint32())
+		h2 := uint64(r.ReadUint32())
+		l1 := uint64(r.ReadUint32())
+		l2 := uint64(r.ReadUint32())
+		mask.H = (h1 << 32) | h2
+		mask.L = (l1 << 32) | l2
+
+		lookup := MonsterTemporaryStatTypeByName(t)
+
+		allStats := []monster.TemporaryStatType{
+			monster.TemporaryStatTypeWeaponAttack,
+			monster.TemporaryStatTypeWeaponDefense,
+			monster.TemporaryStatTypeMagicAttack,
+			monster.TemporaryStatTypeMagicDefense,
+			monster.TemporaryStatTypeAccuracy,
+			monster.TemporaryStatTypeAvoidability,
+			monster.TemporaryStatTypeSpeed,
+			monster.TemporaryStatTypeStun,
+			monster.TemporaryStatTypeFrozen,
+			monster.TemporaryStatTypePoison,
+			monster.TemporaryStatTypeSeal,
+			monster.TemporaryStatTypeDarkness,
+			monster.TemporaryStatTypePowerUp,
+			monster.TemporaryStatTypeMagicUp,
+			monster.TemporaryStatTypePowerGuardUp,
+			monster.TemporaryStatTypeMagicGuardUp,
+			monster.TemporaryStatTypeDoom,
+			monster.TemporaryStatTypeWeb,
+			monster.TemporaryStatTypeWeaponAttackImmune,
+			monster.TemporaryStatTypeMagicAttackImmune,
+			monster.TemporaryStatTypeShowdown,
+			monster.TemporaryStatTypeHardSkin,
+			monster.TemporaryStatTypeAmbush,
+			monster.TemporaryStatTypeDamagedElemAttr,
+			monster.TemporaryStatTypeVenom,
+			monster.TemporaryStatTypeBlind,
+			monster.TemporaryStatTypeSealSkill,
+			monster.TemporaryStatTypeBurned,
+			monster.TemporaryStatTypeDazzle,
+			monster.TemporaryStatTypeWeaponCounter,
+			monster.TemporaryStatTypeMagicCounter,
+			monster.TemporaryStatTypeDisable,
+			monster.TemporaryStatTypeRiseByToss,
+			monster.TemporaryStatTypeBodyPressure,
+			monster.TemporaryStatTypeWeakness,
+			monster.TemporaryStatTypeTimeBomb,
+			monster.TemporaryStatTypeMagicCrash,
+			monster.TemporaryStatTypeHealByDamage,
+		}
+
+		m.stats = make(map[monster.TemporaryStatType]MonsterTemporaryStatValue)
+		weaponCounter := int32(-1)
+		magicCounter := int32(-1)
+		for _, name := range allStats {
+			st, err := lookup(name)
+			if err != nil {
+				continue
+			}
+			check := mask.And(st.Mask())
+			if check.H == 0 && check.L == 0 {
+				continue
+			}
+			if name == monster.TemporaryStatTypeBurned {
+				count := r.ReadUint32()
+				m.burnedInfo = make([]MonsterBurnedInfo, count)
+				for i := uint32(0); i < count; i++ {
+					m.burnedInfo[i].Decode(l, ctx)(r, options)
+				}
+				continue
+			}
+			if name == monster.TemporaryStatTypeDisable {
+				_ = r.ReadBool() // bInvincible
+				_ = r.ReadBool() // bDisable
+				m.stats[name] = MonsterTemporaryStatValue{statType: st}
+				continue
+			}
+			value := int32(r.ReadInt16())
+			sourceId := int32(r.ReadInt16())
+			sourceLevel := int32(r.ReadInt16())
+			_ = r.ReadInt16() // expiry
+			m.stats[name] = MonsterTemporaryStatValue{
+				statType:    st,
+				sourceId:    sourceId,
+				sourceLevel: sourceLevel,
+				value:       value,
+			}
+			if name == monster.TemporaryStatTypeWeaponCounter {
+				weaponCounter = value
+			}
+			if name == monster.TemporaryStatTypeMagicCounter {
+				magicCounter = value
+			}
+		}
+
+		if weaponCounter != -1 {
+			_ = r.ReadInt32()
+		}
+		if magicCounter != -1 {
+			_ = r.ReadInt32()
+		}
+		if weaponCounter != -1 || magicCounter != -1 {
+			_ = r.ReadInt32()
+		}
 	}
 }
 
@@ -390,5 +512,32 @@ func (m *MonsterModel) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 			w.WriteInt(0)
 		}
 		return w.Bytes()
+	}
+}
+
+func (m *MonsterModel) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
+		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+			m.monsterTemporaryStat.Decode(l, ctx)(r, options)
+		}
+		m.x = r.ReadInt16()
+		m.y = r.ReadInt16()
+		m.moveAction = r.ReadByte()
+		m.foothold = r.ReadInt16()
+		m.homeFoothold = r.ReadInt16()
+		m.appearType = MonsterAppearType(r.ReadInt8())
+		if m.appearType == MonsterAppearTypeRevived || m.appearType >= 0 {
+			m.appearTypeOption = r.ReadUint32()
+		}
+		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+			m.team = r.ReadInt8()
+			m.effectItemId = r.ReadUint32()
+			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+				m.phase = r.ReadUint32()
+			}
+		} else {
+			_ = r.ReadUint32()
+		}
 	}
 }

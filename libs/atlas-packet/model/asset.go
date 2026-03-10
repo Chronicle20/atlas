@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -358,4 +359,123 @@ func (m *Asset) encodeEquipmentStats(w *response.Writer) {
 	w.WriteShort(m.hands)
 	w.WriteShort(m.speed)
 	w.WriteShort(m.jump)
+}
+
+func (m *Asset) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		t := tenant.MustFromContext(ctx)
+
+		var typeByte byte
+		if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+			typeByte = r.ReadByte()
+		} else {
+			// For very old versions without a type discriminator, default to equipment.
+			typeByte = 1
+		}
+
+		m.templateId = r.ReadUint32()
+		isCash := r.ReadBool()
+
+		if isCash {
+			if typeByte == 3 {
+				m.petId = uint32(r.ReadUint64())
+			} else {
+				m.cashId = r.ReadInt64()
+			}
+		}
+
+		switch typeByte {
+		case 1:
+			m.decodeEquipableInfo(r, t, isCash)
+		case 2:
+			m.decodeStackableInfo(r, isCash)
+		case 3:
+			m.decodePetInfo(r)
+		}
+	}
+}
+
+func (m *Asset) decodeEquipableInfo(r *request.Reader, t tenant.Model, isCash bool) {
+	m.expiration = FromMsTime(r.ReadInt64())
+	m.slots = uint16(r.ReadByte())
+	m.level = r.ReadByte()
+	if t.Region() == "JMS" {
+		_ = r.ReadByte()
+	}
+	m.decodeEquipmentStats(r)
+
+	if (t.Region() == "GMS" && t.MajorVersion() > 12) || t.Region() == "JMS" {
+		_ = r.ReadAsciiString() // name
+		m.flag = r.ReadUint16()
+
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+			if isCash {
+				for i := 0; i < 10; i++ {
+					_ = r.ReadByte()
+				}
+			} else {
+				m.levelType = r.ReadByte()
+				m.level = r.ReadByte()
+				m.experience = r.ReadUint32()
+				m.hammersApplied = r.ReadUint32()
+
+				if t.Region() == "JMS" {
+					_ = r.ReadByte()
+					_ = r.ReadUint16()
+					_ = r.ReadUint16()
+					_ = r.ReadUint16()
+					_ = r.ReadUint16()
+					_ = r.ReadUint16()
+					_ = r.ReadUint32()
+				}
+
+				_ = r.ReadUint64() // 0
+			}
+			_ = r.ReadInt64() // 94354848000000000
+			_ = r.ReadInt32() // -1
+		}
+	}
+}
+
+func (m *Asset) decodeEquipmentStats(r *request.Reader) {
+	m.strength = r.ReadUint16()
+	m.dexterity = r.ReadUint16()
+	m.intelligence = r.ReadUint16()
+	m.luck = r.ReadUint16()
+	m.hp = r.ReadUint16()
+	m.mp = r.ReadUint16()
+	m.weaponAttack = r.ReadUint16()
+	m.magicAttack = r.ReadUint16()
+	m.weaponDefense = r.ReadUint16()
+	m.magicDefense = r.ReadUint16()
+	m.accuracy = r.ReadUint16()
+	m.avoidability = r.ReadUint16()
+	m.hands = r.ReadUint16()
+	m.speed = r.ReadUint16()
+	m.jump = r.ReadUint16()
+}
+
+func (m *Asset) decodeStackableInfo(r *request.Reader, isCash bool) {
+	m.expiration = FromMsTime(r.ReadInt64())
+	m.quantity = uint32(r.ReadUint16())
+	_ = r.ReadAsciiString() // ""
+	m.flag = r.ReadUint16()
+	if !isCash {
+		if item.IsBullet(item.Id(m.templateId)) || item.IsThrowingStar(item.Id(m.templateId)) {
+			m.rechargeable = r.ReadUint64()
+		}
+	}
+}
+
+func (m *Asset) decodePetInfo(r *request.Reader) {
+	_ = FromMsTime(r.ReadInt64()) // msTime(time.Time{})
+	m.petName = ReadPaddedString(r, 13)
+	m.petLevel = r.ReadByte()
+	m.closeness = r.ReadUint16()
+	m.fullness = r.ReadByte()
+	m.expiration = FromMsTime(r.ReadInt64())
+	_ = r.ReadUint16() // attribute
+	_ = r.ReadUint16() // skill
+	_ = r.ReadUint32() // remaining life
+	_ = r.ReadUint16() // attribute
 }

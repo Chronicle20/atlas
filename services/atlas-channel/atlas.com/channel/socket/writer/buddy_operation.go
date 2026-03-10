@@ -6,9 +6,8 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	buddypkt "github.com/Chronicle20/atlas-packet/buddy"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -34,107 +33,65 @@ const (
 
 func BuddyInviteBody(actorId uint32, originatorId uint32, originatorName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationInvite))
-			w.WriteInt(originatorId)
-			w.WriteAsciiString(originatorName)
-
-			b := packetmodel.Buddy{
-				FriendId:    actorId,
-				FriendName:  originatorName,
-				Flag:        0,
-				ChannelId:   0,
-				FriendGroup: "Default Group",
-			}
-			w.WriteByteArray(b.Encode(l, ctx)(options))
-			w.WriteByte(0) // 0 no, 1 true m_aInShop
-			return w.Bytes()
+			mode := getBuddyOperation(l)(options, BuddyOperationInvite)
+			return buddypkt.NewBuddyInvite(mode, actorId, originatorId, originatorName).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func BuddyListUpdateBody(buddies []buddy.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationUpdate))
-			w.WriteByte(byte(len(buddies)))
+			mode := getBuddyOperation(l)(options, BuddyOperationUpdate)
+			entries := make([]buddypkt.BuddyEntry, 0, len(buddies))
 			for _, b := range buddies {
-				m := packetmodel.Buddy{
-					FriendId:    b.CharacterId(),
-					FriendName:  b.Name(),
-					Flag:        0,
+				entries = append(entries, buddypkt.BuddyEntry{
+					CharacterId: b.CharacterId(),
+					Name:        b.Name(),
 					ChannelId:   channel.Id(b.ChannelId()),
-					FriendGroup: b.Group(),
-				}
-				w.WriteByteArray(m.Encode(l, ctx)(options))
+					Group:       b.Group(),
+					InShop:      b.InShop(),
+				})
 			}
-			for _, b := range buddies {
-				if b.InShop() {
-					w.WriteInt(1)
-				} else {
-					w.WriteInt(0)
-				}
-			}
-			return w.Bytes()
+			return buddypkt.NewBuddyListUpdate(mode, entries).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func BuddyUpdateBody(characterId uint32, group string, characterName string, channelId int8, inShop bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationBuddyUpdate))
-			w.WriteInt(characterId)
-			m := packetmodel.Buddy{
-				FriendId:    characterId,
-				FriendName:  characterName,
-				Flag:        0,
-				ChannelId:   channel.Id(channelId),
-				FriendGroup: group,
-			}
-			w.WriteByteArray(m.Encode(l, ctx)(options))
-			w.WriteBool(inShop)
-			return w.Bytes()
+			mode := getBuddyOperation(l)(options, BuddyOperationBuddyUpdate)
+			return buddypkt.NewBuddyUpdate(mode, characterId, characterName, group, channel.Id(channelId), inShop).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func BuddyErrorBody(errorCode string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, errorCode))
-			if errorCode == BuddyOperationErrorUnknownError {
-				w.WriteByte(0)
-			}
-			return w.Bytes()
+			mode := getBuddyOperation(l)(options, errorCode)
+			hasExtra := errorCode == BuddyOperationErrorUnknownError
+			return buddypkt.NewBuddyError(mode, hasExtra).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func BuddyChannelChangeBody(characterId uint32, channelId int8) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationBuddyChannelChange))
-			w.WriteInt(characterId)
-			w.WriteByte(0) // TODO m_aInShop
-			w.WriteInt32(int32(channelId))
-			return w.Bytes()
+			mode := getBuddyOperation(l)(options, BuddyOperationBuddyChannelChange)
+			return buddypkt.NewBuddyChannelChange(mode, characterId, channelId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func BuddyCapacityUpdateBody(capacity byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getBuddyOperation(l)(options, BuddyOperationCapacityUpdate))
-			w.WriteByte(capacity)
-			return w.Bytes()
+			mode := getBuddyOperation(l)(options, BuddyOperationCapacityUpdate)
+			return buddypkt.NewBuddyCapacityUpdate(mode, capacity).Encode(l, ctx)(options)
 		}
 	}
 }

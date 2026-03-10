@@ -2,11 +2,10 @@ package writer
 
 import (
 	"atlas-channel/pet"
-	model2 "atlas-channel/socket/model"
 	"context"
 
+	petpkt "github.com/Chronicle20/atlas-packet/pet"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,39 +22,14 @@ const (
 )
 
 func PetSpawnBody(p pet.Model) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteInt(p.OwnerId())
-			w.WriteInt8(p.Slot())
-			w.WriteBool(true)
-			w.WriteBool(true) // show?
-			m := model2.Pet{
-				TemplateId:  p.TemplateId(),
-				Name:        p.Name(),
-				Id:          p.Id(),
-				X:           p.X(),
-				Y:           p.Y(),
-				Stance:      p.Stance(),
-				Foothold:    p.Fh(),
-				NameTag:     0,
-				ChatBalloon: 0,
-			}
-			w.WriteByteArray(m.Encoder(l, ctx)(options))
-			return w.Bytes()
-		}
-	}
+	return petpkt.NewPetSpawnActivated(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())).Encode
 }
 
 func PetDespawnBody(characterId uint32, slot int8, reason string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteInt8(slot)
-			w.WriteBool(false)
-			w.WriteByte(getPetDespawnOperation(l)(options, reason))
-			return w.Bytes()
+			mode := getPetDespawnOperation(l)(options, reason)
+			return petpkt.NewPetDespawnActivated(characterId, slot, mode).Encode(l, ctx)(options)
 		}
 	}
 }

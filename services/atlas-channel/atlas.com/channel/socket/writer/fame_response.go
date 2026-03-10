@@ -4,8 +4,8 @@ import (
 	"context"
 	"strconv"
 
+	famepkt "github.com/Chronicle20/atlas-packet/fame"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,38 +22,27 @@ const (
 
 func ReceiveFameResponseBody(fromName string, amount int8) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getFameOperation(l)(options, FameResponseReceive))
-			w.WriteAsciiString(fromName)
-			mode := (amount + 1) / 2
-			w.WriteInt8(mode)
-			return w.Bytes()
+			mode := getFameOperation(l)(options, FameResponseReceive)
+			return famepkt.NewReceiveFameResponse(mode, fromName, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func GiveFameResponseBody(toName string, amount int8, total int16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getFameOperation(l)(options, FameResponseGive))
-			w.WriteAsciiString(toName)
-			mode := (amount + 1) / 2
-			w.WriteInt8(mode)
-			w.WriteInt16(total)
-			w.WriteShort(0)
-			return w.Bytes()
+			mode := getFameOperation(l)(options, FameResponseGive)
+			return famepkt.NewGiveFameResponse(mode, toName, amount, total).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func FameResponseErrorBody(errCode string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getFameOperation(l)(options, errCode))
-			return w.Bytes()
+			mode := getFameOperation(l)(options, errCode)
+			return famepkt.NewFameErrorResponse(mode).Encode(l, ctx)(options)
 		}
 	}
 }

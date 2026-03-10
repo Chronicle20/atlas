@@ -2,12 +2,9 @@ package writer
 
 import (
 	"context"
-	"strconv"
-	"strings"
 
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -42,33 +39,12 @@ const (
 
 func ServerIPBody(ipAddr string, port uint16, clientId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		T := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options))
-			w.WriteByte(getCode(l)(ServerIP, string(ServerIPModeOk), "modes", options))
-			w.WriteByteArray(ipAsByteArray(ipAddr))
-			w.WriteShort(port)
-			w.WriteInt(clientId)
-			w.WriteByte(0) // bAuthenCode
-			if (T.Region() == "GMS" && T.MajorVersion() > 12) || T.Region() == "JMS" {
-				w.WriteInt(0) // ulPremiumArgument
-			}
-			return w.Bytes()
+			code := getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options)
+			mode := getCode(l)(ServerIP, string(ServerIPModeOk), "modes", options)
+			return loginpkt.NewServerIP(code, mode, ipAddr, port, clientId).Encode(l, ctx)(options)
 		}
 	}
-}
-
-func ipAsByteArray(ipAddress string) []byte {
-	var ob = make([]byte, 0)
-	os := strings.Split(ipAddress, ".")
-	for _, x := range os {
-		o, err := strconv.ParseUint(x, 10, 8)
-		if err == nil {
-			ob = append(ob, byte(o))
-		}
-	}
-	return ob
 }
 
 func ServerIPBodySimpleError(code ServerIPCode) packet.Encode {
@@ -77,11 +53,10 @@ func ServerIPBodySimpleError(code ServerIPCode) packet.Encode {
 
 func ServerIPBodyError(code ServerIPCode, mode ServerIPMode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(ServerIP, string(code), "codes", options))
-			w.WriteByte(getCode(l)(ServerIP, string(mode), "modes", options))
-			return w.Bytes()
+			codeResolved := getCode(l)(ServerIP, string(code), "codes", options)
+			modeResolved := getCode(l)(ServerIP, string(mode), "modes", options)
+			return loginpkt.NewServerIPError(codeResolved, modeResolved).Encode(l, ctx)(options)
 		}
 	}
 }

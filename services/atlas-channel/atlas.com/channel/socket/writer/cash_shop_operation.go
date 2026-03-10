@@ -8,9 +8,8 @@ import (
 	model2 "atlas-channel/socket/model"
 	"context"
 
-	"github.com/Chronicle20/atlas-model/model"
+	cashpkt "github.com/Chronicle20/atlas-packet/cash"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -85,122 +84,117 @@ const (
 
 func CashShopCashInventoryBody(a account.Model, characterId uint32, assets []asset.Model, storageSlots uint16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadInventorySuccess))
-			w.WriteShort(uint16(len(assets)))
-			for _, i := range assets {
-				_ = WriteCashInventoryItem(a.Id(), characterId, i)(w)
+			mode := getCashShopOperation(l)(options, CashShopOperationLoadInventorySuccess)
+			items := make([]cashpkt.CashInventoryItem, len(assets))
+			for i, as := range assets {
+				items[i] = cashpkt.CashInventoryItem{
+					CashId:      as.Item().CashId(),
+					AccountId:   a.Id(),
+					CharacterId: characterId,
+					TemplateId:  as.Item().TemplateId(),
+					CommodityId: as.CommodityId(),
+					Quantity:    int16(as.Item().Quantity()),
+					GiftFrom:    "",
+					Expiration:  msTime(as.Expiration()),
+				}
 			}
-			w.WriteShort(storageSlots)
-			w.WriteInt16(a.CharacterSlots())
-			return w.Bytes()
+			return cashpkt.NewCashShopInventory(mode, items, storageSlots, a.CharacterSlots()).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func CashShopCashInventoryPurchaseSuccessBody(accountId uint32, characterId uint32, asset asset.Model) packet.Encode {
+func CashShopCashInventoryPurchaseSuccessBody(accountId uint32, characterId uint32, a asset.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationPurchaseSuccess))
-			_ = WriteCashInventoryItem(accountId, characterId, asset)(w)
-			return w.Bytes()
+			mode := getCashShopOperation(l)(options, CashShopOperationPurchaseSuccess)
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   accountId,
+				CharacterId: characterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  msTime(a.Expiration()),
+			}
+			return cashpkt.NewCashShopPurchaseSuccess(mode, item).Encode(l, ctx)(options)
 		}
-	}
-}
-
-func WriteCashInventoryItem(accountId uint32, characterId uint32, a asset.Model) model.Operator[*response.Writer] {
-	return func(w *response.Writer) error {
-		w.WriteInt64(a.Item().CashId())
-		w.WriteInt(accountId)
-		w.WriteInt(characterId)
-		w.WriteInt(a.Item().TemplateId())
-		w.WriteInt(a.CommodityId())
-		w.WriteInt16(int16(a.Item().Quantity()))
-		WritePaddedString(w, "", 13) // TODO
-		w.WriteInt64(msTime(a.Expiration()))
-		w.WriteInt(0) // TODO
-		w.WriteInt(0) // TODO
-		return nil
 	}
 }
 
 func CashShopCashGiftsBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// TODO map codes for JMS
-			w.WriteByte(0x4D)
-			w.WriteShort(0)
-			// TODO load gifts
-			return w.Bytes()
+			// TODO map codes for JMS — currently hardcoded to 0x4D
+			return cashpkt.NewCashShopGifts(0x4D).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CashShopInventoryCapacityIncreaseSuccessBody(inventoryType byte, capacity uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseSuccess))
-			w.WriteByte(inventoryType)
-			w.WriteShort(uint16(capacity))
-			return w.Bytes()
+			mode := getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseSuccess)
+			return cashpkt.NewInventoryCapacitySuccess(mode, inventoryType, uint16(capacity)).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CashShopInventoryCapacityIncreaseFailedBody(message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseFailed))
-			w.WriteByte(getCashShopOperationError(l)(options, message))
-			return w.Bytes()
+			mode := getCashShopOperation(l)(options, CashShopOperationInventoryCapacityIncreaseFailed)
+			errorCode := getCashShopOperationError(l)(options, message)
+			return cashpkt.NewInventoryCapacityFailed(mode, errorCode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CashShopWishListBody(update bool, items []wishlist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
+			var mode byte
 			if update {
-				w.WriteByte(getCashShopOperation(l)(options, CashShopOperationUpdateWishlist))
+				mode = getCashShopOperation(l)(options, CashShopOperationUpdateWishlist)
 			} else {
-				w.WriteByte(getCashShopOperation(l)(options, CashShopOperationLoadWishlist))
+				mode = getCashShopOperation(l)(options, CashShopOperationLoadWishlist)
 			}
+			var sns []uint32
 			for _, item := range items {
-				w.WriteInt(item.SerialNumber())
+				sns = append(sns, item.SerialNumber())
 			}
-			for i := 0; i < 10-len(items); i++ {
-				w.WriteInt(0)
-			}
-			return w.Bytes()
+			return cashpkt.NewWishList(mode, sns).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CashShopCashItemMovedToInventoryBody(a asset2.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory))
-			w.WriteShort(uint16(a.Slot()))
-			_ = model2.NewAssetWriter(l, ctx, options, w)(true)(a)
-			return w.Bytes()
+			mode := getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory)
+			am := model2.NewAsset(true, a)
+			assetBytes := am.Encode(l, ctx)(options)
+			return cashpkt.NewCashItemMovedToInventory(mode, uint16(a.Slot()), assetBytes).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CashShopCashItemMovedToCashInventoryBody(accountId uint32, characterId uint32, a asset.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCashShopOperation(l)(options, CashShopOperationCashItemMovedToCashInventory))
-			_ = WriteCashInventoryItem(accountId, characterId, a)(w)
-			return w.Bytes()
+			mode := getCashShopOperation(l)(options, CashShopOperationCashItemMovedToCashInventory)
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   accountId,
+				CharacterId: characterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  msTime(a.Expiration()),
+			}
+			return cashpkt.NewCashItemMovedToCashInventory(mode, item).Encode(l, ctx)(options)
 		}
 	}
 }

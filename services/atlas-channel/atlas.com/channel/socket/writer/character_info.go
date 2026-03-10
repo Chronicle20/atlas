@@ -4,64 +4,41 @@ import (
 	"atlas-channel/cashshop/wishlist"
 	"atlas-channel/character"
 	"atlas-channel/guild"
-	"atlas-channel/pet"
 	"context"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
-
-	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 )
 
 const CharacterInfo = "CharacterInfo"
 
 func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt(c.Id())
-			w.WriteByte(c.Level())
-			w.WriteShort(uint16(c.JobId()))
-			w.WriteInt16(c.Fame())
-			w.WriteBool(false) // marriage ring
+			guildName := ""
 			if g.Id() != 0 {
-				w.WriteAsciiString(g.Name())
-			} else {
-				w.WriteAsciiString("")
+				guildName = g.Name()
 			}
-			w.WriteAsciiString("") // alliance name
-			w.WriteByte(0)         // medal info
 
-			// TODO pet skill and item writing
-			writeForEachPet(w, c.Pets(), func(w *response.Writer, p pet.Model) {
-				w.WriteBool(true)
-				w.WriteInt(p.TemplateId())
-				w.WriteAsciiString(p.Name())
-				w.WriteByte(p.Level())
-				w.WriteShort(p.Closeness())
-				w.WriteByte(p.Fullness())
-				w.WriteShort(0) // skill
-				w.WriteInt(0)   // itemId
-			}, func(w *response.Writer) {
-			})
-			w.WriteBool(false) // more pets?
+			var pets []charpkt.InfoPet
+			if c.Pets() != nil {
+				for _, p := range c.Pets() {
+					pets = append(pets, charpkt.InfoPet{
+						Slot:       p.Slot(),
+						TemplateId: p.TemplateId(),
+						Name:       p.Name(),
+						Level:      p.Level(),
+						Closeness:  p.Closeness(),
+						Fullness:   p.Fullness(),
+					})
+				}
+			}
 
-			w.WriteByte(0) // mount, followed by mount info
-
-			w.WriteByte(byte(len(wl)))
+			var wishListSNs []uint32
 			for _, i := range wl {
-				w.WriteInt(i.SerialNumber())
-			}
-
-			if (t.Region() == "GMS" && t.MajorVersion() < 87) || t.Region() == "JMS" {
-				w.WriteInt(0) // monster book level
-				w.WriteInt(0) // normal card
-				w.WriteInt(0) // special card
-				w.WriteInt(0) // total cards
-				w.WriteInt(0) // cover
+				wishListSNs = append(wishListSNs, i.SerialNumber())
 			}
 
 			medalId := uint32(0)
@@ -73,13 +50,12 @@ func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) pa
 					}
 				}
 			}
-			w.WriteInt(medalId)
 
-			w.WriteShort(0) // medal quests
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-				w.WriteInt(0) // chair
-			}
-			return w.Bytes()
+			return charpkt.NewCharacterInfo(
+				c.Id(), c.Level(), uint16(c.JobId()), c.Fame(), guildName,
+				pets, wishListSNs, medalId,
+			).Encode(l, ctx)(options)
 		}
 	}
 }
+

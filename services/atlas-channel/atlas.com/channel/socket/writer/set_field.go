@@ -7,13 +7,13 @@ import (
 	"atlas-channel/quest"
 	model2 "atlas-channel/socket/model"
 	"context"
-	"math/rand"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-model/model"
+	fieldpkt "github.com/Chronicle20/atlas-packet/field"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
@@ -23,77 +23,18 @@ import (
 const SetField = "SetField"
 
 func WarpToMapBody(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		t := tenant.MustFromContext(ctx)
-		return func(options map[string]interface{}) []byte {
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-				w.WriteShort(0) // decode opt, loop with 2 decode 4s
-			}
-			w.WriteInt(uint32(channelId))
-			if t.Region() == "JMS" {
-				w.WriteByte(0)
-				w.WriteInt(0)
-			}
-			w.WriteByte(0) // sNotifierMessage
-			w.WriteByte(0) // bCharacterData
-			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-				w.WriteShort(0) // nNotifierCheck
-				w.WriteByte(0)  // revive
-			}
-			w.WriteInt(uint32(mapId))
-			w.WriteByte(byte(portalId))
-			w.WriteShort(hp)
-			if t.Region() == "GMS" && t.MajorVersion() > 28 {
-				w.WriteBool(false) // Chasing?
-				if false {
-					w.WriteInt(0)
-					w.WriteInt(0)
-				}
-			}
-			w.WriteInt64(msTime(time.Now()))
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewWarpToMap(channelId, mapId, byte(portalId), hp).Encode
 }
 
 func SetFieldBody(channelId channel.Id, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-				w.WriteShort(0) // decode opt, loop with 2 decode 4s
-			}
-			w.WriteInt(uint32(channelId))
-			if t.Region() == "JMS" {
-				w.WriteByte(0)
-				w.WriteInt(0)
-			}
-			w.WriteByte(1) // sNotifierMessage
-			w.WriteByte(1) // bCharacterData
-
-			var seedSize = 3
-			if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
-				w.WriteShort(0) // nNotifierCheck, if non zero STRs are encoded
-			} else {
-				seedSize = 4
-			}
-
-			// damage seed
-			for i := 0; i < seedSize; i++ {
-				w.WriteInt(rand.Uint32())
-			}
-
+			// Encode the character info bytes using existing helpers
+			w := response.NewWriter(l)
 			WriteCharacterInfo(l, ctx, options)(w)(c, bl)
-			if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-				w.WriteInt(0) // logout gifts
-				w.WriteInt(0)
-				w.WriteInt(0)
-				w.WriteInt(0)
-			}
-			w.WriteInt64(msTime(time.Now()))
-			return w.Bytes()
+			charInfoBytes := w.Bytes()
+			// Delegate to atlas-packet for the outer frame
+			return fieldpkt.NewSetField(channelId, charInfoBytes).Encode(l, ctx)(options)
 		}
 	}
 }

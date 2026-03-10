@@ -5,8 +5,8 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -37,21 +37,15 @@ func StopControlMonsterBody(m monster.Model) packet.Encode {
 
 func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt8(int8(controlType))
-			w.WriteInt(m.UniqueId())
+			var mem model.Monster
 			if controlType > ControlMonsterTypeReset {
-				w.WriteByte(5)
-				w.WriteInt(m.MonsterId())
-				mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), model.MonsterAppearTypeRegen, m.Team())
+				mem = model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), model.MonsterAppearTypeRegen, m.Team())
 				stat := buildMonsterTemporaryStat(l, t, m)
 				mem.SetTemporaryStat(stat)
-				w.WriteByteArray(mem.Encode(l, ctx)(options))
-				return w.Bytes()
 			}
-			return w.Bytes()
+			return monsterpkt.NewMonsterControl(monsterpkt.ControlType(controlType), m.UniqueId(), m.MonsterId(), mem).Encode(l, ctx)(options)
 		}
 	}
 }

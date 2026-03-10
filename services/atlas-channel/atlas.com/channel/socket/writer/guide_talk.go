@@ -3,8 +3,8 @@ package writer
 import (
 	"context"
 
+	npcpkt "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,28 +14,12 @@ const (
 
 func GuideTalkMessageBody(message string, width uint32, duration uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			// default width is 200
-			// default duration is 4000 (ms?)
-			w.WriteBool(true)
-			w.WriteAsciiString(message)
-			w.WriteInt(width)
-			w.WriteInt(duration)
-			return w.Bytes()
-		}
+		return npcpkt.NewGuideTalkMessage(message, width, duration).Encode(l, ctx)
 	}
 }
 
 func GuideTalkIdxBody(hintId uint32, duration uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			// default duration is 7000 (ms?)
-			w.WriteBool(false)
-			w.WriteInt(hintId)
-			w.WriteInt(duration)
-			return w.Bytes()
-		}
+		return npcpkt.NewGuideTalkIdx(hintId, duration).Encode(l, ctx)
 	}
 }

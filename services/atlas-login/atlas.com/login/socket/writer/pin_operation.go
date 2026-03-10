@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 )
 
 const PinOperation = "PinOperation"
@@ -43,10 +44,9 @@ func PinConnectionFailedBody() packet.Encode {
 
 func PinOperationBody(mode PinOperationMode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(PinOperation, string(mode), "modes", options))
-			return w.Bytes()
+			resolved := getCode(l)(PinOperation, string(mode), "modes", options)
+			return loginpkt.NewPinOperation(resolved).Encode(l, ctx)(options)
 		}
 	}
 }

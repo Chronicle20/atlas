@@ -4,8 +4,8 @@ import (
 	"atlas-login/character"
 	"context"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,11 +13,10 @@ const AddCharacterEntry = "AddCharacterEntry"
 
 func AddCharacterEntryBody(c character.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options))
-			WriteCharacter(l, ctx)(w, options)(c, false)
-			return w.Bytes()
+			resolved := getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options)
+			entry := toCharacterListEntry(c)
+			return charpkt.NewAddCharacterEntry(resolved, entry).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -34,10 +33,9 @@ const (
 
 func AddCharacterErrorBody(code AddCharacterCode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(AddCharacterEntry, string(code), "codes", options))
-			return w.Bytes()
+			resolved := getCode(l)(AddCharacterEntry, string(code), "codes", options)
+			return charpkt.NewAddCharacterError(resolved).Encode(l, ctx)(options)
 		}
 	}
 }

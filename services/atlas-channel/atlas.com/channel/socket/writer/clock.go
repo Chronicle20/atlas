@@ -1,12 +1,10 @@
 package writer
 
 import (
-	"context"
 	"time"
 
+	fieldpkt "github.com/Chronicle20/atlas-packet/field"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type ClockType byte
@@ -35,61 +33,21 @@ func DurationToUint32Seconds(d time.Duration) uint32 {
 
 // EventClockBody writes an event clock payload with a given duration in seconds.
 func EventClockBody(duration time.Duration) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(EventClock))
-			w.WriteInt(DurationToUint32Seconds(duration))
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewEventClock(DurationToUint32Seconds(duration)).Encode
 }
 
-func TownClockBody(time time.Time) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(TownClock))
-			w.WriteByte(byte(time.Hour()))
-			w.WriteByte(byte(time.Minute()))
-			w.WriteByte(byte(time.Second()))
-			return w.Bytes()
-		}
-	}
+func TownClockBody(t time.Time) packet.Encode {
+	return fieldpkt.NewTownClock(byte(t.Hour()), byte(t.Minute()), byte(t.Second())).Encode
 }
 
 func TimerClockBody(duration time.Duration) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(TimerClock))
-			w.WriteInt(DurationToUint32Seconds(duration))
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewTimerClock(DurationToUint32Seconds(duration)).Encode
 }
 
 func EventTimerClockBody(duration time.Duration) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(EventTimerClock))
-			w.WriteBool(true) // not sure what this is used for. will skip set/start if false
-			w.WriteInt(DurationToUint32Seconds(duration))
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewEventTimerClock(DurationToUint32Seconds(duration)).Encode
 }
 
 func CakePieEventTimerClockBody(duration time.Duration) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(CakePieEventTimerClock))
-			w.WriteBool(true) // not sure what this is used for. will skip set/start if false
-			w.WriteBool(true) // adjusts height/width of timer window?
-			w.WriteInt(DurationToUint32Seconds(duration))
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewCakePieEventTimerClock(DurationToUint32Seconds(duration)).Encode
 }

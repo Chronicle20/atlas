@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"time"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,304 +32,194 @@ const (
 
 func CharacterStatusMessageDropPickUpItemUnavailableBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written to right side of screen.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp))
-			w.WriteInt8(-2)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp)
+			return charpkt.NewStatusMessageDropPickUpItemUnavailable(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageDropPickUpInventoryFullBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written to right side of screen.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp))
-			w.WriteInt8(-3)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp)
+			return charpkt.NewStatusMessageDropPickUpInventoryFull(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationDropPickUpStackableItemBody(itemId uint32, amount uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written to right side of screen.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp))
-			w.WriteInt8(0)
-			w.WriteInt(itemId)
-			w.WriteInt(amount)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp)
+			return charpkt.NewStatusMessageDropPickUpStackableItem(mode, itemId, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationDropPickUpUnStackableItemBody(itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written to right side of screen.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp))
-			w.WriteInt8(2)
-			w.WriteInt(itemId)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp)
+			return charpkt.NewStatusMessageDropPickUpUnStackableItem(mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationDropPickUpMesoBody(partial bool, amount uint32, internetCafeBonus uint16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written to right side of screen.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp))
-			w.WriteInt8(1)
-			w.WriteBool(partial)
-			w.WriteInt(amount)
-			w.WriteShort(internetCafeBonus)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationDropPickUp)
+			return charpkt.NewStatusMessageDropPickUpMeso(mode, partial, amount, internetCafeBonus).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationForfeitQuestRecordBody(questId uint16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord))
-			w.WriteShort(questId)
-			w.WriteByte(0)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord)
+			return charpkt.NewStatusMessageForfeitQuestRecord(mode, questId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationUpdateQuestRecordBody(questId uint16, info string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord))
-			w.WriteShort(questId)
-			w.WriteByte(1)
-			w.WriteAsciiString(info)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord)
+			return charpkt.NewStatusMessageUpdateQuestRecord(mode, questId, info).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationCompleteQuestRecordBody(questId uint16, completedAt time.Time) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord))
-			w.WriteShort(questId)
-			w.WriteByte(2)
-			w.WriteInt64(characterStatusMsTime(completedAt))
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecord)
+			return charpkt.NewStatusMessageCompleteQuestRecord(mode, questId, completedAt).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func characterStatusMsTime(t time.Time) int64 {
-	if t.IsZero() {
-		return -1
-	}
-	return t.Unix()*int64(10000000) + int64(116444736000000000)
-}
-
 func CharacterStatusMessageOperationCashItemExpireBody(itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink message.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationCashItemExpire))
-			w.WriteInt(itemId)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationCashItemExpire)
+			return charpkt.NewStatusMessageCashItemExpire(mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationIncreaseExperienceBody(c model.IncreaseExperienceConfig) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseExperience))
-			w.WriteBool(c.White)
-			w.WriteInt32(c.Amount)
-			w.WriteBool(c.InChat)
-			w.WriteInt32(c.MonsterBookBonus)
-			w.WriteByte(c.MobEventBonusPercentage)
-			w.WriteByte(c.PartyBonusPercentage)
-			w.WriteInt32(c.WeddingBonusEXP)
-			if c.MobEventBonusPercentage > 0 {
-				w.WriteByte(c.PlayTimeHour)
-			}
-			if c.InChat {
-				w.WriteByte(c.QuestBonusRate)
-				if c.QuestBonusRate > 0 {
-					w.WriteByte(c.QuestBonusRemainCount)
-				}
-			}
-			w.WriteByte(c.PartyBonusEventRate)
-			w.WriteInt32(c.PartyBonusExp)
-			w.WriteInt32(c.ItemBonusEXP)
-			w.WriteInt32(c.PremiumIPExp)
-			w.WriteInt32(c.RainbowWeekEventEXP)
-
-			if t.Region() == "GMS" && t.MajorVersion() >= 95 {
-				w.WriteInt32(c.PartyEXPRingEXP)
-				w.WriteInt32(c.CakePieEventBonus)
-			}
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseExperience)
+			return charpkt.NewStatusMessageIncreaseExperience(mode,
+				c.White, c.Amount, c.InChat, c.MonsterBookBonus,
+				c.MobEventBonusPercentage, c.PartyBonusPercentage, c.WeddingBonusEXP, c.PlayTimeHour,
+				c.QuestBonusRate, c.QuestBonusRemainCount, c.PartyBonusEventRate, c.PartyBonusExp,
+				c.ItemBonusEXP, c.PremiumIPExp, c.RainbowWeekEventEXP, c.PartyEXPRingEXP, c.CakePieEventBonus,
+			).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationIncreaseSkillPointBody(jobId uint16, amount byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseSkillPoint))
-			w.WriteShort(jobId)
-			w.WriteByte(amount)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseSkillPoint)
+			return charpkt.NewStatusMessageIncreaseSkillPoint(mode, jobId, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationIncreaseFameBody(amount int32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a gray text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseFame))
-			w.WriteInt32(amount)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseFame)
+			return charpkt.NewStatusMessageIncreaseFame(mode, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationIncreaseMesoBody(amount int32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a gray text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseMeso))
-			w.WriteInt32(amount)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseMeso)
+			return charpkt.NewStatusMessageIncreaseMeso(mode, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationIncreaseGuildPointBody(amount int32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a gray text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseGuildPoint))
-			w.WriteInt32(amount)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationIncreaseGuildPoint)
+			return charpkt.NewStatusMessageIncreaseGuildPoint(mode, amount).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationGiveBuffBody(itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a gray text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationGiveBuff))
-			w.WriteInt(itemId)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationGiveBuff)
+			return charpkt.NewStatusMessageGiveBuff(mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationGeneralItemExpireBody(itemIds []uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationGeneralItemExpire))
-			w.WriteByte(byte(len(itemIds)))
-			for _, itemId := range itemIds {
-				w.WriteInt(itemId)
-			}
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationGeneralItemExpire)
+			return charpkt.NewStatusMessageGeneralItemExpire(mode, itemIds).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationSystemMessageBody(message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationSystemMessage))
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationSystemMessage)
+			return charpkt.NewStatusMessageSystemMessage(mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationQuestRecordExBody(questId uint16, info string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecordEx))
-			w.WriteShort(questId)
-			w.WriteAsciiString(info)
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationQuestRecordEx)
+			return charpkt.NewStatusMessageQuestRecordEx(mode, questId, info).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationItemProtectExpireBody(itemIds []uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationItemProtectExpire))
-			w.WriteByte(byte(len(itemIds)))
-			for _, itemId := range itemIds {
-				w.WriteInt(itemId)
-			}
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationItemProtectExpire)
+			return charpkt.NewStatusMessageItemProtectExpire(mode, itemIds).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationItemExpireReplaceBody(messages []string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationItemExpireReplace))
-			w.WriteByte(byte(len(messages)))
-			for _, message := range messages {
-				w.WriteAsciiString(message)
-			}
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationItemExpireReplace)
+			return charpkt.NewStatusMessageItemExpireReplace(mode, messages).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterStatusMessageOperationSkillExpireBody(skillIds []uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			// Written in chat as a pink text.
-			w.WriteByte(getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationSkillExpire))
-			w.WriteByte(byte(len(skillIds)))
-			for _, skillId := range skillIds {
-				w.WriteInt(skillId)
-			}
-			return w.Bytes()
+			mode := getCharacterStatusMessageOperation(l)(options, CharacterStatusMessageOperationSkillExpire)
+			return charpkt.NewStatusMessageSkillExpire(mode, skillIds).Encode(l, ctx)(options)
 		}
 	}
 }

@@ -4,8 +4,8 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	notepkt "github.com/Chronicle20/atlas-packet/note"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -23,45 +23,41 @@ const (
 
 func NoteDisplayBody(notes []model.Note) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNoteOperation(l)(options, NoteOperationShow))
-			w.WriteByte(byte(len(notes)))
-			for _, n := range notes {
-				w.WriteByteArray(n.Encoder(l, ctx)(options))
+			mode := getNoteOperation(l)(options, NoteOperationShow)
+			noteBytes := make([][]byte, len(notes))
+			for i, n := range notes {
+				noteBytes[i] = n.Encoder(l, ctx)(options)
 			}
-			return w.Bytes()
+			return notepkt.NewNoteDisplay(mode, noteBytes).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NoteSendSuccess() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNoteOperation(l)(options, NoteOperationSendSuccess))
-			return w.Bytes()
+			mode := getNoteOperation(l)(options, NoteOperationSendSuccess)
+			return notepkt.NewNoteSendSuccess(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NoteSendError(error string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNoteOperation(l)(options, NoteOperationSendSuccess))
-			w.WriteByte(getNoteError(l)(options, error))
-			return w.Bytes()
+			mode := getNoteOperation(l)(options, NoteOperationSendSuccess)
+			errorCode := getNoteError(l)(options, error)
+			return notepkt.NewNoteSendError(mode, errorCode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NoteRefresh() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNoteOperation(l)(options, NoteOperationRefresh))
-			return w.Bytes()
+			mode := getNoteOperation(l)(options, NoteOperationRefresh)
+			return notepkt.NewNoteRefresh(mode).Encode(l, ctx)(options)
 		}
 	}
 }

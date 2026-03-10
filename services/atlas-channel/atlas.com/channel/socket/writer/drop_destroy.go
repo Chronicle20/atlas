@@ -1,11 +1,8 @@
 package writer
 
 import (
-	"context"
-
+	droppkt "github.com/Chronicle20/atlas-packet/drop"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type DropDestroyType byte
@@ -21,18 +18,5 @@ const (
 )
 
 func DropDestroyBody(dropId uint32, destroyType DropDestroyType, characterId uint32, petSlot int8) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(destroyType))
-			w.WriteInt(dropId)
-			if destroyType >= 2 {
-				w.WriteInt(characterId)
-				if petSlot >= 0 {
-					w.WriteByte(byte(petSlot))
-				}
-			}
-			return w.Bytes()
-		}
-	}
+	return droppkt.NewDropDestroy(dropId, droppkt.DropDestroyType(destroyType), characterId, petSlot).Encode
 }

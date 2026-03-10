@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	partypkt "github.com/Chronicle20/atlas-packet/party"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -25,190 +25,115 @@ const (
 	PartyOperationInvite       = "INVITE"
 )
 
+func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember {
+	members := make([]partypkt.PartyMember, 0, len(p.Members()))
+	for _, m := range p.Members() {
+		chId := int32(m.ChannelId())
+		if !m.Online() {
+			chId = -2
+		}
+		mapId := uint32(0)
+		if forChannel == m.ChannelId() {
+			mapId = uint32(m.MapId())
+		}
+		members = append(members, partypkt.PartyMember{
+			Id:        m.Id(),
+			Name:      m.Name(),
+			JobId:     uint16(m.JobId()),
+			Level:     uint16(m.Level()), // byte -> uint16
+			ChannelId: chId,
+			MapId:     mapId,
+		})
+	}
+	return members
+}
+
 func PartyCreatedBody(partyId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationCreated))
-			w.WriteInt(partyId)
-
-			// TODO write doors for party.
-			w.WriteInt(uint32(_map.EmptyMapId))
-			w.WriteInt(uint32(_map.EmptyMapId))
-			w.WriteShort(0)
-			w.WriteShort(0)
-			return w.Bytes()
+			mode := getPartyOperation(l)(options, PartyOperationCreated)
+			return partypkt.NewCreated(mode, partyId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyLeftBody(p party.Model, t character.Model, forChannel channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationLeave))
-			w.WriteInt(p.Id())
-			w.WriteInt(t.Id())
-			w.WriteByte(1)
-			w.WriteBool(false) // forced
-			w.WriteAsciiString(t.Name())
-			return WriteParty(w, p, forChannel)
+			mode := getPartyOperation(l)(options, PartyOperationLeave)
+			members := toPartyMembers(p, forChannel)
+			return partypkt.NewLeft(mode, p.Id(), t.Id(), t.Name(), false, members, p.LeaderId()).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyExpelBody(p party.Model, t character.Model, forChannel channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationExpel))
-			w.WriteInt(p.Id())
-			w.WriteInt(t.Id())
-			w.WriteByte(1)
-			w.WriteBool(true) // forced
-			w.WriteAsciiString(t.Name())
-			return WriteParty(w, p, forChannel)
+			mode := getPartyOperation(l)(options, PartyOperationExpel)
+			members := toPartyMembers(p, forChannel)
+			return partypkt.NewLeft(mode, p.Id(), t.Id(), t.Name(), true, members, p.LeaderId()).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyDisbandBody(partyId uint32, t character.Model, forChannel channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationDisband))
-			w.WriteInt(partyId)
-			w.WriteInt(t.Id())
-			w.WriteByte(0)
-			w.WriteInt(partyId)
-			return w.Bytes()
+			mode := getPartyOperation(l)(options, PartyOperationDisband)
+			return partypkt.NewDisbandW(mode, partyId, t.Id()).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyJoinBody(p party.Model, t character.Model, forChannel channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationJoin))
-			w.WriteInt(p.Id())
-			w.WriteAsciiString(t.Name())
-			return WriteParty(w, p, forChannel)
+			mode := getPartyOperation(l)(options, PartyOperationJoin)
+			members := toPartyMembers(p, forChannel)
+			return partypkt.NewJoinW(mode, p.Id(), t.Name(), members, p.LeaderId()).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyUpdateBody(p party.Model, t character.Model, forChannel channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationUpdate))
-			w.WriteInt(p.Id())
-			return WriteParty(w, p, forChannel)
+			mode := getPartyOperation(l)(options, PartyOperationUpdate)
+			members := toPartyMembers(p, forChannel)
+			return partypkt.NewUpdateW(mode, p.Id(), members, p.LeaderId()).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyChangeLeaderBody(targetCharacterId uint32, disconnected bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationChangeLeader))
-			w.WriteInt(targetCharacterId)
-			w.WriteBool(disconnected)
-			return w.Bytes()
+			mode := getPartyOperation(l)(options, PartyOperationChangeLeader)
+			return partypkt.NewChangeLeaderW(mode, targetCharacterId, disconnected).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyErrorBody(code string, name string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, code))
-			w.WriteAsciiString(name)
-			return w.Bytes()
+			mode := getPartyOperation(l)(options, code)
+			return partypkt.NewErrorW(mode, name).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func PartyInviteBody(partyId uint32, originatorName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getPartyOperation(l)(options, PartyOperationInvite))
-			w.WriteInt(partyId)
-			w.WriteAsciiString(originatorName)
-			w.WriteByte(0) // TODO this triggers op 3 for party operation if 1, feels like auto reject, blocked packet
-			return w.Bytes()
+			mode := getPartyOperation(l)(options, PartyOperationInvite)
+			return partypkt.NewInviteW(mode, partyId, originatorName).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func WriteParty(w *response.Writer, p party.Model, forChannel channel.Id) []byte {
-	for _, m := range p.Members() {
-		w.WriteInt(m.Id())
-	}
-	for range 6 - len(p.Members()) {
-		w.WriteInt(0)
-	}
-
-	for _, m := range p.Members() {
-		WritePaddedString(w, m.Name(), 13)
-	}
-	for range 6 - len(p.Members()) {
-		WritePaddedString(w, "", 13)
-	}
-
-	for _, m := range p.Members() {
-		w.WriteInt(uint32(m.JobId()))
-	}
-	for range 6 - len(p.Members()) {
-		w.WriteInt(0)
-	}
-
-	for _, m := range p.Members() {
-		w.WriteInt(uint32(m.Level()))
-	}
-	for range 6 - len(p.Members()) {
-		w.WriteInt(0)
-	}
-
-	for _, m := range p.Members() {
-		if m.Online() {
-			w.WriteInt(uint32(m.ChannelId()))
-		} else {
-			w.WriteInt32(-2)
-		}
-	}
-	for range 6 - len(p.Members()) {
-		w.WriteInt(0)
-	}
-
-	w.WriteInt(p.LeaderId())
-
-	for _, m := range p.Members() {
-		if forChannel == m.ChannelId() {
-			w.WriteInt(uint32(m.MapId()))
-		} else {
-			w.WriteInt(0)
-		}
-	}
-	for range 6 - len(p.Members()) {
-		w.WriteInt(0)
-	}
-
-	for range 6 {
-		// TODO write doors for party.
-		w.WriteInt(uint32(_map.EmptyMapId))
-		w.WriteInt(uint32(_map.EmptyMapId))
-		w.WriteInt(0)
-		w.WriteInt(0)
-	}
-	return w.Bytes()
-}
-
-// TODO test with JMS before moving to library
+// WritePaddedString writes a string padded or truncated to the given length.
 func WritePaddedString(w *response.Writer, str string, number int) {
 	if len(str) > number {
 		w.WriteByteArray([]byte(str)[:number])

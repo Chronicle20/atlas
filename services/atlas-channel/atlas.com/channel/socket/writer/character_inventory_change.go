@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-model/model"
+	invpkt "github.com/Chronicle20/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -28,21 +29,18 @@ type InventoryChangeWriter func(w *response.Writer) (int8, error)
 
 func CharacterInventoryChangeBody(silent bool, writers ...InventoryChangeWriter) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteBool(!silent)
-			w.WriteByte(byte(len(writers)))
+			var entryBytes [][]byte
 			addMov := int8(-1)
 			for _, wf := range writers {
+				w := response.NewWriter(l)
 				tMov, _ := wf(w)
+				entryBytes = append(entryBytes, w.Bytes())
 				if tMov > -1 {
 					addMov = tMov
 				}
 			}
-			if addMov > -1 {
-				w.WriteInt8(addMov)
-			}
-			return w.Bytes()
+			return invpkt.NewChangeBatch(silent, entryBytes, addMov).Encode(l, ctx)(options)
 		}
 	}
 }

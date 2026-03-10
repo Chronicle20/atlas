@@ -4,19 +4,18 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
+
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 )
 
 const DeleteCharacterResponse = "DeleteCharacterResponse"
 
 func DeleteCharacterResponseBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(DeleteCharacterCodeOk), "codes", options))
-			return w.Bytes()
+			resolved := getCode(l)(DeleteCharacterResponse, string(DeleteCharacterCodeOk), "codes", options)
+			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -41,11 +40,9 @@ const (
 
 func DeleteCharacterErrorBody(characterId uint32, code DeleteCharacterCode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(code), "codes", options))
-			return w.Bytes()
+			resolved := getCode(l)(DeleteCharacterResponse, string(code), "codes", options)
+			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}
 }

@@ -2,11 +2,9 @@ package writer
 
 import (
 	"atlas-channel/kite"
-	"context"
 
+	fieldpkt "github.com/Chronicle20/atlas-packet/field"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 type KiteDestroyAnimationType byte
@@ -18,12 +16,5 @@ const (
 )
 
 func DestroyKiteBody(m kite.Model, animationType KiteDestroyAnimationType) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(animationType))
-			w.WriteInt(m.Id())
-			return w.Bytes()
-		}
-	}
+	return fieldpkt.NewKiteDestroy(m.Id(), fieldpkt.KiteDestroyAnimationType(animationType)).Encode
 }

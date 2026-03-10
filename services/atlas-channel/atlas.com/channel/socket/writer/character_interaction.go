@@ -4,8 +4,8 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -48,60 +48,49 @@ const (
 
 func CharacterInteractionInviteBody(roomType model.MiniRoomType, name string, dwSN uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeInvite))
-			w.WriteByte(byte(roomType))
-			w.WriteAsciiString(name)
-			w.WriteInt(dwSN)
-			return w.Bytes()
+			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeInvite)
+			return interactionpkt.NewInteractionInvite(mode, byte(roomType), name, dwSN).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterInteractionInviteResultBody(result byte, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
 			// 1, 2, 3, 4
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeInviteResult))
-			w.WriteByte(result)
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeInviteResult)
+			return interactionpkt.NewInteractionInviteResult(mode, result, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterInteractionEnterBody(visitor model.MiniRoomVisitor) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnter))
-			w.WriteByteArray(visitor.Enter()(l, ctx)(options))
-			return w.Bytes()
+			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeEnter)
+			visitorBytes := visitor.Enter()(l, ctx)(options)
+			return interactionpkt.NewInteractionEnter(mode, visitorBytes).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterInteractionEnterResultSuccessBody(characterId uint32, mr model.MiniRoom) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult))
-			w.WriteByteArray(mr.Enter(characterId)(l, ctx)(options))
-			return w.Bytes()
+			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult)
+			roomBytes := mr.Enter(characterId)(l, ctx)(options)
+			return interactionpkt.NewInteractionEnterResultSuccess(mode, roomBytes).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterInteractionEnterResultErrorBody(errorError CharacterInteractionEnterErrorMode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult))
-			w.WriteByte(0)
-			w.WriteByte(getCharacterInteractionEnterErrorMode(l)(options, errorError))
-			return w.Bytes()
+			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult)
+			errorCode := getCharacterInteractionEnterErrorMode(l)(options, errorError)
+			return interactionpkt.NewInteractionEnterResultError(mode, errorCode).Encode(l, ctx)(options)
 		}
 	}
 }

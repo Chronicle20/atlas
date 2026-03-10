@@ -1,22 +1,13 @@
 package writer
 
 import (
-	"context"
-
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
+
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 )
 
 const SetAccountResult = "SetAccountResult"
 
 func SetAccountResultBody(gender byte, success bool) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(gender)
-			w.WriteBool(success)
-			return w.Bytes()
-		}
-	}
+	return loginpkt.NewSetAccountResult(gender, success).Encode
 }

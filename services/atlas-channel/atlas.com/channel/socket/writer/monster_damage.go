@@ -4,8 +4,8 @@ import (
 	"atlas-channel/monster"
 	"context"
 
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,14 +22,6 @@ const (
 
 func MonsterDamageBody(m monster.Model, damageType DamageType, damage uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteInt(m.UniqueId())
-			w.WriteByte(byte(damageType))
-			w.WriteInt(damage)
-			w.WriteInt(m.Hp())
-			w.WriteInt(m.MaxHp())
-			return w.Bytes()
-		}
+		return monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageType(damageType), damage, m.Hp(), m.MaxHp()).Encode(l, ctx)
 	}
 }

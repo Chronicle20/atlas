@@ -2,40 +2,21 @@ package writer
 
 import (
 	"atlas-channel/character/key"
-	"context"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/sirupsen/logrus"
 )
 
 const CharacterKeyMap = "CharacterKeyMap"
 
 func CharacterKeyMapBody(keys map[int32]key.Model) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(0)
-			for i := range 90 {
-				if val, ok := keys[int32(i)]; ok {
-					w.WriteInt8(val.Type())
-					w.WriteInt32(val.Action())
-				} else {
-					w.WriteInt8(0)
-					w.WriteInt32(0)
-				}
-			}
-			return w.Bytes()
-		}
+	bindings := make(map[int32]charpkt.KeyBinding)
+	for k, v := range keys {
+		bindings[k] = charpkt.KeyBinding{KeyType: v.Type(), KeyAction: v.Action()}
 	}
+	return charpkt.NewCharacterKeyMap(bindings).Encode
 }
 
 func CharacterKeyMapResetToDefaultBody() packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(1)
-			return w.Bytes()
-		}
-	}
+	return charpkt.NewCharacterKeyMapResetToDefault().Encode
 }

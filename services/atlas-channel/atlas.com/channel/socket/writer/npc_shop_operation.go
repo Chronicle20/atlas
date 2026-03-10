@@ -3,8 +3,8 @@ package writer
 import (
 	"context"
 
+	npcpkt "github.com/Chronicle20/atlas-packet/npc"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,54 +41,44 @@ func NPCShopOperationBody(code string) packet.Encode {
 			return NPCShopOperationGenericErrorWithReasonBody("generic error")(l, ctx)
 		}
 		return func(options map[string]interface{}) []byte {
-			w := response.NewWriter(l)
-			w.WriteByte(getNpcShopOperation(l)(options, code))
-			return w.Bytes()
+			mode := getNpcShopOperation(l)(options, code)
+			return npcpkt.NewShopOperationSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NPCShopOperationGenericErrorBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationGenericError))
-			w.WriteBool(false)
-			return w.Bytes()
+			mode := getNpcShopOperation(l)(options, NPCShopOperationGenericError)
+			return npcpkt.NewShopOperationGenericError(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NPCShopOperationGenericErrorWithReasonBody(reason string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationGenericErrorWithReason))
-			w.WriteBool(true)
-			w.WriteAsciiString(reason)
-			return w.Bytes()
+			mode := getNpcShopOperation(l)(options, NPCShopOperationGenericErrorWithReason)
+			return npcpkt.NewShopOperationGenericErrorWithReason(mode, reason).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NPCShopOperationOverLevelRequirementBody(levelLimit uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationOverLevelRequirement))
-			w.WriteInt(levelLimit)
-			return w.Bytes()
+			mode := getNpcShopOperation(l)(options, NPCShopOperationOverLevelRequirement)
+			return npcpkt.NewShopOperationLevelRequirement(mode, levelLimit).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func NPCShopOperationUnderLevelRequirementBody(levelLimit uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getNpcShopOperation(l)(options, NPCShopOperationUnderLevelRequirement))
-			w.WriteInt(levelLimit)
-			return w.Bytes()
+			mode := getNpcShopOperation(l)(options, NPCShopOperationUnderLevelRequirement)
+			return npcpkt.NewShopOperationLevelRequirement(mode, levelLimit).Encode(l, ctx)(options)
 		}
 	}
 }

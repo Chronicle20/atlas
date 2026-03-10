@@ -1,6 +1,9 @@
 package model
 
 import (
+	"strings"
+
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 )
 
@@ -11,4 +14,9 @@ func WritePaddedString(w *response.Writer, str string, number int) {
 		w.WriteByteArray([]byte(str))
 		w.WriteByteArray(make([]byte, number-len(str)))
 	}
+}
+
+func ReadPaddedString(r *request.Reader, number int) string {
+	b := r.ReadBytes(number)
+	return strings.TrimRight(string(b), "\x00")
 }

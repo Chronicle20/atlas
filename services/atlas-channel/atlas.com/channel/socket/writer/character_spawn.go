@@ -8,10 +8,11 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,24 +20,15 @@ const CharacterSpawn = "CharacterSpawn"
 
 func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			w.WriteInt(c.Id())
-			w.WriteByte(c.Level())
-			w.WriteAsciiString(c.Name())
+			ge := charpkt.GuildEmblem{}
 			if g.Id() != 0 {
-				w.WriteAsciiString(g.Name())
-				w.WriteShort(g.LogoBackground())
-				w.WriteByte(g.LogoBackgroundColor())
-				w.WriteShort(g.Logo())
-				w.WriteByte(g.LogoColor())
-			} else {
-				w.WriteAsciiString("")
-				w.WriteShort(0)
-				w.WriteByte(0)
-				w.WriteShort(0)
-				w.WriteByte(0)
+				ge.Name = g.Name()
+				ge.LogoBackground = g.LogoBackground()
+				ge.LogoBackgroundColor = g.LogoBackgroundColor()
+				ge.Logo = g.Logo()
+				ge.LogoColor = g.LogoColor()
 			}
 
 			cts := model.NewCharacterTemporaryStat()
@@ -45,85 +37,33 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.Level(), b.ExpiresAt())
 				}
 			}
-			w.WriteByteArray(cts.EncodeForeign(l, ctx)(options))
-			w.WriteShort(uint16(c.JobId()))
 
 			ava := model.NewFromCharacter(c, false)
-			w.WriteByteArray(ava.Encode(l, ctx)(options))
 
-			if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
-				w.WriteInt(0) // driver id
-				w.WriteInt(0) // passenger id
-			}
-			w.WriteInt(0) // choco count
-			w.WriteInt(0) // item effect
-			if t.Region() == "GMS" && t.MajorVersion() > 83 {
-				w.WriteInt(0) // nCompletedSetItemID
-			}
-			w.WriteInt(0) // chair
-
-			if enteringField {
-				w.WriteInt16(c.X())
-				w.WriteInt16(c.Y() - 42)
-				w.WriteByte(6) // move action / stance
-			} else {
-				w.WriteInt16(c.X())
-				w.WriteInt16(c.Y())
-				w.WriteByte(c.Stance()) // move action / stance
-			}
-
-			w.WriteShort(0) // fh
-			w.WriteByte(0)  // bShowAdminEffect
-
-			// TODO clean this up.
-			writeForEachPet(w, c.Pets(), func(w *response.Writer, p pet.Model) {
-				m := packetmodel.Pet{
-					TemplateId:  p.TemplateId(),
-					Name:        p.Name(),
-					Id:          p.Id(),
-					X:           p.X(),
-					Y:           p.Y(),
-					Stance:      p.Stance(),
-					Foothold:    p.Fh(),
-					NameTag:     0,
-					ChatBalloon: 0,
+			var pets []charpkt.SpawnPet
+			if c.Pets() != nil {
+				for _, p := range c.Pets() {
+					pets = append(pets, charpkt.SpawnPet{
+						Slot: p.Slot(),
+						Pet: packetmodel.Pet{
+							TemplateId:  p.TemplateId(),
+							Name:        p.Name(),
+							Id:          p.Id(),
+							X:           p.X(),
+							Y:           p.Y(),
+							Stance:      p.Stance(),
+							Foothold:    p.Fh(),
+							NameTag:     0,
+							ChatBalloon: 0,
+						},
+					})
 				}
-				w.WriteBool(true)
-				w.WriteByteArray(m.Encode(l, ctx)(options))
-			}, func(w *response.Writer) {
-			})
-			w.WriteByte(0) // end of pets
-
-			w.WriteInt(1)  // mount level
-			w.WriteInt(0)  // mount exp
-			w.WriteInt(0)  // mount tiredness
-			w.WriteByte(0) // mini room
-			w.WriteByte(0) // ad board
-
-			// TODO GMS - JMS have different ring encoding/decoding
-			w.WriteByte(0) // couple ring
-			w.WriteByte(0) // friendship ring
-			w.WriteByte(0) // marriage ring
-
-			if t.Region() == "GMS" && t.MajorVersion() < 95 {
-				w.WriteByte(0) // new year card
 			}
 
-			w.WriteByte(0) // berserk
-
-			if t.Region() == "GMS" {
-				if t.MajorVersion() <= 87 {
-					w.WriteByte(0) // unknown (same as JMS unknown)
-				}
-				if t.MajorVersion() > 87 {
-					w.WriteByte(0) // new year card
-					w.WriteInt(0)  // nPhase
-				}
-			} else if t.Region() == "JMS" {
-				w.WriteByte(0) // unknown
-			}
-			w.WriteByte(0) // team
-			return w.Bytes()
+			return charpkt.NewCharacterSpawn(
+				c.Id(), c.Level(), c.Name(), ge, cts, uint16(c.JobId()), ava,
+				pets, enteringField, c.X(), c.Y(), c.Stance(),
+			).Encode(l, ctx)(options)
 		}
 	}
 }

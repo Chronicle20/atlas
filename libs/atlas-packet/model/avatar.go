@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -94,5 +95,61 @@ func (m Avatar) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 			}
 		}
 		return w.Bytes()
+	}
+}
+
+func (m *Avatar) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+			// older versions don't write these fields
+		} else {
+			m.gender = r.ReadByte()
+			m.skinColor = r.ReadByte()
+			m.face = r.ReadUint32()
+			notMega := r.ReadBool()
+			m.mega = !notMega
+			m.hair = r.ReadUint32()
+		}
+
+		terminator := byte(0xFF)
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+			terminator = 0
+		}
+
+		m.equipment = make(map[slot.Position]uint32)
+		for {
+			key := r.ReadByte()
+			if key == terminator {
+				break
+			}
+			m.equipment[slot.Position(key)] = r.ReadUint32()
+		}
+
+		m.maskedEquipment = make(map[slot.Position]uint32)
+		for {
+			key := r.ReadByte()
+			if key == terminator {
+				break
+			}
+			m.maskedEquipment[slot.Position(key)] = r.ReadUint32()
+		}
+
+		_ = r.ReadUint32() // cash weapon
+
+		m.pets = make(map[int8]uint32)
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+			for i := int8(0); i < 3; i++ {
+				petId := r.ReadUint32()
+				if petId != 0 {
+					m.pets[i] = petId
+				}
+			}
+		} else {
+			petId := r.ReadUint64()
+			if petId != 0 {
+				m.pets[0] = uint32(petId)
+			}
+		}
 	}
 }

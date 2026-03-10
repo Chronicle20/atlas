@@ -4,9 +4,9 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -52,225 +52,197 @@ const (
 
 func CharacterLevelUpEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectLevelUp))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectLevelUp)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterLevelUpEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterLevelUpEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectLevelUp)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterSkillUseEffectBody(skillId uint32, characterLevel byte, skillLevel byte, darkForceEffect bool, createOrDeleteDragon bool, left bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSkillUse))
-			w.WriteInt(skillId)
-			w.WriteByte(characterLevel)
-			w.WriteByte(skillLevel)
-			if skill.Id(skillId) == skill.DarkKnightBerserkId {
-				w.WriteBool(darkForceEffect)
-			}
-			if skill.Id(skillId) == skill.EvanStage8DragonFuryId {
-				w.WriteBool(createOrDeleteDragon)
-			}
-			if skill.Is(skill.Id(skillId), skill.HeroMonsterMagnetId, skill.PaladinMonsterMagnetId, skill.DarkKnightMonsterMagnetId) {
-				w.WriteBool(left)
-			}
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillUse)
+			isBerserk := skill.Id(skillId) == skill.DarkKnightBerserkId
+			isDragonFury := skill.Id(skillId) == skill.EvanStage8DragonFuryId
+			isMonsterMagnet := skill.Is(skill.Id(skillId), skill.HeroMonsterMagnetId, skill.PaladinMonsterMagnetId, skill.DarkKnightMonsterMagnetId)
+			return charpkt.NewEffectSkillUse(mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterSkillUseEffectForeignBody(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, darkForceEffect bool, createOrDeleteDragon bool, left bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, darkForceEffect, createOrDeleteDragon, left)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, darkForceEffect, createOrDeleteDragon, left)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterSkillAffectedEffectBody(skillId uint32, skillLevel byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSkillAffected))
-			w.WriteInt(skillId)
-			w.WriteByte(skillLevel)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillAffected)
+			return charpkt.NewEffectSkillAffected(mode, skillId, skillLevel).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterSkillAffectedEffectForeignBody(characterId uint32, skillId uint32, skillLevel byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterSkillAffectedEffectBody(skillId, skillLevel)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterSkillAffectedEffectBody(skillId, skillLevel)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterQuestEffectBody(message string, rewards []model.QuestReward, nEffect uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectQuest))
-			w.WriteByte(byte(len(rewards)))
-			if len(rewards) == 0 {
-				w.WriteAsciiString(message)
-				w.WriteInt(nEffect)
-			} else {
-				for _, r := range rewards {
-					w.WriteInt(r.ItemId())
-					w.WriteInt32(r.Amount())
-				}
+			mode := getCharacterEffect(l)(options, CharacterEffectQuest)
+			pktRewards := make([]charpkt.QuestReward, len(rewards))
+			for i, r := range rewards {
+				pktRewards[i] = charpkt.QuestReward{ItemId: r.ItemId(), Amount: r.Amount()}
 			}
-			return w.Bytes()
+			return charpkt.NewEffectQuest(mode, message, nEffect, pktRewards).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterQuestEffectForeignBody(characterId uint32, message string, rewards []model.QuestReward, nEffect uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterQuestEffectBody(message, rewards, nEffect)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterQuestEffectBody(message, rewards, nEffect)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterPetEffectBody(petIndex byte, effectType byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPet))
-			w.WriteByte(effectType)
-			w.WriteByte(petIndex)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectPet)
+			return charpkt.NewEffectPet(mode, effectType, petIndex).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterPetEffectForeignBody(characterId uint32, petIndex byte, effectType byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterPetEffectBody(petIndex, effectType)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterPetEffectBody(petIndex, effectType)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterSkillSpecialEffectBody(skillId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSkillSpecial))
-			w.WriteInt(skillId)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillSpecial)
+			return charpkt.NewEffectWithId(mode, skillId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterSkillSpecialEffectForeignBody(characterId uint32, skillId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterSkillSpecialEffectBody(skillId)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterSkillSpecialEffectBody(skillId)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterProtectOnDieItemUseEffectBody(safetyCharm bool, usesRemaining byte, days byte, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectProtectOnDieItemUse))
-			w.WriteBool(safetyCharm)
-			w.WriteByte(usesRemaining)
-			w.WriteByte(days)
-			if !safetyCharm {
-				w.WriteInt(itemId)
-			}
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectProtectOnDieItemUse)
+			return charpkt.NewEffectProtectOnDie(mode, safetyCharm, usesRemaining, days, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterProtectOnDieItemUseEffectForeignBody(characterId uint32, safetyCharm bool, usesRemaining byte, days byte, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterProtectOnDieItemUseEffectBody(safetyCharm, usesRemaining, days, itemId)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterProtectOnDieItemUseEffectBody(safetyCharm, usesRemaining, days, itemId)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterPlayPortalSoundEffectEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPlayPortalSoundEffect))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectPlayPortalSoundEffect)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterPlayPortalSoundEffectEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterPlayPortalSoundEffectEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectPlayPortalSoundEffect)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterJobChangedEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectJobChanged))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectJobChanged)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterJobChangedEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterJobChangedEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectJobChanged)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterQuestCompleteEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectQuestComplete))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectQuestComplete)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterQuestCompleteEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterQuestCompleteEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectQuestComplete)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 // TODO this will crash for some reason
 func CharacterIncDecHPEffectBody(delta int8) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectIncDecHPEffect))
-			w.WriteInt8(delta)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectIncDecHPEffect)
+			return charpkt.NewEffectIncDecHP(mode, delta).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -278,279 +250,263 @@ func CharacterIncDecHPEffectBody(delta int8) packet.Encode {
 // TODO this will crash for some reason
 func CharacterIncDecHPEffectForeignBody(characterId uint32, delta int8) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterIncDecHPEffectBody(delta)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterIncDecHPEffectBody(delta)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterBuffItemEffectBody(itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectBuffItemEffect))
-			w.WriteInt(itemId)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectBuffItemEffect)
+			return charpkt.NewEffectWithId(mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterBuffItemEffectForeignBody(characterId uint32, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterBuffItemEffectBody(itemId)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterBuffItemEffectBody(itemId)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterShowIntroEffectBody(message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
 			// TODO characters may be facing the wrong way during these interactions. Not possible to change facing direction.
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectShowIntroEffect))
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectShowIntroEffect)
+			return charpkt.NewEffectWithMessage(mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterShowIntroEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterShowIntroEffectBody(message)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterShowIntroEffectBody(message)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterMonsterBookCardGetEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectMonsterBookCardGet))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectMonsterBookCardGet)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterMonsterBookCardGetEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterMonsterBookCardGetEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectMonsterBookCardGet)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterLotteryUseEffectBody(itemId uint32, success bool, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectLotteryUse))
-			w.WriteInt(itemId)
-			w.WriteBool(success)
-			if success {
-				w.WriteAsciiString(message)
-			}
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectLotteryUse)
+			return charpkt.NewEffectLotteryUse(mode, itemId, success, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterLotteryUseEffectForeignBody(characterId uint32, itemId uint32, success bool, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterLotteryUseEffectBody(itemId, success, message)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterLotteryUseEffectBody(itemId, success, message)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterItemLevelUpEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectItemLevelUp))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectItemLevelUp)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterItemLevelUpEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterItemLevelUpEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectItemLevelUp)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterItemMakerEffectBody(state uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectItemMaker))
-			w.WriteInt(state)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectItemMaker)
+			return charpkt.NewEffectItemMaker(mode, state).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterItemMakerEffectForeignBody(characterId uint32, state uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterItemMakerEffectBody(state)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterItemMakerEffectBody(state)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterShowInfoEffectBody(path string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectShowInfo))
-			w.WriteAsciiString(path)
-			w.WriteInt(1) // not used
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectShowInfo)
+			return charpkt.NewEffectShowInfo(mode, path).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterShowInfoEffectForeignBody(characterId uint32, path string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterShowInfoEffectBody(path)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterShowInfoEffectBody(path)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterReservedEffectBody(message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectReservedEffect))
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectReservedEffect)
+			return charpkt.NewEffectWithMessage(mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterReservedEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterReservedEffectBody(message)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterReservedEffectBody(message)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterConsumeEffectBody(itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectConsumeEffect))
-			w.WriteInt(itemId)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectConsumeEffect)
+			return charpkt.NewEffectWithId(mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterConsumeEffectForeignBody(characterId uint32, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterConsumeEffectBody(itemId)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterConsumeEffectBody(itemId)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterUpgradeTombItemUseEffectBody(usesRemaining byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectUpgradeTombItemUse))
-			w.WriteByte(usesRemaining)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectUpgradeTombItemUse)
+			return charpkt.NewEffectUpgradeTomb(mode, usesRemaining).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterUpgradeTombItemUseEffectForeignBody(characterId uint32, usesRemaining byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterUpgradeTombItemUseEffectBody(usesRemaining)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterUpgradeTombItemUseEffectBody(usesRemaining)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterBattlefieldItemUseEffectBody(message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectBattlefieldItemUse))
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectBattlefieldItemUse)
+			return charpkt.NewEffectWithMessage(mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterBattlefieldItemUseEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterBattlefieldItemUseEffectBody(message)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterBattlefieldItemUseEffectBody(message)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterIncubatorUseEffectBody(itemId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectIncubatorUse))
-			w.WriteInt(itemId)
-			w.WriteAsciiString(message)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectIncubatorUse)
+			return charpkt.NewEffectIncubatorUse(mode, itemId, message).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterIncubatorUseEffectForeignBody(characterId uint32, itemId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterIncubatorUseEffectBody(itemId, message)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterIncubatorUseEffectBody(itemId, message)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectPlaySoundWithMuteBackgroundMusic))
-			w.WriteAsciiString(songName)
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectPlaySoundWithMuteBackgroundMusic)
+			return charpkt.NewEffectWithMessage(mode, songName).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterPlaySoundWithMuteBackgroundMusicEffectForeignBody(characterId uint32, songName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName)(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			innerBytes := CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName)(l, ctx)(options)
+			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+		}
 	}
 }
 
 func CharacterSoulStoneUseEffectBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			w.WriteByte(getCharacterEffect(l)(options, CharacterEffectSoulStoneUse))
-			return w.Bytes()
+			mode := getCharacterEffect(l)(options, CharacterEffectSoulStoneUse)
+			return charpkt.NewEffectSimple(mode).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterSoulStoneUseEffectForeignBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		w.WriteInt(characterId)
-		return CharacterSoulStoneUseEffectBody()(l, ctx)
+		return func(options map[string]interface{}) []byte {
+			mode := getCharacterEffect(l)(options, CharacterEffectSoulStoneUse)
+			return charpkt.NewEffectSimpleForeign(characterId, mode).Encode(l, ctx)(options)
+		}
 	}
 }
 

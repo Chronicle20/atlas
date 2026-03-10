@@ -2,10 +2,12 @@ package writer
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-model/model"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
@@ -155,65 +157,73 @@ func NPCIdOperator(l logrus.FieldLogger) func(npcId uint32) model.Operator[*resp
 	}
 }
 
+func extractUint32FromOperator(l logrus.FieldLogger, operator model.Operator[*response.Writer]) uint32 {
+	tw := response.NewWriter(l)
+	_ = operator(tw)
+	bs := tw.Bytes()
+	if len(bs) >= 4 {
+		return binary.BigEndian.Uint32(bs)
+	}
+	return 0
+}
+
+func extractInt32FromOperator(l logrus.FieldLogger, operator model.Operator[*response.Writer]) int32 {
+	tw := response.NewWriter(l)
+	_ = operator(tw)
+	bs := tw.Bytes()
+	if len(bs) >= 4 {
+		return int32(binary.BigEndian.Uint32(bs))
+	}
+	return 0
+}
+
 func WorldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, operator model.Operator[*response.Writer]) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
-			weatherItemId := uint32(0)
-
-			if len(messages) > 1 && mode != WorldMessageMultiMegaphone {
-				l.Warnf("Client will only relay a maximum of 1 message in this mode.")
-			} else if len(messages) > 3 {
-				l.Warnf("Client will only relay a maximum of 3 messages in a multi megaphone.")
-			}
-
 			modeByte := getWorldMessageMode(l)(options, mode)
-			w.WriteByte(modeByte)
-			if mode == WorldMessageTopScroll {
-				if len(messages[0]) == 0 {
-					w.WriteBool(false)
-				} else {
-					w.WriteBool(true)
+
+			switch mode {
+			case WorldMessageNotice, WorldMessagePopUp, WorldMessageMegaphone, WorldMessagePinkText,
+				WorldMessageClipboardNotice1, WorldMessageClipboardNotice2:
+				return chatpkt.NewWorldMessageSimple(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageTopScroll:
+				return chatpkt.NewWorldMessageTopScroll(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageSuperMegaphone:
+				return chatpkt.NewWorldMessageSuperMegaphone(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
+			case WorldMessageBlueText, WorldMessageNPC:
+				itemId := extractUint32FromOperator(l, operator)
+				return chatpkt.NewWorldMessageBlueText(modeByte, messages[0], itemId).Encode(l, ctx)(options)
+			case WorldMessageItemMegaphone:
+				slot := extractInt32FromOperator(l, operator)
+				return chatpkt.NewWorldMessageItemMegaphone(modeByte, messages[0], byte(channel), whispersOn, slot).Encode(l, ctx)(options)
+			case WorldMessageYellowMegaphone:
+				return chatpkt.NewWorldMessageYellowMegaphone(modeByte, messages[0], byte(channel)).Encode(l, ctx)(options)
+			case WorldMessageMultiMegaphone:
+				if len(messages) > 3 {
+					l.Warnf("Client will only relay a maximum of 3 messages in a multi megaphone.")
 				}
-			}
-			w.WriteAsciiString(messages[0])
-			if mode == WorldMessageSuperMegaphone {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-			} else if mode == WorldMessageBlueText {
-				_ = operator(w)
-			} else if mode == WorldMessageNPC {
-				_ = operator(w)
-			} else if mode == WorldMessageItemMegaphone {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-				w.WriteBool(true)
-				_ = operator(w)
-			} else if mode == WorldMessageYellowMegaphone {
-				w.WriteByte(byte(channel))
-			} else if mode == WorldMessageMultiMegaphone {
-				w.WriteByte(byte(len(messages)))
-				for _, m := range messages[1:] {
-					w.WriteAsciiString(m)
+				return chatpkt.NewWorldMessageMultiMegaphone(modeByte, messages, byte(channel), whispersOn).Encode(l, ctx)(options)
+			case WorldMessageGachapon:
+				itemId := extractUint32FromOperator(l, operator)
+				return chatpkt.NewWorldMessageGachapon(modeByte, messages[0], townName, itemId).Encode(l, ctx)(options)
+			case WorldMessageWeather:
+				return chatpkt.NewWorldMessageWeather(modeByte, messages[0], 0).Encode(l, ctx)(options)
+			default:
+				// Fallback for unknown modes (Unk3, Unk4, Unk7, Unk8, etc.)
+				w := response.NewWriter(l)
+				w.WriteByte(modeByte)
+				w.WriteAsciiString(messages[0])
+				if mode == WorldMessageUnk3 || mode == WorldMessageUnk4 {
+					w.WriteAsciiString("doo")
+					_ = operator(w)
+				} else if mode == WorldMessageUnk7 {
+					w.WriteInt(0)
+				} else if mode == WorldMessageUnk8 {
+					w.WriteByte(byte(channel))
+					w.WriteBool(whispersOn)
 				}
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-			} else if mode == WorldMessageWeather {
-				w.WriteInt(weatherItemId)
-			} else if mode == WorldMessageGachapon {
-				w.WriteInt(0)                // ?
-				w.WriteAsciiString(townName) // town name
-				_ = operator(w)
-			} else if mode == WorldMessageUnk3 || mode == WorldMessageUnk4 {
-				w.WriteAsciiString("doo") // character name
-				_ = operator(w)
-			} else if mode == WorldMessageUnk7 {
-				w.WriteInt(0) // item id
-			} else if mode == WorldMessageUnk8 {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
+				return w.Bytes()
 			}
-			return w.Bytes()
 		}
 	}
 }

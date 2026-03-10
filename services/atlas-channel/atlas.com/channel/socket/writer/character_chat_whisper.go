@@ -5,9 +5,9 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas-constants/map"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -35,119 +35,57 @@ const (
 
 func CharacterChatWhisperFindResultInCashShopBody(mode WhisperMode, targetName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(mode))
-			w.WriteAsciiString(targetName)
-			w.WriteByte(byte(WhisperFindResultModeCashShop))
-			w.WriteInt32(-1)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperFindResultCashShop(byte(mode), targetName).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperFindResultInMapBody(mode WhisperMode, target character.Model, mapId _map.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(mode))
-			w.WriteAsciiString(target.Name())
-			w.WriteByte(byte(WhisperFindResultModeMap))
-			w.WriteInt(uint32(mapId))
-			if mode == WhisperModeFindResult {
-				w.WriteInt32(int32(target.X()))
-				w.WriteInt32(int32(target.Y()))
-			}
-			return w.Bytes()
+		if mode == WhisperModeFindResult {
+			return chatpkt.NewWhisperFindResultMapWithXY(byte(mode), target.Name(), uint32(mapId), target.X(), target.Y()).Encode(l, ctx)
 		}
+		return chatpkt.NewWhisperFindResultMap(byte(mode), target.Name(), uint32(mapId)).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperFindResultInOtherChannelBody(mode WhisperMode, targetName string, channelId channel.Id) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(mode))
-			w.WriteAsciiString(targetName)
-			w.WriteByte(byte(WhisperFindResultModeDifferentChannel))
-			w.WriteInt(uint32(channelId))
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperFindResultChannel(byte(mode), targetName, uint32(channelId)).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperFindResultErrorBody(mode WhisperMode, targetName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(mode))
-			w.WriteAsciiString(targetName)
-			w.WriteByte(byte(WhisperFindResultModeError))
-			w.WriteInt(0)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperFindResultError(byte(mode), targetName).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperSendResultBody(target character.Model, success bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(WhisperModeSend))
-			w.WriteAsciiString(target.Name())
-			w.WriteBool(success)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperSendResult(byte(WhisperModeSend), target.Name(), success).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperSendFailureResultBody(targetName string, success bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(WhisperModeSend))
-			w.WriteAsciiString(targetName)
-			w.WriteBool(success)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperSendResult(byte(WhisperModeSend), targetName, success).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperReceiptBody(from character.Model, channelId channel.Id, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(WhisperModeReceive))
-			w.WriteAsciiString(from.Name())
-			w.WriteByte(byte(channelId))
-			w.WriteBool(from.Gm())
-			w.WriteAsciiString(message)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperReceive(byte(WhisperModeReceive), from.Name(), byte(channelId), from.Gm(), message).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperErrorBody(targetName string, whispersDisabled bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(WhisperModeError))
-			w.WriteAsciiString(targetName)
-			w.WriteBool(!whispersDisabled)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperError(byte(WhisperModeError), targetName, !whispersDisabled).Encode(l, ctx)
 	}
 }
 
 func CharacterChatWhisperWeatherBody(fromName string, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		w := response.NewWriter(l)
-		return func(options map[string]interface{}) []byte {
-			w.WriteByte(byte(WhisperModeWeather))
-			w.WriteAsciiString(fromName)
-			w.WriteBool(true)
-			w.WriteAsciiString(message)
-			return w.Bytes()
-		}
+		return chatpkt.NewWhisperWeather(byte(WhisperModeWeather), fromName, message).Encode(l, ctx)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	model2 "atlas-channel/socket/model"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	storagepkt "github.com/Chronicle20/atlas-packet/storage"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
@@ -15,8 +16,6 @@ type StorageOperationMode string
 type StorageFlag uint64
 
 const (
-	StorageOperation = "StorageOperation"
-
 	StorageOperationModeRetrieveAssets       StorageOperationMode = "RETRIEVE_ASSETS"    // 9
 	StorageOperationModeErrorInventoryFull   StorageOperationMode = "INVENTORY_FULL"     // 10
 	StorageOperationModeErrorNotEnoughMesos  StorageOperationMode = "NOT_ENOUGH_MESOS"   // 11
@@ -91,21 +90,14 @@ func StorageOperationUpdateAssetsForCompartmentBody(op StorageOperationMode, slo
 			flags := uint64(inventoryTypeToFlag(inventoryType))
 
 			// Filter assets to only include those from the affected compartment
-			var filteredAssets []asset.Model
+			var packetAssets []model2.Asset
 			for _, a := range assets {
 				if a.InventoryType() == inventoryType {
-					filteredAssets = append(filteredAssets, a)
+					packetAssets = append(packetAssets, model2.NewAsset(true, a))
 				}
 			}
 
-			// Pre-encode each asset
-			assetEntryBytes := make([][]byte, len(filteredAssets))
-			for i, a := range filteredAssets {
-				am := model2.NewAsset(true, a)
-				assetEntryBytes[i] = am.Encode(l, ctx)(options)
-			}
-
-			return storagepkt.NewStorageUpdateAssets(mode, slots, flags, assetEntryBytes).Encode(l, ctx)(options)
+			return storagepkt.NewStorageUpdateAssets(mode, slots, flags, packetAssets).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -125,14 +117,12 @@ func StorageOperationShowBody(npcId uint32, slots byte, meso uint32, assets []as
 			mode := getStorageOperationMode(l)(options, StorageOperationModeShow)
 			flags := uint64(StorageFlagCurrency | StorageFlagEquipment | StorageFlagConsumables | StorageFlagSetUp | StorageFlagEtc | StorageFlagCash)
 
-			// Pre-encode each asset
-			assetEntryBytes := make([][]byte, len(assets))
+			packetAssets := make([]model2.Asset, len(assets))
 			for i, a := range assets {
-				am := model2.NewAsset(true, a)
-				assetEntryBytes[i] = am.Encode(l, ctx)(options)
+				packetAssets[i] = model2.NewAsset(true, a)
 			}
 
-			return storagepkt.NewStorageShow(mode, npcId, slots, flags, meso, assetEntryBytes).Encode(l, ctx)(options)
+			return storagepkt.NewStorageShow(mode, npcId, slots, flags, meso, packetAssets).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -148,24 +138,6 @@ func StorageOperationErrorMessageBody(message string) packet.Encode {
 
 func getStorageOperationMode(l logrus.FieldLogger) func(options map[string]interface{}, key StorageOperationMode) byte {
 	return func(options map[string]interface{}, key StorageOperationMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

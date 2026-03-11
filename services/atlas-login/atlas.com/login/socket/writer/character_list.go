@@ -12,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterList = "CharacterList"
 
 func CharacterListBody(characters []character.Model, worldId world.Id, status int, pic string, availableCharacterSlots int16, characterSlots int16) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

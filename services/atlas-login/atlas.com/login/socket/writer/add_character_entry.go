@@ -9,12 +9,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const AddCharacterEntry = "AddCharacterEntry"
 
 func AddCharacterEntryBody(c character.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options)
+			resolved := getCode(l)(charpkt.AddCharacterEntryWriter, string(AddCharacterCodeOk), "codes", options)
 			entry := toCharacterListEntry(c)
 			return charpkt.NewAddCharacterEntry(resolved, entry).Encode(l, ctx)(options)
 		}
@@ -34,7 +33,7 @@ const (
 func AddCharacterErrorBody(code AddCharacterCode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(AddCharacterEntry, string(code), "codes", options)
+			resolved := getCode(l)(charpkt.AddCharacterEntryWriter, string(code), "codes", options)
 			return charpkt.NewAddCharacterError(resolved).Encode(l, ctx)(options)
 		}
 	}

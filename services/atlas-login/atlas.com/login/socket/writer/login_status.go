@@ -10,10 +10,6 @@ import (
 	loginpkt "github.com/Chronicle20/atlas-packet/login"
 )
 
-const AuthSuccess = "AuthSuccess"
-const AuthTemporaryBan = "AuthTemporaryBan"
-const AuthPermanentBan = "AuthPermanentBan"
-const AuthLoginFailed = "AuthLoginFailed"
 
 const (
 	Banned                     = "BANNED"
@@ -48,7 +44,7 @@ func AuthSuccessBody(accountId uint32, name string, gender byte, usesPin bool, p
 func AuthTemporaryBanBody(until time.Time, reason byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
+			resolved := getCode(l)(loginpkt.AuthLoginFailedWriter, Banned, "failedReasonCodes", options)
 			return loginpkt.NewAuthTemporaryBan(resolved, reason, until).Encode(l, ctx)(options)
 		}
 	}
@@ -57,7 +53,7 @@ func AuthTemporaryBanBody(until time.Time, reason byte) packet.Encode {
 func AuthPermanentBanBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(AuthLoginFailed, Banned, "failedReasonCodes", options)
+			resolved := getCode(l)(loginpkt.AuthLoginFailedWriter, Banned, "failedReasonCodes", options)
 			return loginpkt.NewAuthPermanentBan(resolved).Encode(l, ctx)(options)
 		}
 	}
@@ -66,7 +62,7 @@ func AuthPermanentBanBody() packet.Encode {
 func AuthLoginFailedBody(reason string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(AuthLoginFailed, reason, "failedReasonCodes", options)
+			resolved := getCode(l)(loginpkt.AuthLoginFailedWriter, reason, "failedReasonCodes", options)
 			return loginpkt.NewAuthLoginFailed(resolved).Encode(l, ctx)(options)
 		}
 	}

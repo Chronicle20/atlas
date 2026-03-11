@@ -2,15 +2,14 @@ package writer
 
 import (
 	"context"
-	"strconv"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	famepkt "github.com/Chronicle20/atlas-packet/fame"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	FameResponse                         = "FameResponse"
 	FameResponseReceive                  = "RECEIVE"
 	FameResponseGive                     = "GIVE"
 	FameResponseErrorTypeNotToday        = "NOT_TODAY"
@@ -49,30 +48,6 @@ func FameResponseErrorBody(errCode string) packet.Encode {
 
 func getFameOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }

@@ -13,6 +13,7 @@ import (
 	character2 "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
+	petpkt "github.com/Chronicle20/atlas-packet/pet"
 )
 
 func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
@@ -48,11 +49,15 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 
 			for _, pe := range ps {
-				_ = session.Announce(l)(ctx)(wp)(writer.PetExcludeResponse)(writer.PetExcludeResponseBody(pe))(s)
+				excludeIds := make([]uint32, len(pe.Excludes()))
+				for i, e := range pe.Excludes() {
+					excludeIds[i] = e.ItemId()
+				}
+				_ = session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(pe.OwnerId(), pe.Slot(), uint64(pe.Id()), excludeIds).Encode)(s)
 			}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CharacterInfo)(writer.CharacterInfoBody(c, g, wl))(s)
+		err = session.Announce(l)(ctx)(wp)(character2.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"time"
 
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -13,26 +14,23 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// SetField is sent when a character enters a field with full character data.
-// The characterInfoBytes are pre-encoded by the service layer since they depend
-// on the full character model (stats, inventory, skills, quests, rings, etc.).
 type SetField struct {
-	channelId          channel.Id
-	characterInfoBytes []byte
-	damageSeeds        []uint32
-	timestamp          int64
+	channelId     channel.Id
+	characterData charpkt.CharacterData
+	damageSeeds   []uint32
+	timestamp     int64
 }
 
-func NewSetField(channelId channel.Id, characterInfoBytes []byte) SetField {
+func NewSetField(channelId channel.Id, characterData charpkt.CharacterData) SetField {
 	seeds := make([]uint32, 4)
 	for i := range seeds {
 		seeds[i] = rand.Uint32()
 	}
 	return SetField{
-		channelId:          channelId,
-		characterInfoBytes: characterInfoBytes,
-		damageSeeds:        seeds,
-		timestamp:          fieldMsTime(time.Now()),
+		channelId:     channelId,
+		characterData: characterData,
+		damageSeeds:   seeds,
+		timestamp:     fieldMsTime(time.Now()),
 	}
 }
 
@@ -69,7 +67,7 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 			}
 		}
 
-		w.WriteByteArray(m.characterInfoBytes)
+		w.WriteByteArray(m.characterData.Encode(l, ctx)(options))
 
 		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
 			w.WriteInt(0) // logout gifts
@@ -82,8 +80,44 @@ func (m SetField) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 	}
 }
 
-func (m *SetField) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m SetField) CharacterData() charpkt.CharacterData { return m.characterData }
+
+func (m *SetField) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: SetField is server-send-only with pre-encoded character info.
+		t := tenant.MustFromContext(ctx)
+
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			_ = r.ReadUint16() // decode opt
+		}
+		m.channelId = channel.Id(r.ReadUint32())
+		if t.Region() == "JMS" {
+			_ = r.ReadByte()
+			_ = r.ReadUint32()
+		}
+		_ = r.ReadByte() // sNotifierMessage
+		_ = r.ReadByte() // bCharacterData
+
+		if (t.Region() == "GMS" && t.MajorVersion() > 28) || t.Region() == "JMS" {
+			_ = r.ReadUint16() // nNotifierCheck
+			m.damageSeeds = make([]uint32, 4)
+			for i := 0; i < 3; i++ {
+				m.damageSeeds[i] = r.ReadUint32()
+			}
+		} else {
+			m.damageSeeds = make([]uint32, 4)
+			for i := 0; i < 4; i++ {
+				m.damageSeeds[i] = r.ReadUint32()
+			}
+		}
+
+		m.characterData.Decode(l, ctx)(r, options)
+
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			_ = r.ReadUint32() // logout gifts
+			_ = r.ReadUint32()
+			_ = r.ReadUint32()
+			_ = r.ReadUint32()
+		}
+		m.timestamp = r.ReadInt64()
 	}
 }

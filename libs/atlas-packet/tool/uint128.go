@@ -34,6 +34,10 @@ func (i Uint128) ShiftRight(bits uint) Uint128 {
 	return i
 }
 
+func (i Uint128) IsZero() bool {
+	return i.H == 0 && i.L == 0
+}
+
 func (i Uint128) And(y Uint128) Uint128 {
 	i.H &= y.H
 	i.L &= y.L

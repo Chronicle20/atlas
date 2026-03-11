@@ -9,12 +9,11 @@ import (
 	charpkt "github.com/Chronicle20/atlas-packet/character"
 )
 
-const DeleteCharacterResponse = "DeleteCharacterResponse"
 
 func DeleteCharacterResponseBody(characterId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(DeleteCharacterResponse, string(DeleteCharacterCodeOk), "codes", options)
+			resolved := getCode(l)(charpkt.DeleteCharacterResponseWriter, string(DeleteCharacterCodeOk), "codes", options)
 			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}
@@ -41,7 +40,7 @@ const (
 func DeleteCharacterErrorBody(characterId uint32, code DeleteCharacterCode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(DeleteCharacterResponse, string(code), "codes", options)
+			resolved := getCode(l)(charpkt.DeleteCharacterResponseWriter, string(code), "codes", options)
 			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}

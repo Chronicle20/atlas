@@ -23,6 +23,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -92,7 +93,7 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
-		announceOp := session.Announce(l)(ctx)(wp)(writer.WorldMessage)(func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		announceOp := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 			return func(options map[string]interface{}) []byte {
 				return writer.WorldMessageGachaponMegaphoneBody("", c.Name(), sc.ChannelId(), event.GachaponName, func(w *response.Writer) error {
 					return model2.NewAssetWriter(l, ctx, options, w)(true)(*a)

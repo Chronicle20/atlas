@@ -4,6 +4,7 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
@@ -15,7 +16,6 @@ type CharacterInteractionEnterErrorMode string
 
 const (
 	// CharacterInteraction CMiniRoomBaseDlg::OnPacketBase
-	CharacterInteraction                                          = "CharacterInteraction"
 	CharacterInteractionModeInvite       CharacterInteractionMode = "INVITE"        // 2
 	CharacterInteractionModeInviteResult CharacterInteractionMode = "INVITE_RESULT" // 3
 	CharacterInteractionModeEnter        CharacterInteractionMode = "ENTER"         // 4
@@ -69,8 +69,8 @@ func CharacterInteractionEnterBody(visitor model.MiniRoomVisitor) packet.Encode 
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeEnter)
-			visitorBytes := visitor.Enter()(l, ctx)(options)
-			return interactionpkt.NewInteractionEnter(mode, visitorBytes).Encode(l, ctx)(options)
+			v := visitor.ToPacketVisitor(l, ctx, options)
+			return interactionpkt.NewInteractionEnter(mode, v).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -79,8 +79,8 @@ func CharacterInteractionEnterResultSuccessBody(characterId uint32, mr model.Min
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			mode := getCharacterInteractionMode(l)(options, CharacterInteractionModeEnterResult)
-			roomBytes := mr.Enter(characterId)(l, ctx)(options)
-			return interactionpkt.NewInteractionEnterResultSuccess(mode, roomBytes).Encode(l, ctx)(options)
+			room := mr.ToPacketRoom(l, ctx, options, characterId)
+			return interactionpkt.NewInteractionEnterResultSuccess(mode, room).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -97,48 +97,12 @@ func CharacterInteractionEnterResultErrorBody(errorError CharacterInteractionEnt
 
 func getCharacterInteractionMode(l logrus.FieldLogger) func(options map[string]interface{}, key CharacterInteractionMode) byte {
 	return func(options map[string]interface{}, key CharacterInteractionMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }
 
 func getCharacterInteractionEnterErrorMode(l logrus.FieldLogger) func(options map[string]interface{}, key CharacterInteractionEnterErrorMode) byte {
 	return func(options map[string]interface{}, key CharacterInteractionEnterErrorMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["enterError"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "enterError", string(key))
 	}
 }

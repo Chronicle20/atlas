@@ -33,11 +33,16 @@ func (m BuffGive) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 	}
 }
 
-func (m *BuffGive) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *BuffGive) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// server-send only — CharacterTemporaryStat decode not supported
+		m.cts = *model.NewCharacterTemporaryStat()
+		m.cts.Decode(l, ctx)(r, options)
+		_ = r.ReadUint16() // tDelay
+		_ = r.ReadByte()   // MovementAffectingStat
 	}
 }
+
+func (m BuffGive) Cts() model.CharacterTemporaryStat { return m.cts }
 
 const CharacterBuffGiveForeignWriter = "CharacterBuffGiveForeign"
 
@@ -67,8 +72,14 @@ func (m BuffGiveForeign) Encode(l logrus.FieldLogger, ctx context.Context) func(
 	}
 }
 
-func (m *BuffGiveForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *BuffGiveForeign) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// server-send only — CharacterTemporaryStat decode not supported
+		m.characterId = r.ReadUint32()
+		m.cts = *model.NewCharacterTemporaryStat()
+		m.cts.DecodeForeign(l, ctx)(r, options)
+		_ = r.ReadUint16() // tDelay
+		_ = r.ReadByte()   // MovementAffectingStat
 	}
 }
+
+func (m BuffGiveForeign) Cts() model.CharacterTemporaryStat { return m.cts }

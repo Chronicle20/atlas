@@ -8,7 +8,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ServerIP = "ServerIP"
 
 type ServerIPCode string
 type ServerIPMode string
@@ -40,8 +39,8 @@ const (
 func ServerIPBody(ipAddr string, port uint16, clientId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			code := getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options)
-			mode := getCode(l)(ServerIP, string(ServerIPModeOk), "modes", options)
+			code := getCode(l)(loginpkt.ServerIPWriter, string(ServerIPCodeOk), "codes", options)
+			mode := getCode(l)(loginpkt.ServerIPWriter, string(ServerIPModeOk), "modes", options)
 			return loginpkt.NewServerIP(code, mode, ipAddr, port, clientId).Encode(l, ctx)(options)
 		}
 	}
@@ -54,8 +53,8 @@ func ServerIPBodySimpleError(code ServerIPCode) packet.Encode {
 func ServerIPBodyError(code ServerIPCode, mode ServerIPMode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			codeResolved := getCode(l)(ServerIP, string(code), "codes", options)
-			modeResolved := getCode(l)(ServerIP, string(mode), "modes", options)
+			codeResolved := getCode(l)(loginpkt.ServerIPWriter, string(code), "codes", options)
+			modeResolved := getCode(l)(loginpkt.ServerIPWriter, string(mode), "modes", options)
 			return loginpkt.NewServerIPError(codeResolved, modeResolved).Encode(l, ctx)(options)
 		}
 	}

@@ -19,6 +19,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -74,7 +75,7 @@ func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms)
-		_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopWriter)(bp)(s)
 	}
 }
 
@@ -106,6 +107,6 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 		} else {
 			bp = writer.NPCShopOperationBody(e.Body.Error)
 		}
-		_ = session.Announce(l)(ctx)(wp)(writer.NPCShopOperation)(bp)(s)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopOperationWriter)(bp)(s)
 	}
 }

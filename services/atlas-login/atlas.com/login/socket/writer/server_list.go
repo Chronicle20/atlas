@@ -12,8 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ServerListEntry = "ServerListEntry"
-const ServerListEnd = "ServerListEnd"
 
 func ServerListEntryBody(worldId world2.Id, worldName string, state world.State, eventMessage string, channelLoad []model.Load) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

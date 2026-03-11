@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -54,13 +55,13 @@ func handleCreatedStatusEvent(t tenant.Model, wp writer.Producer) message.Handle
 			c, err := cp.GetById(cp.InventoryDecorator())(e.Body.CharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve newly created character [%d] for account [%d].", e.Body.CharacterId, e.AccountId)
-				err = session.Announce(l)(ctx)(wp)(writer.AddCharacterEntry)(writer.AddCharacterErrorBody(writer.AddCharacterCodeUnknownError))(s)
+				err = session.Announce(l)(ctx)(wp)(charpkt.AddCharacterEntryWriter)(writer.AddCharacterErrorBody(writer.AddCharacterCodeUnknownError))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to show character creation error.")
 				}
 				return err
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.AddCharacterEntry)(writer.AddCharacterEntryBody(c))(s)
+			err = session.Announce(l)(ctx)(wp)(charpkt.AddCharacterEntryWriter)(writer.AddCharacterEntryBody(c))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show newly created character.")
 			}

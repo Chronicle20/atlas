@@ -6,13 +6,13 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	MessengerOperation                   = "MessengerOperation"
 	MessengerOperationModeAdd            = "ADD"
 	MessengerOperationModeJoin           = "JOIN"
 	MessengerOperationModeRemove         = "REMOVE"
@@ -28,8 +28,7 @@ func MessengerOperationAddBody(position byte, c character.Model, channelId chann
 		return func(options map[string]interface{}) []byte {
 			mode := getMessengerOperation(l)(options, MessengerOperationModeAdd)
 			ava := model.NewFromCharacter(c, true)
-			avatarBytes := ava.Encode(l, ctx)(options)
-			return messengerpkt.NewMessengerAdd(mode, position, avatarBytes, c.Name(), byte(channelId)).Encode(l, ctx)(options)
+			return messengerpkt.NewMessengerAdd(mode, position, ava, c.Name(), byte(channelId)).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -93,32 +92,13 @@ func MessengerOperationUpdateBody(position byte, c character.Model, channelId ch
 		return func(options map[string]interface{}) []byte {
 			mode := getMessengerOperation(l)(options, MessengerOperationModeUpdate)
 			ava := model.NewFromCharacter(c, true)
-			avatarBytes := ava.Encode(l, ctx)(options)
-			return messengerpkt.NewMessengerUpdate(mode, position, avatarBytes, c.Name(), byte(channelId)).Encode(l, ctx)(options)
+			return messengerpkt.NewMessengerUpdate(mode, position, ava, c.Name(), byte(channelId)).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func getMessengerOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-
-		res, ok := codes[key].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-		return byte(res)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }

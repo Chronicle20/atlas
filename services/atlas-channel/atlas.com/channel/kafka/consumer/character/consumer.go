@@ -22,6 +22,11 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	famepkt "github.com/Chronicle20/atlas-packet/fame"
+	fieldpkt "github.com/Chronicle20/atlas-packet/field"
+	partypkt "github.com/Chronicle20/atlas-packet/party"
+	statpkt "github.com/Chronicle20/atlas-packet/stat"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -93,7 +98,7 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, c.MapId()).Build()
 			imf := party.OtherMemberInMap(f, c.Id())
 			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(e.CharacterId)))
-			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(writer.PartyMemberHP)(writer.PartyMemberHPBody(c.Id(), c.Hp(), c.MaxHp())))
+			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(partypkt.PartyMemberHPWriter)(partypkt.NewPartyMemberHP(c.Id(), c.Hp(), c.MaxHp()).Encode))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", c.Id())
 			}
@@ -169,9 +174,13 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						su = append(su, model2.NewStatUpdate(update, value))
 					}
 
-					err := session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(su, exclRequestSent))(s)
+					pktUpdates := make([]statpkt.Update, len(su))
+					for i, u := range su {
+						pktUpdates[i] = statpkt.NewUpdate(u.Stat(), u.Value())
+					}
+					err := session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(pktUpdates, exclRequestSent).Encode)(s)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+						l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 						return err
 					}
 					return nil
@@ -209,7 +218,7 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					targetField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.TargetMapId).SetInstance(event.Body.TargetInstance).Build()
 					s = session.NewProcessor(l, ctx).SetField(s.SessionId(), targetField)
 
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.WarpToMapBody(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))(s)
+					err = session.Announce(l)(ctx)(wp)(fieldpkt.SetFieldWriter)(writer.WarpToMapBody(s.ChannelId(), event.Body.TargetMapId, event.Body.TargetPortalId, c.Hp()))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err
@@ -279,7 +288,7 @@ func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func
 						}
 					}
 
-					err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationIncreaseExperienceBody(c))(s)
+					err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationIncreaseExperienceBody(c))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce experience gain to character [%d].", s.CharacterId())
 						return err
@@ -329,7 +338,7 @@ func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 			return func(fromName string, amount int8) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.ReceiveFameResponseBody(fromName, amount))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.ReceiveFameResponseBody(fromName, amount))
 			}
 		}
 	}
@@ -339,7 +348,7 @@ func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 	return func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 			return func(toName string, amount int8, total int16) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.GiveFameResponseBody(toName, amount, total))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.GiveFameResponseBody(toName, amount, total))
 			}
 		}
 	}
@@ -366,7 +375,7 @@ func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 			return func(amount int32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationIncreaseMesoBody(amount))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationIncreaseMesoBody(amount))
 			}
 		}
 	}
@@ -383,8 +392,8 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterLevelUpEffectBody())(s)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterLevelUpEffectForeignBody(s.CharacterId())))
+			_ = session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterLevelUpEffectBody())(s)
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(writer.CharacterLevelUpEffectForeignBody(s.CharacterId())))
 			return nil
 		})
 

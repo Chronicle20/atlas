@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const StorageOperationWriter = "StorageOperationW"
+const StorageOperationWriter = "StorageOperation"
 
 // ErrorSimple - just mode (covers InventoryFull, NotEnoughMesos, OneOfAKind, etc.)
 type ErrorSimple struct {

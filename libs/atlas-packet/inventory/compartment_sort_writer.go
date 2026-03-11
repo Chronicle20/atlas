@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CompartmentSortWriter = "CompartmentSortW"
+const CompartmentSortWriter = "CompartmentSort"
 
 type CompartmentSortW struct {
 	inventoryType byte

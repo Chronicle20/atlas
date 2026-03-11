@@ -12,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterInfo = "CharacterInfo"
 
 func CharacterInfoBody(c character.Model, g guild.Model, wl []wishlist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ForeignEmblemChangedWriter = "ForeignEmblemChanged"
+const GuildEmblemChangedWriter = "GuildEmblemChanged"
 
 type ForeignEmblemChanged struct {
 	characterId         uint32
@@ -23,7 +23,7 @@ func NewForeignEmblemChanged(characterId uint32, logo uint16, logoColor byte, lo
 	return ForeignEmblemChanged{characterId: characterId, logo: logo, logoColor: logoColor, logoBackground: logoBackground, logoBackgroundColor: logoBackgroundColor}
 }
 
-func (m ForeignEmblemChanged) Operation() string { return ForeignEmblemChangedWriter }
+func (m ForeignEmblemChanged) Operation() string { return GuildEmblemChangedWriter }
 func (m ForeignEmblemChanged) String() string {
 	return fmt.Sprintf("characterId [%d], logo [%d], logoColor [%d], logoBackground [%d], logoBackgroundColor [%d]", m.characterId, m.logo, m.logoColor, m.logoBackground, m.logoBackgroundColor)
 }

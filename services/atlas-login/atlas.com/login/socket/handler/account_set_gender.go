@@ -8,6 +8,7 @@ import (
 	"context"
 
 	account2 "github.com/Chronicle20/atlas-packet/account"
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -32,7 +33,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			as.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
 		}
 
-		err := session.Announce(l)(ctx)(wp)(writer.SetAccountResult)(writer.SetAccountResultBody(p.Gender(), success))(s)
+		err := session.Announce(l)(ctx)(wp)(loginpkt.SetAccountResultWriter)(loginpkt.NewSetAccountResult(p.Gender(), success).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue set account result")
 		}

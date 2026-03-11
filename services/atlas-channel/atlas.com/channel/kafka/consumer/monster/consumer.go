@@ -12,6 +12,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"math"
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
@@ -23,6 +24,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model2.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -102,7 +104,7 @@ func spawnForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 	return func(ctx context.Context) func(wp writer.Producer) func(m monster.Model) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(m monster.Model) model2.Operator[session.Model] {
 			return func(m monster.Model) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.SpawnMonster)(writer.SpawnMonsterBody(m, true))
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterSpawnWriter)(writer.SpawnMonsterBody(m, true))
 			}
 		}
 	}
@@ -129,7 +131,7 @@ func destroyForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
 			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.DestroyMonster)(writer.DestroyMonsterBody(uniqueId, writer.DestroyMonsterTypeFadeOut))
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
 			}
 		}
 	}
@@ -150,7 +152,8 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		announcer := session.Announce(l)(ctx)(wp)(writer.MonsterHealth)(writer.MonsterHealthBody(m))
+		hpPercent := byte(math.Max(1, float64(m.Hp())*100/float64(m.MaxHp())))
+		announcer := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterHealthWriter)(monsterpkt.NewMonsterHealth(m.UniqueId(), hpPercent).Encode)
 
 		// Boss monsters: broadcast HP bar to all characters in the map
 		f := sc.Field(e.MapId, e.Instance)
@@ -177,7 +180,7 @@ func handleStatusEventDamaged(sc server.Model, wp writer.Producer) message.Handl
 		go func() {
 			err = _map.NewProcessor(l, ctx).ForSessionsInMap(f, func(s session.Model) error {
 				de := e.Body.DamageEntries[len(e.Body.DamageEntries)-1]
-				return session.Announce(l)(ctx)(wp)(writer.MonsterDamage)(writer.MonsterDamageBody(m, writer.DamageTypeUnk3, uint32(de.Damage)))(s)
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDamageWriter)(monsterpkt.NewMonsterDamage(m.UniqueId(), monsterpkt.MonsterDamageTypeUnk3, uint32(de.Damage), m.Hp(), m.MaxHp()).Encode)(s)
 			})
 		}()
 	}
@@ -204,7 +207,7 @@ func killForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writ
 	return func(ctx context.Context) func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(uniqueId uint32) model2.Operator[session.Model] {
 			return func(uniqueId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.DestroyMonster)(writer.DestroyMonsterBody(uniqueId, writer.DestroyMonsterTypeFadeOut))
+				return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterDestroyWriter)(monsterpkt.NewMonsterDestroy(uniqueId, monsterpkt.DestroyTypeFadeOut).Encode)
 			}
 		}
 	}
@@ -228,7 +231,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetFH(e.Body.FH).
 			SetTeam(e.Body.Team).
 			MustBuild()
-		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StartControlMonsterBody(m, false))
+		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, false))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
@@ -249,7 +252,7 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			MustBuild()
-		sf := session.Announce(l)(ctx)(wp)(writer.ControlMonster)(writer.StopControlMonsterBody(m))
+		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StopControlMonsterBody(m))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
@@ -274,7 +277,7 @@ func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(writer.MonsterStatSet)(writer.MonsterStatSetBody(e.UniqueId, stat)))
+			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatSetWriter)(monsterpkt.NewMonsterStatSet(e.UniqueId, stat).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect applied to monster [%d].", e.UniqueId)
 		}
@@ -298,7 +301,7 @@ func handleStatusEffectExpired(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(writer.MonsterStatReset)(writer.MonsterStatResetBody(e.UniqueId, stat)))
+			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatResetWriter)(monsterpkt.NewMonsterStatReset(e.UniqueId, stat).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect expired from monster [%d].", e.UniqueId)
 		}
@@ -322,7 +325,7 @@ func handleStatusEffectCancelled(sc server.Model, wp writer.Producer) message.Ha
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(writer.MonsterStatReset)(writer.MonsterStatResetBody(e.UniqueId, stat)))
+			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatResetWriter)(monsterpkt.NewMonsterStatReset(e.UniqueId, stat).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect cancelled from monster [%d].", e.UniqueId)
 		}

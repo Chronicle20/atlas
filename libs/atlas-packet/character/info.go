@@ -105,8 +105,65 @@ func (m CharacterInfo) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 	}
 }
 
-func (m *CharacterInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m CharacterInfo) CharacterId() uint32  { return m.characterId }
+func (m CharacterInfo) Level() byte          { return m.level }
+func (m CharacterInfo) JobId() uint16        { return m.jobId }
+func (m CharacterInfo) Fame() int16          { return m.fame }
+func (m CharacterInfo) GuildName() string    { return m.guildName }
+func (m CharacterInfo) Pets() []InfoPet      { return m.pets }
+func (m CharacterInfo) WishList() []uint32   { return m.wishList }
+func (m CharacterInfo) MedalId() uint32      { return m.medalId }
+
+func (m *CharacterInfo) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: CharacterInfo is server-send-only with complex conditional encoding.
+		t := tenant.MustFromContext(ctx)
+		m.characterId = r.ReadUint32()
+		m.level = r.ReadByte()
+		m.jobId = r.ReadUint16()
+		m.fame = r.ReadInt16()
+		_ = r.ReadBool()          // marriage ring
+		m.guildName = r.ReadAsciiString()
+		_ = r.ReadAsciiString()   // alliance name
+		_ = r.ReadByte()          // medal info
+
+		// Pets: bool-terminated loop
+		m.pets = nil
+		slot := int8(0)
+		for r.ReadBool() {
+			pet := InfoPet{
+				Slot:       slot,
+				TemplateId: r.ReadUint32(),
+				Name:       r.ReadAsciiString(),
+				Level:      r.ReadByte(),
+				Closeness:  r.ReadUint16(),
+				Fullness:   r.ReadByte(),
+			}
+			_ = r.ReadUint16() // skill
+			_ = r.ReadUint32() // itemId
+			m.pets = append(m.pets, pet)
+			slot++
+		}
+
+		_ = r.ReadByte() // mount
+
+		wishCount := r.ReadByte()
+		m.wishList = make([]uint32, wishCount)
+		for i := byte(0); i < wishCount; i++ {
+			m.wishList[i] = r.ReadUint32()
+		}
+
+		if (t.Region() == "GMS" && t.MajorVersion() < 87) || t.Region() == "JMS" {
+			_ = r.ReadUint32() // monster book level
+			_ = r.ReadUint32() // normal card
+			_ = r.ReadUint32() // special card
+			_ = r.ReadUint32() // total cards
+			_ = r.ReadUint32() // cover
+		}
+
+		m.medalId = r.ReadUint32()
+		_ = r.ReadUint16() // medal quests
+		if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
+			_ = r.ReadUint32() // chair
+		}
 	}
 }

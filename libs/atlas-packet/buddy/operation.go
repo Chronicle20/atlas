@@ -10,6 +10,7 @@ import (
 )
 
 const BuddyOperationHandle = "BuddyOperationHandle"
+const BuddyOperationWriter = "BuddyOperation"
 
 type Operation struct {
 	op byte
@@ -20,7 +21,7 @@ func (m Operation) Op() byte {
 }
 
 func (m Operation) Operation() string {
-	return BuddyOperationHandle
+	return BuddyOperationWriter
 }
 
 func (m Operation) String() string {

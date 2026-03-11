@@ -79,3 +79,78 @@ func (m *EffectSkillUse) Decode(_ logrus.FieldLogger, _ context.Context) func(r 
 		// No-op: server-send-only
 	}
 }
+
+// EffectSkillUseForeign - characterId + mode, skillId, characterLevel, skillLevel + conditional berserk/dragonFury/monsterMagnet
+type EffectSkillUseForeign struct {
+	characterId       uint32
+	mode              byte
+	skillId           uint32
+	characterLevel    byte
+	skillLevel        byte
+	berserkDarkForce  bool
+	dragonFuryCreate  bool
+	monsterMagnetLeft bool
+	isBerserk         bool
+	isDragonFury      bool
+	isMonsterMagnet   bool
+}
+
+func NewEffectSkillUseForeign(characterId uint32, mode byte, skillId uint32, characterLevel byte, skillLevel byte, isBerserk bool, berserkDarkForce bool, isDragonFury bool, dragonFuryCreate bool, isMonsterMagnet bool, monsterMagnetLeft bool) EffectSkillUseForeign {
+	return EffectSkillUseForeign{
+		characterId:       characterId,
+		mode:              mode,
+		skillId:           skillId,
+		characterLevel:    characterLevel,
+		skillLevel:        skillLevel,
+		berserkDarkForce:  berserkDarkForce,
+		dragonFuryCreate:  dragonFuryCreate,
+		monsterMagnetLeft: monsterMagnetLeft,
+		isBerserk:         isBerserk,
+		isDragonFury:      isDragonFury,
+		isMonsterMagnet:   isMonsterMagnet,
+	}
+}
+
+func (m EffectSkillUseForeign) CharacterId() uint32      { return m.characterId }
+func (m EffectSkillUseForeign) Mode() byte               { return m.mode }
+func (m EffectSkillUseForeign) SkillId() uint32          { return m.skillId }
+func (m EffectSkillUseForeign) CharacterLevel() byte     { return m.characterLevel }
+func (m EffectSkillUseForeign) SkillLevel() byte         { return m.skillLevel }
+func (m EffectSkillUseForeign) BerserkDarkForce() bool   { return m.berserkDarkForce }
+func (m EffectSkillUseForeign) DragonFuryCreate() bool   { return m.dragonFuryCreate }
+func (m EffectSkillUseForeign) MonsterMagnetLeft() bool  { return m.monsterMagnetLeft }
+func (m EffectSkillUseForeign) IsBerserk() bool          { return m.isBerserk }
+func (m EffectSkillUseForeign) IsDragonFury() bool       { return m.isDragonFury }
+func (m EffectSkillUseForeign) IsMonsterMagnet() bool    { return m.isMonsterMagnet }
+func (m EffectSkillUseForeign) Operation() string        { return CharacterEffectWriter }
+
+func (m EffectSkillUseForeign) String() string {
+	return fmt.Sprintf("foreign skill use characterId [%d] skillId [%d] level [%d]", m.characterId, m.skillId, m.skillLevel)
+}
+
+func (m EffectSkillUseForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.skillId)
+		w.WriteByte(m.characterLevel)
+		w.WriteByte(m.skillLevel)
+		if m.isBerserk {
+			w.WriteBool(m.berserkDarkForce)
+		}
+		if m.isDragonFury {
+			w.WriteBool(m.dragonFuryCreate)
+		}
+		if m.isMonsterMagnet {
+			w.WriteBool(m.monsterMagnetLeft)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *EffectSkillUseForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		// No-op: conditional bools not self-describing on wire
+	}
+}

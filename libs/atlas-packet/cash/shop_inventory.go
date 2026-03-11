@@ -37,6 +37,26 @@ func (m CashInventoryItem) EncodeBytes(l logrus.FieldLogger) []byte {
 	return w.Bytes()
 }
 
+func DecodeCashInventoryItem(r *request.Reader) CashInventoryItem {
+	return CashInventoryItem{
+		CashId:      r.ReadInt64(),
+		AccountId:   r.ReadUint32(),
+		CharacterId: r.ReadUint32(),
+		TemplateId:  r.ReadUint32(),
+		CommodityId: r.ReadUint32(),
+		Quantity:    r.ReadInt16(),
+		GiftFrom:    model.ReadPaddedString(r, 13),
+		Expiration:  r.ReadInt64(),
+	}
+}
+
+func decodeCashInventoryItemSkipPadding(r *request.Reader) CashInventoryItem {
+	item := DecodeCashInventoryItem(r)
+	_ = r.ReadUint32() // padding
+	_ = r.ReadUint32() // padding
+	return item
+}
+
 // CashShopInventory - mode, items, storageSlots, characterSlots
 type CashShopInventory struct {
 	mode           byte
@@ -75,7 +95,14 @@ func (m CashShopInventory) Encode(l logrus.FieldLogger, _ context.Context) func(
 
 func (m *CashShopInventory) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: server-send-only
+		m.mode = r.ReadByte()
+		count := int(r.ReadUint16())
+		m.items = make([]CashInventoryItem, count)
+		for i := 0; i < count; i++ {
+			m.items[i] = decodeCashInventoryItemSkipPadding(r)
+		}
+		m.storageSlots = r.ReadUint16()
+		m.characterSlots = r.ReadInt16()
 	}
 }
 
@@ -108,7 +135,8 @@ func (m CashShopPurchaseSuccess) Encode(l logrus.FieldLogger, _ context.Context)
 
 func (m *CashShopPurchaseSuccess) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: server-send-only
+		m.mode = r.ReadByte()
+		m.item = decodeCashInventoryItemSkipPadding(r)
 	}
 }
 
@@ -136,6 +164,7 @@ func (m CashShopGifts) Encode(l logrus.FieldLogger, _ context.Context) func(opti
 
 func (m *CashShopGifts) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: server-send-only
+		m.mode = r.ReadByte()
+		_ = r.ReadUint16() // gift count (always 0 in current impl)
 	}
 }

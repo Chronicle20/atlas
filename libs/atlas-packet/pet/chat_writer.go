@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PetChatWriter = "PetChatW"
+const PetChatWriter = "PetChat"
 
 type ChatW struct {
 	ownerId uint32

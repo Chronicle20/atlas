@@ -4,9 +4,9 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/party"
 	"context"
-	"strconv"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	partypkt "github.com/Chronicle20/atlas-packet/party"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -14,7 +14,6 @@ import (
 )
 
 const (
-	PartyOperation             = "PartyOperation"
 	PartyOperationCreated      = "CREATED"
 	PartyOperationDisband      = "DISBAND"
 	PartyOperationExpel        = "EXPEL"
@@ -145,30 +144,6 @@ func WritePaddedString(w *response.Writer, str string, number int) {
 
 func getPartyOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }

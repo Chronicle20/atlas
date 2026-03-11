@@ -4,14 +4,12 @@ import (
 	"atlas-channel/socket/model"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
-
-const CharacterEffect = "CharacterEffect"
-const CharacterEffectForeign = "CharacterEffectForeign"
 
 type CharacterEffectMode string
 
@@ -83,8 +81,11 @@ func CharacterSkillUseEffectBody(skillId uint32, characterLevel byte, skillLevel
 func CharacterSkillUseEffectForeignBody(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte, darkForceEffect bool, createOrDeleteDragon bool, left bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, darkForceEffect, createOrDeleteDragon, left)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillUse)
+			isBerserk := skill.Id(skillId) == skill.DarkKnightBerserkId
+			isDragonFury := skill.Id(skillId) == skill.EvanStage8DragonFuryId
+			isMonsterMagnet := skill.Is(skill.Id(skillId), skill.HeroMonsterMagnetId, skill.PaladinMonsterMagnetId, skill.DarkKnightMonsterMagnetId)
+			return charpkt.NewEffectSkillUseForeign(characterId, mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -101,8 +102,8 @@ func CharacterSkillAffectedEffectBody(skillId uint32, skillLevel byte) packet.En
 func CharacterSkillAffectedEffectForeignBody(characterId uint32, skillId uint32, skillLevel byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterSkillAffectedEffectBody(skillId, skillLevel)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillAffected)
+			return charpkt.NewEffectSkillAffectedForeign(characterId, mode, skillId, skillLevel).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -123,8 +124,12 @@ func CharacterQuestEffectBody(message string, rewards []model.QuestReward, nEffe
 func CharacterQuestEffectForeignBody(characterId uint32, message string, rewards []model.QuestReward, nEffect uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterQuestEffectBody(message, rewards, nEffect)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectQuest)
+			pktRewards := make([]charpkt.QuestReward, len(rewards))
+			for i, r := range rewards {
+				pktRewards[i] = charpkt.QuestReward{ItemId: r.ItemId(), Amount: r.Amount()}
+			}
+			return charpkt.NewEffectQuestForeign(characterId, mode, message, nEffect, pktRewards).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -141,8 +146,8 @@ func CharacterPetEffectBody(petIndex byte, effectType byte) packet.Encode {
 func CharacterPetEffectForeignBody(characterId uint32, petIndex byte, effectType byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterPetEffectBody(petIndex, effectType)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectPet)
+			return charpkt.NewEffectPetForeign(characterId, mode, effectType, petIndex).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -159,8 +164,8 @@ func CharacterSkillSpecialEffectBody(skillId uint32) packet.Encode {
 func CharacterSkillSpecialEffectForeignBody(characterId uint32, skillId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterSkillSpecialEffectBody(skillId)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectSkillSpecial)
+			return charpkt.NewEffectWithIdForeign(characterId, mode, skillId).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -177,8 +182,8 @@ func CharacterProtectOnDieItemUseEffectBody(safetyCharm bool, usesRemaining byte
 func CharacterProtectOnDieItemUseEffectForeignBody(characterId uint32, safetyCharm bool, usesRemaining byte, days byte, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterProtectOnDieItemUseEffectBody(safetyCharm, usesRemaining, days, itemId)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectProtectOnDieItemUse)
+			return charpkt.NewEffectProtectOnDieForeign(characterId, mode, safetyCharm, usesRemaining, days, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -251,8 +256,8 @@ func CharacterIncDecHPEffectBody(delta int8) packet.Encode {
 func CharacterIncDecHPEffectForeignBody(characterId uint32, delta int8) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterIncDecHPEffectBody(delta)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectIncDecHPEffect)
+			return charpkt.NewEffectIncDecHPForeign(characterId, mode, delta).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -269,8 +274,8 @@ func CharacterBuffItemEffectBody(itemId uint32) packet.Encode {
 func CharacterBuffItemEffectForeignBody(characterId uint32, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterBuffItemEffectBody(itemId)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectBuffItemEffect)
+			return charpkt.NewEffectWithIdForeign(characterId, mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -288,8 +293,8 @@ func CharacterShowIntroEffectBody(message string) packet.Encode {
 func CharacterShowIntroEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterShowIntroEffectBody(message)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectShowIntroEffect)
+			return charpkt.NewEffectWithMessageForeign(characterId, mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -324,8 +329,8 @@ func CharacterLotteryUseEffectBody(itemId uint32, success bool, message string) 
 func CharacterLotteryUseEffectForeignBody(characterId uint32, itemId uint32, success bool, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterLotteryUseEffectBody(itemId, success, message)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectLotteryUse)
+			return charpkt.NewEffectLotteryUseForeign(characterId, mode, itemId, success, message).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -360,8 +365,8 @@ func CharacterItemMakerEffectBody(state uint32) packet.Encode {
 func CharacterItemMakerEffectForeignBody(characterId uint32, state uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterItemMakerEffectBody(state)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectItemMaker)
+			return charpkt.NewEffectItemMakerForeign(characterId, mode, state).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -378,8 +383,8 @@ func CharacterShowInfoEffectBody(path string) packet.Encode {
 func CharacterShowInfoEffectForeignBody(characterId uint32, path string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterShowInfoEffectBody(path)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectShowInfo)
+			return charpkt.NewEffectShowInfoForeign(characterId, mode, path).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -396,8 +401,8 @@ func CharacterReservedEffectBody(message string) packet.Encode {
 func CharacterReservedEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterReservedEffectBody(message)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectReservedEffect)
+			return charpkt.NewEffectWithMessageForeign(characterId, mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -414,8 +419,8 @@ func CharacterConsumeEffectBody(itemId uint32) packet.Encode {
 func CharacterConsumeEffectForeignBody(characterId uint32, itemId uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterConsumeEffectBody(itemId)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectConsumeEffect)
+			return charpkt.NewEffectWithIdForeign(characterId, mode, itemId).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -432,8 +437,8 @@ func CharacterUpgradeTombItemUseEffectBody(usesRemaining byte) packet.Encode {
 func CharacterUpgradeTombItemUseEffectForeignBody(characterId uint32, usesRemaining byte) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterUpgradeTombItemUseEffectBody(usesRemaining)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectUpgradeTombItemUse)
+			return charpkt.NewEffectUpgradeTombForeign(characterId, mode, usesRemaining).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -450,8 +455,8 @@ func CharacterBattlefieldItemUseEffectBody(message string) packet.Encode {
 func CharacterBattlefieldItemUseEffectForeignBody(characterId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterBattlefieldItemUseEffectBody(message)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectBattlefieldItemUse)
+			return charpkt.NewEffectWithMessageForeign(characterId, mode, message).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -468,8 +473,8 @@ func CharacterIncubatorUseEffectBody(itemId uint32, message string) packet.Encod
 func CharacterIncubatorUseEffectForeignBody(characterId uint32, itemId uint32, message string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterIncubatorUseEffectBody(itemId, message)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectIncubatorUse)
+			return charpkt.NewEffectIncubatorUseForeign(characterId, mode, itemId, message).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -486,8 +491,8 @@ func CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName string) packet
 func CharacterPlaySoundWithMuteBackgroundMusicEffectForeignBody(characterId uint32, songName string) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			innerBytes := CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName)(l, ctx)(options)
-			return charpkt.NewEffectForeign(characterId, innerBytes).Encode(l, ctx)(options)
+			mode := getCharacterEffect(l)(options, CharacterEffectPlaySoundWithMuteBackgroundMusic)
+			return charpkt.NewEffectWithMessageForeign(characterId, mode, songName).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -512,24 +517,6 @@ func CharacterSoulStoneUseEffectForeignBody(characterId uint32) packet.Encode {
 
 func getCharacterEffect(l logrus.FieldLogger) func(options map[string]interface{}, key CharacterEffectMode) byte {
 	return func(options map[string]interface{}, key CharacterEffectMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

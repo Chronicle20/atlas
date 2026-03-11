@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const NpcActionWriter = "NpcActionW"
+const NpcActionWriter = "NPCAction"
 
 type ActionW struct {
 	objectId    uint32

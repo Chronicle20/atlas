@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PetMovementWriter = "PetMovementW"
+const PetMovementWriter = "PetMovement"
 
 type MovementW struct {
 	ownerId  uint32

@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterBuffCancelWriter = "CharacterBuffCancelW"
+const CharacterBuffCancelWriter = "CharacterBuffCancel"
 
 type BuffCancelW struct {
 	cts model.CharacterTemporaryStat
@@ -36,7 +36,9 @@ func (m BuffCancelW) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 
 func (m *BuffCancelW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// server-send only
+		m.cts = *model.NewCharacterTemporaryStat()
+		_ = m.cts.DecodeMask(r)
+		_ = r.ReadByte() // tSwallowBuffTime
 	}
 }
 
@@ -70,6 +72,9 @@ func (m BuffCancelForeign) Encode(l logrus.FieldLogger, ctx context.Context) fun
 
 func (m *BuffCancelForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// server-send only
+		m.characterId = r.ReadUint32()
+		m.cts = *model.NewCharacterTemporaryStat()
+		_ = m.cts.DecodeMask(r)
+		_ = r.ReadByte() // tSwallowBuffTime
 	}
 }

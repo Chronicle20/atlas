@@ -11,8 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterBuffGive = "CharacterBuffGive"
-const CharacterBuffGiveForeign = "CharacterBuffGiveForeign"
 
 func CharacterBuffGiveBody(buffs []buff.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

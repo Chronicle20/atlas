@@ -4,12 +4,12 @@ import (
 	"atlas-channel/pet"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	petpkt "github.com/Chronicle20/atlas-packet/pet"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const PetActivated = "PetActivated"
 
 type PetDespawnMode byte
 
@@ -36,24 +36,6 @@ func PetDespawnBody(characterId uint32, slot int8, reason string) packet.Encode 
 
 func getPetDespawnOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[key].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }

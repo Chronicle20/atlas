@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ServerListRecommendations = "ServerListRecommendations"
 
 func ServerListRecommendationsBody(wrs []model.Recommendation) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

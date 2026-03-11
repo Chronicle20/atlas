@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const MonsterMovementAckWriter = "MonsterMovementAck"
+const MonsterMovementAckWriter = "MoveMonsterAck"
 
 type MovementAck struct {
 	uniqueId  uint32

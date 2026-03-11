@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const KiteDestroyWriter = "KiteDestroy"
+const KiteDestroyWriter = "DestroyKite"
 
 type KiteDestroyAnimationType byte
 

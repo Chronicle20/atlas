@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const KiteSpawnWriter = "KiteSpawn"
+const KiteSpawnWriter = "SpawnKite"
 
 type KiteSpawn struct {
 	id         uint32

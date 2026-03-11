@@ -139,11 +139,11 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 			session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, func(s session.Model) error {
 				var bp packet.Encode
 				if e.Body.Meso > 0 {
-					bp = writer.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Meso, 0)
+					bp = charpkt.CharacterStatusMessageOperationDropPickUpMesoBody(false, e.Body.Meso, 0)
 				} else if e.Body.EquipmentId > 0 {
-					bp = writer.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(e.Body.ItemId)
+					bp = charpkt.CharacterStatusMessageOperationDropPickUpUnStackableItemBody(e.Body.ItemId)
 				} else {
-					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
+					bp = charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
 				}
 
 				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(bp)(s)

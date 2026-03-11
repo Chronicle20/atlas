@@ -18,6 +18,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
@@ -171,7 +172,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						err := session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyListUpdateBody(bl.Buddies()))(s)
+						entries := make([]buddypkt.BuddyEntry, 0, len(bl.Buddies()))
+						for _, b := range bl.Buddies() {
+							entries = append(entries, buddypkt.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
+						}
+						err := session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(buddypkt.BuddyListUpdateBody(entries))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -179,7 +184,28 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())
 						if g.Id() != 0 {
-							err = session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(writer.GuildInfoBody(g))(s)
+							inGuild := g.Id() != 0
+							var titles [5]string
+							for _, t := range g.Titles() {
+								idx := t.Index()
+								if idx >= 1 && idx <= 5 {
+									titles[idx-1] = t.Name()
+								}
+							}
+							var guildMembers []guildpkt.GuildMemberInfo
+							for _, mm := range g.Members() {
+								guildMembers = append(guildMembers, guildpkt.GuildMemberInfo{
+									CharacterId:   mm.CharacterId(),
+									Name:          mm.Name(),
+									JobId:         mm.JobId(),
+									Level:         mm.Level(),
+									Title:         mm.Title(),
+									Online:        mm.Online(),
+									Signature:     0,
+									AllianceTitle: mm.AllianceTitle(),
+								})
+							}
+							err = session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
@@ -304,7 +330,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							}, nil
 						})(model.FixedProvider(nms))(model.ParallelMap())()
 
-						err = session.Announce(l)(ctx)(wp)(notepkt.NoteOperationWriter)(writer.NoteDisplayBody(wnms))(s)
+						noteEntries := make([]notepkt.NoteEntry, len(wnms))
+						for i, n := range wnms {
+							noteEntries[i] = notepkt.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
+						}
+						err = session.Announce(l)(ctx)(wp)(notepkt.NoteOperationWriter)(notepkt.NoteDisplayBody(noteEntries))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

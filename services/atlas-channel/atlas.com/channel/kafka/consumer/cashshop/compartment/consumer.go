@@ -18,6 +18,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	cashpkt "github.com/Chronicle20/atlas-packet/cash"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -69,7 +70,17 @@ func handleAcceptedEvent(sc server.Model, wp writer.Producer) message.Handler[ca
 			}
 
 			// Notify the client that the item was moved to the cash inventory
-			err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(writer.CashShopCashItemMovedToCashInventoryBody(e.AccountId, e.CharacterId, a))(s)
+			item := cashpkt.CashInventoryItem{
+				CashId:      a.Item().CashId(),
+				AccountId:   e.AccountId,
+				CharacterId: e.CharacterId,
+				TemplateId:  a.Item().TemplateId(),
+				CommodityId: a.CommodityId(),
+				Quantity:    int16(a.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  packetmodel.MsTime(a.Expiration()),
+			}
+			err = session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopCashItemMovedToCashInventoryBody(item))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to announce cash item moved to cash inventory for character [%d].", e.CharacterId)
 				return err

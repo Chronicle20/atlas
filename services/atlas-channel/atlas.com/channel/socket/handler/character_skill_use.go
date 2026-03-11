@@ -95,7 +95,7 @@ func announceSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp wr
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 			return func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, false, false, false))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(charpkt.CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, false, false, false))
 			}
 		}
 	}
@@ -105,7 +105,7 @@ func announceForeignSkillUse(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 			return func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(writer.CharacterSkillUseEffectForeignBody(characterId, skillId, characterLevel, skillLevel, false, false, false))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(charpkt.CharacterSkillUseEffectForeignBody(characterId, skillId, characterLevel, skillLevel, false, false, false))
 			}
 		}
 	}

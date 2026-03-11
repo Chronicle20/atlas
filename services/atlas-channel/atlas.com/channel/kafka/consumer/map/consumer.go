@@ -139,7 +139,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					if k != s.CharacterId() {
 						for _, p := range v.Pets() {
 							if p.Slot() >= 0 {
-								err = session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(writer.PetSpawnBody(p))(s)
+								err = session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s)
 								if err != nil {
 									l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 								}
@@ -153,7 +153,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				for k := range cms {
 					for _, p := range cms[s.CharacterId()].Pets() {
 						if p.Slot() >= 0 {
-							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(writer.PetSpawnBody(p)))
+							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh()))))
 							if err != nil {
 								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
@@ -275,7 +275,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				if ci.BgmPath != "" {
-					_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(writer.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
+					_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
 				}
 				if ci.StateChangeItem > 0 {
 					applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
@@ -450,7 +450,7 @@ func applyWeatherEffects(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 	}
 
 	if ci.BgmPath != "" {
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(writer.FieldEffectBackgroundMusicBody(ci.BgmPath)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath)))
 	}
 
 	if ci.StateChangeItem == 0 {

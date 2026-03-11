@@ -62,7 +62,11 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 				l.WithError(err).Errorf("Cash Shop Operation [%s] failed for character [%d].", CashShopOperationSetWishlist, s.CharacterId())
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(writer.CashShopWishListBody(true, wl))(s)
+			sns := make([]uint32, len(wl))
+			for i, w := range wl {
+				sns[i] = w.SerialNumber()
+			}
+			err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(cash2.CashShopWishListBody(true, sns))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 			}

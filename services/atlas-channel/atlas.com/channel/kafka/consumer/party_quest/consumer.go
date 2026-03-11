@@ -78,11 +78,11 @@ func handleStageCleared(sc server.Model, wp writer.Producer) message.Handler[pq.
 
 func announceStageCleared(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) model.Operator[session.Model] {
 	return func(s session.Model) error {
-		err := session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(writer.FieldEffectScreenBody("quest/party/clear"))(s)
+		err := session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectScreenBody("quest/party/clear"))(s)
 		if err != nil {
 			return err
 		}
-		return session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(writer.FieldEffectSoundBody("Party1/Clear"))(s)
+		return session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody("Party1/Clear"))(s)
 	}
 }
 

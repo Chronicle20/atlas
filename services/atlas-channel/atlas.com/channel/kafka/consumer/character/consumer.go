@@ -288,7 +288,12 @@ func announceExperienceGain(l logrus.FieldLogger) func(ctx context.Context) func
 						}
 					}
 
-					err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationIncreaseExperienceBody(c))(s)
+					err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationIncreaseExperienceBody(
+						c.White, c.Amount, c.InChat, c.MonsterBookBonus,
+						c.MobEventBonusPercentage, c.PartyBonusPercentage, c.WeddingBonusEXP, c.PlayTimeHour,
+						c.QuestBonusRate, c.QuestBonusRemainCount, c.PartyBonusEventRate, c.PartyBonusExp,
+						c.ItemBonusEXP, c.PremiumIPExp, c.RainbowWeekEventEXP, c.PartyEXPRingEXP, c.CakePieEventBonus,
+					))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce experience gain to character [%d].", s.CharacterId())
 						return err
@@ -338,7 +343,7 @@ func receiveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(fromName string, amount int8) model.Operator[session.Model] {
 			return func(fromName string, amount int8) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.ReceiveFameResponseBody(fromName, amount))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(famepkt.ReceiveFameResponseBody(fromName, amount))
 			}
 		}
 	}
@@ -348,7 +353,7 @@ func giveFame(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 	return func(ctx context.Context) func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(toName string, amount int8, total int16) model.Operator[session.Model] {
 			return func(toName string, amount int8, total int16) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.GiveFameResponseBody(toName, amount, total))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(famepkt.GiveFameResponseBody(toName, amount, total))
 			}
 		}
 	}
@@ -375,7 +380,7 @@ func mesoChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(amount int32) model.Operator[session.Model] {
 			return func(amount int32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationIncreaseMesoBody(amount))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationIncreaseMesoBody(amount))
 			}
 		}
 	}
@@ -392,8 +397,8 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			_ = session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterLevelUpEffectBody())(s)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(writer.CharacterLevelUpEffectForeignBody(s.CharacterId())))
+			_ = session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(charpkt.CharacterLevelUpEffectBody())(s)
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(charpkt.CharacterLevelUpEffectForeignBody(s.CharacterId())))
 			return nil
 		})
 

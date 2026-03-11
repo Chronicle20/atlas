@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 )
 
 func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.CharacterData {
@@ -57,7 +58,7 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 		entry := charpkt.SkillEntry{
 			Id:         uint32(s.Id()),
 			Level:      uint32(s.Level()),
-			Expiration: msTime(s.Expiration()),
+			Expiration: packetmodel.MsTime(s.Expiration()),
 			FourthJob:  s.IsFourthJob(),
 		}
 		if s.IsFourthJob() {
@@ -84,7 +85,7 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 	for _, q := range quest.Completed(c.Quests()) {
 		cd.CompletedQuests = append(cd.CompletedQuests, charpkt.QuestCompleted{
 			QuestId:     uint16(q.QuestId()),
-			CompletedAt: msTime(q.CompletedAt()),
+			CompletedAt: packetmodel.MsTime(q.CompletedAt()),
 		})
 	}
 

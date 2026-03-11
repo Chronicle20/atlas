@@ -355,9 +355,10 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 							return
 						}
 
+						ava := model2.NewFromCharacter(c, true)
 						for _, mm := range m.Members() {
 							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
-								return session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(writer.MessengerOperationUpdateBody(um.Slot(), c, s.ChannelId()))(os)
+								return session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
 							})
 						}
 						errChannels <- err
@@ -430,7 +431,8 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 
 			if a.CashId() != 0 {
 				// Cash shop withdrawal - notify the cash shop UI
-				err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(writer.CashShopCashItemMovedToInventoryBody(a))(s)
+				am := model2.NewAsset(true, a)
+				err := session.Announce(l)(ctx)(wp)(cashpkt.CashShopOperationWriter)(cashpkt.CashShopCashItemMovedToInventoryBody(uint16(a.Slot()), am))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce cash item moved to inventory for character [%d].", e.CharacterId)
 					return err
@@ -497,7 +499,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			if e.Body.ReplaceMessage != "" {
 				// Item was replaced - send replacement message
 				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
-					writer.CharacterStatusMessageOperationItemExpireReplaceBody([]string{e.Body.ReplaceMessage}),
+					charpkt.CharacterStatusMessageOperationItemExpireReplaceBody([]string{e.Body.ReplaceMessage}),
 				)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to send item expire replace message for character [%d].", e.CharacterId)
@@ -506,7 +508,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			} else if e.Body.IsCash {
 				// Cash item expired
 				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
-					writer.CharacterStatusMessageOperationCashItemExpireBody(e.TemplateId),
+					charpkt.CharacterStatusMessageOperationCashItemExpireBody(e.TemplateId),
 				)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to send cash item expire message for character [%d].", e.CharacterId)
@@ -515,7 +517,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			} else {
 				// Regular item expired
 				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
-					writer.CharacterStatusMessageOperationGeneralItemExpireBody([]uint32{e.TemplateId}),
+					charpkt.CharacterStatusMessageOperationGeneralItemExpireBody([]uint32{e.TemplateId}),
 				)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to send general item expire message for character [%d].", e.CharacterId)

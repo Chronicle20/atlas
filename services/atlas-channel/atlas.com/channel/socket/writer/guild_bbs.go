@@ -3,9 +3,9 @@ package writer
 import (
 	"atlas-channel/guild/thread"
 	"context"
-	"time"
 
 	guildpkt "github.com/Chronicle20/atlas-packet/guild"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +27,7 @@ func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 					Id:         nt.Id(),
 					PosterId:   nt.PosterId(),
 					Title:      nt.Title(),
-					CreatedAt:  msTime(nt.CreatedAt()),
+					CreatedAt:  packetmodel.MsTime(nt.CreatedAt()),
 					EmoticonId: nt.EmoticonId(),
 					ReplyCount: uint32(len(nt.Replies())),
 				}
@@ -37,7 +37,7 @@ func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 						Id:         t.Id(),
 						PosterId:   t.PosterId(),
 						Title:      t.Title(),
-						CreatedAt:  msTime(t.CreatedAt()),
+						CreatedAt:  packetmodel.MsTime(t.CreatedAt()),
 						EmoticonId: t.EmoticonId(),
 						ReplyCount: uint32(len(t.Replies())),
 					})
@@ -48,7 +48,7 @@ func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 						Id:         t.Id(),
 						PosterId:   t.PosterId(),
 						Title:      t.Title(),
-						CreatedAt:  msTime(t.CreatedAt()),
+						CreatedAt:  packetmodel.MsTime(t.CreatedAt()),
 						EmoticonId: t.EmoticonId(),
 						ReplyCount: uint32(len(t.Replies())),
 					})
@@ -67,18 +67,12 @@ func GuildBBSThreadBody(t thread.Model) packet.Encode {
 				replies = append(replies, guildpkt.BBSReply{
 					Id:        r.Id(),
 					PosterId:  r.PosterId(),
-					CreatedAt: msTime(r.CreatedAt()),
+					CreatedAt: packetmodel.MsTime(r.CreatedAt()),
 					Message:   r.Message(),
 				})
 			}
-			return guildpkt.NewBBSThread(t.Id(), t.PosterId(), msTime(t.CreatedAt()), t.Title(), t.Message(), t.EmoticonId(), replies).Encode(l, ctx)(options)
+			return guildpkt.NewBBSThread(t.Id(), t.PosterId(), packetmodel.MsTime(t.CreatedAt()), t.Title(), t.Message(), t.EmoticonId(), replies).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func msTime(t time.Time) int64 {
-	if t.IsZero() {
-		return -1
-	}
-	return t.Unix()*int64(10000000) + int64(116444736000000000)
-}

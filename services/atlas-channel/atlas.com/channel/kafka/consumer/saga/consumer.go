@@ -126,9 +126,9 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 func getStorageErrorBodyProducer(errorCode string) packet.Encode {
 	switch errorCode {
 	case saga.ErrorCodeNotEnoughMesos:
-		return writer.StorageOperationErrorNotEnoughMesoBody()
+		return storagepkt.StorageOperationErrorNotEnoughMesoBody()
 	case saga.ErrorCodeInventoryFull, saga.ErrorCodeStorageFull:
-		return writer.StorageOperationErrorInventoryFullBody()
+		return storagepkt.StorageOperationErrorInventoryFullBody()
 	default:
 		return nil
 	}

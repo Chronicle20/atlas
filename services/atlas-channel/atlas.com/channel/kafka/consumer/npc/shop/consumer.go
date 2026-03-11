@@ -96,16 +96,16 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 		}
 
 		var bp packet.Encode
-		if e.Body.Error == writer.NPCShopOperationOverLevelRequirement {
-			bp = writer.NPCShopOperationOverLevelRequirementBody(e.Body.LevelLimit)
-		} else if e.Body.Error == writer.NPCShopOperationUnderLevelRequirement {
-			bp = writer.NPCShopOperationUnderLevelRequirementBody(e.Body.LevelLimit)
-		} else if e.Body.Error == writer.NPCShopOperationGenericError {
-			bp = writer.NPCShopOperationGenericErrorBody()
-		} else if e.Body.Error == writer.NPCShopOperationGenericErrorWithReason {
-			bp = writer.NPCShopOperationGenericErrorWithReasonBody(e.Body.Reason)
+		if e.Body.Error == npcpkt.NPCShopOperationOverLevelRequirement {
+			bp = npcpkt.NPCShopOperationOverLevelRequirementBody(e.Body.LevelLimit)
+		} else if e.Body.Error == npcpkt.NPCShopOperationUnderLevelRequirement {
+			bp = npcpkt.NPCShopOperationUnderLevelRequirementBody(e.Body.LevelLimit)
+		} else if e.Body.Error == npcpkt.NPCShopOperationGenericError {
+			bp = npcpkt.NPCShopOperationGenericErrorBody()
+		} else if e.Body.Error == npcpkt.NPCShopOperationGenericErrorWithReason {
+			bp = npcpkt.NPCShopOperationGenericErrorWithReasonBody(e.Body.Reason)
 		} else {
-			bp = writer.NPCShopOperationBody(e.Body.Error)
+			bp = npcpkt.NPCShopOperationBody(e.Body.Error)
 		}
 		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopOperationWriter)(bp)(s)
 	}

@@ -177,7 +177,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 		}
 
 		for _, cid := range e.Body.Recipients {
-			bp := session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(writer.MessengerOperationChatBody(e.Message))
+			bp := session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationChatBody(e.Message))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)

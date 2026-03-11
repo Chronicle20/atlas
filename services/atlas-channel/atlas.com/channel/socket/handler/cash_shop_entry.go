@@ -14,6 +14,7 @@ import (
 	"context"
 
 	cash2 "github.com/Chronicle20/atlas-packet/cash"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -67,7 +68,20 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			sd = storage.StorageData{Capacity: storage.DefaultStorageCapacity}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(writer.CashShopCashInventoryBody(a, s.CharacterId(), ccp.Assets(), uint16(sd.Capacity)))(s)
+		items := make([]cash2.CashInventoryItem, len(ccp.Assets()))
+		for i, as := range ccp.Assets() {
+			items[i] = cash2.CashInventoryItem{
+				CashId:      as.Item().CashId(),
+				AccountId:   a.Id(),
+				CharacterId: s.CharacterId(),
+				TemplateId:  as.Item().TemplateId(),
+				CommodityId: as.CommodityId(),
+				Quantity:    int16(as.Item().Quantity()),
+				GiftFrom:    "",
+				Expiration:  packetmodel.MsTime(as.Expiration()),
+			}
+		}
+		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(cash2.CashShopCashInventoryBody(items, uint16(sd.Capacity), a.CharacterSlots()))(s)
 		if err != nil {
 			return
 		}
@@ -82,7 +96,11 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 			return
 		}
-		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(writer.CashShopWishListBody(false, wl))(s)
+		sns := make([]uint32, len(wl))
+		for i, w := range wl {
+			sns[i] = w.SerialNumber()
+		}
+		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(cash2.CashShopWishListBody(false, sns))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 		}

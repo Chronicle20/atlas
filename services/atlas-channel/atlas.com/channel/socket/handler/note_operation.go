@@ -34,7 +34,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			tc, err := character.NewProcessor(l, ctx).GetByName(sp.ToName())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", sp.ToName())
-				_ = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(writer.NoteSendError(writer.NoteSendErrorReceiverUnknown))(s)
+				_ = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(note2.NoteSendErrorBody(note2.NoteSendErrorReceiverUnknown))(s)
 				return
 			}
 
@@ -115,7 +115,11 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				}, nil
 			})(model.FixedProvider(nms))(model.ParallelMap())()
 
-			err = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(writer.NoteDisplayBody(wnms))(s)
+			entries := make([]note2.NoteEntry, len(wnms))
+			for i, n := range wnms {
+				entries[i] = note2.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
+			}
+			err = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(note2.NoteDisplayBody(entries))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 			}

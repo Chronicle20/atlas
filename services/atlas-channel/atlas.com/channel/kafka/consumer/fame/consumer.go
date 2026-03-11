@@ -63,7 +63,7 @@ func fameResponseError(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 			return func(errCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.FameResponseErrorBody(errCode))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(famepkt.FameResponseErrorBody(errCode))
 			}
 		}
 	}

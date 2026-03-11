@@ -17,6 +17,11 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat"
+	fieldpkt "github.com/Chronicle20/atlas-packet/field"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc"
+	uipkt "github.com/Chronicle20/atlas-packet/ui"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -104,7 +109,7 @@ func handleSendMessage(sc server.Model, wp writer.Producer) message.Handler[syst
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.WorldMessage)(bodyProducer))
+			session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(bodyProducer))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send message to character [%d].", cmd.CharacterId)
 		}
@@ -127,7 +132,7 @@ func handlePlayPortalSound(sc server.Model, wp writer.Producer) message.Handler[
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterPlayPortalSoundEffectEffectBody()))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterPlayPortalSoundEffectEffectBody()))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to play portal sound for character [%d].", cmd.CharacterId)
 		}
@@ -150,7 +155,7 @@ func handleShowInfo(sc server.Model, wp writer.Producer) message.Handler[system_
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowInfoEffectBody(cmd.Body.Path)))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterShowInfoEffectBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show info for character [%d].", cmd.CharacterId)
 		}
@@ -173,7 +178,7 @@ func handleShowInfoText(sc server.Model, wp writer.Producer) message.Handler[sys
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationSystemMessageBody(cmd.Body.Text)))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationSystemMessageBody(cmd.Body.Text)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show info text for character [%d].", cmd.CharacterId)
 		}
@@ -196,7 +201,7 @@ func handleUpdateAreaInfo(sc server.Model, wp writer.Producer) message.Handler[s
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationQuestRecordExBody(cmd.Body.Area, cmd.Body.Info)))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(writer.CharacterStatusMessageOperationQuestRecordExBody(cmd.Body.Area, cmd.Body.Info)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update area info for character [%d].", cmd.CharacterId)
 		}
@@ -219,7 +224,7 @@ func handleShowHint(sc server.Model, wp writer.Producer) message.Handler[system_
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterHint)(writer.CharacterHintBody(cmd.Body.Hint, cmd.Body.Width, cmd.Body.Height, false, 0, 0)))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterHintWriter)(charpkt.NewCharacterHint(cmd.Body.Hint, cmd.Body.Width, cmd.Body.Height, false, 0, 0).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show hint for character [%d].", cmd.CharacterId)
 		}
@@ -248,7 +253,7 @@ func handleShowGuideHint(sc server.Model, wp writer.Producer) message.Handler[sy
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.GuideTalk)(writer.GuideTalkIdxBody(cmd.Body.HintId, duration)))
+			session.Announce(l)(ctx)(wp)(npcpkt.GuideTalkWriter)(npcpkt.NewGuideTalkIdx(cmd.Body.HintId, duration).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show guide hint for character [%d].", cmd.CharacterId)
 		}
@@ -271,7 +276,7 @@ func handleShowIntro(sc server.Model, wp writer.Producer) message.Handler[system
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterShowIntroEffectBody(cmd.Body.Path)))
+			session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(writer.CharacterShowIntroEffectBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show intro for character [%d].", cmd.CharacterId)
 		}
@@ -294,7 +299,7 @@ func handleFieldEffect(sc server.Model, wp writer.Producer) message.Handler[syst
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.FieldEffect)(writer.FieldEffectScreenBody(cmd.Body.Path)))
+			session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(writer.FieldEffectScreenBody(cmd.Body.Path)))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show field effect for character [%d].", cmd.CharacterId)
 		}
@@ -317,7 +322,7 @@ func handleUiLock(sc server.Model, wp writer.Producer) message.Handler[system_me
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.UiLock)(writer.UiLockBody(cmd.Body.Enable, 0)))
+			session.Announce(l)(ctx)(wp)(uipkt.UiLockWriter)(uipkt.NewUiLock(cmd.Body.Enable, 0).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to lock/unlock UI for character [%d].", cmd.CharacterId)
 		}
@@ -340,7 +345,7 @@ func handleUiDisable(sc server.Model, wp writer.Producer) message.Handler[system
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cmd.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.UiDisable)(writer.UiDisableBody(cmd.Body.Enable)))
+			session.Announce(l)(ctx)(wp)(uipkt.UiDisableWriter)(uipkt.NewUiDisable(cmd.Body.Enable).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to disable/enable UI for character [%d].", cmd.CharacterId)
 		}

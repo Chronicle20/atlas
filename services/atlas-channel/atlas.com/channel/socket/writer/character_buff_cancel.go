@@ -11,9 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterBuffCancel = "CharacterBuffCancel"
-const CharacterBuffCancelForeign = "CharacterBuffCancelForeign"
-
 func CharacterBuffCancelBody(buffs []buff.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		t := tenant.MustFromContext(ctx)

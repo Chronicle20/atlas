@@ -10,6 +10,7 @@ import (
 )
 
 const CharacterEffectWriter = "CharacterEffect"
+const CharacterEffectForeignWriter = "CharacterEffectForeign"
 
 // EffectSimple - mode only (LevelUp, PlayPortalSound, JobChanged, QuestComplete, MonsterBookCardGet, ItemLevelUp, SoulStoneUse)
 type EffectSimple struct {
@@ -108,6 +109,47 @@ func (m *EffectSkillAffected) Decode(_ logrus.FieldLogger, _ context.Context) fu
 	}
 }
 
+// EffectSkillAffectedForeign - characterId + mode + skillId + skillLevel
+type EffectSkillAffectedForeign struct {
+	characterId uint32
+	mode        byte
+	skillId     uint32
+	skillLevel  byte
+}
+
+func NewEffectSkillAffectedForeign(characterId uint32, mode byte, skillId uint32, skillLevel byte) EffectSkillAffectedForeign {
+	return EffectSkillAffectedForeign{characterId: characterId, mode: mode, skillId: skillId, skillLevel: skillLevel}
+}
+
+func (m EffectSkillAffectedForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectSkillAffectedForeign) Mode() byte          { return m.mode }
+func (m EffectSkillAffectedForeign) SkillId() uint32     { return m.skillId }
+func (m EffectSkillAffectedForeign) SkillLevel() byte    { return m.skillLevel }
+func (m EffectSkillAffectedForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectSkillAffectedForeign) String() string {
+	return fmt.Sprintf("foreign skill affected characterId [%d] skillId [%d] level [%d]", m.characterId, m.skillId, m.skillLevel)
+}
+
+func (m EffectSkillAffectedForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.skillId)
+		w.WriteByte(m.skillLevel)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectSkillAffectedForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.skillId = r.ReadUint32()
+		m.skillLevel = r.ReadByte()
+	}
+}
+
 // EffectPet - mode, effectType, petIndex
 type EffectPet struct {
 	mode       byte
@@ -139,6 +181,47 @@ func (m EffectPet) Encode(l logrus.FieldLogger, _ context.Context) func(options 
 
 func (m *EffectPet) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.effectType = r.ReadByte()
+		m.petIndex = r.ReadByte()
+	}
+}
+
+// EffectPetForeign - characterId + mode + effectType + petIndex
+type EffectPetForeign struct {
+	characterId uint32
+	mode        byte
+	effectType  byte
+	petIndex    byte
+}
+
+func NewEffectPetForeign(characterId uint32, mode byte, effectType byte, petIndex byte) EffectPetForeign {
+	return EffectPetForeign{characterId: characterId, mode: mode, effectType: effectType, petIndex: petIndex}
+}
+
+func (m EffectPetForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectPetForeign) Mode() byte          { return m.mode }
+func (m EffectPetForeign) EffectType() byte    { return m.effectType }
+func (m EffectPetForeign) PetIndex() byte      { return m.petIndex }
+func (m EffectPetForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectPetForeign) String() string {
+	return fmt.Sprintf("foreign pet effect characterId [%d] type [%d] index [%d]", m.characterId, m.effectType, m.petIndex)
+}
+
+func (m EffectPetForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteByte(m.effectType)
+		w.WriteByte(m.petIndex)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectPetForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.effectType = r.ReadByte()
 		m.petIndex = r.ReadByte()
@@ -178,6 +261,43 @@ func (m *EffectWithId) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 	}
 }
 
+// EffectWithIdForeign - characterId + mode + id
+type EffectWithIdForeign struct {
+	characterId uint32
+	mode        byte
+	id          uint32
+}
+
+func NewEffectWithIdForeign(characterId uint32, mode byte, id uint32) EffectWithIdForeign {
+	return EffectWithIdForeign{characterId: characterId, mode: mode, id: id}
+}
+
+func (m EffectWithIdForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectWithIdForeign) Mode() byte          { return m.mode }
+func (m EffectWithIdForeign) Id() uint32          { return m.id }
+func (m EffectWithIdForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectWithIdForeign) String() string {
+	return fmt.Sprintf("foreign effect characterId [%d] mode [%d] id [%d]", m.characterId, m.mode, m.id)
+}
+
+func (m EffectWithIdForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.id)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectWithIdForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.id = r.ReadUint32()
+	}
+}
+
 // EffectWithMessage - mode, message (ShowIntro, Reserved, Battlefield)
 type EffectWithMessage struct {
 	mode    byte
@@ -206,6 +326,43 @@ func (m EffectWithMessage) Encode(l logrus.FieldLogger, _ context.Context) func(
 
 func (m *EffectWithMessage) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.message = r.ReadAsciiString()
+	}
+}
+
+// EffectWithMessageForeign - characterId + mode + message
+type EffectWithMessageForeign struct {
+	characterId uint32
+	mode        byte
+	message     string
+}
+
+func NewEffectWithMessageForeign(characterId uint32, mode byte, message string) EffectWithMessageForeign {
+	return EffectWithMessageForeign{characterId: characterId, mode: mode, message: message}
+}
+
+func (m EffectWithMessageForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectWithMessageForeign) Mode() byte          { return m.mode }
+func (m EffectWithMessageForeign) Message() string     { return m.message }
+func (m EffectWithMessageForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectWithMessageForeign) String() string {
+	return fmt.Sprintf("foreign effect characterId [%d] mode [%d] message [%s]", m.characterId, m.mode, m.message)
+}
+
+func (m EffectWithMessageForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteAsciiString(m.message)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectWithMessageForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.message = r.ReadAsciiString()
 	}
@@ -260,6 +417,59 @@ func (m *EffectProtectOnDie) Decode(_ logrus.FieldLogger, _ context.Context) fun
 	}
 }
 
+// EffectProtectOnDieForeign - characterId + mode + safetyCharm + usesRemaining + days + conditional itemId
+type EffectProtectOnDieForeign struct {
+	characterId   uint32
+	mode          byte
+	safetyCharm   bool
+	usesRemaining byte
+	days          byte
+	itemId        uint32
+}
+
+func NewEffectProtectOnDieForeign(characterId uint32, mode byte, safetyCharm bool, usesRemaining byte, days byte, itemId uint32) EffectProtectOnDieForeign {
+	return EffectProtectOnDieForeign{characterId: characterId, mode: mode, safetyCharm: safetyCharm, usesRemaining: usesRemaining, days: days, itemId: itemId}
+}
+
+func (m EffectProtectOnDieForeign) CharacterId() uint32  { return m.characterId }
+func (m EffectProtectOnDieForeign) Mode() byte           { return m.mode }
+func (m EffectProtectOnDieForeign) SafetyCharm() bool    { return m.safetyCharm }
+func (m EffectProtectOnDieForeign) UsesRemaining() byte  { return m.usesRemaining }
+func (m EffectProtectOnDieForeign) Days() byte           { return m.days }
+func (m EffectProtectOnDieForeign) ItemId() uint32       { return m.itemId }
+func (m EffectProtectOnDieForeign) Operation() string    { return CharacterEffectWriter }
+func (m EffectProtectOnDieForeign) String() string {
+	return fmt.Sprintf("foreign protect on die characterId [%d] safetyCharm [%v]", m.characterId, m.safetyCharm)
+}
+
+func (m EffectProtectOnDieForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteBool(m.safetyCharm)
+		w.WriteByte(m.usesRemaining)
+		w.WriteByte(m.days)
+		if !m.safetyCharm {
+			w.WriteInt(m.itemId)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *EffectProtectOnDieForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.safetyCharm = r.ReadBool()
+		m.usesRemaining = r.ReadByte()
+		m.days = r.ReadByte()
+		if !m.safetyCharm {
+			m.itemId = r.ReadUint32()
+		}
+	}
+}
+
 // EffectIncDecHP - mode, delta int8
 type EffectIncDecHP struct {
 	mode  byte
@@ -288,6 +498,43 @@ func (m EffectIncDecHP) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 
 func (m *EffectIncDecHP) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.delta = r.ReadInt8()
+	}
+}
+
+// EffectIncDecHPForeign - characterId + mode + delta
+type EffectIncDecHPForeign struct {
+	characterId uint32
+	mode        byte
+	delta       int8
+}
+
+func NewEffectIncDecHPForeign(characterId uint32, mode byte, delta int8) EffectIncDecHPForeign {
+	return EffectIncDecHPForeign{characterId: characterId, mode: mode, delta: delta}
+}
+
+func (m EffectIncDecHPForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectIncDecHPForeign) Mode() byte          { return m.mode }
+func (m EffectIncDecHPForeign) Delta() int8         { return m.delta }
+func (m EffectIncDecHPForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectIncDecHPForeign) String() string {
+	return fmt.Sprintf("foreign inc dec hp characterId [%d] delta [%d]", m.characterId, m.delta)
+}
+
+func (m EffectIncDecHPForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt8(m.delta)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectIncDecHPForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.delta = r.ReadInt8()
 	}
@@ -322,6 +569,45 @@ func (m EffectShowInfo) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 
 func (m *EffectShowInfo) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.path = r.ReadAsciiString()
+		_ = r.ReadUint32()
+	}
+}
+
+// EffectShowInfoForeign - characterId + mode + path + unk(1)
+type EffectShowInfoForeign struct {
+	characterId uint32
+	mode        byte
+	path        string
+}
+
+func NewEffectShowInfoForeign(characterId uint32, mode byte, path string) EffectShowInfoForeign {
+	return EffectShowInfoForeign{characterId: characterId, mode: mode, path: path}
+}
+
+func (m EffectShowInfoForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectShowInfoForeign) Mode() byte          { return m.mode }
+func (m EffectShowInfoForeign) Path() string        { return m.path }
+func (m EffectShowInfoForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectShowInfoForeign) String() string {
+	return fmt.Sprintf("foreign show info characterId [%d] path [%s]", m.characterId, m.path)
+}
+
+func (m EffectShowInfoForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteAsciiString(m.path)
+		w.WriteInt(1)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectShowInfoForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.path = r.ReadAsciiString()
 		_ = r.ReadUint32()
@@ -373,6 +659,55 @@ func (m *EffectLotteryUse) Decode(_ logrus.FieldLogger, _ context.Context) func(
 	}
 }
 
+// EffectLotteryUseForeign - characterId + mode + itemId + success + conditional message
+type EffectLotteryUseForeign struct {
+	characterId uint32
+	mode        byte
+	itemId      uint32
+	success     bool
+	message     string
+}
+
+func NewEffectLotteryUseForeign(characterId uint32, mode byte, itemId uint32, success bool, message string) EffectLotteryUseForeign {
+	return EffectLotteryUseForeign{characterId: characterId, mode: mode, itemId: itemId, success: success, message: message}
+}
+
+func (m EffectLotteryUseForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectLotteryUseForeign) Mode() byte          { return m.mode }
+func (m EffectLotteryUseForeign) ItemId() uint32      { return m.itemId }
+func (m EffectLotteryUseForeign) Success() bool       { return m.success }
+func (m EffectLotteryUseForeign) Message() string     { return m.message }
+func (m EffectLotteryUseForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectLotteryUseForeign) String() string {
+	return fmt.Sprintf("foreign lottery use characterId [%d] itemId [%d] success [%v]", m.characterId, m.itemId, m.success)
+}
+
+func (m EffectLotteryUseForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.itemId)
+		w.WriteBool(m.success)
+		if m.success {
+			w.WriteAsciiString(m.message)
+		}
+		return w.Bytes()
+	}
+}
+
+func (m *EffectLotteryUseForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.itemId = r.ReadUint32()
+		m.success = r.ReadBool()
+		if m.success {
+			m.message = r.ReadAsciiString()
+		}
+	}
+}
+
 // EffectItemMaker - mode, state
 type EffectItemMaker struct {
 	mode  byte
@@ -401,6 +736,43 @@ func (m EffectItemMaker) Encode(l logrus.FieldLogger, _ context.Context) func(op
 
 func (m *EffectItemMaker) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.state = r.ReadUint32()
+	}
+}
+
+// EffectItemMakerForeign - characterId + mode + state
+type EffectItemMakerForeign struct {
+	characterId uint32
+	mode        byte
+	state       uint32
+}
+
+func NewEffectItemMakerForeign(characterId uint32, mode byte, state uint32) EffectItemMakerForeign {
+	return EffectItemMakerForeign{characterId: characterId, mode: mode, state: state}
+}
+
+func (m EffectItemMakerForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectItemMakerForeign) Mode() byte          { return m.mode }
+func (m EffectItemMakerForeign) State() uint32       { return m.state }
+func (m EffectItemMakerForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectItemMakerForeign) String() string {
+	return fmt.Sprintf("foreign item maker characterId [%d] state [%d]", m.characterId, m.state)
+}
+
+func (m EffectItemMakerForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.state)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectItemMakerForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.state = r.ReadUint32()
 	}
@@ -439,6 +811,43 @@ func (m *EffectUpgradeTomb) Decode(_ logrus.FieldLogger, _ context.Context) func
 	}
 }
 
+// EffectUpgradeTombForeign - characterId + mode + usesRemaining
+type EffectUpgradeTombForeign struct {
+	characterId   uint32
+	mode          byte
+	usesRemaining byte
+}
+
+func NewEffectUpgradeTombForeign(characterId uint32, mode byte, usesRemaining byte) EffectUpgradeTombForeign {
+	return EffectUpgradeTombForeign{characterId: characterId, mode: mode, usesRemaining: usesRemaining}
+}
+
+func (m EffectUpgradeTombForeign) CharacterId() uint32  { return m.characterId }
+func (m EffectUpgradeTombForeign) Mode() byte           { return m.mode }
+func (m EffectUpgradeTombForeign) UsesRemaining() byte  { return m.usesRemaining }
+func (m EffectUpgradeTombForeign) Operation() string    { return CharacterEffectWriter }
+func (m EffectUpgradeTombForeign) String() string {
+	return fmt.Sprintf("foreign upgrade tomb characterId [%d] uses [%d]", m.characterId, m.usesRemaining)
+}
+
+func (m EffectUpgradeTombForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteByte(m.usesRemaining)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectUpgradeTombForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.usesRemaining = r.ReadByte()
+	}
+}
+
 // EffectIncubatorUse - mode, itemId, message
 type EffectIncubatorUse struct {
 	mode    byte
@@ -470,6 +879,47 @@ func (m EffectIncubatorUse) Encode(l logrus.FieldLogger, _ context.Context) func
 
 func (m *EffectIncubatorUse) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.itemId = r.ReadUint32()
+		m.message = r.ReadAsciiString()
+	}
+}
+
+// EffectIncubatorUseForeign - characterId + mode + itemId + message
+type EffectIncubatorUseForeign struct {
+	characterId uint32
+	mode        byte
+	itemId      uint32
+	message     string
+}
+
+func NewEffectIncubatorUseForeign(characterId uint32, mode byte, itemId uint32, message string) EffectIncubatorUseForeign {
+	return EffectIncubatorUseForeign{characterId: characterId, mode: mode, itemId: itemId, message: message}
+}
+
+func (m EffectIncubatorUseForeign) CharacterId() uint32 { return m.characterId }
+func (m EffectIncubatorUseForeign) Mode() byte          { return m.mode }
+func (m EffectIncubatorUseForeign) ItemId() uint32      { return m.itemId }
+func (m EffectIncubatorUseForeign) Message() string     { return m.message }
+func (m EffectIncubatorUseForeign) Operation() string   { return CharacterEffectWriter }
+func (m EffectIncubatorUseForeign) String() string {
+	return fmt.Sprintf("foreign incubator use characterId [%d] itemId [%d]", m.characterId, m.itemId)
+}
+
+func (m EffectIncubatorUseForeign) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteInt(m.characterId)
+		w.WriteByte(m.mode)
+		w.WriteInt(m.itemId)
+		w.WriteAsciiString(m.message)
+		return w.Bytes()
+	}
+}
+
+func (m *EffectIncubatorUseForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.characterId = r.ReadUint32()
 		m.mode = r.ReadByte()
 		m.itemId = r.ReadUint32()
 		m.message = r.ReadAsciiString()

@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
+	socketpkt "github.com/Chronicle20/atlas-packet/socket"
 	socket "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
@@ -239,6 +240,6 @@ func SendPing(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) soc
 			return
 		}
 		l.Debugf("Session [%s] idle, sending PING.", sessionId)
-		_ = Announce(l)(ctx)(wp)(writer.Ping)(writer.PingBody())(s)
+		_ = Announce(l)(ctx)(wp)(socketpkt.PingWriter)(socketpkt.Ping{}.Encode)(s)
 	}
 }

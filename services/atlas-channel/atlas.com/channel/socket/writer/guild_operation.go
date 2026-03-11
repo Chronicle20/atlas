@@ -3,15 +3,14 @@ package writer
 import (
 	"atlas-channel/guild"
 	"context"
-	"strconv"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	guildpkt "github.com/Chronicle20/atlas-packet/guild"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	GuildOperation                               = "GuildOperation"
 	GuildOperationRequestName                    = "REQUEST_NAME"
 	GuildOperationRequestAgreement               = "REQUEST_AGREEMENT"
 	GuildOperationRequestEmblem                  = "REQUEST_EMBLEM"
@@ -218,30 +217,6 @@ func GuildCapacityChangedBody(guildId uint32, capacity uint32) packet.Encode {
 
 func getGuildOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var code interface{}
-		if code, ok = codes[key]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, err := strconv.ParseUint(code.(string), 0, 16)
-		if err != nil {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }

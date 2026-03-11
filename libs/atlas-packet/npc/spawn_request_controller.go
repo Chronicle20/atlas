@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const NpcSpawnRequestControllerWriter = "NpcSpawnRequestController"
+const NpcSpawnRequestControllerWriter = "SpawnNPCRequestController"
 
 type SpawnRequestController struct {
 	id       uint32

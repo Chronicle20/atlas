@@ -9,14 +9,14 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
-	account2 "github.com/Chronicle20/atlas-packet/login"
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := account2.CharacterSelectRegisterPic{}
+		p := loginpkt.CharacterSelectRegisterPic{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -39,7 +39,7 @@ func RegisterPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.
 		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
-			err = session.Announce(l)(ctx)(wp)(writer.ServerIP)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
+			err = session.Announce(l)(ctx)(wp)(loginpkt.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 				return

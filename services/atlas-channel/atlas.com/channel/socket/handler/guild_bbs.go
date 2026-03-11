@@ -59,7 +59,7 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				l.WithError(err).Errorf("Unable to display the guild threads to character [%d].", s.CharacterId())
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadsBody(ts, sp.StartIndex()*10))(s)
+			err = session.Announce(l)(ctx)(wp)(guild2.GuildBBSWriter)(writer.GuildBBSThreadsBody(ts, sp.StartIndex()*10))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the guild threads to character [%d].", s.CharacterId())
 				return
@@ -75,7 +75,7 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 				l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadBody(t))(s)
+			err = session.Announce(l)(ctx)(wp)(guild2.GuildBBSWriter)(writer.GuildBBSThreadBody(t))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 				return

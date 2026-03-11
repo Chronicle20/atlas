@@ -8,21 +8,22 @@ import (
 	"context"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-packet/login"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := login.AllCharacterListRequest{}
+		p := loginpkt.AllCharacterListRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {
 			l.Debugf("Unable to retrieve available worlds.")
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllErrorBody())(s)
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllErrorBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write view error.")
 			}
@@ -44,21 +45,21 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 
 		l.Debugf("Located [%d] characters for account [%d].", count, s.AccountId())
 		if count == 0 {
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllSearchFailedBody())(s)
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllSearchFailedBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}
 			return
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllCountBody(uint32(len(ws)), uint32(count)))(s)
+		err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllCountBody(uint32(len(ws)), uint32(count)))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write count.")
 			return
 		}
 
 		for w, cs := range wcs {
-			err = session.Announce(l)(ctx)(wp)(writer.CharacterViewAll)(writer.CharacterViewAllCharacterBody(w, cs))(s)
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllCharacterBody(w, cs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}

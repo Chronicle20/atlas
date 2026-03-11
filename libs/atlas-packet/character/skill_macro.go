@@ -10,6 +10,7 @@ import (
 )
 
 const CharacterSkillMacroHandle = "CharacterSkillMacroHandle"
+const CharacterSkillMacroWriter = "CharacterSkillMacro"
 
 type SkillMacroEntry struct {
 	Name     string

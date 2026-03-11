@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const PartyOperationWriter = "PartyOperationW"
+const PartyOperationWriter = "PartyOperation"
 
 type Created struct {
 	mode    byte

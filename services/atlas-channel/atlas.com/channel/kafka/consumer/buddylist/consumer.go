@@ -9,6 +9,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	buddypkt "github.com/Chronicle20/atlas-packet/buddy"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -101,7 +102,7 @@ func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						return err
 					}
 
-					err = session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(bl.Buddies()))(s)
+					err = session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyListUpdateBody(bl.Buddies()))(s)
 					if err != nil {
 						return err
 					}
@@ -133,7 +134,7 @@ func updateBuddy(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
 			return func(characterId uint32, group string, characterName string, channelId int8, inShop bool) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyUpdateBody(characterId, group, characterName, channelId, inShop))
+				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyUpdateBody(characterId, group, characterName, channelId, inShop))
 			}
 		}
 	}
@@ -160,7 +161,7 @@ func buddyChannelChange(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, channelId int8) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, channelId int8) model.Operator[session.Model] {
 			return func(characterId uint32, channelId int8) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyChannelChangeBody(characterId, channelId))
+				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyChannelChangeBody(characterId, channelId))
 			}
 		}
 	}
@@ -187,7 +188,7 @@ func buddyCapacityChange(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	return func(ctx context.Context) func(wp writer.Producer) func(capacity byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(capacity byte) model.Operator[session.Model] {
 			return func(capacity byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyCapacityUpdateBody(capacity))
+				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyCapacityUpdateBody(capacity))
 			}
 		}
 	}
@@ -214,7 +215,7 @@ func buddyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	return func(ctx context.Context) func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorCode string) model.Operator[session.Model] {
 			return func(errorCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyErrorBody(errorCode))
+				return session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(writer.BuddyErrorBody(errorCode))
 			}
 		}
 	}

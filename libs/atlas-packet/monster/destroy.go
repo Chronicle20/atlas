@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const MonsterDestroyWriter = "MonsterDestroy"
+const MonsterDestroyWriter = "DestroyMonster"
 
 type DestroyType byte
 

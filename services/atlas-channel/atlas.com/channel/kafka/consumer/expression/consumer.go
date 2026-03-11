@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -48,7 +49,7 @@ func handleEvent(sc server.Model, wp writer.Producer) message.Handler[expression
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(writer.CharacterExpression)(writer.CharacterExpressionBody(e.CharacterId, e.Expression)))
+		err := _map.NewProcessor(l, ctx).ForOtherSessionsInMap(sc.Field(e.MapId, e.Instance), e.CharacterId, session.Announce(l)(ctx)(wp)(charpkt.CharacterExpressionWriter)(charpkt.NewCharacterExpressionW(e.CharacterId, e.Expression).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce character [%d] expression [%d] change to characters in map [%d].", e.CharacterId, e.Expression, e.MapId)
 		}

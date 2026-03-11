@@ -16,6 +16,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	famepkt "github.com/Chronicle20/atlas-packet/fame"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -62,7 +63,7 @@ func fameResponseError(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 			return func(errCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.FameResponse)(writer.FameResponseErrorBody(errCode))
+				return session.Announce(l)(ctx)(wp)(famepkt.FameResponseWriter)(writer.FameResponseErrorBody(errCode))
 			}
 		}
 	}

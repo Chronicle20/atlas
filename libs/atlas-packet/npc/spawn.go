@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const NpcSpawnWriter = "NpcSpawn"
+const NpcSpawnWriter = "SpawnNPC"
 
 type SpawnW struct {
 	id       uint32

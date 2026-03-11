@@ -18,6 +18,8 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc"
+	statpkt "github.com/Chronicle20/atlas-packet/stat"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -64,7 +66,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, c.CharacterId)
 		}
 	}
 }
@@ -134,7 +136,7 @@ func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) 
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
 
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -147,7 +149,7 @@ func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) 
 				scm := &model2.AskNumberConversationDetail{Message: message, Def: def, Min: min, Max: max}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -160,7 +162,7 @@ func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) f
 				scm := &model2.AskAvatarConversationDetail{Message: message, Styles: styles}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -173,7 +175,7 @@ func announceSlideMenuConversation(l logrus.FieldLogger) func(ctx context.Contex
 				scm := &model2.AskSlideMenuConversationDetail{Message: message, MenuType: menuType}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, model2.NpcConversationMessageTypeAskSlideMenu, speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}

@@ -28,7 +28,7 @@ func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.NPCAction)(writer.NPCActionAnimationBody(p.ObjectId(), p.Unk(), p.Unk2()))(s)
+		err = session.Announce(l)(ctx)(wp)(npcpacket.NpcActionWriter)(npcpacket.NewNpcActionAnimation(p.ObjectId(), p.Unk(), p.Unk2()).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to animate npc [%d] for character [%d].", n.Template(), s.CharacterId())
 			return

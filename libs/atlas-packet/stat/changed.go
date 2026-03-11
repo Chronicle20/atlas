@@ -81,9 +81,64 @@ func (m Changed) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 	}
 }
 
-func (m *Changed) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Changed) Decode(l logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// server-send only — stat index resolution requires options["statistics"]
+		m.exclRequestSent = r.ReadBool()
+		updateMask := r.ReadUint32()
+
+		statTypes := getStatTypes(l)(options)
+		m.updates = nil
+		for i := uint8(0); i < 32; i++ {
+			if updateMask&(1<<i) == 0 {
+				continue
+			}
+			if int(i) >= len(statTypes) {
+				continue
+			}
+			st := statTypes[i]
+			var val int64
+			switch st {
+			case constants.TypeSkin, constants.TypeLevel:
+				val = int64(r.ReadByte())
+			case constants.TypeJob, constants.TypeStrength, constants.TypeDexterity, constants.TypeIntelligence, constants.TypeLuck,
+				constants.TypeHp, constants.TypeMaxHp, constants.TypeMp, constants.TypeMaxMp, constants.TypeAvailableAP, constants.TypeFame:
+				val = int64(r.ReadInt16())
+			case constants.TypeAvailableSP:
+				val = int64(r.ReadUint16())
+			case constants.TypeFace, constants.TypeHair, constants.TypeExperience, constants.TypeMeso, constants.TypeGachaponExperience:
+				val = int64(r.ReadUint32())
+			case constants.TypePetSn1, constants.TypePetSn2, constants.TypePetSn3:
+				val = int64(r.ReadUint64())
+			default:
+				continue
+			}
+			m.updates = append(m.updates, Update{statType: st, value: val})
+		}
+		_ = r.ReadByte() // trailing zero
+	}
+}
+
+func getStatTypes(l logrus.FieldLogger) func(options map[string]interface{}) []constants.Type {
+	return func(options map[string]interface{}) []constants.Type {
+		genericCodes, ok := options["statistics"]
+		if !ok {
+			l.Error("statistics not configured in options")
+			return nil
+		}
+		var codes []string
+		switch v := genericCodes.(type) {
+		case []interface{}:
+			for _, item := range v {
+				if str, ok := item.(string); ok {
+					codes = append(codes, str)
+				}
+			}
+		}
+		result := make([]constants.Type, len(codes))
+		for i, c := range codes {
+			result[i] = constants.Type(c)
+		}
+		return result
 	}
 }
 

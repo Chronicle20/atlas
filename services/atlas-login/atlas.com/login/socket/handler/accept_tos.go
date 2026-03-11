@@ -9,6 +9,7 @@ import (
 
 	"github.com/Chronicle20/atlas-model/model"
 	account2 "github.com/Chronicle20/atlas-packet/account"
+	loginpkt "github.com/Chronicle20/atlas-packet/login"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -38,7 +39,7 @@ func issueSuccess(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[account.Model] {
 		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(s session.Model) model.Operator[account.Model] {
-			authSuccessFunc := session.Announce(l)(ctx)(wp)(writer.AuthSuccess)
+			authSuccessFunc := session.Announce(l)(ctx)(wp)(loginpkt.AuthSuccessWriter)
 			return func(s session.Model) model.Operator[account.Model] {
 				return func(a account.Model) error {
 					sc, err := configuration.GetTenantConfig(t.Id())

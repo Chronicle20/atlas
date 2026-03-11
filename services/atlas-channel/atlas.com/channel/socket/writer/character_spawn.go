@@ -16,7 +16,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterSpawn = "CharacterSpawn"
 
 func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enteringField bool) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

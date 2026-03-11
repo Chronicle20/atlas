@@ -10,6 +10,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+const MiniRoomWriter = "MiniRoom"
+
 type MiniRoomType byte
 
 const (

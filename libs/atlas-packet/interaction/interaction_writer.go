@@ -82,59 +82,63 @@ func (m *InteractionInviteResult) Decode(_ logrus.FieldLogger, _ context.Context
 	}
 }
 
-// InteractionEnter - visitor entering a room (pre-encoded visitor bytes)
+// InteractionEnter - visitor entering a room
 type InteractionEnter struct {
-	mode         byte
-	visitorBytes []byte
+	mode    byte
+	visitor Visitor
 }
 
-func NewInteractionEnter(mode byte, visitorBytes []byte) InteractionEnter {
-	return InteractionEnter{mode: mode, visitorBytes: visitorBytes}
+func NewInteractionEnter(mode byte, visitor Visitor) InteractionEnter {
+	return InteractionEnter{mode: mode, visitor: visitor}
 }
 
 func (m InteractionEnter) Operation() string { return CharacterInteractionWriter }
 func (m InteractionEnter) String() string    { return "enter" }
+func (m InteractionEnter) Visitor() Visitor  { return m.visitor }
 
-func (m InteractionEnter) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m InteractionEnter) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteByteArray(m.visitorBytes)
+		w.WriteByteArray(m.visitor.Encode(l, ctx)(options))
 		return w.Bytes()
 	}
 }
 
-func (m *InteractionEnter) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *InteractionEnter) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: variable-length visitor encoding
+		m.mode = r.ReadByte()
+		m.visitor.Decode(l, ctx)(r, options)
 	}
 }
 
-// InteractionEnterResultSuccess - successful room entry (pre-encoded room bytes)
+// InteractionEnterResultSuccess - successful room entry
 type InteractionEnterResultSuccess struct {
-	mode      byte
-	roomBytes []byte
+	mode byte
+	room Room
 }
 
-func NewInteractionEnterResultSuccess(mode byte, roomBytes []byte) InteractionEnterResultSuccess {
-	return InteractionEnterResultSuccess{mode: mode, roomBytes: roomBytes}
+func NewInteractionEnterResultSuccess(mode byte, room Room) InteractionEnterResultSuccess {
+	return InteractionEnterResultSuccess{mode: mode, room: room}
 }
 
 func (m InteractionEnterResultSuccess) Operation() string { return CharacterInteractionWriter }
 func (m InteractionEnterResultSuccess) String() string    { return "enter result success" }
+func (m InteractionEnterResultSuccess) Room() Room        { return m.room }
 
-func (m InteractionEnterResultSuccess) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m InteractionEnterResultSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteByteArray(m.roomBytes)
+		w.WriteByteArray(m.room.Encode(l, ctx)(options))
 		return w.Bytes()
 	}
 }
 
-func (m *InteractionEnterResultSuccess) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *InteractionEnterResultSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: variable-length room encoding
+		m.mode = r.ReadByte()
+		m.room.Decode(l, ctx)(r, options)
 	}
 }
 

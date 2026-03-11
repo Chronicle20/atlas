@@ -21,7 +21,7 @@ func CashShopCheckWalletHandleFunc(l logrus.FieldLogger, ctx context.Context, wp
 			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 			w = wallet.Model{}
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(w.Credit(), w.Points(), w.Prepaid()))(s)
+		err = session.Announce(l)(ctx)(wp)(cash2.CashQueryResultWriter)(cash2.NewCashQueryResult(w.Credit(), w.Points(), w.Prepaid()).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
 			return

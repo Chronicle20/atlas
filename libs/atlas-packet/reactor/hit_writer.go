@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ReactorHitWriter = "ReactorHitW"
+const ReactorHitWriter = "ReactorHit"
 
 type HitW struct {
 	id        uint32

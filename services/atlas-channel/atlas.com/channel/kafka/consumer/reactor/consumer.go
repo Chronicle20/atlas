@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	reactorpkt "github.com/Chronicle20/atlas-packet/reactor"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -70,7 +71,7 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorSpawn)(writer.ReactorSpawnBody(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorSpawnWriter)(reactorpkt.NewReactorSpawn(r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction(), r.Name()).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
 		}
@@ -87,7 +88,7 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[reacto
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorDestroy)(writer.ReactorDestroyBody(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorDestroyWriter)(reactorpkt.NewReactorDestroy(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy reactor [%d] for characters in map [%d].", e.ReactorId, e.MapId)
 		}
@@ -112,7 +113,7 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.ReactorHit)(writer.ReactorHitBody(r)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorHitWriter)(reactorpkt.NewReactorHitW(r.Id(), r.State(), r.X(), r.Y(), uint16(r.Direction())).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send reactor hit [%d] to characters in map [%d].", r.Id(), e.MapId)
 		}

@@ -3,6 +3,7 @@ package writer
 import (
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	merchantpkt "github.com/Chronicle20/atlas-packet/merchant"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
@@ -12,7 +13,6 @@ type HiredMerchantOperationMode string
 
 const (
 	// HiredMerchantOperation CWvsContext::OnEntrustedShopCheckResult
-	HiredMerchantOperation = "HiredMerchantOperation"
 
 	HiredMerchantOperationModeOpenShop                            = "OPEN_SHOP"                                 // 7
 	HiredMerchantOperationModeErrorUnknown                        = "ERROR_UNKNOWN"                             // 8
@@ -124,24 +124,6 @@ func HiredMerchantOperationFreeFormNoticeBody(message string) packet.Encode {
 
 func getHiredMerchantOperationMode(l logrus.FieldLogger) func(options map[string]interface{}, key HiredMerchantOperationMode) byte {
 	return func(options map[string]interface{}, key HiredMerchantOperationMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

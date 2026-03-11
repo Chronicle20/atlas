@@ -19,6 +19,8 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	droppkt "github.com/Chronicle20/atlas-packet/drop"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -74,7 +76,11 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropSpawn)(writer.DropSpawnBody(d, writer.DropEnterTypeFresh, int16(e.Body.Mod))))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(droppkt.DropSpawnWriter)(droppkt.NewDropSpawn(
+			droppkt.DropEnterTypeFresh, d.Id(), d.Meso(), d.ItemId(),
+			d.Owner(), d.Type(), d.X(), d.Y(), d.DropperId(),
+			d.DropperX(), d.DropperY(), int16(e.Body.Mod), d.CharacterDrop(),
+		).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn drop [%d] for characters in map [%d].", d.Id(), e.MapId)
 		}
@@ -92,7 +98,7 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, writer.DropDestroyTypeExpire, s.CharacterId(), -1))(s)
+			return session.Announce(l)(ctx)(wp)(droppkt.DropDestroyWriter)(droppkt.NewDropDestroy(e.DropId, droppkt.DropDestroyTypeExpire, s.CharacterId(), -1).Encode)(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy drop [%d] for characters in map [%d].", e.DropId, e.MapId)
@@ -110,7 +116,7 @@ func handleStatusEventConsumed(sc server.Model, wp writer.Producer) message.Hand
 			return
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, writer.DropDestroyTypeExplode, 0, -1)))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(droppkt.DropDestroyWriter)(droppkt.NewDropDestroy(e.DropId, droppkt.DropDestroyTypeExplode, 0, -1).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy consumed drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 		}
@@ -140,7 +146,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 					bp = writer.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
 				}
 
-				err := session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(bp)(s)
+				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(bp)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write status message to character [%d] picking up drop [%d].", s.CharacterId(), e.DropId)
 				}
@@ -149,12 +155,12 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 		}()
 
 		go func() {
-			dt := writer.DropDestroyTypePickUp
+			dt := droppkt.DropDestroyTypePickUp
 			if e.Body.PetSlot >= 0 {
-				dt = writer.DropDestroyTypePetPickUp
+				dt = droppkt.DropDestroyTypePetPickUp
 			}
 
-			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(writer.DropDestroy)(writer.DropDestroyBody(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot)))
+			err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(droppkt.DropDestroyWriter)(droppkt.NewDropDestroy(e.DropId, dt, e.Body.CharacterId, e.Body.PetSlot).Encode))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to pick up drop [%d] for characters in map [%d].", e.DropId, e.MapId)
 			}

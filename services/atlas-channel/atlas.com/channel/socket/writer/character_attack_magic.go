@@ -10,7 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterAttackMagic = "CharacterAttackMagic"
 
 func CharacterAttackMagicBody(c character.Model, ai packetmodel.AttackInfo) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

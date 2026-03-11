@@ -8,13 +8,13 @@ import (
 	model2 "atlas-channel/socket/model"
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	cashpkt "github.com/Chronicle20/atlas-packet/cash"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	CashShopOperation                                 = "CashShopOperation"
 	CashShopOperationLoadInventorySuccess             = "LOAD_INVENTORY_SUCCESS"
 	CashShopOperationLoadInventoryFailure             = "LOAD_INVENTORY_FAILURE"
 	CashShopOperationInventoryCapacityIncreaseSuccess = "INVENTORY_CAPACITY_INCREASE_SUCCESS"
@@ -174,8 +174,7 @@ func CashShopCashItemMovedToInventoryBody(a asset2.Model) packet.Encode {
 		return func(options map[string]interface{}) []byte {
 			mode := getCashShopOperation(l)(options, CashShopOperationCashItemMovedToInventory)
 			am := model2.NewAsset(true, a)
-			assetBytes := am.Encode(l, ctx)(options)
-			return cashpkt.NewCashItemMovedToInventory(mode, uint16(a.Slot()), assetBytes).Encode(l, ctx)(options)
+			return cashpkt.NewCashItemMovedToInventory(mode, uint16(a.Slot()), am).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -201,48 +200,12 @@ func CashShopCashItemMovedToCashInventoryBody(accountId uint32, characterId uint
 
 func getCashShopOperation(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 99
-		}
-
-		res, ok := codes[key].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 99
-		}
-		return byte(res)
+		return atlas_packet.ResolveCode(l, options, "operations", key)
 	}
 }
 
 func getCashShopOperationError(l logrus.FieldLogger) func(options map[string]interface{}, key string) byte {
 	return func(options map[string]interface{}, key string) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["errors"]; !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-
-		res, ok := codes[key].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use.", key)
-			return 0
-		}
-		return byte(res)
+		return atlas_packet.ResolveCode(l, options, "errors", key)
 	}
 }

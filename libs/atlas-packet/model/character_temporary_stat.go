@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-packet/tool"
 	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -20,13 +21,18 @@ type CharacterTemporaryStatType struct {
 	mask               tool.Uint128
 	disease            bool
 	foreignValueWriter ForeignValueWriter
+	foreignValueReader ForeignValueReader
 }
 
 func (t CharacterTemporaryStatType) Shift() uint {
 	return t.shift
 }
 
-func NewCharacterTemporaryStatType(name character.TemporaryStatType, shift uint, disease bool, foreignValueWriter ForeignValueWriter) CharacterTemporaryStatType {
+func (t CharacterTemporaryStatType) Name() character.TemporaryStatType {
+	return t.name
+}
+
+func NewCharacterTemporaryStatType(name character.TemporaryStatType, shift uint, disease bool, foreignValueWriter ForeignValueWriter, foreignValueReader ForeignValueReader) CharacterTemporaryStatType {
 	mask := tool.Uint128{L: 1}.ShiftLeft(shift)
 	return CharacterTemporaryStatType{
 		name:               name,
@@ -34,17 +40,26 @@ func NewCharacterTemporaryStatType(name character.TemporaryStatType, shift uint,
 		mask:               mask,
 		disease:            disease,
 		foreignValueWriter: foreignValueWriter,
+		foreignValueReader: foreignValueReader,
 	}
 }
 
-func CharacterTemporaryStatTypeByName(t tenant.Model) func(name character.TemporaryStatType) (CharacterTemporaryStatType, error) {
+type characterTemporaryStatRegistry struct {
+	byName  map[character.TemporaryStatType]CharacterTemporaryStatType
+	inOrder []CharacterTemporaryStatType
+}
+
+func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatRegistry {
 	var shift uint = 0
 	set := make(map[character.TemporaryStatType]CharacterTemporaryStatType)
+	var ordered []CharacterTemporaryStatType
 
-	funcCallNewAndInc := func(disease bool) func(name character.TemporaryStatType) func(foreignValueWriter ForeignValueWriter) {
-		return func(name character.TemporaryStatType) func(foreignValueWriter ForeignValueWriter) {
-			return func(foreignValueWriter ForeignValueWriter) {
-				set[name] = NewCharacterTemporaryStatType(name, shift, disease, foreignValueWriter)
+	funcCallNewAndInc := func(disease bool) func(name character.TemporaryStatType) func(w ForeignValueWriter, r ForeignValueReader) {
+		return func(name character.TemporaryStatType) func(w ForeignValueWriter, r ForeignValueReader) {
+			return func(w ForeignValueWriter, r ForeignValueReader) {
+				st := NewCharacterTemporaryStatType(name, shift, disease, w, r)
+				set[name] = st
+				ordered = append(ordered, st)
 				shift += 1
 			}
 		}
@@ -52,133 +67,138 @@ func CharacterTemporaryStatTypeByName(t tenant.Model) func(name character.Tempor
 	newAndIncDiseased := funcCallNewAndInc(true)
 	newAndIncNonDiseased := funcCallNewAndInc(false)
 
-	newAndIncNonDiseased(character.TemporaryStatTypeWeaponAttack)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeWeaponDefense)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMagicAttack)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMagicDefense)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeAccuracy)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeAvoidability)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHands)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSpeed)(ValueAsByteForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeJump)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMagicGuard)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDarkSight)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBooster)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypePowerGuard)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyHP)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyMP)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeInvincible)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSoulArrow)(NoOpForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeStun)(ValueAsIntForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypePoison)(ValueSourceLevelForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeSeal)(ValueAsIntForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeDarkness)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeCombo)(ValueAsByteForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeWhiteKnightCharge)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDragonBlood)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHolySymbol)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMesoUp)(NoOpForeignValueWriter)
+	newAndIncNonDiseased(character.TemporaryStatTypeWeaponAttack)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeWeaponDefense)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicAttack)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicDefense)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeAccuracy)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeAvoidability)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHands)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpeed)(ValueAsByteForeignValueWriter, ByteForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeJump)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDarkSight)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBooster)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypePowerGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyHP)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHyperBodyMP)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeInvincible)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulArrow)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeStun)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypePoison)(ValueSourceLevelForeignValueWriter, ValueSourceLevelForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeSeal)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeDarkness)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeCombo)(ValueAsByteForeignValueWriter, ByteForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeWhiteKnightCharge)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDragonBlood)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHolySymbol)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoUp)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	if t.Region() == "GMS" && t.MajorVersion() > 83 {
-		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(LevelSourceForeignValueWriter)
+		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
 	} else {
-		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(NoOpForeignValueWriter)
+		newAndIncNonDiseased(character.TemporaryStatTypeShadowPartner)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	}
-	newAndIncNonDiseased(character.TemporaryStatTypePickPocket)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMesoGuard)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeThaw)(NoOpForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeWeaken)(ValueAsIntForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeCurse)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSlow)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMorph)(ValueAsShortForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeRecovery)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMapleWarrior)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeStance)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSharpEyes)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeManaReflection)(NoOpForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeSeduce)(LevelSourceForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeShadowClaw)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeInfinity)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHolyShield)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHamstring)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBlind)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeConcentrate)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBanMap)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeEchoOfHero)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMesoUpByItem)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeGhostMorph)(ValueAsShortForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBarrier)(ValueAsIntForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeConfuse)(LevelSourceForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeItemUpByItem)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeRespectPImmune)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeRespectMImmune)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDefenseAttack)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDefenseState)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectHpPotion)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectMpPotion)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBerserkFury)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDivineBody)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSpark)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDojangShield)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSoulMasterFinal)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeWindBreakerFinal)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeElementalReset)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeWindWalk)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeEventRate)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeAranCombo)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeComboDrain)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeComboBarrier)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeBodyPressure)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSmartKnockBack)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeRepeatEffect)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeExpBuffRate)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeStopPortion)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeStopMotion)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeFear)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeEvanSlow)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMagicShield)(ValueAsIntForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMagicResist)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSoulStone)(NoOpForeignValueWriter)
+	newAndIncNonDiseased(character.TemporaryStatTypePickPocket)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeThaw)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeWeaken)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeCurse)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSlow)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMorph)(ValueAsShortForeignValueWriter, ShortForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeRecovery)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMapleWarrior)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeStance)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSharpEyes)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeManaReflection)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeSeduce)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeShadowClaw)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeInfinity)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHolyShield)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHamstring)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBlind)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeConcentrate)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBanMap)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeEchoOfHero)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMesoUpByItem)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeGhostMorph)(ValueAsShortForeignValueWriter, ShortForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBarrier)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeConfuse)(LevelSourceForeignValueWriter, LevelSourceForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeItemUpByItem)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeRespectPImmune)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeRespectMImmune)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDefenseAttack)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDefenseState)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectHpPotion)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeIncreaseEffectMpPotion)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBerserkFury)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDivineBody)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpark)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDojangShield)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulMasterFinal)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeWindBreakerFinal)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeElementalReset)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeWindWalk)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeEventRate)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeAranCombo)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeComboDrain)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeComboBarrier)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeBodyPressure)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSmartKnockBack)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeRepeatEffect)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeExpBuffRate)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeStopPortion)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeStopMotion)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeFear)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeEvanSlow)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicShield)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMagicResist)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSoulStone)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	if (t.Region() == "GMS" && t.MajorVersion() > 83) || t.Region() == "JMS" {
-		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeMirrorImage)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)(ValueAsIntForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)(ValueAsIntForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeThornsEffect)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSwallowAttackDamage)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeWildDamageUp)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeMine)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeEMHP)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeEMMP)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeEPAD)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeEPPD)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeEMDD)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeGuard)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSafetyDamage)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSafetyAbsorb)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeCyclone)(ValueAsByteForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSwallowCritical)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSwallowMaxMP)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSwallowDefense)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSwallowEvasion)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeConversion)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeRevive)(NoOpForeignValueWriter)
-		newAndIncNonDiseased(character.TemporaryStatTypeSneak)(NoOpForeignValueWriter)
+		newAndIncNonDiseased(character.TemporaryStatTypeFlying)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeFrozen)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeAssistCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeMirrorImage)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSuddenDeath)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeNotDamaged)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeFinalCut)(ValueAsIntForeignValueWriter, IntForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeThornsEffect)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowAttackDamage)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeWildDamageUp)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeMine)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMHP)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMMP)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeEPAD)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeEPPD)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeEMDD)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeGuard)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyDamage)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSafetyAbsorb)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeCyclone)(ValueAsByteForeignValueWriter, ByteForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowCritical)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowMaxMP)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowDefense)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSwallowEvasion)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeConversion)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeRevive)(NoOpForeignValueWriter, NoOpForeignValueReader)
+		newAndIncNonDiseased(character.TemporaryStatTypeSneak)(NoOpForeignValueWriter, NoOpForeignValueReader)
 
-		newAndIncNonDiseased(character.TemporaryStatTypeUnknown)(NoOpForeignValueWriter)
+		newAndIncNonDiseased(character.TemporaryStatTypeUnknown)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	}
-	newAndIncNonDiseased(character.TemporaryStatTypeEnergyCharge)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDashSpeed)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeDashJump)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeMonsterRiding)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeSpeedInfusion)(NoOpForeignValueWriter)
-	newAndIncNonDiseased(character.TemporaryStatTypeHomingBeacon)(NoOpForeignValueWriter)
-	newAndIncDiseased(character.TemporaryStatTypeUndead)(NoOpForeignValueWriter)
+	newAndIncNonDiseased(character.TemporaryStatTypeEnergyCharge)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDashSpeed)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeDashJump)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeMonsterRiding)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeSpeedInfusion)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncNonDiseased(character.TemporaryStatTypeHomingBeacon)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeUndead)(NoOpForeignValueWriter, NoOpForeignValueReader)
 
+	return characterTemporaryStatRegistry{byName: set, inOrder: ordered}
+}
+
+func CharacterTemporaryStatTypeByName(t tenant.Model) func(name character.TemporaryStatType) (CharacterTemporaryStatType, error) {
+	reg := buildCharacterTemporaryStatRegistry(t)
 	return func(name character.TemporaryStatType) (CharacterTemporaryStatType, error) {
-		if val, ok := set[name]; ok {
+		if val, ok := reg.byName[name]; ok {
 			return val, nil
 		}
 		return CharacterTemporaryStatType{}, errors.New("character temporary stat type not found")
@@ -225,6 +245,37 @@ func ValueSourceLevelForeignValueWriter(v CharacterTemporaryStatValue) func(w *r
 	}
 }
 
+type ForeignValueReader func(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue
+
+func NoOpForeignValueReader(_ *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	return CharacterTemporaryStatValue{statType: st}
+}
+
+func ByteForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	return CharacterTemporaryStatValue{statType: st, value: int32(r.ReadInt8())}
+}
+
+func ShortForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	return CharacterTemporaryStatValue{statType: st, value: int32(r.ReadInt16())}
+}
+
+func IntForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	return CharacterTemporaryStatValue{statType: st, value: r.ReadInt32()}
+}
+
+func LevelSourceForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	level := byte(r.ReadInt16())
+	sourceId := int32(r.ReadInt16())
+	return CharacterTemporaryStatValue{statType: st, level: level, sourceId: sourceId}
+}
+
+func ValueSourceLevelForeignValueReader(r *request.Reader, st CharacterTemporaryStatType) CharacterTemporaryStatValue {
+	value := int32(r.ReadInt16())
+	level := byte(r.ReadInt16())
+	sourceId := int32(r.ReadInt16())
+	return CharacterTemporaryStatValue{statType: st, value: value, level: level, sourceId: sourceId}
+}
+
 type CharacterTemporaryStatValue struct {
 	statType  CharacterTemporaryStatType
 	sourceId  int32
@@ -268,6 +319,16 @@ func NewCharacterTemporaryStatBase(bDynamicTermSet bool) CharacterTemporaryStatB
 	}
 }
 
+func readTime(r *request.Reader) int64 {
+	interval := r.ReadBool()
+	delta := int64(r.ReadInt32()) * 1000
+	cur := time.Now().Unix()
+	if interval {
+		return cur - delta
+	}
+	return cur + delta
+}
+
 func writeTime(t int64) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		cur := time.Now().Unix()
@@ -297,6 +358,17 @@ func (m CharacterTemporaryStatBase) Encode(l logrus.FieldLogger, _ context.Conte
 	}
 }
 
+func (m *CharacterTemporaryStatBase) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.nOption = r.ReadInt32()
+		m.rOption = r.ReadInt32()
+		m.tLastUpdated = readTime(r)
+		if m.bDynamicTermSet {
+			m.usExpireItem = r.ReadInt16()
+		}
+	}
+}
+
 type SpeedInfusionTemporaryStat struct {
 	CharacterTemporaryStatBase
 	tCurrentTime int32
@@ -309,6 +381,14 @@ func (m SpeedInfusionTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Con
 		writeTime(int64(m.tCurrentTime))(w)
 		w.WriteInt16(m.usExpireItem)
 		return w.Bytes()
+	}
+}
+
+func (m *SpeedInfusionTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.CharacterTemporaryStatBase.Decode(l, ctx)(r, options)
+		m.tCurrentTime = int32(readTime(r))
+		m.usExpireItem = r.ReadInt16()
 	}
 }
 
@@ -336,6 +416,13 @@ func (m GuidedBulletTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Cont
 		w.WriteByteArray(m.CharacterTemporaryStatBase.Encode(l, ctx)(options))
 		w.WriteInt(m.dwMobId)
 		return w.Bytes()
+	}
+}
+
+func (m *GuidedBulletTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.CharacterTemporaryStatBase.Decode(l, ctx)(r, options)
+		m.dwMobId = r.ReadUint32()
 	}
 }
 
@@ -486,6 +573,93 @@ func (m *CharacterTemporaryStat) EncodeForeign(l logrus.FieldLogger, ctx context
 			w.WriteByteArray(bts.Encode(l, ctx)(options))
 		}
 		return w.Bytes()
+	}
+}
+
+var baseStatNames = map[character.TemporaryStatType]bool{
+	character.TemporaryStatTypeEnergyCharge: true,
+	character.TemporaryStatTypeDashSpeed:    true,
+	character.TemporaryStatTypeDashJump:     true,
+	character.TemporaryStatTypeMonsterRiding: true,
+	character.TemporaryStatTypeSpeedInfusion: true,
+	character.TemporaryStatTypeHomingBeacon:  true,
+	character.TemporaryStatTypeUndead:        true,
+}
+
+func (m *CharacterTemporaryStat) DecodeMask(r *request.Reader) tool.Uint128 {
+	h1 := uint64(r.ReadUint32()) << 32
+	h2 := uint64(r.ReadUint32())
+	l1 := uint64(r.ReadUint32()) << 32
+	l2 := uint64(r.ReadUint32())
+	return tool.Uint128{H: h1 | h2, L: l1 | l2}
+}
+
+func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
+		mask := m.DecodeMask(r)
+		reg := buildCharacterTemporaryStatRegistry(t)
+
+		for _, st := range reg.inOrder {
+			if mask.And(st.mask).IsZero() {
+				continue
+			}
+			if baseStatNames[st.name] {
+				continue
+			}
+			value := r.ReadInt16()
+			sourceId := r.ReadInt32()
+			_ = r.ReadInt32() // expiresAt (relative ms)
+			m.stats[st.name] = CharacterTemporaryStatValue{
+				statType: st,
+				sourceId: sourceId,
+				value:    int32(value),
+			}
+		}
+
+		_ = r.ReadByte() // nDefenseAtt
+		_ = r.ReadByte() // nDefenseState
+
+		m.decodeBaseTemporaryStats(l, ctx)(r, options)
+	}
+}
+
+func (m *CharacterTemporaryStat) DecodeForeign(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	return func(r *request.Reader, options map[string]interface{}) {
+		mask := m.DecodeMask(r)
+		reg := buildCharacterTemporaryStatRegistry(t)
+
+		for _, st := range reg.inOrder {
+			if mask.And(st.mask).IsZero() {
+				continue
+			}
+			if baseStatNames[st.name] {
+				continue
+			}
+			v := st.foreignValueReader(r, st)
+			m.stats[st.name] = v
+		}
+
+		_ = r.ReadByte() // nDefenseAtt
+		_ = r.ReadByte() // nDefenseState
+
+		m.decodeBaseTemporaryStats(l, ctx)(r, options)
+	}
+}
+
+func (m *CharacterTemporaryStat) decodeBaseTemporaryStats(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		for i := 0; i < 4; i++ {
+			base := CharacterTemporaryStatBase{bDynamicTermSet: true}
+			base.Decode(l, ctx)(r, options)
+		}
+		base := CharacterTemporaryStatBase{bDynamicTermSet: false}
+		base.Decode(l, ctx)(r, options)
+		si := SpeedInfusionTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
+		si.Decode(l, ctx)(r, options)
+		gb := GuidedBulletTemporaryStat{CharacterTemporaryStatBase: CharacterTemporaryStatBase{bDynamicTermSet: false}}
+		gb.Decode(l, ctx)(r, options)
 	}
 }
 

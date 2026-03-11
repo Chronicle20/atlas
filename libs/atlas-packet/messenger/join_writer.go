@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const MessengerOperationWriter = "MessengerOperationW"
+const MessengerOperationWriter = "MessengerOperation"
 
 type JoinW struct {
 	mode     byte

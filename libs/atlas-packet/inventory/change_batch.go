@@ -9,43 +9,60 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ChangeBatch - multi-operation inventory change with pre-encoded entries
+// ChangeBatch - multi-operation inventory change with structured entries.
 type ChangeBatch struct {
-	silent     bool
-	entryBytes [][]byte
-	addMov     int8
+	silent  bool
+	entries []ChangeEntry
 }
 
-func NewChangeBatch(silent bool, entryBytes [][]byte, addMov int8) ChangeBatch {
-	return ChangeBatch{silent: silent, entryBytes: entryBytes, addMov: addMov}
+func NewChangeBatch(silent bool, entries ...ChangeEntry) ChangeBatch {
+	return ChangeBatch{silent: silent, entries: entries}
 }
 
-func (m ChangeBatch) Silent() bool        { return m.silent }
-func (m ChangeBatch) EntryBytes() [][]byte { return m.entryBytes }
-func (m ChangeBatch) AddMov() int8        { return m.addMov }
-func (m ChangeBatch) Operation() string   { return InventoryChangeWriter }
+func (m ChangeBatch) Silent() bool          { return m.silent }
+func (m ChangeBatch) Entries() []ChangeEntry { return m.entries }
+func (m ChangeBatch) Operation() string     { return InventoryChangeWriter }
 
 func (m ChangeBatch) String() string {
-	return fmt.Sprintf("change batch entries [%d]", len(m.entryBytes))
+	return fmt.Sprintf("change batch entries [%d]", len(m.entries))
 }
 
-func (m ChangeBatch) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ChangeBatch) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteBool(!m.silent)
-		w.WriteByte(byte(len(m.entryBytes)))
-		for _, entry := range m.entryBytes {
-			w.WriteByteArray(entry)
+		w.WriteByte(byte(len(m.entries)))
+		addMov := int8(-1)
+		for _, entry := range m.entries {
+			w.WriteByteArray(entry.EncodeEntry(l, ctx)(options))
+			if entry.EntryAddMov() > addMov {
+				addMov = entry.EntryAddMov()
+			}
 		}
-		if m.addMov > -1 {
-			w.WriteInt8(m.addMov)
+		if addMov > -1 {
+			w.WriteInt8(addMov)
 		}
 		return w.Bytes()
 	}
 }
 
-func (m *ChangeBatch) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ChangeBatch) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: server-send-only
+		m.silent = !r.ReadBool()
+		count := int(r.ReadByte())
+		m.entries = make([]ChangeEntry, 0, count)
+		for i := 0; i < count; i++ {
+			entry := DecodeChangeEntry(l, ctx, r, options)
+			if entry != nil {
+				m.entries = append(m.entries, entry)
+			}
+		}
+		// Read addMov if any entry indicates equipment state change
+		for _, entry := range m.entries {
+			if entry.EntryAddMov() > -1 {
+				_ = r.ReadInt8()
+				break
+			}
+		}
 	}
 }

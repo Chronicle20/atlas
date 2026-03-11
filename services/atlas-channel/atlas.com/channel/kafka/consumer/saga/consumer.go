@@ -8,6 +8,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	storagepkt "github.com/Chronicle20/atlas-packet/storage"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -107,7 +108,7 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 			}
 
 			// Send the error packet to the client
-			err := session.Announce(l)(ctx)(wp)(writer.StorageOperation)(errorBody)(s)
+			err := session.Announce(l)(ctx)(wp)(storagepkt.StorageOperationWriter)(errorBody)(s)
 			if err != nil {
 				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send storage error packet to client.")
 				return

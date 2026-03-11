@@ -22,7 +22,6 @@ var ControlMonsterTypePassive = ControlMonsterType(-1)
 var ControlMonsterTypePassive0 = ControlMonsterType(-2)
 var ControlMonsterTypePassive1 = ControlMonsterType(-3)
 
-const ControlMonster = "ControlMonster"
 
 func StartControlMonsterBody(m monster.Model, aggro bool) packet.Encode {
 	if aggro {

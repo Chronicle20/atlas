@@ -3,12 +3,12 @@ package writer
 import (
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	fieldpkt "github.com/Chronicle20/atlas-packet/field"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const FieldEffect = "FieldEffect"
 
 type FieldEffectMode string
 
@@ -100,24 +100,6 @@ func FieldEffectRewardRulletBody(nRewardJobIdx uint32, nRewardPartIdx uint32, nR
 
 func getFieldEffect(l logrus.FieldLogger) func(options map[string]interface{}, key FieldEffectMode) byte {
 	return func(options map[string]interface{}, key FieldEffectMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

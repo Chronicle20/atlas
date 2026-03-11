@@ -11,6 +11,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	partypkt "github.com/Chronicle20/atlas-packet/party"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -89,7 +90,7 @@ func partyCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32) model.Operator[session.Model] {
 			return func(partyId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyCreatedBody(partyId))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyCreatedBody(partyId))
 			}
 		}
 	}
@@ -140,7 +141,7 @@ func partyLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pr
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyLeftBody(p, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyLeftBody(p, tc, forChannel))
 			}
 		}
 	}
@@ -191,7 +192,7 @@ func partyExpel(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyExpelBody(p, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyExpelBody(p, tc, forChannel))
 			}
 		}
 	}
@@ -236,7 +237,7 @@ func partyDisband(l logrus.FieldLogger) func(ctx context.Context) func(wp writer
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(partyId uint32, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyDisbandBody(partyId, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyDisbandBody(partyId, tc, forChannel))
 			}
 		}
 	}
@@ -280,7 +281,7 @@ func partyJoined(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyJoinBody(p, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyJoinBody(p, tc, forChannel))
 			}
 		}
 	}
@@ -325,7 +326,7 @@ func partyChangeLeader(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
 			return func(partyId uint32, targetCharacterId uint32, disconnected bool) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyChangeLeaderBody(targetCharacterId, disconnected))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyChangeLeaderBody(targetCharacterId, disconnected))
 			}
 		}
 	}
@@ -349,7 +350,7 @@ func partyError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.P
 	return func(ctx context.Context) func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errorType string, name string) model.Operator[session.Model] {
 			return func(errorType string, name string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyErrorBody(errorType, name))
+				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(writer.PartyErrorBody(errorType, name))
 			}
 		}
 	}

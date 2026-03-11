@@ -9,7 +9,6 @@ import (
 	loginpkt "github.com/Chronicle20/atlas-packet/login"
 )
 
-const PinOperation = "PinOperation"
 
 type PinOperationMode string
 
@@ -45,7 +44,7 @@ func PinConnectionFailedBody() packet.Encode {
 func PinOperationBody(mode PinOperationMode) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(PinOperation, string(mode), "modes", options)
+			resolved := getCode(l)(loginpkt.PinOperationWriter, string(mode), "modes", options)
 			return loginpkt.NewPinOperation(resolved).Encode(l, ctx)(options)
 		}
 	}

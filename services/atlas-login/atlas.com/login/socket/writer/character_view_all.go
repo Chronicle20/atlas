@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterViewAll = "CharacterViewAll"
 
 type CharacterViewAllCode string
 
@@ -27,7 +26,7 @@ const (
 func CharacterViewAllCountBody(worldCount uint32, unk uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(CharacterViewAll, string(CharacterViewAllCodeCharacterCount), "codes", options)
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeCharacterCount), "codes", options)
 			return charpkt.NewCharacterViewAllCount(resolved, worldCount, unk).Encode(l, ctx)(options)
 		}
 	}
@@ -36,7 +35,7 @@ func CharacterViewAllCountBody(worldCount uint32, unk uint32) packet.Encode {
 func CharacterViewAllSearchFailedBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(CharacterViewAll, string(CharacterViewAllCodeSearchFailed), "codes", options)
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeSearchFailed), "codes", options)
 			return charpkt.NewCharacterViewAllSearchFailed(resolved).Encode(l, ctx)(options)
 		}
 	}
@@ -45,7 +44,7 @@ func CharacterViewAllSearchFailedBody() packet.Encode {
 func CharacterViewAllErrorBody() packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(CharacterViewAll, string(CharacterViewAllCodeErrorViewAll), "codes", options)
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeErrorViewAll), "codes", options)
 			return charpkt.NewCharacterViewAllError(resolved).Encode(l, ctx)(options)
 		}
 	}
@@ -54,7 +53,7 @@ func CharacterViewAllErrorBody() packet.Encode {
 func CharacterViewAllCharacterBody(worldId world.Id, characters []character.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
-			resolved := getCode(l)(CharacterViewAll, string(CharacterViewAllCodeNormal), "codes", options)
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeNormal), "codes", options)
 			entries := make([]packetmodel.CharacterListEntry, len(characters))
 			for i, c := range characters {
 				entries[i] = toCharacterListEntry(c)

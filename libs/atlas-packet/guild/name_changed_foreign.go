@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ForeignNameChangedWriter = "ForeignNameChanged"
+const GuildNameChangedWriter = "GuildNameChanged"
 
 type ForeignNameChanged struct {
 	characterId uint32
@@ -20,7 +20,7 @@ func NewForeignNameChanged(characterId uint32, name string) ForeignNameChanged {
 	return ForeignNameChanged{characterId: characterId, name: name}
 }
 
-func (m ForeignNameChanged) Operation() string { return ForeignNameChangedWriter }
+func (m ForeignNameChanged) Operation() string { return GuildNameChangedWriter }
 func (m ForeignNameChanged) String() string {
 	return fmt.Sprintf("characterId [%d], name [%s]", m.characterId, m.name)
 }

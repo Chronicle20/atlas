@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/item"
+	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -30,10 +31,12 @@ type MiniRoom interface {
 	Spawn(characterId uint32) packet.Encode
 	Despawn(characterId uint32) packet.Encode
 	Enter(characterId uint32) packet.Encode
+	ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room
 }
 
 type MiniRoomVisitor interface {
 	Enter() packet.Encode
+	ToPacketVisitor(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}) interactionpkt.Visitor
 }
 
 type MiniRoomBase struct {
@@ -102,6 +105,10 @@ func (m *MiniRoomBase) Enter(_ uint32) packet.Encode {
 	}
 }
 
+func (m *MiniRoomBase) ToPacketRoom(_ logrus.FieldLogger, _ context.Context, _ map[string]interface{}, _ uint32) interactionpkt.Room {
+	panic("concrete ToPacketRoom implementation needed")
+}
+
 type GameMiniRoom struct {
 	*MiniRoomBase
 	tournament bool
@@ -114,6 +121,14 @@ func (m *GameMiniRoom) Spawn(_ uint32) packet.Encode {
 			return []byte{}
 		}
 	}
+}
+
+func (m *GameMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, _ uint32) interactionpkt.Room {
+	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
+	for _, v := range m.Visitors() {
+		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
+	}
+	return interactionpkt.NewGameRoom(interactionpkt.RoomType(m.Type()), m.Capacity(), visitors, m.title, m.gameKind, m.tournament, m.round)
 }
 
 func (m *GameMiniRoom) Enter(_ uint32) packet.Encode {
@@ -177,6 +192,23 @@ type PersonalShopMiniRoom struct {
 	items        []ShopItem
 }
 
+func (m *PersonalShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, _ uint32) interactionpkt.Room {
+	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
+	for _, v := range m.Visitors() {
+		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
+	}
+	items := make([]interactionpkt.RoomShopItem, 0, len(m.items))
+	for _, i := range m.items {
+		items = append(items, interactionpkt.RoomShopItem{
+			PerBundle: i.perBundle,
+			Quantity:  i.quantity,
+			Price:     i.price,
+			Asset:     NewAsset(true, i.asset),
+		})
+	}
+	return interactionpkt.NewPersonalShopRoom(visitors, m.title, m.maxItemCount, items)
+}
+
 func (m *PersonalShopMiniRoom) Enter(_ uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		w := response.NewWriter(l)
@@ -233,6 +265,29 @@ type MerchantShopMiniRoom struct {
 	maxItemCount byte
 	messages     []MiniRoomMessage
 	items        []ShopItem
+}
+
+func (m *MerchantShopMiniRoom) ToPacketRoom(l logrus.FieldLogger, ctx context.Context, options map[string]interface{}, characterId uint32) interactionpkt.Room {
+	visitors := make([]interactionpkt.Visitor, 0, len(m.Visitors()))
+	for _, v := range m.Visitors() {
+		visitors = append(visitors, v.ToPacketVisitor(l, ctx, options))
+	}
+	var messages []interactionpkt.RoomMessage
+	if characterId == m.ownerId {
+		for _, msg := range m.messages {
+			messages = append(messages, interactionpkt.RoomMessage{Message: msg.message, Slot: msg.slot})
+		}
+	}
+	items := make([]interactionpkt.RoomShopItem, 0, len(m.items))
+	for _, i := range m.items {
+		items = append(items, interactionpkt.RoomShopItem{
+			PerBundle: i.perBundle,
+			Quantity:  i.quantity,
+			Price:     i.price,
+			Asset:     NewAsset(true, i.asset),
+		})
+	}
+	return interactionpkt.NewMerchantShopRoom(visitors, messages, m.ownerName, m.maxItemCount, m.meso, items)
 }
 
 func (m *MerchantShopMiniRoom) Enter(characterId uint32) packet.Encode {
@@ -310,6 +365,10 @@ func (m *MiniRoomVisitorBase) Enter() packet.Encode {
 	}
 }
 
+func (m *MiniRoomVisitorBase) ToPacketVisitor(_ logrus.FieldLogger, _ context.Context, _ map[string]interface{}) interactionpkt.Visitor {
+	return interactionpkt.NewBaseVisitor(m.slot, m.avatar, m.name)
+}
+
 type MiniGameRoomVisitor struct {
 	mrb    MiniRoomVisitorBase
 	record MiniGameRecord
@@ -324,6 +383,17 @@ func (m *MiniGameRoomVisitor) Enter() packet.Encode {
 			return w.Bytes()
 		}
 	}
+}
+
+func (m *MiniGameRoomVisitor) ToPacketVisitor(_ logrus.FieldLogger, _ context.Context, _ map[string]interface{}) interactionpkt.Visitor {
+	record := interactionpkt.GameRecord{
+		Unknown: m.record.Unknown,
+		Wins:    m.record.Wins,
+		Ties:    m.record.Ties,
+		Losses:  m.record.Losses,
+		Points:  m.record.Points,
+	}
+	return interactionpkt.NewGameVisitor(m.mrb.slot, m.mrb.avatar, m.mrb.name, record)
 }
 
 type MerchantOwnerVisitor struct {
@@ -341,4 +411,8 @@ func (m *MerchantOwnerVisitor) Enter() packet.Encode {
 			return w.Bytes()
 		}
 	}
+}
+
+func (m *MerchantOwnerVisitor) ToPacketVisitor(_ logrus.FieldLogger, _ context.Context, _ map[string]interface{}) interactionpkt.Visitor {
+	return interactionpkt.NewMerchantVisitor(uint32(m.itemId), m.merchantName)
 }

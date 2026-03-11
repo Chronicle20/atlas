@@ -3,6 +3,7 @@ package writer
 import (
 	"context"
 
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	uipkt "github.com/Chronicle20/atlas-packet/ui"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
@@ -11,7 +12,6 @@ import (
 type UiWindow string
 
 const (
-	UiOpen                                = "UiOpen"
 	UiWindowItem                 UiWindow = "ITEM"                  // 0
 	UiWindowEquipment            UiWindow = "EQUIPMENT"             // 1
 	UiWindowStatistics           UiWindow = "STATISTICS"            // 2
@@ -46,24 +46,6 @@ func UiOpenBody(window UiWindow) packet.Encode {
 
 func getUiWindowMode(l logrus.FieldLogger) func(options map[string]interface{}, key UiWindow) byte {
 	return func(options map[string]interface{}, key UiWindow) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

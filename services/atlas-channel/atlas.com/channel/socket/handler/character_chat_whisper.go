@@ -26,7 +26,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if p.Mode() == chat.WhisperModeChat {
 			err := message.NewProcessor(l, ctx).WhisperChat(s.Field(), s.CharacterId(), p.Msg(), p.TargetName())
 			if err != nil {
-				_ = session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)(writer.CharacterChatWhisperSendFailureResultBody(p.TargetName(), false))(s)
+				_ = session.Announce(l)(ctx)(wp)(chat.WhisperWriter)(chat.NewWhisperSendResult(0x0A, p.TargetName(), false).Encode)(s)
 				return
 			}
 			return
@@ -40,32 +40,35 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 		return func(wp writer.Producer) func(mode chat.WhisperMode, targetName string) model.Operator[session.Model] {
 			return func(mode chat.WhisperMode, targetName string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					var resultMode writer.WhisperMode
+					var resultMode byte
 					if mode == chat.WhisperModeBuddyWindowFind {
-						resultMode = writer.WhisperModeBuddyWindowFindResult
+						resultMode = 0x48
 					} else {
-						resultMode = writer.WhisperModeFindResult
+						resultMode = 0x09
 					}
 
-					af := session.Announce(l)(ctx)(wp)(writer.CharacterChatWhisper)
+					af := session.Announce(l)(ctx)(wp)(chat.WhisperWriter)
 
 					tc, err := character.NewProcessor(l, ctx).GetByName(targetName)
 					if err != nil {
-						return af(writer.CharacterChatWhisperFindResultErrorBody(resultMode, targetName))(s)
+						return af(chat.NewWhisperFindResultError(resultMode, targetName).Encode)(s)
 					}
 					// TODO query cash shop.
 					cs := false
 					if cs {
-						return af(writer.CharacterChatWhisperFindResultInCashShopBody(resultMode, targetName))(s)
+						return af(chat.NewWhisperFindResultCashShop(resultMode, targetName).Encode)(s)
 					}
 
 					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
-						return af(writer.CharacterChatWhisperFindResultInMapBody(resultMode, tc, tc.MapId()))(s)
+						if resultMode == 0x09 {
+							return af(chat.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tc.MapId()), tc.X(), tc.Y()).Encode)(s)
+						}
+						return af(chat.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tc.MapId())).Encode)(s)
 					}
 
 					// TODO find a way to look up remote channel.
-					return af(writer.CharacterChatWhisperFindResultInOtherChannelBody(resultMode, targetName, 0))(s)
+					return af(chat.NewWhisperFindResultChannel(resultMode, targetName, 0).Encode)(s)
 				}
 			}
 		}

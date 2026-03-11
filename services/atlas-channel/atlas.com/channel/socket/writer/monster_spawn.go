@@ -11,7 +11,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const SpawnMonster = "SpawnMonster"
 
 func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *model.MonsterTemporaryStat {
 	stat := model.NewMonsterTemporaryStat()

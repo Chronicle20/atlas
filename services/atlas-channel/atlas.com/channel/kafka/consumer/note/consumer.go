@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	notepkt "github.com/Chronicle20/atlas-packet/note"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -65,7 +66,7 @@ func processNoteCreated(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 			return func(body note2.StatusEventCreatedBody) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					// Send the note to the client
-					err := session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteRefresh())(s)
+					err := session.Announce(l)(ctx)(wp)(notepkt.NoteOperationWriter)(writer.NoteRefresh())(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to display note [%d] for character [%d]", body.NoteId, s.CharacterId())
 					}

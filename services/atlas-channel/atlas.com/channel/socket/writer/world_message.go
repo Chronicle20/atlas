@@ -7,6 +7,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-model/model"
+	atlas_packet "github.com/Chronicle20/atlas-packet"
 	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-socket/response"
@@ -17,7 +18,6 @@ type WorldMessageMode string
 
 const (
 	// WorldMessage CWvsContext::OnBroadcastMsg
-	WorldMessage = "WorldMessage"
 
 	WorldMessageNotice           = WorldMessageMode("NOTICE")
 	WorldMessagePopUp            = WorldMessageMode("POP_UP")
@@ -230,24 +230,6 @@ func WorldMessageBody(mode WorldMessageMode, messages []string, channel channel.
 
 func getWorldMessageMode(l logrus.FieldLogger) func(options map[string]interface{}, key WorldMessageMode) byte {
 	return func(options map[string]interface{}, key WorldMessageMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

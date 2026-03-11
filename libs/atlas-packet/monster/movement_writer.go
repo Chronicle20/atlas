@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const MonsterMovementWriter = "MonsterMovementW"
+const MonsterMovementWriter = "MoveMonster"
 
 type MovementW struct {
 	uniqueId                    uint32

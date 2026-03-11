@@ -10,9 +10,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	GuildBBS = "GuildBBS"
-)
 
 func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {

@@ -49,7 +49,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopOpen)(writer.CashShopOpenBody(a, c, bl))(s)
+		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOpenWriter)(writer.CashShopOpenBody(a, c, bl))(s)
 		if err != nil {
 			return
 		}
@@ -67,12 +67,12 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			sd = storage.StorageData{Capacity: storage.DefaultStorageCapacity}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopCashInventoryBody(a, s.CharacterId(), ccp.Assets(), uint16(sd.Capacity)))(s)
+		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(writer.CashShopCashInventoryBody(a, s.CharacterId(), ccp.Assets(), uint16(sd.Capacity)))(s)
 		if err != nil {
 			return
 		}
 
-		//err = session.Announce(l)(wp)(writer.CashShopOperation)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
+		//err = session.Announce(l)(wp)(cash2.CashShopOperationWriter)(s, writer.CashShopCashGiftsBody(l)(s.Tenant()))
 		//if err != nil {
 		//	return
 		//}
@@ -82,7 +82,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 			return
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopOperation)(writer.CashShopWishListBody(false, wl))(s)
+		err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(writer.CashShopWishListBody(false, wl))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 		}
@@ -92,7 +92,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 			w = wallet.Model{}
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(w.Credit(), w.Points(), w.Prepaid()))(s)
+		err = session.Announce(l)(ctx)(wp)(cash2.CashQueryResultWriter)(cash2.NewCashQueryResult(w.Credit(), w.Points(), w.Prepaid()).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
 			return

@@ -8,7 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const KiteErrorWriter = "KiteError"
+const KiteErrorWriter = "SpawnKiteError"
 
 type KiteError struct{}
 

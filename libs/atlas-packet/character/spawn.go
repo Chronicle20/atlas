@@ -147,8 +147,92 @@ func (m CharacterSpawn) Encode(l logrus.FieldLogger, ctx context.Context) func(o
 	}
 }
 
-func (m *CharacterSpawn) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m CharacterSpawn) CharacterId() uint32              { return m.characterId }
+func (m CharacterSpawn) Level() byte                      { return m.level }
+func (m CharacterSpawn) Name() string                     { return m.name }
+func (m CharacterSpawn) Guild() GuildEmblem               { return m.guild }
+func (m CharacterSpawn) Cts() *model.CharacterTemporaryStat { return m.cts }
+func (m CharacterSpawn) JobId() uint16                    { return m.jobId }
+func (m CharacterSpawn) Avatar() model.Avatar             { return m.avatar }
+func (m CharacterSpawn) Pets() []SpawnPet                 { return m.pets }
+func (m CharacterSpawn) X() int16                         { return m.x }
+func (m CharacterSpawn) Y() int16                         { return m.y }
+func (m CharacterSpawn) Stance() byte                     { return m.stance }
+
+func (m *CharacterSpawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: CharacterSpawn is server-send-only with complex conditional encoding.
+		t := tenant.MustFromContext(ctx)
+
+		m.characterId = r.ReadUint32()
+		m.level = r.ReadByte()
+		m.name = r.ReadAsciiString()
+
+		m.guild.Name = r.ReadAsciiString()
+		m.guild.LogoBackground = r.ReadUint16()
+		m.guild.LogoBackgroundColor = r.ReadByte()
+		m.guild.Logo = r.ReadUint16()
+		m.guild.LogoColor = r.ReadByte()
+
+		m.cts = model.NewCharacterTemporaryStat()
+		m.cts.DecodeForeign(l, ctx)(r, options)
+
+		m.jobId = r.ReadUint16()
+		m.avatar.Decode(l, ctx)(r, options)
+
+		if (t.Region() == "GMS" && t.MajorVersion() > 87) || t.Region() == "JMS" {
+			_ = r.ReadUint32() // driver id
+			_ = r.ReadUint32() // passenger id
+		}
+		_ = r.ReadUint32() // choco count
+		_ = r.ReadUint32() // item effect
+		if t.Region() == "GMS" && t.MajorVersion() > 83 {
+			_ = r.ReadUint32() // nCompletedSetItemID
+		}
+		_ = r.ReadUint32() // chair
+
+		m.x = r.ReadInt16()
+		m.y = r.ReadInt16()
+		m.stance = r.ReadByte()
+
+		_ = r.ReadUint16() // fh
+		_ = r.ReadByte()   // bShowAdminEffect
+
+		// Pets: bool-terminated loop (true+data for each present pet, then false terminator)
+		m.pets = nil
+		slot := int8(0)
+		for r.ReadBool() {
+			pet := model.Pet{}
+			pet.Decode(l, ctx)(r, options)
+			m.pets = append(m.pets, SpawnPet{Slot: slot, Pet: pet})
+			slot++
+		}
+
+		_ = r.ReadUint32() // mount level
+		_ = r.ReadUint32() // mount exp
+		_ = r.ReadUint32() // mount tiredness
+		_ = r.ReadByte()   // mini room
+		_ = r.ReadByte()   // ad board
+		_ = r.ReadByte()   // couple ring
+		_ = r.ReadByte()   // friendship ring
+		_ = r.ReadByte()   // marriage ring
+
+		if t.Region() == "GMS" && t.MajorVersion() < 95 {
+			_ = r.ReadByte() // new year card
+		}
+
+		_ = r.ReadByte() // berserk
+
+		if t.Region() == "GMS" {
+			if t.MajorVersion() <= 87 {
+				_ = r.ReadByte()
+			}
+			if t.MajorVersion() > 87 {
+				_ = r.ReadByte()   // new year card
+				_ = r.ReadUint32() // nPhase
+			}
+		} else if t.Region() == "JMS" {
+			_ = r.ReadByte()
+		}
+		_ = r.ReadByte() // team
 	}
 }

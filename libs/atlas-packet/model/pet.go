@@ -3,6 +3,7 @@ package model
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
@@ -32,5 +33,19 @@ func (b Pet) Encode(l logrus.FieldLogger, _ context.Context) func(options map[st
 		w.WriteByte(b.NameTag)
 		w.WriteByte(b.ChatBalloon)
 		return w.Bytes()
+	}
+}
+
+func (b *Pet) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		b.TemplateId = r.ReadUint32()
+		b.Name = r.ReadAsciiString()
+		b.Id = uint32(r.ReadUint64())
+		b.X = r.ReadInt16()
+		b.Y = r.ReadInt16()
+		b.Stance = r.ReadByte()
+		b.Foothold = r.ReadInt16()
+		b.NameTag = r.ReadByte()
+		b.ChatBalloon = r.ReadByte()
 	}
 }

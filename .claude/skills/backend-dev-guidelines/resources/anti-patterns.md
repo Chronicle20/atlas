@@ -31,6 +31,9 @@ description: Common pitfalls to avoid when implementing Golang microservices.
 | jsonapi struct tags on REST models | Use interface methods (`GetName`, `GetID`, `SetID`) |
 | Plain http.HandlerFunc for routes | Use `server.RegisterHandler` for automatic tenant/tracing |
 
+| Type aliases for library migrations | Adds indirection; we control all services — update call sites directly |
+| Leaving dead code after refactoring | Unused constants/structs/functions clutter the codebase and cause confusion |
+
 **Always** prefer pure, context-aware, curried, and testable functions.
 
 **For REST:** Use `server.RegisterHandler` and `server.RegisterInputHandler` with flat JSON:API-compliant models.

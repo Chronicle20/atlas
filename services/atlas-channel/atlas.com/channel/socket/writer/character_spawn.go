@@ -4,14 +4,12 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/guild"
-	"atlas-channel/pet"
 	"atlas-channel/socket/model"
 	"context"
 
 	charpkt "github.com/Chronicle20/atlas-packet/character"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -30,7 +28,7 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 				ge.LogoColor = g.LogoColor()
 			}
 
-			cts := model.NewCharacterTemporaryStat()
+			cts := packetmodel.NewCharacterTemporaryStat()
 			for _, b := range bs {
 				for _, ch := range b.Changes() {
 					cts.AddStat(l)(t)(ch.Type(), b.SourceId(), ch.Amount(), b.Level(), b.ExpiresAt())
@@ -65,33 +63,4 @@ func CharacterSpawnBody(c character.Model, bs []buff.Model, g guild.Model, enter
 			).Encode(l, ctx)(options)
 		}
 	}
-}
-
-func writeForEachPet(w *response.Writer, ps []pet.Model, pe func(w *response.Writer, p pet.Model), pne func(w *response.Writer)) {
-	for i := int8(0); i < 3; i++ {
-		if ps == nil {
-			pne(w)
-			continue
-		}
-
-		var p *pet.Model
-		for _, rp := range ps {
-			if rp.Slot() == i {
-				p = &rp
-			}
-		}
-		if p != nil {
-			pe(w, *p)
-		} else {
-			pne(w)
-		}
-	}
-}
-
-func writePetId(w *response.Writer, pet pet.Model) {
-	w.WriteLong(uint64(pet.Id()))
-}
-
-func writeEmptyPetId(w *response.Writer) {
-	w.WriteLong(0)
 }

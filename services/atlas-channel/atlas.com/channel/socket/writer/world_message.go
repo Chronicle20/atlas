@@ -2,15 +2,12 @@ package writer
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-model/model"
 	atlas_packet "github.com/Chronicle20/atlas-packet"
 	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,11 +38,11 @@ const (
 )
 
 func WorldMessageNoticeBody(message string) packet.Encode {
-	return WorldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", NoOpOperator)
+	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0, 0)
 }
 
 func WorldMessagePopUpBody(message string) packet.Encode {
-	return WorldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", NoOpOperator)
+	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0, 0)
 }
 
 func decorateNameForMessage(medal string, characterName string) string {
@@ -63,121 +60,26 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 	return fmt.Sprintf("%s : %s", name, message)
 }
 
-func WorldMessageMegaphoneBody(medal string, characterName string, message string) packet.Encode {
-	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageMegaphone, []string{actualMessage}, 0, false, "", NoOpOperator)
-}
-
-func WorldMessageSuperMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) packet.Encode {
-	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageSuperMegaphone, []string{actualMessage}, channelId, whispersOn, "", NoOpOperator)
-}
-
 func WorldMessageTopScrollBody(message string) packet.Encode {
-	return WorldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", NoOpOperator)
-}
-
-func WorldMessageClearTopScrollBody() packet.Encode {
-	return WorldMessageBody(WorldMessageTopScroll, []string{""}, 0, false, "", NoOpOperator)
+	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0, 0)
 }
 
 func WorldMessagePinkTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", NoOpOperator)
+	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0, 0)
 }
 
 func WorldMessageBlueTextBody(medal string, characterName string, message string) packet.Encode {
 	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(0))
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0, 0)
 }
 
-func WorldMessageBlueTextWithItemBody(medal string, characterName string, message string, itemId uint32) packet.Encode {
-	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(itemId))
-}
-
-func WorldMessageNPCBody(message string, npcId uint32) packet.Encode {
-	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
-		return WorldMessageBody(WorldMessageBlueText, []string{message}, 0, false, "", NPCIdOperator(l)(npcId))(l, ctx)
-	}
-}
-
-func WorldMessageItemMegaphoneBody(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) packet.Encode {
-	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageItemMegaphone, []string{actualMessage}, channelId, whispersOn, "", operator)
-}
-
-func WorldMessageYellowMegaphoneBody(medal string, characterName string, message string, channelId channel.Id) packet.Encode {
-	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-	return WorldMessageBody(WorldMessageYellowMegaphone, []string{actualMessage}, channelId, false, "", NoOpOperator)
-}
-
-func WorldMessageMultiMegaphoneBody(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) packet.Encode {
-	actualMessages := make([]string, 0)
-	for _, m := range messages {
-		actualMessages = append(actualMessages, decorateMegaphoneMessage(medal, characterName, m))
-	}
-	return WorldMessageBody(WorldMessageMultiMegaphone, actualMessages, channelId, whispersOn, "", NoOpOperator)
-}
-
-func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) packet.Encode {
+func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, itemId uint32) packet.Encode {
 	actualMessage := decorateNameForMessage(medal, characterName)
-	return WorldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, operator)
+	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId, 0)
 }
 
-func NoOpOperator(_ *response.Writer) error {
-	return nil
-}
-
-func ItemIdOperator(itemId uint32) func(w *response.Writer) error {
-	return func(w *response.Writer) error {
-		w.WriteInt(itemId)
-		return nil
-	}
-}
-
-func SlotAsIntOperator(slot int16) model.Operator[*response.Writer] {
-	return func(w *response.Writer) error {
-		w.WriteInt32(int32(slot))
-		return nil
-	}
-}
-
-func NPCIdOperator(l logrus.FieldLogger) func(npcId uint32) model.Operator[*response.Writer] {
-	return func(npcId uint32) model.Operator[*response.Writer] {
-		return func(w *response.Writer) error {
-			if npcId == 0 {
-				l.Warnf("NPC should be provided for NPC mode.")
-				w.WriteInt(9010000)
-			} else {
-				w.WriteInt(npcId)
-			}
-			return nil
-		}
-	}
-}
-
-func extractUint32FromOperator(l logrus.FieldLogger, operator model.Operator[*response.Writer]) uint32 {
-	tw := response.NewWriter(l)
-	_ = operator(tw)
-	bs := tw.Bytes()
-	if len(bs) >= 4 {
-		return binary.BigEndian.Uint32(bs)
-	}
-	return 0
-}
-
-func extractInt32FromOperator(l logrus.FieldLogger, operator model.Operator[*response.Writer]) int32 {
-	tw := response.NewWriter(l)
-	_ = operator(tw)
-	bs := tw.Bytes()
-	if len(bs) >= 4 {
-		return int32(binary.BigEndian.Uint32(bs))
-	}
-	return 0
-}
-
-func WorldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, operator model.Operator[*response.Writer]) packet.Encode {
+func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32, slot int32) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			modeByte := getWorldMessageMode(l)(options, mode)
@@ -191,10 +93,8 @@ func WorldMessageBody(mode WorldMessageMode, messages []string, channel channel.
 			case WorldMessageSuperMegaphone:
 				return chatpkt.NewWorldMessageSuperMegaphone(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
 			case WorldMessageBlueText, WorldMessageNPC:
-				itemId := extractUint32FromOperator(l, operator)
 				return chatpkt.NewWorldMessageBlueText(modeByte, messages[0], itemId).Encode(l, ctx)(options)
 			case WorldMessageItemMegaphone:
-				slot := extractInt32FromOperator(l, operator)
 				return chatpkt.NewWorldMessageItemMegaphone(modeByte, messages[0], byte(channel), whispersOn, slot).Encode(l, ctx)(options)
 			case WorldMessageYellowMegaphone:
 				return chatpkt.NewWorldMessageYellowMegaphone(modeByte, messages[0], byte(channel)).Encode(l, ctx)(options)
@@ -204,25 +104,18 @@ func WorldMessageBody(mode WorldMessageMode, messages []string, channel channel.
 				}
 				return chatpkt.NewWorldMessageMultiMegaphone(modeByte, messages, byte(channel), whispersOn).Encode(l, ctx)(options)
 			case WorldMessageGachapon:
-				itemId := extractUint32FromOperator(l, operator)
 				return chatpkt.NewWorldMessageGachapon(modeByte, messages[0], townName, itemId).Encode(l, ctx)(options)
 			case WorldMessageWeather:
 				return chatpkt.NewWorldMessageWeather(modeByte, messages[0], 0).Encode(l, ctx)(options)
+			case WorldMessageUnk3, WorldMessageUnk4:
+				return chatpkt.NewWorldMessageUnknown3(modeByte, messages[0], itemId).Encode(l, ctx)(options)
+			case WorldMessageUnk7:
+				return chatpkt.NewWorldMessageUnknown7(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageUnk8:
+				return chatpkt.NewWorldMessageUnknown8(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
 			default:
-				// Fallback for unknown modes (Unk3, Unk4, Unk7, Unk8, etc.)
-				w := response.NewWriter(l)
-				w.WriteByte(modeByte)
-				w.WriteAsciiString(messages[0])
-				if mode == WorldMessageUnk3 || mode == WorldMessageUnk4 {
-					w.WriteAsciiString("doo")
-					_ = operator(w)
-				} else if mode == WorldMessageUnk7 {
-					w.WriteInt(0)
-				} else if mode == WorldMessageUnk8 {
-					w.WriteByte(byte(channel))
-					w.WriteBool(whispersOn)
-				}
-				return w.Bytes()
+				l.Warnf("Unhandled world message mode [%s].", mode)
+				return nil
 			}
 		}
 	}

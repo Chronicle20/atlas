@@ -38,6 +38,16 @@ func NewEffectSkillUse(mode byte, skillId uint32, characterLevel byte, skillLeve
 	}
 }
 
+// NewEffectSkillUseForDecode creates an EffectSkillUse with the constructor flags
+// needed to drive non-self-describing Decode branches.
+func NewEffectSkillUseForDecode(isBerserk bool, isDragonFury bool, isMonsterMagnet bool) EffectSkillUse {
+	return EffectSkillUse{
+		isBerserk:       isBerserk,
+		isDragonFury:    isDragonFury,
+		isMonsterMagnet: isMonsterMagnet,
+	}
+}
+
 func (m EffectSkillUse) Mode() byte              { return m.mode }
 func (m EffectSkillUse) SkillId() uint32          { return m.skillId }
 func (m EffectSkillUse) CharacterLevel() byte     { return m.characterLevel }
@@ -76,7 +86,19 @@ func (m EffectSkillUse) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 
 func (m *EffectSkillUse) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: server-send-only
+		m.mode = r.ReadByte()
+		m.skillId = r.ReadUint32()
+		m.characterLevel = r.ReadByte()
+		m.skillLevel = r.ReadByte()
+		if m.isBerserk {
+			m.berserkDarkForce = r.ReadBool()
+		}
+		if m.isDragonFury {
+			m.dragonFuryCreate = r.ReadBool()
+		}
+		if m.isMonsterMagnet {
+			m.monsterMagnetLeft = r.ReadBool()
+		}
 	}
 }
 
@@ -108,6 +130,16 @@ func NewEffectSkillUseForeign(characterId uint32, mode byte, skillId uint32, cha
 		isBerserk:         isBerserk,
 		isDragonFury:      isDragonFury,
 		isMonsterMagnet:   isMonsterMagnet,
+	}
+}
+
+// NewEffectSkillUseForeignForDecode creates an EffectSkillUseForeign with the
+// constructor flags needed to drive non-self-describing Decode branches.
+func NewEffectSkillUseForeignForDecode(isBerserk bool, isDragonFury bool, isMonsterMagnet bool) EffectSkillUseForeign {
+	return EffectSkillUseForeign{
+		isBerserk:       isBerserk,
+		isDragonFury:    isDragonFury,
+		isMonsterMagnet: isMonsterMagnet,
 	}
 }
 
@@ -151,6 +183,19 @@ func (m EffectSkillUseForeign) Encode(l logrus.FieldLogger, _ context.Context) f
 
 func (m *EffectSkillUseForeign) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: conditional bools not self-describing on wire
+		m.characterId = r.ReadUint32()
+		m.mode = r.ReadByte()
+		m.skillId = r.ReadUint32()
+		m.characterLevel = r.ReadByte()
+		m.skillLevel = r.ReadByte()
+		if m.isBerserk {
+			m.berserkDarkForce = r.ReadBool()
+		}
+		if m.isDragonFury {
+			m.dragonFuryCreate = r.ReadBool()
+		}
+		if m.isMonsterMagnet {
+			m.monsterMagnetLeft = r.ReadBool()
+		}
 	}
 }

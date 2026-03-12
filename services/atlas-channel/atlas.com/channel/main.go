@@ -4,8 +4,6 @@ import (
 	"atlas-channel/account"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/configuration"
-	handler2 "atlas-channel/configuration/tenant/socket/handler"
-	writer2 "atlas-channel/configuration/tenant/socket/writer"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
@@ -55,7 +53,6 @@ import (
 	"atlas-channel/tracing"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
@@ -89,9 +86,9 @@ import (
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-opcodes"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
-	sw "github.com/Chronicle20/atlas-socket/writer"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -342,9 +339,9 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l logrus.FieldLogger) func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
-	return func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
-		return getWriterProducer(l)(writers, writerList, w)
+func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
+	return func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
+		return opcodes.BuildWriterProducer(l, writers, writerList, w)
 	}
 }
 
@@ -530,53 +527,21 @@ func produceValidators() map[string]handler.MessageValidator {
 	return validatorMap
 }
 
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
-	return func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
-		rwm := make(map[string]writer.BodyFunc)
-		for _, wc := range writerConfig {
-			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to configure writer [%s] for opcode [%s].", wc.Writer, wc.OpCode)
-				continue
+func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+	return func(adapter handler.Adapter) func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+		return func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+			adapt := func(name string, v interface{}, h interface{}, options map[string]interface{}) request.Handler {
+				return adapter(name, v.(handler.MessageValidator), h.(handler.MessageHandler), options)
 			}
-
-			for _, wn := range wl {
-				if wn == wc.Writer {
-					rwm[wc.Writer] = sw.MessageGetter(w.Write(uint16(op)), wc.Options)
-				}
+			vmGeneric := make(map[string]interface{})
+			for k, v := range vm {
+				vmGeneric[k] = v
 			}
-		}
-		return sw.ProducerGetter(rwm)
-	}
-}
-
-func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-	return func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-		return func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-			handlers := make(map[uint16]request.Handler)
-			for _, hc := range handlerConfig {
-				var v handler.MessageValidator
-				var ok bool
-				if v, ok = vm[hc.Validator]; !ok {
-					l.Warnf("Unable to locate validator [%s] for handler[%s].", hc.Validator, hc.Handler)
-					continue
-				}
-
-				var h handler.MessageHandler
-				if h, ok = hm[hc.Handler]; !ok {
-					continue
-				}
-
-				op, err := strconv.ParseUint(hc.OpCode, 0, 16)
-				if err != nil {
-					l.WithError(err).Warnf("Unable to configure handler [%s] for opcode [%s].", hc.Handler, hc.OpCode)
-					continue
-				}
-
-				l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-				handlers[uint16(op)] = adapter(hc.Handler, v, h, hc.Options)
+			hmGeneric := make(map[string]interface{})
+			for k, v := range hm {
+				hmGeneric[k] = v
 			}
-
+			handlers := opcodes.BuildHandlerMap(l, handlerConfig, vmGeneric, hmGeneric, adapt)
 			return func() map[uint16]request.Handler {
 				return handlers
 			}

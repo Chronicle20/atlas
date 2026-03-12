@@ -2,28 +2,23 @@ package gachapon
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/compartment"
 	consumer2 "atlas-channel/kafka/consumer"
 	gachapon2 "atlas-channel/kafka/message/gachapon"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-socket/response"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -62,24 +57,6 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 			return
 		}
 
-		inventoryType, ok := inventory.TypeFromItemId(item.Id(event.ItemId))
-		if !ok {
-			l.Errorf("Unable to identify inventory type for item [%d].", event.ItemId)
-			return
-		}
-
-		comp, err := compartment.NewProcessor(l, ctx).GetByType(event.CharacterId, inventoryType)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to retrieve compartment for character [%d] inventory type [%d].", event.CharacterId, inventoryType)
-			return
-		}
-
-		a, found := comp.FindById(event.AssetId)
-		if !found {
-			l.Errorf("Unable to find asset [%d] for character [%d].", event.AssetId, event.CharacterId)
-			return
-		}
-
 		l.WithFields(logrus.Fields{
 			"character_name": c.Name(),
 			"item_id":        event.ItemId,
@@ -95,9 +72,7 @@ func handleRewardWon(sc server.Model, wp writer.Producer) message.Handler[gachap
 
 		announceOp := session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 			return func(options map[string]interface{}) []byte {
-				return writer.WorldMessageGachaponMegaphoneBody("", c.Name(), sc.ChannelId(), event.GachaponName, func(w *response.Writer) error {
-					return model2.NewAssetWriter(l, ctx, options, w)(true)(*a)
-				})(l, ctx)(options)
+				return writer.WorldMessageGachaponMegaphoneBody("", c.Name(), sc.ChannelId(), event.GachaponName, event.ItemId)(l, ctx)(options)
 			}
 		})
 		for _, s := range sessions {

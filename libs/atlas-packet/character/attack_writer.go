@@ -66,7 +66,26 @@ func newAttack(attackType string, characterId uint32, level byte, skillLevel byt
 	}
 }
 
-func (m Attack) Operation() string { return m.attackType }
+// NewAttackForDecode creates an Attack with the constructor flags needed to drive
+// non-self-describing Decode branches. Data fields are populated by Decode.
+func NewAttackForDecode(attackType string, skillId uint32, isStrafe bool, isMesoExplosion bool, hasKeydown bool) Attack {
+	return Attack{
+		attackType:      attackType,
+		skillId:         skillId,
+		isStrafe:        isStrafe,
+		isMesoExplosion: isMesoExplosion,
+		hasKeydown:      hasKeydown,
+	}
+}
+
+func (m Attack) Operation() string    { return m.attackType }
+func (m Attack) CharacterId() uint32   { return m.characterId }
+func (m Attack) Level() byte           { return m.level }
+func (m Attack) SkillLevel() byte      { return m.skillLevel }
+func (m Attack) SkillId() uint32       { return m.skillId }
+func (m Attack) Mastery() byte         { return m.mastery }
+func (m Attack) BulletItemId() uint32  { return m.bulletItemId }
+func (m Attack) AttackInfo() model.AttackInfo { return m.attackInfo }
 func (m Attack) String() string {
 	return fmt.Sprintf("attack type [%s] characterId [%d] skillId [%d]", m.attackType, m.characterId, m.skillId)
 }
@@ -126,9 +145,86 @@ func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	}
 }
 
-func (m *Attack) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Attack) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		// No-op: attack display packets are server-send-only with complex
-		// conditional encoding (variable damage counts, skill-dependent fields).
+		m.characterId = r.ReadUint32()
+		packed := r.ReadByte()
+		damage := uint32((packed >> 4) & 0x0F)
+		hits := packed & 0x0F
+
+		m.level = r.ReadByte()
+
+		if m.skillId > 0 {
+			m.skillLevel = r.ReadByte()
+			m.skillId = r.ReadUint32()
+		} else {
+			_ = r.ReadByte() // zero byte
+		}
+
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			if m.isStrafe {
+				_ = r.ReadByte() // passive SLV
+			}
+		}
+
+		option := r.ReadByte()
+		mask := r.ReadUint16()
+		left := (mask >> 15) & 1
+		attackAction := int(mask & 0x7FFF)
+
+		var at model.AttackType
+		switch m.attackType {
+		case CharacterAttackMeleeWriter:
+			at = model.AttackTypeMelee
+		case CharacterAttackRangedWriter:
+			at = model.AttackTypeRanged
+		case CharacterAttackMagicWriter:
+			at = model.AttackTypeMagic
+		case CharacterAttackEnergyWriter:
+			at = model.AttackTypeEnergy
+		}
+
+		ai := model.NewAttackInfo(at)
+		ai.SetDamage(damage)
+		ai.SetHits(hits)
+		ai.SetSkillId(m.skillId)
+		ai.SetOption(option)
+		ai.SetLeft(left == 1)
+		ai.SetAttackAction(attackAction)
+
+		if attackAction <= 0x110 {
+			ai.SetActionSpeed(r.ReadByte())
+			m.mastery = r.ReadByte()
+			m.bulletItemId = r.ReadUint32()
+
+			for range damage {
+				monsterId := r.ReadUint32()
+				di := model.NewDamageInfo(hits)
+				di.SetMonsterId(monsterId)
+				if monsterId > 0 {
+					di.SetHitAction(r.ReadByte())
+					damageCount := hits
+					if m.isMesoExplosion {
+						damageCount = r.ReadByte()
+					}
+					damages := make([]uint32, damageCount)
+					for j := range damageCount {
+						damages[j] = r.ReadUint32()
+					}
+					di.SetDamages(damages)
+				}
+				ai.AddDamageInfo(*di)
+			}
+		}
+
+		if at == model.AttackTypeRanged {
+			ai.SetBulletPosition(r.ReadUint16(), r.ReadUint16())
+		}
+		if m.hasKeydown {
+			ai.SetKeydown(r.ReadUint32())
+		}
+
+		m.attackInfo = *ai
 	}
 }

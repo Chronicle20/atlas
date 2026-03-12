@@ -10,9 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type Asset = packetmodel.Asset
-
-func NewAsset(zeroPosition bool, a asset.Model) Asset {
+func NewAsset(zeroPosition bool, a asset.Model) packetmodel.Asset {
 	base := packetmodel.NewAsset(zeroPosition, a.Slot(), a.TemplateId(), a.Expiration())
 
 	if a.IsEquipment() {

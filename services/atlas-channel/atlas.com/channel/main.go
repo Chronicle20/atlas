@@ -456,7 +456,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
 	handlerMap[field2.MapChangeHandle] = handler.MapChangeHandleFunc
 	handlerMap[character2.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
-	handlerMap[channel4.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
+	handlerMap[channel4.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
 	handlerMap[cash2.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
 	handlerMap[monster2.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
 	handlerMap[chat2.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
@@ -509,8 +509,8 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[cash2.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
 	handlerMap[cash2.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
 	handlerMap[npc2.NPCShopHandle] = handler.NPCShopHandleFunc
-	handlerMap[inventory2.CompartmentMergeHandle] = handler.CompartmentMergeHandleFunc
-	handlerMap[inventory2.CompartmentSortHandle] = handler.CompartmentSortHandleFunc
+	handlerMap[inventory2.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
+	handlerMap[inventory2.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
 	handlerMap[inventory2.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
 	handlerMap[note4.NoteOperationHandle] = handler.NoteOperationHandleFunc
 	handlerMap[quest2.QuestActionHandle] = handler.QuestActionHandleFunc

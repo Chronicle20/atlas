@@ -43,7 +43,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 
 func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovementW(characterId, movement).Encode)
+		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", characterId, f.MapId())
@@ -87,7 +87,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 			SetSlot(0).
 			MustBuild()
 
-		op := session.Announce(p.l)(p.ctx)(p.wp)(petpkt.PetMovementWriter)(petpkt.NewPetMovementW(pe.OwnerId(), pe.Slot(), movement).Encode)
+		op := session.Announce(p.l)(p.ctx)(p.wp)(petpkt.PetMovementWriter)(petpkt.NewPetMovement(pe.OwnerId(), pe.Slot(), movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move pet [%d] for characters in map [%d].", characterId, f.MapId())
@@ -125,7 +125,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		}
 	}()
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementWriter)(monsterpkt.NewMonsterMovementW(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement).Encode)
+		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementWriter)(monsterpkt.NewMonsterMovement(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement).Encode)
 		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, f.MapId())

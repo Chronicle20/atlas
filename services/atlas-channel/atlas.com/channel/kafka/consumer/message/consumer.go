@@ -202,7 +202,7 @@ func handlePetChat(sc server.Model, wp writer.Producer) message.Handler[message3
 		}
 
 		p := pet.NewModelBuilder(e.ActorId, 0, 0, "").SetOwnerID(e.Body.OwnerId).SetSlot(e.Body.PetSlot).MustBuild()
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(petpkt.PetChatWriter)(petpkt.NewPetChatW(p.OwnerId(), p.Slot(), e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon).Encode))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(petpkt.PetChatWriter)(petpkt.NewPetChat(p.OwnerId(), p.Slot(), e.Body.Type, e.Body.Action, e.Message, e.Body.Balloon).Encode))
 	}
 }
 

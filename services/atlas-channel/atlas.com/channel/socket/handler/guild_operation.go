@@ -133,7 +133,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			sp := &guild2.Invite{}
+			sp := &guild2.InviteRequest{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			c, err := character.NewProcessor(l, ctx).GetByName(sp.Target())

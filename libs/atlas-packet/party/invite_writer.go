@@ -9,29 +9,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type InviteW struct {
+type Invite struct {
 	mode           byte
 	partyId        uint32
 	originatorName string
 }
 
-func NewInviteW(mode byte, partyId uint32, originatorName string) InviteW {
-	return InviteW{mode: mode, partyId: partyId, originatorName: originatorName}
+func NewInvite(mode byte, partyId uint32, originatorName string) Invite {
+	return Invite{mode: mode, partyId: partyId, originatorName: originatorName}
 }
 
-func (m InviteW) Mode() byte            { return m.mode }
-func (m InviteW) PartyId() uint32       { return m.partyId }
-func (m InviteW) OriginatorName() string { return m.originatorName }
+func (m Invite) Mode() byte            { return m.mode }
+func (m Invite) PartyId() uint32       { return m.partyId }
+func (m Invite) OriginatorName() string { return m.originatorName }
 
-func (m InviteW) Operation() string {
+func (m Invite) Operation() string {
 	return PartyOperationWriter
 }
 
-func (m InviteW) String() string {
+func (m Invite) String() string {
 	return fmt.Sprintf("mode [%d], partyId [%d], originatorName [%s]", m.mode, m.partyId, m.originatorName)
 }
 
-func (m InviteW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -42,7 +42,7 @@ func (m InviteW) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 	}
 }
 
-func (m *InviteW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()

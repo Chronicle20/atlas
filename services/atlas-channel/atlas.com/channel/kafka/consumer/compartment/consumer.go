@@ -80,7 +80,7 @@ func handleCompartmentMergeCompleteEvent(sc server.Model, wp writer.Producer) me
 			if err != nil {
 				return err
 			}
-			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentMergeWriter)(invpkt.NewCompartmentMergeW(e.Body.Type).Encode)(s)
+			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentMergeWriter)(invpkt.NewCompartmentMerge(e.Body.Type).Encode)(s)
 			if err != nil {
 				return err
 			}
@@ -105,7 +105,7 @@ func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) mes
 			if err != nil {
 				return err
 			}
-			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentSortWriter)(invpkt.NewCompartmentSortW(e.Body.Type).Encode)(s)
+			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentSortWriter)(invpkt.NewCompartmentSort(e.Body.Type).Encode)(s)
 			if err != nil {
 				return err
 			}

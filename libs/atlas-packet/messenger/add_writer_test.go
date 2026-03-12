@@ -21,7 +21,7 @@ func TestMessengerAddRoundTrip(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			ava := testAvatar()
 			input := NewMessengerAdd(1, 2, ava, "TestPlayer", 3)
-			output := AddW{}
+			output := Add{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
@@ -49,7 +49,7 @@ func TestMessengerUpdateRoundTrip(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			ava := testAvatar()
 			input := NewMessengerUpdate(5, 1, ava, "OtherPlayer", 2)
-			output := UpdateW{}
+			output := Update{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())

@@ -8,7 +8,7 @@ import (
 )
 
 func TestCharacterDamagePhysical(t *testing.T) {
-	input := NewCharacterDamageW(1234, model.DamageTypePhysical, 500, 100100, true)
+	input := NewCharacterDamage(1234, model.DamageTypePhysical, 500, 100100, true)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

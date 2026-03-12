@@ -113,7 +113,7 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorHitWriter)(reactorpkt.NewReactorHitW(r.Id(), r.State(), r.X(), r.Y(), uint16(r.Direction())).Encode))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorHitWriter)(reactorpkt.NewReactorHit(r.Id(), r.State(), r.X(), r.Y(), uint16(r.Direction())).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send reactor hit [%d] to characters in map [%d].", r.Id(), e.MapId)
 		}

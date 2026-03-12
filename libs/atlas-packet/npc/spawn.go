@@ -11,7 +11,7 @@ import (
 
 const NpcSpawnWriter = "SpawnNPC"
 
-type SpawnW struct {
+type Spawn struct {
 	id       uint32
 	template uint32
 	x        int16
@@ -22,16 +22,16 @@ type SpawnW struct {
 	rx1      int16
 }
 
-func NewNpcSpawn(id uint32, template uint32, x int16, cy int16, f int32, fh uint16, rx0 int16, rx1 int16) SpawnW {
-	return SpawnW{id: id, template: template, x: x, cy: cy, f: f, fh: fh, rx0: rx0, rx1: rx1}
+func NewNpcSpawn(id uint32, template uint32, x int16, cy int16, f int32, fh uint16, rx0 int16, rx1 int16) Spawn {
+	return Spawn{id: id, template: template, x: x, cy: cy, f: f, fh: fh, rx0: rx0, rx1: rx1}
 }
 
-func (m SpawnW) Operation() string { return NpcSpawnWriter }
-func (m SpawnW) String() string {
+func (m Spawn) Operation() string { return NpcSpawnWriter }
+func (m Spawn) String() string {
 	return fmt.Sprintf("id [%d], template [%d]", m.id, m.template)
 }
 
-func (m SpawnW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Spawn) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.id)
@@ -51,7 +51,7 @@ func (m SpawnW) Encode(l logrus.FieldLogger, _ context.Context) func(options map
 	}
 }
 
-func (m *SpawnW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Spawn) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.id = r.ReadUint32()
 		m.template = r.ReadUint32()

@@ -7,7 +7,7 @@ import (
 )
 
 func TestNPCActionWithoutMovement(t *testing.T) {
-	p := Action{}
+	p := ActionRequest{}
 	p.objectId = 12345
 	p.unk = 1
 	p.unk2 = 2
@@ -35,7 +35,7 @@ func TestNPCActionWithoutMovement(t *testing.T) {
 }
 
 func TestNPCActionWithMovement(t *testing.T) {
-	p := Action{}
+	p := ActionRequest{}
 	p.objectId = 99999
 	p.unk = 3
 	p.unk2 = 4
@@ -66,7 +66,7 @@ func TestNPCActionWithMovement(t *testing.T) {
 }
 
 func TestNPCActionOperationString(t *testing.T) {
-	p := Action{}
+	p := ActionRequest{}
 	if p.Operation() != NPCActionHandle {
 		t.Errorf("expected operation %s, got %s", NPCActionHandle, p.Operation())
 	}

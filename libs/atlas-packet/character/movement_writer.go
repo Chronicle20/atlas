@@ -12,21 +12,21 @@ import (
 
 const CharacterMovementWriter = "CharacterMovement"
 
-type CharacterMovementW struct {
+type CharacterMovement struct {
 	characterId uint32
 	movement    model.Movement
 }
 
-func NewCharacterMovementW(characterId uint32, movement model.Movement) CharacterMovementW {
-	return CharacterMovementW{characterId: characterId, movement: movement}
+func NewCharacterMovement(characterId uint32, movement model.Movement) CharacterMovement {
+	return CharacterMovement{characterId: characterId, movement: movement}
 }
 
-func (m CharacterMovementW) CharacterId() uint32    { return m.characterId }
-func (m CharacterMovementW) Movement() model.Movement { return m.movement }
-func (m CharacterMovementW) Operation() string       { return CharacterMovementWriter }
-func (m CharacterMovementW) String() string          { return fmt.Sprintf("characterId [%d]", m.characterId) }
+func (m CharacterMovement) CharacterId() uint32    { return m.characterId }
+func (m CharacterMovement) Movement() model.Movement { return m.movement }
+func (m CharacterMovement) Operation() string       { return CharacterMovementWriter }
+func (m CharacterMovement) String() string          { return fmt.Sprintf("characterId [%d]", m.characterId) }
 
-func (m CharacterMovementW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m CharacterMovement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.characterId)
@@ -35,7 +35,7 @@ func (m CharacterMovementW) Encode(l logrus.FieldLogger, ctx context.Context) fu
 	}
 }
 
-func (m *CharacterMovementW) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterMovement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()
 		m.movement.Decode(l, ctx)(r, options)

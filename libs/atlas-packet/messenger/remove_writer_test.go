@@ -11,7 +11,7 @@ func TestMessengerRemoveRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := NewMessengerRemove(2, 1)
-			output := RemoveW{}
+			output := Remove{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())

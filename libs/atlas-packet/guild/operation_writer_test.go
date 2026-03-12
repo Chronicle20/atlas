@@ -116,12 +116,12 @@ func TestMemberJoinedRoundTrip(t *testing.T) {
 	}
 }
 
-func TestInviteWRoundTrip(t *testing.T) {
-	input := NewInviteW(0x05, 500, "InviterName")
+func TestInviteRoundTrip(t *testing.T) {
+	input := NewInvite(0x05, 500, "InviterName")
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			output := InviteW{}
+			output := Invite{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 		})
 	}

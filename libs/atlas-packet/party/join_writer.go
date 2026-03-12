@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type JoinW struct {
+type Join struct {
 	mode       byte
 	partyId    uint32
 	targetName string
@@ -17,25 +17,25 @@ type JoinW struct {
 	leaderId   uint32
 }
 
-func NewJoinW(mode byte, partyId uint32, targetName string, members []PartyMember, leaderId uint32) JoinW {
-	return JoinW{mode: mode, partyId: partyId, targetName: targetName, members: members, leaderId: leaderId}
+func NewJoin(mode byte, partyId uint32, targetName string, members []PartyMember, leaderId uint32) Join {
+	return Join{mode: mode, partyId: partyId, targetName: targetName, members: members, leaderId: leaderId}
 }
 
-func (m JoinW) Mode() byte             { return m.mode }
-func (m JoinW) PartyId() uint32        { return m.partyId }
-func (m JoinW) TargetName() string     { return m.targetName }
-func (m JoinW) Members() []PartyMember { return m.members }
-func (m JoinW) LeaderId() uint32       { return m.leaderId }
+func (m Join) Mode() byte             { return m.mode }
+func (m Join) PartyId() uint32        { return m.partyId }
+func (m Join) TargetName() string     { return m.targetName }
+func (m Join) Members() []PartyMember { return m.members }
+func (m Join) LeaderId() uint32       { return m.leaderId }
 
-func (m JoinW) Operation() string {
+func (m Join) Operation() string {
 	return PartyOperationWriter
 }
 
-func (m JoinW) String() string {
+func (m Join) String() string {
 	return fmt.Sprintf("mode [%d], partyId [%d], targetName [%s]", m.mode, m.partyId, m.targetName)
 }
 
-func (m JoinW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Join) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -46,7 +46,7 @@ func (m JoinW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[
 	}
 }
 
-func (m *JoinW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Join) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.partyId = r.ReadUint32()

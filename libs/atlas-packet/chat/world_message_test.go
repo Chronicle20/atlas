@@ -162,6 +162,66 @@ func TestWorldMessageMultiMegaphoneRoundTrip(t *testing.T) {
 	}
 }
 
+func TestWorldMessageUnknown3RoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := WorldMessageUnknown3{mode: 3, message: "Unknown3 msg", operator: 12345}
+			output := WorldMessageUnknown3{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+			if output.Message() != input.Message() {
+				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
+			}
+			if output.Operator() != input.Operator() {
+				t.Errorf("operator: got %v, want %v", output.Operator(), input.Operator())
+			}
+		})
+	}
+}
+
+func TestWorldMessageUnknown7RoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := WorldMessageUnknown7{mode: 7, message: "Unknown7 msg"}
+			output := WorldMessageUnknown7{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+			if output.Message() != input.Message() {
+				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
+			}
+		})
+	}
+}
+
+func TestWorldMessageUnknown8RoundTrip(t *testing.T) {
+	for _, v := range pt.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			input := WorldMessageUnknown8{mode: 8, message: "Unknown8 msg", channelId: 4, whispersOn: true}
+			output := WorldMessageUnknown8{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if output.Mode() != input.Mode() {
+				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())
+			}
+			if output.Message() != input.Message() {
+				t.Errorf("message: got %v, want %v", output.Message(), input.Message())
+			}
+			if output.ChannelId() != input.ChannelId() {
+				t.Errorf("channelId: got %v, want %v", output.ChannelId(), input.ChannelId())
+			}
+			if output.WhispersOn() != input.WhispersOn() {
+				t.Errorf("whispersOn: got %v, want %v", output.WhispersOn(), input.WhispersOn())
+			}
+		})
+	}
+}
+
 func TestWorldMessageGachaponRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {

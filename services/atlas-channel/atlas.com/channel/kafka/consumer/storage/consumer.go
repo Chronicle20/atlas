@@ -12,6 +12,7 @@ import (
 	"context"
 	"sort"
 
+	"github.com/Chronicle20/atlas-constants/inventory"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	storagepkt "github.com/Chronicle20/atlas-packet/storage"
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -25,24 +26,24 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func inventoryTypeToFlag(inventoryType asset.InventoryType) storagepkt.StorageFlag {
+func inventoryTypeToFlag(inventoryType inventory.Type) storagepkt.StorageFlag {
 	switch inventoryType {
-	case asset.InventoryTypeEquip:
+	case inventory.TypeValueEquip:
 		return storagepkt.StorageFlagEquipment
-	case asset.InventoryTypeUse:
+	case inventory.TypeValueUse:
 		return storagepkt.StorageFlagConsumables
-	case asset.InventoryTypeSetup:
+	case inventory.TypeValueSetup:
 		return storagepkt.StorageFlagSetUp
-	case asset.InventoryTypeEtc:
+	case inventory.TypeValueETC:
 		return storagepkt.StorageFlagEtc
-	case asset.InventoryTypeCash:
+	case inventory.TypeValueCash:
 		return storagepkt.StorageFlagCash
 	default:
 		return 0
 	}
 }
 
-func toPacketAssets(inventoryType asset.InventoryType, assets []asset.Model) []packetmodel.Asset {
+func toPacketAssets(inventoryType inventory.Type, assets []asset.Model) []packetmodel.Asset {
 	var result []packetmodel.Asset
 	for _, a := range assets {
 		if a.InventoryType() == inventoryType {
@@ -220,7 +221,7 @@ func handleStorageCompartmentAcceptedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		inventoryType := asset.InventoryType(e.Body.InventoryType)
+		inventoryType := inventory.Type(e.Body.InventoryType)
 		l.Debugf("Storage compartment ACCEPTED: character [%d] account [%d] asset [%d] slot [%d] inventoryType [%d]",
 			e.CharacterId, e.AccountId, e.Body.AssetId, e.Body.Slot, inventoryType)
 
@@ -275,7 +276,7 @@ func handleStorageCompartmentReleasedEvent(sc server.Model, wp writer.Producer) 
 			return
 		}
 
-		inventoryType := asset.InventoryType(e.Body.InventoryType)
+		inventoryType := inventory.Type(e.Body.InventoryType)
 		l.Debugf("Storage compartment RELEASED: character [%d] account [%d] asset [%d] inventoryType [%d]",
 			e.CharacterId, e.AccountId, e.Body.AssetId, inventoryType)
 
@@ -361,17 +362,17 @@ func handleProjectionCreatedEvent(sc server.Model, wp writer.Producer) message.H
 	}
 }
 
-func inventoryTypeName(t asset.InventoryType) string {
+func inventoryTypeName(t inventory.Type) string {
 	switch t {
-	case asset.InventoryTypeEquip:
+	case inventory.TypeValueEquip:
 		return "equip"
-	case asset.InventoryTypeUse:
+	case inventory.TypeValueUse:
 		return "use"
-	case asset.InventoryTypeSetup:
+	case inventory.TypeValueSetup:
 		return "setup"
-	case asset.InventoryTypeEtc:
+	case inventory.TypeValueETC:
 		return "etc"
-	case asset.InventoryTypeCash:
+	case inventory.TypeValueCash:
 		return "cash"
 	default:
 		return "unknown"

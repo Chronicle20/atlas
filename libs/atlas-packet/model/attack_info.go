@@ -251,3 +251,56 @@ func (m *AttackInfo) BulletX() uint16 {
 func (m *AttackInfo) BulletY() uint16 {
 	return m.bulletY
 }
+
+// Builder methods for constructing AttackInfo in the server-send path.
+
+func (m *AttackInfo) SetDamage(damage uint32) *AttackInfo {
+	m.damage = damage
+	return m
+}
+
+func (m *AttackInfo) SetHits(hits byte) *AttackInfo {
+	m.hits = hits
+	return m
+}
+
+func (m *AttackInfo) SetSkillId(skillId uint32) *AttackInfo {
+	m.skillId = skillId
+	return m
+}
+
+func (m *AttackInfo) SetOption(option byte) *AttackInfo {
+	m.mask1 = option
+	return m
+}
+
+func (m *AttackInfo) SetLeft(left bool) *AttackInfo {
+	m.left = left
+	return m
+}
+
+func (m *AttackInfo) SetAttackAction(attackAction int) *AttackInfo {
+	m.attackAction = attackAction
+	return m
+}
+
+func (m *AttackInfo) SetActionSpeed(actionSpeed byte) *AttackInfo {
+	m.attackSpeed = actionSpeed
+	return m
+}
+
+func (m *AttackInfo) SetKeydown(keydown uint32) *AttackInfo {
+	m.keyDown = keydown
+	return m
+}
+
+func (m *AttackInfo) SetBulletPosition(bulletX uint16, bulletY uint16) *AttackInfo {
+	m.bulletX = bulletX
+	m.bulletY = bulletY
+	return m
+}
+
+func (m *AttackInfo) AddDamageInfo(di DamageInfo) *AttackInfo {
+	m.damageInfo = append(m.damageInfo, di)
+	return m
+}

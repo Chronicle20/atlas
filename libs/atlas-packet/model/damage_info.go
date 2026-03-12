@@ -61,3 +61,20 @@ func (m *DamageInfo) MonsterId() uint32 {
 func (m *DamageInfo) HitAction() byte {
 	return m.hitAction
 }
+
+// Builder methods for constructing DamageInfo in the server-send path.
+
+func (m *DamageInfo) SetMonsterId(monsterId uint32) *DamageInfo {
+	m.monsterId = monsterId
+	return m
+}
+
+func (m *DamageInfo) SetHitAction(hitAction byte) *DamageInfo {
+	m.hitAction = hitAction
+	return m
+}
+
+func (m *DamageInfo) SetDamages(damages []uint32) *DamageInfo {
+	m.damages = damages
+	return m
+}

@@ -9,7 +9,6 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
@@ -21,10 +20,11 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model2.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -271,7 +271,7 @@ func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		t := tenant.MustFromContext(ctx)
-		stat := model.NewMonsterTemporaryStat()
+		stat := packetmodel.NewMonsterTemporaryStat()
 		for s, a := range e.Body.Statuses {
 			stat.AddStat(l)(t)(s, e.Body.SourceSkillId, e.Body.SourceSkillLevel, a, time.Now().Add(time.Duration(e.Body.Duration)*time.Millisecond))
 		}
@@ -295,7 +295,7 @@ func handleStatusEffectExpired(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		t := tenant.MustFromContext(ctx)
-		stat := model.NewMonsterTemporaryStat()
+		stat := packetmodel.NewMonsterTemporaryStat()
 		for s, a := range e.Body.Statuses {
 			stat.AddStat(l)(t)(s, 0, 0, a, time.Now())
 		}
@@ -319,7 +319,7 @@ func handleStatusEffectCancelled(sc server.Model, wp writer.Producer) message.Ha
 		}
 
 		t := tenant.MustFromContext(ctx)
-		stat := model.NewMonsterTemporaryStat()
+		stat := packetmodel.NewMonsterTemporaryStat()
 		for s, a := range e.Body.Statuses {
 			stat.AddStat(l)(t)(s, 0, 0, a, time.Now())
 		}

@@ -150,13 +150,3 @@ func (m Model) Quantity() uint32 {
 	return 1
 }
 
-// InventoryType aliases for backward compatibility (previously in reference_data.go)
-type InventoryType = inventory.Type
-
-var (
-	InventoryTypeEquip = inventory.TypeValueEquip
-	InventoryTypeUse   = inventory.TypeValueUse
-	InventoryTypeSetup = inventory.TypeValueSetup
-	InventoryTypeEtc   = inventory.TypeValueETC
-	InventoryTypeCash  = inventory.TypeValueCash
-)

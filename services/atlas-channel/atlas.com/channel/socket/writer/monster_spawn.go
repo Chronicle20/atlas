@@ -2,18 +2,17 @@ package writer
 
 import (
 	"atlas-channel/monster"
-	"atlas-channel/socket/model"
 	"context"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-
-func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *model.MonsterTemporaryStat {
-	stat := model.NewMonsterTemporaryStat()
+func buildMonsterTemporaryStat(l logrus.FieldLogger, t tenant.Model, m monster.Model) *packetmodel.MonsterTemporaryStat {
+	stat := packetmodel.NewMonsterTemporaryStat()
 	for _, se := range m.StatusEffects() {
 		for name, value := range se.Statuses() {
 			stat.AddStat(l)(t)(name, se.SourceSkillId(), se.SourceSkillLevel(), value, se.ExpiresAt())
@@ -30,12 +29,12 @@ func SpawnMonsterWithEffectBody(m monster.Model, newSpawn bool, effect byte) pac
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		t := tenant.MustFromContext(ctx)
 		return func(options map[string]interface{}) []byte {
-			appearType := model.MonsterAppearTypeNormal
+			appearType := packetmodel.MonsterAppearTypeNormal
 			if newSpawn {
-				appearType = model.MonsterAppearTypeRegen
+				appearType = packetmodel.MonsterAppearTypeRegen
 			}
 
-			mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), appearType, m.Team())
+			mem := packetmodel.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), appearType, m.Team())
 			stat := buildMonsterTemporaryStat(l, t, m)
 			mem.SetTemporaryStat(stat)
 

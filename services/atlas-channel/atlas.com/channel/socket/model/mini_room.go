@@ -371,7 +371,7 @@ func (m *MiniRoomVisitorBase) ToPacketVisitor(_ logrus.FieldLogger, _ context.Co
 
 type MiniGameRoomVisitor struct {
 	mrb    MiniRoomVisitorBase
-	record MiniGameRecord
+	record interactionpkt.MiniGameRecord
 }
 
 func (m *MiniGameRoomVisitor) Enter() packet.Encode {
@@ -379,7 +379,7 @@ func (m *MiniGameRoomVisitor) Enter() packet.Encode {
 		w := response.NewWriter(l)
 		return func(options map[string]interface{}) []byte {
 			w.WriteByteArray(m.mrb.Enter()(l, ctx)(options))
-			w.WriteByteArray(m.record.Encoder(l, ctx)(options))
+			w.WriteByteArray(m.record.Encode(l, ctx)(options))
 			return w.Bytes()
 		}
 	}

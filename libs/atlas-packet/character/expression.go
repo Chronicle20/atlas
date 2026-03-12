@@ -11,24 +11,24 @@ import (
 
 const CharacterExpressionHandle = "CharacterExpressionHandle"
 
-// Expression - CUser::SendEmotion
-type Expression struct {
+// ExpressionRequest - CUser::SendEmotion
+type ExpressionRequest struct {
 	emote uint32
 }
 
-func (m Expression) Emote() uint32 {
+func (m ExpressionRequest) Emote() uint32 {
 	return m.emote
 }
 
-func (m Expression) Operation() string {
+func (m ExpressionRequest) Operation() string {
 	return CharacterExpressionHandle
 }
 
-func (m Expression) String() string {
+func (m ExpressionRequest) String() string {
 	return fmt.Sprintf("emote [%d]", m.emote)
 }
 
-func (m Expression) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ExpressionRequest) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.emote)
@@ -36,7 +36,7 @@ func (m Expression) Encode(l logrus.FieldLogger, _ context.Context) func(options
 	}
 }
 
-func (m *Expression) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ExpressionRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.emote = r.ReadUint32()
 	}

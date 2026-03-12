@@ -13,7 +13,7 @@ import (
 
 const MonsterMovementHandle = "MonsterMovementHandle"
 
-type Movement struct {
+type MovementRequest struct {
 	uniqueId              uint32
 	moveId                int16
 	dwFlag                byte
@@ -34,30 +34,30 @@ type Movement struct {
 	tChaseDuration        uint32
 }
 
-func (m Movement) UniqueId() uint32                             { return m.uniqueId }
-func (m Movement) MoveId() int16                                { return m.moveId }
-func (m Movement) DwFlag() byte                                 { return m.dwFlag }
-func (m Movement) ActionAndDir() int8                           { return m.nActionAndDir }
-func (m Movement) SkillData() uint32                            { return m.skillData }
-func (m Movement) SkillId() int16                               { return int16(m.skillData & 0xFF) }
-func (m Movement) SkillLevel() int16                            { return int16(m.skillData >> 8 & 0xFF) }
-func (m Movement) MonsterMoveStartResult() bool                 { return m.dwFlag > 0 }
-func (m Movement) MultiTargetForBall() model.MultiTargetForBall { return m.multiTargetForBall }
-func (m Movement) RandTimeForAreaAttack() model.RandTimeForAreaAttack {
+func (m MovementRequest) UniqueId() uint32                             { return m.uniqueId }
+func (m MovementRequest) MoveId() int16                                { return m.moveId }
+func (m MovementRequest) DwFlag() byte                                 { return m.dwFlag }
+func (m MovementRequest) ActionAndDir() int8                           { return m.nActionAndDir }
+func (m MovementRequest) SkillData() uint32                            { return m.skillData }
+func (m MovementRequest) SkillId() int16                               { return int16(m.skillData & 0xFF) }
+func (m MovementRequest) SkillLevel() int16                            { return int16(m.skillData >> 8 & 0xFF) }
+func (m MovementRequest) MonsterMoveStartResult() bool                 { return m.dwFlag > 0 }
+func (m MovementRequest) MultiTargetForBall() model.MultiTargetForBall { return m.multiTargetForBall }
+func (m MovementRequest) RandTimeForAreaAttack() model.RandTimeForAreaAttack {
 	return m.randTimeForAreaAttack
 }
-func (m Movement) MovementData() model.Movement { return m.movement }
+func (m MovementRequest) MovementData() model.Movement { return m.movement }
 
-func (m Movement) Operation() string {
+func (m MovementRequest) Operation() string {
 	return MonsterMovementHandle
 }
 
-func (m Movement) String() string {
+func (m MovementRequest) String() string {
 	return fmt.Sprintf("uniqueId [%d] moveId [%d] dwFlag [%d] nActionAndDir [%d] skillData [%d] elements [%d]",
 		m.uniqueId, m.moveId, m.dwFlag, m.nActionAndDir, m.skillData, len(m.movement.Elements))
 }
 
-func (m Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m MovementRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -93,7 +93,7 @@ func (m Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 	}
 }
 
-func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *MovementRequest) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.uniqueId = r.ReadUint32()

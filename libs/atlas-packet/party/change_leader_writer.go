@@ -9,29 +9,29 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type ChangeLeaderW struct {
+type ChangeLeader struct {
 	mode              byte
 	targetCharacterId uint32
 	disconnected      bool
 }
 
-func NewChangeLeaderW(mode byte, targetCharacterId uint32, disconnected bool) ChangeLeaderW {
-	return ChangeLeaderW{mode: mode, targetCharacterId: targetCharacterId, disconnected: disconnected}
+func NewChangeLeader(mode byte, targetCharacterId uint32, disconnected bool) ChangeLeader {
+	return ChangeLeader{mode: mode, targetCharacterId: targetCharacterId, disconnected: disconnected}
 }
 
-func (m ChangeLeaderW) Mode() byte                { return m.mode }
-func (m ChangeLeaderW) TargetCharacterId() uint32  { return m.targetCharacterId }
-func (m ChangeLeaderW) Disconnected() bool         { return m.disconnected }
+func (m ChangeLeader) Mode() byte                { return m.mode }
+func (m ChangeLeader) TargetCharacterId() uint32  { return m.targetCharacterId }
+func (m ChangeLeader) Disconnected() bool         { return m.disconnected }
 
-func (m ChangeLeaderW) Operation() string {
+func (m ChangeLeader) Operation() string {
 	return PartyOperationWriter
 }
 
-func (m ChangeLeaderW) String() string {
+func (m ChangeLeader) String() string {
 	return fmt.Sprintf("mode [%d], targetCharacterId [%d], disconnected [%t]", m.mode, m.targetCharacterId, m.disconnected)
 }
 
-func (m ChangeLeaderW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ChangeLeader) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -41,7 +41,7 @@ func (m ChangeLeaderW) Encode(l logrus.FieldLogger, _ context.Context) func(opti
 	}
 }
 
-func (m *ChangeLeaderW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ChangeLeader) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.targetCharacterId = r.ReadUint32()

@@ -39,36 +39,36 @@ func PartyExpelBody(partyId uint32, targetId uint32, targetName string, members 
 
 func PartyDisbandBody(partyId uint32, targetId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationDisband, func(mode byte) packet.Encoder {
-		return NewDisbandW(mode, partyId, targetId)
+		return NewDisband(mode, partyId, targetId)
 	})
 }
 
 func PartyJoinBody(partyId uint32, targetName string, members []PartyMember, leaderId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationJoin, func(mode byte) packet.Encoder {
-		return NewJoinW(mode, partyId, targetName, members, leaderId)
+		return NewJoin(mode, partyId, targetName, members, leaderId)
 	})
 }
 
 func PartyUpdateBody(partyId uint32, members []PartyMember, leaderId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationUpdate, func(mode byte) packet.Encoder {
-		return NewUpdateW(mode, partyId, members, leaderId)
+		return NewUpdate(mode, partyId, members, leaderId)
 	})
 }
 
 func PartyChangeLeaderBody(targetCharacterId uint32, disconnected bool) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationChangeLeader, func(mode byte) packet.Encoder {
-		return NewChangeLeaderW(mode, targetCharacterId, disconnected)
+		return NewChangeLeader(mode, targetCharacterId, disconnected)
 	})
 }
 
 func PartyErrorBody(code string, name string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return NewErrorW(mode, name)
+		return NewError(mode, name)
 	})
 }
 
 func PartyInviteBody(partyId uint32, originatorName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", PartyOperationInvite, func(mode byte) packet.Encoder {
-		return NewInviteW(mode, partyId, originatorName)
+		return NewInvite(mode, partyId, originatorName)
 	})
 }

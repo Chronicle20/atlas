@@ -13,19 +13,19 @@ import (
 
 const ChannelChangeWriter = "ChannelChange"
 
-type ChannelChangeW struct {
+type ChannelChange struct {
 	ipAddr string
 	port   uint16
 }
 
-func NewChannelChangeW(ipAddr string, port uint16) ChannelChangeW {
-	return ChannelChangeW{ipAddr: ipAddr, port: port}
+func NewChannelChange(ipAddr string, port uint16) ChannelChange {
+	return ChannelChange{ipAddr: ipAddr, port: port}
 }
 
-func (m ChannelChangeW) IpAddr() string    { return m.ipAddr }
-func (m ChannelChangeW) Port() uint16      { return m.port }
-func (m ChannelChangeW) Operation() string { return ChannelChangeWriter }
-func (m ChannelChangeW) String() string {
+func (m ChannelChange) IpAddr() string    { return m.ipAddr }
+func (m ChannelChange) Port() uint16      { return m.port }
+func (m ChannelChange) Operation() string { return ChannelChangeWriter }
+func (m ChannelChange) String() string {
 	return fmt.Sprintf("ipAddr [%s], port [%d]", m.ipAddr, m.port)
 }
 
@@ -49,7 +49,7 @@ func channelIpFromByteArray(b []byte) string {
 	return strings.Join(parts, ".")
 }
 
-func (m ChannelChangeW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ChannelChange) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(1)
@@ -59,7 +59,7 @@ func (m ChannelChangeW) Encode(l logrus.FieldLogger, _ context.Context) func(opt
 	}
 }
 
-func (m *ChannelChangeW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ChannelChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		_ = r.ReadByte() // 1
 		m.ipAddr = channelIpFromByteArray(r.ReadBytes(4))

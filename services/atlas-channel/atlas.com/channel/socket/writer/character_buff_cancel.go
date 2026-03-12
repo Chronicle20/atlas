@@ -21,7 +21,7 @@ func CharacterBuffCancelBody(buffs []buff.Model) packet.Encode {
 					cts.AddStat(l)(t)(c.Type(), b.SourceId(), c.Amount(), b.Level(), b.ExpiresAt())
 				}
 			}
-			return charpkt.NewBuffCancelW(*cts).Encode(l, ctx)(options)
+			return charpkt.NewBuffCancel(*cts).Encode(l, ctx)(options)
 		}
 	}
 }

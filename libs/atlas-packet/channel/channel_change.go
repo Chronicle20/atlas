@@ -10,31 +10,31 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const ChannelChangeHandle = "ChannelChangeHandle"
+const ChannelChangeRequestHandle = "ChannelChangeHandle"
 
-// ChannelChange - CField::SendTransferChannelRequest
-type ChannelChange struct {
+// ChannelChangeRequest - CField::SendTransferChannelRequest
+type ChannelChangeRequest struct {
 	channelId  channel2.Id
 	updateTime uint32
 }
 
-func (m ChannelChange) ChannelId() channel2.Id {
+func (m ChannelChangeRequest) ChannelId() channel2.Id {
 	return m.channelId
 }
 
-func (m ChannelChange) UpdateTime() uint32 {
+func (m ChannelChangeRequest) UpdateTime() uint32 {
 	return m.updateTime
 }
 
-func (m ChannelChange) Operation() string {
-	return ChannelChangeHandle
+func (m ChannelChangeRequest) Operation() string {
+	return ChannelChangeRequestHandle
 }
 
-func (m ChannelChange) String() string {
+func (m ChannelChangeRequest) String() string {
 	return fmt.Sprintf("channelId [%d], updateTime [%d]", m.channelId, m.updateTime)
 }
 
-func (m ChannelChange) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ChannelChangeRequest) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(byte(m.channelId))
@@ -43,7 +43,7 @@ func (m ChannelChange) Encode(l logrus.FieldLogger, _ context.Context) func(opti
 	}
 }
 
-func (m *ChannelChange) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ChannelChangeRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.channelId = channel2.Id(r.ReadByte())
 		m.updateTime = r.ReadUint32()

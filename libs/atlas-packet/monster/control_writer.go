@@ -25,15 +25,15 @@ const (
 	ControlTypePassive1      ControlType = -3
 )
 
-type ControlW struct {
+type Control struct {
 	controlType ControlType
 	uniqueId    uint32
 	monsterId   uint32
 	monster     model.MonsterModel
 }
 
-func NewMonsterControl(controlType ControlType, uniqueId uint32, monsterId uint32, monster model.MonsterModel) ControlW {
-	return ControlW{
+func NewMonsterControl(controlType ControlType, uniqueId uint32, monsterId uint32, monster model.MonsterModel) Control {
+	return Control{
 		controlType: controlType,
 		uniqueId:    uniqueId,
 		monsterId:   monsterId,
@@ -41,16 +41,16 @@ func NewMonsterControl(controlType ControlType, uniqueId uint32, monsterId uint3
 	}
 }
 
-func (m ControlW) ControlTypeValue() ControlType    { return m.controlType }
-func (m ControlW) UniqueId() uint32                  { return m.uniqueId }
-func (m ControlW) MonsterId() uint32                 { return m.monsterId }
-func (m ControlW) Monster() model.MonsterModel       { return m.monster }
-func (m ControlW) Operation() string                 { return MonsterControlWriter }
-func (m ControlW) String() string {
+func (m Control) ControlTypeValue() ControlType    { return m.controlType }
+func (m Control) UniqueId() uint32                  { return m.uniqueId }
+func (m Control) MonsterId() uint32                 { return m.monsterId }
+func (m Control) Monster() model.MonsterModel       { return m.monster }
+func (m Control) Operation() string                 { return MonsterControlWriter }
+func (m Control) String() string {
 	return fmt.Sprintf("controlType [%d], uniqueId [%d], monsterId [%d]", m.controlType, m.uniqueId, m.monsterId)
 }
 
-func (m ControlW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m Control) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt8(int8(m.controlType))
@@ -64,7 +64,7 @@ func (m ControlW) Encode(l logrus.FieldLogger, ctx context.Context) func(options
 	}
 }
 
-func (m *ControlW) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Control) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.controlType = ControlType(r.ReadInt8())
 		m.uniqueId = r.ReadUint32()

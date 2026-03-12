@@ -13,15 +13,15 @@ import (
 
 const MonsterSpawnWriter = "SpawnMonster"
 
-type SpawnW struct {
+type Spawn struct {
 	uniqueId   uint32
 	controlled bool
 	monsterId  uint32
 	monster    model.MonsterModel
 }
 
-func NewMonsterSpawn(uniqueId uint32, controlled bool, monsterId uint32, monster model.MonsterModel) SpawnW {
-	return SpawnW{
+func NewMonsterSpawn(uniqueId uint32, controlled bool, monsterId uint32, monster model.MonsterModel) Spawn {
+	return Spawn{
 		uniqueId:   uniqueId,
 		controlled: controlled,
 		monsterId:  monsterId,
@@ -29,16 +29,16 @@ func NewMonsterSpawn(uniqueId uint32, controlled bool, monsterId uint32, monster
 	}
 }
 
-func (m SpawnW) UniqueId() uint32           { return m.uniqueId }
-func (m SpawnW) Controlled() bool           { return m.controlled }
-func (m SpawnW) MonsterId() uint32          { return m.monsterId }
-func (m SpawnW) Monster() model.MonsterModel { return m.monster }
-func (m SpawnW) Operation() string          { return MonsterSpawnWriter }
-func (m SpawnW) String() string {
+func (m Spawn) UniqueId() uint32           { return m.uniqueId }
+func (m Spawn) Controlled() bool           { return m.controlled }
+func (m Spawn) MonsterId() uint32          { return m.monsterId }
+func (m Spawn) Monster() model.MonsterModel { return m.monster }
+func (m Spawn) Operation() string          { return MonsterSpawnWriter }
+func (m Spawn) String() string {
 	return fmt.Sprintf("uniqueId [%d], controlled [%t], monsterId [%d]", m.uniqueId, m.controlled, m.monsterId)
 }
 
-func (m SpawnW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m Spawn) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -56,7 +56,7 @@ func (m SpawnW) Encode(l logrus.FieldLogger, ctx context.Context) func(options m
 	}
 }
 
-func (m *SpawnW) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Spawn) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.uniqueId = r.ReadUint32()

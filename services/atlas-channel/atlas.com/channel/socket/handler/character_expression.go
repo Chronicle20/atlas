@@ -13,7 +13,7 @@ import (
 
 func CharacterExpressionHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := character2.Expression{}
+		p := character2.ExpressionRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = expression.NewProcessor(l, ctx).Change(s.CharacterId(), s.Field(), p.Emote())

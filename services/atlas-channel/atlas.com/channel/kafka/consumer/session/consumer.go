@@ -116,7 +116,7 @@ func processChannelChangeReturn(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 			return func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(channelpkt.ChannelChangeWriter)(channelpkt.NewChannelChangeW(params.IPAddress, params.Port).Encode)
+				return session.Announce(l)(ctx)(wp)(channelpkt.ChannelChangeWriter)(channelpkt.NewChannelChange(params.IPAddress, params.Port).Encode)
 			}
 		}
 	}

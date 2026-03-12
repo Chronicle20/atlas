@@ -14,7 +14,7 @@ import (
 
 func PetChatHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		pk := pet2.Chat{}
+		pk := pet2.ChatRequest{}
 		pk.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", pk.Operation(), pk.String())
 		p, err := pet.NewProcessor(l, ctx).GetById(uint32(pk.PetId()))

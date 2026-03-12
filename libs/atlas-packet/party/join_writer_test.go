@@ -6,7 +6,7 @@ import (
 	pt "github.com/Chronicle20/atlas-packet/test"
 )
 
-func TestJoinWRoundTrip(t *testing.T) {
+func TestJoinRoundTrip(t *testing.T) {
 	members := []PartyMember{
 		{Id: 100, Name: "Player1", JobId: 111, Level: 50, ChannelId: 1, MapId: 100000},
 		{Id: 200, Name: "Player2", JobId: 222, Level: 70, ChannelId: 2, MapId: 200000},
@@ -14,8 +14,8 @@ func TestJoinWRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := NewJoinW(12, 5000, "Player2", members, 100)
-			output := JoinW{}
+			input := NewJoin(12, 5000, "Player2", members, 100)
+			output := Join{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())

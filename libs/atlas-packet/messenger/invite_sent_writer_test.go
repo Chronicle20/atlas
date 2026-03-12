@@ -11,7 +11,7 @@ func TestMessengerInviteSentRoundTrip(t *testing.T) {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
 			input := NewMessengerInviteSent(6, "TestPlayer", true)
-			output := InviteSentW{}
+			output := InviteSent{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Mode() != input.Mode() {
 				t.Errorf("mode: got %v, want %v", output.Mode(), input.Mode())

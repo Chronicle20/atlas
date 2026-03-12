@@ -11,21 +11,21 @@ import (
 
 const CompartmentSortWriter = "CompartmentSort"
 
-type CompartmentSortW struct {
+type CompartmentSort struct {
 	inventoryType byte
 }
 
-func NewCompartmentSortW(inventoryType byte) CompartmentSortW {
-	return CompartmentSortW{inventoryType: inventoryType}
+func NewCompartmentSort(inventoryType byte) CompartmentSort {
+	return CompartmentSort{inventoryType: inventoryType}
 }
 
-func (m CompartmentSortW) InventoryType() byte { return m.inventoryType }
-func (m CompartmentSortW) Operation() string   { return CompartmentSortWriter }
-func (m CompartmentSortW) String() string {
+func (m CompartmentSort) InventoryType() byte { return m.inventoryType }
+func (m CompartmentSort) Operation() string   { return CompartmentSortWriter }
+func (m CompartmentSort) String() string {
 	return fmt.Sprintf("inventoryType [%d]", m.inventoryType)
 }
 
-func (m CompartmentSortW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m CompartmentSort) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(0)
@@ -34,7 +34,7 @@ func (m CompartmentSortW) Encode(l logrus.FieldLogger, _ context.Context) func(o
 	}
 }
 
-func (m *CompartmentSortW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CompartmentSort) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		_ = r.ReadByte() // always 0
 		m.inventoryType = r.ReadByte()

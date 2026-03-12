@@ -7,7 +7,7 @@ import (
 )
 
 func TestMonsterMovement(t *testing.T) {
-	p := Movement{}
+	p := MovementRequest{}
 	p.uniqueId = 1001
 	p.moveId = 55
 	p.dwFlag = 1
@@ -56,7 +56,7 @@ func TestMonsterMovement(t *testing.T) {
 
 func TestMonsterMovementGMS28(t *testing.T) {
 	// GMS v28 does not have multiTargetForBall, randTimeForAreaAttack, hackedCodeCRC, or chasing fields.
-	p := Movement{}
+	p := MovementRequest{}
 	p.uniqueId = 2002
 	p.moveId = 10
 	p.dwFlag = 0
@@ -79,7 +79,7 @@ func TestMonsterMovementGMS28(t *testing.T) {
 }
 
 func TestMonsterMovementOperationString(t *testing.T) {
-	p := Movement{}
+	p := MovementRequest{}
 	if p.Operation() != MonsterMovementHandle {
 		t.Errorf("expected operation %s, got %s", MonsterMovementHandle, p.Operation())
 	}

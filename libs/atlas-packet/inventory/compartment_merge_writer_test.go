@@ -6,8 +6,8 @@ import (
 	"github.com/Chronicle20/atlas-packet/test"
 )
 
-func TestCompartmentMergeW(t *testing.T) {
-	input := NewCompartmentMergeW(3)
+func TestCompartmentMerge(t *testing.T) {
+	input := NewCompartmentMerge(3)
 	for _, v := range test.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)

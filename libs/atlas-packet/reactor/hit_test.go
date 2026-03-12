@@ -10,8 +10,8 @@ func TestHitRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := Hit{oid: 100, isSkill: true, dwHitOption: 3, delay: 50, skillId: 1001004}
-			output := Hit{}
+			input := HitRequest{oid: 100, isSkill: true, dwHitOption: 3, delay: 50, skillId: 1001004}
+			output := HitRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.Oid() != input.Oid() {
 				t.Errorf("oid: got %v, want %v", output.Oid(), input.Oid())

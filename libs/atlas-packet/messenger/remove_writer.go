@@ -9,25 +9,25 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type RemoveW struct {
+type Remove struct {
 	mode     byte
 	position byte
 }
 
-func NewMessengerRemove(mode byte, position byte) RemoveW {
-	return RemoveW{mode: mode, position: position}
+func NewMessengerRemove(mode byte, position byte) Remove {
+	return Remove{mode: mode, position: position}
 }
 
-func (m RemoveW) Mode() byte     { return m.mode }
-func (m RemoveW) Position() byte { return m.position }
+func (m Remove) Mode() byte     { return m.mode }
+func (m Remove) Position() byte { return m.position }
 
-func (m RemoveW) Operation() string { return MessengerOperationWriter }
+func (m Remove) Operation() string { return MessengerOperationWriter }
 
-func (m RemoveW) String() string {
+func (m Remove) String() string {
 	return fmt.Sprintf("messenger remove position [%d]", m.position)
 }
 
-func (m RemoveW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Remove) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -36,7 +36,7 @@ func (m RemoveW) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 	}
 }
 
-func (m *RemoveW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Remove) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.position = r.ReadByte()

@@ -18,9 +18,9 @@ const (
 	CharacterAttackEnergyWriter = "CharacterAttackEnergy"
 )
 
-// AttackWriter is a common attack packet for all 4 attack types.
+// Attack is a common attack packet for all 4 attack types.
 // Service layer pre-computes mastery, bulletItemId, and skillLevel.
-type AttackWriter struct {
+type Attack struct {
 	attackType      string
 	characterId     uint32
 	level           byte
@@ -34,24 +34,24 @@ type AttackWriter struct {
 	attackInfo      model.AttackInfo
 }
 
-func NewAttackMelee(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isMesoExplosion bool, hasKeydown bool, ai model.AttackInfo) AttackWriter {
-	return newAttackWriter(CharacterAttackMeleeWriter, characterId, level, skillLevel, mastery, bulletItemId, false, isMesoExplosion, hasKeydown, ai)
+func NewAttackMelee(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isMesoExplosion bool, hasKeydown bool, ai model.AttackInfo) Attack {
+	return newAttack(CharacterAttackMeleeWriter, characterId, level, skillLevel, mastery, bulletItemId, false, isMesoExplosion, hasKeydown, ai)
 }
 
-func NewAttackRanged(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isStrafe bool, hasKeydown bool, ai model.AttackInfo) AttackWriter {
-	return newAttackWriter(CharacterAttackRangedWriter, characterId, level, skillLevel, mastery, bulletItemId, isStrafe, false, hasKeydown, ai)
+func NewAttackRanged(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isStrafe bool, hasKeydown bool, ai model.AttackInfo) Attack {
+	return newAttack(CharacterAttackRangedWriter, characterId, level, skillLevel, mastery, bulletItemId, isStrafe, false, hasKeydown, ai)
 }
 
-func NewAttackMagic(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, hasKeydown bool, ai model.AttackInfo) AttackWriter {
-	return newAttackWriter(CharacterAttackMagicWriter, characterId, level, skillLevel, mastery, bulletItemId, false, false, hasKeydown, ai)
+func NewAttackMagic(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, hasKeydown bool, ai model.AttackInfo) Attack {
+	return newAttack(CharacterAttackMagicWriter, characterId, level, skillLevel, mastery, bulletItemId, false, false, hasKeydown, ai)
 }
 
-func NewAttackEnergy(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, hasKeydown bool, ai model.AttackInfo) AttackWriter {
-	return newAttackWriter(CharacterAttackEnergyWriter, characterId, level, skillLevel, mastery, bulletItemId, false, false, hasKeydown, ai)
+func NewAttackEnergy(characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, hasKeydown bool, ai model.AttackInfo) Attack {
+	return newAttack(CharacterAttackEnergyWriter, characterId, level, skillLevel, mastery, bulletItemId, false, false, hasKeydown, ai)
 }
 
-func newAttackWriter(attackType string, characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isStrafe bool, isMesoExplosion bool, hasKeydown bool, ai model.AttackInfo) AttackWriter {
-	return AttackWriter{
+func newAttack(attackType string, characterId uint32, level byte, skillLevel byte, mastery byte, bulletItemId uint32, isStrafe bool, isMesoExplosion bool, hasKeydown bool, ai model.AttackInfo) Attack {
+	return Attack{
 		attackType:      attackType,
 		characterId:     characterId,
 		level:           level,
@@ -66,12 +66,12 @@ func newAttackWriter(attackType string, characterId uint32, level byte, skillLev
 	}
 }
 
-func (m AttackWriter) Operation() string { return m.attackType }
-func (m AttackWriter) String() string {
+func (m Attack) Operation() string { return m.attackType }
+func (m Attack) String() string {
 	return fmt.Sprintf("attack type [%s] characterId [%d] skillId [%d]", m.attackType, m.characterId, m.skillId)
 }
 
-func (m AttackWriter) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m Attack) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -126,7 +126,7 @@ func (m AttackWriter) Encode(l logrus.FieldLogger, ctx context.Context) func(opt
 	}
 }
 
-func (m *AttackWriter) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Attack) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		// No-op: attack display packets are server-send-only with complex
 		// conditional encoding (variable damage counts, skill-dependent fields).

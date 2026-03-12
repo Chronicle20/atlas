@@ -402,24 +402,24 @@ func (m *MemberJoined) Decode(_ logrus.FieldLogger, _ context.Context) func(r *r
 	}
 }
 
-// InviteW
+// Invite
 
-type InviteW struct {
+type Invite struct {
 	mode            byte
 	guildId         uint32
 	originatorName  string
 }
 
-func NewInviteW(mode byte, guildId uint32, originatorName string) InviteW {
-	return InviteW{mode: mode, guildId: guildId, originatorName: originatorName}
+func NewInvite(mode byte, guildId uint32, originatorName string) Invite {
+	return Invite{mode: mode, guildId: guildId, originatorName: originatorName}
 }
 
-func (m InviteW) Operation() string { return GuildOperationWriter }
-func (m InviteW) String() string {
+func (m Invite) Operation() string { return GuildOperationWriter }
+func (m Invite) String() string {
 	return fmt.Sprintf("mode [%d], guildId [%d], originatorName [%s]", m.mode, m.guildId, m.originatorName)
 }
 
-func (m InviteW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Invite) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
@@ -429,7 +429,7 @@ func (m InviteW) Encode(l logrus.FieldLogger, _ context.Context) func(options ma
 	}
 }
 
-func (m *InviteW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Invite) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		m.guildId = r.ReadUint32()

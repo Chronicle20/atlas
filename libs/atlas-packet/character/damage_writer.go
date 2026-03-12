@@ -13,7 +13,7 @@ import (
 
 const CharacterDamageWriter = "CharacterDamage"
 
-type CharacterDamageW struct {
+type CharacterDamage struct {
 	characterId       uint32
 	attackIdx         model.DamageType
 	damage            int32
@@ -21,8 +21,8 @@ type CharacterDamageW struct {
 	left              bool
 }
 
-func NewCharacterDamageW(characterId uint32, attackIdx model.DamageType, damage int32, monsterTemplateId uint32, left bool) CharacterDamageW {
-	return CharacterDamageW{
+func NewCharacterDamage(characterId uint32, attackIdx model.DamageType, damage int32, monsterTemplateId uint32, left bool) CharacterDamage {
+	return CharacterDamage{
 		characterId:       characterId,
 		attackIdx:         attackIdx,
 		damage:            damage,
@@ -31,17 +31,17 @@ func NewCharacterDamageW(characterId uint32, attackIdx model.DamageType, damage 
 	}
 }
 
-func (m CharacterDamageW) CharacterId() uint32       { return m.characterId }
-func (m CharacterDamageW) AttackIdx() model.DamageType { return m.attackIdx }
-func (m CharacterDamageW) DamageAmount() int32       { return m.damage }
-func (m CharacterDamageW) MonsterTemplateId() uint32 { return m.monsterTemplateId }
-func (m CharacterDamageW) Left() bool                { return m.left }
-func (m CharacterDamageW) Operation() string         { return CharacterDamageWriter }
-func (m CharacterDamageW) String() string {
+func (m CharacterDamage) CharacterId() uint32       { return m.characterId }
+func (m CharacterDamage) AttackIdx() model.DamageType { return m.attackIdx }
+func (m CharacterDamage) DamageAmount() int32       { return m.damage }
+func (m CharacterDamage) MonsterTemplateId() uint32 { return m.monsterTemplateId }
+func (m CharacterDamage) Left() bool                { return m.left }
+func (m CharacterDamage) Operation() string         { return CharacterDamageWriter }
+func (m CharacterDamage) String() string {
 	return fmt.Sprintf("characterId [%d], damage [%d]", m.characterId, m.damage)
 }
 
-func (m CharacterDamageW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m CharacterDamage) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -65,7 +65,7 @@ func (m CharacterDamageW) Encode(l logrus.FieldLogger, ctx context.Context) func
 	}
 }
 
-func (m *CharacterDamageW) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *CharacterDamage) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.characterId = r.ReadUint32()

@@ -6,12 +6,12 @@ import (
 	pt "github.com/Chronicle20/atlas-packet/test"
 )
 
-func TestCompartmentSortRoundTrip(t *testing.T) {
+func TestCompartmentSortRequestRoundTrip(t *testing.T) {
 	for _, v := range pt.Variants {
 		t.Run(v.Name, func(t *testing.T) {
 			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
-			input := CompartmentSort{updateTime: 100, compartmentType: 2}
-			output := CompartmentSort{}
+			input := CompartmentSortRequest{updateTime: 100, compartmentType: 2}
+			output := CompartmentSortRequest{}
 			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
 			if output.CompartmentType() != input.CompartmentType() {
 				t.Errorf("compartmentType: got %v, want %v", output.CompartmentType(), input.CompartmentType())

@@ -116,7 +116,7 @@ func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobI
 
 func GuildInviteBody(guildId uint32, originatorName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationInvite, func(mode byte) packet.Encoder {
-		return NewInviteW(mode, guildId, originatorName)
+		return NewInvite(mode, guildId, originatorName)
 	})
 }
 

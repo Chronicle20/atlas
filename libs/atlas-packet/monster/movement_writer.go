@@ -13,7 +13,7 @@ import (
 
 const MonsterMovementWriter = "MoveMonster"
 
-type MovementW struct {
+type Movement struct {
 	uniqueId                    uint32
 	bNotForceLandingWhenDiscard bool
 	bNotChangeAction            bool
@@ -26,8 +26,8 @@ type MovementW struct {
 	movement                    model.Movement
 }
 
-func NewMonsterMovementW(uniqueId uint32, bNotForceLandingWhenDiscard bool, bNotChangeAction bool, bNextAttackPossible bool, bLeft int8, skillId int16, skillLevel int16, multiTargets model.MultiTargetForBall, randTimeForAreaAttack model.RandTimeForAreaAttack, movement model.Movement) MovementW {
-	return MovementW{
+func NewMonsterMovement(uniqueId uint32, bNotForceLandingWhenDiscard bool, bNotChangeAction bool, bNextAttackPossible bool, bLeft int8, skillId int16, skillLevel int16, multiTargets model.MultiTargetForBall, randTimeForAreaAttack model.RandTimeForAreaAttack, movement model.Movement) Movement {
+	return Movement{
 		uniqueId:                    uniqueId,
 		bNotForceLandingWhenDiscard: bNotForceLandingWhenDiscard,
 		bNotChangeAction:            bNotChangeAction,
@@ -41,12 +41,12 @@ func NewMonsterMovementW(uniqueId uint32, bNotForceLandingWhenDiscard bool, bNot
 	}
 }
 
-func (m MovementW) Operation() string { return MonsterMovementWriter }
-func (m MovementW) String() string {
+func (m Movement) Operation() string { return MonsterMovementWriter }
+func (m Movement) String() string {
 	return fmt.Sprintf("uniqueId [%d], bLeft [%d], skillId [%d]", m.uniqueId, m.bLeft, m.skillId)
 }
 
-func (m MovementW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m Movement) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -68,7 +68,7 @@ func (m MovementW) Encode(l logrus.FieldLogger, ctx context.Context) func(option
 	}
 }
 
-func (m *MovementW) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Movement) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.uniqueId = r.ReadUint32()

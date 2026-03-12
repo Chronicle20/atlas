@@ -13,18 +13,18 @@ import (
 
 const CharacterBuffCancelWriter = "CharacterBuffCancel"
 
-type BuffCancelW struct {
+type BuffCancel struct {
 	cts model.CharacterTemporaryStat
 }
 
-func NewBuffCancelW(cts model.CharacterTemporaryStat) BuffCancelW {
-	return BuffCancelW{cts: cts}
+func NewBuffCancel(cts model.CharacterTemporaryStat) BuffCancel {
+	return BuffCancel{cts: cts}
 }
 
-func (m BuffCancelW) Operation() string { return CharacterBuffCancelWriter }
-func (m BuffCancelW) String() string    { return "buff cancel" }
+func (m BuffCancel) Operation() string { return CharacterBuffCancelWriter }
+func (m BuffCancel) String() string    { return "buff cancel" }
 
-func (m BuffCancelW) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+func (m BuffCancel) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
@@ -34,7 +34,7 @@ func (m BuffCancelW) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 	}
 }
 
-func (m *BuffCancelW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *BuffCancel) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.cts = *model.NewCharacterTemporaryStat()
 		_ = m.cts.DecodeMask(r)

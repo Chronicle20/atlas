@@ -7,7 +7,7 @@ import (
 )
 
 func TestPetMovement(t *testing.T) {
-	p := Movement{}
+	p := MovementRequest{}
 	p.petId = 5000001
 
 	for _, v := range test.Variants {
@@ -26,7 +26,7 @@ func TestPetMovement(t *testing.T) {
 }
 
 func TestPetMovementOperationString(t *testing.T) {
-	p := Movement{}
+	p := MovementRequest{}
 	if p.Operation() != PetMovementHandle {
 		t.Errorf("expected operation %s, got %s", PetMovementHandle, p.Operation())
 	}

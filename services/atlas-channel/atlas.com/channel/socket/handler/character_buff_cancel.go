@@ -13,7 +13,7 @@ import (
 
 func CharacterBuffCancelHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := character2.BuffCancel{}
+		p := character2.BuffCancelRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = buff.NewProcessor(l, ctx).Cancel(s.Field(), s.CharacterId(), p.SkillId())

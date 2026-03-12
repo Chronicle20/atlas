@@ -11,7 +11,7 @@ import (
 
 const ReactorHitWriter = "ReactorHit"
 
-type HitW struct {
+type Hit struct {
 	id        uint32
 	state     int8
 	x         int16
@@ -21,16 +21,16 @@ type HitW struct {
 	unk2      byte
 }
 
-func NewReactorHitW(id uint32, state int8, x int16, y int16, direction uint16) HitW {
-	return HitW{id: id, state: state, x: x, y: y, direction: direction, unk1: 0, unk2: 5}
+func NewReactorHit(id uint32, state int8, x int16, y int16, direction uint16) Hit {
+	return Hit{id: id, state: state, x: x, y: y, direction: direction, unk1: 0, unk2: 5}
 }
 
-func (m HitW) Operation() string { return ReactorHitWriter }
-func (m HitW) String() string {
+func (m Hit) Operation() string { return ReactorHitWriter }
+func (m Hit) String() string {
 	return fmt.Sprintf("id [%d], state [%d]", m.id, m.state)
 }
 
-func (m HitW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m Hit) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteInt(m.id)
@@ -44,7 +44,7 @@ func (m HitW) Encode(l logrus.FieldLogger, _ context.Context) func(options map[s
 	}
 }
 
-func (m *HitW) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Hit) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.id = r.ReadUint32()
 		m.state = r.ReadInt8()

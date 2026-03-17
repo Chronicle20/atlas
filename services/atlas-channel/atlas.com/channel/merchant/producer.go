@@ -54,6 +54,60 @@ func CloseShopCommandProvider(characterId uint32, shopId uuid.UUID) model.Provid
 	return producer.SingleMessageProvider(key, value)
 }
 
+func EnterMaintenanceCommandProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandEnterMaintenanceBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandEnterMaintenance,
+		Body: merchant2.CommandEnterMaintenanceBody{
+			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ExitMaintenanceCommandProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandExitMaintenanceBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandExitMaintenance,
+		Body: merchant2.CommandExitMaintenanceBody{
+			ShopId: shopId.String(),
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func AddListingCommandProvider(characterId uint32, shopId uuid.UUID, inventoryType byte, slot int16, quantity uint16, bundleSize uint16, pricePerBundle uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandAddListingBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandAddListing,
+		Body: merchant2.CommandAddListingBody{
+			ShopId:         shopId.String(),
+			InventoryType:  inventoryType,
+			Slot:           slot,
+			BundleSize:     bundleSize,
+			BundleCount:    quantity,
+			PricePerBundle: pricePerBundle,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RemoveListingCommandProvider(characterId uint32, shopId uuid.UUID, listingIndex uint16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant2.Command[merchant2.CommandRemoveListingBody]{
+		CharacterId: characterId,
+		Type:        merchant2.CommandRemoveListing,
+		Body: merchant2.CommandRemoveListingBody{
+			ShopId:       shopId.String(),
+			ListingIndex: listingIndex,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func EnterShopCommandProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant2.Command[merchant2.CommandEnterShopBody]{

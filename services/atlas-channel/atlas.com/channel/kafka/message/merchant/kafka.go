@@ -9,16 +9,18 @@ import (
 const (
 	EnvCommandTopic = "COMMAND_TOPIC_MERCHANT"
 
-	CommandPlaceShop      = "PLACE_SHOP"
-	CommandOpenShop       = "OPEN_SHOP"
-	CommandCloseShop      = "CLOSE_SHOP"
-	CommandEnterShop      = "ENTER_SHOP"
-	CommandExitShop       = "EXIT_SHOP"
-	CommandSendMessage    = "SEND_MESSAGE"
-	CommandAddListing     = "ADD_LISTING"
-	CommandRemoveListing  = "REMOVE_LISTING"
-	CommandUpdateListing  = "UPDATE_LISTING"
-	CommandPurchaseBundle = "PURCHASE_BUNDLE"
+	CommandPlaceShop        = "PLACE_SHOP"
+	CommandOpenShop         = "OPEN_SHOP"
+	CommandCloseShop        = "CLOSE_SHOP"
+	CommandEnterMaintenance = "ENTER_MAINTENANCE"
+	CommandExitMaintenance  = "EXIT_MAINTENANCE"
+	CommandEnterShop        = "ENTER_SHOP"
+	CommandExitShop         = "EXIT_SHOP"
+	CommandSendMessage      = "SEND_MESSAGE"
+	CommandAddListing       = "ADD_LISTING"
+	CommandRemoveListing    = "REMOVE_LISTING"
+	CommandUpdateListing    = "UPDATE_LISTING"
+	CommandPurchaseBundle   = "PURCHASE_BUNDLE"
 )
 
 type Command[E any] struct {
@@ -58,6 +60,14 @@ type CommandExitShopBody struct {
 type CommandSendMessageBody struct {
 	ShopId  string `json:"shopId"`
 	Content string `json:"content"`
+}
+
+type CommandEnterMaintenanceBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type CommandExitMaintenanceBody struct {
+	ShopId string `json:"shopId"`
 }
 
 type CommandAddListingBody struct {
@@ -100,8 +110,15 @@ const (
 	StatusEventMaintenanceExited  = "MAINTENANCE_EXITED"
 	StatusEventVisitorEntered     = "VISITOR_ENTERED"
 	StatusEventVisitorExited      = "VISITOR_EXITED"
-	StatusEventVisitorEjected     = "VISITOR_EJECTED"
-	StatusEventMessageSent        = "MESSAGE_SENT"
+	StatusEventVisitorEjected        = "VISITOR_EJECTED"
+	StatusEventCapacityFull          = "CAPACITY_FULL"
+	StatusEventPurchaseFailed        = "PURCHASE_FAILED"
+	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
+	StatusEventMessageSent           = "MESSAGE_SENT"
+
+	EnvListingEventTopic = "EVENT_TOPIC_MERCHANT_LISTING"
+
+	ListingEventPurchased = "LISTING_PURCHASED"
 )
 
 type StatusEvent[E any] struct {
@@ -132,9 +149,35 @@ type StatusEventVisitorBody struct {
 	CharacterId uint32 `json:"characterId"`
 }
 
+type StatusEventCapacityFullBody struct {
+	ShopId string `json:"shopId"`
+}
+
+type StatusEventPurchaseFailedBody struct {
+	ShopId string `json:"shopId"`
+	Reason string `json:"reason"`
+}
+
+type StatusEventFrederickNotificationBody struct {
+	DaysSinceStorage uint16 `json:"daysSinceStorage"`
+}
+
 type StatusEventMessageSentBody struct {
 	ShopId      string `json:"shopId"`
 	CharacterId uint32 `json:"characterId"`
 	Slot        byte   `json:"slot"`
 	Content     string `json:"content"`
+}
+
+type ListingEvent[E any] struct {
+	ShopId string `json:"shopId"`
+	Type   string `json:"type"`
+	Body   E      `json:"body"`
+}
+
+type ListingEventPurchasedBody struct {
+	ListingIndex     uint16 `json:"listingIndex"`
+	BuyerCharacterId uint32 `json:"buyerCharacterId"`
+	BundleCount      uint16 `json:"bundleCount"`
+	BundlesRemaining uint16 `json:"bundlesRemaining"`
 }

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/character"
 	"atlas-channel/merchant"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -83,6 +84,15 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
 				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Slot(), sp.ItemId())
+				if roomType == model.MerchantShopMiniRoomType {
+					c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+					if err != nil {
+						l.WithError(err).Errorf("Unable to get character [%d] for shop placement.", s.CharacterId())
+						return
+					}
+					mp := merchant.NewProcessor(l, ctx)
+					_ = mp.PlaceShop(s.Field(), s.CharacterId(), byte(roomType), sp.Title(), sp.ItemId(), c.X(), c.Y())
+				}
 				return
 			}
 			if roomType == model.CashTradeMiniRoomType {
@@ -105,7 +115,15 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeVisit) {
 			sp := &interaction2.OperationVisit{}
 			sp.Decode(l, ctx)(r, readerOptions)
-			l.Debugf("Character [%d] is accepting a trade invite. serialNumber [%d], errorCode [%d], errorMessage [%s], something [%t], unk1 [%d], cashSerialNumber [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode(), sp.ErrorMessage(), sp.Something(), sp.Unk1(), sp.CashSerialNumber())
+			l.Debugf("Character [%d] is visiting. serialNumber [%d], errorCode [%d], errorMessage [%s], something [%t], unk1 [%d], cashSerialNumber [%d].", s.CharacterId(), sp.SerialNumber(), sp.ErrorCode(), sp.ErrorMessage(), sp.Something(), sp.Unk1(), sp.CashSerialNumber())
+			ownerCharacterId := sp.SerialNumber()
+			mp := merchant.NewProcessor(l, ctx)
+			shops, err := mp.GetByCharacterId(ownerCharacterId)
+			if err != nil || len(shops) == 0 {
+				l.WithError(err).Errorf("Unable to find shop for owner [%d].", ownerCharacterId)
+				return
+			}
+			_ = mp.EnterShop(s.CharacterId(), shops[0].Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeChat) {
@@ -123,12 +141,30 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeExit) {
 			l.Debugf("Character [%d] has stopped character interaction.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Debugf("Character [%d] not visiting a shop, ignoring exit.", s.CharacterId())
+				return
+			}
+			if visiting.CharacterId() == s.CharacterId() {
+				_ = mp.CloseShop(s.CharacterId(), visiting.Id())
+			} else {
+				_ = mp.ExitShop(s.CharacterId(), visiting.Id())
+			}
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeOpen) {
 			sp := &interaction2.OperationOpen{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] has opened (something). success [%t].", s.CharacterId(), sp.Success())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.OpenShop(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeCashTradeOpen) {
@@ -145,8 +181,14 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 				return
 			}
 			if nProc == 4 && roomType == model.MerchantShopMiniRoomType {
-				// TODO This immediately triggered from a hired_merchant_operation ConfirmManage
-				l.Debugf("Character [%d] has opened cash trade. nProc [%d], roomType [%d], spw [%d], shopId [%d], unk2 [%d], position [%d], serialNumber [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.ShopId(), sp.Unk2(), sp.Position(), sp.SerialNumber())
+				l.Debugf("Character [%d] entering merchant maintenance. nProc [%d], roomType [%d], spw [%d], shopId [%d], unk2 [%d], position [%d], serialNumber [%d].", s.CharacterId(), nProc, roomType, sp.Spw(), sp.ShopId(), sp.Unk2(), sp.Position(), sp.SerialNumber())
+				mp := merchant.NewProcessor(l, ctx)
+				shops, err := mp.GetByCharacterId(s.CharacterId())
+				if err != nil || len(shops) == 0 {
+					l.WithError(err).Errorf("Unable to find shop for character [%d].", s.CharacterId())
+					return
+				}
+				_ = mp.EnterMaintenance(s.CharacterId(), shops[0].Id())
 				return
 			}
 			if nProc == 11 && (roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType) {
@@ -235,6 +277,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			sp := &interaction2.OperationMerchantPutItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to merchant. set [%d], price [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.Set(), sp.Price())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantBuy) {
@@ -254,10 +303,24 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			sp := &interaction2.OperationMerchantRemoveItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to remove item index [%d] from merchant.", s.CharacterId(), sp.Index())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.RemoveListing(s.CharacterId(), visiting.Id(), uint16(sp.Index()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantMaintenanceOff) {
 			l.Debugf("Character [%d] has stopped merchant maintenance.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.ExitMaintenance(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantOrganize) {

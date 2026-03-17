@@ -3,15 +3,16 @@ package merchant
 import "github.com/google/uuid"
 
 type RestModel struct {
-	Id           string `json:"-"`
-	CharacterId  uint32 `json:"characterId"`
-	ShopType     byte   `json:"shopType"`
-	Title        string `json:"title"`
-	MapId        uint32 `json:"mapId"`
-	X            int16  `json:"x"`
-	Y            int16  `json:"y"`
-	PermitItemId uint32 `json:"permitItemId"`
-	ListingCount int64  `json:"listingCount"`
+	Id           string   `json:"-"`
+	CharacterId  uint32   `json:"characterId"`
+	ShopType     byte     `json:"shopType"`
+	Title        string   `json:"title"`
+	MapId        uint32   `json:"mapId"`
+	X            int16    `json:"x"`
+	Y            int16    `json:"y"`
+	PermitItemId uint32   `json:"permitItemId"`
+	ListingCount int64    `json:"listingCount"`
+	Visitors     []uint32 `json:"visitors,omitempty"`
 }
 
 func (r RestModel) GetName() string {
@@ -41,5 +42,6 @@ func Extract(rm RestModel) (Model, error) {
 		y:            rm.Y,
 		permitItemId: rm.PermitItemId,
 		listingCount: rm.ListingCount,
+		visitors:     rm.Visitors,
 	}, nil
 }

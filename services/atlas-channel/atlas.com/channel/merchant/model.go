@@ -11,6 +11,7 @@ type Model struct {
 	y            int16
 	permitItemId uint32
 	listingCount int64
+	visitors     []uint32
 }
 
 func (m Model) Id() uuid.UUID       { return m.id }
@@ -21,3 +22,4 @@ func (m Model) X() int16             { return m.x }
 func (m Model) Y() int16             { return m.y }
 func (m Model) PermitItemId() uint32 { return m.permitItemId }
 func (m Model) ListingCount() int64  { return m.listingCount }
+func (m Model) Visitors() []uint32   { return m.visitors }

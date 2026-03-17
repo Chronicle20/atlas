@@ -4,6 +4,8 @@ import (
 	"atlas-merchant/listing"
 	"errors"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -49,10 +51,10 @@ func getActiveByCharacterIdAndType(characterId uint32, shopType ShopType) databa
 	}
 }
 
-func getByMapId(mapId uint32) database.EntityProvider[[]Entity] {
+func getByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where("map_id = ? AND state != ?", mapId, byte(Closed)).Find(&results).Error
+		err := db.Where("world_id = ? AND channel_id = ? AND map_id = ? AND instance_id = ? AND state != ?", worldId, channelId, mapId, instanceId, byte(Closed)).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}
@@ -84,15 +86,17 @@ func getExpired() database.EntityProvider[[]Entity] {
 
 type listingSearchRow struct {
 	listing.Entity
-	ShopTitle string `gorm:"column:shop_title"`
-	ShopMapId uint32 `gorm:"column:shop_map_id"`
+	ShopTitle     string     `gorm:"column:shop_title"`
+	ShopWorldId   world.Id   `gorm:"column:shop_world_id"`
+	ShopChannelId channel.Id `gorm:"column:shop_channel_id"`
+	ShopMapId     uint32     `gorm:"column:shop_map_id"`
 }
 
 func searchListingsByItemId(itemId uint32) database.EntityProvider[[]ListingSearchResult] {
 	return func(db *gorm.DB) model.Provider[[]ListingSearchResult] {
 		var rows []listingSearchRow
 		err := db.Table("listings").
-			Select("listings.*, shops.title AS shop_title, shops.map_id AS shop_map_id").
+			Select("listings.*, shops.title AS shop_title, shops.world_id AS shop_world_id, shops.channel_id AS shop_channel_id, shops.map_id AS shop_map_id").
 			Joins("JOIN shops ON shops.id = listings.shop_id").
 			Where("listings.item_id = ? AND shops.state IN (?, ?)", itemId, byte(Open), byte(Maintenance)).
 			Order("listings.price_per_bundle ASC").
@@ -108,10 +112,12 @@ func searchListingsByItemId(itemId uint32) database.EntityProvider[[]ListingSear
 				return model.ErrorProvider[[]ListingSearchResult](err)
 			}
 			results = append(results, ListingSearchResult{
-				Listing: lm,
-				ShopId:  r.Entity.ShopId,
-				Title:   r.ShopTitle,
-				MapId:   r.ShopMapId,
+				Listing:   lm,
+				ShopId:    r.Entity.ShopId,
+				Title:     r.ShopTitle,
+				WorldId:   r.ShopWorldId,
+				ChannelId: r.ShopChannelId,
+				MapId:     r.ShopMapId,
 			})
 		}
 		return model.FixedProvider(results)

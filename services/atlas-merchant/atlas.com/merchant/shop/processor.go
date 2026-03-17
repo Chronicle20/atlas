@@ -12,8 +12,9 @@ import (
 	"strconv"
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -28,12 +29,12 @@ type Processor interface {
 	GetById(id uuid.UUID) (Model, error)
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
-	GetByMapId(mapId uint32) ([]Model, error)
+	GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error)
 	GetAllOpen() ([]Model, error)
 	GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
 	SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
-	CreateShop(characterId uint32, shopType ShopType, title string, mapId uint32, x int16, y int16, permitItemId uint32) (Model, error)
+	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(shopId uuid.UUID) error
 	EnterMaintenance(shopId uuid.UUID) error
 	ExitMaintenance(shopId uuid.UUID) (bool, error)
@@ -74,10 +75,12 @@ type PurchaseResult struct {
 }
 
 type ListingSearchResult struct {
-	Listing listing.Model
-	ShopId  uuid.UUID
-	Title   string
-	MapId   uint32
+	Listing   listing.Model
+	ShopId    uuid.UUID
+	Title     string
+	WorldId   world.Id
+	ChannelId channel.Id
+	MapId     uint32
 }
 
 var ErrNotFound = errors.New("not found")
@@ -120,8 +123,8 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 	return model.SliceMap(Make)(getByCharacterId(characterId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
-func (p *ProcessorImpl) GetByMapId(mapId uint32) ([]Model, error) {
-	return model.SliceMap(Make)(getByMapId(mapId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+func (p *ProcessorImpl) GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]Model, error) {
+	return model.SliceMap(Make)(getByField(worldId, channelId, mapId, instanceId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
 func (p *ProcessorImpl) GetAllOpen() ([]Model, error) {
@@ -144,7 +147,7 @@ func (p *ProcessorImpl) GetExpired() ([]Model, error) {
 	return model.SliceMap(Make)(getExpired()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
 }
 
-func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title string, mapId uint32, x int16, y int16, permitItemId uint32) (Model, error) {
+func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error) {
 	// Validate Free Market room.
 	if !IsFreemarketRoom(mapId) {
 		return Model{}, ErrNotFreemarketRoom
@@ -157,7 +160,7 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 
 	// Validate shop-to-shop proximity.
 	shopProvider := func() ([]Model, error) {
-		return p.GetByMapId(mapId)
+		return p.GetByField(worldId, channelId, mapId, instanceId)
 	}
 	if IsNearExistingShop(mapId, x, y, shopProvider) {
 		return Model{}, ErrTooCloseToShop
@@ -194,7 +197,10 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 		ShopType:     byte(shopType),
 		State:        byte(Draft),
 		Title:        title,
+		WorldId:      worldId,
+		ChannelId:    channelId,
 		MapId:        mapId,
+		InstanceId:   instanceId,
 		X:            x,
 		Y:            y,
 		PermitItemId: permitItemId,
@@ -222,9 +228,12 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 	r := GetRegistry()
 	if r != nil {
 		_ = r.activeShops.Put(p.ctx, p.t, characterId, ActiveShopEntry{
-			ShopId:   id,
-			ShopType: shopType,
-			MapId:    mapId,
+			ShopId:     id,
+			ShopType:   shopType,
+			WorldId:    worldId,
+			ChannelId:  channelId,
+			MapId:      mapId,
+			InstanceId: instanceId,
 		})
 	}
 

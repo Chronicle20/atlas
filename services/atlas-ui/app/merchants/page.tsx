@@ -6,6 +6,7 @@ import { merchantsService } from "@/services/api/merchants.service";
 import { itemsService } from "@/services/api/items.service";
 import type { MerchantShop } from "@/types/models/merchant";
 import type { ListingSearchResult } from "@/types/models/merchant";
+import type { TenantConfig } from "@/services/api/tenants.service";
 import { toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ export default function MerchantsPage() {
 }
 
 function MerchantsPageContent() {
-  const { activeTenant } = useTenant();
+  const { activeTenant, fetchTenantConfiguration } = useTenant();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -49,6 +50,7 @@ function MerchantsPageContent() {
   const initialQuery = searchParams.get("q") ?? "";
 
   const [shops, setShops] = useState<MerchantShop[]>([]);
+  const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,15 +65,19 @@ function MerchantsPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const data = await merchantsService.getAllShops(activeTenant);
+      const [data, config] = await Promise.all([
+        merchantsService.getAllShops(activeTenant),
+        fetchTenantConfiguration(activeTenant.id),
+      ]);
       setShops(data);
+      setTenantConfig(config);
     } catch (err: unknown) {
       const errorInfo = createErrorFromUnknown(err, "Failed to fetch merchants");
       setError(errorInfo.message);
     } finally {
       setLoading(false);
     }
-  }, [activeTenant]);
+  }, [activeTenant, fetchTenantConfiguration]);
 
   useEffect(() => {
     fetchShops();
@@ -147,7 +153,7 @@ function MerchantsPageContent() {
     }
   }, [activeTenant, initialQuery, initialTab, handleSearch]);
 
-  const columns = getColumns({ tenant: activeTenant });
+  const columns = getColumns({ tenant: activeTenant, tenantConfig });
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
@@ -232,6 +238,7 @@ function MerchantsPageContent() {
                           <TableHead className="w-10">Icon</TableHead>
                           <TableHead>Item</TableHead>
                           <TableHead>Shop</TableHead>
+                          <TableHead>Channel</TableHead>
                           <TableHead>Map</TableHead>
                           <TableHead>Price</TableHead>
                           <TableHead>Qty</TableHead>
@@ -240,7 +247,7 @@ function MerchantsPageContent() {
                       </TableHeader>
                       <TableBody>
                         {searchResults.map((result) => (
-                          <SearchResultRow key={result.id} result={result} />
+                          <SearchResultRow key={result.id} result={result} tenantConfig={tenantConfig} />
                         ))}
                       </TableBody>
                     </Table>
@@ -255,9 +262,10 @@ function MerchantsPageContent() {
   );
 }
 
-function SearchResultRow({ result }: { result: ListingSearchResult }) {
+function SearchResultRow({ result, tenantConfig }: { result: ListingSearchResult; tenantConfig: TenantConfig | null }) {
   const { activeTenant } = useTenant();
   const a = result.attributes;
+  const worldName = tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`;
 
   const iconUrl = activeTenant ? getAssetIconUrl(
     activeTenant.id,
@@ -293,6 +301,11 @@ function SearchResultRow({ result }: { result: ListingSearchResult }) {
         <Link href={`/merchants/${a.shopId}`} className="font-medium text-primary hover:underline">
           {a.shopTitle || "Untitled"}
         </Link>
+      </TableCell>
+      <TableCell>
+        <Badge variant="secondary">
+          {worldName} Ch. {a.channelId + 1}
+        </Badge>
       </TableCell>
       <TableCell>
         <MapCell mapId={String(a.mapId)} tenant={activeTenant} />

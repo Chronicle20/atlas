@@ -13,7 +13,10 @@ type RestModel struct {
 	ShopType     byte                `json:"shopType"`
 	State        byte                `json:"state"`
 	Title        string              `json:"title"`
+	WorldId      byte                `json:"worldId"`
+	ChannelId    byte                `json:"channelId"`
 	MapId        uint32              `json:"mapId"`
+	InstanceId   string              `json:"instanceId"`
 	X            int16               `json:"x"`
 	Y            int16               `json:"y"`
 	PermitItemId uint32              `json:"permitItemId"`
@@ -73,7 +76,10 @@ func Transform(m Model) (RestModel, error) {
 		ShopType:     byte(m.ShopType()),
 		State:        byte(m.State()),
 		Title:        m.Title(),
+		WorldId:      byte(m.WorldId()),
+		ChannelId:    byte(m.ChannelId()),
 		MapId:        m.MapId(),
+		InstanceId:   m.InstanceId().String(),
 		X:            m.X(),
 		Y:            m.Y(),
 		PermitItemId: m.PermitItemId(),
@@ -128,6 +134,8 @@ type ListingSearchRestModel struct {
 	Id               string `json:"-"`
 	ShopId           string `json:"shopId"`
 	ShopTitle        string `json:"shopTitle"`
+	WorldId          byte   `json:"worldId"`
+	ChannelId        byte   `json:"channelId"`
 	MapId            uint32 `json:"mapId"`
 	ItemId           uint32 `json:"itemId"`
 	ItemType         byte   `json:"itemType"`
@@ -155,6 +163,8 @@ func TransformSearchResult(sr ListingSearchResult) (ListingSearchRestModel, erro
 		Id:               sr.Listing.Id().String(),
 		ShopId:           sr.ShopId.String(),
 		ShopTitle:        sr.Title,
+		WorldId:          byte(sr.WorldId),
+		ChannelId:        byte(sr.ChannelId),
 		MapId:            sr.MapId,
 		ItemId:           sr.Listing.ItemId(),
 		ItemType:         sr.Listing.ItemType(),

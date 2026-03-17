@@ -2,6 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import type { Tenant } from "@/types/models/tenant";
+import type { TenantConfig } from "@/services/api/tenants.service";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { MapCell } from "@/components/map-cell";
@@ -15,11 +16,12 @@ import {
 
 interface ColumnProps {
   tenant: Tenant | null;
+  tenantConfig: TenantConfig | null;
 }
 
 export const hiddenColumns = ["id"];
 
-export const getColumns = ({ tenant }: ColumnProps): ColumnDef<MerchantShop>[] => {
+export const getColumns = ({ tenant, tenantConfig }: ColumnProps): ColumnDef<MerchantShop>[] => {
   return [
     {
       accessorKey: "id",
@@ -55,6 +57,20 @@ export const getColumns = ({ tenant }: ColumnProps): ColumnDef<MerchantShop>[] =
         return (
           <Badge variant="secondary" className={getShopStateBadgeVariant(state)}>
             {getShopStateName(state)}
+          </Badge>
+        );
+      },
+    },
+    {
+      accessorKey: "attributes.channelId",
+      header: "Channel",
+      cell: ({ row }) => {
+        const worldId = row.original.attributes.worldId;
+        const channelId = row.original.attributes.channelId;
+        const worldName = tenantConfig?.attributes.worlds[worldId]?.name || `World ${worldId}`;
+        return (
+          <Badge variant="secondary">
+            {worldName} Ch. {channelId + 1}
           </Badge>
         );
       },

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { merchantsService } from "@/services/api/merchants.service";
 import type { MerchantShop, MerchantListing } from "@/types/models/merchant";
+import type { TenantConfig } from "@/services/api/tenants.service";
 import { getShopTypeName, getShopTypeBadgeVariant, getShopStateName, getShopStateBadgeVariant } from "@/types/models/merchant";
 import { toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";
@@ -28,12 +29,13 @@ import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 
 export default function MerchantDetailPage() {
-  const { activeTenant } = useTenant();
+  const { activeTenant, fetchTenantConfiguration } = useTenant();
   const params = useParams();
   const shopId = params.id as string;
 
   const [shop, setShop] = useState<MerchantShop | null>(null);
   const [listings, setListings] = useState<MerchantListing[]>([]);
+  const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,12 +47,14 @@ export default function MerchantDetailPage() {
       setError(null);
 
       try {
-        const [shopData, listingData] = await Promise.all([
+        const [shopData, listingData, config] = await Promise.all([
           merchantsService.getShopById(shopId, activeTenant),
           merchantsService.getShopListings(shopId, activeTenant),
+          fetchTenantConfiguration(activeTenant.id),
         ]);
         setShop(shopData);
         setListings(listingData);
+        setTenantConfig(config);
       } catch (err: unknown) {
         const errorInfo = createErrorFromUnknown(err, "Failed to load merchant details");
         setError(errorInfo.message);
@@ -61,7 +65,7 @@ export default function MerchantDetailPage() {
     };
 
     fetchData();
-  }, [activeTenant, shopId]);
+  }, [activeTenant, shopId, fetchTenantConfiguration]);
 
   if (loading) {
     return <PageLoader />;
@@ -106,6 +110,7 @@ export default function MerchantDetailPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <InfoField label="Shop ID" value={shopId} mono />
+            <InfoField label="Channel" value={`${tenantConfig?.attributes.worlds[a.worldId]?.name || `World ${a.worldId}`} Ch. ${a.channelId + 1}`} />
             <div className="space-y-1">
               <p className="text-sm text-muted-foreground">Map</p>
               <MapCell mapId={String(a.mapId)} tenant={activeTenant} />

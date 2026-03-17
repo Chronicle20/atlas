@@ -3,7 +3,10 @@ export interface MerchantShopAttributes {
   shopType: number;
   state: number;
   title: string;
+  worldId: number;
+  channelId: number;
   mapId: number;
+  instanceId: string;
   x: number;
   y: number;
   permitItemId: number;
@@ -38,6 +41,8 @@ export interface MerchantListing {
 export interface ListingSearchResultAttributes {
   shopId: string;
   shopTitle: string;
+  worldId: number;
+  channelId: number;
   mapId: number;
   itemId: number;
   itemType: number;

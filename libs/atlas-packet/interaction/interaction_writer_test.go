@@ -26,6 +26,16 @@ func TestInteractionInviteResultRoundTrip(t *testing.T) {
 	}
 }
 
+func TestInteractionChatRoundTrip(t *testing.T) {
+	input := NewInteractionChat(6, 7, 1, "TestPlayer : Hello world")
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionChat{}).Decode, nil)
+		})
+	}
+}
+
 func TestInteractionEnterResultErrorRoundTrip(t *testing.T) {
 	input := NewInteractionEnterResultError(5, 2)
 	for _, v := range test.Variants {

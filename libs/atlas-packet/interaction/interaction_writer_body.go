@@ -18,6 +18,8 @@ const (
 	CharacterInteractionModeInviteResult CharacterInteractionMode = "INVITE_RESULT" // 3
 	CharacterInteractionModeEnter        CharacterInteractionMode = "ENTER"         // 4
 	CharacterInteractionModeEnterResult  CharacterInteractionMode = "ENTER_RESULT"  // 5
+	CharacterInteractionModeChat         CharacterInteractionMode = "CHAT"          // 6
+	CharacterInteractionModeChatThing    CharacterInteractionMode = "CHAT_THING"    // 7
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -53,6 +55,16 @@ func CharacterInteractionInviteResultBody(result byte, message string) func(logr
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeInviteResult, func(mode byte) packet.Encoder {
 		return NewInteractionInviteResult(mode, result, message)
 	})
+}
+
+func CharacterInteractionChatBody(slot byte, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			mode := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeChat)
+			chatType := atlas_packet.ResolveCode(l, options, "operations", CharacterInteractionModeChatThing)
+			return NewInteractionChat(mode, chatType, slot, message).Encode(l, ctx)(options)
+		}
+	}
 }
 
 func CharacterInteractionEnterResultErrorBody(errorError CharacterInteractionEnterErrorMode) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {

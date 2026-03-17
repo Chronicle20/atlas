@@ -5,6 +5,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/google/uuid"
 )
 
 const (
@@ -34,12 +35,13 @@ type Command[E any] struct {
 }
 
 type CommandPlaceShopBody struct {
-	ShopType     byte   `json:"shopType"`
-	Title        string `json:"title"`
-	MapId        uint32 `json:"mapId"`
-	X            int16  `json:"x"`
-	Y            int16  `json:"y"`
-	PermitItemId uint32 `json:"permitItemId"`
+	ShopType     byte      `json:"shopType"`
+	Title        string    `json:"title"`
+	MapId        uint32    `json:"mapId"`
+	InstanceId   uuid.UUID `json:"instanceId"`
+	X            int16     `json:"x"`
+	Y            int16     `json:"y"`
+	PermitItemId uint32    `json:"permitItemId"`
 }
 
 type CommandOpenShopBody struct {
@@ -117,8 +119,9 @@ const (
 	StatusEventVisitorExited       = "VISITOR_EXITED"
 	StatusEventVisitorEjected      = "VISITOR_EJECTED"
 	StatusEventCapacityFull        = "CAPACITY_FULL"
-	StatusEventPurchaseFailed      = "PURCHASE_FAILED"
-	StatusEventFrederickNotification = "FREDERICK_NOTIFICATION"
+	StatusEventPurchaseFailed          = "PURCHASE_FAILED"
+	StatusEventFrederickNotification   = "FREDERICK_NOTIFICATION"
+	StatusEventMessageSent             = "MESSAGE_SENT"
 )
 
 type StatusEvent[E any] struct {
@@ -128,10 +131,15 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventShopOpenedBody struct {
-	ShopId   string `json:"shopId"`
-	ShopType byte   `json:"shopType"`
-	MapId    uint32 `json:"mapId"`
-	Title    string `json:"title"`
+	ShopId     string     `json:"shopId"`
+	ShopType   byte       `json:"shopType"`
+	WorldId    world.Id   `json:"worldId"`
+	ChannelId  channel.Id `json:"channelId"`
+	MapId      uint32     `json:"mapId"`
+	InstanceId uuid.UUID  `json:"instanceId"`
+	Title      string     `json:"title"`
+	X          int16      `json:"x"`
+	Y          int16      `json:"y"`
 }
 
 type StatusEventShopClosedBody struct {
@@ -155,6 +163,13 @@ type StatusEventPurchaseFailedBody struct {
 
 type StatusEventFrederickNotificationBody struct {
 	DaysSinceStorage uint16 `json:"daysSinceStorage"`
+}
+
+type StatusEventMessageSentBody struct {
+	ShopId      string `json:"shopId"`
+	CharacterId uint32 `json:"characterId"`
+	Slot        byte   `json:"slot"`
+	Content     string `json:"content"`
 }
 
 const (

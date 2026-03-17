@@ -25,6 +25,7 @@ import (
 	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
+	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	"atlas-channel/kafka/consumer/monster"
@@ -160,6 +161,7 @@ func main() {
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -315,6 +317,9 @@ func main() {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 				if err = gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = merchantConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 

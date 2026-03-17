@@ -47,6 +47,7 @@ type Processor interface {
 	ExitShop(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
+	GetShopForCharacter(characterId uint32) (uuid.UUID, error)
 	PurchaseBundle(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (PurchaseResult, error)
 	OpenShopAndEmit(shopId uuid.UUID, characterId uint32) error
 	CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error
@@ -732,6 +733,14 @@ func (p *ProcessorImpl) GetVisitors(shopId uuid.UUID) ([]uint32, error) {
 		return nil, nil
 	}
 	return vr.GetVisitors(p.ctx, p.t, shopId)
+}
+
+func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, error) {
+	vr := visitor.GetRegistry()
+	if vr == nil {
+		return uuid.Nil, errors.New("visitor registry not initialized")
+	}
+	return vr.GetShopForCharacter(p.ctx, p.t, characterId)
 }
 
 func (p *ProcessorImpl) removeFromRegistry(characterId uint32) {

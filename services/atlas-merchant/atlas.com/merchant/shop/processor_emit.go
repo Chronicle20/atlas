@@ -27,7 +27,7 @@ func (p *ProcessorImpl) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) er
 	}
 
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopOpenedProvider(characterId, shopId, m.ShopType(), m.MapId(), m.Title()))
+		return buf.Put(merchant.EnvStatusEventTopic, StatusEventShopOpenedProvider(characterId, shopId, m))
 	})
 }
 

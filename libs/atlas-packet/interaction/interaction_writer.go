@@ -142,6 +142,43 @@ func (m *InteractionEnterResultSuccess) Decode(l logrus.FieldLogger, ctx context
 	}
 }
 
+// InteractionChat - chat message in a mini room
+type InteractionChat struct {
+	mode     byte
+	chatType byte
+	slot     byte
+	message  string
+}
+
+func NewInteractionChat(mode byte, chatType byte, slot byte, message string) InteractionChat {
+	return InteractionChat{mode: mode, chatType: chatType, slot: slot, message: message}
+}
+
+func (m InteractionChat) Operation() string { return CharacterInteractionWriter }
+func (m InteractionChat) String() string {
+	return fmt.Sprintf("chat slot [%d] message [%s]", m.slot, m.message)
+}
+
+func (m InteractionChat) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.chatType)
+		w.WriteByte(m.slot)
+		w.WriteAsciiString(m.message)
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionChat) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.chatType = r.ReadByte()
+		m.slot = r.ReadByte()
+		m.message = r.ReadAsciiString()
+	}
+}
+
 // InteractionEnterResultError - failed room entry
 type InteractionEnterResultError struct {
 	mode      byte

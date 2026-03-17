@@ -23,7 +23,7 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, models)
 
-	models, err = m.GetByMapId(100)
+	models, err = m.GetByField(0, 0, 100, uuid.Nil)
 	assert.NoError(t, err)
 	assert.Empty(t, models)
 
@@ -31,7 +31,7 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, listings)
 
-	created, err := m.CreateShop(1000, shop.CharacterShop, "Test", 100, 0, 0, 0)
+	created, err := m.CreateShop(1000, shop.CharacterShop, "Test", 0, 0, 100, uuid.Nil, 0, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, shop.Model{}, created)
 
@@ -67,6 +67,10 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	visitors, err := m.GetVisitors(id)
 	assert.NoError(t, err)
 	assert.Nil(t, visitors)
+
+	visitingId, err := m.GetShopForCharacter(1000)
+	assert.NoError(t, err)
+	assert.Equal(t, uuid.Nil, visitingId)
 
 	result, err := m.PurchaseBundle(2000, id, 0, 1)
 	assert.NoError(t, err)

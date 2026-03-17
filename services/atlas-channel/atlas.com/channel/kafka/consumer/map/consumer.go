@@ -4,6 +4,7 @@ import (
 	"atlas-channel/chair"
 	"atlas-channel/chalkboard"
 	"atlas-channel/character"
+	"atlas-channel/merchant"
 	"atlas-channel/character/buff"
 	cashData "atlas-channel/data/cash"
 	mapData "atlas-channel/data/map"
@@ -37,6 +38,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
+	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
 	npcpkt "github.com/Chronicle20/atlas-packet/npc"
 	droppkt "github.com/Chronicle20/atlas-packet/drop"
 	fieldpkt "github.com/Chronicle20/atlas-packet/field"
@@ -209,6 +211,13 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				err = chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+				}
+			}()
+
+			go func() {
+				err = merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s))
+				if err != nil {
+					l.WithError(err).Errorf("Unable to spawn merchants for character [%d].", s.CharacterId())
 				}
 			}()
 
@@ -415,6 +424,25 @@ func spawnChairsForSession(l logrus.FieldLogger) func(ctx context.Context) func(
 			return func(s session.Model) model.Operator[chair.Model] {
 				return func(c chair.Model) error {
 					return session.Announce(l)(ctx)(wp)(charpkt.CharacterShowChairWriter)(charpkt.NewCharacterChairShow(c.CharacterId(), c.Id()).Encode)(s)
+				}
+			}
+		}
+	}
+}
+
+func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
+		return func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
+			return func(s session.Model) model.Operator[merchant.Model] {
+				return func(m merchant.Model) error {
+					mr := &interactionpkt.MiniRoomBase{
+						MiniRoomTypeVal: interactionpkt.MerchantShopMiniRoomType,
+						Title:           m.Title(),
+						CapacityVal:     4,
+						OwnerId:         m.CharacterId(),
+						VisitorList:     []interactionpkt.MiniRoomVisitor{},
+					}
+					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(m.CharacterId()))(s)
 				}
 			}
 		}

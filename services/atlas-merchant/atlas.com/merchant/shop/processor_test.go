@@ -48,7 +48,7 @@ func TestCreateShop(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(1000), m.CharacterId())
 	assert.Equal(t, CharacterShop, m.ShopType())
@@ -63,7 +63,7 @@ func TestCreateShop_NotFreemarketRoom(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	_, err := p.CreateShop(1000, CharacterShop, "Test Shop", 100000100, 0, 0, 0)
+	_, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 100000100, uuid.Nil, 0, 0, 0)
 	assert.ErrorIs(t, err, ErrNotFreemarketRoom)
 }
 
@@ -73,10 +73,10 @@ func TestCreateShop_DuplicateActiveShop(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	_, err := p.CreateShop(1000, CharacterShop, "Shop 1", 910000001, 0, 0, 0)
+	_, err := p.CreateShop(1000, CharacterShop, "Shop 1", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	_, err = p.CreateShop(1000, CharacterShop, "Shop 2", 910000002, 0, 0, 0)
+	_, err = p.CreateShop(1000, CharacterShop, "Shop 2", 0, 0, 910000002, uuid.Nil, 0, 0, 0)
 	assert.ErrorIs(t, err, ErrShopLimitReached)
 }
 
@@ -86,7 +86,7 @@ func TestOpenShop(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -107,7 +107,7 @@ func TestOpenShop_NoListings(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(m.Id())
@@ -120,7 +120,7 @@ func TestCloseShop(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -145,7 +145,7 @@ func TestCloseShop_InvalidState(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -169,7 +169,7 @@ func TestAddListing(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -187,7 +187,7 @@ func TestAddListing_LimitReached(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -206,7 +206,7 @@ func TestPurchaseBundle(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -230,7 +230,7 @@ func TestPurchaseBundle_SoldOut(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -257,7 +257,7 @@ func TestPurchaseBundle_InsufficientBundles(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -279,7 +279,7 @@ func TestEnterMaintenance(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -300,7 +300,7 @@ func TestEnterMaintenance_InvalidState(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	// Draft → Maintenance should fail.
@@ -314,7 +314,7 @@ func TestExitMaintenance_Reopen(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -339,7 +339,7 @@ func TestExitMaintenance_CloseWhenEmpty(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -369,7 +369,7 @@ func TestExitMaintenance_InvalidState(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	// Draft → ExitMaintenance should fail.
@@ -385,7 +385,7 @@ func TestRemoveListing_DisplayOrderCollapse(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -420,7 +420,7 @@ func TestUpdateListing(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -444,7 +444,7 @@ func TestAddListing_InvalidState(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -464,7 +464,7 @@ func TestAddListing_ZeroValues(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -519,7 +519,7 @@ func TestHiredMerchant_MesoAccumulation(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, HiredMerchant, "Hired Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, HiredMerchant, "Hired Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 	assert.NotNil(t, m.ExpiresAt())
 
@@ -548,7 +548,7 @@ func TestCharacterShop_NoExpiry(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Char Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Char Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 	assert.Nil(t, m.ExpiresAt())
 }
@@ -559,7 +559,7 @@ func TestCharacterShop_NoMesoAccumulation(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -583,7 +583,7 @@ func TestPurchaseBundle_ZeroBundleCount(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
@@ -602,7 +602,7 @@ func TestCloseShop_FromDraft(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	err = p.CloseShop(m.Id(), CloseReasonManualClose)
@@ -619,7 +619,7 @@ func TestCloseShop_FromMaintenance(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 910000001, 0, 0, 0)
+	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
 	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})

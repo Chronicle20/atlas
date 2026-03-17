@@ -12,7 +12,7 @@ type Entity struct {
 	Id               uuid.UUID `gorm:"type:uuid;primaryKey"`
 	TenantId         uuid.UUID `gorm:"type:uuid;not null"`
 	ShopId           uuid.UUID `gorm:"type:uuid;not null;index"`
-	ItemId           uint32    `gorm:"not null"`
+	ItemId           uint32    `gorm:"not null;index"`
 	ItemType         byte      `gorm:"not null"`
 	Quantity         uint16    `gorm:"not null"`
 	BundleSize       uint16    `gorm:"not null"`

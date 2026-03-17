@@ -3,6 +3,7 @@ package shop
 import (
 	"atlas-merchant/listing"
 
+	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 
@@ -18,6 +19,8 @@ type RestModel struct {
 	PermitItemId uint32              `json:"permitItemId"`
 	CloseReason  byte                `json:"closeReason"`
 	MesoBalance  uint32              `json:"mesoBalance"`
+	ListingCount int64               `json:"listingCount"`
+	Visitors     []uint32            `json:"visitors,omitempty"`
 	Listings     []listing.RestModel `json:"-"`
 }
 
@@ -79,6 +82,17 @@ func Transform(m Model) (RestModel, error) {
 	}, nil
 }
 
+func TransformWithListingCount(counts map[uuid.UUID]int64) func(m Model) (RestModel, error) {
+	return func(m Model) (RestModel, error) {
+		rm, err := Transform(m)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rm.ListingCount = counts[m.Id()]
+		return rm, nil
+	}
+}
+
 func TransformWithListings(listings []listing.Model) func(m Model) (RestModel, error) {
 	return func(m Model) (RestModel, error) {
 		rm, err := Transform(m)
@@ -96,5 +110,58 @@ func TransformWithListings(listings []listing.Model) func(m Model) (RestModel, e
 		rm.Listings = listingRest
 		return rm, nil
 	}
+}
+
+func TransformWithListingsAndVisitors(listings []listing.Model, visitors []uint32) func(m Model) (RestModel, error) {
+	return func(m Model) (RestModel, error) {
+		rm, err := TransformWithListings(listings)(m)
+		if err != nil {
+			return RestModel{}, err
+		}
+		rm.Visitors = visitors
+		rm.ListingCount = int64(len(listings))
+		return rm, nil
+	}
+}
+
+type ListingSearchRestModel struct {
+	Id               string `json:"-"`
+	ShopId           string `json:"shopId"`
+	ShopTitle        string `json:"shopTitle"`
+	MapId            uint32 `json:"mapId"`
+	ItemId           uint32 `json:"itemId"`
+	ItemType         byte   `json:"itemType"`
+	Quantity         uint16 `json:"quantity"`
+	BundleSize       uint16 `json:"bundleSize"`
+	BundlesRemaining uint16 `json:"bundlesRemaining"`
+	PricePerBundle   uint32 `json:"pricePerBundle"`
+}
+
+func (r ListingSearchRestModel) GetID() string {
+	return r.Id
+}
+
+func (r *ListingSearchRestModel) SetID(id string) error {
+	r.Id = id
+	return nil
+}
+
+func (r ListingSearchRestModel) GetName() string {
+	return "listing-search-results"
+}
+
+func TransformSearchResult(sr ListingSearchResult) (ListingSearchRestModel, error) {
+	return ListingSearchRestModel{
+		Id:               sr.Listing.Id().String(),
+		ShopId:           sr.ShopId.String(),
+		ShopTitle:        sr.Title,
+		MapId:            sr.MapId,
+		ItemId:           sr.Listing.ItemId(),
+		ItemType:         sr.Listing.ItemType(),
+		Quantity:         sr.Listing.Quantity(),
+		BundleSize:       sr.Listing.BundleSize(),
+		BundlesRemaining: sr.Listing.BundlesRemaining(),
+		PricePerBundle:   sr.Listing.PricePerBundle(),
+	}, nil
 }
 

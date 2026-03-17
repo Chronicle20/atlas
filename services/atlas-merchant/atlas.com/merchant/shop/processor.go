@@ -29,6 +29,9 @@ type Processor interface {
 	ByIdProvider(id uuid.UUID) model.Provider[Model]
 	GetByCharacterId(characterId uint32) ([]Model, error)
 	GetByMapId(mapId uint32) ([]Model, error)
+	GetAllOpen() ([]Model, error)
+	GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
+	SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShop(characterId uint32, shopType ShopType, title string, mapId uint32, x int16, y int16, permitItemId uint32) (Model, error)
 	OpenShop(shopId uuid.UUID) error
@@ -68,6 +71,13 @@ type PurchaseResult struct {
 	ShopOwnerId      uint32
 	ShopType         ShopType
 	ShopClosed       bool
+}
+
+type ListingSearchResult struct {
+	Listing listing.Model
+	ShopId  uuid.UUID
+	Title   string
+	MapId   uint32
 }
 
 var ErrNotFound = errors.New("not found")
@@ -112,6 +122,18 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) ([]Model, error) {
 
 func (p *ProcessorImpl) GetByMapId(mapId uint32) ([]Model, error) {
 	return model.SliceMap(Make)(getByMapId(mapId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+}
+
+func (p *ProcessorImpl) GetAllOpen() ([]Model, error) {
+	return model.SliceMap(Make)(getAllOpen()(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+}
+
+func (p *ProcessorImpl) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error) {
+	return listing.CountByShopIds(shopIds)(p.db.WithContext(p.ctx))()
+}
+
+func (p *ProcessorImpl) SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error) {
+	return searchListingsByItemId(itemId)(p.db.WithContext(p.ctx))()
 }
 
 func (p *ProcessorImpl) GetListings(shopId uuid.UUID) ([]listing.Model, error) {

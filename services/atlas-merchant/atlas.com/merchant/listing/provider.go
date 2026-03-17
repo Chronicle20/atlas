@@ -46,3 +46,30 @@ func countByShopId(shopId uuid.UUID) database.EntityProvider[int64] {
 		return model.FixedProvider(count)
 	}
 }
+
+type shopCount struct {
+	ShopId uuid.UUID `gorm:"column:shop_id"`
+	Count  int64     `gorm:"column:count"`
+}
+
+func countByShopIds(shopIds []uuid.UUID) database.EntityProvider[map[uuid.UUID]int64] {
+	return func(db *gorm.DB) model.Provider[map[uuid.UUID]int64] {
+		if len(shopIds) == 0 {
+			return model.FixedProvider(make(map[uuid.UUID]int64))
+		}
+		var counts []shopCount
+		err := db.Model(&Entity{}).
+			Select("shop_id, COUNT(*) as count").
+			Where("shop_id IN ?", shopIds).
+			Group("shop_id").
+			Find(&counts).Error
+		if err != nil {
+			return model.ErrorProvider[map[uuid.UUID]int64](err)
+		}
+		result := make(map[uuid.UUID]int64, len(counts))
+		for _, c := range counts {
+			result[c.ShopId] = c.Count
+		}
+		return model.FixedProvider(result)
+	}
+}

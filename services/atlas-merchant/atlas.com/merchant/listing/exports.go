@@ -53,3 +53,8 @@ func DecrementDisplayOrderAfter(shopId uuid.UUID, afterOrder uint16) database.En
 func UpdateListingFields(id uuid.UUID, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) database.EntityProvider[int64] {
 	return updateListingFields(id, pricePerBundle, bundleSize, bundleCount)
 }
+
+// CountByShopIds is the exported provider for batch listing count by shop IDs.
+func CountByShopIds(shopIds []uuid.UUID) database.EntityProvider[map[uuid.UUID]int64] {
+	return countByShopIds(shopIds)
+}

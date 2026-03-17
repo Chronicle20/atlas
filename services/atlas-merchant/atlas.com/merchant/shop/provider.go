@@ -1,6 +1,7 @@
 package shop
 
 import (
+	"atlas-merchant/listing"
 	"errors"
 
 	database "github.com/Chronicle20/atlas-database"
@@ -59,12 +60,59 @@ func getByMapId(mapId uint32) database.EntityProvider[[]Entity] {
 	}
 }
 
+func getAllOpen() database.EntityProvider[[]Entity] {
+	return func(db *gorm.DB) model.Provider[[]Entity] {
+		var results []Entity
+		err := db.Where("state IN (?, ?)", byte(Open), byte(Maintenance)).Find(&results).Error
+		if err != nil {
+			return model.ErrorProvider[[]Entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
 func getExpired() database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
 		err := db.Where("expires_at IS NOT NULL AND expires_at < NOW() AND state IN (?, ?)", byte(Open), byte(Maintenance)).Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
+		}
+		return model.FixedProvider(results)
+	}
+}
+
+type listingSearchRow struct {
+	listing.Entity
+	ShopTitle string `gorm:"column:shop_title"`
+	ShopMapId uint32 `gorm:"column:shop_map_id"`
+}
+
+func searchListingsByItemId(itemId uint32) database.EntityProvider[[]ListingSearchResult] {
+	return func(db *gorm.DB) model.Provider[[]ListingSearchResult] {
+		var rows []listingSearchRow
+		err := db.Table("listings").
+			Select("listings.*, shops.title AS shop_title, shops.map_id AS shop_map_id").
+			Joins("JOIN shops ON shops.id = listings.shop_id").
+			Where("listings.item_id = ? AND shops.state IN (?, ?)", itemId, byte(Open), byte(Maintenance)).
+			Order("listings.price_per_bundle ASC").
+			Find(&rows).Error
+		if err != nil {
+			return model.ErrorProvider[[]ListingSearchResult](err)
+		}
+
+		results := make([]ListingSearchResult, 0, len(rows))
+		for _, r := range rows {
+			lm, err := listing.Make(r.Entity)
+			if err != nil {
+				return model.ErrorProvider[[]ListingSearchResult](err)
+			}
+			results = append(results, ListingSearchResult{
+				Listing: lm,
+				ShopId:  r.Entity.ShopId,
+				Title:   r.ShopTitle,
+				MapId:   r.ShopMapId,
+			})
 		}
 		return model.FixedProvider(results)
 	}

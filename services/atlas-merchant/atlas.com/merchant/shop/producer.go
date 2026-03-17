@@ -9,16 +9,21 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StatusEventShopOpenedProvider(characterId uint32, shopId uuid.UUID, shopType ShopType, mapId uint32, title string) model.Provider[[]kafka.Message] {
+func StatusEventShopOpenedProvider(characterId uint32, shopId uuid.UUID, m Model) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventShopOpenedBody]{
 		CharacterId: characterId,
 		Type:        merchant.StatusEventShopOpened,
 		Body: merchant.StatusEventShopOpenedBody{
-			ShopId:   shopId.String(),
-			ShopType: byte(shopType),
-			MapId:    mapId,
-			Title:    title,
+			ShopId:     shopId.String(),
+			ShopType:   byte(m.ShopType()),
+			WorldId:    m.WorldId(),
+			ChannelId:  m.ChannelId(),
+			MapId:      m.MapId(),
+			InstanceId: m.InstanceId(),
+			Title:      m.Title(),
+			X:          m.X(),
+			Y:          m.Y(),
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -122,6 +127,21 @@ func StatusEventPurchaseFailedProvider(characterId uint32, shopId uuid.UUID, rea
 		Body: merchant.StatusEventPurchaseFailedBody{
 			ShopId: shopId.String(),
 			Reason: reason,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func StatusEventMessageSentProvider(characterId uint32, shopId uuid.UUID, slot byte, content string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &merchant.StatusEvent[merchant.StatusEventMessageSentBody]{
+		CharacterId: characterId,
+		Type:        merchant.StatusEventMessageSent,
+		Body: merchant.StatusEventMessageSentBody{
+			ShopId:      shopId.String(),
+			CharacterId: characterId,
+			Slot:        slot,
+			Content:     content,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

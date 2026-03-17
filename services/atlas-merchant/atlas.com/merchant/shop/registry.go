@@ -3,6 +3,8 @@ package shop
 import (
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	atlas "github.com/Chronicle20/atlas-redis"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -15,9 +17,12 @@ type Registry struct {
 }
 
 type ActiveShopEntry struct {
-	ShopId   uuid.UUID `json:"shopId"`
-	ShopType ShopType  `json:"shopType"`
-	MapId    uint32    `json:"mapId"`
+	ShopId     uuid.UUID  `json:"shopId"`
+	ShopType   ShopType   `json:"shopType"`
+	WorldId    world.Id   `json:"worldId"`
+	ChannelId  channel.Id `json:"channelId"`
+	MapId      uint32     `json:"mapId"`
+	InstanceId uuid.UUID  `json:"instanceId"`
 }
 
 var registry *Registry

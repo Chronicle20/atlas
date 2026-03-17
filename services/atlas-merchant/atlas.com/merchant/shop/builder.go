@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -17,7 +19,10 @@ type ModelBuilder struct {
 	shopType     ShopType
 	state        State
 	title        string
+	worldId      world.Id
+	channelId    channel.Id
 	mapId        uint32
+	instanceId   uuid.UUID
 	x            int16
 	y            int16
 	permitItemId uint32
@@ -53,8 +58,23 @@ func (b *ModelBuilder) SetTitle(title string) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetWorldId(worldId world.Id) *ModelBuilder {
+	b.worldId = worldId
+	return b
+}
+
+func (b *ModelBuilder) SetChannelId(channelId channel.Id) *ModelBuilder {
+	b.channelId = channelId
+	return b
+}
+
 func (b *ModelBuilder) SetMapId(mapId uint32) *ModelBuilder {
 	b.mapId = mapId
+	return b
+}
+
+func (b *ModelBuilder) SetInstanceId(instanceId uuid.UUID) *ModelBuilder {
+	b.instanceId = instanceId
 	return b
 }
 
@@ -117,7 +137,10 @@ func (b *ModelBuilder) Build() (Model, error) {
 		shopType:     b.shopType,
 		state:        b.state,
 		title:        b.title,
+		worldId:      b.worldId,
+		channelId:    b.channelId,
 		mapId:        b.mapId,
+		instanceId:   b.instanceId,
 		x:            b.x,
 		y:            b.y,
 		permitItemId: b.permitItemId,
@@ -136,7 +159,10 @@ func Clone(m Model) *ModelBuilder {
 		shopType:     m.shopType,
 		state:        m.state,
 		title:        m.title,
+		worldId:      m.worldId,
+		channelId:    m.channelId,
 		mapId:        m.mapId,
+		instanceId:   m.instanceId,
 		x:            m.x,
 		y:            m.y,
 		permitItemId: m.permitItemId,

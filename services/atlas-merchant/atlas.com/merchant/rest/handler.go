@@ -3,6 +3,8 @@ package rest
 import (
 	"net/http"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -33,4 +35,20 @@ func ParseCharacterId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) 
 
 func ParseShopId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseUUIDId(l, "shopId", next)
+}
+
+func ParseWorldId(l logrus.FieldLogger, next func(world.Id) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[world.Id](l, "worldId", next)
+}
+
+func ParseChannelId(l logrus.FieldLogger, next func(channel.Id) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[channel.Id](l, "channelId", next)
+}
+
+func ParseMapId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "mapId", next)
+}
+
+func ParseInstanceId(l logrus.FieldLogger, next func(uuid.UUID) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseUUIDId(l, "instanceId", next)
 }

@@ -5,6 +5,7 @@ import (
 	"atlas-merchant/shop"
 	"encoding/json"
 
+	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -16,12 +17,12 @@ type ProcessorMock struct {
 	GetByIdFunc              func(id uuid.UUID) (shop.Model, error)
 	ByIdProviderFunc         func(id uuid.UUID) model.Provider[shop.Model]
 	GetByCharacterIdFunc     func(characterId uint32) ([]shop.Model, error)
-	GetByMapIdFunc           func(mapId uint32) ([]shop.Model, error)
+	GetByFieldFunc           func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
 	GetAllOpenFunc           func() ([]shop.Model, error)
 	GetListingCountsFunc     func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
 	SearchListingsByItemIdFunc func(itemId uint32) ([]shop.ListingSearchResult, error)
 	GetListingsFunc          func(shopId uuid.UUID) ([]listing.Model, error)
-	CreateShopFunc           func(characterId uint32, shopType shop.ShopType, title string, mapId uint32, x int16, y int16, permitItemId uint32) (shop.Model, error)
+	CreateShopFunc           func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
 	OpenShopFunc             func(shopId uuid.UUID) error
 	EnterMaintenanceFunc     func(shopId uuid.UUID) error
 	ExitMaintenanceFunc      func(shopId uuid.UUID) (bool, error)
@@ -34,6 +35,7 @@ type ProcessorMock struct {
 	ExitShopFunc             func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitorsFunc     func(shopId uuid.UUID) ([]uint32, error)
 	GetVisitorsFunc          func(shopId uuid.UUID) ([]uint32, error)
+	GetShopForCharacterFunc  func(characterId uint32) (uuid.UUID, error)
 	PurchaseBundleFunc       func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (shop.PurchaseResult, error)
 	AddListingAndEmitFunc    func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
 	OpenShopAndEmitFunc      func(shopId uuid.UUID, characterId uint32) error
@@ -68,9 +70,9 @@ func (m *ProcessorMock) GetByCharacterId(characterId uint32) ([]shop.Model, erro
 	return []shop.Model{}, nil
 }
 
-func (m *ProcessorMock) GetByMapId(mapId uint32) ([]shop.Model, error) {
-	if m.GetByMapIdFunc != nil {
-		return m.GetByMapIdFunc(mapId)
+func (m *ProcessorMock) GetByField(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error) {
+	if m.GetByFieldFunc != nil {
+		return m.GetByFieldFunc(worldId, channelId, mapId, instanceId)
 	}
 	return []shop.Model{}, nil
 }
@@ -103,9 +105,9 @@ func (m *ProcessorMock) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
 	return []listing.Model{}, nil
 }
 
-func (m *ProcessorMock) CreateShop(characterId uint32, shopType shop.ShopType, title string, mapId uint32, x int16, y int16, permitItemId uint32) (shop.Model, error) {
+func (m *ProcessorMock) CreateShop(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error) {
 	if m.CreateShopFunc != nil {
-		return m.CreateShopFunc(characterId, shopType, title, mapId, x, y, permitItemId)
+		return m.CreateShopFunc(characterId, shopType, title, worldId, channelId, mapId, instanceId, x, y, permitItemId)
 	}
 	return shop.Model{}, nil
 }
@@ -192,6 +194,13 @@ func (m *ProcessorMock) GetVisitors(shopId uuid.UUID) ([]uint32, error) {
 		return m.GetVisitorsFunc(shopId)
 	}
 	return nil, nil
+}
+
+func (m *ProcessorMock) GetShopForCharacter(characterId uint32) (uuid.UUID, error) {
+	if m.GetShopForCharacterFunc != nil {
+		return m.GetShopForCharacterFunc(characterId)
+	}
+	return uuid.Nil, nil
 }
 
 func (m *ProcessorMock) PurchaseBundle(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (shop.PurchaseResult, error) {

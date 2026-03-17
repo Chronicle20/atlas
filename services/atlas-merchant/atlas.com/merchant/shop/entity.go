@@ -3,6 +3,8 @@ package shop
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -18,7 +20,10 @@ type Entity struct {
 	ShopType        byte       `gorm:"not null"`
 	State           byte       `gorm:"not null"`
 	Title           string     `gorm:"type:varchar(255);not null;default:''"`
+	WorldId         world.Id   `gorm:"not null;default:0"`
+	ChannelId       channel.Id `gorm:"not null;default:0"`
 	MapId           uint32     `gorm:"not null;index"`
+	InstanceId      uuid.UUID  `gorm:"type:uuid;not null;default:'00000000-0000-0000-0000-000000000000'"`
 	X               int16      `gorm:"not null"`
 	Y               int16      `gorm:"not null"`
 	PermitItemId    uint32     `gorm:"not null"`
@@ -39,7 +44,10 @@ func Make(entity Entity) (Model, error) {
 		SetShopType(ShopType(entity.ShopType)).
 		SetState(State(entity.State)).
 		SetTitle(entity.Title).
+		SetWorldId(entity.WorldId).
+		SetChannelId(entity.ChannelId).
 		SetMapId(entity.MapId).
+		SetInstanceId(entity.InstanceId).
 		SetX(entity.X).
 		SetY(entity.Y).
 		SetPermitItemId(entity.PermitItemId).

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"atlas-channel/merchant"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -111,6 +112,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			sp := &interaction2.OperationChat{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] is sending chat [%s].", s.CharacterId(), sp.Message())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.SendMessage(s.CharacterId(), visiting.Id(), sp.Message())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeExit) {
@@ -233,6 +241,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			sp := &interaction2.OperationMerchantBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from merchant.", s.CharacterId(), sp.Quantity(), sp.Index())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.PurchaseBundle(s.CharacterId(), visiting.Id(), uint16(sp.Index()), uint16(sp.Quantity()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantRemoveItem) {
@@ -251,6 +266,13 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantExit) {
 			l.Debugf("Character [%d] has stopped merchant interaction.", s.CharacterId())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.ExitShop(s.CharacterId(), visiting.Id())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModeMerchantWithdrawMeso) {

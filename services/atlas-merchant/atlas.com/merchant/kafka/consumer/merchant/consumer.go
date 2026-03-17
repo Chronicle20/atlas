@@ -62,7 +62,7 @@ func handlePlaceShopCommand(db *gorm.DB) message.Handler[merchant2.Command[merch
 			return
 		}
 		p := shop.NewProcessor(l, ctx, db)
-		_, err := p.CreateShop(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.Body.MapId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
+		_, err := p.CreateShop(e.CharacterId, shop.ShopType(e.Body.ShopType), e.Body.Title, e.WorldId, e.ChannelId, e.Body.MapId, e.Body.InstanceId, e.Body.X, e.Body.Y, e.Body.PermitItemId)
 		if err != nil {
 			l.WithError(err).Errorf("Error creating shop for character [%d].", e.CharacterId)
 		}
@@ -285,7 +285,37 @@ func handleSendMessageCommand(db *gorm.DB) message.Handler[merchant2.Command[mer
 		mp := msg.NewProcessor(l, ctx, db)
 		if err := mp.SendMessage(shopId, e.CharacterId, e.Body.Content); err != nil {
 			l.WithError(err).Errorf("Error sending message in shop [%s].", shopId)
+			return
 		}
+
+		// Resolve visitor slot for the sender.
+		p := shop.NewProcessor(l, ctx, db)
+		visitors, err := p.GetVisitors(shopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error retrieving visitors for shop [%s].", shopId)
+			return
+		}
+
+		// Slot 0 is the owner. Visitors start at slot 1.
+		var slot byte
+		s, err := p.GetById(shopId)
+		if err != nil {
+			l.WithError(err).Errorf("Error retrieving shop [%s].", shopId)
+			return
+		}
+		if e.CharacterId == s.CharacterId() {
+			slot = 0
+		} else {
+			for i, v := range visitors {
+				if v == e.CharacterId {
+					slot = byte(i + 1)
+					break
+				}
+			}
+		}
+
+		kp := producer.ProviderImpl(l)(ctx)
+		_ = kp(merchant2.EnvStatusEventTopic)(shop.StatusEventMessageSentProvider(e.CharacterId, shopId, slot, e.Body.Content))
 	}
 }
 

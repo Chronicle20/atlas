@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-rest/server"
 	"github.com/google/uuid"
@@ -30,6 +32,10 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 
 			cr := router.PathPrefix("/characters/{characterId}").Subrouter()
 			cr.HandleFunc("/merchants", registerHandler("get_character_merchants", handleGetCharacterMerchants(db))).Methods(http.MethodGet)
+			cr.HandleFunc("/visiting", registerHandler("get_character_visiting", handleGetCharacterVisiting(db))).Methods(http.MethodGet)
+
+			wr := router.PathPrefix("/worlds/{worldId}").Subrouter()
+			wr.HandleFunc("/channels/{channelId}/maps/{mapId}/instances/{instanceId}/merchants", registerHandler("get_field_merchants", handleGetFieldMerchants(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -112,20 +118,7 @@ func handleGetMerchants(db *gorm.DB) rest.GetHandler {
 		return func(w http.ResponseWriter, r *http.Request) {
 			p := NewProcessor(d.Logger(), d.Context(), db)
 
-			var shops []Model
-			var err error
-
-			mapIdStr := r.URL.Query().Get("mapId")
-			if mapIdStr != "" {
-				v, parseErr := strconv.ParseUint(mapIdStr, 10, 32)
-				if parseErr != nil {
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				shops, err = p.GetByMapId(uint32(v))
-			} else {
-				shops, err = p.GetAllOpen()
-			}
+			shops, err := p.GetAllOpen()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Retrieving merchants.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -218,6 +211,89 @@ func handleGetCharacterMerchants(db *gorm.DB) rest.GetHandler {
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 			}
+		})
+	}
+}
+
+func handleGetCharacterVisiting(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				p := NewProcessor(d.Logger(), d.Context(), db)
+				shopId, err := p.GetShopForCharacter(characterId)
+				if err != nil {
+					w.WriteHeader(http.StatusNotFound)
+					return
+				}
+
+				m, err := p.GetById(shopId)
+				if err != nil {
+					if errors.Is(err, ErrNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Retrieving merchant.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res, err := Transform(m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Creating REST model.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}
+
+func handleGetFieldMerchants(db *gorm.DB) rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseWorldId(d.Logger(), func(worldId world.Id) http.HandlerFunc {
+			return rest.ParseChannelId(d.Logger(), func(channelId channel.Id) http.HandlerFunc {
+				return rest.ParseMapId(d.Logger(), func(mapId uint32) http.HandlerFunc {
+					return rest.ParseInstanceId(d.Logger(), func(instanceId uuid.UUID) http.HandlerFunc {
+						return func(w http.ResponseWriter, r *http.Request) {
+							p := NewProcessor(d.Logger(), d.Context(), db)
+
+							shops, err := p.GetByField(worldId, channelId, mapId, instanceId)
+							if err != nil {
+								d.Logger().WithError(err).Errorf("Retrieving field merchants.")
+								w.WriteHeader(http.StatusInternalServerError)
+								return
+							}
+
+							shopIds := make([]uuid.UUID, 0, len(shops))
+							for _, s := range shops {
+								shopIds = append(shopIds, s.Id())
+							}
+
+							counts, err := p.GetListingCounts(shopIds)
+							if err != nil {
+								d.Logger().WithError(err).Errorf("Retrieving listing counts.")
+								w.WriteHeader(http.StatusInternalServerError)
+								return
+							}
+
+							res, err := model.SliceMap(TransformWithListingCount(counts))(model.FixedProvider(shops))(model.ParallelMap())()
+							if err != nil {
+								d.Logger().WithError(err).Errorf("Creating REST models.")
+								w.WriteHeader(http.StatusInternalServerError)
+								return
+							}
+
+							query := r.URL.Query()
+							queryParams := jsonapi.ParseQueryFields(&query)
+							server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+						}
+					})
+				})
+			})
 		})
 	}
 }

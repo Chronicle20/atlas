@@ -211,3 +211,35 @@ func (m *InteractionEnterResultError) Decode(_ logrus.FieldLogger, _ context.Con
 		m.errorCode = r.ReadByte()
 	}
 }
+
+// InteractionUpdateMerchant - refresh shop listings for viewers
+type InteractionUpdateMerchant struct {
+	mode  byte
+	meso  uint32
+	items []RoomShopItem
+}
+
+func NewInteractionUpdateMerchant(mode byte, meso uint32, items []RoomShopItem) InteractionUpdateMerchant {
+	return InteractionUpdateMerchant{mode: mode, meso: meso, items: items}
+}
+
+func (m InteractionUpdateMerchant) Operation() string { return CharacterInteractionWriter }
+func (m InteractionUpdateMerchant) String() string {
+	return fmt.Sprintf("update merchant meso [%d] items [%d]", m.meso, len(m.items))
+}
+
+func (m InteractionUpdateMerchant) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt(m.meso)
+		w.WriteByte(byte(len(m.items)))
+		for _, item := range m.items {
+			w.WriteShort(item.PerBundle)
+			w.WriteShort(item.Quantity)
+			w.WriteInt(item.Price)
+			w.WriteByteArray(item.Asset.Encode(l, ctx)(options))
+		}
+		return w.Bytes()
+	}
+}

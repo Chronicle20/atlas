@@ -84,15 +84,17 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			}
 			if roomType == model.PersonalShopMiniRoomType || roomType == model.MerchantShopMiniRoomType {
 				l.Debugf("Character [%d] has created a store. roomType [%d], title [%s], private [%t], position [%d], itemId [%d].", s.CharacterId(), roomType, sp.Title(), sp.Private(), sp.Slot(), sp.ItemId())
-				if roomType == model.MerchantShopMiniRoomType {
-					c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
-					if err != nil {
-						l.WithError(err).Errorf("Unable to get character [%d] for shop placement.", s.CharacterId())
-						return
-					}
-					mp := merchant.NewProcessor(l, ctx)
-					_ = mp.PlaceShop(s.Field(), s.CharacterId(), byte(roomType), sp.Title(), sp.ItemId(), c.X(), c.Y())
+				c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
+				if err != nil {
+					l.WithError(err).Errorf("Unable to get character [%d] for shop placement.", s.CharacterId())
+					return
 				}
+				mp := merchant.NewProcessor(l, ctx)
+				shopType := byte(1) // CharacterShop
+				if roomType == model.MerchantShopMiniRoomType {
+					shopType = byte(2) // HiredMerchant
+				}
+				_ = mp.PlaceShop(s.Field(), s.CharacterId(), shopType, sp.Title(), sp.ItemId(), c.X(), c.Y())
 				return
 			}
 			if roomType == model.CashTradeMiniRoomType {
@@ -229,18 +231,39 @@ func CharacterInteractionHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			sp := &interaction2.OperationPersonalStorePutItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to add [%d] item(s) from inventory compartment [%d] slot [%d] to store. set [%d], price [%d].", s.CharacterId(), sp.Quantity(), sp.InventoryType(), sp.Slot(), sp.Set(), sp.Price())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.AddListing(s.CharacterId(), visiting.Id(), sp.InventoryType(), sp.Slot(), sp.Quantity(), sp.Set(), sp.Price())
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreBuy) {
 			sp := &interaction2.OperationPersonalStoreBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to purchase [%d] item(s) index [%d] from store.", s.CharacterId(), sp.Quantity(), sp.Index())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.PurchaseBundle(s.CharacterId(), visiting.Id(), uint16(sp.Index()), uint16(sp.Quantity()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreRemoveItem) {
 			sp := &interaction2.OperationPersonalStoreRemoveItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to remove item index [%d] from store.", s.CharacterId(), sp.Index())
+			mp := merchant.NewProcessor(l, ctx)
+			visiting, err := mp.GetVisitingShop(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get visiting shop for character [%d].", s.CharacterId())
+				return
+			}
+			_ = mp.RemoveListing(s.CharacterId(), visiting.Id(), uint16(sp.Index()))
 			return
 		}
 		if isCharacterInteraction(l)(readerOptions, mode, CharacterInteractionModePersonalStoreAddToBlackList) {

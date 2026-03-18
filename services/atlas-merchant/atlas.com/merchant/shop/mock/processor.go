@@ -1,6 +1,7 @@
 package mock
 
 import (
+	message "atlas-merchant/kafka/message"
 	"atlas-merchant/listing"
 	"atlas-merchant/shop"
 	"encoding/json"
@@ -14,37 +15,42 @@ import (
 var _ shop.Processor = (*ProcessorMock)(nil)
 
 type ProcessorMock struct {
-	GetByIdFunc              func(id uuid.UUID) (shop.Model, error)
-	ByIdProviderFunc         func(id uuid.UUID) model.Provider[shop.Model]
-	GetByCharacterIdFunc     func(characterId uint32) ([]shop.Model, error)
-	GetByFieldFunc           func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
-	GetAllOpenFunc           func() ([]shop.Model, error)
-	GetListingCountsFunc     func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
+	GetByIdFunc                func(id uuid.UUID) (shop.Model, error)
+	ByIdProviderFunc           func(id uuid.UUID) model.Provider[shop.Model]
+	GetByCharacterIdFunc       func(characterId uint32) ([]shop.Model, error)
+	GetByFieldFunc             func(worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID) ([]shop.Model, error)
+	GetAllOpenFunc             func() ([]shop.Model, error)
+	GetListingCountsFunc       func(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
 	SearchListingsByItemIdFunc func(itemId uint32) ([]shop.ListingSearchResult, error)
-	GetListingsFunc          func(shopId uuid.UUID) ([]listing.Model, error)
-	CreateShopFunc           func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
-	OpenShopFunc             func(shopId uuid.UUID) error
-	EnterMaintenanceFunc     func(shopId uuid.UUID) error
-	ExitMaintenanceFunc      func(shopId uuid.UUID) (bool, error)
-	CloseShopFunc            func(shopId uuid.UUID, reason shop.CloseReason) error
-	GetExpiredFunc           func() ([]shop.Model, error)
-	AddListingFunc           func(shopId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16) (listing.Model, error)
-	RemoveListingFunc        func(shopId uuid.UUID, listingIndex uint16) (listing.Model, error)
-	UpdateListingFunc        func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
-	EnterShopFunc            func(characterId uint32, shopId uuid.UUID) error
-	ExitShopFunc             func(characterId uint32, shopId uuid.UUID) error
-	EjectAllVisitorsFunc     func(shopId uuid.UUID) ([]uint32, error)
-	GetVisitorsFunc          func(shopId uuid.UUID) ([]uint32, error)
-	GetShopForCharacterFunc  func(characterId uint32) (uuid.UUID, error)
-	PurchaseBundleFunc       func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (shop.PurchaseResult, error)
-	AddListingAndEmitFunc    func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
-	OpenShopAndEmitFunc      func(shopId uuid.UUID, characterId uint32) error
-	CloseShopAndEmitFunc     func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
+	GetListingsFunc            func(shopId uuid.UUID) ([]listing.Model, error)
+	CreateShopFunc             func(characterId uint32, shopType shop.ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (shop.Model, error)
+	OpenShopFunc               func(shopId uuid.UUID, characterId uint32) error
+	EnterMaintenanceFunc       func(shopId uuid.UUID, characterId uint32) error
+	ExitMaintenanceFunc        func(shopId uuid.UUID, characterId uint32) error
+	CloseShopFunc              func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
+	GetExpiredFunc             func() ([]shop.Model, error)
+	AddListingFunc             func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListingFunc          func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
+	UpdateListingFunc          func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
+	EnterShopFunc              func(characterId uint32, shopId uuid.UUID) error
+	ExitShopFunc               func(characterId uint32, shopId uuid.UUID) error
+	EjectAllVisitorsFunc       func(shopId uuid.UUID) ([]uint32, error)
+	GetVisitorsFunc            func(shopId uuid.UUID) ([]uint32, error)
+	GetShopForCharacterFunc    func(characterId uint32) (uuid.UUID, error)
+	PurchaseBundleFunc         func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
+	SendMessageFunc            func(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederickFunc      func(characterId uint32, worldId world.Id) error
+	OpenShopAndEmitFunc        func(shopId uuid.UUID, characterId uint32) error
+	CloseShopAndEmitFunc       func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
 	EnterMaintenanceAndEmitFunc func(shopId uuid.UUID, characterId uint32) error
 	ExitMaintenanceAndEmitFunc  func(shopId uuid.UUID, characterId uint32) error
-	EnterShopAndEmitFunc     func(characterId uint32, shopId uuid.UUID) error
-	ExitShopAndEmitFunc      func(characterId uint32, shopId uuid.UUID) error
-	PurchaseBundleAndEmitFunc func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
+	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID) error
+	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
+	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListingAndEmitFunc   func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
+	PurchaseBundleAndEmitFunc  func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
+	SendMessageAndEmitFunc     func(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederickAndEmitFunc func(characterId uint32, worldId world.Id) error
 }
 
 func (m *ProcessorMock) GetById(id uuid.UUID) (shop.Model, error) {
@@ -112,32 +118,40 @@ func (m *ProcessorMock) CreateShop(characterId uint32, shopType shop.ShopType, t
 	return shop.Model{}, nil
 }
 
-func (m *ProcessorMock) OpenShop(shopId uuid.UUID) error {
-	if m.OpenShopFunc != nil {
-		return m.OpenShopFunc(shopId)
+func (m *ProcessorMock) OpenShop(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		if m.OpenShopFunc != nil {
+			return m.OpenShopFunc(shopId, characterId)
+		}
+		return nil
 	}
-	return nil
 }
 
-func (m *ProcessorMock) EnterMaintenance(shopId uuid.UUID) error {
-	if m.EnterMaintenanceFunc != nil {
-		return m.EnterMaintenanceFunc(shopId)
+func (m *ProcessorMock) EnterMaintenance(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		if m.EnterMaintenanceFunc != nil {
+			return m.EnterMaintenanceFunc(shopId, characterId)
+		}
+		return nil
 	}
-	return nil
 }
 
-func (m *ProcessorMock) ExitMaintenance(shopId uuid.UUID) (bool, error) {
-	if m.ExitMaintenanceFunc != nil {
-		return m.ExitMaintenanceFunc(shopId)
+func (m *ProcessorMock) ExitMaintenance(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		if m.ExitMaintenanceFunc != nil {
+			return m.ExitMaintenanceFunc(shopId, characterId)
+		}
+		return nil
 	}
-	return false, nil
 }
 
-func (m *ProcessorMock) CloseShop(shopId uuid.UUID, reason shop.CloseReason) error {
-	if m.CloseShopFunc != nil {
-		return m.CloseShopFunc(shopId, reason)
+func (m *ProcessorMock) CloseShop(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error {
+	return func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error {
+		if m.CloseShopFunc != nil {
+			return m.CloseShopFunc(shopId, characterId, reason)
+		}
+		return nil
 	}
-	return nil
 }
 
 func (m *ProcessorMock) GetExpired() ([]shop.Model, error) {
@@ -147,18 +161,22 @@ func (m *ProcessorMock) GetExpired() ([]shop.Model, error) {
 	return []shop.Model{}, nil
 }
 
-func (m *ProcessorMock) AddListing(shopId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16) (listing.Model, error) {
-	if m.AddListingFunc != nil {
-		return m.AddListingFunc(shopId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag)
+func (m *ProcessorMock) AddListing(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+		if m.AddListingFunc != nil {
+			return m.AddListingFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+		}
+		return listing.Model{}, nil
 	}
-	return listing.Model{}, nil
 }
 
-func (m *ProcessorMock) RemoveListing(shopId uuid.UUID, listingIndex uint16) (listing.Model, error) {
-	if m.RemoveListingFunc != nil {
-		return m.RemoveListingFunc(shopId, listingIndex)
+func (m *ProcessorMock) RemoveListing(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+		if m.RemoveListingFunc != nil {
+			return m.RemoveListingFunc(shopId, characterId, listingIndex)
+		}
+		return listing.Model{}, nil
 	}
-	return listing.Model{}, nil
 }
 
 func (m *ProcessorMock) UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error {
@@ -168,18 +186,22 @@ func (m *ProcessorMock) UpdateListing(shopId uuid.UUID, listingIndex uint16, pri
 	return nil
 }
 
-func (m *ProcessorMock) EnterShop(characterId uint32, shopId uuid.UUID) error {
-	if m.EnterShopFunc != nil {
-		return m.EnterShopFunc(characterId, shopId)
+func (m *ProcessorMock) EnterShop(_ *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
+	return func(characterId uint32, shopId uuid.UUID) error {
+		if m.EnterShopFunc != nil {
+			return m.EnterShopFunc(characterId, shopId)
+		}
+		return nil
 	}
-	return nil
 }
 
-func (m *ProcessorMock) ExitShop(characterId uint32, shopId uuid.UUID) error {
-	if m.ExitShopFunc != nil {
-		return m.ExitShopFunc(characterId, shopId)
+func (m *ProcessorMock) ExitShop(_ *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
+	return func(characterId uint32, shopId uuid.UUID) error {
+		if m.ExitShopFunc != nil {
+			return m.ExitShopFunc(characterId, shopId)
+		}
+		return nil
 	}
-	return nil
 }
 
 func (m *ProcessorMock) EjectAllVisitors(shopId uuid.UUID) ([]uint32, error) {
@@ -203,18 +225,31 @@ func (m *ProcessorMock) GetShopForCharacter(characterId uint32) (uuid.UUID, erro
 	return uuid.Nil, nil
 }
 
-func (m *ProcessorMock) PurchaseBundle(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (shop.PurchaseResult, error) {
-	if m.PurchaseBundleFunc != nil {
-		return m.PurchaseBundleFunc(buyerCharacterId, shopId, listingIndex, bundleCount)
+func (m *ProcessorMock) PurchaseBundle(_ *message.Buffer) func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error) {
+	return func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error) {
+		if m.PurchaseBundleFunc != nil {
+			return m.PurchaseBundleFunc(buyerCharacterId, shopId, listingIndex, bundleCount, worldId)
+		}
+		return shop.PurchaseResult{}, nil
 	}
-	return shop.PurchaseResult{}, nil
 }
 
-func (m *ProcessorMock) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
-	if m.AddListingAndEmitFunc != nil {
-		return m.AddListingAndEmitFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+func (m *ProcessorMock) SendMessage(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, content string) error {
+	return func(shopId uuid.UUID, characterId uint32, content string) error {
+		if m.SendMessageFunc != nil {
+			return m.SendMessageFunc(shopId, characterId, content)
+		}
+		return nil
 	}
-	return listing.Model{}, nil
+}
+
+func (m *ProcessorMock) RetrieveFrederick(_ *message.Buffer) func(characterId uint32, worldId world.Id) error {
+	return func(characterId uint32, worldId world.Id) error {
+		if m.RetrieveFrederickFunc != nil {
+			return m.RetrieveFrederickFunc(characterId, worldId)
+		}
+		return nil
+	}
 }
 
 func (m *ProcessorMock) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) error {
@@ -259,9 +294,37 @@ func (m *ProcessorMock) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) er
 	return nil
 }
 
+func (m *ProcessorMock) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+	if m.AddListingAndEmitFunc != nil {
+		return m.AddListingAndEmitFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+	}
+	return listing.Model{}, nil
+}
+
+func (m *ProcessorMock) RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+	if m.RemoveListingAndEmitFunc != nil {
+		return m.RemoveListingAndEmitFunc(shopId, characterId, listingIndex)
+	}
+	return listing.Model{}, nil
+}
+
 func (m *ProcessorMock) PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error) {
 	if m.PurchaseBundleAndEmitFunc != nil {
 		return m.PurchaseBundleAndEmitFunc(buyerCharacterId, shopId, listingIndex, bundleCount, worldId)
 	}
 	return shop.PurchaseResult{}, nil
+}
+
+func (m *ProcessorMock) SendMessageAndEmit(shopId uuid.UUID, characterId uint32, content string) error {
+	if m.SendMessageAndEmitFunc != nil {
+		return m.SendMessageAndEmitFunc(shopId, characterId, content)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RetrieveFrederickAndEmit(characterId uint32, worldId world.Id) error {
+	if m.RetrieveFrederickAndEmitFunc != nil {
+		return m.RetrieveFrederickAndEmitFunc(characterId, worldId)
+	}
+	return nil
 }

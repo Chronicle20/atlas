@@ -40,6 +40,7 @@ func Make(entity Entity) (Model, error) {
 		SetPricePerBundle(entity.PricePerBundle).
 		SetItemSnapshot(entity.ItemSnapshot).
 		SetDisplayOrder(entity.DisplayOrder).
+		SetVersion(entity.Version).
 		SetListedAt(entity.ListedAt).
 		Build()
 }

@@ -1,8 +1,12 @@
 package shop
 
 import (
+	asset2 "atlas-merchant/kafka/message/asset"
+	character "atlas-merchant/kafka/message/character"
+	"atlas-merchant/kafka/message/compartment"
 	merchant "atlas-merchant/kafka/message/merchant"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
@@ -157,6 +161,54 @@ func ListingEventPurchasedProvider(shopId uuid.UUID, listingIndex uint16, buyerC
 			BuyerCharacterId: buyerCharacterId,
 			BundleCount:      bundleCount,
 			BundlesRemaining: bundlesRemaining,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ReleaseAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, assetId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.ReleaseCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandRelease,
+		Body: compartment.ReleaseCommandBody{
+			TransactionId: transactionId,
+			AssetId:       assetId,
+			Quantity:      quantity,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func AcceptAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.AcceptCommandBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		InventoryType: inventoryType,
+		Type:          compartment.CommandAccept,
+		Body: compartment.AcceptCommandBody{
+			TransactionId: transactionId,
+			TemplateId:    templateId,
+			AssetData:     assetData,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ChangeMesoCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character.Command[character.RequestChangeMesoBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character.CommandRequestChangeMeso,
+		Body: character.RequestChangeMesoBody{
+			ActorId:   actorId,
+			ActorType: actorType,
+			Amount:    amount,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

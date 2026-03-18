@@ -2,21 +2,14 @@ package merchant
 
 import (
 	consumer2 "atlas-merchant/kafka/consumer"
-	"atlas-merchant/frederick"
 	"atlas-merchant/kafka/message/asset"
-	"atlas-merchant/kafka/message/compartment"
-	character "atlas-merchant/kafka/message/character"
 	merchant2 "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/kafka/producer"
-	"atlas-merchant/listing"
-	msg "atlas-merchant/message"
 	"atlas-merchant/shop"
 	"context"
 	"encoding/json"
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -148,7 +141,6 @@ func handleAddListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merc
 			return
 		}
 
-		// Extract flag from item snapshot for trade restriction validation.
 		var flag uint16
 		if e.Body.ItemSnapshot != nil {
 			var snapshot asset.AssetData
@@ -158,14 +150,10 @@ func handleAddListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merc
 		}
 
 		p := shop.NewProcessor(l, ctx, db)
-		created, err := p.AddListingAndEmit(shopId, e.CharacterId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, flag, e.Body.InventoryType, e.Body.AssetId)
+		_, err = p.AddListingAndEmit(shopId, e.CharacterId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, flag, e.Body.InventoryType, e.Body.AssetId)
 		if err != nil {
 			l.WithError(err).Errorf("Error adding listing to shop [%s].", shopId)
-			return
 		}
-
-		quantity := uint32(e.Body.BundleSize) * uint32(e.Body.BundleCount)
-		l.Infof("Listing [%s] added to shop [%s], releasing asset [%d] (qty %d) from inventory.", created.Id(), shopId, e.Body.AssetId, quantity)
 	}
 }
 
@@ -180,15 +168,9 @@ func handleRemoveListingCommand(db *gorm.DB) message.Handler[merchant2.Command[m
 			return
 		}
 
-		p := shop.NewProcessor(l, ctx, db)
-		removed, err := p.RemoveListing(shopId, e.Body.ListingIndex)
-		if err != nil {
+		if _, err := shop.NewProcessor(l, ctx, db).RemoveListingAndEmit(shopId, e.CharacterId, e.Body.ListingIndex); err != nil {
 			l.WithError(err).Errorf("Error removing listing from shop [%s].", shopId)
-			return
 		}
-
-		// Return item to owner's inventory.
-		acceptItemToOwner(l, ctx, e.CharacterId, removed)
 	}
 }
 
@@ -203,9 +185,7 @@ func handleUpdateListingCommand(db *gorm.DB) message.Handler[merchant2.Command[m
 			return
 		}
 
-		p := shop.NewProcessor(l, ctx, db)
-		err = p.UpdateListing(shopId, e.Body.ListingIndex, e.Body.PricePerBundle, e.Body.BundleSize, e.Body.BundleCount)
-		if err != nil {
+		if err := shop.NewProcessor(l, ctx, db).UpdateListing(shopId, e.Body.ListingIndex, e.Body.PricePerBundle, e.Body.BundleSize, e.Body.BundleCount); err != nil {
 			l.WithError(err).Errorf("Error updating listing in shop [%s].", shopId)
 		}
 	}
@@ -282,67 +262,10 @@ func handleSendMessageCommand(db *gorm.DB) message.Handler[merchant2.Command[mer
 			return
 		}
 
-		mp := msg.NewProcessor(l, ctx, db)
-		if err := mp.SendMessage(shopId, e.CharacterId, e.Body.Content); err != nil {
+		if err := shop.NewProcessor(l, ctx, db).SendMessageAndEmit(shopId, e.CharacterId, e.Body.Content); err != nil {
 			l.WithError(err).Errorf("Error sending message in shop [%s].", shopId)
-			return
 		}
-
-		// Resolve visitor slot for the sender.
-		p := shop.NewProcessor(l, ctx, db)
-		visitors, err := p.GetVisitors(shopId)
-		if err != nil {
-			l.WithError(err).Errorf("Error retrieving visitors for shop [%s].", shopId)
-			return
-		}
-
-		// Slot 0 is the owner. Visitors start at slot 1.
-		var slot byte
-		s, err := p.GetById(shopId)
-		if err != nil {
-			l.WithError(err).Errorf("Error retrieving shop [%s].", shopId)
-			return
-		}
-		if e.CharacterId == s.CharacterId() {
-			slot = 0
-		} else {
-			for i, v := range visitors {
-				if v == e.CharacterId {
-					slot = byte(i + 1)
-					break
-				}
-			}
-		}
-
-		kp := producer.ProviderImpl(l)(ctx)
-		_ = kp(merchant2.EnvStatusEventTopic)(shop.StatusEventMessageSentProvider(e.CharacterId, shopId, slot, e.Body.Content))
 	}
-}
-
-func acceptItemToOwner(l logrus.FieldLogger, ctx context.Context, characterId uint32, li listing.Model) {
-	if li.ItemSnapshot() == nil {
-		l.Warnf("Listing [%s] has no item snapshot, cannot return to inventory.", li.Id())
-		return
-	}
-
-	var ad asset.AssetData
-	if err := json.Unmarshal(li.ItemSnapshot(), &ad); err != nil {
-		l.WithError(err).Errorf("Error unmarshaling item snapshot for listing [%s].", li.Id())
-		return
-	}
-
-	ad.Quantity = uint32(li.Quantity())
-
-	invType, ok := inventory.TypeFromItemId(item.Id(li.ItemId()))
-	if !ok {
-		l.Errorf("Unable to determine inventory type for item [%d].", li.ItemId())
-		return
-	}
-
-	transactionId := uuid.New()
-	kp := producer.ProviderImpl(l)(ctx)
-	_ = kp(compartment.EnvCommandTopic)(shop.AcceptAssetCommandProvider(transactionId, characterId, byte(invType), li.ItemId(), ad))
-	l.Infof("Returning item [%d] (qty %d) to character [%d] inventory.", li.ItemId(), li.Quantity(), characterId)
 }
 
 func handleRetrieveFrederickCommand(db *gorm.DB) message.Handler[merchant2.Command[merchant2.CommandRetrieveFrederickBody]] {
@@ -351,72 +274,8 @@ func handleRetrieveFrederickCommand(db *gorm.DB) message.Handler[merchant2.Comma
 			return
 		}
 
-		fp := frederick.NewProcessor(l, ctx, db)
-
-		items, err := fp.GetItems(e.CharacterId)
-		if err != nil {
+		if err := shop.NewProcessor(l, ctx, db).RetrieveFrederickAndEmit(e.CharacterId, e.WorldId); err != nil {
 			l.WithError(err).Errorf("Error retrieving Frederick items for character [%d].", e.CharacterId)
-			return
 		}
-
-		mesos, err := fp.GetMesos(e.CharacterId)
-		if err != nil {
-			l.WithError(err).Errorf("Error retrieving Frederick mesos for character [%d].", e.CharacterId)
-			return
-		}
-
-		if len(items) == 0 && len(mesos) == 0 {
-			l.Debugf("No items or mesos at Frederick for character [%d].", e.CharacterId)
-			return
-		}
-
-		kp := producer.ProviderImpl(l)(ctx)
-
-		// Transfer items to character's inventory.
-		for _, fi := range items {
-			if fi.ItemSnapshot() == nil {
-				continue
-			}
-
-			var ad asset.AssetData
-			if err := json.Unmarshal(fi.ItemSnapshot(), &ad); err != nil {
-				l.WithError(err).Errorf("Error unmarshaling item snapshot for Frederick item [%s].", fi.Id())
-				continue
-			}
-
-			ad.Quantity = uint32(fi.Quantity())
-
-			invType, ok := inventory.TypeFromItemId(item.Id(fi.ItemId()))
-			if !ok {
-				l.Errorf("Unable to determine inventory type for Frederick item [%d].", fi.ItemId())
-				continue
-			}
-
-			transactionId := uuid.New()
-			_ = kp(compartment.EnvCommandTopic)(shop.AcceptAssetCommandProvider(transactionId, e.CharacterId, byte(invType), fi.ItemId(), ad))
-		}
-
-		// Transfer mesos to character.
-		var totalMesos uint32
-		for _, fm := range mesos {
-			totalMesos += fm.Amount()
-		}
-		if totalMesos > 0 {
-			transactionId := uuid.New()
-			_ = kp(character.EnvCommandTopic)(shop.ChangeMesoCommandProvider(transactionId, e.WorldId, e.CharacterId, 0, "FREDERICK", int32(totalMesos)))
-		}
-
-		// Clear Frederick storage and notifications after dispatching transfers.
-		if err := fp.ClearItems(e.CharacterId); err != nil {
-			l.WithError(err).Errorf("Error clearing Frederick items for character [%d].", e.CharacterId)
-		}
-		if err := fp.ClearMesos(e.CharacterId); err != nil {
-			l.WithError(err).Errorf("Error clearing Frederick mesos for character [%d].", e.CharacterId)
-		}
-		if err := fp.ClearNotifications(e.CharacterId); err != nil {
-			l.WithError(err).Errorf("Error clearing Frederick notifications for character [%d].", e.CharacterId)
-		}
-
-		l.Infof("Retrieved %d items and %d meso records from Frederick for character [%d].", len(items), len(mesos), e.CharacterId)
 	}
 }

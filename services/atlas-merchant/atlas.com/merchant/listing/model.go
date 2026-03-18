@@ -18,6 +18,7 @@ type Model struct {
 	pricePerBundle   uint32
 	itemSnapshot     json.RawMessage
 	displayOrder     uint16
+	version          uint32
 	listedAt         time.Time
 }
 
@@ -59,6 +60,10 @@ func (m Model) ItemSnapshot() json.RawMessage {
 
 func (m Model) DisplayOrder() uint16 {
 	return m.displayOrder
+}
+
+func (m Model) Version() uint32 {
+	return m.version
 }
 
 func (m Model) ListedAt() time.Time {

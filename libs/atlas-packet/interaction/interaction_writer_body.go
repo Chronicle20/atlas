@@ -14,12 +14,13 @@ type CharacterInteractionEnterErrorMode = string
 
 const (
 	// CharacterInteraction CMiniRoomBaseDlg::OnPacketBase
-	CharacterInteractionModeInvite       CharacterInteractionMode = "INVITE"        // 2
-	CharacterInteractionModeInviteResult CharacterInteractionMode = "INVITE_RESULT" // 3
-	CharacterInteractionModeEnter        CharacterInteractionMode = "ENTER"         // 4
-	CharacterInteractionModeEnterResult  CharacterInteractionMode = "ENTER_RESULT"  // 5
-	CharacterInteractionModeChat         CharacterInteractionMode = "CHAT"          // 6
-	CharacterInteractionModeChatThing    CharacterInteractionMode = "CHAT_THING"    // 7
+	CharacterInteractionModeInvite          CharacterInteractionMode = "INVITE"           // 2
+	CharacterInteractionModeInviteResult    CharacterInteractionMode = "INVITE_RESULT"    // 3
+	CharacterInteractionModeEnter           CharacterInteractionMode = "ENTER"            // 4
+	CharacterInteractionModeEnterResult     CharacterInteractionMode = "ENTER_RESULT"     // 5
+	CharacterInteractionModeChat            CharacterInteractionMode = "CHAT"             // 6
+	CharacterInteractionModeChatThing       CharacterInteractionMode = "CHAT_THING"       // 8
+	CharacterInteractionModeUpdateMerchant  CharacterInteractionMode = "UPDATE_MERCHANT"  // 25
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
 	CharacterInteractionEnterErrorModeFull                      CharacterInteractionEnterErrorMode = "FULL"                          // 2
@@ -75,4 +76,16 @@ func CharacterInteractionEnterResultErrorBody(errorError CharacterInteractionEnt
 			return NewInteractionEnterResultError(mode, errorCode).Encode(l, ctx)(options)
 		}
 	}
+}
+
+func CharacterInteractionEnterResultSuccessBody(room Room) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnterResult, func(mode byte) packet.Encoder {
+		return NewInteractionEnterResultSuccess(mode, room)
+	})
+}
+
+func CharacterInteractionUpdateMerchantBody(meso uint32, items []RoomShopItem) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeUpdateMerchant, func(mode byte) packet.Encoder {
+		return NewInteractionUpdateMerchant(mode, meso, items)
+	})
 }

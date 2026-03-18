@@ -2315,6 +2315,36 @@
         "writer": "CharacterInteraction",
         "options": {
           "operations": {
+            "INVITE": 2,
+            "INVITE_RESULT": 3,
+            "ENTER": 4,
+            "ENTER_RESULT": 5,
+            "CHAT": 6,
+            "CHAT_THING": 8
+          },
+          "enterError": {
+            "ROOM_CLOSED": 1,
+            "FULL": 2,
+            "OTHER_REQUESTS": 3,
+            "NOT_WHEN_DEAD": 4,
+            "NOT_IN_EVENT": 5,
+            "UNABLE": 6,
+            "TRADE_NOT_ALLOWED": 7,
+            "NOT_SAME_MAP": 9,
+            "CANNOT_OPEN_STORE_NEAR_PORTAL": 10,
+            "CANNOT_START_GAME_HERE": 11,
+            "CANNOT_OPEN_STORE_IN_CHANNEL": 12,
+            "CANNOT_OPEN_MINI_ROOM_HERE": 13,
+            "CANNOT_START_GAME_HERE_2": 14,
+            "MUST_BE_IN_FREE_MARKET": 15,
+            "MUST_BE_IN_ROOM_722": 16,
+            "CANNOT_ENTER_STORE": 17,
+            "UNDERGOING_MAINTENANCE": 18,
+            "CANNOT_ENTER_TOURNAMENT_ROOM": 19,
+            "TRADE_NOT_ALLOWED_2": 20,
+            "NOT_ENOUGH_MESOS": 21,
+            "INCORRECT_PASSWORD": 22,
+            "ITEM_EXPIRED": 24
           }
         }
       },

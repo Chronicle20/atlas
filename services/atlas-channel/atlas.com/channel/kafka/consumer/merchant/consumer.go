@@ -1,23 +1,30 @@
 package merchant
 
 import (
+	"atlas-channel/character"
 	_map "atlas-channel/map"
 	"atlas-channel/merchant"
 	consumer2 "atlas-channel/kafka/consumer"
 	merchant2 "atlas-channel/kafka/message/merchant"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	mapId "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
+	atlasmodel "github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-tenant"
 	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
 	merchantpkt "github.com/Chronicle20/atlas-packet/merchant"
@@ -25,8 +32,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
-	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
+func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...atlasmodel.Decorator[consumer.Config])) func(consumerGroupId string) {
+	return func(rf func(config consumer.Config, decorators ...atlasmodel.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("merchant_status_event")(merchant2.EnvStatusEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
 			rf(consumer2.NewConfig(l)("merchant_listing_event")(merchant2.EnvListingEventTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser), consumer.SetStartOffset(kafka.LastOffset))
@@ -88,8 +95,14 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		l.Debugf("Merchant shop [%s] opened by character [%d] in map [%d] instance [%s].", e.Body.ShopId, e.CharacterId, e.Body.MapId, e.Body.InstanceId)
 
 		f := field.NewBuilder(e.Body.WorldId, e.Body.ChannelId, mapId.Id(e.Body.MapId)).SetInstance(e.Body.InstanceId).Build()
+
+		miniRoomType := interactionpkt.MerchantShopMiniRoomType
+		if e.Body.ShopType == 1 {
+			miniRoomType = interactionpkt.PersonalShopMiniRoomType
+		}
+
 		mr := &interactionpkt.MiniRoomBase{
-			MiniRoomTypeVal: interactionpkt.MerchantShopMiniRoomType,
+			MiniRoomTypeVal: miniRoomType,
 			Title:           e.Body.Title,
 			CapacityVal:     4,
 			OwnerId:         e.CharacterId,
@@ -100,6 +113,14 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn merchant shop [%s] for characters in map [%d] instance [%s].", e.Body.ShopId, e.Body.MapId, e.Body.InstanceId)
 		}
+
+		// Send room enter packet to the owner so they enter the shop editing interface.
+		room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.CharacterId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to build room for shop [%s].", e.Body.ShopId)
+			return
+		}
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
 	}
 }
 
@@ -133,6 +154,16 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 		switch e.Type {
 		case merchant2.StatusEventVisitorEntered:
 			l.Debugf("Visitor [%d] entered shop [%s].", e.Body.CharacterId, e.Body.ShopId)
+
+			// Send full shop interior to the entering visitor.
+			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to build room for shop [%s] for visitor [%d].", e.Body.ShopId, e.Body.CharacterId)
+			} else {
+				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
+			}
+
+			// Announce to existing viewers.
 			broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
 				announce := session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)
 				for _, cid := range characterIds {
@@ -161,6 +192,14 @@ func handleMaintenanceEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 		switch e.Type {
 		case merchant2.StatusEventMaintenanceEntered:
 			l.Debugf("Maintenance entered for shop [%s] by character [%d].", e.Body.ShopId, e.Body.CharacterId)
+
+			// Send full shop interior to the owner entering maintenance.
+			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to build room for shop [%s] for maintenance.", e.Body.ShopId)
+			} else {
+				_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
+			}
 		case merchant2.StatusEventMaintenanceExited:
 			l.Debugf("Maintenance exited for shop [%s] by character [%d].", e.Body.ShopId, e.Body.CharacterId)
 		}
@@ -254,6 +293,26 @@ func handleListingPurchasedEvent(sc server.Model, wp writer.Producer) func(l log
 		}
 
 		l.Debugf("Listing [%d] purchased in shop [%s] by character [%d]. bundleCount [%d], remaining [%d].", e.Body.ListingIndex, e.ShopId, e.Body.BuyerCharacterId, e.Body.BundleCount, e.Body.BundlesRemaining)
+
+		mp := merchant.NewProcessor(l, ctx)
+		shop, err := mp.GetShop(e.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get shop [%s] for purchase update.", e.ShopId)
+			return
+		}
+
+		items := buildShopItems(l, shop.Listings())
+
+		sp := session.NewProcessor(l, ctx)
+		characterIds := []uint32{shop.CharacterId()}
+		characterIds = append(characterIds, shop.Visitors()...)
+		for _, cid := range characterIds {
+			meso := uint32(0)
+			if cid == shop.CharacterId() {
+				meso = shop.MesoBalance()
+			}
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionUpdateMerchantBody(meso, items)))
+		}
 	}
 }
 
@@ -268,4 +327,157 @@ func broadcastToShopViewers(l logrus.FieldLogger, ctx context.Context, sc server
 	characterIds := []uint32{shop.CharacterId()}
 	characterIds = append(characterIds, shop.Visitors()...)
 	fn(characterIds)
+}
+
+// buildShopRoom fetches shop data and resolves character info to build the appropriate room packet.
+func buildShopRoom(l logrus.FieldLogger, ctx context.Context, shopId string, viewerCharacterId uint32) (interactionpkt.Room, error) {
+	mp := merchant.NewProcessor(l, ctx)
+	shop, err := mp.GetShop(shopId)
+	if err != nil {
+		return interactionpkt.Room{}, err
+	}
+
+	cp := character.NewProcessor(l, ctx)
+
+	items := buildShopItems(l, shop.Listings())
+
+	// CharacterShop (1) = PersonalShop, HiredMerchant (2) = MerchantShop.
+	if shop.ShopType() == 2 {
+		return buildMerchantShopRoom(l, ctx, cp, shop, viewerCharacterId, items)
+	}
+	return buildPersonalShopRoom(l, ctx, cp, shop, items)
+}
+
+func buildMerchantShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, viewerCharacterId uint32, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+	// Owner is represented as MerchantVisitor (NPC sprite with item ID).
+	ownerVisitor := interactionpkt.NewMerchantVisitor(shop.PermitItemId(), shop.Title())
+
+	visitors := []interactionpkt.Visitor{ownerVisitor}
+	for i, visitorId := range shop.Visitors() {
+		c, err := cp.GetById(cp.InventoryDecorator)(visitorId)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to resolve visitor [%d].", visitorId)
+			continue
+		}
+		avatar := model.NewFromCharacter(c, false)
+		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
+	}
+
+	// Messages are only visible to the owner.
+	var messages []interactionpkt.RoomMessage
+	if viewerCharacterId == shop.CharacterId() {
+		// No stored messages currently; placeholder for future implementation.
+	}
+
+	ownerChar, err := cp.GetById()(shop.CharacterId())
+	if err != nil {
+		return interactionpkt.Room{}, fmt.Errorf("unable to resolve owner [%d]: %w", shop.CharacterId(), err)
+	}
+
+	return interactionpkt.NewMerchantShopRoom(visitors, messages, ownerChar.Name(), 16, shop.MesoBalance(), items), nil
+}
+
+func buildPersonalShopRoom(l logrus.FieldLogger, ctx context.Context, cp character.Processor, shop merchant.Model, items []interactionpkt.RoomShopItem) (interactionpkt.Room, error) {
+	// Owner is slot 0 as a regular visitor with avatar.
+	ownerChar, err := cp.GetById(cp.InventoryDecorator)(shop.CharacterId())
+	if err != nil {
+		return interactionpkt.Room{}, fmt.Errorf("unable to resolve owner [%d]: %w", shop.CharacterId(), err)
+	}
+	ownerAvatar := model.NewFromCharacter(ownerChar, false)
+	visitors := []interactionpkt.Visitor{interactionpkt.NewBaseVisitor(0, ownerAvatar, ownerChar.Name())}
+
+	for i, visitorId := range shop.Visitors() {
+		c, err := cp.GetById(cp.InventoryDecorator)(visitorId)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to resolve visitor [%d].", visitorId)
+			continue
+		}
+		avatar := model.NewFromCharacter(c, false)
+		visitors = append(visitors, interactionpkt.NewBaseVisitor(byte(i+1), avatar, c.Name()))
+	}
+
+	return interactionpkt.NewPersonalShopRoom(visitors, shop.Title(), 16, items), nil
+}
+
+// buildShopItems converts listing models to packet RoomShopItems.
+func buildShopItems(l logrus.FieldLogger, listings []merchant.ListingModel) []interactionpkt.RoomShopItem {
+	items := make([]interactionpkt.RoomShopItem, 0, len(listings))
+	for _, listing := range listings {
+		asset := assetFromSnapshot(listing.ItemId(), listing.ItemSnapshot())
+		items = append(items, interactionpkt.RoomShopItem{
+			PerBundle: listing.BundleSize(),
+			Quantity:  listing.BundlesRemaining(),
+			Price:     listing.PricePerBundle(),
+			Asset:     asset,
+		})
+	}
+	return items
+}
+
+// itemSnapshot is the JSON structure stored in listing.ItemSnapshot.
+type itemSnapshot struct {
+	Expiration    time.Time `json:"expiration"`
+	Quantity      uint32    `json:"quantity"`
+	Flag          uint16    `json:"flag"`
+	Rechargeable  uint64    `json:"rechargeable"`
+	Strength      uint16    `json:"strength"`
+	Dexterity     uint16    `json:"dexterity"`
+	Intelligence  uint16    `json:"intelligence"`
+	Luck          uint16    `json:"luck"`
+	Hp            uint16    `json:"hp"`
+	Mp            uint16    `json:"mp"`
+	WeaponAttack  uint16    `json:"weaponAttack"`
+	MagicAttack   uint16    `json:"magicAttack"`
+	WeaponDefense uint16    `json:"weaponDefense"`
+	MagicDefense  uint16    `json:"magicDefense"`
+	Accuracy      uint16    `json:"accuracy"`
+	Avoidability  uint16    `json:"avoidability"`
+	Hands         uint16    `json:"hands"`
+	Speed         uint16    `json:"speed"`
+	Jump          uint16    `json:"jump"`
+	Slots         uint16    `json:"slots"`
+	LevelType     byte      `json:"levelType"`
+	Level         byte      `json:"level"`
+	Experience    uint32    `json:"experience"`
+	HammersApplied uint32   `json:"hammersApplied"`
+	CashId        int64     `json:"cashId,string"`
+	PetId         uint32    `json:"petId"`
+}
+
+// assetFromSnapshot deserializes an ItemSnapshot into a packet model Asset.
+func assetFromSnapshot(templateId uint32, snapshot json.RawMessage) packetmodel.Asset {
+	base := packetmodel.NewAsset(true, 0, templateId, time.Time{})
+
+	if snapshot == nil || len(snapshot) == 0 {
+		return base
+	}
+
+	var s itemSnapshot
+	if err := json.Unmarshal(snapshot, &s); err != nil {
+		return base
+	}
+
+	base = packetmodel.NewAsset(true, 0, templateId, s.Expiration)
+
+	invType, ok := inventory.TypeFromItemId(item.Id(templateId))
+	if !ok {
+		return base
+	}
+
+	if invType == inventory.TypeValueEquip {
+		base = base.SetEquipmentStats(
+			s.Strength, s.Dexterity, s.Intelligence, s.Luck,
+			s.Hp, s.Mp,
+			s.WeaponAttack, s.MagicAttack, s.WeaponDefense, s.MagicDefense,
+			s.Accuracy, s.Avoidability, s.Hands, s.Speed, s.Jump,
+		)
+		base = base.SetEquipmentMeta(s.Slots, s.LevelType, s.Level, s.Experience, s.HammersApplied, s.Flag)
+		if s.CashId != 0 {
+			base = base.SetCashId(s.CashId)
+		}
+	} else {
+		base = base.SetStackableInfo(s.Quantity, s.Flag, s.Rechargeable)
+	}
+
+	return base
 }

@@ -8,7 +8,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	character2 "github.com/Chronicle20/atlas-packet/socket"
+	character2 "github.com/Chronicle20/atlas-packet/socket/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

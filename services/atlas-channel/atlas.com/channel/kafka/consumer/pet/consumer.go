@@ -24,9 +24,11 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas-packet/inventory"
-	petpkt "github.com/Chronicle20/atlas-packet/pet"
-	statpkt "github.com/Chronicle20/atlas-packet/stat"
+	invcb "github.com/Chronicle20/atlas-packet/inventory/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -222,7 +224,7 @@ func announcePetStatUpdate(l logrus.FieldLogger) func(ctx context.Context) func(
 						return errors.New("pet not found")
 					}
 				}
-				return session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventory2.TypeValueCash), a.Slot(), model2.NewAsset(true, *a))).Encode)
+				return session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventory2.TypeValueCash), a.Slot(), model2.NewAsset(true, *a))).Encode)
 			}
 		}
 	}
@@ -306,13 +308,13 @@ func handleLevelChanged(sc server.Model, wp writer.Producer) message.Handler[pet
 
 			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), func(os session.Model) error {
 				if s.CharacterId() == os.CharacterId() {
-					err = session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectWriter)(charpkt.CharacterPetEffectBody(byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterPetEffectBody(byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}
 					return err
 				} else {
-					err = session.Announce(l)(ctx)(wp)(charpkt.CharacterEffectForeignWriter)(charpkt.CharacterPetEffectForeignBody(s.CharacterId(), byte(e.Body.Slot), 0))(os)
+					err = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterPetEffectForeignBody(s.CharacterId(), byte(e.Body.Slot), 0))(os)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue pet [%d] level up.", p.Id())
 					}

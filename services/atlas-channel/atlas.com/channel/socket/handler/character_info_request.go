@@ -10,15 +10,16 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
-	character2 "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	charsb "github.com/Chronicle20/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	petpkt "github.com/Chronicle20/atlas-packet/pet"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
 )
 
 func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := character2.InfoRequest{}
+		p := charsb.InfoRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -57,7 +58,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 			}
 		}
 
-		err = session.Announce(l)(ctx)(wp)(character2.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl))(s)
+		err = session.Announce(l)(ctx)(wp)(charcb.CharacterInfoWriter)(writer.CharacterInfoBody(c, g, wl))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write character information.")
 		}

@@ -7,7 +7,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	cash2 "github.com/Chronicle20/atlas-packet/cash"
+	cashcb "github.com/Chronicle20/atlas-packet/cash/clientbound"
+	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -36,25 +37,25 @@ const (
 
 func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := cash2.ShopOperation{}
+		p := cashsb.ShopOperation{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := p.Op()
 		var err error
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuy) {
-			sp := &cash2.ShopOperationBuy{}
+			sp := &cashsb.ShopOperationBuy{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = cashshop.NewProcessor(l, ctx).RequestPurchase(s.CharacterId(), sp.SerialNumber(), sp.IsPoints(), sp.Currency(), sp.Zero())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGift) {
-			sp := &cash2.ShopOperationGift{}
+			sp := &cashsb.ShopOperationGift{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] gifting [%d] to [%s] with message [%s]. birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Birthday())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationSetWishlist) {
-			sp := &cash2.ShopOperationSetWishlist{}
+			sp := &cashsb.ShopOperationSetWishlist{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			var wl []wishlist.Model
 			wl, err = wishlist.NewProcessor(l, ctx).SetForCharacter(s.CharacterId(), sp.SerialNumbers())
@@ -66,14 +67,14 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			for i, w := range wl {
 				sns[i] = w.SerialNumber()
 			}
-			err = session.Announce(l)(ctx)(wp)(cash2.CashShopOperationWriter)(cash2.CashShopWishListBody(true, sns))(s)
+			err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOperationWriter)(cashcb.CashShopWishListBody(true, sns))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update wish list for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseInventory) {
-			sp := &cash2.ShopOperationIncreaseInventory{}
+			sp := &cashsb.ShopOperationIncreaseInventory{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if !sp.Item() {
 				err = cashshop.NewProcessor(l, ctx).RequestInventoryIncreasePurchaseByType(s.CharacterId(), sp.IsPoints(), sp.Currency(), sp.InventoryType())
@@ -89,7 +90,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseStorage) {
-			sp := &cash2.ShopOperationIncreaseStorage{}
+			sp := &cashsb.ShopOperationIncreaseStorage{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if !sp.Item() {
 				err = cashshop.NewProcessor(l, ctx).RequestStorageIncreasePurchase(s.CharacterId(), sp.IsPoints(), sp.Currency())
@@ -105,7 +106,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationIncreaseCharacterSlot) {
-			sp := &cash2.ShopOperationIncreaseCharacterSlot{}
+			sp := &cashsb.ShopOperationIncreaseCharacterSlot{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			err = cashshop.NewProcessor(l, ctx).RequestCharacterSlotIncreasePurchaseByItem(s.CharacterId(), sp.IsPoints(), sp.Currency(), sp.SerialNumber())
 			if err != nil {
@@ -114,14 +115,14 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationEnableEquipSlot) {
-			sp := &cash2.ShopOperationEnableEquipSlot{}
+			sp := &cashsb.ShopOperationEnableEquipSlot{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			pt := cashshop.GetPointType(sp.PointType())
 			l.Infof("Character [%d] enabling equip slot? via item [%d] using [%s].", s.CharacterId(), sp.SerialNumber(), pt)
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationMoveFromCashInventory) {
-			sp := &cash2.ShopOperationMoveFromCashInventory{}
+			sp := &cashsb.ShopOperationMoveFromCashInventory{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			err = cashshop.NewProcessor(l, ctx).MoveFromCashInventory(s.AccountId(), s.CharacterId(), sp.SerialNumber(), sp.InventoryType(), sp.Slot())
 			if err != nil {
@@ -130,7 +131,7 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationMoveToCashInventory) {
-			sp := &cash2.ShopOperationMoveToCashInventory{}
+			sp := &cashsb.ShopOperationMoveToCashInventory{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			err = cashshop.NewProcessor(l, ctx).MoveToCashInventory(s.AccountId(), s.CharacterId(), sp.SerialNumber(), sp.InventoryType())
 			if err != nil {
@@ -139,25 +140,25 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNormal) {
-			sp := &cash2.ShopOperationBuyNormal{}
+			sp := &cashsb.ShopOperationBuyNormal{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] purchasing [%d].", s.CharacterId(), sp.SerialNumber())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationRebateLockerItem) {
-			sp := &cash2.ShopOperationRebateLockerItem{}
+			sp := &cashsb.ShopOperationRebateLockerItem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] using rebate [%d]. birthday [%d]", s.CharacterId(), sp.Unk(), sp.Birthday())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyCouple) {
-			sp := &cash2.ShopOperationBuyCouple{}
+			sp := &cashsb.ShopOperationBuyCouple{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyPackage) {
-			sp := &cash2.ShopOperationBuyPackage{}
+			sp := &cashsb.ShopOperationBuyPackage{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			pt := cashshop.GetPointType(sp.PointType())
 			l.Infof("Character [%d] purchasing [%d] with [%s]. Option [%d]", s.CharacterId(), sp.SerialNumber(), pt, sp.Option())
@@ -168,25 +169,25 @@ func CashShopOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyFriendship) {
-			sp := &cash2.ShopOperationBuyFriendship{}
+			sp := &cashsb.ShopOperationBuyFriendship{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] purchasing [%d] for [%s] with message [%s]. Option [%d], birthday [%d]", s.CharacterId(), sp.SerialNumber(), sp.Name(), sp.Message(), sp.Option(), sp.Birthday())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationGetPurchaseRecord) {
-			sp := &cash2.ShopOperationGetPurchaseRecord{}
+			sp := &cashsb.ShopOperationGetPurchaseRecord{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] requesting purchase record for [%d].", s.CharacterId(), sp.SerialNumber())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyNameChange) {
-			sp := &cash2.ShopOperationBuyNameChange{}
+			sp := &cashsb.ShopOperationBuyNameChange{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] requesting purchase name change from [%s] to [%s] via item [%d].", s.CharacterId(), sp.OldName(), sp.NewName(), sp.SerialNumber())
 			return
 		}
 		if isCashShopOperation(l)(readerOptions, op, CashShopOperationBuyWorldTransfer) {
-			sp := &cash2.ShopOperationBuyWorldTransfer{}
+			sp := &cashsb.ShopOperationBuyWorldTransfer{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Infof("Character [%d] requesting purchase world transfer for [%d] via item [%d].", s.CharacterId(), sp.TargetWorld(), sp.SerialNumber())
 			return

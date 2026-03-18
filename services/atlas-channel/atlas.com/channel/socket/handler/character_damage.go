@@ -10,7 +10,7 @@ import (
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
 func CharacterDamageHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {

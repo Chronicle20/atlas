@@ -5,6 +5,7 @@ import (
 
 	atlas_packet "github.com/Chronicle20/atlas-packet"
 	"github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
@@ -38,42 +39,42 @@ const (
 
 func StorageOperationErrorInventoryFullBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorInventoryFull, func(mode byte) packet.Encoder {
-		return NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorSimple(mode)
 	})
 }
 
 func StorageOperationErrorNotEnoughMesoBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorNotEnoughMesos, func(mode byte) packet.Encoder {
-		return NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorSimple(mode)
 	})
 }
 
 func StorageOperationErrorOneOfAKindBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorOneOfAKind, func(mode byte) packet.Encoder {
-		return NewStorageErrorSimple(mode)
+		return clientbound.NewStorageErrorSimple(mode)
 	})
 }
 
 func StorageOperationUpdateAssetsBody(op StorageOperationMode, slots byte, flags uint64, assets []model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", op, func(mode byte) packet.Encoder {
-		return NewStorageUpdateAssets(mode, slots, flags, assets)
+		return clientbound.NewStorageUpdateAssets(mode, slots, flags, assets)
 	})
 }
 
 func StorageOperationUpdateMesoBody(slots byte, meso uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeUpdateMeso, func(mode byte) packet.Encoder {
-		return NewStorageUpdateMeso(mode, slots, meso)
+		return clientbound.NewStorageUpdateMeso(mode, slots, meso)
 	})
 }
 
 func StorageOperationShowBody(npcId uint32, slots byte, meso uint32, assets []model.Asset) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeShow, func(mode byte) packet.Encoder {
-		return NewStorageShow(mode, npcId, slots, uint64(StorageFlagAll), meso, assets)
+		return clientbound.NewStorageShow(mode, npcId, slots, uint64(StorageFlagAll), meso, assets)
 	})
 }
 
 func StorageOperationErrorMessageBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", StorageOperationModeErrorMessage, func(mode byte) packet.Encoder {
-		return NewStorageErrorMessage(mode, message)
+		return clientbound.NewStorageErrorMessage(mode, message)
 	})
 }

@@ -10,7 +10,9 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	messenger2 "github.com/Chronicle20/atlas-packet/messenger"
+	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
+	messengersb "github.com/Chronicle20/atlas-packet/messenger/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -28,12 +30,12 @@ const (
 
 func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := messenger2.Operation{}
+		p := messengersb.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		mode := MessengerOperation(p.Mode())
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationAnswerInvite) {
-			sp := &messenger2.OperationAnswerInvite{}
+			sp := &messengersb.OperationAnswerInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] answered messenger [%d] invite.", s.CharacterId(), sp.MessengerId())
 			if sp.MessengerId() == 0 {
@@ -62,13 +64,13 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationInvite) {
-			sp := &messenger2.OperationInvite{}
+			sp := &messengersb.OperationInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to invite [%s] to messenger.", s.CharacterId(), sp.TargetCharacter())
 			tc, err := character.NewProcessor(l, ctx).GetByName(sp.TargetCharacter())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", sp.TargetCharacter())
-				err = session.Announce(l)(ctx)(wp)(messenger2.MessengerOperationWriter)(messenger2.MessengerOperationInviteSentBody(sp.TargetCharacter(), false))(s)
+				err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationInviteSentBody(sp.TargetCharacter(), false))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 				}
@@ -80,14 +82,14 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 
-			err = session.Announce(l)(ctx)(wp)(messenger2.MessengerOperationWriter)(messenger2.MessengerOperationInviteSentBody(sp.TargetCharacter(), true))(s)
+			err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationInviteSentBody(sp.TargetCharacter(), true))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationDeclineInvite) {
-			sp := &messenger2.OperationDeclineInvite{}
+			sp := &messengersb.OperationDeclineInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), sp.FromName(), sp.MyName(), sp.AlwaysZero())
 			tc, err := character.NewProcessor(l, ctx).GetByName(sp.FromName())
@@ -102,7 +104,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationChat) {
-			sp := &messenger2.OperationChat{}
+			sp := &messengersb.OperationChat{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] sending message [%s] to messenger.", s.CharacterId(), sp.Msg())
 			m, err := messenger.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())

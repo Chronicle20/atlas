@@ -7,7 +7,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	guild2 "github.com/Chronicle20/atlas-packet/guild"
+	guildcb "github.com/Chronicle20/atlas-packet/guild/clientbound"
+	guildsb "github.com/Chronicle20/atlas-packet/guild/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -30,12 +31,12 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 
-		p := guild2.BBS{}
+		p := guildsb.BBS{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := p.Op()
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationCreateOrEditThread) {
-			sp := &guild2.BBSCreateOrEditThread{}
+			sp := &guildsb.BBSCreateOrEditThread{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if sp.Modify() {
 				_ = thread.NewProcessor(l, ctx).ModifyThread(g.Id(), s.CharacterId(), sp.ThreadId(), sp.Notice(), sp.Title(), sp.Message(), sp.EmoticonId())
@@ -46,20 +47,20 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			}
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDeleteThread) {
-			sp := &guild2.BBSDeleteThread{}
+			sp := &guildsb.BBSDeleteThread{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = thread.NewProcessor(l, ctx).DeleteThread(g.Id(), s.CharacterId(), sp.ThreadId())
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationListThreads) {
-			sp := &guild2.BBSListThreads{}
+			sp := &guildsb.BBSListThreads{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			ts, err := thread.NewProcessor(l, ctx).GetAll(g.Id())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the guild threads to character [%d].", s.CharacterId())
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(guild2.GuildBBSWriter)(writer.GuildBBSThreadsBody(ts, sp.StartIndex()*10))(s)
+			err = session.Announce(l)(ctx)(wp)(guildcb.GuildBBSWriter)(writer.GuildBBSThreadsBody(ts, sp.StartIndex()*10))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the guild threads to character [%d].", s.CharacterId())
 				return
@@ -68,14 +69,14 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDisplayThread) {
-			sp := &guild2.BBSDisplayThread{}
+			sp := &guildsb.BBSDisplayThread{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			t, err := thread.NewProcessor(l, ctx).GetById(g.Id(), sp.ThreadId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(guild2.GuildBBSWriter)(writer.GuildBBSThreadBody(t))(s)
+			err = session.Announce(l)(ctx)(wp)(guildcb.GuildBBSWriter)(writer.GuildBBSThreadBody(t))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to display the requested thread [%d] to character [%d].", t.Id(), s.CharacterId())
 				return
@@ -83,13 +84,13 @@ func GuildBBSHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pro
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationReplyThread) {
-			sp := &guild2.BBSReplyThread{}
+			sp := &guildsb.BBSReplyThread{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = thread.NewProcessor(l, ctx).ReplyToThread(g.Id(), s.CharacterId(), sp.ThreadId(), sp.Message())
 			return
 		}
 		if isGuildBBSOperation(l)(readerOptions, op, GuildBBSOperationDeleteReply) {
-			sp := &guild2.BBSDeleteReply{}
+			sp := &guildsb.BBSDeleteReply{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = thread.NewProcessor(l, ctx).DeleteReply(g.Id(), s.CharacterId(), sp.ThreadId(), sp.ReplyId())
 			return

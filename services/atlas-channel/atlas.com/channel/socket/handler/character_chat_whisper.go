@@ -8,7 +8,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-packet/chat"
+	chatCB "github.com/Chronicle20/atlas-packet/chat/clientbound"
+	chat "github.com/Chronicle20/atlas-packet/chat/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -26,7 +27,7 @@ func CharacterChatWhisperHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if p.Mode() == chat.WhisperModeChat {
 			err := message.NewProcessor(l, ctx).WhisperChat(s.Field(), s.CharacterId(), p.Msg(), p.TargetName())
 			if err != nil {
-				_ = session.Announce(l)(ctx)(wp)(chat.WhisperWriter)(chat.NewWhisperSendResult(0x0A, p.TargetName(), false).Encode)(s)
+				_ = session.Announce(l)(ctx)(wp)(chatCB.WhisperWriter)(chatCB.NewWhisperSendResult(0x0A, p.TargetName(), false).Encode)(s)
 				return
 			}
 			return
@@ -47,28 +48,28 @@ func produceFindResultBody(l logrus.FieldLogger) func(ctx context.Context) func(
 						resultMode = 0x09
 					}
 
-					af := session.Announce(l)(ctx)(wp)(chat.WhisperWriter)
+					af := session.Announce(l)(ctx)(wp)(chatCB.WhisperWriter)
 
 					tc, err := character.NewProcessor(l, ctx).GetByName(targetName)
 					if err != nil {
-						return af(chat.NewWhisperFindResultError(resultMode, targetName).Encode)(s)
+						return af(chatCB.NewWhisperFindResultError(resultMode, targetName).Encode)(s)
 					}
 					// TODO query cash shop.
 					cs := false
 					if cs {
-						return af(chat.NewWhisperFindResultCashShop(resultMode, targetName).Encode)(s)
+						return af(chatCB.NewWhisperFindResultCashShop(resultMode, targetName).Encode)(s)
 					}
 
 					_, err = session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(tc.Id())
 					if err == nil {
 						if resultMode == 0x09 {
-							return af(chat.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tc.MapId()), tc.X(), tc.Y()).Encode)(s)
+							return af(chatCB.NewWhisperFindResultMapWithXY(resultMode, tc.Name(), uint32(tc.MapId()), tc.X(), tc.Y()).Encode)(s)
 						}
-						return af(chat.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tc.MapId())).Encode)(s)
+						return af(chatCB.NewWhisperFindResultMap(resultMode, tc.Name(), uint32(tc.MapId())).Encode)(s)
 					}
 
 					// TODO find a way to look up remote channel.
-					return af(chat.NewWhisperFindResultChannel(resultMode, targetName, 0).Encode)(s)
+					return af(chatCB.NewWhisperFindResultChannel(resultMode, targetName, 0).Encode)(s)
 				}
 			}
 		}

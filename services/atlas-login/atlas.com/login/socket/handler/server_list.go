@@ -9,14 +9,15 @@ import (
 	"sort"
 
 	"github.com/Chronicle20/atlas-model/model"
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := loginpkt.ServerListRequest{}
+		p := loginSB.ServerListRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = announceServerInformation(l)(ctx)(wp)(s)
@@ -54,7 +55,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))
 						}
 					}
-					err := session.Announce(l)(ctx)(wp)(loginpkt.ServerListRecommendationsWriter)(writer.ServerListRecommendationsBody(rs))(s)
+					err := session.Announce(l)(ctx)(wp)(loginCB.ServerListRecommendationsWriter)(writer.ServerListRecommendationsBody(rs))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue recommended worlds")
 						return err
@@ -70,7 +71,7 @@ func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		return func(wp writer.Producer) model.Operator[session.Model] {
 			return func(s session.Model) error {
-				err := session.Announce(l)(ctx)(wp)(loginpkt.SelectWorldWriter)(loginpkt.NewSelectWorld(uint32(0)).Encode)(s)
+				err := session.Announce(l)(ctx)(wp)(loginCB.SelectWorldWriter)(loginCB.NewSelectWorld(uint32(0)).Encode)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to identify the last world a account was logged into")
 					return err
@@ -92,12 +93,12 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							cls = append(cls, model2.NewChannelLoad(c.ChannelId(), c.CurrentCapacity()))
 						}
 
-						err := session.Announce(l)(ctx)(wp)(loginpkt.ServerListEntryWriter)(writer.ServerListEntryBody(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))(s)
+						err := session.Announce(l)(ctx)(wp)(loginCB.ServerListEntryWriter)(writer.ServerListEntryBody(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}
 					}
-					err := session.Announce(l)(ctx)(wp)(loginpkt.ServerListEndWriter)(writer.ServerListEndBody())(s)
+					err := session.Announce(l)(ctx)(wp)(loginCB.ServerListEndWriter)(writer.ServerListEndBody())(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to complete writing the server list")
 						return err

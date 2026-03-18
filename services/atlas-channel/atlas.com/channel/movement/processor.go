@@ -16,10 +16,10 @@ import (
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc"
-	petpkt "github.com/Chronicle20/atlas-packet/pet"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
 )
 
 type Processor struct {

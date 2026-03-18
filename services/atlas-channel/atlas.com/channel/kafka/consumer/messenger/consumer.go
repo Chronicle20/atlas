@@ -12,6 +12,7 @@ import (
 	"context"
 
 	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -93,7 +94,7 @@ func messengerLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 	return func(ctx context.Context) func(wp writer.Producer) func(position byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(position byte) model.Operator[session.Model] {
 			return func(position byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationRemoveBody(position))
+				return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationRemoveBody(position))
 			}
 		}
 	}
@@ -134,7 +135,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 					continue
 				}
 				ava := socketmodel.NewFromCharacter(tc, true)
-			bp := session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(e.Body.Slot, ava, tc.Name(), byte(mm.ChannelId())))
+			bp := session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(e.Body.Slot, ava, tc.Name(), byte(mm.ChannelId())))
 				err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.Id(), bp)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
@@ -143,7 +144,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 		}()
 		go func() {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.ActorId, func(s session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationJoinBody(e.Body.Slot))(s)
+				err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationJoinBody(e.Body.Slot))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 				}
@@ -159,7 +160,7 @@ func handleJoin(sc server.Model, wp writer.Producer) message.Handler[messenger2.
 					}
 
 					mAva := socketmodel.NewFromCharacter(mc, true)
-					err = session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(m.Slot(), mAva, mc.Name(), byte(m.ChannelId())))(s)
+					err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationAddBody(m.Slot(), mAva, mc.Name(), byte(m.ChannelId())))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to announce character [%d] has joined messenger [%d].", tc.Id(), p.Id())
 					}

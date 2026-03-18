@@ -7,14 +7,15 @@ import (
 	"context"
 	"net"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := loginpkt.AfterLogin{}
+		p := loginSB.AfterLogin{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -45,7 +46,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 		if p.PinMode() == 1 && p.Opt2() == 1 {
 			if a.PIN() == "" {
 				l.Debugf("Requesting account [%d] to create PIN.", s.AccountId())
-				err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.RegisterPinBody())(s)
+				err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.RegisterPinBody())(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 					return
@@ -53,7 +54,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				return
 			}
 			l.Debugf("Requesting account [%d] to input PIN.", s.AccountId())
-			err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.RequestPinBody())(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.RequestPinBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 				return
@@ -67,7 +68,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				if err != nil {
 					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
 				}
-				err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.AcceptPinBody())(s)
+				err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.AcceptPinBody())(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 					return
@@ -84,7 +85,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.InvalidPinBody())(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.InvalidPinBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 				return
@@ -98,7 +99,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				if err != nil {
 					l.WithError(err).Errorf("Unable to record successful PIN attempt for account [%d].", s.AccountId())
 				}
-				err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.RegisterPinBody())(s)
+				err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.RegisterPinBody())(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 					return
@@ -115,7 +116,7 @@ func AfterLoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.P
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(loginpkt.PinOperationWriter)(writer.InvalidPinBody())(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.PinOperationWriter)(writer.InvalidPinBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write pin operation response due to error.")
 				return

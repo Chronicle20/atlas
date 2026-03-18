@@ -4,6 +4,7 @@ import (
 	"context"
 
 	atlas_packet "github.com/Chronicle20/atlas-packet"
+	"github.com/Chronicle20/atlas-packet/guild/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
@@ -56,67 +57,67 @@ func RequestGuildEmblemBody() func(logrus.FieldLogger, context.Context) func(map
 
 func GuildRequestAgreementBody(partyId uint32, leaderName string, guildName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationRequestAgreement, func(mode byte) packet.Encoder {
-		return NewRequestAgreement(mode, partyId, leaderName, guildName)
+		return clientbound.NewRequestAgreement(mode, partyId, leaderName, guildName)
 	})
 }
 
 func GuildErrorBody(code string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return NewErrorMessage(mode)
+		return clientbound.NewErrorMessage(mode)
 	})
 }
 
 func GuildErrorBody2(code string, target string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", code, func(mode byte) packet.Encoder {
-		return NewErrorMessageWithTarget(mode, target)
+		return clientbound.NewErrorMessageWithTarget(mode, target)
 	})
 }
 
 func GuildEmblemChangedBody(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationEmblemChange, func(mode byte) packet.Encoder {
-		return NewEmblemChange(mode, guildId, logo, logoColor, logoBackground, logoBackgroundColor)
+		return clientbound.NewEmblemChange(mode, guildId, logo, logoColor, logoBackground, logoBackgroundColor)
 	})
 }
 
 func GuildMemberStatusUpdatedBody(guildId uint32, characterId uint32, online bool) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberOnline, func(mode byte) packet.Encoder {
-		return NewMemberStatusUpdate(mode, guildId, characterId, online)
+		return clientbound.NewMemberStatusUpdate(mode, guildId, characterId, online)
 	})
 }
 
 func GuildMemberTitleUpdatedBody(guildId uint32, characterId uint32, title byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberTitleChange, func(mode byte) packet.Encoder {
-		return NewMemberTitleUpdate(mode, guildId, characterId, title)
+		return clientbound.NewMemberTitleUpdate(mode, guildId, characterId, title)
 	})
 }
 
 func GuildNoticeChangedBody(guildId uint32, notice string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationNoticeChange, func(mode byte) packet.Encoder {
-		return NewNoticeChange(mode, guildId, notice)
+		return clientbound.NewNoticeChange(mode, guildId, notice)
 	})
 }
 
 func GuildMemberLeftBody(guildId uint32, characterId uint32, name string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberQuitSuccess, func(mode byte) packet.Encoder {
-		return NewMemberLeft(mode, guildId, characterId, name)
+		return clientbound.NewMemberLeft(mode, guildId, characterId, name)
 	})
 }
 
 func GuildMemberExpelBody(guildId uint32, characterId uint32, name string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationMemberExpelledSuccess, func(mode byte) packet.Encoder {
-		return NewMemberExpel(mode, guildId, characterId, name)
+		return clientbound.NewMemberExpel(mode, guildId, characterId, name)
 	})
 }
 
 func GuildMemberJoinedBody(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationJoinSuccess, func(mode byte) packet.Encoder {
-		return NewMemberJoined(mode, guildId, characterId, name, jobId, level, title, online, allianceTitle)
+		return clientbound.NewMemberJoined(mode, guildId, characterId, name, jobId, level, title, online, allianceTitle)
 	})
 }
 
 func GuildInviteBody(guildId uint32, originatorName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationInvite, func(mode byte) packet.Encoder {
-		return NewInvite(mode, guildId, originatorName)
+		return clientbound.NewInvite(mode, guildId, originatorName)
 	})
 }
 
@@ -126,22 +127,22 @@ func GuildTitleChangedBody(guildId uint32, titles []string) func(logrus.FieldLog
 		t[i] = titles[i]
 	}
 	return atlas_packet.WithResolvedCode("operations", GuildOperationTitleUpdate, func(mode byte) packet.Encoder {
-		return NewTitleChange(mode, guildId, t)
+		return clientbound.NewTitleChange(mode, guildId, t)
 	})
 }
 
 func GuildDisbandBody(guildId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationDisbandSuccess, func(mode byte) packet.Encoder {
-		return NewDisband(mode, guildId)
+		return clientbound.NewDisband(mode, guildId)
 	})
 }
 
 func GuildCapacityChangedBody(guildId uint32, capacity uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", GuildOperationIncreaseCapacitySuccess, func(mode byte) packet.Encoder {
-		return NewCapacityChange(mode, guildId, capacity)
+		return clientbound.NewCapacityChange(mode, guildId, capacity)
 	})
 }
 
-func GuildInfoBody(inGuild bool, guildId uint32, name string, titles [5]string, members []GuildMemberInfo, capacity uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte, notice string, points uint32, allianceId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
-	return NewInfo(inGuild, guildId, name, titles, members, capacity, logoBackground, logoBackgroundColor, logo, logoColor, notice, points, allianceId).Encode
+func GuildInfoBody(inGuild bool, guildId uint32, name string, titles [5]string, members []clientbound.GuildMemberInfo, capacity uint32, logoBackground uint16, logoBackgroundColor byte, logo uint16, logoColor byte, notice string, points uint32, allianceId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return clientbound.NewInfo(inGuild, guildId, name, titles, members, capacity, logoBackground, logoBackgroundColor, logo, logoColor, notice, points, allianceId).Encode
 }

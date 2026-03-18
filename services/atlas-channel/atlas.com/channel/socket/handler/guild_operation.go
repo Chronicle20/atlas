@@ -9,7 +9,7 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	guild2 "github.com/Chronicle20/atlas-packet/guild"
+	guildsb "github.com/Chronicle20/atlas-packet/guild/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -36,18 +36,18 @@ const (
 
 func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := guild2.Operation{}
+		p := guildsb.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := p.Op()
 		if isGuildOperation(l)(readerOptions, op, GuildOperationRequestCreate) {
-			sp := &guild2.RequestCreate{}
+			sp := &guildsb.RequestCreate{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = guild.NewProcessor(l, ctx).RequestCreate(s.Field(), s.CharacterId(), sp.Name())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationAgreementResponse) {
-			sp := &guild2.AgreementResponse{}
+			sp := &guildsb.AgreementResponse{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] responded to the request to create a guild with [%t]. unk [%d].", s.CharacterId(), sp.Agreed(), sp.Unk())
 			_ = guild.NewProcessor(l, ctx).CreationAgreement(s.CharacterId(), sp.Agreed())
@@ -61,14 +61,14 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				return
 			}
 
-			sp := &guild2.SetEmblem{}
+			sp := &guildsb.SetEmblem{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			_ = guild.NewProcessor(l, ctx).RequestEmblemUpdate(g.Id(), s.CharacterId(), sp.LogoBackground(), sp.LogoBackgroundColor(), sp.Logo(), sp.LogoColor())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetNotice) {
-			sp := &guild2.SetNotice{}
+			sp := &guildsb.SetNotice{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if len(sp.Notice()) > 100 {
 				l.Errorf("Character [%d] setting a guild notice longer than possible.", s.CharacterId())
@@ -87,7 +87,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationWithdraw) {
-			sp := &guild2.Withdraw{}
+			sp := &guildsb.Withdraw{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if sp.Cid() != s.CharacterId() {
 				l.Errorf("Character [%d] attempting to have [%d] leave guild.", s.CharacterId(), sp.Cid())
@@ -113,7 +113,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationKick) {
-			sp := &guild2.Kick{}
+			sp := &guildsb.Kick{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
@@ -133,7 +133,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			sp := &guild2.InviteRequest{}
+			sp := &guildsb.InviteRequest{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			c, err := character.NewProcessor(l, ctx).GetByName(sp.Target())
@@ -146,7 +146,7 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationJoin) {
-			sp := &guild2.Join{}
+			sp := &guildsb.Join{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if s.CharacterId() != sp.CharacterId() {
 				l.Errorf("Character [%d] attempting to have [%d] join guild.", s.CharacterId(), sp.CharacterId())
@@ -167,13 +167,13 @@ func GuildOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			sp := &guild2.SetTitleNames{}
+			sp := &guildsb.SetTitleNames{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = guild.NewProcessor(l, ctx).RequestTitleChanges(g.Id(), s.CharacterId(), sp.Titles())
 			return
 		}
 		if isGuildOperation(l)(readerOptions, op, GuildOperationSetMemberTitle) {
-			sp := &guild2.SetMemberTitle{}
+			sp := &guildsb.SetMemberTitle{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			if sp.NewTitle() <= 1 || sp.NewTitle() > 5 {

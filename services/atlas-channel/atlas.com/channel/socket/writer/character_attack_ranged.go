@@ -4,7 +4,7 @@ import (
 	"atlas-channel/character"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"

@@ -11,6 +11,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	buddypkt "github.com/Chronicle20/atlas-packet/buddy"
+	buddyCB "github.com/Chronicle20/atlas-packet/buddy/clientbound"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -103,9 +104,9 @@ func redrawBuddyList(l logrus.FieldLogger) func(ctx context.Context) func(wp wri
 						return err
 					}
 
-					entries := make([]buddypkt.BuddyEntry, 0, len(bl.Buddies()))
+					entries := make([]buddyCB.BuddyEntry, 0, len(bl.Buddies()))
 					for _, b := range bl.Buddies() {
-						entries = append(entries, buddypkt.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
+						entries = append(entries, buddyCB.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
 					}
 					err = session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(buddypkt.BuddyListUpdateBody(entries))(s)
 					if err != nil {

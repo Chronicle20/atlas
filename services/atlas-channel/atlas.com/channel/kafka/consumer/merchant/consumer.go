@@ -2,10 +2,10 @@ package merchant
 
 import (
 	"atlas-channel/character"
-	_map "atlas-channel/map"
-	"atlas-channel/merchant"
 	consumer2 "atlas-channel/kafka/consumer"
 	merchant2 "atlas-channel/kafka/message/merchant"
+	_map "atlas-channel/map"
+	"atlas-channel/merchant"
 	"atlas-channel/server"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
@@ -24,10 +24,12 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	atlasmodel "github.com/Chronicle20/atlas-model/model"
+	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
+	interactioncb "github.com/Chronicle20/atlas-packet/interaction/clientbound"
+	merchantpkt "github.com/Chronicle20/atlas-packet/merchant"
+	merchantcb "github.com/Chronicle20/atlas-packet/merchant/clientbound"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-tenant"
-	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
-	merchantpkt "github.com/Chronicle20/atlas-packet/merchant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -120,7 +122,7 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 			l.WithError(err).Errorf("Unable to build room for shop [%s].", e.Body.ShopId)
 			return
 		}
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
 	}
 }
 
@@ -160,24 +162,24 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 			if err != nil {
 				l.WithError(err).Errorf("Unable to build room for shop [%s] for visitor [%d].", e.Body.ShopId, e.Body.CharacterId)
 			} else {
-				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
+				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
 			}
 
 			// Announce to existing viewers.
 			broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
-				announce := session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)
+				announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)
 				for _, cid := range characterIds {
 					if cid == e.Body.CharacterId {
 						continue
 					}
-					_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce(interactionpkt.CharacterInteractionChatBody(0, fmt.Sprintf("Visitor [%d] has entered.", e.Body.CharacterId))))
+					_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce(interactioncb.CharacterInteractionChatBody(0, fmt.Sprintf("Visitor [%d] has entered.", e.Body.CharacterId))))
 				}
 			})
 		case merchant2.StatusEventVisitorExited:
 			l.Debugf("Visitor [%d] exited shop [%s].", e.Body.CharacterId, e.Body.ShopId)
 		case merchant2.StatusEventVisitorEjected:
 			l.Debugf("Visitor [%d] ejected from shop [%s].", e.Body.CharacterId, e.Body.ShopId)
-			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultErrorBody(interactionpkt.CharacterInteractionEnterErrorModeRoomClosed)))
+			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeRoomClosed)))
 		}
 	}
 }
@@ -198,7 +200,7 @@ func handleMaintenanceEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			if err != nil {
 				l.WithError(err).Errorf("Unable to build room for shop [%s] for maintenance.", e.Body.ShopId)
 			} else {
-				_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultSuccessBody(room)))
+				_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
 			}
 		case merchant2.StatusEventMaintenanceExited:
 			l.Debugf("Maintenance exited for shop [%s] by character [%d].", e.Body.ShopId, e.Body.CharacterId)
@@ -219,7 +221,7 @@ func handleCapacityFullEvent(sc server.Model, wp writer.Producer) func(l logrus.
 
 		l.Debugf("Shop [%s] is full, character [%d] cannot enter.", e.Body.ShopId, e.CharacterId)
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultErrorBody(interactionpkt.CharacterInteractionEnterErrorModeFull)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeFull)))
 	}
 }
 
@@ -236,7 +238,7 @@ func handlePurchaseFailedEvent(sc server.Model, wp writer.Producer) func(l logru
 
 		l.Debugf("Purchase failed in shop [%s] for character [%d]. reason [%s].", e.Body.ShopId, e.CharacterId, e.Body.Reason)
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionEnterResultErrorBody(interactionpkt.CharacterInteractionEnterErrorModeUnable)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeUnable)))
 	}
 }
 
@@ -254,7 +256,7 @@ func handleFrederickNotificationEvent(sc server.Model, wp writer.Producer) func(
 		l.Debugf("Frederick notification for character [%d]. daysSinceStorage [%d].", e.CharacterId, e.Body.DaysSinceStorage)
 
 		msg := fmt.Sprintf("Your hired merchant items have been stored for %d day(s). Please retrieve them from Fredrick.", e.Body.DaysSinceStorage)
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantpkt.HiredMerchantOperationWriter)(merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(merchantcb.HiredMerchantOperationWriter)(merchantpkt.HiredMerchantOperationFreeFormNoticeBody(msg)))
 	}
 }
 
@@ -273,7 +275,7 @@ func handleMessageSentEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 
 		broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
 			sp := session.NewProcessor(l, ctx)
-			announce := session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionChatBody(e.Body.Slot, e.Body.Content))
+			announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionChatBody(e.Body.Slot, e.Body.Content))
 			for _, cid := range characterIds {
 				_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce)
 			}
@@ -311,7 +313,7 @@ func handleListingPurchasedEvent(sc server.Model, wp writer.Producer) func(l log
 			if cid == shop.CharacterId() {
 				meso = shop.MesoBalance()
 			}
-			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactionpkt.CharacterInteractionWriter)(interactionpkt.CharacterInteractionUpdateMerchantBody(meso, items)))
+			_ = sp.IfPresentByCharacterId(sc.Channel())(cid, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionUpdateMerchantBody(meso, items)))
 		}
 	}
 }
@@ -416,32 +418,32 @@ func buildShopItems(l logrus.FieldLogger, listings []merchant.ListingModel) []in
 
 // itemSnapshot is the JSON structure stored in listing.ItemSnapshot.
 type itemSnapshot struct {
-	Expiration    time.Time `json:"expiration"`
-	Quantity      uint32    `json:"quantity"`
-	Flag          uint16    `json:"flag"`
-	Rechargeable  uint64    `json:"rechargeable"`
-	Strength      uint16    `json:"strength"`
-	Dexterity     uint16    `json:"dexterity"`
-	Intelligence  uint16    `json:"intelligence"`
-	Luck          uint16    `json:"luck"`
-	Hp            uint16    `json:"hp"`
-	Mp            uint16    `json:"mp"`
-	WeaponAttack  uint16    `json:"weaponAttack"`
-	MagicAttack   uint16    `json:"magicAttack"`
-	WeaponDefense uint16    `json:"weaponDefense"`
-	MagicDefense  uint16    `json:"magicDefense"`
-	Accuracy      uint16    `json:"accuracy"`
-	Avoidability  uint16    `json:"avoidability"`
-	Hands         uint16    `json:"hands"`
-	Speed         uint16    `json:"speed"`
-	Jump          uint16    `json:"jump"`
-	Slots         uint16    `json:"slots"`
-	LevelType     byte      `json:"levelType"`
-	Level         byte      `json:"level"`
-	Experience    uint32    `json:"experience"`
-	HammersApplied uint32   `json:"hammersApplied"`
-	CashId        int64     `json:"cashId,string"`
-	PetId         uint32    `json:"petId"`
+	Expiration     time.Time `json:"expiration"`
+	Quantity       uint32    `json:"quantity"`
+	Flag           uint16    `json:"flag"`
+	Rechargeable   uint64    `json:"rechargeable"`
+	Strength       uint16    `json:"strength"`
+	Dexterity      uint16    `json:"dexterity"`
+	Intelligence   uint16    `json:"intelligence"`
+	Luck           uint16    `json:"luck"`
+	Hp             uint16    `json:"hp"`
+	Mp             uint16    `json:"mp"`
+	WeaponAttack   uint16    `json:"weaponAttack"`
+	MagicAttack    uint16    `json:"magicAttack"`
+	WeaponDefense  uint16    `json:"weaponDefense"`
+	MagicDefense   uint16    `json:"magicDefense"`
+	Accuracy       uint16    `json:"accuracy"`
+	Avoidability   uint16    `json:"avoidability"`
+	Hands          uint16    `json:"hands"`
+	Speed          uint16    `json:"speed"`
+	Jump           uint16    `json:"jump"`
+	Slots          uint16    `json:"slots"`
+	LevelType      byte      `json:"levelType"`
+	Level          byte      `json:"level"`
+	Experience     uint32    `json:"experience"`
+	HammersApplied uint32    `json:"hammersApplied"`
+	CashId         int64     `json:"cashId,string"`
+	PetId          uint32    `json:"petId"`
 }
 
 // assetFromSnapshot deserializes an ItemSnapshot into a packet model Asset.

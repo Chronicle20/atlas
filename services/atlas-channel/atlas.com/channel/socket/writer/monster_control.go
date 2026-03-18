@@ -5,7 +5,7 @@ import (
 	"context"
 
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"

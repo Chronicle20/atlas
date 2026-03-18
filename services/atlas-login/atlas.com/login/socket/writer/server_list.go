@@ -6,7 +6,7 @@ import (
 	"context"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"

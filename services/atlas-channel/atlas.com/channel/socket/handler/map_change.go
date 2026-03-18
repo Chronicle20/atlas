@@ -13,14 +13,14 @@ import (
 	"context"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
-	field2 "github.com/Chronicle20/atlas-packet/field"
+	fieldsb "github.com/Chronicle20/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := field2.Change{}
+		p := fieldsb.Change{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 

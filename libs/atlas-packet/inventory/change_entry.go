@@ -10,6 +10,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type ChangeMode byte
+
+const (
+	ChangeModeAdd            ChangeMode = 0
+	ChangeModeQuantityUpdate ChangeMode = 1
+	ChangeModeMove           ChangeMode = 2
+	ChangeModeRemove         ChangeMode = 3
+)
+
 // ChangeEntry is a single entry in a ChangeBatch. Each entry type knows how
 // to encode its body (mode + type + slot + data) and report its equipment
 // state change indicator (addMov).

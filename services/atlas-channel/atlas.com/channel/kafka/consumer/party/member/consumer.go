@@ -12,6 +12,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	partypkt "github.com/Chronicle20/atlas-packet/party"
+	partycb "github.com/Chronicle20/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -141,7 +142,7 @@ func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(partypkt.PartyOperationWriter)(partypkt.PartyUpdateBody(p.Id(), toPartyMembers(p, forChannel), p.LeaderId()))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUpdateBody(p.Id(), toPartyMembers(p, forChannel), p.LeaderId()))
 			}
 		}
 	}

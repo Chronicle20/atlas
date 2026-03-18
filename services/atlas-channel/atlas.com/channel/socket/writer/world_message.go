@@ -6,7 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	atlas_packet "github.com/Chronicle20/atlas-packet"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )

@@ -6,7 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas-constants/skill"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 )
 

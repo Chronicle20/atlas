@@ -147,6 +147,7 @@ type StatusEventShopClosedBody struct {
 type StatusEventVisitorBody struct {
 	ShopId      string `json:"shopId"`
 	CharacterId uint32 `json:"characterId"`
+	Slot        byte   `json:"slot"`
 }
 
 type StatusEventCapacityFullBody struct {

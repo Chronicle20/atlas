@@ -320,7 +320,10 @@ func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UU
 			return err
 		}
 
+		// Get visitor list with slots before ejection, then emit events.
+		visitors, _ := p.GetVisitors(shopId)
 		ejected, _ := p.EjectAllVisitors(shopId)
+		emitEjectionEvents(mb, visitors, shopId)
 		if len(ejected) > 0 {
 			p.l.Infof("Shop [%s] entered maintenance, ejected %d visitors.", shopId, len(ejected))
 		}
@@ -436,7 +439,10 @@ func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, cha
 
 		p.removeFromRegistry(characterId)
 		p.removeFromMapIndex(mapId, shopId)
+		// Get visitor list with slots before ejection, then emit events.
+		visitors, _ := p.GetVisitors(shopId)
 		p.EjectAllVisitors(shopId)
+		emitEjectionEvents(mb, visitors, shopId)
 
 		if shopType == HiredMerchant {
 			p.storeToFrederick(shopId, characterId, mesoBalance)
@@ -717,7 +723,10 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 		if result.ShopClosed {
 			p.removeFromRegistry(result.ShopOwnerId)
 			p.removeFromMapIndex(mapId, shopId)
+			// Get visitor list with slots before ejection, then emit events.
+			soldOutVisitors, _ := p.GetVisitors(shopId)
 			p.EjectAllVisitors(shopId)
+			emitEjectionEvents(mb, soldOutVisitors, shopId)
 			p.l.Infof("Shop [%s] sold out and closed.", shopId)
 		}
 
@@ -780,7 +789,14 @@ func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, s
 			return err
 		}
 
-		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEnteredProvider(characterId, shopId))
+		// Compute slot based on insertion-ordered visitor list.
+		visitors, err := vr.GetVisitors(p.ctx, p.t, shopId)
+		if err != nil {
+			return err
+		}
+		slot := visitorSlot(visitors, characterId)
+
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEnteredProvider(characterId, shopId, slot))
 	}
 }
 
@@ -790,11 +806,19 @@ func (p *ProcessorImpl) ExitShop(mb *message.Buffer) func(characterId uint32, sh
 		if vr == nil {
 			return errors.New("visitor registry not initialized")
 		}
+
+		// Compute slot before removal (sorted set guarantees insertion order).
+		visitors, err := vr.GetVisitors(p.ctx, p.t, shopId)
+		if err != nil {
+			return err
+		}
+		slot := visitorSlot(visitors, characterId)
+
 		if err := vr.RemoveVisitor(p.ctx, p.t, shopId, characterId); err != nil {
 			return err
 		}
 
-		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorExitedProvider(characterId, shopId))
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorExitedProvider(characterId, shopId, slot))
 	}
 }
 
@@ -820,6 +844,25 @@ func (p *ProcessorImpl) GetShopForCharacter(characterId uint32) (uuid.UUID, erro
 		return uuid.Nil, errors.New("visitor registry not initialized")
 	}
 	return vr.GetShopForCharacter(p.ctx, p.t, characterId)
+}
+
+// visitorSlot returns the 1-indexed slot for a visitor in the ordered visitor list.
+// Slot 0 is reserved for the shop owner. Returns 0 if not found.
+func visitorSlot(visitors []uint32, characterId uint32) byte {
+	for i, v := range visitors {
+		if v == characterId {
+			return byte(i + 1)
+		}
+	}
+	return 0
+}
+
+// emitEjectionEvents emits a VISITOR_EJECTED event for each visitor in the ordered list.
+func emitEjectionEvents(mb *message.Buffer, visitors []uint32, shopId uuid.UUID) {
+	for i, cid := range visitors {
+		slot := byte(i + 1)
+		_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEjectedProvider(cid, shopId, slot))
+	}
 }
 
 func (p *ProcessorImpl) removeFromRegistry(characterId uint32) {

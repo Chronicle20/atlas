@@ -72,7 +72,7 @@ func StatusEventMaintenanceExitedProvider(characterId uint32, shopId uuid.UUID) 
 	return producer.SingleMessageProvider(key, value)
 }
 
-func StatusEventVisitorEnteredProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+func StatusEventVisitorEnteredProvider(characterId uint32, shopId uuid.UUID, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventVisitorBody]{
 		CharacterId: characterId,
@@ -80,12 +80,13 @@ func StatusEventVisitorEnteredProvider(characterId uint32, shopId uuid.UUID) mod
 		Body: merchant.StatusEventVisitorBody{
 			ShopId:      shopId.String(),
 			CharacterId: characterId,
+			Slot:        slot,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func StatusEventVisitorExitedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+func StatusEventVisitorExitedProvider(characterId uint32, shopId uuid.UUID, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventVisitorBody]{
 		CharacterId: characterId,
@@ -93,12 +94,13 @@ func StatusEventVisitorExitedProvider(characterId uint32, shopId uuid.UUID) mode
 		Body: merchant.StatusEventVisitorBody{
 			ShopId:      shopId.String(),
 			CharacterId: characterId,
+			Slot:        slot,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }
 
-func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID) model.Provider[[]kafka.Message] {
+func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID, slot byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &merchant.StatusEvent[merchant.StatusEventVisitorBody]{
 		CharacterId: characterId,
@@ -106,6 +108,7 @@ func StatusEventVisitorEjectedProvider(characterId uint32, shopId uuid.UUID) mod
 		Body: merchant.StatusEventVisitorBody{
 			ShopId:      shopId.String(),
 			CharacterId: characterId,
+			Slot:        slot,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

@@ -213,6 +213,40 @@ func (m *InteractionEnterResultError) Decode(_ logrus.FieldLogger, _ context.Con
 	}
 }
 
+// InteractionLeave - visitor leaving a room
+type InteractionLeave struct {
+	mode   byte
+	slot   byte
+	status byte
+}
+
+func NewInteractionLeave(mode byte, slot byte, status byte) InteractionLeave {
+	return InteractionLeave{mode: mode, slot: slot, status: status}
+}
+
+func (m InteractionLeave) Operation() string { return CharacterInteractionWriter }
+func (m InteractionLeave) String() string {
+	return fmt.Sprintf("leave slot [%d] status [%d]", m.slot, m.status)
+}
+
+func (m InteractionLeave) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteByte(m.slot)
+		w.WriteByte(m.status)
+		return w.Bytes()
+	}
+}
+
+func (m *InteractionLeave) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		m.slot = r.ReadByte()
+		m.status = r.ReadByte()
+	}
+}
+
 // InteractionUpdateMerchant - refresh shop listings for viewers
 type InteractionUpdateMerchant struct {
 	mode  byte

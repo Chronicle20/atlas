@@ -21,6 +21,7 @@ const (
 	CharacterInteractionModeEnterResult     CharacterInteractionMode = "ENTER_RESULT"     // 5
 	CharacterInteractionModeChat            CharacterInteractionMode = "CHAT"             // 6
 	CharacterInteractionModeChatThing       CharacterInteractionMode = "CHAT_THING"       // 8
+	CharacterInteractionModeLeave           CharacterInteractionMode = "LEAVE"            // 10
 	CharacterInteractionModeUpdateMerchant  CharacterInteractionMode = "UPDATE_MERCHANT"  // 25
 
 	CharacterInteractionEnterErrorModeRoomClosed                CharacterInteractionEnterErrorMode = "ROOM_CLOSED"                   // 1
@@ -82,6 +83,20 @@ func CharacterInteractionEnterResultErrorBody(errorError CharacterInteractionEnt
 func CharacterInteractionEnterResultSuccessBody(room interaction.Room) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnterResult, func(mode byte) packet.Encoder {
 		return NewInteractionEnterResultSuccess(mode, room)
+	})
+}
+
+func CharacterInteractionEnterBody(visitor interaction.Visitor) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeEnter, func(mode byte) packet.Encoder {
+		return NewInteractionEnter(mode, visitor)
+	})
+}
+
+// CharacterInteractionLeaveBody notifies a client that a visitor has left the room.
+// TODO: verify status byte values with client testing.
+func CharacterInteractionLeaveBody(slot byte, status byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", CharacterInteractionModeLeave, func(mode byte) packet.Encoder {
+		return NewInteractionLeave(mode, slot, status)
 	})
 }
 

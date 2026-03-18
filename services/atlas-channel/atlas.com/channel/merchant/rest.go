@@ -1,6 +1,8 @@
 package merchant
 
 import (
+	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -12,7 +14,10 @@ type RestModel struct {
 	ShopType     byte               `json:"shopType"`
 	State        byte               `json:"state"`
 	Title        string             `json:"title"`
+	WorldId      byte               `json:"worldId"`
+	ChannelId    byte               `json:"channelId"`
 	MapId        uint32             `json:"mapId"`
+	InstanceId   string             `json:"instanceId"`
 	X            int16              `json:"x"`
 	Y            int16              `json:"y"`
 	PermitItemId uint32             `json:"permitItemId"`
@@ -101,6 +106,8 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
+	instanceId, _ := uuid.Parse(rm.InstanceId)
+
 	ls, err := model.SliceMap(ExtractListing)(model.FixedProvider(rm.Listings))(model.ParallelMap())()
 	if err != nil {
 		return Model{}, err
@@ -112,6 +119,10 @@ func Extract(rm RestModel) (Model, error) {
 		shopType:     rm.ShopType,
 		state:        rm.State,
 		title:        rm.Title,
+		worldId:      world.Id(rm.WorldId),
+		channelId:    channel.Id(rm.ChannelId),
+		mapId:        rm.MapId,
+		instanceId:   instanceId,
 		x:            rm.X,
 		y:            rm.Y,
 		permitItemId: rm.PermitItemId,

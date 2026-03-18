@@ -436,11 +436,16 @@ func spawnMerchantsForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(s session.Model) model.Operator[merchant.Model] {
 			return func(s session.Model) model.Operator[merchant.Model] {
 				return func(m merchant.Model) error {
+					miniRoomType := interactionpkt.MerchantShopMiniRoomType
+					if m.ShopType() == 1 {
+						miniRoomType = interactionpkt.PersonalShopMiniRoomType
+					}
 					mr := &interactionpkt.MiniRoomBase{
-						MiniRoomTypeVal: interactionpkt.MerchantShopMiniRoomType,
+						MiniRoomTypeVal: miniRoomType,
 						Title:           m.Title(),
 						CapacityVal:     4,
 						OwnerId:         m.CharacterId(),
+						VisitorCount:    byte(len(m.Visitors())),
 						VisitorList:     []interactionpkt.MiniRoomVisitor{},
 					}
 					return session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Spawn(m.CharacterId()))(s)

@@ -46,6 +46,7 @@ type MiniRoomBase struct {
 	GameOn          bool
 	CapacityVal     byte
 	OwnerId         uint32
+	VisitorCount    byte
 	VisitorList     []MiniRoomVisitor
 }
 
@@ -75,7 +76,7 @@ func (m *MiniRoomBase) Spawn(characterId uint32) packet.Encode {
 			w.WriteAsciiString(m.Title)
 			w.WriteBool(m.Private)
 			w.WriteByte(m.GameKind)
-			w.WriteByte(byte(len(m.VisitorList)))
+			w.WriteByte(m.VisitorCount)
 			w.WriteByte(m.CapacityVal)
 			w.WriteBool(m.GameOn)
 			return w.Bytes()

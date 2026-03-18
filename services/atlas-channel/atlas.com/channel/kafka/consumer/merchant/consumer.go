@@ -106,6 +106,7 @@ func handleShopOpenedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 			Title:           e.Body.Title,
 			CapacityVal:     4,
 			OwnerId:         e.CharacterId,
+			VisitorCount:    0,
 			VisitorList:     []interactionpkt.MiniRoomVisitor{},
 		}
 
@@ -137,8 +138,19 @@ func handleShopClosedEvent(sc server.Model, wp writer.Producer) func(l logrus.Fi
 
 		l.Debugf("Merchant shop [%s] closed by character [%d].", e.Body.ShopId, e.CharacterId)
 
+		// Fetch shop to get field data for map-wide despawn broadcast.
+		mp := merchant.NewProcessor(l, ctx)
+		shop, err := mp.GetShop(e.Body.ShopId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to get shop [%s] for close broadcast.", e.Body.ShopId)
+			return
+		}
+
+		f := field.NewBuilder(shop.WorldId(), shop.ChannelId(), mapId.Id(shop.MapId())).SetInstance(shop.InstanceId()).Build()
 		mr := &interactionpkt.MiniRoomBase{}
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId)))
+		if err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(interactionpkt.MiniRoomWriter)(mr.Despawn(e.CharacterId))); err != nil {
+			l.WithError(err).Errorf("Unable to broadcast despawn for shop [%s].", e.Body.ShopId)
+		}
 	}
 }
 
@@ -151,33 +163,54 @@ func handleVisitorEvent(sc server.Model, wp writer.Producer) func(l logrus.Field
 
 		sp := session.NewProcessor(l, ctx)
 
+		announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)
+
 		switch e.Type {
 		case merchant2.StatusEventVisitorEntered:
-			l.Debugf("Visitor [%d] entered shop [%s].", e.Body.CharacterId, e.Body.ShopId)
+			l.Debugf("Visitor [%d] entered shop [%s] at slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
 
 			// Send full shop interior to the entering visitor.
 			room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to build room for shop [%s] for visitor [%d].", e.Body.ShopId, e.Body.CharacterId)
 			} else {
-				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
+				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
 			}
 
-			// Announce to existing viewers.
+			// Broadcast ENTER with avatar to existing viewers so they see the new visitor.
 			broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
-				announce := session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)
+				cp := character.NewProcessor(l, ctx)
+				c, err := cp.GetById(cp.InventoryDecorator)(e.Body.CharacterId)
+				if err != nil {
+					l.WithError(err).Warnf("Unable to resolve entering visitor [%d].", e.Body.CharacterId)
+					return
+				}
+				avatar := model.NewFromCharacter(c, false)
+				visitor := interactionpkt.NewBaseVisitor(e.Body.Slot, avatar, c.Name())
 				for _, cid := range characterIds {
 					if cid == e.Body.CharacterId {
 						continue
 					}
-					_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce(interactioncb.CharacterInteractionChatBody(0, fmt.Sprintf("Visitor [%d] has entered.", e.Body.CharacterId))))
+					_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce(interactioncb.CharacterInteractionEnterBody(visitor)))
 				}
 			})
 		case merchant2.StatusEventVisitorExited:
-			l.Debugf("Visitor [%d] exited shop [%s].", e.Body.CharacterId, e.Body.ShopId)
+			l.Debugf("Visitor [%d] exited shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+
+			// Send LEAVE to the exiting visitor (closes their room UI).
+			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
+
+			// Broadcast LEAVE to owner + remaining visitors (removes avatar from slot).
+			broadcastToShopViewers(l, ctx, sc, wp, e.Body.ShopId, func(characterIds []uint32) {
+				for _, cid := range characterIds {
+					_ = sp.IfPresentByCharacterId(sc.Channel())(cid, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
+				}
+			})
 		case merchant2.StatusEventVisitorEjected:
-			l.Debugf("Visitor [%d] ejected from shop [%s].", e.Body.CharacterId, e.Body.ShopId)
-			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultErrorBody(interactioncb.CharacterInteractionEnterErrorModeRoomClosed)))
+			l.Debugf("Visitor [%d] ejected from shop [%s] from slot [%d].", e.Body.CharacterId, e.Body.ShopId, e.Body.Slot)
+
+			// Send LEAVE to the ejected visitor (closes their room UI).
+			_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, announce(interactioncb.CharacterInteractionLeaveBody(e.Body.Slot, 0)))
 		}
 	}
 }
@@ -202,6 +235,27 @@ func handleMaintenanceEvent(sc server.Model, wp writer.Producer) func(l logrus.F
 			}
 		case merchant2.StatusEventMaintenanceExited:
 			l.Debugf("Maintenance exited for shop [%s] by character [%d].", e.Body.ShopId, e.Body.CharacterId)
+
+			mp := merchant.NewProcessor(l, ctx)
+			shop, err := mp.GetShop(e.Body.ShopId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to get shop [%s] for maintenance exit.", e.Body.ShopId)
+				return
+			}
+
+			sp := session.NewProcessor(l, ctx)
+			if shop.ShopType() == 2 {
+				// Hired merchant: close management UI, shop continues autonomously.
+				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionLeaveBody(0, 0)))
+			} else {
+				// Personal shop: refresh room with updated listings.
+				room, err := buildShopRoom(l, ctx, e.Body.ShopId, e.Body.CharacterId)
+				if err != nil {
+					l.WithError(err).Errorf("Unable to build room for shop [%s] after maintenance exit.", e.Body.ShopId)
+					return
+				}
+				_ = sp.IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(interactioncb.CharacterInteractionWriter)(interactioncb.CharacterInteractionEnterResultSuccessBody(room)))
+			}
 		}
 	}
 }

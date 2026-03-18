@@ -2321,6 +2321,7 @@
             "ENTER_RESULT": 5,
             "CHAT": 6,
             "CHAT_THING": 8,
+            "LEAVE": 10,
             "UPDATE_MERCHANT": 25
           },
           "enterError": {

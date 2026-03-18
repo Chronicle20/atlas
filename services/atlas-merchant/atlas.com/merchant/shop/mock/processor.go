@@ -2,9 +2,9 @@ package mock
 
 import (
 	message "atlas-merchant/kafka/message"
+	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
 	"atlas-merchant/shop"
-	"encoding/json"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -29,7 +29,7 @@ type ProcessorMock struct {
 	ExitMaintenanceFunc        func(shopId uuid.UUID, characterId uint32) error
 	CloseShopFunc              func(shopId uuid.UUID, characterId uint32, reason shop.CloseReason) error
 	GetExpiredFunc             func() ([]shop.Model, error)
-	AddListingFunc             func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	AddListingFunc             func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingFunc          func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListingFunc          func(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
 	EnterShopFunc              func(characterId uint32, shopId uuid.UUID) error
@@ -46,7 +46,7 @@ type ProcessorMock struct {
 	ExitMaintenanceAndEmitFunc  func(shopId uuid.UUID, characterId uint32) error
 	EnterShopAndEmitFunc       func(characterId uint32, shopId uuid.UUID) error
 	ExitShopAndEmitFunc        func(characterId uint32, shopId uuid.UUID) error
-	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	AddListingAndEmitFunc      func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingAndEmitFunc   func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	PurchaseBundleAndEmitFunc  func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (shop.PurchaseResult, error)
 	SendMessageAndEmitFunc     func(shopId uuid.UUID, characterId uint32, content string) error
@@ -161,10 +161,10 @@ func (m *ProcessorMock) GetExpired() ([]shop.Model, error) {
 	return []shop.Model{}, nil
 }
 
-func (m *ProcessorMock) AddListing(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
-	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+func (m *ProcessorMock) AddListing(_ *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
 		if m.AddListingFunc != nil {
-			return m.AddListingFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+			return m.AddListingFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, inventoryType, assetId)
 		}
 		return listing.Model{}, nil
 	}
@@ -294,9 +294,9 @@ func (m *ProcessorMock) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) er
 	return nil
 }
 
-func (m *ProcessorMock) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+func (m *ProcessorMock) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
 	if m.AddListingAndEmitFunc != nil {
-		return m.AddListingAndEmitFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+		return m.AddListingAndEmitFunc(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, inventoryType, assetId)
 	}
 	return listing.Model{}, nil
 }

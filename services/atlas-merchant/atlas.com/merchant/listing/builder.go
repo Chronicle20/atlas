@@ -1,7 +1,7 @@
 package listing
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 	"errors"
 	"time"
 
@@ -21,7 +21,7 @@ type ModelBuilder struct {
 	bundleSize       uint16
 	bundlesRemaining uint16
 	pricePerBundle   uint32
-	itemSnapshot     json.RawMessage
+	itemSnapshot     asset.AssetData
 	displayOrder     uint16
 	version          uint32
 	listedAt         time.Time
@@ -67,7 +67,7 @@ func (b *ModelBuilder) SetPricePerBundle(pricePerBundle uint32) *ModelBuilder {
 	return b
 }
 
-func (b *ModelBuilder) SetItemSnapshot(itemSnapshot json.RawMessage) *ModelBuilder {
+func (b *ModelBuilder) SetItemSnapshot(itemSnapshot asset.AssetData) *ModelBuilder {
 	b.itemSnapshot = itemSnapshot
 	return b
 }

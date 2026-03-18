@@ -1,7 +1,7 @@
 package listing
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 )
 
 type RestModel struct {
@@ -13,7 +13,7 @@ type RestModel struct {
 	BundleSize       uint16          `json:"bundleSize"`
 	BundlesRemaining uint16          `json:"bundlesRemaining"`
 	PricePerBundle   uint32          `json:"pricePerBundle"`
-	ItemSnapshot     json.RawMessage `json:"itemSnapshot"`
+	ItemSnapshot     asset.AssetData `json:"itemSnapshot"`
 	DisplayOrder     uint16          `json:"displayOrder"`
 }
 

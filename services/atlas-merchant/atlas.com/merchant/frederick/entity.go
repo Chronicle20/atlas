@@ -1,6 +1,7 @@
 package frederick
 
 import (
+	"atlas-merchant/kafka/message/asset"
 	"time"
 
 	"github.com/google/uuid"
@@ -9,14 +10,14 @@ import (
 
 type ItemEntity struct {
 	gorm.Model
-	Id           uuid.UUID `gorm:"type:uuid;primaryKey"`
-	TenantId     uuid.UUID `gorm:"type:uuid;not null"`
-	CharacterId  uint32    `gorm:"not null;index"`
-	ItemId       uint32    `gorm:"not null"`
-	ItemType     byte      `gorm:"not null"`
-	Quantity     uint16    `gorm:"not null"`
-	ItemSnapshot []byte    `gorm:"type:jsonb"`
-	StoredAt     time.Time `gorm:"not null"`
+	Id           uuid.UUID       `gorm:"type:uuid;primaryKey"`
+	TenantId     uuid.UUID       `gorm:"type:uuid;not null"`
+	CharacterId  uint32          `gorm:"not null;index"`
+	ItemId       uint32          `gorm:"not null"`
+	ItemType     byte            `gorm:"not null"`
+	Quantity     uint16          `gorm:"not null"`
+	ItemSnapshot asset.AssetData `gorm:"type:jsonb"`
+	StoredAt     time.Time       `gorm:"not null"`
 	LastNotified *time.Time
 }
 

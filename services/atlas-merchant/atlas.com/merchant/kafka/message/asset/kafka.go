@@ -1,6 +1,9 @@
 package asset
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -36,4 +39,24 @@ type AssetData struct {
 	CommodityId    uint32     `json:"commodityId"`
 	PurchaseBy     uint32     `json:"purchaseBy"`
 	PetId          uint32     `json:"petId"`
+}
+
+func (a AssetData) WithQuantity(quantity uint32) AssetData {
+	a.Quantity = quantity
+	return a
+}
+
+func (a AssetData) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *AssetData) Scan(value interface{}) error {
+	if value == nil {
+		return nil
+	}
+	bytes, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("expected []byte, got %T", value)
+	}
+	return json.Unmarshal(bytes, a)
 }

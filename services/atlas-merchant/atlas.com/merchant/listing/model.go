@@ -1,7 +1,7 @@
 package listing
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 	"time"
 
 	"github.com/google/uuid"
@@ -16,7 +16,7 @@ type Model struct {
 	bundleSize       uint16
 	bundlesRemaining uint16
 	pricePerBundle   uint32
-	itemSnapshot     json.RawMessage
+	itemSnapshot     asset.AssetData
 	displayOrder     uint16
 	version          uint32
 	listedAt         time.Time
@@ -54,7 +54,7 @@ func (m Model) PricePerBundle() uint32 {
 	return m.pricePerBundle
 }
 
-func (m Model) ItemSnapshot() json.RawMessage {
+func (m Model) ItemSnapshot() asset.AssetData {
 	return m.itemSnapshot
 }
 

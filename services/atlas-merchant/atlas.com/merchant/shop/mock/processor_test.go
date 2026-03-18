@@ -2,6 +2,7 @@ package mock
 
 import (
 	message "atlas-merchant/kafka/message"
+	"atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
 	"atlas-merchant/shop"
 	"errors"
@@ -47,7 +48,7 @@ func TestProcessorMock_DefaultBehavior(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Empty(t, expired)
 
-	li, err := m.AddListing(mb)(id, 1000, 2000000, 0, 1, 1, 1000, nil, 0, 0, 0)
+	li, err := m.AddListing(mb)(id, 1000, 2000000, 0, 1, 1, 1000, asset.AssetData{}, 0, 0)
 	assert.NoError(t, err)
 	assert.Equal(t, listing.Model{}, li)
 

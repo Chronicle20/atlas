@@ -12,7 +12,6 @@ import (
 	msg "atlas-merchant/message"
 	"atlas-merchant/visitor"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -48,7 +47,7 @@ type Processor interface {
 	ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
 	CloseShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, reason CloseReason) error
 	GetExpired() ([]Model, error)
-	AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
 	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
@@ -65,7 +64,7 @@ type Processor interface {
 	ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
 	EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
-	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error)
 	RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error)
 	SendMessageAndEmit(shopId uuid.UUID, characterId uint32, content string) error
@@ -76,7 +75,7 @@ type PurchaseResult struct {
 	ListingId        uuid.UUID
 	ItemId           uint32
 	ItemType         byte
-	ItemSnapshot     json.RawMessage
+	ItemSnapshot     asset2.AssetData
 	BundleSize       uint16
 	BundlesPurchased uint16
 	BundlesRemaining uint16
@@ -492,8 +491,8 @@ func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, m
 	}
 }
 
-func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
-	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
 		if pricePerBundle == 0 {
 			return listing.Model{}, errors.New("pricePerBundle must be at least 1")
 		}
@@ -504,7 +503,7 @@ func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, ch
 			return listing.Model{}, errors.New("bundleCount must be at least 1")
 		}
 
-		if err := IsListableItem(itemId, flag); err != nil {
+		if err := IsListableItem(itemId, itemSnapshot.Flag); err != nil {
 			return listing.Model{}, err
 		}
 
@@ -729,16 +728,11 @@ func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId
 		}
 
 		// Grant items to buyer.
-		if result.ItemSnapshot != nil {
-			var ad asset2.AssetData
-			if err := json.Unmarshal(result.ItemSnapshot, &ad); err == nil {
-				ad.Quantity = uint32(result.BundleSize) * uint32(result.BundlesPurchased)
-				invType, ok := inventory.TypeFromItemId(item.Id(result.ItemId))
-				if ok {
-					itemTransactionId := uuid.New()
-					_ = mb.Put(compartment.EnvCommandTopic, AcceptAssetCommandProvider(itemTransactionId, buyerCharacterId, byte(invType), result.ItemId, ad))
-				}
-			}
+		ad := result.ItemSnapshot.WithQuantity(uint32(result.BundleSize) * uint32(result.BundlesPurchased))
+		invType, ok := inventory.TypeFromItemId(item.Id(result.ItemId))
+		if ok {
+			itemTransactionId := uuid.New()
+			_ = mb.Put(compartment.EnvCommandTopic, AcceptAssetCommandProvider(itemTransactionId, buyerCharacterId, byte(invType), result.ItemId, ad))
 		}
 
 		// Credit mesos to owner (character shops only).
@@ -906,17 +900,7 @@ func (p *ProcessorImpl) RetrieveFrederick(mb *message.Buffer) func(characterId u
 
 		// Transfer items to character's inventory.
 		for _, fi := range items {
-			if fi.ItemSnapshot() == nil {
-				continue
-			}
-
-			var ad asset2.AssetData
-			if err := json.Unmarshal(fi.ItemSnapshot(), &ad); err != nil {
-				p.l.WithError(err).Errorf("Error unmarshaling item snapshot for Frederick item [%s].", fi.Id())
-				continue
-			}
-
-			ad.Quantity = uint32(fi.Quantity())
+			ad := fi.ItemSnapshot().WithQuantity(uint32(fi.Quantity()))
 
 			invType, ok := inventory.TypeFromItemId(item.Id(fi.ItemId()))
 			if !ok {
@@ -992,11 +976,11 @@ func (p *ProcessorImpl) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) er
 	})
 }
 
-func (p *ProcessorImpl) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+func (p *ProcessorImpl) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset2.AssetData, inventoryType byte, assetId uint32) (listing.Model, error) {
 	var result listing.Model
 	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
 		var err error
-		result, err = p.AddListing(buf)(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+		result, err = p.AddListing(buf)(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, inventoryType, assetId)
 		return err
 	})
 	return result, err
@@ -1039,20 +1023,11 @@ type listingSnapshot struct {
 	ItemId       uint32
 	ItemType     byte
 	Quantity     uint16
-	ItemSnapshot json.RawMessage
+	ItemSnapshot asset2.AssetData
 }
 
 func acceptItemToBuffer(buf *message.Buffer, characterId uint32, ls listingSnapshot) {
-	if ls.ItemSnapshot == nil {
-		return
-	}
-
-	var ad asset2.AssetData
-	if err := json.Unmarshal(ls.ItemSnapshot, &ad); err != nil {
-		return
-	}
-
-	ad.Quantity = uint32(ls.Quantity)
+	ad := ls.ItemSnapshot.WithQuantity(uint32(ls.Quantity))
 
 	invType, ok := inventory.TypeFromItemId(item.Id(ls.ItemId))
 	if !ok {

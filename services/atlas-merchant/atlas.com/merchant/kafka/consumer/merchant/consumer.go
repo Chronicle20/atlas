@@ -2,12 +2,10 @@ package merchant
 
 import (
 	consumer2 "atlas-merchant/kafka/consumer"
-	"atlas-merchant/kafka/message/asset"
 	merchant2 "atlas-merchant/kafka/message/merchant"
 	"atlas-merchant/kafka/producer"
 	"atlas-merchant/shop"
 	"context"
-	"encoding/json"
 	"errors"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -141,16 +139,8 @@ func handleAddListingCommand(db *gorm.DB) message.Handler[merchant2.Command[merc
 			return
 		}
 
-		var flag uint16
-		if e.Body.ItemSnapshot != nil {
-			var snapshot asset.AssetData
-			if err := json.Unmarshal(e.Body.ItemSnapshot, &snapshot); err == nil {
-				flag = snapshot.Flag
-			}
-		}
-
 		p := shop.NewProcessor(l, ctx, db)
-		_, err = p.AddListingAndEmit(shopId, e.CharacterId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, flag, e.Body.InventoryType, e.Body.AssetId)
+		_, err = p.AddListingAndEmit(shopId, e.CharacterId, e.Body.ItemId, e.Body.ItemType, e.Body.BundleSize, e.Body.BundleCount, e.Body.PricePerBundle, e.Body.ItemSnapshot, e.Body.InventoryType, e.Body.AssetId)
 		if err != nil {
 			l.WithError(err).Errorf("Error adding listing to shop [%s].", shopId)
 		}

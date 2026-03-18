@@ -6,7 +6,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	fame2 "github.com/Chronicle20/atlas-packet/fame"
+	fame2 "github.com/Chronicle20/atlas-packet/fame/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

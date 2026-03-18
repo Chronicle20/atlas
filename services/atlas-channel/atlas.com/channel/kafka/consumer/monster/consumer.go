@@ -21,7 +21,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

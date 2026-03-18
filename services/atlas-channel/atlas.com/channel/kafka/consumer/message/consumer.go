@@ -20,9 +20,10 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
-	petpkt "github.com/Chronicle20/atlas-packet/pet"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -177,7 +178,7 @@ func handleMessengerChat(sc server.Model, wp writer.Producer) message.Handler[me
 		}
 
 		for _, cid := range e.Body.Recipients {
-			bp := session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationChatBody(e.Message))
+			bp := session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationChatBody(e.Message))
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(cid, bp)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send message of type [%s] to character [%d].", e.Type, cid)

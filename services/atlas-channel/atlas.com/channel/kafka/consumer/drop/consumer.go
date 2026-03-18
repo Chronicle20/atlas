@@ -20,7 +20,8 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
-	droppkt "github.com/Chronicle20/atlas-packet/drop"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	droppkt "github.com/Chronicle20/atlas-packet/drop/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -146,7 +147,7 @@ func handleStatusEventPickedUp(sc server.Model, wp writer.Producer) message.Hand
 					bp = charpkt.CharacterStatusMessageOperationDropPickUpStackableItemBody(e.Body.ItemId, e.Body.Quantity)
 				}
 
-				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(bp)(s)
+				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(bp)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write status message to character [%d] picking up drop [%d].", s.CharacterId(), e.DropId)
 				}

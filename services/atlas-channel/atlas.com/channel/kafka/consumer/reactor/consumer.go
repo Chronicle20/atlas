@@ -19,7 +19,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	reactorpkt "github.com/Chronicle20/atlas-packet/reactor"
+	reactorpkt "github.com/Chronicle20/atlas-packet/reactor/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {

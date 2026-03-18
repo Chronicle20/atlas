@@ -4,7 +4,7 @@ import (
 	"atlas-channel/guild/thread"
 	"context"
 
-	guildpkt "github.com/Chronicle20/atlas-packet/guild"
+	guildpkt "github.com/Chronicle20/atlas-packet/guild/clientbound"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"

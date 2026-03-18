@@ -9,7 +9,9 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
-	note2 "github.com/Chronicle20/atlas-packet/note"
+	notepkt "github.com/Chronicle20/atlas-packet/note"
+	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
+	notesb "github.com/Chronicle20/atlas-packet/note/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -22,19 +24,19 @@ const (
 
 func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := note2.Operation{}
+		p := notesb.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := p.Op()
 		np := note.NewProcessor(l, ctx)
 		if isNoteOperation(l)(readerOptions, op, NoteOperationSend) {
-			sp := &note2.OperationSend{}
+			sp := &notesb.OperationSend{}
 			sp.Decode(l, ctx)(r, readerOptions)
 
 			tc, err := character.NewProcessor(l, ctx).GetByName(sp.ToName())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", sp.ToName())
-				_ = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(note2.NoteSendErrorBody(note2.NoteSendErrorReceiverUnknown))(s)
+				_ = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteSendErrorBody(notecb.NoteSendErrorReceiverUnknown))(s)
 				return
 			}
 
@@ -45,7 +47,7 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 		if isNoteOperation(l)(readerOptions, op, NoteOperationDiscard) {
-			sp := &note2.OperationDiscard{}
+			sp := &notesb.OperationDiscard{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] discarding [%d] notes. val1 [%d], val2 [%d].", s.CharacterId(), sp.Count(), sp.Val1(), sp.Val2())
 
@@ -115,11 +117,11 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				}, nil
 			})(model.FixedProvider(nms))(model.ParallelMap())()
 
-			entries := make([]note2.NoteEntry, len(wnms))
+			entries := make([]notepkt.NoteEntry, len(wnms))
 			for i, n := range wnms {
-				entries[i] = note2.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
+				entries[i] = notepkt.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
 			}
-			err = session.Announce(l)(ctx)(wp)(note2.NoteOperationWriter)(note2.NoteDisplayBody(entries))(s)
+			err = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteDisplayBody(entries))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 			}

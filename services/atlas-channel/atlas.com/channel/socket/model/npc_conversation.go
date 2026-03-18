@@ -4,7 +4,7 @@ import (
 	"context"
 
 	atlas_packet "github.com/Chronicle20/atlas-packet"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )

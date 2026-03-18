@@ -9,7 +9,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	channel3 "github.com/Chronicle20/atlas-packet/channel"
+	channel3 "github.com/Chronicle20/atlas-packet/channel/serverbound"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-socket/request"

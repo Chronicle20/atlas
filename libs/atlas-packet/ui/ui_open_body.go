@@ -4,6 +4,7 @@ import (
 	"context"
 
 	atlas_packet "github.com/Chronicle20/atlas-packet"
+	"github.com/Chronicle20/atlas-packet/ui/clientbound"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,7 +38,7 @@ func UiOpenBody(window UiWindow) func(logrus.FieldLogger, context.Context) func(
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			mode := atlas_packet.ResolveCode(l, options, "operations", string(window))
-			return NewUiOpen(mode).Encode(l, ctx)(options)
+			return clientbound.NewUiOpen(mode).Encode(l, ctx)(options)
 		}
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	reactor2 "github.com/Chronicle20/atlas-packet/reactor"
+	reactor2 "github.com/Chronicle20/atlas-packet/reactor/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

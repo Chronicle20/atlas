@@ -8,14 +8,14 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	guild2 "github.com/Chronicle20/atlas-packet/guild"
+	guildsb "github.com/Chronicle20/atlas-packet/guild/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func GuildInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := guild2.InviteReject{}
+		p := guildsb.InviteReject{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 

@@ -9,6 +9,7 @@ import (
 	"context"
 
 	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
+	buddySB "github.com/Chronicle20/atlas-packet/buddy/serverbound"
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -32,7 +33,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAdd) {
-			sp := &buddy2.OperationAdd{}
+			sp := &buddySB.OperationAdd{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			if len(sp.Name()) < 4 || len(sp.Name()) > 13 {
 				l.Warnf("Character [%d] attempting to add a buddy and input name is out of range.", s.CharacterId())
@@ -59,7 +60,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAccept) {
-			sp := &buddy2.OperationAccept{}
+			sp := &buddySB.OperationAccept{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			l.Debugf("Character [%d] attempting to accept buddy request from [%d].", s.CharacterId(), sp.FromCharacterId())
 			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeBuddy), sp.FromCharacterId())
@@ -69,7 +70,7 @@ func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ write
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationDelete) {
-			sp := &buddy2.OperationDelete{}
+			sp := &buddySB.OperationDelete{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			// This happens both when a character uses the UI to remove an existing buddy. Or when a character rejects another characters invitation.
 			err := buddylist.NewProcessor(l, ctx).RequestDelete(s.CharacterId(), s.WorldId(), sp.BuddyCharacterId())

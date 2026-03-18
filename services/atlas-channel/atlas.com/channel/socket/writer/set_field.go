@@ -7,21 +7,21 @@ import (
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas-constants/map"
-	fieldpkt "github.com/Chronicle20/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
 
 func WarpToMapBody(channelId channel.Id, mapId _map.Id, portalId uint32, hp uint16) packet.Encode {
-	return fieldpkt.NewWarpToMap(channelId, mapId, byte(portalId), hp).Encode
+	return fieldcb.NewWarpToMap(channelId, mapId, byte(portalId), hp).Encode
 }
 
 func SetFieldBody(channelId channel.Id, c character.Model, bl buddylist.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			cd := BuildCharacterData(c, bl)
-			return fieldpkt.NewSetField(channelId, cd).Encode(l, ctx)(options)
+			return fieldcb.NewSetField(channelId, cd).Encode(l, ctx)(options)
 		}
 	}
 }

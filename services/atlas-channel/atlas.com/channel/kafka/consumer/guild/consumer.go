@@ -22,6 +22,7 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	guildpkt "github.com/Chronicle20/atlas-packet/guild"
+	guildcb "github.com/Chronicle20/atlas-packet/guild/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -109,7 +110,7 @@ func announceGuildError(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(errCode string) model.Operator[session.Model] {
 			return func(errCode string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildErrorBody(errCode))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildErrorBody(errCode))
 			}
 		}
 	}
@@ -136,7 +137,7 @@ func announceTitlesUpdated(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, titles []string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, titles []string) model.Operator[session.Model] {
 			return func(guildId uint32, titles []string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildTitleChangedBody(guildId, titles))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildTitleChangedBody(guildId, titles))
 			}
 		}
 	}
@@ -185,11 +186,11 @@ func announceForeignGuildInfo(l logrus.FieldLogger) func(ctx context.Context) fu
 		return func(wp writer.Producer) func(characterId uint32, g guild.Model) model.Operator[session.Model] {
 			return func(characterId uint32, g guild.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := session.Announce(l)(ctx)(wp)(guildpkt.GuildNameChangedWriter)(guildpkt.NewForeignNameChanged(characterId, g.Name()).Encode)(s)
+					err := session.Announce(l)(ctx)(wp)(guildcb.GuildNameChangedWriter)(guildcb.NewForeignNameChanged(characterId, g.Name()).Encode)(s)
 					if err != nil {
 						return err
 					}
-					err = session.Announce(l)(ctx)(wp)(guildpkt.GuildEmblemChangedWriter)(guildpkt.NewForeignEmblemChanged(characterId, g.Logo(), g.LogoColor(), g.LogoBackground(), g.LogoBackgroundColor()).Encode)(s)
+					err = session.Announce(l)(ctx)(wp)(guildcb.GuildEmblemChangedWriter)(guildcb.NewForeignEmblemChanged(characterId, g.Logo(), g.LogoColor(), g.LogoBackground(), g.LogoBackgroundColor()).Encode)(s)
 					if err != nil {
 						return err
 					}
@@ -212,9 +213,9 @@ func announceGuildInfo(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						titles[idx-1] = t.Name()
 					}
 				}
-				var guildMembers []guildpkt.GuildMemberInfo
+				var guildMembers []guildcb.GuildMemberInfo
 				for _, mm := range g.Members() {
-					guildMembers = append(guildMembers, guildpkt.GuildMemberInfo{
+					guildMembers = append(guildMembers, guildcb.GuildMemberInfo{
 						CharacterId:   mm.CharacterId(),
 						Name:          mm.Name(),
 						JobId:         mm.JobId(),
@@ -225,7 +226,7 @@ func announceGuildInfo(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						AllianceTitle: mm.AllianceTitle(),
 					})
 				}
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))
 			}
 		}
 	}
@@ -235,7 +236,7 @@ func announceMemberJoined(l logrus.FieldLogger) func(ctx context.Context) func(w
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) model.Operator[session.Model] {
 			return func(guildId uint32, characterId uint32, name string, jobId uint16, level byte, title byte, online bool, allianceTitle byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildMemberJoinedBody(guildId, characterId, name, jobId, level, title, online, allianceTitle))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildMemberJoinedBody(guildId, characterId, name, jobId, level, title, online, allianceTitle))
 			}
 		}
 	}
@@ -290,7 +291,7 @@ func announceMemberExpelled(l logrus.FieldLogger) func(ctx context.Context) func
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
 			return func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildMemberExpelBody(guildId, characterId, name))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildMemberExpelBody(guildId, characterId, name))
 			}
 		}
 	}
@@ -300,7 +301,7 @@ func announceMemberLeft(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
 			return func(guildId uint32, characterId uint32, name string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildMemberLeftBody(guildId, characterId, name))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildMemberLeftBody(guildId, characterId, name))
 			}
 		}
 	}
@@ -327,7 +328,7 @@ func announceCapacityChanged(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, capacity uint32) model.Operator[session.Model] {
 			return func(guildId uint32, capacity uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, capacity))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildCapacityChangedBody(guildId, capacity))
 			}
 		}
 	}
@@ -354,7 +355,7 @@ func announceNoticeChanged(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, notice string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, notice string) model.Operator[session.Model] {
 			return func(guildId uint32, notice string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildNoticeChangedBody(guildId, notice))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildNoticeChangedBody(guildId, notice))
 			}
 		}
 	}
@@ -389,7 +390,7 @@ func announceMemberTitleChanged(l logrus.FieldLogger) func(ctx context.Context) 
 			return func(g guild.Model, characterId uint32, title byte) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					if s.CharacterId() != characterId {
-						return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildMemberTitleUpdatedBody(g.Id(), characterId, title))(s)
+						return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildMemberTitleUpdatedBody(g.Id(), characterId, title))(s)
 					} else {
 						inGuild := g.Id() != 0
 						var titles [5]string
@@ -399,9 +400,9 @@ func announceMemberTitleChanged(l logrus.FieldLogger) func(ctx context.Context) 
 								titles[idx-1] = t.Name()
 							}
 						}
-						var guildMembers []guildpkt.GuildMemberInfo
+						var guildMembers []guildcb.GuildMemberInfo
 						for _, mm := range g.Members() {
-							guildMembers = append(guildMembers, guildpkt.GuildMemberInfo{
+							guildMembers = append(guildMembers, guildcb.GuildMemberInfo{
 								CharacterId:   mm.CharacterId(),
 								Name:          mm.Name(),
 								JobId:         mm.JobId(),
@@ -412,7 +413,7 @@ func announceMemberTitleChanged(l logrus.FieldLogger) func(ctx context.Context) 
 								AllianceTitle: mm.AllianceTitle(),
 							})
 						}
-						return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
+						return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
 					}
 				}
 			}
@@ -449,7 +450,7 @@ func announceMemberStatusUpdated(l logrus.FieldLogger) func(ctx context.Context)
 			return func(g guild.Model, characterId uint32, online bool) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					if s.CharacterId() != characterId {
-						return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildMemberStatusUpdatedBody(g.Id(), characterId, online))(s)
+						return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildMemberStatusUpdatedBody(g.Id(), characterId, online))(s)
 					} else {
 						inGuild := g.Id() != 0
 						var titles [5]string
@@ -459,9 +460,9 @@ func announceMemberStatusUpdated(l logrus.FieldLogger) func(ctx context.Context)
 								titles[idx-1] = t.Name()
 							}
 						}
-						var guildMembers []guildpkt.GuildMemberInfo
+						var guildMembers []guildcb.GuildMemberInfo
 						for _, mm := range g.Members() {
-							guildMembers = append(guildMembers, guildpkt.GuildMemberInfo{
+							guildMembers = append(guildMembers, guildcb.GuildMemberInfo{
 								CharacterId:   mm.CharacterId(),
 								Name:          mm.Name(),
 								JobId:         mm.JobId(),
@@ -472,7 +473,7 @@ func announceMemberStatusUpdated(l logrus.FieldLogger) func(ctx context.Context)
 								AllianceTitle: mm.AllianceTitle(),
 							})
 						}
-						return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
+						return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
 					}
 				}
 			}
@@ -516,7 +517,7 @@ func announceForeignEmblemChanged(l logrus.FieldLogger) func(ctx context.Context
 	return func(ctx context.Context) func(wp writer.Producer) func(memberId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(memberId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
 			return func(memberId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildEmblemChangedWriter)(guildpkt.NewForeignEmblemChanged(memberId, logo, logoColor, logoBackground, logoBackgroundColor).Encode)
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildEmblemChangedWriter)(guildcb.NewForeignEmblemChanged(memberId, logo, logoColor, logoBackground, logoBackgroundColor).Encode)
 			}
 		}
 	}
@@ -526,7 +527,7 @@ func announceEmblemChanged(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
 			return func(guildId uint32, logo uint16, logoColor byte, logoBackground uint16, logoBackgroundColor byte) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildEmblemChangedBody(guildId, logo, logoColor, logoBackground, logoBackgroundColor))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildEmblemChangedBody(guildId, logo, logoColor, logoBackground, logoBackgroundColor))
 			}
 		}
 	}
@@ -564,7 +565,7 @@ func requestGuildNameAgreement(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(wp writer.Producer) func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
 			return func(partyId uint32, leaderName string, guildName string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildRequestAgreementBody(partyId, leaderName, guildName))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildRequestAgreementBody(partyId, leaderName, guildName))
 			}
 		}
 	}
@@ -603,7 +604,7 @@ func announceGuildDisband(l logrus.FieldLogger) func(ctx context.Context) func(w
 	return func(ctx context.Context) func(wp writer.Producer) func(guildId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(guildId uint32) model.Operator[session.Model] {
 			return func(guildId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildDisbandBody(guildId))
+				return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildDisbandBody(guildId))
 			}
 		}
 	}
@@ -658,7 +659,7 @@ func handleRequestEmblem(sc server.Model, wp writer.Producer) message.Handler[gu
 func announceGuildEmblemRequest(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		return func(wp writer.Producer) model.Operator[session.Model] {
-			return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.RequestGuildEmblemBody())
+			return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.RequestGuildEmblemBody())
 		}
 	}
 }
@@ -683,7 +684,7 @@ func handleRequestName(sc server.Model, wp writer.Producer) message.Handler[guil
 func announceGuildNameRequest(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		return func(wp writer.Producer) model.Operator[session.Model] {
-			return session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.RequestGuildNameBody())
+			return session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.RequestGuildNameBody())
 		}
 	}
 }

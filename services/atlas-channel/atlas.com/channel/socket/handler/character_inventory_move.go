@@ -8,7 +8,7 @@ import (
 	"context"
 
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
-	inventory3 "github.com/Chronicle20/atlas-packet/inventory"
+	inventory3 "github.com/Chronicle20/atlas-packet/inventory/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

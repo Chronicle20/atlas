@@ -13,7 +13,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
-	socketpkt "github.com/Chronicle20/atlas-packet/socket"
+	socketpkt "github.com/Chronicle20/atlas-packet/socket/clientbound"
 	socket "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"

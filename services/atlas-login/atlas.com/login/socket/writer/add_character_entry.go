@@ -4,7 +4,7 @@ import (
 	"atlas-login/character"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )

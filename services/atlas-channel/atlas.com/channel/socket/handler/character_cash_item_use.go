@@ -15,7 +15,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
-	cash2 "github.com/Chronicle20/atlas-packet/cash"
+	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -25,7 +25,7 @@ import (
 func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := cash2.ItemUse{}
+		p := cashsb.ItemUse{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -43,7 +43,7 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		it := GetCashSlotItemType(t)(itemId)
 
 		if it == CashSlotItemTypePetConsumable {
-			sp := cash2.NewItemUsePetConsumable(updateTimeFirst)
+			sp := cashsb.NewItemUsePetConsumable(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			if !updateTimeFirst {
 				updateTime = sp.UpdateTime()
@@ -52,13 +52,13 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
-			sp := cash2.NewItemUseChalkboard(updateTimeFirst)
+			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
 			return
 		}
 		if it == CashSlotItemTypeFieldEffect {
-			sp := cash2.NewItemUseFieldEffect(updateTimeFirst)
+			sp := cashsb.NewItemUseFieldEffect(updateTimeFirst)
 			sp.Decode(l, ctx)(r, readerOptions)
 			message := sp.Message()
 

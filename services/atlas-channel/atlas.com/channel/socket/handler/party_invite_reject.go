@@ -8,14 +8,14 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	party2 "github.com/Chronicle20/atlas-packet/party"
+	partysb "github.com/Chronicle20/atlas-packet/party/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func PartyInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := party2.InviteReject{}
+		p := partysb.InviteReject{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 

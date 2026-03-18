@@ -10,14 +10,15 @@ import (
 	"context"
 	"net"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := loginpkt.CharacterSelectWithPic{}
+		p := loginSB.CharacterSelectWithPic{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -37,7 +38,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		a, err := ap.GetById(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve account [%d] for PIC validation.", s.AccountId())
-			err = session.Announce(l)(ctx)(wp)(loginpkt.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			}
@@ -52,7 +53,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			err = session.Announce(l)(ctx)(wp)(loginpkt.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeIncorrectPassword))(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeIncorrectPassword))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 			}
@@ -64,7 +65,7 @@ func CharacterSelectedPicHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		c, err := channel.NewProcessor(l, ctx).GetById(s.Channel())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
-			err = session.Announce(l)(ctx)(wp)(loginpkt.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.ServerIPWriter)(writer.ServerIPBodySimpleError(writer.ServerIPCodeServerUnderInspection))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write server ip response due to error.")
 				return

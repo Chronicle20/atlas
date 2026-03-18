@@ -8,15 +8,16 @@ import (
 	"atlas-login/world"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := loginpkt.WorldCharacterListRequest{}
+		p := loginSB.WorldCharacterListRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -27,7 +28,7 @@ func CharacterListWorldHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 		}
 
 		if w.CapacityStatus() == world.StatusFull {
-			err = session.Announce(l)(ctx)(wp)(loginpkt.ServerStatusWriter)(loginpkt.NewServerStatus(uint16(world.StatusFull)).Encode)(s)
+			err = session.Announce(l)(ctx)(wp)(loginCB.ServerStatusWriter)(loginCB.NewServerStatus(uint16(world.StatusFull)).Encode)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show that world %d is full", w.Id())
 			}

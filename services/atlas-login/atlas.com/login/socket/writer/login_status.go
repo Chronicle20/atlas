@@ -7,7 +7,7 @@ import (
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 )
 
 

@@ -8,14 +8,15 @@ import (
 	"encoding/hex"
 	"net"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := loginpkt.Request{}
+		p := loginSB.Request{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
@@ -34,10 +35,10 @@ func LoginHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Produc
 
 		err := as.NewProcessor(l, ctx).Create(s.SessionId(), s.AccountId(), p.Name(), p.Password(), ipAddress, hwid)
 		if err != nil {
-			authLoginFailedFunc := session.Announce(l)(ctx)(wp)(loginpkt.AuthLoginFailedWriter)
+			authLoginFailedFunc := session.Announce(l)(ctx)(wp)(loginCB.AuthLoginFailedWriter)
 			err = authLoginFailedFunc(writer.AuthLoginFailedBody(writer.SystemError1))(s)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to issue [%s].", loginpkt.AuthLoginFailedWriter)
+				l.WithError(err).Errorf("Unable to issue [%s].", loginCB.AuthLoginFailedWriter)
 			}
 			return
 		}

@@ -9,7 +9,8 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	party2 "github.com/Chronicle20/atlas-packet/party"
+	partycb "github.com/Chronicle20/atlas-packet/party/clientbound"
+	partysb "github.com/Chronicle20/atlas-packet/party/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -27,7 +28,7 @@ const (
 
 func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := party2.Operation{}
+		p := partysb.Operation{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		op := PartyOperation(p.Op())
@@ -39,7 +40,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationJoin) {
-			sp := &party2.OperationJoin{}
+			sp := &partysb.OperationJoin{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeParty), sp.PartyId())
 			if err != nil {
@@ -60,7 +61,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationExpel) {
-			sp := &party2.OperationExpel{}
+			sp := &partysb.OperationExpel{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
@@ -74,7 +75,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationChangeLeader) {
-			sp := &party2.OperationChangeLeader{}
+			sp := &partysb.OperationChangeLeader{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			p, err := party.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
@@ -88,12 +89,12 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			return
 		}
 		if isPartyOperation(l)(readerOptions, op, PartyOperationInvite) {
-			sp := &party2.OperationInvite{}
+			sp := &partysb.OperationInvite{}
 			sp.Decode(l, ctx)(r, readerOptions)
 			cs, err := character.NewProcessor(l, ctx).GetByName(sp.Name())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to party.", sp.Name())
-				err := session.Announce(l)(ctx)(wp)(party2.PartyOperationWriter)(party2.PartyErrorBody("UNABLE_TO_FIND_THE_CHARACTER", sp.Name()))(s)
+				err := session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyErrorBody("UNABLE_TO_FIND_THE_CHARACTER", sp.Name()))(s)
 				if err != nil {
 					return
 				}
@@ -102,7 +103,7 @@ func PartyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writ
 			os, err := session.NewProcessor(l, ctx).GetByCharacterId(s.Field().Channel())(cs.Id())
 			if err != nil || s.WorldId() != os.WorldId() || s.ChannelId() != os.ChannelId() {
 				l.WithError(err).Errorf("Character [%d] not in channel. Cannot invite to party.", cs.Id())
-				err = session.Announce(l)(ctx)(wp)(party2.PartyOperationWriter)(party2.PartyErrorBody("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", sp.Name()))(s)
+				err = session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyErrorBody("UNABLE_TO_FIND_THE_REQUESTED_CHARACTER_IN_THIS_CHANNEL", sp.Name()))(s)
 				if err != nil {
 				}
 				return

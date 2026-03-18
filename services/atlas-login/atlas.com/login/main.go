@@ -18,10 +18,13 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-opcodes"
-	account3 "github.com/Chronicle20/atlas-packet/account"
-	"github.com/Chronicle20/atlas-packet/character"
-	"github.com/Chronicle20/atlas-packet/login"
-	socket3 "github.com/Chronicle20/atlas-packet/socket"
+	account3 "github.com/Chronicle20/atlas-packet/account/serverbound"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	charsb "github.com/Chronicle20/atlas-packet/character/serverbound"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
+	socketcb "github.com/Chronicle20/atlas-packet/socket/clientbound"
+	socketsb "github.com/Chronicle20/atlas-packet/socket/serverbound"
 	"github.com/Chronicle20/atlas-service"
 
 	"github.com/Chronicle20/atlas-kafka/consumer"
@@ -133,28 +136,28 @@ func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterCo
 
 func produceWriters() []string {
 	return []string{
-		login.LoginAuthWriter,
-		login.AuthSuccessWriter,
-		login.AuthTemporaryBanWriter,
-		login.AuthPermanentBanWriter,
-		login.AuthLoginFailedWriter,
-		login.ServerListRecommendationsWriter,
-		login.ServerListEntryWriter,
-		login.ServerListEndWriter,
-		login.SelectWorldWriter,
-		login.ServerStatusWriter,
-		character.CharacterListWriter,
-		character.CharacterNameResponseWriter,
-		character.AddCharacterEntryWriter,
-		character.DeleteCharacterResponseWriter,
-		login.PinOperationWriter,
-		login.PinUpdateWriter,
-		login.PicResultWriter,
-		login.ServerIPWriter,
-		login.ServerLoadWriter,
-		login.SetAccountResultWriter,
-		character.CharacterViewAllWriter,
-		socket3.PingWriter,
+		loginCB.LoginAuthWriter,
+		loginCB.AuthSuccessWriter,
+		loginCB.AuthTemporaryBanWriter,
+		loginCB.AuthPermanentBanWriter,
+		loginCB.AuthLoginFailedWriter,
+		loginCB.ServerListRecommendationsWriter,
+		loginCB.ServerListEntryWriter,
+		loginCB.ServerListEndWriter,
+		loginCB.SelectWorldWriter,
+		loginCB.ServerStatusWriter,
+		charcb.CharacterListWriter,
+		charcb.CharacterNameResponseWriter,
+		charcb.AddCharacterEntryWriter,
+		charcb.DeleteCharacterResponseWriter,
+		loginCB.PinOperationWriter,
+		loginCB.PinUpdateWriter,
+		loginCB.PicResultWriter,
+		loginCB.ServerIPWriter,
+		loginCB.ServerLoadWriter,
+		loginCB.SetAccountResultWriter,
+		charcb.CharacterViewAllWriter,
+		socketcb.PingWriter,
 	}
 }
 
@@ -163,29 +166,29 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
 	handlerMap[handler.DebugHandle] = handler.DebugHandleFunc
 	handlerMap[handler.CreateSecurityHandle] = handler.CreateSecurityHandleFunc
-	handlerMap[login.LoginHandle] = handler.LoginHandleFunc
-	handlerMap[login.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
-	handlerMap[login.ServerStatusHandle] = handler.ServerStatusHandleFunc
-	handlerMap[login.WorldCharacterListHandle] = handler.CharacterListWorldHandleFunc
-	handlerMap[character.CharacterCheckNameHandle] = handler.CharacterCheckNameHandleFunc
-	handlerMap[character.CreateCharacterHandle] = handler.CreateCharacterHandleFunc
-	handlerMap[character.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
-	handlerMap[login.AfterLoginHandle] = handler.AfterLoginHandleFunc
+	handlerMap[loginSB.LoginHandle] = handler.LoginHandleFunc
+	handlerMap[loginSB.ServerListRequestHandle] = handler.ServerListRequestHandleFunc
+	handlerMap[loginSB.ServerStatusHandle] = handler.ServerStatusHandleFunc
+	handlerMap[loginSB.WorldCharacterListHandle] = handler.CharacterListWorldHandleFunc
+	handlerMap[charsb.CharacterCheckNameHandle] = handler.CharacterCheckNameHandleFunc
+	handlerMap[charsb.CreateCharacterHandle] = handler.CreateCharacterHandleFunc
+	handlerMap[charsb.DeleteCharacterHandle] = handler.DeleteCharacterHandleFunc
+	handlerMap[loginSB.AfterLoginHandle] = handler.AfterLoginHandleFunc
 	handlerMap[account3.RegisterPinHandle] = handler.RegisterPinHandleFunc
-	handlerMap[login.RegisterPicHandle] = handler.RegisterPicHandleFunc
+	handlerMap[loginSB.RegisterPicHandle] = handler.RegisterPicHandleFunc
 	handlerMap[account3.AcceptTosHandle] = handler.AcceptTosHandleFunc
-	handlerMap[login.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
-	handlerMap[login.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
-	handlerMap[login.WorldSelectHandle] = handler.WorldSelectHandleFunc
+	handlerMap[loginSB.CharacterSelectedHandle] = handler.CharacterSelectedHandleFunc
+	handlerMap[loginSB.CharacterSelectedPicHandle] = handler.CharacterSelectedPicHandleFunc
+	handlerMap[loginSB.WorldSelectHandle] = handler.WorldSelectHandleFunc
 	handlerMap[account3.SetGenderHandle] = handler.SetGenderHandleFunc
-	handlerMap[login.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
-	handlerMap[login.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
-	handlerMap[login.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
-	handlerMap[login.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
-	handlerMap[login.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
+	handlerMap[loginSB.CharacterViewAllHandle] = handler.CharacterViewAllHandleFunc
+	handlerMap[loginSB.CharacterViewAllSelectedHandle] = handler.CharacterViewAllSelectedHandleFunc
+	handlerMap[loginSB.CharacterViewAllSelectedPicRegisterHandle] = handler.CharacterViewAllSelectedPicRegisterHandleFunc
+	handlerMap[loginSB.CharacterViewAllSelectedPicHandle] = handler.CharacterViewAllSelectedPicHandleFunc
+	handlerMap[loginSB.CharacterViewAllPongHandle] = handler.CharacterViewAllPongHandleFunc
 	handlerMap[handler.ClientStartHandle] = handler.ClientStartHandleFunc
-	handlerMap[socket3.PongHandle] = handler.PongHandleFunc
-	handlerMap[socket3.StartErrorHandle] = handler.StartErrorHandleFunc
+	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
+	handlerMap[socketsb.StartErrorHandle] = handler.StartErrorHandleFunc
 	return handlerMap
 }
 

@@ -20,8 +20,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas-packet/field"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -78,11 +79,11 @@ func handleStageCleared(sc server.Model, wp writer.Producer) message.Handler[pq.
 
 func announceStageCleared(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) model.Operator[session.Model] {
 	return func(s session.Model) error {
-		err := session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectScreenBody("quest/party/clear"))(s)
+		err := session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectScreenBody("quest/party/clear"))(s)
 		if err != nil {
 			return err
 		}
-		return session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody("Party1/Clear"))(s)
+		return session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectSoundBody("Party1/Clear"))(s)
 	}
 }
 

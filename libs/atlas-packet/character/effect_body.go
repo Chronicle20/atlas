@@ -4,6 +4,7 @@ import (
 	"context"
 
 	atlas_packet "github.com/Chronicle20/atlas-packet"
+	"github.com/Chronicle20/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas-constants/skill"
 	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
@@ -48,13 +49,13 @@ const (
 
 func CharacterLevelUpEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectLevelUp), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterLevelUpEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectLevelUp), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
@@ -65,7 +66,7 @@ func CharacterSkillUseEffectBody(skillId uint32, characterLevel byte, skillLevel
 			isBerserk := skill.Id(skillId) == skill.DarkKnightBerserkId
 			isDragonFury := skill.Id(skillId) == skill.EvanStage8DragonFuryId
 			isMonsterMagnet := skill.Is(skill.Id(skillId), skill.HeroMonsterMagnetId, skill.PaladinMonsterMagnetId, skill.DarkKnightMonsterMagnetId)
-			return NewEffectSkillUse(mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
+			return clientbound.NewEffectSkillUse(mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -77,286 +78,286 @@ func CharacterSkillUseEffectForeignBody(characterId uint32, skillId uint32, char
 			isBerserk := skill.Id(skillId) == skill.DarkKnightBerserkId
 			isDragonFury := skill.Id(skillId) == skill.EvanStage8DragonFuryId
 			isMonsterMagnet := skill.Is(skill.Id(skillId), skill.HeroMonsterMagnetId, skill.PaladinMonsterMagnetId, skill.DarkKnightMonsterMagnetId)
-			return NewEffectSkillUseForeign(characterId, mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
+			return clientbound.NewEffectSkillUseForeign(characterId, mode, skillId, characterLevel, skillLevel, isBerserk, darkForceEffect, isDragonFury, createOrDeleteDragon, isMonsterMagnet, left).Encode(l, ctx)(options)
 		}
 	}
 }
 
 func CharacterSkillAffectedEffectBody(skillId uint32, skillLevel byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSkillAffected), func(mode byte) packet.Encoder {
-		return NewEffectSkillAffected(mode, skillId, skillLevel)
+		return clientbound.NewEffectSkillAffected(mode, skillId, skillLevel)
 	})
 }
 
 func CharacterSkillAffectedEffectForeignBody(characterId uint32, skillId uint32, skillLevel byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSkillAffected), func(mode byte) packet.Encoder {
-		return NewEffectSkillAffectedForeign(characterId, mode, skillId, skillLevel)
+		return clientbound.NewEffectSkillAffectedForeign(characterId, mode, skillId, skillLevel)
 	})
 }
 
-func CharacterQuestEffectBody(message string, rewards []QuestReward, nEffect uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func CharacterQuestEffectBody(message string, rewards []clientbound.QuestReward, nEffect uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectQuest), func(mode byte) packet.Encoder {
-		return NewEffectQuest(mode, message, nEffect, rewards)
+		return clientbound.NewEffectQuest(mode, message, nEffect, rewards)
 	})
 }
 
-func CharacterQuestEffectForeignBody(characterId uint32, message string, rewards []QuestReward, nEffect uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+func CharacterQuestEffectForeignBody(characterId uint32, message string, rewards []clientbound.QuestReward, nEffect uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectQuest), func(mode byte) packet.Encoder {
-		return NewEffectQuestForeign(characterId, mode, message, nEffect, rewards)
+		return clientbound.NewEffectQuestForeign(characterId, mode, message, nEffect, rewards)
 	})
 }
 
 func CharacterPetEffectBody(petIndex byte, effectType byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPet), func(mode byte) packet.Encoder {
-		return NewEffectPet(mode, effectType, petIndex)
+		return clientbound.NewEffectPet(mode, effectType, petIndex)
 	})
 }
 
 func CharacterPetEffectForeignBody(characterId uint32, petIndex byte, effectType byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPet), func(mode byte) packet.Encoder {
-		return NewEffectPetForeign(characterId, mode, effectType, petIndex)
+		return clientbound.NewEffectPetForeign(characterId, mode, effectType, petIndex)
 	})
 }
 
 func CharacterSkillSpecialEffectBody(skillId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSkillSpecial), func(mode byte) packet.Encoder {
-		return NewEffectWithId(mode, skillId)
+		return clientbound.NewEffectWithId(mode, skillId)
 	})
 }
 
 func CharacterSkillSpecialEffectForeignBody(characterId uint32, skillId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSkillSpecial), func(mode byte) packet.Encoder {
-		return NewEffectWithIdForeign(characterId, mode, skillId)
+		return clientbound.NewEffectWithIdForeign(characterId, mode, skillId)
 	})
 }
 
 func CharacterProtectOnDieItemUseEffectBody(safetyCharm bool, usesRemaining byte, days byte, itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectProtectOnDieItemUse), func(mode byte) packet.Encoder {
-		return NewEffectProtectOnDie(mode, safetyCharm, usesRemaining, days, itemId)
+		return clientbound.NewEffectProtectOnDie(mode, safetyCharm, usesRemaining, days, itemId)
 	})
 }
 
 func CharacterProtectOnDieItemUseEffectForeignBody(characterId uint32, safetyCharm bool, usesRemaining byte, days byte, itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectProtectOnDieItemUse), func(mode byte) packet.Encoder {
-		return NewEffectProtectOnDieForeign(characterId, mode, safetyCharm, usesRemaining, days, itemId)
+		return clientbound.NewEffectProtectOnDieForeign(characterId, mode, safetyCharm, usesRemaining, days, itemId)
 	})
 }
 
 func CharacterPlayPortalSoundEffectEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPlayPortalSoundEffect), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterPlayPortalSoundEffectEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPlayPortalSoundEffect), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
 func CharacterJobChangedEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectJobChanged), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterJobChangedEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectJobChanged), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
 func CharacterQuestCompleteEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectQuestComplete), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterQuestCompleteEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectQuestComplete), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
 // TODO this will crash for some reason
 func CharacterIncDecHPEffectBody(delta int8) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectIncDecHPEffect), func(mode byte) packet.Encoder {
-		return NewEffectIncDecHP(mode, delta)
+		return clientbound.NewEffectIncDecHP(mode, delta)
 	})
 }
 
 // TODO this will crash for some reason
 func CharacterIncDecHPEffectForeignBody(characterId uint32, delta int8) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectIncDecHPEffect), func(mode byte) packet.Encoder {
-		return NewEffectIncDecHPForeign(characterId, mode, delta)
+		return clientbound.NewEffectIncDecHPForeign(characterId, mode, delta)
 	})
 }
 
 func CharacterBuffItemEffectBody(itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectBuffItemEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithId(mode, itemId)
+		return clientbound.NewEffectWithId(mode, itemId)
 	})
 }
 
 func CharacterBuffItemEffectForeignBody(characterId uint32, itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectBuffItemEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithIdForeign(characterId, mode, itemId)
+		return clientbound.NewEffectWithIdForeign(characterId, mode, itemId)
 	})
 }
 
 func CharacterShowIntroEffectBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	// TODO characters may be facing the wrong way during these interactions. Not possible to change facing direction.
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectShowIntroEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithMessage(mode, message)
+		return clientbound.NewEffectWithMessage(mode, message)
 	})
 }
 
 func CharacterShowIntroEffectForeignBody(characterId uint32, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectShowIntroEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithMessageForeign(characterId, mode, message)
+		return clientbound.NewEffectWithMessageForeign(characterId, mode, message)
 	})
 }
 
 func CharacterMonsterBookCardGetEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectMonsterBookCardGet), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterMonsterBookCardGetEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectMonsterBookCardGet), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
 func CharacterLotteryUseEffectBody(itemId uint32, success bool, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectLotteryUse), func(mode byte) packet.Encoder {
-		return NewEffectLotteryUse(mode, itemId, success, message)
+		return clientbound.NewEffectLotteryUse(mode, itemId, success, message)
 	})
 }
 
 func CharacterLotteryUseEffectForeignBody(characterId uint32, itemId uint32, success bool, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectLotteryUse), func(mode byte) packet.Encoder {
-		return NewEffectLotteryUseForeign(characterId, mode, itemId, success, message)
+		return clientbound.NewEffectLotteryUseForeign(characterId, mode, itemId, success, message)
 	})
 }
 
 func CharacterItemLevelUpEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectItemLevelUp), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterItemLevelUpEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectItemLevelUp), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }
 
 func CharacterItemMakerEffectBody(state uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectItemMaker), func(mode byte) packet.Encoder {
-		return NewEffectItemMaker(mode, state)
+		return clientbound.NewEffectItemMaker(mode, state)
 	})
 }
 
 func CharacterItemMakerEffectForeignBody(characterId uint32, state uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectItemMaker), func(mode byte) packet.Encoder {
-		return NewEffectItemMakerForeign(characterId, mode, state)
+		return clientbound.NewEffectItemMakerForeign(characterId, mode, state)
 	})
 }
 
 func CharacterShowInfoEffectBody(path string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectShowInfo), func(mode byte) packet.Encoder {
-		return NewEffectShowInfo(mode, path)
+		return clientbound.NewEffectShowInfo(mode, path)
 	})
 }
 
 func CharacterShowInfoEffectForeignBody(characterId uint32, path string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectShowInfo), func(mode byte) packet.Encoder {
-		return NewEffectShowInfoForeign(characterId, mode, path)
+		return clientbound.NewEffectShowInfoForeign(characterId, mode, path)
 	})
 }
 
 func CharacterReservedEffectBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectReservedEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithMessage(mode, message)
+		return clientbound.NewEffectWithMessage(mode, message)
 	})
 }
 
 func CharacterReservedEffectForeignBody(characterId uint32, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectReservedEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithMessageForeign(characterId, mode, message)
+		return clientbound.NewEffectWithMessageForeign(characterId, mode, message)
 	})
 }
 
 func CharacterConsumeEffectBody(itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectConsumeEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithId(mode, itemId)
+		return clientbound.NewEffectWithId(mode, itemId)
 	})
 }
 
 func CharacterConsumeEffectForeignBody(characterId uint32, itemId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectConsumeEffect), func(mode byte) packet.Encoder {
-		return NewEffectWithIdForeign(characterId, mode, itemId)
+		return clientbound.NewEffectWithIdForeign(characterId, mode, itemId)
 	})
 }
 
 func CharacterUpgradeTombItemUseEffectBody(usesRemaining byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectUpgradeTombItemUse), func(mode byte) packet.Encoder {
-		return NewEffectUpgradeTomb(mode, usesRemaining)
+		return clientbound.NewEffectUpgradeTomb(mode, usesRemaining)
 	})
 }
 
 func CharacterUpgradeTombItemUseEffectForeignBody(characterId uint32, usesRemaining byte) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectUpgradeTombItemUse), func(mode byte) packet.Encoder {
-		return NewEffectUpgradeTombForeign(characterId, mode, usesRemaining)
+		return clientbound.NewEffectUpgradeTombForeign(characterId, mode, usesRemaining)
 	})
 }
 
 func CharacterBattlefieldItemUseEffectBody(message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectBattlefieldItemUse), func(mode byte) packet.Encoder {
-		return NewEffectWithMessage(mode, message)
+		return clientbound.NewEffectWithMessage(mode, message)
 	})
 }
 
 func CharacterBattlefieldItemUseEffectForeignBody(characterId uint32, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectBattlefieldItemUse), func(mode byte) packet.Encoder {
-		return NewEffectWithMessageForeign(characterId, mode, message)
+		return clientbound.NewEffectWithMessageForeign(characterId, mode, message)
 	})
 }
 
 func CharacterIncubatorUseEffectBody(itemId uint32, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectIncubatorUse), func(mode byte) packet.Encoder {
-		return NewEffectIncubatorUse(mode, itemId, message)
+		return clientbound.NewEffectIncubatorUse(mode, itemId, message)
 	})
 }
 
 func CharacterIncubatorUseEffectForeignBody(characterId uint32, itemId uint32, message string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectIncubatorUse), func(mode byte) packet.Encoder {
-		return NewEffectIncubatorUseForeign(characterId, mode, itemId, message)
+		return clientbound.NewEffectIncubatorUseForeign(characterId, mode, itemId, message)
 	})
 }
 
 func CharacterPlaySoundWithMuteBackgroundMusicEffectBody(songName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPlaySoundWithMuteBackgroundMusic), func(mode byte) packet.Encoder {
-		return NewEffectWithMessage(mode, songName)
+		return clientbound.NewEffectWithMessage(mode, songName)
 	})
 }
 
 func CharacterPlaySoundWithMuteBackgroundMusicEffectForeignBody(characterId uint32, songName string) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectPlaySoundWithMuteBackgroundMusic), func(mode byte) packet.Encoder {
-		return NewEffectWithMessageForeign(characterId, mode, songName)
+		return clientbound.NewEffectWithMessageForeign(characterId, mode, songName)
 	})
 }
 
 func CharacterSoulStoneUseEffectBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSoulStoneUse), func(mode byte) packet.Encoder {
-		return NewEffectSimple(mode)
+		return clientbound.NewEffectSimple(mode)
 	})
 }
 
 func CharacterSoulStoneUseEffectForeignBody(characterId uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", string(CharacterEffectSoulStoneUse), func(mode byte) packet.Encoder {
-		return NewEffectSimpleForeign(characterId, mode)
+		return clientbound.NewEffectSimpleForeign(characterId, mode)
 	})
 }

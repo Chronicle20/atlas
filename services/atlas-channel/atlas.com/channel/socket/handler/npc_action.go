@@ -7,14 +7,15 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	npcpacket "github.com/Chronicle20/atlas-packet/npc"
+	npcpacket "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	npcsb "github.com/Chronicle20/atlas-packet/npc/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 func NPCActionHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		p := npcpacket.ActionRequest{}
+		p := npcsb.ActionRequest{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 

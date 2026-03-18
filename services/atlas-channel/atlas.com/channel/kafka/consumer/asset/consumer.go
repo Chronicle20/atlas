@@ -25,10 +25,13 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	cashpkt "github.com/Chronicle20/atlas-packet/cash"
+	cashpkt "github.com/Chronicle20/atlas-packet/cash/clientbound"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas-packet/inventory"
+	invcb "github.com/Chronicle20/atlas-packet/inventory/clientbound"
 	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -228,8 +231,8 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 
 			a := buildAssetFromCreatedBody(e)
 			a = enrichPetAsset(l, ctx, a)
-			err := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(
-				invpkt.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
+			err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(
+				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 			}
@@ -257,7 +260,7 @@ func handleAssetUpdatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			}
 
 			a := buildAssetFromUpdatedBody(e)
-			so := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), a.Slot(), model2.NewAsset(true, a))).Encode)
+			so := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), a.Slot(), model2.NewAsset(true, a))).Encode)
 			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
@@ -284,7 +287,7 @@ func handleAssetQuantityUpdatedEvent(sc server.Model, wp writer.Producer) messag
 			return
 		}
 
-		so := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewQuantityUpdateEntry(byte(inventoryType), e.Slot, uint16(e.Body.Quantity))).Encode)
+		so := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewQuantityUpdateEntry(byte(inventoryType), e.Slot, uint16(e.Body.Quantity))).Encode)
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, so)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to update [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
@@ -327,7 +330,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 							return
 						}
 
-						err := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s)
+						err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.TemplateId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
@@ -358,7 +361,7 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						ava := model2.NewFromCharacter(c, true)
 						for _, mm := range m.Members() {
 							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
-								return session.Announce(l)(ctx)(wp)(messengerpkt.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
+								return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
 							})
 						}
 						errChannels <- err
@@ -382,7 +385,7 @@ func updateAppearance(l logrus.FieldLogger) func(ctx context.Context) func(wp wr
 		return func(wp writer.Producer) func(c character.Model) model.Operator[session.Model] {
 			return func(c character.Model) model.Operator[session.Model] {
 				ava := model2.NewFromCharacter(c, false)
-				return session.Announce(l)(ctx)(wp)(charpkt.CharacterAppearanceUpdateWriter)(charpkt.NewCharacterAppearanceUpdate(c.Id(), ava).Encode)
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterAppearanceUpdateWriter)(charcb.NewCharacterAppearanceUpdate(c.Id(), ava).Encode)
 			}
 		}
 	}
@@ -405,7 +408,7 @@ func handleAssetDeletedEvent(sc server.Model, wp writer.Producer) message.Handle
 			return
 		}
 
-		af := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewRemoveEntry(byte(inventoryType), e.Slot)).Encode)
+		af := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewRemoveEntry(byte(inventoryType), e.Slot)).Encode)
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, af)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
@@ -445,8 +448,8 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 				l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 				return errors.New("unable to identify inventory type")
 			}
-			err := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(
-				invpkt.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
+			err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(
+				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add accepted asset [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 				return err
@@ -474,7 +477,7 @@ func handleAssetReleasedEvent(sc server.Model, wp writer.Producer) message.Handl
 			return
 		}
 
-		af := session.Announce(l)(ctx)(wp)(invpkt.InventoryChangeWriter)(invpkt.NewChangeBatch(false, invpkt.NewRemoveEntry(byte(inventoryType), e.Slot)).Encode)
+		af := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewRemoveEntry(byte(inventoryType), e.Slot)).Encode)
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, af)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to remove released asset [%d] in slot [%d] for character [%d].", e.TemplateId, e.Slot, e.CharacterId)
@@ -498,7 +501,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 			// Send appropriate expiration notification based on item type
 			if e.Body.ReplaceMessage != "" {
 				// Item was replaced - send replacement message
-				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
+				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(
 					charpkt.CharacterStatusMessageOperationItemExpireReplaceBody([]string{e.Body.ReplaceMessage}),
 				)(s)
 				if err != nil {
@@ -507,7 +510,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 				}
 			} else if e.Body.IsCash {
 				// Cash item expired
-				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
+				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(
 					charpkt.CharacterStatusMessageOperationCashItemExpireBody(e.TemplateId),
 				)(s)
 				if err != nil {
@@ -516,7 +519,7 @@ func handleAssetExpiredEvent(sc server.Model, wp writer.Producer) message.Handle
 				}
 			} else {
 				// Regular item expired
-				err := session.Announce(l)(ctx)(wp)(charpkt.CharacterStatusMessageWriter)(
+				err := session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(
 					charpkt.CharacterStatusMessageOperationGeneralItemExpireBody([]uint32{e.TemplateId}),
 				)(s)
 				if err != nil {

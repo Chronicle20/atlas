@@ -9,7 +9,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
-	pet2 "github.com/Chronicle20/atlas-packet/pet"
+	pet2 "github.com/Chronicle20/atlas-packet/pet/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

@@ -28,12 +28,16 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	buddypkt "github.com/Chronicle20/atlas-packet/buddy"
-	channelpkt "github.com/Chronicle20/atlas-packet/channel"
+	buddyCB "github.com/Chronicle20/atlas-packet/buddy/clientbound"
+	channelpkt "github.com/Chronicle20/atlas-packet/channel/clientbound"
 	charpkt "github.com/Chronicle20/atlas-packet/character"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat"
-	fieldpkt "github.com/Chronicle20/atlas-packet/field"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
 	guildpkt "github.com/Chronicle20/atlas-packet/guild"
+	guildcb "github.com/Chronicle20/atlas-packet/guild/clientbound"
 	notepkt "github.com/Chronicle20/atlas-packet/note"
+	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -167,14 +171,14 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					sp.SessionCreated(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = session.Announce(l)(ctx)(wp)(fieldpkt.SetFieldWriter)(writer.SetFieldBody(s.ChannelId(), c, bl))(s)
+					err = session.Announce(l)(ctx)(wp)(fieldcb.SetFieldWriter)(writer.SetFieldBody(s.ChannelId(), c, bl))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						entries := make([]buddypkt.BuddyEntry, 0, len(bl.Buddies()))
+						entries := make([]buddyCB.BuddyEntry, 0, len(bl.Buddies()))
 						for _, b := range bl.Buddies() {
-							entries = append(entries, buddypkt.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
+							entries = append(entries, buddyCB.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
 						}
 						err := session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(buddypkt.BuddyListUpdateBody(entries))(s)
 						if err != nil {
@@ -192,9 +196,9 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 									titles[idx-1] = t.Name()
 								}
 							}
-							var guildMembers []guildpkt.GuildMemberInfo
+							var guildMembers []guildcb.GuildMemberInfo
 							for _, mm := range g.Members() {
-								guildMembers = append(guildMembers, guildpkt.GuildMemberInfo{
+								guildMembers = append(guildMembers, guildcb.GuildMemberInfo{
 									CharacterId:   mm.CharacterId(),
 									Name:          mm.Name(),
 									JobId:         mm.JobId(),
@@ -205,7 +209,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 									AllianceTitle: mm.AllianceTitle(),
 								})
 							}
-							err = session.Announce(l)(ctx)(wp)(guildpkt.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
+							err = session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
@@ -223,11 +227,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							return
 						}
 
-						bindings := make(map[int32]charpkt.KeyBinding)
+						bindings := make(map[int32]charcb.KeyBinding)
 						for k, v := range km {
-							bindings[k] = charpkt.KeyBinding{KeyType: v.Type(), KeyAction: v.Action()}
+							bindings[k] = charcb.KeyBinding{KeyType: v.Type(), KeyAction: v.Action()}
 						}
-						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterKeyMapWriter)(charpkt.NewCharacterKeyMap(bindings).Encode)(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapWriter)(charcb.NewCharacterKeyMap(bindings).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
@@ -236,7 +240,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if hkm, ok := km[91]; ok {
 							haction = hkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterKeyMapAutoHpWriter)(charpkt.NewCharacterKeyMapAutoHp(haction).Encode)(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapAutoHpWriter)(charcb.NewCharacterKeyMapAutoHp(haction).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto hp key map for character [%d].", s.CharacterId())
 						}
@@ -245,7 +249,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if mkm, ok := km[92]; ok {
 							maction = mkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterKeyMapAutoMpWriter)(charpkt.NewCharacterKeyMapAutoMp(maction).Encode)(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapAutoMpWriter)(charcb.NewCharacterKeyMapAutoMp(maction).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto mp key map for character [%d].", s.CharacterId())
 						}
@@ -257,7 +261,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -334,7 +338,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						for i, n := range wnms {
 							noteEntries[i] = notepkt.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
 						}
-						err = session.Announce(l)(ctx)(wp)(notepkt.NoteOperationWriter)(notepkt.NoteDisplayBody(noteEntries))(s)
+						err = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteDisplayBody(noteEntries))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

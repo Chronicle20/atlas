@@ -8,8 +8,8 @@ import (
 	"context"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	loginpkt "github.com/Chronicle20/atlas-packet/login"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )

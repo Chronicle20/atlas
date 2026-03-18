@@ -37,15 +37,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc"
-	droppkt "github.com/Chronicle20/atlas-packet/drop"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	droppkt "github.com/Chronicle20/atlas-packet/drop/clientbound"
 	fieldpkt "github.com/Chronicle20/atlas-packet/field"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster"
-	partypkt "github.com/Chronicle20/atlas-packet/party"
-	petpkt "github.com/Chronicle20/atlas-packet/pet"
-	reactorpkt "github.com/Chronicle20/atlas-packet/reactor"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
+	partycb "github.com/Chronicle20/atlas-packet/party/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
+	reactorpkt "github.com/Chronicle20/atlas-packet/reactor/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -224,13 +225,13 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			go func() {
 				imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
 				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(s.CharacterId())))
-				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partypkt.PartyMemberHPWriter)(partypkt.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
+				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
 				if err != nil {
 					l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", s.CharacterId())
 				}
 
 				_ = model.ForEachSlice(oip, func(oid uint32) error {
-					return session.Announce(l)(ctx)(wp)(partypkt.PartyMemberHPWriter)(partypkt.NewPartyMemberHP(oid, cms[oid].Hp(), cms[oid].MaxHp()).Encode)(s)
+					return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, cms[oid].Hp(), cms[oid].MaxHp()).Encode)(s)
 				}, model.ParallelExecute())
 			}()
 
@@ -243,7 +244,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				}
 				if md.Clock() {
 					now := time.Now()
-					_ = session.Announce(l)(ctx)(wp)(fieldpkt.ClockWriter)(fieldpkt.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
+					_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
 				}
 			}()
 
@@ -255,9 +256,9 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 					return
 				}
 				if hasShip {
-					_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldTransportStateWriter)(fieldpkt.NewFieldTransport(fieldpkt.TransportStateEnter1, false).Encode)(s)
+					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode)(s)
 				} else {
-					_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldTransportStateWriter)(fieldpkt.NewFieldTransport(fieldpkt.TransportStateMove1, false).Encode)(s)
+					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode)(s)
 				}
 			}()
 
@@ -269,7 +270,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				if timer.Duration() <= 0 {
 					return
 				}
-				_ = session.Announce(l)(ctx)(wp)(fieldpkt.ClockWriter)(fieldpkt.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
 			}()
 
 			go func() {
@@ -277,14 +278,14 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				if werr != nil {
 					return
 				}
-				_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWeatherWriter)(fieldpkt.NewFieldEffectWeatherStart(we.ItemId, we.Message).Encode)(s)
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWeatherWriter)(fieldcb.NewFieldEffectWeatherStart(we.ItemId, we.Message).Encode)(s)
 
 				ci, cerr := cashData.NewProcessor(l, ctx).GetById(we.ItemId)
 				if cerr != nil {
 					return
 				}
 				if ci.BgmPath != "" {
-					_ = session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
+					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
 				}
 				if ci.StateChangeItem > 0 {
 					applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
@@ -461,7 +462,7 @@ func handleStatusEventWeatherStart(sc server.Model, wp writer.Producer) func(l l
 
 		l.Debugf("Weather started in map [%d] instance [%s] with item [%d].", e.MapId, e.Instance, e.Body.ItemId)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWeatherWriter)(fieldpkt.NewFieldEffectWeatherStart(e.Body.ItemId, e.Body.Message).Encode))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWeatherWriter)(fieldcb.NewFieldEffectWeatherStart(e.Body.ItemId, e.Body.Message).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast weather start to map [%d] instance [%s].", e.MapId, e.Instance)
 		}
@@ -478,7 +479,7 @@ func applyWeatherEffects(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 	}
 
 	if ci.BgmPath != "" {
-		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath)))
+		_ = _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath)))
 	}
 
 	if ci.StateChangeItem == 0 {
@@ -532,7 +533,7 @@ func handleStatusEventWeatherEnd(sc server.Model, wp writer.Producer) func(l log
 
 		l.Debugf("Weather ended in map [%d] instance [%s].", e.MapId, e.Instance)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldpkt.FieldEffectWeatherWriter)(fieldpkt.NewFieldEffectWeatherEnd(e.Body.ItemId).Encode))
+		err := _map.NewProcessor(l, ctx).ForSessionsInMap(f, session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWeatherWriter)(fieldcb.NewFieldEffectWeatherEnd(e.Body.ItemId).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast weather end to map [%d] instance [%s].", e.MapId, e.Instance)
 		}

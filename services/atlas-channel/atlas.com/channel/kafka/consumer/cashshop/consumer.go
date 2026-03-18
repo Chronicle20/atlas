@@ -18,7 +18,7 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	cashpkt "github.com/Chronicle20/atlas-packet/cash"
+	cashpkt "github.com/Chronicle20/atlas-packet/cash/clientbound"
 	packetmodel "github.com/Chronicle20/atlas-packet/model"
 )
 

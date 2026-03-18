@@ -2,8 +2,14 @@ package shop
 
 import (
 	"atlas-merchant/frederick"
+	asset2 "atlas-merchant/kafka/message/asset"
+	character "atlas-merchant/kafka/message/character"
+	"atlas-merchant/kafka/message/compartment"
+	message "atlas-merchant/kafka/message"
+	merchant "atlas-merchant/kafka/message/merchant"
 	kafkaProducer "atlas-merchant/kafka/producer"
 	"atlas-merchant/listing"
+	msg "atlas-merchant/message"
 	"atlas-merchant/visitor"
 	"context"
 	"encoding/json"
@@ -13,6 +19,8 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-constants/world"
 	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
@@ -35,20 +43,22 @@ type Processor interface {
 	SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error)
 	GetListings(shopId uuid.UUID) ([]listing.Model, error)
 	CreateShop(characterId uint32, shopType ShopType, title string, worldId world.Id, channelId channel.Id, mapId uint32, instanceId uuid.UUID, x int16, y int16, permitItemId uint32) (Model, error)
-	OpenShop(shopId uuid.UUID) error
-	EnterMaintenance(shopId uuid.UUID) error
-	ExitMaintenance(shopId uuid.UUID) (bool, error)
-	CloseShop(shopId uuid.UUID, reason CloseReason) error
+	OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	EnterMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error
+	CloseShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, reason CloseReason) error
 	GetExpired() ([]Model, error)
-	AddListing(shopId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16) (listing.Model, error)
-	RemoveListing(shopId uuid.UUID, listingIndex uint16) (listing.Model, error)
+	AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error
-	EnterShop(characterId uint32, shopId uuid.UUID) error
-	ExitShop(characterId uint32, shopId uuid.UUID) error
+	EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
+	ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error
 	EjectAllVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetVisitors(shopId uuid.UUID) ([]uint32, error)
 	GetShopForCharacter(characterId uint32) (uuid.UUID, error)
-	PurchaseBundle(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (PurchaseResult, error)
+	PurchaseBundle(mb *message.Buffer) func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error)
+	SendMessage(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederick(mb *message.Buffer) func(characterId uint32, worldId world.Id) error
 	OpenShopAndEmit(shopId uuid.UUID, characterId uint32) error
 	CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error
 	EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error
@@ -56,7 +66,10 @@ type Processor interface {
 	EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error
 	AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error)
+	RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error)
 	PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error)
+	SendMessageAndEmit(shopId uuid.UUID, characterId uint32, content string) error
+	RetrieveFrederickAndEmit(characterId uint32, worldId world.Id) error
 }
 
 type PurchaseResult struct {
@@ -133,7 +146,7 @@ func (p *ProcessorImpl) GetAllOpen() ([]Model, error) {
 }
 
 func (p *ProcessorImpl) GetListingCounts(shopIds []uuid.UUID) (map[uuid.UUID]int64, error) {
-	return listing.CountByShopIds(shopIds)(p.db.WithContext(p.ctx))()
+	return listing.NewProcessor(p.db.WithContext(p.ctx)).CountByShopIds(shopIds)
 }
 
 func (p *ProcessorImpl) SearchListingsByItemId(itemId uint32) ([]ListingSearchResult, error) {
@@ -141,7 +154,7 @@ func (p *ProcessorImpl) SearchListingsByItemId(itemId uint32) ([]ListingSearchRe
 }
 
 func (p *ProcessorImpl) GetListings(shopId uuid.UUID) ([]listing.Model, error) {
-	return model.SliceMap(listing.Make)(listing.GetByShopId(shopId)(p.db.WithContext(p.ctx)))(model.ParallelMap())()
+	return listing.NewProcessor(p.db.WithContext(p.ctx)).GetByShopId(shopId)
 }
 
 func (p *ProcessorImpl) GetExpired() ([]Model, error) {
@@ -242,168 +255,202 @@ func (p *ProcessorImpl) CreateShop(characterId uint32, shopType ShopType, title 
 	return m, nil
 }
 
-func (p *ProcessorImpl) OpenShop(shopId uuid.UUID) error {
-	var mapId uint32
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
+func (p *ProcessorImpl) OpenShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var mapId uint32
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Draft {
+				return fmt.Errorf("%w: cannot open shop in state %d", ErrInvalidTransition, e.State)
+			}
+
+			lp := listing.NewProcessor(tx)
+			count, err := lp.CountByShopId(shopId)
+			if err != nil {
+				return err
+			}
+			if count == 0 {
+				return ErrNoListings
+			}
+
+			e.State = byte(Open)
+			_, err = update(&e)(tx)()
+			if err != nil {
+				return err
+			}
+
+			mapId = e.MapId
+			return nil
+		})
 		if err != nil {
 			return err
 		}
 
-		if State(e.State) != Draft {
-			return fmt.Errorf("%w: cannot open shop in state %d", ErrInvalidTransition, e.State)
-		}
+		p.addToMapIndex(mapId, shopId)
 
-		// Verify at least one listing exists.
-		count, err := listing.CountByShopId(shopId)(tx)()
-		if err != nil {
-			return err
-		}
-		if count == 0 {
-			return ErrNoListings
-		}
-
-		e.State = byte(Open)
-		_, err = update(&e)(tx)()
+		m, err := p.GetById(shopId)
 		if err != nil {
 			return err
 		}
 
-		mapId = e.MapId
-		return nil
-	})
-	if err != nil {
-		return err
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopOpenedProvider(characterId, shopId, m))
 	}
-
-	// Add to map placement index.
-	p.addToMapIndex(mapId, shopId)
-	return nil
 }
 
-func (p *ProcessorImpl) EnterMaintenance(shopId uuid.UUID) error {
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
+func (p *ProcessorImpl) EnterMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Open {
+				return fmt.Errorf("%w: cannot enter maintenance in state %d", ErrInvalidTransition, e.State)
+			}
+
+			e.State = byte(Maintenance)
+			_, err = update(&e)(tx)()
+			return err
+		})
 		if err != nil {
 			return err
 		}
 
-		if State(e.State) != Open {
-			return fmt.Errorf("%w: cannot enter maintenance in state %d", ErrInvalidTransition, e.State)
+		ejected, _ := p.EjectAllVisitors(shopId)
+		if len(ejected) > 0 {
+			p.l.Infof("Shop [%s] entered maintenance, ejected %d visitors.", shopId, len(ejected))
 		}
 
-		e.State = byte(Maintenance)
-		_, err = update(&e)(tx)()
-		return err
-	})
-	if err != nil {
-		return err
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventMaintenanceEnteredProvider(characterId, shopId))
 	}
-
-	ejected, _ := p.EjectAllVisitors(shopId)
-	if len(ejected) > 0 {
-		p.l.Infof("Shop [%s] entered maintenance, ejected %d visitors.", shopId, len(ejected))
-	}
-	return nil
 }
 
-func (p *ProcessorImpl) ExitMaintenance(shopId uuid.UUID) (bool, error) {
-	var closed bool
-	var characterId uint32
-	var mapId uint32
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
+func (p *ProcessorImpl) ExitMaintenance(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32) error {
+	return func(shopId uuid.UUID, characterId uint32) error {
+		var closed bool
+		var mapId uint32
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Maintenance {
+				return fmt.Errorf("%w: cannot exit maintenance in state %d", ErrInvalidTransition, e.State)
+			}
+
+			lp := listing.NewProcessor(tx)
+			count, err := lp.CountByShopId(shopId)
+			if err != nil {
+				return err
+			}
+
+			if count == 0 {
+				now := time.Now()
+				e.State = byte(Closed)
+				e.ClosedAt = &now
+				e.CloseReason = byte(CloseReasonEmpty)
+			} else {
+				e.State = byte(Open)
+			}
+
+			_, err = update(&e)(tx)()
+			if err != nil {
+				return err
+			}
+
+			closed = State(e.State) == Closed
+			mapId = e.MapId
+			return nil
+		})
 		if err != nil {
 			return err
 		}
 
-		if State(e.State) != Maintenance {
-			return fmt.Errorf("%w: cannot exit maintenance in state %d", ErrInvalidTransition, e.State)
+		if closed {
+			p.removeFromRegistry(characterId)
+			p.removeFromMapIndex(mapId, shopId)
+			return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopClosedProvider(characterId, shopId, CloseReasonEmpty))
 		}
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventMaintenanceExitedProvider(characterId, shopId))
+	}
+}
 
-		// If no listings remain, close the shop.
-		count, err := listing.CountByShopId(shopId)(tx)()
+func (p *ProcessorImpl) CloseShop(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, reason CloseReason) error {
+	return func(shopId uuid.UUID, characterId uint32, reason CloseReason) error {
+		m, err := p.GetById(shopId)
 		if err != nil {
 			return err
 		}
 
-		if count == 0 {
+		// For character shops (non-disconnect), snapshot listings for item return.
+		var listings []listingSnapshot
+		if m.ShopType() == CharacterShop && reason != CloseReasonDisconnect {
+			ls, _ := p.GetListings(shopId)
+			for _, l := range ls {
+				listings = append(listings, listingSnapshot{
+					ItemId:       l.ItemId(),
+					ItemType:     l.ItemType(),
+					Quantity:     l.Quantity(),
+					ItemSnapshot: l.ItemSnapshot(),
+				})
+			}
+		}
+
+		var mapId uint32
+		var shopType ShopType
+		var mesoBalance uint32
+		err = database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			currentState := State(e.State)
+			if currentState != Open && currentState != Maintenance && currentState != Draft {
+				return fmt.Errorf("%w: cannot close shop in state %d", ErrInvalidTransition, e.State)
+			}
+
 			now := time.Now()
 			e.State = byte(Closed)
 			e.ClosedAt = &now
-			e.CloseReason = byte(CloseReasonEmpty)
-		} else {
-			e.State = byte(Open)
-		}
+			e.CloseReason = byte(reason)
 
-		_, err = update(&e)(tx)()
+			_, err = update(&e)(tx)()
+			if err != nil {
+				return err
+			}
+
+			mapId = e.MapId
+			shopType = ShopType(e.ShopType)
+			mesoBalance = e.MesoBalance
+			return nil
+		})
 		if err != nil {
 			return err
 		}
 
-		closed = State(e.State) == Closed
-		characterId = e.CharacterId
-		mapId = e.MapId
-		return nil
-	})
-	if err != nil {
-		return false, err
-	}
-
-	if closed {
 		p.removeFromRegistry(characterId)
 		p.removeFromMapIndex(mapId, shopId)
-	}
-	return closed, nil
-}
+		p.EjectAllVisitors(shopId)
 
-func (p *ProcessorImpl) CloseShop(shopId uuid.UUID, reason CloseReason) error {
-	var characterId uint32
-	var mapId uint32
-	var shopType ShopType
-	var mesoBalance uint32
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
-		if err != nil {
-			return err
+		if shopType == HiredMerchant {
+			p.storeToFrederick(shopId, characterId, mesoBalance)
 		}
 
-		currentState := State(e.State)
-		if currentState != Open && currentState != Maintenance && currentState != Draft {
-			return fmt.Errorf("%w: cannot close shop in state %d", ErrInvalidTransition, e.State)
+		// Return items to character shop owner's inventory.
+		for _, ls := range listings {
+			acceptItemToBuffer(mb, characterId, ls)
 		}
 
-		now := time.Now()
-		e.State = byte(Closed)
-		e.ClosedAt = &now
-		e.CloseReason = byte(reason)
-
-		_, err = update(&e)(tx)()
-		if err != nil {
-			return err
-		}
-
-		characterId = e.CharacterId
-		mapId = e.MapId
-		shopType = ShopType(e.ShopType)
-		mesoBalance = e.MesoBalance
-		return nil
-	})
-	if err != nil {
-		return err
+		p.l.Infof("Shop [%s] closed, reason [%d].", shopId, reason)
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventShopClosedProvider(characterId, shopId, reason))
 	}
-
-	p.removeFromRegistry(characterId)
-	p.removeFromMapIndex(mapId, shopId)
-	p.EjectAllVisitors(shopId)
-
-	// For hired merchants, move unsold items and mesos to Frederick.
-	if shopType == HiredMerchant {
-		p.storeToFrederick(shopId, characterId, mesoBalance)
-	}
-
-	p.l.Infof("Shop [%s] closed, reason [%d].", shopId, reason)
-	return nil
 }
 
 func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, mesoBalance uint32) {
@@ -445,99 +492,98 @@ func (p *ProcessorImpl) storeToFrederick(shopId uuid.UUID, characterId uint32, m
 	}
 }
 
-func (p *ProcessorImpl) AddListing(shopId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16) (listing.Model, error) {
-	if pricePerBundle == 0 {
-		return listing.Model{}, errors.New("pricePerBundle must be at least 1")
-	}
-	if bundleSize == 0 {
-		return listing.Model{}, errors.New("bundleSize must be at least 1")
-	}
-	if bundleCount == 0 {
-		return listing.Model{}, errors.New("bundleCount must be at least 1")
-	}
+func (p *ProcessorImpl) AddListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+		if pricePerBundle == 0 {
+			return listing.Model{}, errors.New("pricePerBundle must be at least 1")
+		}
+		if bundleSize == 0 {
+			return listing.Model{}, errors.New("bundleSize must be at least 1")
+		}
+		if bundleCount == 0 {
+			return listing.Model{}, errors.New("bundleCount must be at least 1")
+		}
 
-	// Trade restriction validation.
-	if err := IsListableItem(itemId, flag); err != nil {
-		return listing.Model{}, err
-	}
+		if err := IsListableItem(itemId, flag); err != nil {
+			return listing.Model{}, err
+		}
 
-	var result listing.Model
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
-		if err != nil {
+		var result listing.Model
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Draft && State(e.State) != Maintenance {
+				return fmt.Errorf("%w: cannot add listing in state %d", ErrInvalidTransition, e.State)
+			}
+
+			lp := listing.NewProcessor(tx)
+			count, err := lp.CountByShopId(shopId)
+			if err != nil {
+				return err
+			}
+			if count >= MaxListings {
+				return ErrListingLimitReached
+			}
+
+			result, err = lp.Create(shopId, p.t.Id(), itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, uint16(count))
 			return err
-		}
-
-		if State(e.State) != Draft && State(e.State) != Maintenance {
-			return fmt.Errorf("%w: cannot add listing in state %d", ErrInvalidTransition, e.State)
-		}
-
-		count, err := listing.CountByShopId(shopId)(tx)()
+		})
 		if err != nil {
-			return err
-		}
-		if count >= MaxListings {
-			return ErrListingLimitReached
+			return listing.Model{}, err
 		}
 
-		entity := &listing.Entity{
-			Id:               uuid.New(),
-			TenantId:         p.t.Id(),
-			ShopId:           shopId,
-			ItemId:           itemId,
-			ItemType:         itemType,
-			Quantity:         bundleSize * bundleCount,
-			BundleSize:       bundleSize,
-			BundlesRemaining: bundleCount,
-			PricePerBundle:   pricePerBundle,
-			ItemSnapshot:     itemSnapshot,
-			DisplayOrder:     uint16(count),
-			Version:          1,
-			ListedAt:         time.Now(),
+		quantity := uint32(bundleSize) * uint32(bundleCount)
+		transactionId := uuid.New()
+		if err := mb.Put(compartment.EnvCommandTopic, ReleaseAssetCommandProvider(transactionId, characterId, inventoryType, assetId, quantity)); err != nil {
+			return result, err
 		}
 
-		le, err := listing.CreateListing(entity)(tx)()
-		if err != nil {
-			return err
-		}
-
-		result, err = listing.Make(le)
-		return err
-	})
-	return result, err
+		return result, nil
+	}
 }
 
-func (p *ProcessorImpl) RemoveListing(shopId uuid.UUID, listingIndex uint16) (listing.Model, error) {
-	var result listing.Model
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
+func (p *ProcessorImpl) RemoveListing(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+	return func(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+		var result listing.Model
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Draft && State(e.State) != Maintenance {
+				return fmt.Errorf("%w: cannot remove listing in state %d", ErrInvalidTransition, e.State)
+			}
+
+			lp := listing.NewProcessor(tx)
+			result, err = lp.GetByShopIdAndDisplayOrder(shopId, listingIndex)
+			if err != nil {
+				return err
+			}
+
+			if err = lp.Delete(result.Id()); err != nil {
+				return err
+			}
+
+			return lp.DecrementDisplayOrderAfter(shopId, listingIndex)
+		})
 		if err != nil {
-			return err
+			return listing.Model{}, err
 		}
 
-		if State(e.State) != Draft && State(e.State) != Maintenance {
-			return fmt.Errorf("%w: cannot remove listing in state %d", ErrInvalidTransition, e.State)
-		}
+		// Return item to owner's inventory.
+		acceptItemToBuffer(mb, characterId, listingSnapshot{
+			ItemId:       result.ItemId(),
+			ItemType:     result.ItemType(),
+			Quantity:     result.Quantity(),
+			ItemSnapshot: result.ItemSnapshot(),
+		})
 
-		le, err := listing.GetByShopIdAndDisplayOrder(shopId, listingIndex)(tx)()
-		if err != nil {
-			return err
-		}
-
-		result, err = listing.Make(le)
-		if err != nil {
-			return err
-		}
-
-		_, err = listing.DeleteListing(le.Id)(tx)()
-		if err != nil {
-			return err
-		}
-
-		_, err = listing.DecrementDisplayOrderAfter(shopId, listingIndex)(tx)()
-		return err
-	})
-	return result, err
+		return result, nil
+	}
 }
 
 func (p *ProcessorImpl) UpdateListing(shopId uuid.UUID, listingIndex uint16, pricePerBundle uint32, bundleSize uint16, bundleCount uint16) error {
@@ -561,162 +607,201 @@ func (p *ProcessorImpl) UpdateListing(shopId uuid.UUID, listingIndex uint16, pri
 			return fmt.Errorf("%w: cannot update listing in state %d", ErrInvalidTransition, e.State)
 		}
 
-		le, err := listing.GetByShopIdAndDisplayOrder(shopId, listingIndex)(tx)()
+		lp := listing.NewProcessor(tx)
+		li, err := lp.GetByShopIdAndDisplayOrder(shopId, listingIndex)
 		if err != nil {
 			return err
 		}
 
-		_, err = listing.UpdateListingFields(le.Id, pricePerBundle, bundleSize, bundleCount)(tx)()
-		return err
+		return lp.UpdateFields(li.Id(), pricePerBundle, bundleSize, bundleCount)
 	})
 }
 
-func (p *ProcessorImpl) PurchaseBundle(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16) (PurchaseResult, error) {
-	if bundleCount == 0 {
-		return PurchaseResult{}, errors.New("bundleCount must be at least 1")
-	}
+func (p *ProcessorImpl) PurchaseBundle(mb *message.Buffer) func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
+	return func(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
+		if bundleCount == 0 {
+			return PurchaseResult{}, errors.New("bundleCount must be at least 1")
+		}
 
-	var result PurchaseResult
-	var mapId uint32
-	err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-		e, err := getById(shopId)(tx)()
+		var result PurchaseResult
+		var mapId uint32
+		err := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			e, err := getById(shopId)(tx)()
+			if err != nil {
+				return err
+			}
+
+			if State(e.State) != Open {
+				return fmt.Errorf("%w: shop not open for purchase", ErrInvalidTransition)
+			}
+
+			result.ShopOwnerId = e.CharacterId
+			result.ShopType = ShopType(e.ShopType)
+			mapId = e.MapId
+
+			lp := listing.NewProcessor(tx)
+			li, err := lp.GetByShopIdAndDisplayOrder(shopId, listingIndex)
+			if err != nil {
+				return err
+			}
+
+			if li.BundlesRemaining() < bundleCount {
+				return ErrInsufficientBundles
+			}
+
+			totalCost := int64(bundleCount) * int64(li.PricePerBundle())
+			fee := GetFee(totalCost)
+
+			result.ListingId = li.Id()
+			result.ItemId = li.ItemId()
+			result.ItemType = li.ItemType()
+			result.ItemSnapshot = li.ItemSnapshot()
+			result.BundleSize = li.BundleSize()
+			result.BundlesPurchased = bundleCount
+			result.TotalCost = totalCost
+			result.Fee = fee
+			result.NetAmount = totalCost - fee
+
+			newBundlesRemaining := li.BundlesRemaining() - bundleCount
+			newQuantity := li.BundleSize() * newBundlesRemaining
+
+			rowsAffected, err := lp.UpdateBundles(li.Id(), newBundlesRemaining, newQuantity, li.Version())
+			if err != nil {
+				return err
+			}
+			if rowsAffected == 0 {
+				return ErrVersionConflict
+			}
+
+			result.BundlesRemaining = newBundlesRemaining
+
+			if newBundlesRemaining == 0 {
+				if err = lp.Delete(li.Id()); err != nil {
+					return err
+				}
+
+				if err = lp.DecrementDisplayOrderAfter(shopId, listingIndex); err != nil {
+					return err
+				}
+
+				count, err := lp.CountByShopId(shopId)
+				if err != nil {
+					return err
+				}
+
+				if count == 0 {
+					now := time.Now()
+					e.State = byte(Closed)
+					e.ClosedAt = &now
+					e.CloseReason = byte(CloseReasonSoldOut)
+					result.ShopClosed = true
+				}
+			}
+
+			if ShopType(e.ShopType) == HiredMerchant {
+				e.MesoBalance += uint32(totalCost - fee)
+			}
+
+			if ShopType(e.ShopType) == HiredMerchant || result.ShopClosed {
+				_, err = update(&e)(tx)()
+				if err != nil {
+					return err
+				}
+			}
+
+			return nil
+		})
+		if err != nil {
+			return PurchaseResult{}, err
+		}
+
+		if result.ShopClosed {
+			p.removeFromRegistry(result.ShopOwnerId)
+			p.removeFromMapIndex(mapId, shopId)
+			p.EjectAllVisitors(shopId)
+			p.l.Infof("Shop [%s] sold out and closed.", shopId)
+		}
+
+		// Deduct mesos from buyer.
+		transactionId := uuid.New()
+		if err := mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(transactionId, worldId, buyerCharacterId, result.ShopOwnerId, "MERCHANT", -int32(result.TotalCost))); err != nil {
+			return result, err
+		}
+
+		// Grant items to buyer.
+		if result.ItemSnapshot != nil {
+			var ad asset2.AssetData
+			if err := json.Unmarshal(result.ItemSnapshot, &ad); err == nil {
+				ad.Quantity = uint32(result.BundleSize) * uint32(result.BundlesPurchased)
+				invType, ok := inventory.TypeFromItemId(item.Id(result.ItemId))
+				if ok {
+					itemTransactionId := uuid.New()
+					_ = mb.Put(compartment.EnvCommandTopic, AcceptAssetCommandProvider(itemTransactionId, buyerCharacterId, byte(invType), result.ItemId, ad))
+				}
+			}
+		}
+
+		// Credit mesos to owner (character shops only).
+		if result.ShopType == CharacterShop && result.NetAmount > 0 {
+			creditTransactionId := uuid.New()
+			_ = mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(creditTransactionId, worldId, result.ShopOwnerId, buyerCharacterId, "MERCHANT", int32(result.NetAmount)))
+		}
+
+		_ = mb.Put(merchant.EnvListingEventTopic, ListingEventPurchasedProvider(shopId, listingIndex, buyerCharacterId, bundleCount, result.BundlesRemaining))
+
+		if result.ShopClosed {
+			_ = mb.Put(merchant.EnvStatusEventTopic, StatusEventShopClosedProvider(result.ShopOwnerId, shopId, CloseReasonSoldOut))
+		}
+
+		return result, nil
+	}
+}
+
+func (p *ProcessorImpl) EnterShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
+	return func(characterId uint32, shopId uuid.UUID) error {
+		e, err := getById(shopId)(p.db.WithContext(p.ctx))()
 		if err != nil {
 			return err
 		}
 
 		if State(e.State) != Open {
-			return fmt.Errorf("%w: shop not open for purchase", ErrInvalidTransition)
+			return fmt.Errorf("%w: shop not open", ErrInvalidTransition)
 		}
 
-		result.ShopOwnerId = e.CharacterId
-		result.ShopType = ShopType(e.ShopType)
-		mapId = e.MapId
+		vr := visitor.GetRegistry()
+		if vr == nil {
+			return errors.New("visitor registry not initialized")
+		}
 
-		le, err := listing.GetByShopIdAndDisplayOrder(shopId, listingIndex)(tx)()
+		count, err := vr.GetVisitorCount(p.ctx, p.t, shopId)
 		if err != nil {
 			return err
 		}
 
-		if le.BundlesRemaining < bundleCount {
-			return ErrInsufficientBundles
+		if count >= MaxVisitors {
+			return mb.Put(merchant.EnvStatusEventTopic, StatusEventCapacityFullProvider(characterId, shopId))
 		}
 
-		totalCost := int64(bundleCount) * int64(le.PricePerBundle)
-		fee := GetFee(totalCost)
-
-		result.ListingId = le.Id
-		result.ItemId = le.ItemId
-		result.ItemType = le.ItemType
-		result.ItemSnapshot = le.ItemSnapshot
-		result.BundleSize = le.BundleSize
-		result.BundlesPurchased = bundleCount
-		result.TotalCost = totalCost
-		result.Fee = fee
-		result.NetAmount = totalCost - fee
-
-		newBundlesRemaining := le.BundlesRemaining - bundleCount
-		newQuantity := le.BundleSize * newBundlesRemaining
-
-		// Optimistic lock: only succeeds if version matches.
-		rowsAffected, err := listing.UpdateBundles(le.Id, newBundlesRemaining, newQuantity, le.Version)(tx)()
-		if err != nil {
+		if err = vr.AddVisitor(p.ctx, p.t, shopId, characterId); err != nil {
 			return err
 		}
-		if rowsAffected == 0 {
-			return ErrVersionConflict
-		}
 
-		result.BundlesRemaining = newBundlesRemaining
-
-		// If listing sold out, remove it and collapse display order.
-		if newBundlesRemaining == 0 {
-			_, err = listing.DeleteListing(le.Id)(tx)()
-			if err != nil {
-				return err
-			}
-
-			_, err = listing.DecrementDisplayOrderAfter(shopId, listingIndex)(tx)()
-			if err != nil {
-				return err
-			}
-
-			// Check if all listings are gone → close shop (sold out).
-			count, err := listing.CountByShopId(shopId)(tx)()
-			if err != nil {
-				return err
-			}
-
-			if count == 0 {
-				now := time.Now()
-				e.State = byte(Closed)
-				e.ClosedAt = &now
-				e.CloseReason = byte(CloseReasonSoldOut)
-				result.ShopClosed = true
-			}
-		}
-
-		// Accumulate meso balance for hired merchants.
-		if ShopType(e.ShopType) == HiredMerchant {
-			e.MesoBalance += uint32(totalCost - fee)
-		}
-
-		// Persist entity changes if needed (meso balance or shop closure).
-		if ShopType(e.ShopType) == HiredMerchant || result.ShopClosed {
-			_, err = update(&e)(tx)()
-			if err != nil {
-				return err
-			}
-		}
-
-		return nil
-	})
-	if err != nil {
-		return PurchaseResult{}, err
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorEnteredProvider(characterId, shopId))
 	}
-
-	if result.ShopClosed {
-		p.removeFromRegistry(result.ShopOwnerId)
-		p.removeFromMapIndex(mapId, shopId)
-		p.EjectAllVisitors(shopId)
-		p.l.Infof("Shop [%s] sold out and closed.", shopId)
-	}
-
-	return result, nil
 }
 
-func (p *ProcessorImpl) EnterShop(characterId uint32, shopId uuid.UUID) error {
-	e, err := getById(shopId)(p.db.WithContext(p.ctx))()
-	if err != nil {
-		return err
-	}
+func (p *ProcessorImpl) ExitShop(mb *message.Buffer) func(characterId uint32, shopId uuid.UUID) error {
+	return func(characterId uint32, shopId uuid.UUID) error {
+		vr := visitor.GetRegistry()
+		if vr == nil {
+			return errors.New("visitor registry not initialized")
+		}
+		if err := vr.RemoveVisitor(p.ctx, p.t, shopId, characterId); err != nil {
+			return err
+		}
 
-	if State(e.State) != Open {
-		return fmt.Errorf("%w: shop not open", ErrInvalidTransition)
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventVisitorExitedProvider(characterId, shopId))
 	}
-
-	vr := visitor.GetRegistry()
-	if vr == nil {
-		return errors.New("visitor registry not initialized")
-	}
-
-	count, err := vr.GetVisitorCount(p.ctx, p.t, shopId)
-	if err != nil {
-		return err
-	}
-
-	if count >= MaxVisitors {
-		return ErrShopFull
-	}
-
-	return vr.AddVisitor(p.ctx, p.t, shopId, characterId)
-}
-
-func (p *ProcessorImpl) ExitShop(characterId uint32, shopId uuid.UUID) error {
-	vr := visitor.GetRegistry()
-	if vr == nil {
-		return errors.New("visitor registry not initialized")
-	}
-	return vr.RemoveVisitor(p.ctx, p.t, shopId, characterId)
 }
 
 func (p *ProcessorImpl) EjectAllVisitors(shopId uuid.UUID) ([]uint32, error) {
@@ -764,6 +849,223 @@ func (p *ProcessorImpl) removeFromMapIndex(mapId uint32, shopId uuid.UUID) {
 		mapKey := strconv.FormatUint(uint64(mapId), 10)
 		_ = r.mapPlacement.Remove(p.ctx, p.t, mapKey, shopId.String())
 	}
+}
+
+func (p *ProcessorImpl) SendMessage(mb *message.Buffer) func(shopId uuid.UUID, characterId uint32, content string) error {
+	return func(shopId uuid.UUID, characterId uint32, content string) error {
+		mp := msg.NewProcessor(p.l, p.ctx, p.db)
+		if err := mp.SendMessage(shopId, characterId, content); err != nil {
+			return err
+		}
+
+		visitors, err := p.GetVisitors(shopId)
+		if err != nil {
+			return err
+		}
+
+		s, err := p.GetById(shopId)
+		if err != nil {
+			return err
+		}
+
+		// Slot 0 is the owner. Visitors start at slot 1.
+		var slot byte
+		if characterId == s.CharacterId() {
+			slot = 0
+		} else {
+			for i, v := range visitors {
+				if v == characterId {
+					slot = byte(i + 1)
+					break
+				}
+			}
+		}
+
+		return mb.Put(merchant.EnvStatusEventTopic, StatusEventMessageSentProvider(characterId, shopId, slot, content))
+	}
+}
+
+func (p *ProcessorImpl) RetrieveFrederick(mb *message.Buffer) func(characterId uint32, worldId world.Id) error {
+	return func(characterId uint32, worldId world.Id) error {
+		fp := frederick.NewProcessor(p.l, p.ctx, p.db)
+
+		items, err := fp.GetItems(characterId)
+		if err != nil {
+			return err
+		}
+
+		mesos, err := fp.GetMesos(characterId)
+		if err != nil {
+			return err
+		}
+
+		if len(items) == 0 && len(mesos) == 0 {
+			p.l.Debugf("No items or mesos at Frederick for character [%d].", characterId)
+			return nil
+		}
+
+		// Transfer items to character's inventory.
+		for _, fi := range items {
+			if fi.ItemSnapshot() == nil {
+				continue
+			}
+
+			var ad asset2.AssetData
+			if err := json.Unmarshal(fi.ItemSnapshot(), &ad); err != nil {
+				p.l.WithError(err).Errorf("Error unmarshaling item snapshot for Frederick item [%s].", fi.Id())
+				continue
+			}
+
+			ad.Quantity = uint32(fi.Quantity())
+
+			invType, ok := inventory.TypeFromItemId(item.Id(fi.ItemId()))
+			if !ok {
+				p.l.Errorf("Unable to determine inventory type for Frederick item [%d].", fi.ItemId())
+				continue
+			}
+
+			transactionId := uuid.New()
+			_ = mb.Put(compartment.EnvCommandTopic, AcceptAssetCommandProvider(transactionId, characterId, byte(invType), fi.ItemId(), ad))
+		}
+
+		// Transfer mesos to character.
+		var totalMesos uint32
+		for _, fm := range mesos {
+			totalMesos += fm.Amount()
+		}
+		if totalMesos > 0 {
+			transactionId := uuid.New()
+			_ = mb.Put(character.EnvCommandTopic, ChangeMesoCommandProvider(transactionId, worldId, characterId, 0, "FREDERICK", int32(totalMesos)))
+		}
+
+		// Clear Frederick storage and notifications.
+		if err := fp.ClearItems(characterId); err != nil {
+			p.l.WithError(err).Errorf("Error clearing Frederick items for character [%d].", characterId)
+		}
+		if err := fp.ClearMesos(characterId); err != nil {
+			p.l.WithError(err).Errorf("Error clearing Frederick mesos for character [%d].", characterId)
+		}
+		if err := fp.ClearNotifications(characterId); err != nil {
+			p.l.WithError(err).Errorf("Error clearing Frederick notifications for character [%d].", characterId)
+		}
+
+		p.l.Infof("Retrieved %d items and %d meso records from Frederick for character [%d].", len(items), len(mesos), characterId)
+		return nil
+	}
+}
+
+// AndEmit wrappers.
+
+func (p *ProcessorImpl) OpenShopAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.OpenShop(buf)(shopId, characterId)
+	})
+}
+
+func (p *ProcessorImpl) CloseShopAndEmit(shopId uuid.UUID, characterId uint32, reason CloseReason) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.CloseShop(buf)(shopId, characterId, reason)
+	})
+}
+
+func (p *ProcessorImpl) EnterMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.EnterMaintenance(buf)(shopId, characterId)
+	})
+}
+
+func (p *ProcessorImpl) ExitMaintenanceAndEmit(shopId uuid.UUID, characterId uint32) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.ExitMaintenance(buf)(shopId, characterId)
+	})
+}
+
+func (p *ProcessorImpl) EnterShopAndEmit(characterId uint32, shopId uuid.UUID) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.EnterShop(buf)(characterId, shopId)
+	})
+}
+
+func (p *ProcessorImpl) ExitShopAndEmit(characterId uint32, shopId uuid.UUID) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.ExitShop(buf)(characterId, shopId)
+	})
+}
+
+func (p *ProcessorImpl) AddListingAndEmit(shopId uuid.UUID, characterId uint32, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, flag uint16, inventoryType byte, assetId uint32) (listing.Model, error) {
+	var result listing.Model
+	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
+		var err error
+		result, err = p.AddListing(buf)(shopId, characterId, itemId, itemType, bundleSize, bundleCount, pricePerBundle, itemSnapshot, flag, inventoryType, assetId)
+		return err
+	})
+	return result, err
+}
+
+func (p *ProcessorImpl) RemoveListingAndEmit(shopId uuid.UUID, characterId uint32, listingIndex uint16) (listing.Model, error) {
+	var result listing.Model
+	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
+		var err error
+		result, err = p.RemoveListing(buf)(shopId, characterId, listingIndex)
+		return err
+	})
+	return result, err
+}
+
+func (p *ProcessorImpl) PurchaseBundleAndEmit(buyerCharacterId uint32, shopId uuid.UUID, listingIndex uint16, bundleCount uint16, worldId world.Id) (PurchaseResult, error) {
+	var result PurchaseResult
+	err := message.Emit(p.producer)(func(buf *message.Buffer) error {
+		var err error
+		result, err = p.PurchaseBundle(buf)(buyerCharacterId, shopId, listingIndex, bundleCount, worldId)
+		return err
+	})
+	return result, err
+}
+
+func (p *ProcessorImpl) SendMessageAndEmit(shopId uuid.UUID, characterId uint32, content string) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.SendMessage(buf)(shopId, characterId, content)
+	})
+}
+
+func (p *ProcessorImpl) RetrieveFrederickAndEmit(characterId uint32, worldId world.Id) error {
+	return message.Emit(p.producer)(func(buf *message.Buffer) error {
+		return p.RetrieveFrederick(buf)(characterId, worldId)
+	})
+}
+
+// listingSnapshot captures listing data before shop closure.
+type listingSnapshot struct {
+	ItemId       uint32
+	ItemType     byte
+	Quantity     uint16
+	ItemSnapshot json.RawMessage
+}
+
+func acceptItemToBuffer(buf *message.Buffer, characterId uint32, ls listingSnapshot) {
+	if ls.ItemSnapshot == nil {
+		return
+	}
+
+	var ad asset2.AssetData
+	if err := json.Unmarshal(ls.ItemSnapshot, &ad); err != nil {
+		return
+	}
+
+	ad.Quantity = uint32(ls.Quantity)
+
+	invType, ok := inventory.TypeFromItemId(item.Id(ls.ItemId))
+	if !ok {
+		return
+	}
+
+	transactionId := uuid.New()
+	_ = buf.Put(compartment.EnvCommandTopic, AcceptAssetCommandProvider(transactionId, characterId, byte(invType), ls.ItemId, ad))
+}
+
+// IsShopFull checks if the error is a shop capacity error.
+func IsShopFull(err error) bool {
+	return errors.Is(err, ErrShopFull)
 }
 
 // GetFee calculates the sale fee based on the total meso amount.

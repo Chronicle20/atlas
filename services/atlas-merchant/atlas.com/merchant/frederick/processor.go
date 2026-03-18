@@ -2,18 +2,12 @@ package frederick
 
 import (
 	"context"
-	"sync"
-	"time"
 
-	database "github.com/Chronicle20/atlas-database"
 	"github.com/Chronicle20/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
-
-const CleanupInterval = 6 * time.Hour
-const CleanupAge = 100 * 24 * time.Hour
 
 type Processor interface {
 	StoreItems(characterId uint32, items []StoredItem) error
@@ -95,43 +89,3 @@ func (p *ProcessorImpl) ClearNotifications(characterId uint32) error {
 	return err
 }
 
-// StartCleanupReaper starts a background goroutine that permanently deletes
-// Frederick items and mesos older than 100 days.
-func StartCleanupReaper(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup, db *gorm.DB) {
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		ticker := time.NewTicker(CleanupInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				l.Infoln("Frederick cleanup reaper shutting down.")
-				return
-			case <-ticker.C:
-				reapExpired(l, ctx, db)
-			}
-		}
-	}()
-	l.Infoln("Frederick cleanup reaper started.")
-}
-
-func reapExpired(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) {
-	noTenantCtx := database.WithoutTenantFilter(ctx)
-	cutoff := time.Now().Add(-CleanupAge)
-
-	rows, err := cleanupExpiredItems(cutoff)(db.WithContext(noTenantCtx))()
-	if err != nil {
-		l.WithError(err).Errorln("Error cleaning up expired Frederick items.")
-	} else if rows > 0 {
-		l.Infof("Cleaned up %d expired Frederick items.", rows)
-	}
-
-	rows, err = cleanupExpiredMesos(cutoff)(db.WithContext(noTenantCtx))()
-	if err != nil {
-		l.WithError(err).Errorln("Error cleaning up expired Frederick mesos.")
-	} else if rows > 0 {
-		l.Infof("Cleaned up %d expired Frederick meso records.", rows)
-	}
-}

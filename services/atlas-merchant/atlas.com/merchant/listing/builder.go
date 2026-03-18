@@ -23,6 +23,7 @@ type ModelBuilder struct {
 	pricePerBundle   uint32
 	itemSnapshot     json.RawMessage
 	displayOrder     uint16
+	version          uint32
 	listedAt         time.Time
 }
 
@@ -76,6 +77,11 @@ func (b *ModelBuilder) SetDisplayOrder(displayOrder uint16) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetVersion(version uint32) *ModelBuilder {
+	b.version = version
+	return b
+}
+
 func (b *ModelBuilder) SetListedAt(listedAt time.Time) *ModelBuilder {
 	b.listedAt = listedAt
 	return b
@@ -105,6 +111,7 @@ func (b *ModelBuilder) Build() (Model, error) {
 		pricePerBundle:   b.pricePerBundle,
 		itemSnapshot:     b.itemSnapshot,
 		displayOrder:     b.displayOrder,
+		version:          b.version,
 		listedAt:         b.listedAt,
 	}, nil
 }
@@ -121,6 +128,7 @@ func Clone(m Model) *ModelBuilder {
 		pricePerBundle:   m.pricePerBundle,
 		itemSnapshot:     m.itemSnapshot,
 		displayOrder:     m.displayOrder,
+		version:          m.version,
 		listedAt:         m.listedAt,
 	}
 }

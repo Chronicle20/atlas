@@ -10,6 +10,7 @@ import (
 	"atlas-merchant/message"
 	"atlas-merchant/service"
 	"atlas-merchant/shop"
+	"atlas-merchant/tasks"
 	"atlas-merchant/tracing"
 	"atlas-merchant/visitor"
 	"os"
@@ -70,10 +71,10 @@ func main() {
 	}
 	compartment2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
-	// Start background reapers and schedulers.
-	shop.StartExpirationReaper(l, tdm.Context(), tdm.WaitGroup(), db)
-	frederick.StartCleanupReaper(l, tdm.Context(), tdm.WaitGroup(), db)
-	frederick.StartNotificationScheduler(l, tdm.Context(), tdm.WaitGroup(), db)
+	// Start background tasks.
+	tasks.Register(l, tdm.Context())(shop.NewExpirationTask(l, tdm.Context(), db, shop.DefaultExpirationInterval))
+	tasks.Register(l, tdm.Context())(frederick.NewCleanupTask(l, tdm.Context(), db, frederick.DefaultCleanupInterval))
+	tasks.Register(l, tdm.Context())(frederick.NewNotificationTask(l, tdm.Context(), db, frederick.DefaultNotificationInterval))
 
 	server.New(l).
 		WithContext(tdm.Context()).

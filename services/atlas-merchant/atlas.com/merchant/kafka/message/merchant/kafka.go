@@ -1,7 +1,7 @@
 package merchant
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 
 	"github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
@@ -70,7 +70,7 @@ type CommandAddListingBody struct {
 	Slot           int16           `json:"slot"`
 	InventoryType  byte            `json:"inventoryType"`
 	AssetId        uint32          `json:"assetId"`
-	ItemSnapshot   json.RawMessage `json:"itemSnapshot"`
+	ItemSnapshot   asset.AssetData `json:"itemSnapshot"`
 }
 
 type CommandRemoveListingBody struct {

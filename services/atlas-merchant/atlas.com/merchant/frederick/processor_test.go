@@ -1,6 +1,7 @@
 package frederick
 
 import (
+	"atlas-merchant/kafka/message/asset"
 	"context"
 	"testing"
 
@@ -44,8 +45,8 @@ func TestStoreAndGetItems(t *testing.T) {
 	p := NewProcessor(l, ctx, db)
 
 	items := []StoredItem{
-		{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: []byte(`{"flag":0}`)},
-		{ItemId: 2000001, ItemType: 0, Quantity: 5, ItemSnapshot: []byte(`{"flag":0}`)},
+		{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: asset.AssetData{}},
+		{ItemId: 2000001, ItemType: 0, Quantity: 5, ItemSnapshot: asset.AssetData{}},
 	}
 
 	err := p.StoreItems(1000, items)
@@ -101,7 +102,7 @@ func TestClearItems(t *testing.T) {
 	p := NewProcessor(l, ctx, db)
 
 	items := []StoredItem{
-		{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: []byte(`{"flag":0}`)},
+		{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: asset.AssetData{}},
 	}
 	require.NoError(t, p.StoreItems(1000, items))
 
@@ -135,8 +136,8 @@ func TestMultipleCharacterIsolation(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	items1 := []StoredItem{{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: []byte(`{}`)}}
-	items2 := []StoredItem{{ItemId: 2000001, ItemType: 0, Quantity: 5, ItemSnapshot: []byte(`{}`)}}
+	items1 := []StoredItem{{ItemId: 2000000, ItemType: 0, Quantity: 10, ItemSnapshot: asset.AssetData{}}}
+	items2 := []StoredItem{{ItemId: 2000001, ItemType: 0, Quantity: 5, ItemSnapshot: asset.AssetData{}}}
 
 	require.NoError(t, p.StoreItems(1000, items1))
 	require.NoError(t, p.StoreItems(2000, items2))
@@ -225,7 +226,7 @@ func TestHasItemsOrMesos_Items(t *testing.T) {
 	l, _ := test.NewNullLogger()
 	p := NewProcessor(l, ctx, db)
 
-	items := []StoredItem{{ItemId: 2000000, ItemType: 0, Quantity: 1, ItemSnapshot: []byte(`{}`)}}
+	items := []StoredItem{{ItemId: 2000000, ItemType: 0, Quantity: 1, ItemSnapshot: asset.AssetData{}}}
 	require.NoError(t, p.StoreItems(1000, items))
 
 	has, err := HasItemsOrMesos(1000)(db.WithContext(ctx))()

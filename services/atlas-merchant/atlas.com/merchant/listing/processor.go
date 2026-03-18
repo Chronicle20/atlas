@@ -1,7 +1,7 @@
 package listing
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 	"time"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -14,7 +14,7 @@ type Processor interface {
 	GetByShopIdAndDisplayOrder(shopId uuid.UUID, displayOrder uint16) (Model, error)
 	CountByShopId(shopId uuid.UUID) (int64, error)
 	CountByShopIds(shopIds []uuid.UUID) (map[uuid.UUID]int64, error)
-	Create(shopId uuid.UUID, tenantId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, displayOrder uint16) (Model, error)
+	Create(shopId uuid.UUID, tenantId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, displayOrder uint16) (Model, error)
 	Delete(id uuid.UUID) error
 	DeleteByShopId(shopId uuid.UUID) error
 	UpdateBundles(id uuid.UUID, bundlesRemaining uint16, quantity uint16, expectedVersion uint32) (int64, error)
@@ -50,7 +50,7 @@ func (p *ProcessorImpl) CountByShopIds(shopIds []uuid.UUID) (map[uuid.UUID]int64
 	return countByShopIds(shopIds)(p.db)()
 }
 
-func (p *ProcessorImpl) Create(shopId uuid.UUID, tenantId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot json.RawMessage, displayOrder uint16) (Model, error) {
+func (p *ProcessorImpl) Create(shopId uuid.UUID, tenantId uuid.UUID, itemId uint32, itemType byte, bundleSize uint16, bundleCount uint16, pricePerBundle uint32, itemSnapshot asset.AssetData, displayOrder uint16) (Model, error) {
 	entity := &Entity{
 		Id:               uuid.New(),
 		TenantId:         tenantId,

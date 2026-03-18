@@ -1,7 +1,7 @@
 package frederick
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 
 	"github.com/google/uuid"
 )
@@ -12,7 +12,7 @@ type ItemModel struct {
 	itemId       uint32
 	itemType     byte
 	quantity     uint16
-	itemSnapshot json.RawMessage
+	itemSnapshot asset.AssetData
 }
 
 func (m ItemModel) Id() uuid.UUID         { return m.id }
@@ -20,7 +20,7 @@ func (m ItemModel) CharacterId() uint32    { return m.characterId }
 func (m ItemModel) ItemId() uint32         { return m.itemId }
 func (m ItemModel) ItemType() byte         { return m.itemType }
 func (m ItemModel) Quantity() uint16       { return m.quantity }
-func (m ItemModel) ItemSnapshot() json.RawMessage { return m.itemSnapshot }
+func (m ItemModel) ItemSnapshot() asset.AssetData { return m.itemSnapshot }
 
 func MakeItem(e ItemEntity) (ItemModel, error) {
 	return ItemModel{

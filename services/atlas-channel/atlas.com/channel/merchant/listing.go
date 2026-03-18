@@ -1,18 +1,16 @@
 package merchant
 
-import "encoding/json"
-
 type ListingRestModel struct {
-	Id               string          `json:"-"`
-	ShopId           string          `json:"shopId"`
-	ItemId           uint32          `json:"itemId"`
-	ItemType         byte            `json:"itemType"`
-	Quantity         uint16          `json:"quantity"`
-	BundleSize       uint16          `json:"bundleSize"`
-	BundlesRemaining uint16          `json:"bundlesRemaining"`
-	PricePerBundle   uint32          `json:"pricePerBundle"`
-	ItemSnapshot     json.RawMessage `json:"itemSnapshot"`
-	DisplayOrder     uint16          `json:"displayOrder"`
+	Id               string    `json:"-"`
+	ShopId           string    `json:"shopId"`
+	ItemId           uint32    `json:"itemId"`
+	ItemType         byte      `json:"itemType"`
+	Quantity         uint16    `json:"quantity"`
+	BundleSize       uint16    `json:"bundleSize"`
+	BundlesRemaining uint16    `json:"bundlesRemaining"`
+	PricePerBundle   uint32    `json:"pricePerBundle"`
+	ItemSnapshot     AssetData `json:"itemSnapshot"`
+	DisplayOrder     uint16    `json:"displayOrder"`
 }
 
 func (r ListingRestModel) GetID() string {
@@ -37,7 +35,7 @@ type ListingModel struct {
 	bundleSize       uint16
 	bundlesRemaining uint16
 	pricePerBundle   uint32
-	itemSnapshot     json.RawMessage
+	itemSnapshot     AssetData
 	displayOrder     uint16
 }
 
@@ -49,7 +47,7 @@ func (m ListingModel) Quantity() uint16            { return m.quantity }
 func (m ListingModel) BundleSize() uint16          { return m.bundleSize }
 func (m ListingModel) BundlesRemaining() uint16    { return m.bundlesRemaining }
 func (m ListingModel) PricePerBundle() uint32      { return m.pricePerBundle }
-func (m ListingModel) ItemSnapshot() json.RawMessage { return m.itemSnapshot }
+func (m ListingModel) ItemSnapshot() AssetData { return m.itemSnapshot }
 func (m ListingModel) DisplayOrder() uint16        { return m.displayOrder }
 
 func ExtractListing(rm ListingRestModel) (ListingModel, error) {

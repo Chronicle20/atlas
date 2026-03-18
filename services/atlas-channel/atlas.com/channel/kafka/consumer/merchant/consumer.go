@@ -11,9 +11,7 @@ import (
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
-	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	"github.com/Chronicle20/atlas-constants/inventory"
@@ -416,50 +414,9 @@ func buildShopItems(l logrus.FieldLogger, listings []merchant.ListingModel) []in
 	return items
 }
 
-// itemSnapshot is the JSON structure stored in listing.ItemSnapshot.
-type itemSnapshot struct {
-	Expiration     time.Time `json:"expiration"`
-	Quantity       uint32    `json:"quantity"`
-	Flag           uint16    `json:"flag"`
-	Rechargeable   uint64    `json:"rechargeable"`
-	Strength       uint16    `json:"strength"`
-	Dexterity      uint16    `json:"dexterity"`
-	Intelligence   uint16    `json:"intelligence"`
-	Luck           uint16    `json:"luck"`
-	Hp             uint16    `json:"hp"`
-	Mp             uint16    `json:"mp"`
-	WeaponAttack   uint16    `json:"weaponAttack"`
-	MagicAttack    uint16    `json:"magicAttack"`
-	WeaponDefense  uint16    `json:"weaponDefense"`
-	MagicDefense   uint16    `json:"magicDefense"`
-	Accuracy       uint16    `json:"accuracy"`
-	Avoidability   uint16    `json:"avoidability"`
-	Hands          uint16    `json:"hands"`
-	Speed          uint16    `json:"speed"`
-	Jump           uint16    `json:"jump"`
-	Slots          uint16    `json:"slots"`
-	LevelType      byte      `json:"levelType"`
-	Level          byte      `json:"level"`
-	Experience     uint32    `json:"experience"`
-	HammersApplied uint32    `json:"hammersApplied"`
-	CashId         int64     `json:"cashId,string"`
-	PetId          uint32    `json:"petId"`
-}
-
-// assetFromSnapshot deserializes an ItemSnapshot into a packet model Asset.
-func assetFromSnapshot(templateId uint32, snapshot json.RawMessage) packetmodel.Asset {
-	base := packetmodel.NewAsset(true, 0, templateId, time.Time{})
-
-	if snapshot == nil || len(snapshot) == 0 {
-		return base
-	}
-
-	var s itemSnapshot
-	if err := json.Unmarshal(snapshot, &s); err != nil {
-		return base
-	}
-
-	base = packetmodel.NewAsset(true, 0, templateId, s.Expiration)
+// assetFromSnapshot converts a typed AssetData into a packet model Asset.
+func assetFromSnapshot(templateId uint32, s merchant.AssetData) packetmodel.Asset {
+	base := packetmodel.NewAsset(true, 0, templateId, s.Expiration)
 
 	invType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {

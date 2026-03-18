@@ -3,9 +3,9 @@ package shop
 import (
 	"atlas-merchant/frederick"
 	message "atlas-merchant/kafka/message"
+	asset2 "atlas-merchant/kafka/message/asset"
 	"atlas-merchant/listing"
 	"context"
-	"encoding/json"
 	"testing"
 
 	database "github.com/Chronicle20/atlas-database"
@@ -95,8 +95,8 @@ func TestOpenShop(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -131,8 +131,8 @@ func TestCloseShop(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -157,8 +157,8 @@ func TestCloseShop_InvalidState(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -182,8 +182,8 @@ func TestAddListing(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	li, err := p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 5, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	li, err := p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 5, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 	assert.Equal(t, uint32(2000000), li.ItemId())
 	assert.Equal(t, uint16(5), li.BundleSize())
@@ -201,13 +201,13 @@ func TestAddListing_LimitReached(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
+	snapshot := asset2.AssetData{}
 	for i := 0; i < MaxListings; i++ {
-		_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 1000, snapshot, 0, 0, 0)
+		_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 1000, snapshot, 0, 0)
 		require.NoError(t, err)
 	}
 
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 1000, snapshot, 0, 0, 0)
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 1000, snapshot, 0, 0)
 	assert.ErrorIs(t, err, ErrListingLimitReached)
 }
 
@@ -221,8 +221,8 @@ func TestPurchaseBundle(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 5, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 5, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -246,8 +246,8 @@ func TestPurchaseBundle_SoldOut(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 5, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 5, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -274,8 +274,8 @@ func TestPurchaseBundle_InsufficientBundles(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 3, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 3, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.OpenShop(mb)(m.Id(), 1000)
@@ -297,8 +297,8 @@ func TestEnterMaintenance(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -334,8 +334,8 @@ func TestExitMaintenance_Reopen(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -357,8 +357,8 @@ func TestExitMaintenance_CloseWhenEmpty(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -403,12 +403,12 @@ func TestRemoveListing_DisplayOrderCollapse(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0) // index 0
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0) // index 0
 	require.NoError(t, err)
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000001, 0, 1, 10, 2000, snapshot, 0, 0, 0) // index 1
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000001, 0, 1, 10, 2000, snapshot, 0, 0) // index 1
 	require.NoError(t, err)
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000002, 0, 1, 10, 3000, snapshot, 0, 0, 0) // index 2
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000002, 0, 1, 10, 3000, snapshot, 0, 0) // index 2
 	require.NoError(t, err)
 
 	// Remove the first listing (index 0).
@@ -439,8 +439,8 @@ func TestUpdateListing(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	err = p.UpdateListing(m.Id(), 0, 2000, 5, 20)
@@ -464,14 +464,14 @@ func TestAddListing_InvalidState(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
 
 	// Open state should not allow adding listings.
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000001, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000001, 0, 1, 10, 1000, snapshot, 0, 0)
 	assert.ErrorIs(t, err, ErrInvalidTransition)
 }
 
@@ -485,15 +485,15 @@ func TestAddListing_ZeroValues(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
+	snapshot := asset2.AssetData{}
 
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 0, snapshot, 0, 0, 0)
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 1, 0, snapshot, 0, 0)
 	assert.Error(t, err)
 
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 0, 1, 1000, snapshot, 0, 0, 0)
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 0, 1, 1000, snapshot, 0, 0)
 	assert.Error(t, err)
 
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 0, 1000, snapshot, 0, 0, 0)
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 0, 1000, snapshot, 0, 0)
 	assert.Error(t, err)
 }
 
@@ -542,8 +542,8 @@ func TestHiredMerchant_MesoAccumulation(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, m.ExpiresAt())
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -582,8 +582,8 @@ func TestCharacterShop_NoMesoAccumulation(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -607,8 +607,8 @@ func TestPurchaseBundle_ZeroBundleCount(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))
@@ -645,8 +645,8 @@ func TestCloseShop_FromMaintenance(t *testing.T) {
 	m, err := p.CreateShop(1000, CharacterShop, "Test Shop", 0, 0, 910000001, uuid.Nil, 0, 0, 0)
 	require.NoError(t, err)
 
-	snapshot, _ := json.Marshal(map[string]interface{}{"flag": 0})
-	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0, 0)
+	snapshot := asset2.AssetData{}
+	_, err = p.AddListing(mb)(m.Id(), 1000, 2000000, 0, 1, 10, 1000, snapshot, 0, 0)
 	require.NoError(t, err)
 
 	require.NoError(t, p.OpenShop(mb)(m.Id(), 1000))

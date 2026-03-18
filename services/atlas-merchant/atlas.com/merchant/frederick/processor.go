@@ -1,6 +1,7 @@
 package frederick
 
 import (
+	"atlas-merchant/kafka/message/asset"
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
@@ -40,7 +41,7 @@ type StoredItem struct {
 	ItemId       uint32
 	ItemType     byte
 	Quantity     uint16
-	ItemSnapshot []byte
+	ItemSnapshot asset.AssetData
 }
 
 // StoreItems moves unsold listing items into Frederick storage for a character.

@@ -1,7 +1,7 @@
 package listing
 
 import (
-	"encoding/json"
+	"atlas-merchant/kafka/message/asset"
 	"testing"
 	"time"
 
@@ -13,7 +13,7 @@ import (
 func TestBuilder_ValidListing(t *testing.T) {
 	id := uuid.New()
 	shopId := uuid.New()
-	snapshot := json.RawMessage(`{"name":"Red Potion"}`)
+	snapshot := asset.AssetData{Flag: 1}
 
 	m, err := NewBuilder().
 		SetId(id).

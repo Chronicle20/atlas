@@ -44,6 +44,11 @@ export const getColumns = ({tenant, onRefresh, banStatuses, banStatusLoading, on
         {
             accessorKey: "attributes.name",
             header: "Name",
+            cell: ({row}) => (
+                <Link href={"/accounts/" + row.original.id} className="font-medium text-primary hover:underline">
+                    {row.original.attributes.name}
+                </Link>
+            ),
         },
         {
             accessorKey: "attributes.loggedIn",
@@ -206,12 +211,6 @@ function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount,
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                    <DropdownMenuItem asChild>
-                        <Link href={"/accounts/" + account.id}>
-                            View Account
-                        </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem disabled={account.attributes.loggedIn === 0} onClick={handleLogout}>
                         Logout
                     </DropdownMenuItem>

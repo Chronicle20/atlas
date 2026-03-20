@@ -2,14 +2,7 @@
 
 import { ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { MoreHorizontal, Eye, Clock, Zap, CheckCircle } from "lucide-react"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { Clock, Zap, CheckCircle } from "lucide-react"
 import {
     Tooltip,
     TooltipContent,
@@ -202,29 +195,6 @@ export const getColumns = (): ColumnDef<QuestDefinition>[] => {
         {
             accessorKey: "attributes.order",
             header: "Order",
-        },
-        {
-            id: "actions",
-            cell: ({ row }) => {
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                                <Link href={`/quests/${row.original.id}`}>
-                                    <Eye className="h-4 w-4 mr-2" />
-                                    View Details
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
-            },
         },
     ]
 }

@@ -6,7 +6,9 @@ import { useGachapon, useGachaponPrizePool } from "@/lib/hooks/api/useGachapons"
 import { useItemStrings } from "@/lib/hooks/api/useItemStrings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageLoader } from "@/components/common/PageLoader";
+import Link from "next/link";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import {
   Table,
@@ -114,8 +116,7 @@ export default function GachaponDetailPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Item ID</TableHead>
-                  <TableHead>Item Name</TableHead>
+                  <TableHead>Item</TableHead>
                   <TableHead>Quantity</TableHead>
                   <TableHead>Tier</TableHead>
                 </TableRow>
@@ -123,8 +124,22 @@ export default function GachaponDetailPage() {
               <TableBody>
                 {prizePool.map((reward) => (
                   <TableRow key={`${reward.attributes.itemId}-${reward.attributes.tier}`}>
-                    <TableCell className="font-mono">{reward.attributes.itemId}</TableCell>
-                    <TableCell>{itemNameMap.get(String(reward.attributes.itemId)) ?? "-"}</TableCell>
+                    <TableCell>
+                      <Link href={`/items/${reward.attributes.itemId}`} className="hover:underline">
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Badge variant="secondary">
+                                {itemNameMap.get(String(reward.attributes.itemId)) ?? String(reward.attributes.itemId)}
+                              </Badge>
+                            </TooltipTrigger>
+                            <TooltipContent copyable>
+                              <p>{String(reward.attributes.itemId)}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </Link>
+                    </TableCell>
                     <TableCell>{reward.attributes.quantity}</TableCell>
                     <TableCell>
                       <Badge variant={tierBadgeVariant(reward.attributes.tier)}>

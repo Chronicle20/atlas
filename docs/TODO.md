@@ -51,11 +51,9 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Send buddy operation errors to requester (`buddy_operation.go:48`)
 - [ ] NPC producer NpcId population (`npc/producer.go:32,47`)
 - [ ] NPC shop commodities model incomplete (`npc/shops/commodities/model.go:69`)
-- [ ] Cash shop open loop issue (`socket/writer/cash_shop_open.go:80`)
 - [ ] Cash shop inventory item padded string and unknown fields (`socket/writer/cash_shop_operation.go:117,119,120`)
 - [ ] Guild operation byte value (`socket/writer/guild_operation.go:94`)
 - [ ] Buddy operation shop flag (`socket/writer/buddy_operation.go:118`)
-- [ ] Set field usage validation (`socket/writer/set_field.go:259`)
 - [ ] Multiple services have different cash shop message implementations (`kafka/message/cashshop/kafka.go:72`)
 - [ ] Field migration bug not using instance (`kafka/consumer/character/consumer.go:79`)
 
@@ -121,10 +119,12 @@ Location: `socket/handler/character_damage.go:24-33`
 - [ ] JMS map codes for cash shop (`socket/writer/cash_shop_operation.go:128`)
 - [ ] Load gifts in cash shop (`socket/writer/cash_shop_operation.go:131`)
 
-#### Set Field Writer
-- [ ] Retrieve owner name from id (`socket/writer/set_field.go:416,593`)
-- [ ] Create flags bitmask (`socket/writer/set_field.go:417`)
-- [ ] Multiple incomplete string writes (`socket/writer/set_field.go:444,495,511,524,594`)
+#### Remaining No-op Decode Packets (Category 2)
+These packets have empty Decode implementations by design — they require runtime context
+that is not available on the wire:
+- [ ] `AttackWriter` (`character/attack_writer.go`) — variable damage counts, skill-dependent fields
+- [ ] `EffectSkillUse` (`character/effect_skill_use.go`) — conditional bools not self-describing on wire
+- [ ] `EffectSkillUseForeign` (`character/effect_skill_use.go`) — conditional bools not self-describing on wire
 
 ### Character Service
 - [ ] Blocked name checking disabled (`processor.go:206`)

@@ -13,34 +13,22 @@ import (
 	"context"
 
 	_map "github.com/Chronicle20/atlas-constants/map"
+	fieldsb "github.com/Chronicle20/atlas-packet/field/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const MapChangeHandle = "MapChangeHandle"
-
 func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		cs := r.Available() == 0
-		var fieldKey byte
-		var targetId uint32
-		var portalName string
-		var x int16
-		var y int16
-		var unused byte
-		var premium byte
-		var chase bool
-		var targetX int32
-		var targetY int32
+		p := fieldsb.Change{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		if cs {
+		if p.CashShopReturn() {
 			l.Debugf("Character [%d] returning from cash shop.", s.CharacterId())
 			c, err := channel.NewProcessor(l, ctx).GetById(s.Field().Channel())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to retrieve channel information being returned in to.")
-				// TODO send server notice.
 				return
 			}
 
@@ -54,23 +42,6 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 			}
 			return
-		}
-
-		fieldKey = r.ReadByte()
-		targetId = r.ReadUint32()
-		portalName = r.ReadAsciiString()
-		if len(portalName) == 0 {
-			x = r.ReadInt16()
-			y = r.ReadInt16()
-		}
-		unused = r.ReadByte()
-		premium = r.ReadByte()
-		if t.Region() == "GMS" && t.MajorVersion() >= 83 {
-			chase = r.ReadBool()
-		}
-		if chase {
-			targetX = r.ReadInt32()
-			targetY = r.ReadInt32()
 		}
 
 		c, err := character.NewProcessor(l, ctx).GetById()(s.CharacterId())
@@ -87,12 +58,11 @@ func MapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Pro
 			return
 		}
 
-		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), portalName, x, y, targetId, fieldKey)
-		l.Debugf("Unused [%d], Premium [%d], Chase [%t], TargetX [%d], TargetY [%d]", unused, premium, chase, targetX, targetY)
-		if portalName == "" {
-			_ = portal.NewProcessor(l, ctx).Warp(s.Field(), s.CharacterId(), _map.Id(targetId))
+		l.Debugf("Character [%d] attempting to enter portal [%s] at [%d,%d] heading to [%d]. FieldKey [%d].", s.CharacterId(), p.PortalName(), p.X(), p.Y(), p.TargetId(), p.FieldKey())
+		if p.PortalName() == "" {
+			_ = portal.NewProcessor(l, ctx).Warp(s.Field(), s.CharacterId(), _map.Id(p.TargetId()))
 		} else {
-			_ = portal.NewProcessor(l, ctx).Enter(s.Field(), portalName, s.CharacterId())
+			_ = portal.NewProcessor(l, ctx).Enter(s.Field(), p.PortalName(), s.CharacterId())
 		}
 	}
 }

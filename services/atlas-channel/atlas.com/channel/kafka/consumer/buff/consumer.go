@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -65,13 +66,13 @@ func handleStatusEventApplied(sc server.Model, wp writer.Producer) message.Handl
 			}
 			bs = append(bs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
+			err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 			}
 
 			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGiveForeign)(writer.CharacterBuffGiveForeignBody(l)(ctx)(e.CharacterId, bs))(os)
+				err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffGiveForeignWriter)(writer.CharacterBuffGiveForeignBody(e.CharacterId, bs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 					return err
@@ -101,13 +102,13 @@ func handleStatusEventExpired(sc server.Model, wp writer.Producer) message.Handl
 			}
 			ebs = append(ebs, buff.NewBuff(e.Body.SourceId, e.Body.Level, e.Body.Duration, changes, e.Body.CreatedAt, e.Body.ExpiresAt))
 
-			err := session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancel)(writer.CharacterBuffCancelBody(l)(ctx)(ebs))(s)
+			err := session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffCancelWriter)(writer.CharacterBuffCancelBody(ebs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write character [%d] cancelled buffs.", e.CharacterId)
 			}
 
 			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {
-				err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffCancelForeign)(writer.CharacterBuffCancelForeignBody(l)(ctx)(e.CharacterId, ebs))(os)
+				err = session.Announce(l)(ctx)(wp)(charpkt.CharacterBuffCancelForeignWriter)(writer.CharacterBuffCancelForeignBody(e.CharacterId, ebs))(os)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to write new character [%d] buffs.", e.CharacterId)
 					return err

@@ -9,23 +9,24 @@ import (
 	"sort"
 
 	"github.com/Chronicle20/atlas-model/model"
+	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const ServerListRequestHandle = "ServerListRequestHandle"
-
-func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	return func(s session.Model, r *request.Reader) {
+func ServerListRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := loginSB.ServerListRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		_ = announceServerInformation(l)(ctx)(wp)(s)
 	}
 }
 
 func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-		wp := world.NewProcessor(l, ctx)
-		ws, err := wp.GetAll()
+		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve worlds to display to session.")
 		}
@@ -46,7 +47,6 @@ func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) f
 func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-			serverListRecommendationFunc := session.Announce(l)(wp)(writer.ServerListRecommendations)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var rs = make([]model2.Recommendation, 0)
@@ -55,7 +55,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))
 						}
 					}
-					err := serverListRecommendationFunc(s, writer.ServerListRecommendationsBody(l, ctx)(rs))
+					err := session.Announce(l)(ctx)(wp)(loginCB.ServerListRecommendationsWriter)(writer.ServerListRecommendationsBody(rs))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue recommended worlds")
 						return err
@@ -70,9 +70,8 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		return func(wp writer.Producer) model.Operator[session.Model] {
-			selectWorldFunc := session.Announce(l)(wp)(writer.SelectWorld)
 			return func(s session.Model) error {
-				err := selectWorldFunc(s, writer.SelectWorldBody(0))
+				err := session.Announce(l)(ctx)(wp)(loginCB.SelectWorldWriter)(loginCB.NewSelectWorld(uint32(0)).Encode)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to identify the last world a account was logged into")
 					return err
@@ -85,10 +84,7 @@ func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-			serverListEntryFunc := session.Announce(l)(wp)(writer.ServerListEntry)
-			serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					for _, x := range ws {
@@ -97,12 +93,12 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							cls = append(cls, model2.NewChannelLoad(c.ChannelId(), c.CurrentCapacity()))
 						}
 
-						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))
+						err := session.Announce(l)(ctx)(wp)(loginCB.ServerListEntryWriter)(writer.ServerListEntryBody(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}
 					}
-					err := serverListEndFunc(s, writer.ServerListEndBody)
+					err := session.Announce(l)(ctx)(wp)(loginCB.ServerListEndWriter)(writer.ServerListEndBody())(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to complete writing the server list")
 						return err

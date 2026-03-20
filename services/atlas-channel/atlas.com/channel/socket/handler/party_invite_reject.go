@@ -8,23 +8,20 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
+	partysb "github.com/Chronicle20/atlas-packet/party/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	PartyInviteRejectHandle = "PartyInviteRejectHandle"
-)
-
 func PartyInviteRejectHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		unk := r.ReadByte()
-		from := r.ReadAsciiString()
-		l.Debugf("Rejecting party invite from [%s]. unk [%d].", from, unk)
+		p := partysb.InviteReject{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		cs, err := character.NewProcessor(l, ctx).GetByName(from)
+		cs, err := character.NewProcessor(l, ctx).GetByName(p.From())
 		if err != nil {
-			l.WithError(err).Errorf("Unable to locate character by name [%s]. Invite will be stuck", from)
+			l.WithError(err).Errorf("Unable to locate character by name [%s]. Invite will be stuck", p.From())
 			return
 		}
 

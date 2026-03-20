@@ -1,10 +1,11 @@
 package model
 
 import (
+	"context"
 	"time"
 
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,19 +18,14 @@ type Note struct {
 	Flag       byte
 }
 
-func (n *Note) Encode(_ logrus.FieldLogger, _ tenant.Model, _ map[string]interface{}) func(w *response.Writer) {
-	return func(w *response.Writer) {
+func (n *Note) Encoder(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
 		w.WriteInt(n.Id)
 		w.WriteAsciiString(n.SenderName + " ")
 		w.WriteAsciiString(n.Message)
-		w.WriteInt64(msTime(n.Timestamp))
+		w.WriteInt64(packetmodel.MsTime(n.Timestamp))
 		w.WriteByte(n.Flag)
+		return w.Bytes()
 	}
-}
-
-func msTime(t time.Time) int64 {
-	if t.IsZero() {
-		return -1
-	}
-	return t.Unix()*int64(10000000) + int64(116444736000000000)
 }

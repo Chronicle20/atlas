@@ -6,17 +6,16 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	pet2 "github.com/Chronicle20/atlas-packet/pet/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const PetCommandHandle = "PetCommandHandle"
-
 func PetCommandHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		petId := r.ReadUint64()
-		byName := r.ReadBool()
-		command := r.ReadByte()
-		_ = pet.NewProcessor(l, ctx).AttemptCommand(uint32(petId), command, byName, s.CharacterId())
+		p := pet2.Command{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		_ = pet.NewProcessor(l, ctx).AttemptCommand(uint32(p.PetId()), p.Command(), p.ByName(), s.CharacterId())
 	}
 }

@@ -7,31 +7,32 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/session"
 	"atlas-channel/skill/handler"
-	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 )
 
 const CharacterUseSkillHandle = "CharacterUseSkillHandle"
 
 func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		sui := &model.SkillUsageInfo{}
-		sui.Decode(l, t, readerOptions)(r)
+		sui := &packetmodel.SkillUsageInfo{}
+		sui.Decode(l, ctx)(r, readerOptions)
 
 		cp := character.NewProcessor(l, ctx)
 		c, err := cp.GetById(cp.SkillModelDecorator)(s.CharacterId())
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 			}
 			return
 		}
@@ -39,7 +40,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 			l.Warnf("Character [%d] attempting to use skill when dead.", s.CharacterId())
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 			}
 			return
 		}
@@ -60,7 +61,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 		if err != nil {
 			err = enableActions(l)(ctx)(wp)(s)
 			if err != nil {
-				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+				l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 			}
 			return
 		}
@@ -78,7 +79,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 
 		err = enableActions(l)(ctx)(wp)(s)
 		if err != nil {
-			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, s.CharacterId())
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, s.CharacterId())
 		}
 	}
 }
@@ -86,7 +87,7 @@ func CharacterUseSkillHandleFunc(l logrus.FieldLogger, ctx context.Context, wp w
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
 	}
 }
@@ -95,7 +96,7 @@ func announceSkillUse(l logrus.FieldLogger) func(ctx context.Context) func(wp wr
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 			return func(skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterSkillUseEffectBody(l)(skillId, characterLevel, skillLevel, false, false, false))
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterSkillUseEffectBody(skillId, characterLevel, skillLevel, false, false, false))
 			}
 		}
 	}
@@ -105,7 +106,7 @@ func announceForeignSkillUse(l logrus.FieldLogger) func(ctx context.Context) fun
 	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 		return func(wp writer.Producer) func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
 			return func(characterId uint32, skillId uint32, characterLevel byte, skillLevel byte) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterSkillUseEffectForeignBody(l)(characterId, skillId, characterLevel, skillLevel, false, false, false))
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterSkillUseEffectForeignBody(characterId, skillId, characterLevel, skillLevel, false, false, false))
 			}
 		}
 	}

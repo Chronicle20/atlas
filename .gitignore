@@ -49,3 +49,4 @@ services/atlas-storage/.env
 /services/atlas-reactor-actions/atlas.com/reactor/atlas-reactor-actions
 /services/atlas-skills/atlas.com/skills/atlas-skills
 /services/atlas-tenants/atlas.com/tenants/atlas-tenants
+/services/atlas-merchant/atlas.com/merchant/atlas-merchant

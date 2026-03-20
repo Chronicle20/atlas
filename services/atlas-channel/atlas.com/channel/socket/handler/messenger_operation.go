@@ -10,6 +10,9 @@ import (
 	"context"
 
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
+	messengerpkt "github.com/Chronicle20/atlas-packet/messenger"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
+	messengersb "github.com/Chronicle20/atlas-packet/messenger/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
@@ -17,7 +20,6 @@ import (
 type MessengerOperation byte
 
 const (
-	MessengerOperationHandle        = "MessengerOperationHandle"
 	MessengerOperationAnswerInvite  = "ANSWER_INVITE"
 	MessengerOperationCreate        = "CREATE"
 	MessengerOperationClose         = "CLOSE"
@@ -28,17 +30,21 @@ const (
 
 func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		mode := MessengerOperation(r.ReadByte())
+		p := messengersb.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		mode := MessengerOperation(p.Mode())
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationAnswerInvite) {
-			messengerId := r.ReadUint32()
-			l.Debugf("Character [%d] answered messenger [%d] invite.", s.CharacterId(), messengerId)
-			if messengerId == 0 {
+			sp := &messengersb.OperationAnswerInvite{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] answered messenger [%d] invite.", s.CharacterId(), sp.MessengerId())
+			if sp.MessengerId() == 0 {
 				err := messenger.NewProcessor(l, ctx).Create(s.CharacterId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to issue create messenger for character [%d].", s.CharacterId())
 				}
 			} else {
-				err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeMessenger), messengerId)
+				err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeMessenger), sp.MessengerId())
 				if err != nil {
 					l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 				}
@@ -58,12 +64,13 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationInvite) {
-			targetCharacter := r.ReadAsciiString()
-			l.Debugf("Character [%d] attempting to invite [%s] to messenger.", s.CharacterId(), targetCharacter)
-			tc, err := character.NewProcessor(l, ctx).GetByName(targetCharacter)
+			sp := &messengersb.OperationInvite{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to invite [%s] to messenger.", s.CharacterId(), sp.TargetCharacter())
+			tc, err := character.NewProcessor(l, ctx).GetByName(sp.TargetCharacter())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", targetCharacter)
-				err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, false))(s)
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to invite to messenger.", sp.TargetCharacter())
+				err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationInviteSentBody(sp.TargetCharacter(), false))(s)
 				if err != nil {
 					l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 				}
@@ -75,20 +82,19 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 
-			err = session.Announce(l)(ctx)(wp)(writer.MessengerOperation)(writer.MessengerOperationInviteSentBody(l)(targetCharacter, true))(s)
+			err = session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationInviteSentBody(sp.TargetCharacter(), true))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] was unable to request [%d] to invite messenger.", s.CharacterId(), tc.Id())
 			}
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationDeclineInvite) {
-			fromName := r.ReadAsciiString()
-			myName := r.ReadAsciiString()
-			alwaysZero := r.ReadByte()
-			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), fromName, myName, alwaysZero)
-			tc, err := character.NewProcessor(l, ctx).GetByName(fromName)
+			sp := &messengersb.OperationDeclineInvite{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] rejected [%s] invite to messenger. Other [%s], Zero [%d]", s.CharacterId(), sp.FromName(), sp.MyName(), sp.AlwaysZero())
+			tc, err := character.NewProcessor(l, ctx).GetByName(sp.FromName())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to reject invitation of.", fromName)
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to reject invitation of.", sp.FromName())
 				return
 			}
 			err = invite.NewProcessor(l, ctx).Reject(s.CharacterId(), s.WorldId(), string(invite2.TypeMessenger), tc.Id())
@@ -98,8 +104,9 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 			return
 		}
 		if isMessengerShopOperation(l)(readerOptions, mode, MessengerOperationChat) {
-			msg := r.ReadAsciiString()
-			l.Debugf("Character [%d] sending message [%s] to messenger.", s.CharacterId(), msg)
+			sp := &messengersb.OperationChat{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] sending message [%s] to messenger.", s.CharacterId(), sp.Msg())
 			m, err := messenger.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
 			if err != nil {
 				return
@@ -110,7 +117,7 @@ func MessengerOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp 
 					rids = append(rids, mm.Id())
 				}
 			}
-			err = message.NewProcessor(l, ctx).MessengerChat(s.Field(), s.CharacterId(), msg, rids)
+			err = message.NewProcessor(l, ctx).MessengerChat(s.Field(), s.CharacterId(), sp.Msg(), rids)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to relay messenger [%d] to recipients.", m.Id())
 			}

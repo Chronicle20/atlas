@@ -15,9 +15,11 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -72,8 +74,8 @@ func handleEnteredStatusEvent(sc server.Model, wp writer.Producer) message.Handl
 			l.WithError(err).Errorf("Unable to get shop for NPC [%d].", e.Body.NpcTemplateId)
 			return
 		}
-		bp := writer.NPCShopBody(l, tenant.MustFromContext(ctx))(e.Body.NpcTemplateId, nsm.Commodities(), sms)
-		_ = session.Announce(l)(ctx)(wp)(writer.NPCShop)(bp)(s)
+		bp := writer.NPCShopBody(e.Body.NpcTemplateId, nsm.Commodities(), sms)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopWriter)(bp)(s)
 	}
 }
 
@@ -93,18 +95,18 @@ func handleErrorStatusEvent(sc server.Model, wp writer.Producer) message.Handler
 			return
 		}
 
-		var bp writer.BodyProducer
-		if e.Body.Error == writer.NPCShopOperationOverLevelRequirement {
-			bp = writer.NPCShopOperationOverLevelRequirementBody(l, t)(e.Body.LevelLimit)
-		} else if e.Body.Error == writer.NPCShopOperationUnderLevelRequirement {
-			bp = writer.NPCShopOperationUnderLevelRequirementBody(l, t)(e.Body.LevelLimit)
-		} else if e.Body.Error == writer.NPCShopOperationGenericError {
-			bp = writer.NPCShopOperationGenericErrorBody(l, t)
-		} else if e.Body.Error == writer.NPCShopOperationGenericErrorWithReason {
-			bp = writer.NPCShopOperationGenericErrorWithReasonBody(l, t)(e.Body.Reason)
+		var bp packet.Encode
+		if e.Body.Error == npcpkt.NPCShopOperationOverLevelRequirement {
+			bp = npcpkt.NPCShopOperationOverLevelRequirementBody(e.Body.LevelLimit)
+		} else if e.Body.Error == npcpkt.NPCShopOperationUnderLevelRequirement {
+			bp = npcpkt.NPCShopOperationUnderLevelRequirementBody(e.Body.LevelLimit)
+		} else if e.Body.Error == npcpkt.NPCShopOperationGenericError {
+			bp = npcpkt.NPCShopOperationGenericErrorBody()
+		} else if e.Body.Error == npcpkt.NPCShopOperationGenericErrorWithReason {
+			bp = npcpkt.NPCShopOperationGenericErrorWithReasonBody(e.Body.Reason)
 		} else {
-			bp = writer.NPCShopOperationBody(l, tenant.MustFromContext(ctx))(e.Body.Error)
+			bp = npcpkt.NPCShopOperationBody(e.Body.Error)
 		}
-		_ = session.Announce(l)(ctx)(wp)(writer.NPCShopOperation)(bp)(s)
+		_ = session.Announce(l)(ctx)(wp)(npcpkt.NPCShopOperationWriter)(bp)(s)
 	}
 }

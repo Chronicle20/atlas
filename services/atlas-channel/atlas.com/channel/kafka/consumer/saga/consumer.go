@@ -8,11 +8,14 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	storagepkt "github.com/Chronicle20/atlas-packet/storage"
+	storagecb "github.com/Chronicle20/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -99,14 +102,14 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 		// Handle storage operation failures by sending appropriate error packets
 		if e.Body.SagaType == saga.SagaTypeStorageOperation {
 			// Get the appropriate error body producer based on the error code
-			errorBody := getStorageErrorBodyProducer(l, e.Body.ErrorCode)
+			errorBody := getStorageErrorBodyProducer(e.Body.ErrorCode)
 			if errorBody == nil {
 				l.WithField("error_code", e.Body.ErrorCode).Warn("No error body producer for error code, skipping notification.")
 				return
 			}
 
 			// Send the error packet to the client
-			err := session.Announce(l)(ctx)(wp)(writer.StorageOperation)(errorBody)(s)
+			err := session.Announce(l)(ctx)(wp)(storagecb.StorageOperationWriter)(errorBody)(s)
 			if err != nil {
 				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send storage error packet to client.")
 				return
@@ -121,12 +124,12 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 }
 
 // getStorageErrorBodyProducer returns the appropriate BodyProducer for the given error code
-func getStorageErrorBodyProducer(l logrus.FieldLogger, errorCode string) writer.BodyProducer {
+func getStorageErrorBodyProducer(errorCode string) packet.Encode {
 	switch errorCode {
 	case saga.ErrorCodeNotEnoughMesos:
-		return writer.StorageOperationErrorNotEnoughMesoBody(l)
+		return storagepkt.StorageOperationErrorNotEnoughMesoBody()
 	case saga.ErrorCodeInventoryFull, saga.ErrorCodeStorageFull:
-		return writer.StorageOperationErrorInventoryFullBody(l)
+		return storagepkt.StorageOperationErrorInventoryFullBody()
 	default:
 		return nil
 	}

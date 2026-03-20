@@ -4,24 +4,21 @@ import (
 	"atlas-login/socket/model"
 	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const ServerListRecommendations = "ServerListRecommendations"
 
-func ServerListRecommendationsBody(l logrus.FieldLogger, ctx context.Context) func(wrs []model.Recommendation) BodyProducer {
-	return func(wrs []model.Recommendation) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(byte(len(wrs)))
-			for _, x := range wrs {
-				_ = x.Encode(l, tenant.MustFromContext(ctx), options)
-				w.WriteInt(uint32(x.WorldId()))
-				w.WriteAsciiString(x.Reason())
+func ServerListRecommendationsBody(wrs []model.Recommendation) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			prs := make([]packetmodel.WorldRecommendation, len(wrs))
+			for i, x := range wrs {
+				prs[i] = packetmodel.NewWorldRecommendation(x.WorldId(), x.Reason())
 			}
-			rtn := w.Bytes()
-			return rtn
+			return loginpkt.NewServerListRecommendations(prs).Encode(l, ctx)(options)
 		}
 	}
 }

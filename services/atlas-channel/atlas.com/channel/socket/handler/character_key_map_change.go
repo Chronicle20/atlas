@@ -6,42 +6,37 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	character2 "github.com/Chronicle20/atlas-packet/character/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterKeyMapChangeHandle = "CharacterKeyMapChangeHandle"
-
 func CharacterKeyMapChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		mode := r.ReadUint32()
-		if mode == 0 {
-			changes := r.ReadUint32()
-			for range changes {
-				keyId := r.ReadInt32()
-				theType := r.ReadInt8()
-				action := r.ReadInt32()
-				l.Debugf("Character [%d] attempting to change key [%d] to type [%d] action [%d].", s.CharacterId(), keyId, theType, action)
-				err := key.NewProcessor(l, ctx).Update(s.CharacterId(), keyId, theType, action)
+		p := character2.KeyMapChange{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+
+		if p.Mode() == 0 {
+			for _, e := range p.Entries() {
+				err := key.NewProcessor(l, ctx).Update(s.CharacterId(), e.KeyId, e.TheType, e.Action)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 				}
 			}
 			return
 		}
-		if mode == 1 {
-			itemId := r.ReadUint32()
-			l.Debugf("Character [%d] attempting to Auto HP potion to [%d].", s.CharacterId(), itemId)
-			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 91, 7, int32(itemId))
+		if p.Mode() == 1 {
+			l.Debugf("Character [%d] attempting to Auto HP potion to [%d].", s.CharacterId(), p.ItemId())
+			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 91, 7, int32(p.ItemId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 			}
 			return
 		}
-		if mode == 2 {
-			itemId := r.ReadUint32()
-			l.Debugf("Character [%d] attempting to Auto MP potion to [%d].", s.CharacterId(), itemId)
-			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 92, 7, int32(itemId))
+		if p.Mode() == 2 {
+			l.Debugf("Character [%d] attempting to Auto MP potion to [%d].", s.CharacterId(), p.ItemId())
+			err := key.NewProcessor(l, ctx).Update(s.CharacterId(), 92, 7, int32(p.ItemId()))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update key map for character [%d].", s.CharacterId())
 			}

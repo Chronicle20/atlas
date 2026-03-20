@@ -2,20 +2,20 @@ package writer
 
 import (
 	"atlas-login/character"
+	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const AddCharacterEntry = "AddCharacterEntry"
 
-func AddCharacterEntryBody(l logrus.FieldLogger, tenant tenant.Model) func(c character.Model) BodyProducer {
-	return func(c character.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(AddCharacterEntry, string(AddCharacterCodeOk), "codes", options))
-			WriteCharacter(tenant)(w, c, false)
-			return w.Bytes()
+func AddCharacterEntryBody(c character.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.AddCharacterEntryWriter, string(AddCharacterCodeOk), "codes", options)
+			entry := toCharacterListEntry(c, false)
+			return charpkt.NewAddCharacterEntry(resolved, entry).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -30,11 +30,11 @@ const (
 	AddCharacterCodeUnknownError             AddCharacterCode = "UNKNOWN_ERROR"
 )
 
-func AddCharacterErrorBody(l logrus.FieldLogger, _ tenant.Model) func(code AddCharacterCode) BodyProducer {
-	return func(code AddCharacterCode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(AddCharacterEntry, string(code), "codes", options))
-			return w.Bytes()
+func AddCharacterErrorBody(code AddCharacterCode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.AddCharacterEntryWriter, string(code), "codes", options)
+			return charpkt.NewAddCharacterError(resolved).Encode(l, ctx)(options)
 		}
 	}
 }

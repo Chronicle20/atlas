@@ -1,4 +1,5 @@
 export interface DropAttributes {
+  monsterId: number;
   itemId: number;
   minimumQuantity: number;
   maximumQuantity: number;

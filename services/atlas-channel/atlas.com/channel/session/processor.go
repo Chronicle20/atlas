@@ -14,7 +14,9 @@ import (
 	_map "github.com/Chronicle20/atlas-constants/map"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-model/model"
+	socketpkt "github.com/Chronicle20/atlas-packet/socket/clientbound"
 	socket "github.com/Chronicle20/atlas-socket"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -163,17 +165,17 @@ func (p *Processor) ForEachByCharacterId(ch channel.Model) func(provider model.P
 	}
 }
 
-func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-		return func(writerProducer writer.Producer) func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-			return func(writerName string) func(bodyProducer writer.BodyProducer) model.Operator[Model] {
-				return func(bodyProducer writer.BodyProducer) model.Operator[Model] {
+func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+	return func(ctx context.Context) func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+		return func(writerProducer writer.Producer) func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+			return func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
+				return func(encoder packet.Encode) model.Operator[Model] {
 					return func(s Model) error {
 						w, err := writerProducer(writerName)
 						if err != nil {
 							return err
 						}
-						return s.announceEncrypted(w(l)(bodyProducer))
+						return s.announceEncrypted(w(l, ctx)(encoder))
 					}
 				}
 			}
@@ -344,13 +346,14 @@ func (p *Processor) GetSessionByCharacterId(characterId uint32) (Model, bool) {
 	return getRegistry().GetByCharacterId(p.t.Id(), characterId)
 }
 
-func SendPing(l logrus.FieldLogger, ctx context.Context, t tenant.Model, wp writer.Producer) socket.IdleNotifier {
+func SendPing(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) socket.IdleNotifier {
+	t := tenant.MustFromContext(ctx)
 	return func(sessionId uuid.UUID) {
 		s, ok := getRegistry().Get(t.Id(), sessionId)
 		if !ok {
 			return
 		}
 		l.Debugf("Session [%s] idle, sending PING.", sessionId)
-		_ = Announce(l)(ctx)(wp)(writer.Ping)(writer.PingBody())(s)
+		_ = Announce(l)(ctx)(wp)(socketpkt.PingWriter)(socketpkt.Ping{}.Encode)(s)
 	}
 }

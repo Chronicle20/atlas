@@ -166,6 +166,14 @@ How would you like to proceed?
 "
 ```
 
+## Migration & Refactoring Rules
+
+### No Type Aliases During Migrations
+When migrating types/functions to a shared library, update ALL service call sites to import from the new library directly. Never leave type aliases (`type Foo = lib.Foo`), re-exports, or thin wrappers that just delegate. We control the full lifecycle of all services — there is no backwards-compatibility concern.
+
+### Clean Up Dead Code After Extraction
+After extracting code to a shared library, review every modified service file for symbols that are no longer referenced: unused constants, structs, functions, imports, and variables. Use `grep` across the service to confirm nothing depends on them, then delete. Do not leave dead code behind.
+
 ## Generation Workflow
 0. **Validate dependencies** - Verify all types/operations you plan to use exist
 1. Create `model.go` - Immutable domain model with accessors

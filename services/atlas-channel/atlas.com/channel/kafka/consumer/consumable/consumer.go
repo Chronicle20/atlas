@@ -6,7 +6,6 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -18,6 +17,9 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -58,14 +60,14 @@ func handleErrorConsumableEvent(sc server.Model, wp writer.Producer) message.Han
 		}
 
 		if e.Body.Error == consumable2.ErrorTypePetCannotConsume {
-			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(writer.PetCashFoodResult)(writer.PetCashFoodErrorResultBody()))
+			err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(petpkt.PetCashFoodResultWriter)(petpkt.NewPetCashFoodResultError().Encode))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 			}
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process error event for character [%d].", e.CharacterId)
 		}
@@ -84,7 +86,7 @@ func handleScrollConsumableEvent(sc server.Model, wp writer.Producer) message.Ha
 		}
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(uint32(e.CharacterId), func(s session.Model) error {
-			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(writer.CharacterItemUpgrade)(writer.CharacterItemUpgradeBody(uint32(e.CharacterId), e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll)))
+			return _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), session.Announce(l)(ctx)(wp)(charpkt.CharacterItemUpgradeWriter)(charpkt.NewItemUpgrade(uint32(e.CharacterId), e.Body.Success, e.Body.Cursed, e.Body.LegendarySpirit, e.Body.WhiteScroll).Encode))
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to process scroll event for character [%d].", e.CharacterId)

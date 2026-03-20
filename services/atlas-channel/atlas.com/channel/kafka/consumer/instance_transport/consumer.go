@@ -17,6 +17,8 @@ import (
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
+	questpkt "github.com/Chronicle20/atlas-packet/quest/clientbound"
 )
 
 // InitConsumers initializes the instance transport event consumers
@@ -63,7 +65,7 @@ func handleTransitEnteredEvent(sc server.Model, wp writer.Producer) message.Hand
 		// Send CLOCK packet
 		duration := time.Duration(e.Body.DurationSeconds) * time.Second
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-			session.Announce(l)(ctx)(wp)(writer.Clock)(writer.TimerClockBody(l, t)(duration)))
+			session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(duration.Seconds())).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to send clock to character [%d].", e.CharacterId)
 		}
@@ -71,7 +73,7 @@ func handleTransitEnteredEvent(sc server.Model, wp writer.Producer) message.Hand
 		// Send ScriptProgress packet if message is present
 		if e.Body.Message != "" {
 			err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId,
-				session.Announce(l)(ctx)(wp)(writer.ScriptProgress)(writer.ScriptProgressBody(e.Body.Message)))
+				session.Announce(l)(ctx)(wp)(questpkt.ScriptProgressWriter)(questpkt.NewScriptProgress(e.Body.Message).Encode))
 			if err != nil {
 				l.WithError(err).Errorf("Unable to send script progress to character [%d].", e.CharacterId)
 			}

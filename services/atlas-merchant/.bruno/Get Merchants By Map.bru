@@ -1,0 +1,15 @@
+meta {
+  name: Get Merchants By Map
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/merchants?mapId={{mapId}}
+  body: none
+  auth: none
+}
+
+params:query {
+  mapId: {{mapId}}
+}

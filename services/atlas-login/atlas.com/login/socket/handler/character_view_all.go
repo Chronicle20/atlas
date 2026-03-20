@@ -8,36 +8,22 @@ import (
 	"context"
 
 	world2 "github.com/Chronicle20/atlas-constants/world"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterViewAllHandle = "CharacterViewAllHandle"
-
-func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	t := tenant.MustFromContext(ctx)
-	viewAllFunc := session.Announce(l)(wp)(writer.CharacterViewAll)
-	return func(s session.Model, r *request.Reader) {
-		var gameStartMode byte
-		var nexonPassport string
-		var machineId string
-		var gameRoomClient uint32
-		var gameStartMode2 byte
-
-		if t.Region() == "GMS" && t.MajorVersion() > 83 {
-			gameStartMode = r.ReadByte()
-			nexonPassport = r.ReadAsciiString()
-			machineId = r.ReadAsciiString()
-			gameRoomClient = r.ReadUint32()
-			gameStartMode2 = r.ReadByte()
-		}
-		l.Debugf("Processing request to view all characters. GameStartMode [%d], NexonPassport [%s], MachineId [%s], GameRoomClient [%d], GameStartMode2 [%d]", gameStartMode, nexonPassport, machineId, gameRoomClient, gameStartMode2)
+func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := loginpkt.AllCharacterListRequest{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
 		ws, err := world.NewProcessor(l, ctx).GetAll()
 		if err != nil {
 			l.Debugf("Unable to retrieve available worlds.")
-			err = viewAllFunc(s, writer.CharacterViewAllErrorBody(l)())
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllErrorBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write view error.")
 			}
@@ -59,21 +45,21 @@ func CharacterViewAllHandleFunc(l logrus.FieldLogger, ctx context.Context, wp wr
 
 		l.Debugf("Located [%d] characters for account [%d].", count, s.AccountId())
 		if count == 0 {
-			err = viewAllFunc(s, writer.CharacterViewAllSearchFailedBody(l)())
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllSearchFailedBody())(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}
 			return
 		}
 
-		err = viewAllFunc(s, writer.CharacterViewAllCountBody(l)(uint32(len(ws)), uint32(count)))
+		err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllCountBody(uint32(len(ws)), uint32(count)))(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to write count.")
 			return
 		}
 
 		for w, cs := range wcs {
-			err = viewAllFunc(s, writer.CharacterViewAllCharacterBody(l, t)(w, cs))
+			err = session.Announce(l)(ctx)(wp)(charpkt.CharacterViewAllWriter)(writer.CharacterViewAllCharacterBody(w, cs))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to write search failed.")
 			}

@@ -48,7 +48,7 @@ func CreateSocketService(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 					socket.SetMessageDecryptor(sp.Decrypt(true, hasMapleEncryption)),
 					socket.SetDestroyer(sp.DestroyByIdWithSpan),
 					socket.SetReadWriter(rw),
-					socket.SetIdleNotifier(session.SendPing(l, t, wp), idleThreshold),
+					socket.SetIdleNotifier(session.SendPing(l, ctx, wp), idleThreshold),
 				)
 
 				if err != nil {

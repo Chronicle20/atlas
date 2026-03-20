@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	guildpkt "github.com/Chronicle20/atlas-packet/guild/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -128,7 +129,7 @@ func refreshThread(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						return err
 					}
-					return session.Announce(l)(ctx)(wp)(writer.GuildBBS)(writer.GuildBBSThreadBody(l)(t))(s)
+					return session.Announce(l)(ctx)(wp)(guildpkt.GuildBBSWriter)(writer.GuildBBSThreadBody(t))(s)
 				}
 			}
 		}

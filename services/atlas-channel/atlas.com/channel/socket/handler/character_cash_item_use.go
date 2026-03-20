@@ -15,25 +15,24 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
+	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterCashItemUseHandle = "CharacterCashItemUseHandle"
-
 func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		p := cashsb.ItemUse{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		updateTime := uint32(0)
-		if updateTimeFirst {
-			updateTime = r.ReadUint32()
-		}
-		source := slot.Position(r.ReadInt16())
-		itemId := item.Id(r.ReadUint32())
+		updateTimeFirst := t.Region() == "GMS" && t.MajorVersion() >= 95
+		updateTime := p.UpdateTime()
+		source := slot.Position(p.Source())
+		itemId := item.Id(p.ItemId())
 
 		a, err := character2.NewProcessor(l, ctx).GetItemInSlot(s.CharacterId(), inventory.TypeValueCash, int16(source))()
 		if err != nil || item.Id(a.TemplateId()) != itemId {
@@ -44,26 +43,24 @@ func CharacterCashItemUseHandleFunc(l logrus.FieldLogger, ctx context.Context, _
 		it := GetCashSlotItemType(t)(itemId)
 
 		if it == CashSlotItemTypePetConsumable {
+			sp := cashsb.NewItemUsePetConsumable(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
 			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
+				updateTime = sp.UpdateTime()
 			}
 			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
 			return
 		}
 		if it == CashSlotItemTypeChalkboard {
-			message := r.ReadAsciiString()
-			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
-			}
-			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), message)
+			sp := cashsb.NewItemUseChalkboard(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			_ = chalkboard.NewProcessor(l, ctx).AttemptUse(s.Field(), s.CharacterId(), sp.Message())
 			return
 		}
 		if it == CashSlotItemTypeFieldEffect {
-			message := r.ReadAsciiString()
-			if !updateTimeFirst {
-				updateTime = r.ReadUint32()
-			}
-			_ = updateTime
+			sp := cashsb.NewItemUseFieldEffect(updateTimeFirst)
+			sp.Decode(l, ctx)(r, readerOptions)
+			message := sp.Message()
 
 			transactionId := uuid.New()
 			now := time.Now()

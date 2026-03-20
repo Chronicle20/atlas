@@ -1,11 +1,14 @@
 package writer
 
 import (
-	"github.com/Chronicle20/atlas-socket/response"
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
-const CharacterNameResponse = "CharacterNameResponse"
 
 type CharacterNameResponseCode string
 
@@ -16,13 +19,11 @@ const (
 	CharacterNameResponseCodeSystemError       CharacterNameResponseCode = "SYSTEM_ERROR"
 )
 
-func CharacterNameResponseBody(l logrus.FieldLogger) func(name string, code CharacterNameResponseCode) BodyProducer {
-	return func(name string, code CharacterNameResponseCode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteAsciiString(name)
-			w.WriteByte(getCode(l)(CharacterNameResponse, string(code), "codes", options))
-			rtn := w.Bytes()
-			return rtn
+func CharacterNameResponseBody(name string, code CharacterNameResponseCode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.CharacterNameResponseWriter, string(code), "codes", options)
+			return charpkt.NewCharacterNameResponse(name, resolved).Encode(l, ctx)(options)
 		}
 	}
 }

@@ -2,14 +2,15 @@ package writer
 
 import (
 	"atlas-login/character"
+	"context"
 
 	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterViewAll = "CharacterViewAll"
 
 type CharacterViewAllCode string
 
@@ -22,49 +23,42 @@ const (
 	CharacterViewAllCodeErrorViewAll2  CharacterViewAllCode = "ERROR_VIEW_ALL_2"
 )
 
-func CharacterViewAllCountBody(l logrus.FieldLogger) func(worldCount uint32, unk uint32) BodyProducer {
-	return func(worldCount uint32, unk uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeCharacterCount), "codes", options))
-			w.WriteInt(worldCount)
-			w.WriteInt(unk)
-			return w.Bytes()
+func CharacterViewAllCountBody(worldCount uint32, unk uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeCharacterCount), "codes", options)
+			return charpkt.NewCharacterViewAllCount(resolved, worldCount, unk).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func CharacterViewAllSearchFailedBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeSearchFailed), "codes", options))
-			return w.Bytes()
+func CharacterViewAllSearchFailedBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeSearchFailed), "codes", options)
+			return charpkt.NewCharacterViewAllSearchFailed(resolved).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func CharacterViewAllErrorBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeErrorViewAll), "codes", options))
-			return w.Bytes()
+func CharacterViewAllErrorBody() packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeErrorViewAll), "codes", options)
+			return charpkt.NewCharacterViewAllError(resolved).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func CharacterViewAllCharacterBody(l logrus.FieldLogger, tenant tenant.Model) func(worldId world.Id, characters []character.Model) BodyProducer {
-	return func(worldId world.Id, characters []character.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(CharacterViewAll, string(CharacterViewAllCodeNormal), "codes", options))
-			w.WriteByte(byte(worldId))
-			w.WriteByte(byte(len(characters)))
-			for _, c := range characters {
-				WriteCharacter(tenant)(w, c, true)
+func CharacterViewAllCharacterBody(worldId world.Id, characters []character.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeNormal), "codes", options)
+			entries := make([]packetmodel.CharacterListEntry, len(characters))
+			for i, c := range characters {
+				entries[i] = toCharacterListEntry(c, true)
 			}
-
-			if tenant.Region() == "GMS" && tenant.MajorVersion() > 87 {
-				w.WriteByte(1) // PIC handling
-			}
-			return w.Bytes()
+			return charpkt.NewCharacterViewAllCharacters(resolved, worldId, entries).Encode(l, ctx)(options)
 		}
 	}
 }

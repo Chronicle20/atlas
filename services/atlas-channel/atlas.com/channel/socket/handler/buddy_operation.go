@@ -8,13 +8,14 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
+	buddySB "github.com/Chronicle20/atlas-packet/buddy/serverbound"
 	invite2 "github.com/Chronicle20/atlas-constants/invite"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	BuddyOperationHandle = "BuddyOperationHandle"
 	BuddyOperationReload = "RELOAD"
 	BuddyOperationAdd    = "ADD"
 	BuddyOperationAccept = "ACCEPT"
@@ -23,51 +24,56 @@ const (
 
 func BuddyOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := buddy2.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationReload) {
 			l.Debugf("Character [%d] attempting to reload buddy list.", s.CharacterId())
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAdd) {
-			name := r.ReadAsciiString()
-			if len(name) < 4 || len(name) > 13 {
+			sp := &buddySB.OperationAdd{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			if len(sp.Name()) < 4 || len(sp.Name()) > 13 {
 				l.Warnf("Character [%d] attempting to add a buddy and input name is out of range.", s.CharacterId())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
-			group := r.ReadAsciiString()
-			if len(group) > 16 {
+			if len(sp.Group()) > 16 {
 				l.Warnf("Character [%d] attempting to add a buddy and input group is out of range.", s.CharacterId())
 				_ = session.NewProcessor(l, ctx).Destroy(s)
 				return
 			}
 
-			tc, err := character.NewProcessor(l, ctx).GetByName(name)
+			tc, err := character.NewProcessor(l, ctx).GetByName(sp.Name())
 			if err != nil || s.WorldId() != tc.WorldId() {
 				l.WithError(err).Errorf("Unable to locate buddy character [%d] is attempting to add.", s.CharacterId())
 				// TODO send error to requester
 				return
 			}
 
-			err = buddylist.NewProcessor(l, ctx).RequestAdd(s.CharacterId(), s.WorldId(), tc.Id(), group)
+			err = buddylist.NewProcessor(l, ctx).RequestAdd(s.CharacterId(), s.WorldId(), tc.Id(), sp.Group())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationAccept) {
-			fromCharacterId := r.ReadUint32()
-			l.Debugf("Character [%d] attempting to accept buddy request from [%d].", s.CharacterId(), fromCharacterId)
-			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeBuddy), fromCharacterId)
+			sp := &buddySB.OperationAccept{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] attempting to accept buddy request from [%d].", s.CharacterId(), sp.FromCharacterId())
+			err := invite.NewProcessor(l, ctx).Accept(s.CharacterId(), s.WorldId(), string(invite2.TypeBuddy), sp.FromCharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to issue invite acceptance command for character [%d].", s.CharacterId())
 			}
 			return
 		}
 		if isBuddyOperation(l)(readerOptions, op, BuddyOperationDelete) {
-			buddyCharacterId := r.ReadUint32()
+			sp := &buddySB.OperationDelete{}
+			sp.Decode(l, ctx)(r, readerOptions)
 			// This happens both when a character uses the UI to remove an existing buddy. Or when a character rejects another characters invitation.
-			err := buddylist.NewProcessor(l, ctx).RequestDelete(s.CharacterId(), s.WorldId(), buddyCharacterId)
+			err := buddylist.NewProcessor(l, ctx).RequestDelete(s.CharacterId(), s.WorldId(), sp.BuddyCharacterId())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to request buddy addition for character [%d].", s.CharacterId())
 			}

@@ -8,21 +8,22 @@ import (
 	"context"
 
 	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
+	inventory3 "github.com/Chronicle20/atlas-packet/inventory/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterInventoryMoveHandle = "CharacterInventoryMoveHandle"
-
 func CharacterInventoryMoveHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTime := r.ReadUint32()
-		inventoryType := inventory2.Type(r.ReadByte())
-		source := r.ReadInt16()
-		destination := r.ReadInt16()
-		count := r.ReadInt16()
+		p := inventory3.Move{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-		l.Debugf("Character [%d] attempting to move [%d] item in inventory [%d]. source [%d] destination [%d] updateTime [%d]", s.CharacterId(), count, inventoryType, source, destination, updateTime)
+		inventoryType := inventory2.Type(p.InventoryType())
+		source := p.Source()
+		destination := p.Destination()
+		count := p.Count()
+
 		if source < 0 && destination > 0 {
 			err := compartment.NewProcessor(l, ctx).Unequip(s.CharacterId(), inventoryType, source, destination)
 			if err != nil {

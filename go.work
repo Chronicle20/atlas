@@ -5,6 +5,8 @@ use (
 	./libs/atlas-database
 	./libs/atlas-kafka
 	./libs/atlas-model
+	./libs/atlas-opcodes
+	./libs/atlas-packet
 	./libs/atlas-redis
 	./libs/atlas-rest
 	./libs/atlas-retry
@@ -42,6 +44,7 @@ use (
 	./services/atlas-map-actions/atlas.com/map-actions
 	./services/atlas-maps/atlas.com/maps
 	./services/atlas-marriages/atlas.com/marriages
+	./services/atlas-merchant/atlas.com/merchant
 	./services/atlas-messages/atlas.com/messages
 	./services/atlas-messengers/atlas.com/messengers
 	./services/atlas-monster-death/atlas.com/monster

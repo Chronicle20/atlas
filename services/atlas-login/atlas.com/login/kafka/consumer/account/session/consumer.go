@@ -18,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -80,7 +81,7 @@ func handleCreatedAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) 
 				return err
 			}
 
-			err = session.Announce(l)(wp)(writer.AuthSuccess)(s, writer.AuthSuccessBody(t)(a.Id(), a.Name(), a.Gender(), sc.UsesPin, a.PIC()))
+			err = session.Announce(l)(ctx)(wp)(loginpkt.AuthSuccessWriter)(writer.AuthSuccessBody(a.Id(), a.Name(), a.Gender(), sc.UsesPin, a.PIC()))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show successful authorization for account %d", a.Id())
 				return err
@@ -143,11 +144,10 @@ func handleErrorAccountSessionStatusEvent(t tenant.Model, wp writer.Producer) fu
 
 func announcePermanentBan(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) model.Operator[session.Model] {
-			authPermanentBanFunc := session.Announce(l)(wp)(writer.AuthPermanentBan)
+			authPermanentBanFunc := session.Announce(l)(ctx)(wp)(loginpkt.AuthPermanentBanWriter)
 			return func(s session.Model) error {
-				err := authPermanentBanFunc(s, writer.AuthPermanentBanBody(l, t))
+				err := authPermanentBanFunc(writer.AuthPermanentBanBody())(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to show account is permanently banned.")
 				}
@@ -159,12 +159,11 @@ func announcePermanentBan(l logrus.FieldLogger) func(ctx context.Context) func(w
 
 func announceTemporaryBan(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(until time.Time, reason byte) model.Operator[session.Model] {
-			authTemporaryBanFunc := session.Announce(l)(wp)(writer.AuthTemporaryBan)
+			authTemporaryBanFunc := session.Announce(l)(ctx)(wp)(loginpkt.AuthTemporaryBanWriter)
 			return func(until time.Time, reason byte) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := authTemporaryBanFunc(s, writer.AuthTemporaryBanBody(l, t)(until, reason))
+					err := authTemporaryBanFunc(writer.AuthTemporaryBanBody(until, reason))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show account is temporary banned.")
 					}
@@ -177,14 +176,13 @@ func announceTemporaryBan(l logrus.FieldLogger) func(ctx context.Context) func(w
 
 func announceError(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(reason string) model.Operator[session.Model] {
-			authLoginFailedFunc := session.Announce(l)(wp)(writer.AuthLoginFailed)
+			authLoginFailedFunc := session.Announce(l)(ctx)(wp)(loginpkt.AuthLoginFailedWriter)
 			return func(reason string) model.Operator[session.Model] {
 				return func(s session.Model) error {
-					err := authLoginFailedFunc(s, writer.AuthLoginFailedBody(l, t)(reason))
+					err := authLoginFailedFunc(writer.AuthLoginFailedBody(reason))(s)
 					if err != nil {
-						l.WithError(err).Errorf("Unable to issue [%s].", writer.AuthLoginFailed)
+						l.WithError(err).Errorf("Unable to issue [%s].", loginpkt.AuthLoginFailedWriter)
 						return err
 					}
 					return nil
@@ -218,7 +216,7 @@ func announceServerInformation(l logrus.FieldLogger) func(ctx context.Context) f
 func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-			serverListRecommendationFunc := session.Announce(l)(wp)(writer.ServerListRecommendations)
+			serverListRecommendationFunc := session.Announce(l)(ctx)(wp)(loginpkt.ServerListRecommendationsWriter)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					var rs = make([]model2.Recommendation, 0)
@@ -227,7 +225,7 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 							rs = append(rs, model2.NewWorldRecommendation(x.Id(), x.RecommendedMessage()))
 						}
 					}
-					err := serverListRecommendationFunc(s, writer.ServerListRecommendationsBody(l, ctx)(rs))
+					err := serverListRecommendationFunc(writer.ServerListRecommendationsBody(rs))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to issue recommended worlds")
 						return err
@@ -242,9 +240,9 @@ func announceRecommendedWorlds(l logrus.FieldLogger) func(ctx context.Context) f
 func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) model.Operator[session.Model] {
 		return func(wp writer.Producer) model.Operator[session.Model] {
-			selectWorldFunc := session.Announce(l)(wp)(writer.SelectWorld)
+			selectWorldFunc := session.Announce(l)(ctx)(wp)(loginpkt.SelectWorldWriter)
 			return func(s session.Model) error {
-				err := selectWorldFunc(s, writer.SelectWorldBody(0))
+				err := selectWorldFunc(loginpkt.NewSelectWorld(uint32(0)).Encode)(s)
 				if err != nil {
 					l.WithError(err).Errorf("Unable to identify the last world a account was logged into")
 					return err
@@ -257,10 +255,9 @@ func announceLastWorld(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 
 func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(ws []world.Model) model.Operator[session.Model] {
-			serverListEntryFunc := session.Announce(l)(wp)(writer.ServerListEntry)
-			serverListEndFunc := session.Announce(l)(wp)(writer.ServerListEnd)
+			serverListEntryFunc := session.Announce(l)(ctx)(wp)(loginpkt.ServerListEntryWriter)
+			serverListEndFunc := session.Announce(l)(ctx)(wp)(loginpkt.ServerListEndWriter)
 			return func(ws []world.Model) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					for _, x := range ws {
@@ -269,12 +266,12 @@ func announceServerList(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							cls = append(cls, model2.NewChannelLoad(c.ChannelId(), c.CurrentCapacity()))
 						}
 
-						err := serverListEntryFunc(s, writer.ServerListEntryBody(t)(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))
+						err := serverListEntryFunc(writer.ServerListEntryBody(x.Id(), x.Name(), x.State(), x.EventMessage(), cls))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write server list entry for [%d]", x.Id())
 						}
 					}
-					err := serverListEndFunc(s, writer.ServerListEndBody)
+					err := serverListEndFunc(writer.ServerListEndBody())(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to complete writing the server list")
 						return err
@@ -302,16 +299,15 @@ func handleStateChangedAccountSessionStatusEvent(t tenant.Model, wp writer.Produ
 
 func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
-			serverIpFunc := session.Announce(l)(wp)(writer.ServerIP)
+			serverIpFunc := session.Announce(l)(ctx)(wp)(loginpkt.ServerIPWriter)
 			return func(accountId uint32, state uint8, params model2.ChannelSelect) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					if len(params.IPAddress) <= 0 {
 						return nil
 					}
 
-					err := serverIpFunc(s, writer.ServerIPBody(l, t)(params.IPAddress, params.Port, params.CharacterId))
+					err := serverIpFunc(writer.ServerIPBody(params.IPAddress, params.Port, params.CharacterId))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to write server ip response due to error.")
 						return err

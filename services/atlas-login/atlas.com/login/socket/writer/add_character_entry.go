@@ -14,7 +14,7 @@ func AddCharacterEntryBody(c character.Model) packet.Encode {
 	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 		return func(options map[string]interface{}) []byte {
 			resolved := getCode(l)(charpkt.AddCharacterEntryWriter, string(AddCharacterCodeOk), "codes", options)
-			entry := toCharacterListEntry(c)
+			entry := toCharacterListEntry(c, false)
 			return charpkt.NewAddCharacterEntry(resolved, entry).Encode(l, ctx)(options)
 		}
 	}

@@ -78,7 +78,7 @@ func (m CharacterViewAllCharacters) Encode(l logrus.FieldLogger, ctx context.Con
 		w.WriteByte(byte(m.worldId))
 		w.WriteByte(byte(len(m.characters)))
 		for _, c := range m.characters {
-			c.Write(l, ctx, w, options, true)
+			w.WriteByteArray(c.Encode(l, ctx)(options))
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 87 {
 			w.WriteByte(1) // PIC handling
@@ -95,7 +95,7 @@ func (m *CharacterViewAllCharacters) Decode(l logrus.FieldLogger, ctx context.Co
 		count := r.ReadByte()
 		m.characters = make([]model.CharacterListEntry, count)
 		for i := byte(0); i < count; i++ {
-			m.characters[i].Read(l, ctx, r, options, true)
+			m.characters[i].Decode(l, ctx)(r, options)
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 87 {
 			_ = r.ReadByte() // PIC handling

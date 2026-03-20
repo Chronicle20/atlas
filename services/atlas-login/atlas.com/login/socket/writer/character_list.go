@@ -18,14 +18,14 @@ func CharacterListBody(characters []character.Model, worldId world.Id, status in
 		return func(options map[string]interface{}) []byte {
 			entries := make([]packetmodel.CharacterListEntry, len(characters))
 			for i, c := range characters {
-				entries[i] = toCharacterListEntry(c)
+				entries[i] = toCharacterListEntry(c, false)
 			}
 			return charpkt.NewCharacterList(byte(status), entries, pic != "", uint32(characterSlots)).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func toCharacterListEntry(c character.Model) packetmodel.CharacterListEntry {
+func toCharacterListEntry(c character.Model, viewAll bool) packetmodel.CharacterListEntry {
 	var petIds [3]uint64
 	for _, p := range c.Pets() {
 		petIds[p.Slot()] = p.CashId()
@@ -43,5 +43,5 @@ func toCharacterListEntry(c character.Model) packetmodel.CharacterListEntry {
 
 	avatar := socketmodel.NewFromCharacter(c, false)
 
-	return packetmodel.NewCharacterListEntry(stats, avatar, c.Gm(), c.Rank(), c.RankMove(), c.JobRank(), c.JobRankMove())
+	return packetmodel.NewCharacterListEntry(stats, avatar, viewAll, c.Gm(), c.Rank(), c.RankMove(), c.JobRank(), c.JobRankMove())
 }

@@ -56,7 +56,7 @@ func CharacterViewAllCharacterBody(worldId world.Id, characters []character.Mode
 			resolved := getCode(l)(charpkt.CharacterViewAllWriter, string(CharacterViewAllCodeNormal), "codes", options)
 			entries := make([]packetmodel.CharacterListEntry, len(characters))
 			for i, c := range characters {
-				entries[i] = toCharacterListEntry(c)
+				entries[i] = toCharacterListEntry(c, true)
 			}
 			return charpkt.NewCharacterViewAllCharacters(resolved, worldId, entries).Encode(l, ctx)(options)
 		}

@@ -56,7 +56,7 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
                                     {name}
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent copyable>
                                 <p>{String(value)}</p>
                             </TooltipContent>
                         </Tooltip>

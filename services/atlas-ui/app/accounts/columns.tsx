@@ -69,7 +69,7 @@ export const getColumns = ({tenant, onRefresh, banStatuses, banStatusLoading, on
                                     {name}
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent copyable>
                                 <p>{String(value)}</p>
                             </TooltipContent>
                         </Tooltip>
@@ -142,7 +142,7 @@ export const getColumns = ({tenant, onRefresh, banStatuses, banStatusLoading, on
                                     {name}
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent copyable>
                                 <p>{String(value)}</p>
                             </TooltipContent>
                         </Tooltip>

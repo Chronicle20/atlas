@@ -2,22 +2,21 @@ package writer
 
 import (
 	"atlas-channel/character"
-	"atlas-channel/socket/model"
 	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterAttackEnergy = "CharacterAttackEnergy"
 
-func CharacterAttackEnergyBody(l logrus.FieldLogger) func(ctx context.Context) func(c character.Model, ai model.AttackInfo) BodyProducer {
-	return func(ctx context.Context) func(c character.Model, ai model.AttackInfo) BodyProducer {
-		return func(c character.Model, ai model.AttackInfo) BodyProducer {
-			return func(w *response.Writer, options map[string]interface{}) []byte {
-				WriteCommonAttackBody(l)(ctx)(c, ai)(w)
-				return w.Bytes()
-			}
+func CharacterAttackEnergyBody(c character.Model, ai packetmodel.AttackInfo) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			skillLevel, mastery, bulletItemId := preComputeAttackValues(l, ctx, c, ai)
+			hasKeydown := isKeydownSkill(ai.SkillId())
+			return charpkt.NewAttackEnergy(c.Id(), c.Level(), skillLevel, mastery, bulletItemId, hasKeydown, ai).Encode(l, ctx)(options)
 		}
 	}
 }

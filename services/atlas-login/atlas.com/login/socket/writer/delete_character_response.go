@@ -1,19 +1,20 @@
 package writer
 
 import (
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
-const DeleteCharacterResponse = "DeleteCharacterResponse"
 
-func DeleteCharacterResponseBody(l logrus.FieldLogger, _ tenant.Model) func(characterId uint32) BodyProducer {
-	return func(characterId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(DeleteCharacterCodeOk), "codes", options))
-			return w.Bytes()
+func DeleteCharacterResponseBody(characterId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.DeleteCharacterResponseWriter, string(DeleteCharacterCodeOk), "codes", options)
+			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}
 }
@@ -36,12 +37,11 @@ const (
 	DeleteCharacterCodeCannotDeleteInFamily           DeleteCharacterCode = "CANNOT_DELETE_WITH_FAMILY"
 )
 
-func DeleteCharacterErrorBody(l logrus.FieldLogger, _ tenant.Model) func(characterId uint32, code DeleteCharacterCode) BodyProducer {
-	return func(characterId uint32, code DeleteCharacterCode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt(characterId)
-			w.WriteByte(getCode(l)(DeleteCharacterResponse, string(code), "codes", options))
-			return w.Bytes()
+func DeleteCharacterErrorBody(characterId uint32, code DeleteCharacterCode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(charpkt.DeleteCharacterResponseWriter, string(code), "codes", options)
+			return charpkt.NewDeleteCharacterResponse(characterId, resolved).Encode(l, ctx)(options)
 		}
 	}
 }

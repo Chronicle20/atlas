@@ -10,10 +10,12 @@ WORKDIR /app
 COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constants/
 COPY libs/atlas-kafka/go.mod libs/atlas-kafka/go.sum libs/atlas-kafka/
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
+COPY libs/atlas-packet/go.mod libs/atlas-packet/go.sum libs/atlas-packet/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-socket/go.mod libs/atlas-socket/go.sum libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 
+COPY libs/atlas-opcodes/go.mod libs/atlas-opcodes/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-saga/go.mod libs/atlas-saga/
@@ -27,9 +29,11 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-constants' >> go.work && \
     echo '    ./libs/atlas-kafka' >> go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
+    echo '    ./libs/atlas-packet' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-socket' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-opcodes' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-channel/atlas.com/channel' >> go.work && \
@@ -43,10 +47,12 @@ RUN go mod download -C services/atlas-channel/atlas.com/channel || true
 COPY libs/atlas-constants libs/atlas-constants
 COPY libs/atlas-kafka libs/atlas-kafka
 COPY libs/atlas-model libs/atlas-model
+COPY libs/atlas-packet libs/atlas-packet
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-socket libs/atlas-socket
 COPY libs/atlas-tenant libs/atlas-tenant
 
+COPY libs/atlas-opcodes libs/atlas-opcodes
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-saga libs/atlas-saga

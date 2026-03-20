@@ -2,9 +2,11 @@ package writer
 
 import (
 	"atlas-channel/monster"
-	"atlas-channel/socket/model"
+	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -20,38 +22,28 @@ var ControlMonsterTypePassive = ControlMonsterType(-1)
 var ControlMonsterTypePassive0 = ControlMonsterType(-2)
 var ControlMonsterTypePassive1 = ControlMonsterType(-3)
 
-const ControlMonster = "ControlMonster"
-
-func StartControlMonsterBody(l logrus.FieldLogger, t tenant.Model) func(m monster.Model, aggro bool) BodyProducer {
-	return func(m monster.Model, aggro bool) BodyProducer {
-		if aggro {
-			return ControlMonsterBody(l, t)(m, ControlMonsterTypeActiveRequest)
-		}
-		return ControlMonsterBody(l, t)(m, ControlMonsterTypeActiveInit)
+func StartControlMonsterBody(m monster.Model, aggro bool) packet.Encode {
+	if aggro {
+		return ControlMonsterBody(m, ControlMonsterTypeActiveRequest)
 	}
+	return ControlMonsterBody(m, ControlMonsterTypeActiveInit)
 }
 
-func StopControlMonsterBody(l logrus.FieldLogger, t tenant.Model) func(m monster.Model) BodyProducer {
-	return func(m monster.Model) BodyProducer {
-		return ControlMonsterBody(l, t)(m, ControlMonsterTypeReset)
-	}
+func StopControlMonsterBody(m monster.Model) packet.Encode {
+	return ControlMonsterBody(m, ControlMonsterTypeReset)
 }
 
-func ControlMonsterBody(l logrus.FieldLogger, t tenant.Model) func(m monster.Model, controlType ControlMonsterType) BodyProducer {
-	return func(m monster.Model, controlType ControlMonsterType) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteInt8(int8(controlType))
-			w.WriteInt(m.UniqueId())
+func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		t := tenant.MustFromContext(ctx)
+		return func(options map[string]interface{}) []byte {
+			var mem packetmodel.MonsterModel
 			if controlType > ControlMonsterTypeReset {
-				w.WriteByte(5)
-				w.WriteInt(m.MonsterId())
-				mem := model.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), model.MonsterAppearTypeRegen, m.Team())
+				mem = packetmodel.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), packetmodel.MonsterAppearTypeRegen, m.Team())
 				stat := buildMonsterTemporaryStat(l, t, m)
 				mem.SetTemporaryStat(stat)
-				mem.Encode(l, t, options)(w)
-				return w.Bytes()
 			}
-			return w.Bytes()
+			return monsterpkt.NewMonsterControl(monsterpkt.ControlType(controlType), m.UniqueId(), m.MonsterId(), mem).Encode(l, ctx)(options)
 		}
 	}
 }

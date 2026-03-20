@@ -24,6 +24,12 @@ func getByMonsterId(monsterId uint32) database.EntityProvider[[]entity] {
 	}
 }
 
+func getByItemId(itemId uint32) database.EntityProvider[[]entity] {
+	return func(db *gorm.DB) model.Provider[[]entity] {
+		return database.SliceQuery[entity](db, &entity{ItemId: itemId})
+	}
+}
+
 func modelFromEntity(m entity) (Model, error) {
 	return NewMonsterDropBuilder(m.TenantId, m.ID).
 		SetMonsterId(m.MonsterId).

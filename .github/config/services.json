@@ -244,6 +244,14 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-merchant",
+      "type": "go-service",
+      "path": "services/atlas-merchant",
+      "module_path": "services/atlas-merchant/atlas.com/merchant",
+      "docker_image": "ghcr.io/chronicle20/atlas-merchant/atlas-merchant",
+      "docker_context": "."
+    },
+    {
       "name": "atlas-messages",
       "type": "go-service",
       "path": "services/atlas-messages",
@@ -462,6 +470,12 @@
       "path": "libs/atlas-model",
       "module_path": "libs/atlas-model",
       "coverage_threshold": 75
+    },
+    {
+      "name": "atlas-packet",
+      "type": "go-library",
+      "path": "libs/atlas-packet",
+      "module_path": "libs/atlas-packet"
     },
     {
       "name": "atlas-rest",

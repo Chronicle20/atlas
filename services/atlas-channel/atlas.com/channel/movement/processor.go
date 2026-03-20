@@ -8,14 +8,18 @@ import (
 	"atlas-channel/monster"
 	"atlas-channel/pet"
 	"atlas-channel/session"
-	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
+	"github.com/Chronicle20/atlas-packet/model"
 
 	"github.com/Chronicle20/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
 )
 
 type Processor struct {
@@ -39,7 +43,7 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, wp writer.Producer)
 
 func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement model.Movement) error {
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.CharacterMovement)(writer.CharacterMovementBody(p.l, tenant.MustFromContext(p.ctx))(characterId, movement))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(charpkt.CharacterMovementWriter)(charpkt.NewCharacterMovement(characterId, movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move character [%d] for characters in map [%d].", characterId, f.MapId())
@@ -65,7 +69,7 @@ func (p *Processor) ForNPC(f field.Model, characterId uint32, objectId uint32, u
 			p.l.WithError(err).Errorf("Unable to retrieve npc moving.")
 			return
 		}
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.NPCAction)(writer.NPCActionMoveBody(p.l, p.t)(objectId, unk, unk2, movement))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(npcpkt.NpcActionWriter)(npcpkt.NewNpcActionMove(objectId, unk, unk2, movement).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move npc [%d] for character [%d].", n.Template(), characterId)
@@ -83,7 +87,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 			SetSlot(0).
 			MustBuild()
 
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.PetMovement)(writer.PetMovementBody(p.l, p.t)(pe, movement))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(petpkt.PetMovementWriter)(petpkt.NewPetMovement(pe.OwnerId(), pe.Slot(), movement).Encode)
 		err := _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move pet [%d] for characters in map [%d].", characterId, f.MapId())
@@ -114,14 +118,14 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		return err
 	}
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonsterAck)(writer.MoveMonsterAckBody(p.l, p.t)(objectId, moveId, uint16(mo.Mp()), false, 0, 0))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, uint16(mo.Mp()), false, 0, 0).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
 		}
 	}()
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(writer.MoveMonster)(writer.MoveMonsterBody(p.l, p.t)(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement))
+		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementWriter)(monsterpkt.NewMonsterMovement(objectId, false, skillPossible, false, skill, skillId, skillLevel, mt, rt, movement).Encode)
 		err = _map2.NewProcessor(p.l, p.ctx).ForOtherSessionsInMap(f, characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to move monster [%d] for characters in map [%d].", objectId, f.MapId())
@@ -165,16 +169,7 @@ func summaryProvider(x int16, y int16, stance byte) model2.Provider[summary] {
 	}
 }
 
-const (
-	TypeNormal        = "NORMAL"
-	TypeTeleport      = "TELEPORT"
-	TypeStartFallDown = "START_FALL_DOWN"
-	TypeFlyingBlock   = "FLYING_BLOCK"
-	TypeJump          = "JUMP"
-	TypeStatChange    = "STAT_CHANGE"
-)
-
-func folder(s summary, e model.EncoderDecoder) (summary, error) {
+func folder(s summary, e model.MovementCodec) (summary, error) {
 	return foldMovementSummary(s, e)
 }
 

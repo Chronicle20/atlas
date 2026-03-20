@@ -6,6 +6,7 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	sh "github.com/Chronicle20/atlas-socket/handler"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
@@ -13,7 +14,11 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-type MessageValidator func(l logrus.FieldLogger, ctx context.Context) func(s session.Model) bool
+type MessageValidator = sh.MessageValidator[session.Model]
+
+type MessageHandler = sh.MessageHandler[session.Model]
+
+type Adapter = sh.Adapter[session.Model]
 
 const NoOpValidator = "NoOpValidator"
 
@@ -35,16 +40,12 @@ func LoggedInValidatorFunc(l logrus.FieldLogger, ctx context.Context) func(s ses
 	}
 }
 
-type MessageHandler func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader)
-
 const NoOpHandler = "NoOpHandler"
 
-func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer) func(_ session.Model, _ *request.Reader) {
-	return func(_ session.Model, _ *request.Reader) {
+func NoOpHandlerFunc(_ logrus.FieldLogger, _ context.Context, _ writer.Producer) func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
+	return func(_ session.Model, _ *request.Reader, _ map[string]interface{}) {
 	}
 }
-
-type Adapter func(name string, v MessageValidator, h MessageHandler, readerOptions map[string]interface{}) request.Handler
 
 func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer) Adapter {
 	return func(t tenant.Model, wp writer.Producer) Adapter {
@@ -61,7 +62,7 @@ func AdaptHandler(l logrus.FieldLogger) func(t tenant.Model, wp writer.Producer)
 				sp := session.NewProcessor(l, tctx)
 				sp.IfPresentById(sessionId, func(s session.Model) error {
 					if v(sl, tctx)(s) {
-						h(sl, tctx, wp)(s, &r)
+						h(sl, tctx, wp)(s, &r, readerOptions)
 						_ = sp.UpdateLastRequest(s.SessionId())
 					}
 					return nil

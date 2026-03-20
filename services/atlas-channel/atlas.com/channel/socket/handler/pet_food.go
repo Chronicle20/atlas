@@ -9,17 +9,16 @@ import (
 	"github.com/Chronicle20/atlas-constants/character"
 	"github.com/Chronicle20/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas-constants/item"
+	pet2 "github.com/Chronicle20/atlas-packet/pet/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const PetFoodHandle = "PetFoodHandle"
-
 func PetFoodHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		updateTime := r.ReadUint32()
-		source := slot.Position(r.ReadInt16())
-		itemId := item.Id(r.ReadUint32())
-		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), itemId, source, updateTime)
+		p := pet2.Food{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(p.ItemId()), slot.Position(p.Source()), p.UpdateTime())
 	}
 }

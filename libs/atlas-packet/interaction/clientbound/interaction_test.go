@@ -1,0 +1,57 @@
+package clientbound
+
+import (
+	"testing"
+
+	"github.com/Chronicle20/atlas-packet/test"
+)
+
+func TestInteractionInviteRoundTrip(t *testing.T) {
+	input := NewInteractionInvite(4, 1, "TestPlayer", 12345)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionInvite{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionInviteResultRoundTrip(t *testing.T) {
+	input := NewInteractionInviteResult(5, 1, "Room is full")
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionInviteResult{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionChatRoundTrip(t *testing.T) {
+	input := NewInteractionChat(6, 7, 1, "TestPlayer : Hello world")
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionChat{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionLeaveRoundTrip(t *testing.T) {
+	input := NewInteractionLeave(10, 2, 0)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionLeave{}).Decode, nil)
+		})
+	}
+}
+
+func TestInteractionEnterResultErrorRoundTrip(t *testing.T) {
+	input := NewInteractionEnterResultError(5, 2)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, (&InteractionEnterResultError{}).Decode, nil)
+		})
+	}
+}

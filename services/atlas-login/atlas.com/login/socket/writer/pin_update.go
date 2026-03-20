@@ -1,11 +1,14 @@
 package writer
 
 import (
-	"github.com/Chronicle20/atlas-socket/response"
+	"context"
+
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
+
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 )
 
-const PinUpdate = "PinUpdate"
 
 type PinUpdateMode string
 
@@ -14,13 +17,11 @@ const (
 	PinUpdateModeError PinUpdateMode = "ERROR"
 )
 
-func PinUpdateBody(l logrus.FieldLogger) func(mode PinUpdateMode) BodyProducer {
-	return func(mode PinUpdateMode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(PinUpdate, string(mode), "modes", options))
-			rtn := w.Bytes()
-			//l.Debugf("Writing [%s] message. opcode [0x%02X]. body={mode=%s}.", PinOperation, op&0xFF, mode)
-			return rtn
+func PinUpdateBody(mode PinUpdateMode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			resolved := getCode(l)(loginpkt.PinUpdateWriter, string(mode), "modes", options)
+			return loginpkt.NewPinUpdate(resolved).Encode(l, ctx)(options)
 		}
 	}
 }

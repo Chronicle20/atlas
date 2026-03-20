@@ -1,15 +1,13 @@
 package writer
 
 import (
-	"strconv"
-	"strings"
+	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const ServerIP = "ServerIP"
 
 type ServerIPCode string
 type ServerIPMode string
@@ -38,47 +36,26 @@ const (
 	ServerIPModePCRoomPremium       ServerIPMode = "PC_ROOM_PREMIUM"
 )
 
-func ServerIPBody(l logrus.FieldLogger, tenant tenant.Model) func(ipAddr string, port uint16, clientId uint32) BodyProducer {
-	return func(ipAddr string, port uint16, clientId uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(ServerIP, string(ServerIPCodeOk), "codes", options))
-			w.WriteByte(getCode(l)(ServerIP, string(ServerIPModeOk), "modes", options))
-			w.WriteByteArray(ipAsByteArray(ipAddr))
-			w.WriteShort(port)
-			w.WriteInt(clientId)
-			w.WriteByte(0) // bAuthenCode
-			if (tenant.Region() == "GMS" && tenant.MajorVersion() > 12) || tenant.Region() == "JMS" {
-				w.WriteInt(0) // ulPremiumArgument
-			}
-			return w.Bytes()
+func ServerIPBody(ipAddr string, port uint16, clientId uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			code := getCode(l)(loginpkt.ServerIPWriter, string(ServerIPCodeOk), "codes", options)
+			mode := getCode(l)(loginpkt.ServerIPWriter, string(ServerIPModeOk), "modes", options)
+			return loginpkt.NewServerIP(code, mode, ipAddr, port, clientId).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func ipAsByteArray(ipAddress string) []byte {
-	var ob = make([]byte, 0)
-	os := strings.Split(ipAddress, ".")
-	for _, x := range os {
-		o, err := strconv.ParseUint(x, 10, 8)
-		if err == nil {
-			ob = append(ob, byte(o))
-		}
-	}
-	return ob
+func ServerIPBodySimpleError(code ServerIPCode) packet.Encode {
+	return ServerIPBodyError(code, ServerIPModeOk)
 }
 
-func ServerIPBodySimpleError(l logrus.FieldLogger) func(code ServerIPCode) BodyProducer {
-	return func(code ServerIPCode) BodyProducer {
-		return ServerIPBodyError(l)(code, ServerIPModeOk)
-	}
-}
-
-func ServerIPBodyError(l logrus.FieldLogger) func(code ServerIPCode, mode ServerIPMode) BodyProducer {
-	return func(code ServerIPCode, mode ServerIPMode) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(getCode(l)(ServerIP, string(code), "codes", options))
-			w.WriteByte(getCode(l)(ServerIP, string(mode), "modes", options))
-			return w.Bytes()
+func ServerIPBodyError(code ServerIPCode, mode ServerIPMode) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			codeResolved := getCode(l)(loginpkt.ServerIPWriter, string(code), "codes", options)
+			modeResolved := getCode(l)(loginpkt.ServerIPWriter, string(mode), "modes", options)
+			return loginpkt.NewServerIPError(codeResolved, modeResolved).Encode(l, ctx)(options)
 		}
 	}
 }

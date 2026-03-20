@@ -2,85 +2,77 @@ package writer
 
 import (
 	"atlas-channel/guild/thread"
-	"math"
-	"time"
+	"context"
 
-	"github.com/Chronicle20/atlas-socket/response"
+	guildpkt "github.com/Chronicle20/atlas-packet/guild/clientbound"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
-const (
-	GuildBBS = "GuildBBS"
-)
 
-func GuildBBSThreadsBody(l logrus.FieldLogger) func(ts []thread.Model, startIndex uint32) BodyProducer {
-	return func(ts []thread.Model, startIndex uint32) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(0x06)
+func GuildBBSThreadsBody(ts []thread.Model, startIndex uint32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
 			if len(ts) == 0 {
-				w.WriteByte(0)
-				w.WriteInt(0)
-				return w.Bytes()
+				return guildpkt.NewBBSThreadList(nil, nil, startIndex).Encode(l, ctx)(options)
 			}
-			nt := ts[0]
 
-			var at []thread.Model
+			var notice *guildpkt.BBSThreadSummary
+			var threads []guildpkt.BBSThreadSummary
+
+			nt := ts[0]
 			if nt.Notice() {
-				w.WriteByte(1)
-				w.WriteInt(nt.Id())
-				w.WriteInt(nt.PosterId())
-				w.WriteAsciiString(nt.Title())
-				w.WriteInt64(msTime(nt.CreatedAt()))
-				w.WriteInt(nt.EmoticonId())
-				w.WriteInt(uint32(len(nt.Replies())))
-				at = append(ts[:0], ts[1:]...)
+				n := guildpkt.BBSThreadSummary{
+					Id:         nt.Id(),
+					PosterId:   nt.PosterId(),
+					Title:      nt.Title(),
+					CreatedAt:  packetmodel.MsTime(nt.CreatedAt()),
+					EmoticonId: nt.EmoticonId(),
+					ReplyCount: uint32(len(nt.Replies())),
+				}
+				notice = &n
+				for _, t := range ts[1:] {
+					threads = append(threads, guildpkt.BBSThreadSummary{
+						Id:         t.Id(),
+						PosterId:   t.PosterId(),
+						Title:      t.Title(),
+						CreatedAt:  packetmodel.MsTime(t.CreatedAt()),
+						EmoticonId: t.EmoticonId(),
+						ReplyCount: uint32(len(t.Replies())),
+					})
+				}
 			} else {
-				w.WriteByte(0)
-				at = ts
-			}
-			w.WriteInt(uint32(len(at)))
-			if len(at) > 0 {
-				bound := uint32(math.Min(10, float64(len(at))-float64(startIndex)))
-				w.WriteInt(bound)
-				for i := startIndex; i < startIndex+bound; i++ {
-					w.WriteInt(at[i].Id())
-					w.WriteInt(at[i].PosterId())
-					w.WriteAsciiString(at[i].Title())
-					w.WriteInt64(msTime(at[i].CreatedAt()))
-					w.WriteInt(at[i].EmoticonId())
-					w.WriteInt(uint32(len(at[i].Replies())))
+				for _, t := range ts {
+					threads = append(threads, guildpkt.BBSThreadSummary{
+						Id:         t.Id(),
+						PosterId:   t.PosterId(),
+						Title:      t.Title(),
+						CreatedAt:  packetmodel.MsTime(t.CreatedAt()),
+						EmoticonId: t.EmoticonId(),
+						ReplyCount: uint32(len(t.Replies())),
+					})
 				}
 			}
-			return w.Bytes()
+			return guildpkt.NewBBSThreadList(notice, threads, startIndex).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func GuildBBSThreadBody(l logrus.FieldLogger) func(t thread.Model) BodyProducer {
-	return func(t thread.Model) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			w.WriteByte(0x07)
-			w.WriteInt(t.Id())
-			w.WriteInt(t.PosterId())
-			w.WriteInt64(msTime(t.CreatedAt()))
-			w.WriteAsciiString(t.Title())
-			w.WriteAsciiString(t.Message())
-			w.WriteInt(t.EmoticonId())
-			w.WriteInt(uint32(len(t.Replies())))
+func GuildBBSThreadBody(t thread.Model) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
+			var replies []guildpkt.BBSReply
 			for _, r := range t.Replies() {
-				w.WriteInt(r.Id())
-				w.WriteInt(r.PosterId())
-				w.WriteInt64(msTime(r.CreatedAt()))
-				w.WriteAsciiString(r.Message())
+				replies = append(replies, guildpkt.BBSReply{
+					Id:        r.Id(),
+					PosterId:  r.PosterId(),
+					CreatedAt: packetmodel.MsTime(r.CreatedAt()),
+					Message:   r.Message(),
+				})
 			}
-			return w.Bytes()
+			return guildpkt.NewBBSThread(t.Id(), t.PosterId(), packetmodel.MsTime(t.CreatedAt()), t.Title(), t.Message(), t.EmoticonId(), replies).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func msTime(t time.Time) int64 {
-	if t.IsZero() {
-		return -1
-	}
-	return t.Unix()*int64(10000000) + int64(116444736000000000)
-}

@@ -18,6 +18,8 @@ import (
 	"context"
 	"sort"
 
+	"github.com/Chronicle20/atlas-constants/channel"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -25,6 +27,17 @@ import (
 	"github.com/Chronicle20/atlas-model/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
+	buddypkt "github.com/Chronicle20/atlas-packet/buddy"
+	buddyCB "github.com/Chronicle20/atlas-packet/buddy/clientbound"
+	channelpkt "github.com/Chronicle20/atlas-packet/channel/clientbound"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
+	guildpkt "github.com/Chronicle20/atlas-packet/guild"
+	guildcb "github.com/Chronicle20/atlas-packet/guild/clientbound"
+	notepkt "github.com/Chronicle20/atlas-packet/note"
+	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -107,7 +120,7 @@ func processChannelChangeReturn(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
 			return func(accountId uint32, state uint8, params model2.ChannelChange) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.ChannelChange)(writer.ChannelChangeBody(params.IPAddress, params.Port))
+				return session.Announce(l)(ctx)(wp)(channelpkt.ChannelChangeWriter)(channelpkt.NewChannelChange(params.IPAddress, params.Port).Encode)
 			}
 		}
 	}
@@ -131,7 +144,6 @@ func handlePlayerLoggedIn(sc server.Model, wp writer.Producer) message.Handler[s
 func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 		sp := session.NewProcessor(l, ctx)
-		t := tenant.MustFromContext(ctx)
 		return func(wp writer.Producer) func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 			return func(accountId uint32, state uint8, params model2.SetField) model.Operator[session.Model] {
 				return func(s session.Model) error {
@@ -159,12 +171,16 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					sp.SessionCreated(s)
 
 					l.Debugf("Writing SetField for character [%d].", c.Id())
-					err = session.Announce(l)(ctx)(wp)(writer.SetField)(writer.SetFieldBody(t)(s.ChannelId(), c, bl))(s)
+					err = session.Announce(l)(ctx)(wp)(fieldcb.SetFieldWriter)(writer.SetFieldBody(s.ChannelId(), c, bl))(s)
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 					}
 					go func() {
-						err := session.Announce(l)(ctx)(wp)(writer.BuddyOperation)(writer.BuddyListUpdateBody(l, t)(bl.Buddies()))(s)
+						entries := make([]buddyCB.BuddyEntry, 0, len(bl.Buddies()))
+						for _, b := range bl.Buddies() {
+							entries = append(entries, buddyCB.BuddyEntry{CharacterId: b.CharacterId(), Name: b.Name(), ChannelId: channel.Id(b.ChannelId()), Group: b.Group(), InShop: b.InShop()})
+						}
+						err := session.Announce(l)(ctx)(wp)(buddypkt.BuddyOperationWriter)(buddypkt.BuddyListUpdateBody(entries))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -172,7 +188,28 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					go func() {
 						g, _ := guild.NewProcessor(l, ctx).GetByMemberId(c.Id())
 						if g.Id() != 0 {
-							err = session.Announce(l)(ctx)(wp)(writer.GuildOperation)(writer.GuildInfoBody(l, t)(g))(s)
+							inGuild := g.Id() != 0
+							var titles [5]string
+							for _, t := range g.Titles() {
+								idx := t.Index()
+								if idx >= 1 && idx <= 5 {
+									titles[idx-1] = t.Name()
+								}
+							}
+							var guildMembers []guildcb.GuildMemberInfo
+							for _, mm := range g.Members() {
+								guildMembers = append(guildMembers, guildcb.GuildMemberInfo{
+									CharacterId:   mm.CharacterId(),
+									Name:          mm.Name(),
+									JobId:         mm.JobId(),
+									Level:         mm.Level(),
+									Title:         mm.Title(),
+									Online:        mm.Online(),
+									Signature:     0,
+									AllianceTitle: mm.AllianceTitle(),
+								})
+							}
+							err = session.Announce(l)(ctx)(wp)(guildcb.GuildOperationWriter)(guildpkt.GuildInfoBody(inGuild, g.Id(), g.Name(), titles, guildMembers, g.Capacity(), g.LogoBackground(), g.LogoBackgroundColor(), g.Logo(), g.LogoColor(), g.Notice(), g.Points(), g.AllianceId()))(s)
 							if err != nil {
 								l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 							}
@@ -190,7 +227,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							return
 						}
 
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMap)(writer.CharacterKeyMapBody(km))(s)
+						bindings := make(map[int32]charcb.KeyBinding)
+						for k, v := range km {
+							bindings[k] = charcb.KeyBinding{KeyType: v.Type(), KeyAction: v.Action()}
+						}
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapWriter)(charcb.NewCharacterKeyMap(bindings).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
@@ -199,7 +240,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if hkm, ok := km[91]; ok {
 							haction = hkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMapAutoHp)(writer.CharacterKeyMapAutoHpBody(haction))(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapAutoHpWriter)(charcb.NewCharacterKeyMapAutoHp(haction).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto hp key map for character [%d].", s.CharacterId())
 						}
@@ -208,7 +249,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if mkm, ok := km[92]; ok {
 							maction = mkm.Action()
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterKeyMapAutoMp)(writer.CharacterKeyMapAutoMpBody(maction))(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterKeyMapAutoMpWriter)(charcb.NewCharacterKeyMapAutoMp(maction).Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show auto mp key map for character [%d].", s.CharacterId())
 						}
@@ -220,7 +261,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterBuffGive)(writer.CharacterBuffGiveBody(l)(ctx)(bs))(s)
+						err = session.Announce(l)(ctx)(wp)(charcb.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -231,7 +272,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						if err != nil {
 							return
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.WorldMessage)(writer.WorldMessageTopScrollBody(l)(w.Message()))(s)
+						err = session.Announce(l)(ctx)(wp)(chatpkt.WorldMessageWriter)(writer.WorldMessageTopScrollBody(w.Message()))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to write character [%d] buddy list.", c.Id())
 						}
@@ -246,11 +287,12 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						sort.Slice(sms, func(i, j int) bool {
 							return sms[i].Id() < sms[j].Id()
 						})
-						mms := make([]model2.Macro, 0)
+						mms := make([]packetmodel.Macro, 0)
 						for _, sm := range sms {
-							mms = append(mms, model2.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
+							mms = append(mms, packetmodel.NewMacro(sm.Name(), sm.Shout(), sm.SkillId1(), sm.SkillId2(), sm.SkillId3()))
 						}
-						err = session.Announce(l)(ctx)(wp)(writer.CharacterSkillMacro)(writer.CharacterSkillMacroBody(l, tenant.MustFromContext(ctx))(model2.NewMacros(mms...)))(s)
+							macros := packetmodel.NewMacros(mms...)
+						err = session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillMacroWriter)(macros.Encode)(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}
@@ -292,7 +334,11 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 							}, nil
 						})(model.FixedProvider(nms))(model.ParallelMap())()
 
-						err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
+						noteEntries := make([]notepkt.NoteEntry, len(wnms))
+						for i, n := range wnms {
+							noteEntries[i] = notepkt.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
+						}
+						err = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteDisplayBody(noteEntries))(s)
 						if err != nil {
 							l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 						}

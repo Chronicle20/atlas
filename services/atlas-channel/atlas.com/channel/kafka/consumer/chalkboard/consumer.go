@@ -6,7 +6,6 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -18,6 +17,8 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -57,7 +58,7 @@ func handleSetCommand(sc server.Model, wp writer.Producer) message.Handler[chalk
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardUseBody(e.CharacterId, e.Body.Message))(s)
+			return session.Announce(l)(ctx)(wp)(charpkt.ChalkboardUseWriter)(charpkt.NewChalkboardUse(e.CharacterId, e.Body.Message).Encode)(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show chalkboard in use by character [%d].", e.CharacterId)
@@ -76,7 +77,7 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 		}
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.ChalkboardUse)(writer.ChalkboardClearBody(e.CharacterId))(s)
+			return session.Announce(l)(ctx)(wp)(charpkt.ChalkboardUseWriter)(charpkt.NewChalkboardClear(e.CharacterId).Encode)(s)
 		})
 		if err != nil {
 			l.WithError(err).Errorf("Unable to show chalkboard clear by character [%d].", e.CharacterId)
@@ -91,7 +92,7 @@ func handleClearCommand(sc server.Model, wp writer.Producer) message.Handler[cha
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas-constants/character"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -13,7 +14,6 @@ func TestShiftGeneration(t *testing.T) {
 	t2, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 
 	validateTemplateTemporaryStats(t)(t1, 110)
-	//validateTemplateTemporaryStats(t)(tenant.Model{Id: uuid.New(), Region: "GMS", MajorVersion: 87, MinorVersion: 1}, 86)
 	validateTemplateTemporaryStats(t)(t2, 82)
 }
 
@@ -31,11 +31,11 @@ func validateTemplateTemporaryStats(t *testing.T) func(tenant tenant.Model, shif
 
 func validateCharacterTemporaryStatTypeByName(t *testing.T) func(tenant tenant.Model, name character.TemporaryStatType, shift uint) {
 	return func(tenant tenant.Model, name character.TemporaryStatType, shift uint) {
-		var ctst CharacterTemporaryStatType
+		var ctst packetmodel.CharacterTemporaryStatType
 		var err error
-		ctst, err = CharacterTemporaryStatTypeByName(tenant)(name)
-		if err != nil || ctst.shift != shift {
-			t.Fatalf("Failed to get correct shift for [%s]. Got [%d], Expected [%d]", name, ctst.shift, shift)
+		ctst, err = packetmodel.CharacterTemporaryStatTypeByName(tenant)(name)
+		if err != nil || ctst.Shift() != shift {
+			t.Fatalf("Failed to get correct shift for [%s]. Got [%d], Expected [%d]", name, ctst.Shift(), shift)
 		}
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -91,7 +92,7 @@ func announceSkillUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, level byte, masterLevel byte, expiration time.Time) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillChange)(writer.CharacterSkillChangeBody(l, tenant.MustFromContext(ctx))(true, skillId, level, masterLevel, expiration, true))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillChangeWriter)(charpkt.NewCharacterSkillChange(true, skillId, level, masterLevel, expiration, true).Encode)
 			}
 		}
 	}
@@ -119,7 +120,11 @@ func announceSkillCooldown(l logrus.FieldLogger) func(ctx context.Context) func(
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
 			return func(skillId uint32, cooldownExpiresAt time.Time) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, cooldownExpiresAt))
+				var cd uint16
+				if !cooldownExpiresAt.IsZero() {
+					cd = uint16(cooldownExpiresAt.Sub(time.Now()).Seconds())
+				}
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillCooldownWriter)(charpkt.NewCharacterSkillCooldown(skillId, cd).Encode)
 			}
 		}
 	}
@@ -147,7 +152,7 @@ func announceSkillCooldownReset(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(skillId uint32) model.Operator[session.Model] {
 			return func(skillId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterSkillCooldown)(writer.CharacterSkillCooldownBody(l, tenant.MustFromContext(ctx))(skillId, time.Time{}))
+				return session.Announce(l)(ctx)(wp)(charpkt.CharacterSkillCooldownWriter)(charpkt.NewCharacterSkillCooldown(skillId, 0).Encode)
 			}
 		}
 	}

@@ -11,6 +11,7 @@ import (
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetForMonster(monsterId uint32) model.Provider[[]Model]
+	GetForItem(itemId uint32) model.Provider[[]Model]
 }
 
 type ProcessorImpl struct {
@@ -33,4 +34,8 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetForMonster(monsterId uint32) model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getByMonsterId(monsterId)(p.db.WithContext(p.ctx)))()
+}
+
+func (p *ProcessorImpl) GetForItem(itemId uint32) model.Provider[[]Model] {
+	return model.SliceMap(modelFromEntity)(getByItemId(itemId)(p.db.WithContext(p.ctx)))()
 }

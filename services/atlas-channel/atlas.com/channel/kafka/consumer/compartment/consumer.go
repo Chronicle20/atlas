@@ -5,7 +5,6 @@ import (
 	"atlas-channel/kafka/message/compartment"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	model2 "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 
@@ -14,6 +13,8 @@ import (
 	"github.com/Chronicle20/atlas-kafka/message"
 	"github.com/Chronicle20/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas-model/model"
+	invpkt "github.com/Chronicle20/atlas-packet/inventory/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -59,7 +60,7 @@ func handleCompartmentItemReservationCancelledEvent(sc server.Model, wp writer.P
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true)))
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode))
 	}
 }
 
@@ -79,7 +80,7 @@ func handleCompartmentMergeCompleteEvent(sc server.Model, wp writer.Producer) me
 			if err != nil {
 				return err
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.CompartmentMerge)(writer.CompartmentMergeBody(e.Body.Type))(s)
+			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentMergeWriter)(invpkt.NewCompartmentMerge(e.Body.Type).Encode)(s)
 			if err != nil {
 				return err
 			}
@@ -104,7 +105,7 @@ func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) mes
 			if err != nil {
 				return err
 			}
-			err = session.Announce(l)(ctx)(wp)(writer.CompartmentSort)(writer.CompartmentSortBody(e.Body.Type))(s)
+			err = session.Announce(l)(ctx)(wp)(invpkt.CompartmentSortWriter)(invpkt.NewCompartmentSort(e.Body.Type).Encode)(s)
 			if err != nil {
 				return err
 			}
@@ -116,7 +117,7 @@ func handleCompartmentSortCompleteEvent(sc server.Model, wp writer.Producer) mes
 func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) error {
 		return func(wp writer.Producer) func(s session.Model) error {
-			return session.Announce(l)(ctx)(wp)(writer.StatChanged)(writer.StatChangedBody(l)(make([]model2.StatUpdate, 0), true))
+			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
 	}
 }

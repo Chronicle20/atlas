@@ -18,6 +18,8 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -64,7 +66,7 @@ func handleSimpleConversationCommand(sc server.Model, wp writer.Producer) messag
 
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(c.CharacterId, announceSimpleConversation(l)(ctx)(wp)(c.NpcId, c.Body.Type, c.Message, c.Speaker, c.EndChat, c.SecondaryNpcId))
 		if err != nil {
-			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", writer.StatChanged, c.CharacterId)
+			l.WithError(err).Errorf("Unable to write [%s] for character [%d].", statpkt.StatChangedWriter, c.CharacterId)
 		}
 	}
 }
@@ -124,8 +126,7 @@ func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 			return func(npcId uint32, talkType string, message string, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
-				t := tenant.MustFromContext(ctx)
-				scm := &model2.SayConversationDetail{Message: message}
+				scm := &npcpkt.SayConversationDetail{Message: message}
 				if talkType == "NEXT" || talkType == "NEXT_PREVIOUS" {
 					scm.Next = true
 				}
@@ -135,7 +136,7 @@ func announceSimpleConversation(l logrus.FieldLogger) func(ctx context.Context) 
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
 
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -145,11 +146,10 @@ func announceNumberConversation(l logrus.FieldLogger) func(ctx context.Context) 
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 			return func(npcId uint32, talkType string, message string, def uint32, min uint32, max uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
-				t := tenant.MustFromContext(ctx)
-				scm := &model2.AskNumberConversationDetail{Message: message, Def: def, Min: min, Max: max}
+				scm := &npcpkt.AskNumberConversationDetail{Message: message, Def: def, Min: min, Max: max}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -159,11 +159,10 @@ func announceStyleConversation(l logrus.FieldLogger) func(ctx context.Context) f
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 			return func(npcId uint32, talkType string, message string, styles []uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
-				t := tenant.MustFromContext(ctx)
-				scm := &model2.AskAvatarConversationDetail{Message: message, Styles: styles}
+				scm := &npcpkt.AskAvatarConversationDetail{Message: message, Styles: styles}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
 				ncm := model2.NewNpcConversation(npcId, getNPCTalkType(talkType), speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -173,11 +172,10 @@ func announceSlideMenuConversation(l logrus.FieldLogger) func(ctx context.Contex
 	return func(ctx context.Context) func(wp writer.Producer) func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
 			return func(npcId uint32, message string, menuType uint32, speaker string, endChat bool, secondaryNpcId uint32) model.Operator[session.Model] {
-				t := tenant.MustFromContext(ctx)
-				scm := &model2.AskSlideMenuConversationDetail{Message: message, MenuType: menuType}
+				scm := &npcpkt.AskSlideMenuConversationDetail{Message: message, MenuType: menuType}
 				speakerByte := computeSpeakerByte(speaker, endChat, secondaryNpcId)
-				ncm := model2.NewNpcConversation(npcId, model2.NpcConversationMessageTypeAskSlideMenu, speakerByte, secondaryNpcId, scm)
-				return session.Announce(l)(ctx)(wp)(writer.NPCConversation)(writer.NPCConversationBody(l, t)(ncm))
+				ncm := model2.NewNpcConversation(npcId, npcpkt.NpcConversationMessageTypeAskSlideMenu, speakerByte, secondaryNpcId, scm)
+				return session.Announce(l)(ctx)(wp)(npcpkt.NpcConversationWriter)(ncm.Encoder)
 			}
 		}
 	}
@@ -201,26 +199,26 @@ func computeSpeakerByte(speaker string, endChat bool, secondaryNpcId uint32) byt
 	return b
 }
 
-func getNPCTalkType(t string) model2.NpcConversationMessageType {
+func getNPCTalkType(t string) npcpkt.NpcConversationMessageType {
 	switch t {
 	case "NEXT":
-		return model2.NpcConversationMessageTypeSay
+		return npcpkt.NpcConversationMessageTypeSay
 	case "PREVIOUS":
-		return model2.NpcConversationMessageTypeSay
+		return npcpkt.NpcConversationMessageTypeSay
 	case "NEXT_PREVIOUS":
-		return model2.NpcConversationMessageTypeSay
+		return npcpkt.NpcConversationMessageTypeSay
 	case "OK":
-		return model2.NpcConversationMessageTypeSay
+		return npcpkt.NpcConversationMessageTypeSay
 	case "YES_NO":
-		return model2.NpcConversationMessageTypeAskYesNo
+		return npcpkt.NpcConversationMessageTypeAskYesNo
 	case "NUM":
-		return model2.NpcConversationMessageTypeAskNumber
+		return npcpkt.NpcConversationMessageTypeAskNumber
 	case "SIMPLE":
-		return model2.NpcConversationMessageTypeAskMenu
+		return npcpkt.NpcConversationMessageTypeAskMenu
 	case "STYLE":
-		return model2.NpcConversationMessageTypeAskAvatar
+		return npcpkt.NpcConversationMessageTypeAskAvatar
 	case "ACCEPT_DECLINE":
-		return model2.NpcConversationMessageTypeAskYesNoQuest
+		return npcpkt.NpcConversationMessageTypeAskYesNoQuest
 	}
 	panic(fmt.Sprintf("unsupported talk type %s", t))
 }

@@ -6,22 +6,23 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	cashcb "github.com/Chronicle20/atlas-packet/cash/clientbound"
+	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-const CashShopCheckWalletHandle = "CashShopCheckWalletHandle"
-
 func CashShopCheckWalletHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-	t := tenant.MustFromContext(ctx)
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := cashsb.CheckWallet{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 		w, err := wallet.NewProcessor(l, ctx).GetByAccountId(s.AccountId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve cash shop wallet for character [%d].", s.CharacterId())
 			w = wallet.Model{}
 		}
-		err = session.Announce(l)(ctx)(wp)(writer.CashShopCashQueryResult)(writer.CashShopCashQueryResultBody(t)(w.Credit(), w.Points(), w.Prepaid()))(s)
+		err = session.Announce(l)(ctx)(wp)(cashcb.CashQueryResultWriter)(cashcb.NewCashQueryResult(w.Credit(), w.Points(), w.Prepaid()).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce cash shop wallet to character [%d].", s.CharacterId())
 			return

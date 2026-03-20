@@ -161,6 +161,11 @@ export type { SeedResult } from './seed.service';
 export { mapEntitiesService } from './map-entities.service';
 export type { MapPortalData, MapNpcData, MapReactorData, MapMonsterData } from './map-entities.service';
 
+// Merchant shops
+export { merchantsService } from './merchants.service';
+export type { MerchantShop, MerchantShopAttributes, MerchantListing, MerchantListingAttributes, ListingSearchResult, ListingSearchResultAttributes } from '@/types/models/merchant';
+export { getShopTypeName, getShopStateName, getShopTypeBadgeVariant, getShopStateBadgeVariant } from '@/types/models/merchant';
+
 // Ban management
 export { bansService } from './bans.service';
 export type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanQueryOptions, CheckBanParams } from './bans.service';

@@ -9,14 +9,14 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-model/model"
+	notepkt "github.com/Chronicle20/atlas-packet/note"
+	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
+	notesb "github.com/Chronicle20/atlas-packet/note/serverbound"
 	"github.com/Chronicle20/atlas-socket/request"
-	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
 const (
-	NoteOperationHandle = "NoteOperationHandle"
-
 	NoteOperationSend    = "SEND"
 	NoteOperationDiscard = "DISCARD"
 	NoteOperationRequest = "REQUEST"
@@ -24,53 +24,53 @@ const (
 
 func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
 	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
-		op := r.ReadByte()
+		p := notesb.Operation{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
+		op := p.Op()
 		np := note.NewProcessor(l, ctx)
 		if isNoteOperation(l)(readerOptions, op, NoteOperationSend) {
-			toName := r.ReadAsciiString()
-			message := r.ReadAsciiString()
+			sp := &notesb.OperationSend{}
+			sp.Decode(l, ctx)(r, readerOptions)
 
-			tc, err := character.NewProcessor(l, ctx).GetByName(toName)
+			tc, err := character.NewProcessor(l, ctx).GetByName(sp.ToName())
 			if err != nil {
-				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", toName)
-				_ = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteSendError(l)(writer.NoteSendErrorReceiverUnknown))(s)
+				l.WithError(err).Errorf("Unable to locate character by name [%s] to send note to.", sp.ToName())
+				_ = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteSendErrorBody(notecb.NoteSendErrorReceiverUnknown))(s)
 				return
 			}
 
-			err = np.SendNote(s.Field().Channel(), s.CharacterId(), tc.Id(), message, 1)
+			err = np.SendNote(s.Field().Channel(), s.CharacterId(), tc.Id(), sp.Message(), 1)
 			if err != nil {
 				l.WithError(err).Errorf("Character [%d] unable to send note.", s.CharacterId())
 			}
 			return
 		}
 		if isNoteOperation(l)(readerOptions, op, NoteOperationDiscard) {
-			count := r.ReadByte()
-			val1 := r.ReadByte()
-			val2 := r.ReadByte()
-			l.Debugf("Character [%d] discarding [%d] notes. val1 [%d], val2 [%d].", s.CharacterId(), count, val1, val2)
+			sp := &notesb.OperationDiscard{}
+			sp.Decode(l, ctx)(r, readerOptions)
+			l.Debugf("Character [%d] discarding [%d] notes. val1 [%d], val2 [%d].", s.CharacterId(), sp.Count(), sp.Val1(), sp.Val2())
 
-			noteIds := make([]uint32, 0, count)
+			noteIds := make([]uint32, 0, sp.Count())
 
-			for i := byte(0); i < count; i++ {
-				id := r.ReadUint32()
-				flag := r.ReadByte()
-				l.Debugf("Character [%d] discarding note [%d]. flags [%d].", s.CharacterId(), id, flag)
+			for _, e := range sp.Entries() {
+				l.Debugf("Character [%d] discarding note [%d]. flags [%d].", s.CharacterId(), e.Id(), e.Flag())
 
 				// Verify the note exists and the flag matches
-				n, err := np.GetById(id)
+				n, err := np.GetById(e.Id())
 				if err != nil {
-					l.WithError(err).Errorf("Character [%d] unable to retrieve note [%d].", s.CharacterId(), id)
+					l.WithError(err).Errorf("Character [%d] unable to retrieve note [%d].", s.CharacterId(), e.Id())
 					_ = session.NewProcessor(l, ctx).Destroy(s)
 					return
 				}
 
-				if n.Flag() != flag {
-					l.Errorf("Character [%d] attempting to discard note [%d] with incorrect flag. Expected [%d], got [%d].", s.CharacterId(), id, n.Flag(), flag)
+				if n.Flag() != e.Flag() {
+					l.Errorf("Character [%d] attempting to discard note [%d] with incorrect flag. Expected [%d], got [%d].", s.CharacterId(), e.Id(), n.Flag(), e.Flag())
 					_ = session.NewProcessor(l, ctx).Destroy(s)
 					return
 				}
 
-				noteIds = append(noteIds, id)
+				noteIds = append(noteIds, e.Id())
 			}
 
 			err := np.DiscardNotes(s.Field().Channel(), s.CharacterId(), noteIds)
@@ -117,7 +117,11 @@ func NoteOperationHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 				}, nil
 			})(model.FixedProvider(nms))(model.ParallelMap())()
 
-			err = session.Announce(l)(ctx)(wp)(writer.NoteOperation)(writer.NoteDisplayBody(l, tenant.MustFromContext(ctx))(wnms))(s)
+			entries := make([]notepkt.NoteEntry, len(wnms))
+			for i, n := range wnms {
+				entries[i] = notepkt.NoteEntry{Id: n.Id, SenderName: n.SenderName, Message: n.Message, Timestamp: n.Timestamp, Flag: n.Flag}
+			}
+			err = session.Announce(l)(ctx)(wp)(notecb.NoteOperationWriter)(notecb.NoteDisplayBody(entries))(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to show key map for character [%d].", s.CharacterId())
 			}

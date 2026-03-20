@@ -4,8 +4,6 @@ import (
 	"atlas-channel/account"
 	channel3 "atlas-channel/channel"
 	"atlas-channel/configuration"
-	handler2 "atlas-channel/configuration/tenant/socket/handler"
-	writer2 "atlas-channel/configuration/tenant/socket/writer"
 	account2 "atlas-channel/kafka/consumer/account"
 	"atlas-channel/kafka/consumer/asset"
 	"atlas-channel/kafka/consumer/buddylist"
@@ -24,9 +22,10 @@ import (
 	"atlas-channel/kafka/consumer/gachapon"
 	"atlas-channel/kafka/consumer/guild"
 	"atlas-channel/kafka/consumer/guild/thread"
-	instance_transport "atlas-channel/kafka/consumer/instance_transport"
+	"atlas-channel/kafka/consumer/instance_transport"
 	"atlas-channel/kafka/consumer/invite"
 	"atlas-channel/kafka/consumer/map"
+	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	"atlas-channel/kafka/consumer/monster"
@@ -35,7 +34,7 @@ import (
 	"atlas-channel/kafka/consumer/npc/shop"
 	"atlas-channel/kafka/consumer/party"
 	"atlas-channel/kafka/consumer/party/member"
-	party_quest "atlas-channel/kafka/consumer/party_quest"
+	"atlas-channel/kafka/consumer/party_quest"
 	"atlas-channel/kafka/consumer/pet"
 	"atlas-channel/kafka/consumer/quest"
 	"atlas-channel/kafka/consumer/reactor"
@@ -47,7 +46,6 @@ import (
 	"atlas-channel/kafka/consumer/system_message"
 	"atlas-channel/logger"
 	"atlas-channel/server"
-	"github.com/Chronicle20/atlas-service"
 	"atlas-channel/session"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
@@ -56,12 +54,63 @@ import (
 	"atlas-channel/tracing"
 	"fmt"
 	"os"
-	"strconv"
 	"time"
+
+	buddy2 "github.com/Chronicle20/atlas-packet/buddy"
+	cashcb "github.com/Chronicle20/atlas-packet/cash/clientbound"
+	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
+	channelCB "github.com/Chronicle20/atlas-packet/channel/clientbound"
+	channelSB "github.com/Chronicle20/atlas-packet/channel/serverbound"
+	character2 "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
+	charsb "github.com/Chronicle20/atlas-packet/character/serverbound"
+	chatCB "github.com/Chronicle20/atlas-packet/chat/clientbound"
+	chatSB "github.com/Chronicle20/atlas-packet/chat/serverbound"
+	dropcb "github.com/Chronicle20/atlas-packet/drop/clientbound"
+	dropsb "github.com/Chronicle20/atlas-packet/drop/serverbound"
+	famecb "github.com/Chronicle20/atlas-packet/fame/clientbound"
+	famesb "github.com/Chronicle20/atlas-packet/fame/serverbound"
+	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
+	fieldsb "github.com/Chronicle20/atlas-packet/field/serverbound"
+	guildcb "github.com/Chronicle20/atlas-packet/guild/clientbound"
+	guildsb "github.com/Chronicle20/atlas-packet/guild/serverbound"
+	interaction2 "github.com/Chronicle20/atlas-packet/interaction"
+	interactioncb "github.com/Chronicle20/atlas-packet/interaction/clientbound"
+	interactionsb "github.com/Chronicle20/atlas-packet/interaction/serverbound"
+	invcb "github.com/Chronicle20/atlas-packet/inventory/clientbound"
+	invsb "github.com/Chronicle20/atlas-packet/inventory/serverbound"
+	merchantcb "github.com/Chronicle20/atlas-packet/merchant/clientbound"
+	merchantsb "github.com/Chronicle20/atlas-packet/merchant/serverbound"
+	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	messengercb "github.com/Chronicle20/atlas-packet/messenger/clientbound"
+	messengersb "github.com/Chronicle20/atlas-packet/messenger/serverbound"
+	monstercb "github.com/Chronicle20/atlas-packet/monster/clientbound"
+	monstersb "github.com/Chronicle20/atlas-packet/monster/serverbound"
+	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
+	notesb "github.com/Chronicle20/atlas-packet/note/serverbound"
+	npccb "github.com/Chronicle20/atlas-packet/npc/clientbound"
+	npcsb "github.com/Chronicle20/atlas-packet/npc/serverbound"
+	partycb "github.com/Chronicle20/atlas-packet/party/clientbound"
+	partysb "github.com/Chronicle20/atlas-packet/party/serverbound"
+	petcb "github.com/Chronicle20/atlas-packet/pet/clientbound"
+	petsb "github.com/Chronicle20/atlas-packet/pet/serverbound"
+	portal2 "github.com/Chronicle20/atlas-packet/portal/serverbound"
+	questcb "github.com/Chronicle20/atlas-packet/quest/clientbound"
+	questsb "github.com/Chronicle20/atlas-packet/quest/serverbound"
+	reactorcb "github.com/Chronicle20/atlas-packet/reactor/clientbound"
+	reactorsb "github.com/Chronicle20/atlas-packet/reactor/serverbound"
+	socketcb "github.com/Chronicle20/atlas-packet/socket/clientbound"
+	socketsb "github.com/Chronicle20/atlas-packet/socket/serverbound"
+	stat2 "github.com/Chronicle20/atlas-packet/stat/clientbound"
+	storagecb "github.com/Chronicle20/atlas-packet/storage/clientbound"
+	storagesb "github.com/Chronicle20/atlas-packet/storage/serverbound"
+	ui2 "github.com/Chronicle20/atlas-packet/ui/clientbound"
+	"github.com/Chronicle20/atlas-service"
 
 	channel2 "github.com/Chronicle20/atlas-constants/channel"
 	"github.com/Chronicle20/atlas-constants/world"
 	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas-opcodes"
 	socket2 "github.com/Chronicle20/atlas-socket"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/Chronicle20/atlas-tenant"
@@ -135,6 +184,7 @@ func main() {
 	saga.InitConsumers(l)(cmf)(consumerGroupId)
 	storage3.InitConsumers(l)(cmf)(consumerGroupId)
 	gachapon.InitConsumers(l)(cmf)(consumerGroupId)
+	merchantConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 
 	sctx, span := otel.GetTracerProvider().Tracer(serviceName).Start(tdm.Context(), "startup")
 
@@ -292,6 +342,9 @@ func main() {
 				if err = gachapon.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
+				if err = merchantConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
 
 				hp := handlerProducer(fl)(handler.AdaptHandler(fl)(t, wp))(tenantConfig.Socket.Handlers, validatorMap, handlerMap)
 				socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, sc, ten.IPAddress, c.Port)
@@ -314,179 +367,184 @@ func main() {
 	l.Infoln("Service shutdown.")
 }
 
-func produceWriterProducer(l logrus.FieldLogger) func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
-	return func(writers []writer2.RestModel, writerList []string, w socket2.OpWriter) writer.Producer {
-		return getWriterProducer(l)(writers, writerList, w)
+func produceWriterProducer(l logrus.FieldLogger) func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
+	return func(writers []opcodes.WriterConfig, writerList []string, w socket2.OpWriter) writer.Producer {
+		return opcodes.BuildWriterProducer(l, writers, writerList, w)
 	}
 }
 
 func produceWriters() []string {
 	return []string{
-		writer.SetField,
-		writer.SpawnNPC,
-		writer.SpawnNPCRequestController,
-		writer.NPCAction,
-		writer.StatChanged,
-		writer.ChannelChange,
-		writer.CashShopOpen,
-		writer.CashShopOperation,
-		writer.CashShopCashQueryResult,
-		writer.SpawnMonster,
-		writer.DestroyMonster,
-		writer.ControlMonster,
-		writer.MoveMonster,
-		writer.MoveMonsterAck,
-		writer.CharacterSpawn,
-		writer.CharacterChatGeneral,
-		writer.CharacterMovement,
-		writer.CharacterInfo,
-		writer.CharacterInventoryChange,
-		writer.CharacterAppearanceUpdate,
-		writer.CharacterDespawn,
-		writer.PartyOperation,
-		writer.CharacterChatMulti,
-		writer.CharacterKeyMap,
-		writer.BuddyOperation,
-		writer.CharacterExpression,
-		writer.NPCConversation,
-		writer.GuildOperation,
-		writer.GuildEmblemChanged,
-		writer.GuildNameChanged,
-		writer.FameResponse,
-		writer.CharacterStatusMessage,
-		writer.GuildBBS,
-		writer.CharacterShowChair,
-		writer.CharacterSitResult,
-		writer.DropSpawn,
-		writer.DropDestroy,
-		writer.ReactorSpawn,
-		writer.ReactorDestroy,
-		writer.CharacterSkillChange,
-		writer.CharacterAttackMelee,
-		writer.CharacterAttackRanged,
-		writer.CharacterAttackMagic,
-		writer.CharacterAttackEnergy,
-		writer.CharacterDamage,
-		writer.CharacterBuffGive,
-		writer.CharacterBuffGiveForeign,
-		writer.CharacterBuffCancel,
-		writer.CharacterBuffCancelForeign,
-		writer.CharacterSkillCooldown,
-		writer.CharacterEffect,
-		writer.CharacterEffectForeign,
-		writer.WorldMessage,
-		writer.MonsterHealth,
-		writer.PartyMemberHP,
-		writer.ChalkboardUse,
-		writer.CharacterChatWhisper,
-		writer.MessengerOperation,
-		writer.PetActivated,
-		writer.PetMovement,
-		writer.PetCommandResponse,
-		writer.PetChat,
-		writer.CharacterItemUpgrade,
-		writer.CharacterSkillMacro,
-		writer.PetExcludeResponse,
-		writer.PetCashFoodResult,
-		writer.CharacterKeyMapAutoHp,
-		writer.CharacterKeyMapAutoMp,
-		writer.NPCShop,
-		writer.NPCShopOperation,
-		writer.CompartmentMerge,
-		writer.CompartmentSort,
-		writer.NoteOperation,
-		writer.SpawnKite,
-		writer.SpawnKiteError,
-		writer.DestroyKite,
-		writer.Clock,
-		writer.FieldTransportState,
-		writer.StorageOperation,
-		writer.CharacterHint,
-		writer.ReactorHit,
-		writer.GuideTalk,
-		writer.ScriptProgress,
-		writer.Ping,
-		writer.FieldEffect,
-		writer.UiOpen,
-		writer.UiLock,
-		writer.UiDisable,
-		writer.MonsterStatSet,
-		writer.MonsterStatReset,
-		writer.MonsterDamage,
-		writer.FieldEffectWeather,
+		fieldcb.SetFieldWriter,
+		npccb.NpcSpawnWriter,
+		npccb.NpcSpawnRequestControllerWriter,
+		npccb.NpcActionWriter,
+		stat2.StatChangedWriter,
+		channelCB.ChannelChangeWriter,
+		cashcb.CashShopOpenWriter,
+		cashcb.CashShopOperationWriter,
+		cashcb.CashQueryResultWriter,
+		monstercb.MonsterSpawnWriter,
+		monstercb.MonsterDestroyWriter,
+		monstercb.MonsterControlWriter,
+		monstercb.MonsterMovementWriter,
+		monstercb.MonsterMovementAckWriter,
+		charcb.CharacterSpawnWriter,
+		chatCB.GeneralChatWriter,
+		charcb.CharacterMovementWriter,
+		charcb.CharacterInfoWriter,
+		invcb.InventoryChangeWriter,
+		charcb.CharacterAppearanceUpdateWriter,
+		charcb.CharacterDespawnWriter,
+		partycb.PartyOperationWriter,
+		chatCB.MultiChatWriter,
+		charcb.CharacterKeyMapWriter,
+		buddy2.BuddyOperationWriter,
+		charcb.CharacterExpressionWriter,
+		npccb.NpcConversationWriter,
+		guildcb.GuildOperationWriter,
+		guildcb.GuildEmblemChangedWriter,
+		guildcb.GuildNameChangedWriter,
+		famecb.FameResponseWriter,
+		charcb.CharacterStatusMessageWriter,
+		guildcb.GuildBBSWriter,
+		charcb.CharacterShowChairWriter,
+		charcb.CharacterSitResultWriter,
+		dropcb.DropSpawnWriter,
+		dropcb.DropDestroyWriter,
+		reactorcb.ReactorSpawnWriter,
+		reactorcb.ReactorDestroyWriter,
+		charcb.CharacterSkillChangeWriter,
+		charcb.CharacterAttackMeleeWriter,
+		charcb.CharacterAttackRangedWriter,
+		charcb.CharacterAttackMagicWriter,
+		charcb.CharacterAttackEnergyWriter,
+		charcb.CharacterDamageWriter,
+		charcb.CharacterBuffGiveWriter,
+		charcb.CharacterBuffGiveForeignWriter,
+		charcb.CharacterBuffCancelWriter,
+		charcb.CharacterBuffCancelForeignWriter,
+		charcb.CharacterSkillCooldownWriter,
+		charcb.CharacterEffectWriter,
+		charcb.CharacterEffectForeignWriter,
+		chatCB.WorldMessageWriter,
+		monstercb.MonsterHealthWriter,
+		partycb.PartyMemberHPWriter,
+		charcb.ChalkboardUseWriter,
+		chatCB.WhisperWriter,
+		messengercb.MessengerOperationWriter,
+		petcb.PetActivatedWriter,
+		petcb.PetMovementWriter,
+		petcb.PetCommandResponseWriter,
+		petcb.PetChatWriter,
+		charcb.CharacterItemUpgradeWriter,
+		character2.CharacterSkillMacroWriter,
+		petcb.PetExcludeResponseWriter,
+		petcb.PetCashFoodResultWriter,
+		charcb.CharacterKeyMapAutoHpWriter,
+		charcb.CharacterKeyMapAutoMpWriter,
+		npccb.NPCShopWriter,
+		npccb.NPCShopOperationWriter,
+		invcb.CompartmentMergeWriter,
+		invcb.CompartmentSortWriter,
+		notecb.NoteOperationWriter,
+		fieldcb.KiteSpawnWriter,
+		fieldcb.KiteErrorWriter,
+		fieldcb.KiteDestroyWriter,
+		fieldcb.ClockWriter,
+		fieldcb.FieldTransportStateWriter,
+		storagecb.StorageOperationWriter,
+		charcb.CharacterHintWriter,
+		reactorcb.ReactorHitWriter,
+		npccb.GuideTalkWriter,
+		questcb.ScriptProgressWriter,
+		socketcb.PingWriter,
+		fieldcb.FieldEffectWriter,
+		ui2.UiOpenWriter,
+		ui2.UiLockWriter,
+		ui2.UiDisableWriter,
+		monstercb.MonsterStatSetWriter,
+		monstercb.MonsterStatResetWriter,
+		monstercb.MonsterDamageWriter,
+		fieldcb.FieldEffectWeatherWriter,
+		merchantcb.HiredMerchantOperationWriter,
+		interactioncb.CharacterInteractionWriter,
+		interaction2.MiniRoomWriter,
 	}
 }
 
 func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap := make(map[string]handler.MessageHandler)
 	handlerMap[handler.NoOpHandler] = handler.NoOpHandlerFunc
-	handlerMap[handler.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
-	handlerMap[handler.NPCActionHandle] = handler.NPCActionHandleFunc
-	handlerMap[handler.PortalScriptHandle] = handler.PortalScriptHandleFunc
-	handlerMap[handler.MapChangeHandle] = handler.MapChangeHandleFunc
-	handlerMap[handler.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
-	handlerMap[handler.ChannelChangeHandle] = handler.ChannelChangeHandleFunc
-	handlerMap[handler.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
-	handlerMap[handler.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
-	handlerMap[handler.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
-	handlerMap[handler.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
-	handlerMap[handler.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
-	handlerMap[handler.PartyOperationHandle] = handler.PartyOperationHandleFunc
-	handlerMap[handler.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
-	handlerMap[handler.CharacterChatMultiHandle] = handler.CharacterChatMultiHandleFunc
-	handlerMap[handler.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
-	handlerMap[handler.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
-	handlerMap[handler.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
-	handlerMap[handler.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
-	handlerMap[handler.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
-	handlerMap[handler.GuildOperationHandle] = handler.GuildOperationHandleFunc
-	handlerMap[handler.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
-	handlerMap[handler.FameChangeHandle] = handler.FameChangeHandleFunc
-	handlerMap[handler.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
-	handlerMap[handler.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
-	handlerMap[handler.GuildBBSHandle] = handler.GuildBBSHandleFunc
-	handlerMap[handler.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
-	handlerMap[handler.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
-	handlerMap[handler.DropPickUpHandle] = handler.DropPickUpHandleFunc
-	handlerMap[handler.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
+	handlerMap[socketsb.CharacterLoggedInHandle] = handler.CharacterLoggedInHandleFunc
+	handlerMap[npcsb.NPCActionHandle] = handler.NPCActionHandleFunc
+	handlerMap[portal2.PortalScriptHandle] = handler.PortalScriptHandleFunc
+	handlerMap[fieldsb.MapChangeHandle] = handler.MapChangeHandleFunc
+	handlerMap[charsb.CharacterMoveHandle] = handler.CharacterMoveHandleFunc
+	handlerMap[channelSB.ChannelChangeRequestHandle] = handler.ChannelChangeHandleFunc
+	handlerMap[cashsb.CashShopEntryHandle] = handler.CashShopEntryHandleFunc
+	handlerMap[monstersb.MonsterMovementHandle] = handler.MonsterMovementHandleFunc
+	handlerMap[chatSB.CharacterChatGeneralHandle] = handler.CharacterChatGeneralHandleFunc
+	handlerMap[charsb.CharacterInfoRequestHandle] = handler.CharacterInfoRequestHandleFunc
+	handlerMap[invsb.CharacterInventoryMoveHandle] = handler.CharacterInventoryMoveHandleFunc
+	handlerMap[partysb.PartyOperationHandle] = handler.PartyOperationHandleFunc
+	handlerMap[partysb.PartyInviteRejectHandle] = handler.PartyInviteRejectHandleFunc
+	handlerMap[chatSB.CharacterChatMultiHandle] = handler.CharacterChatMultiHandleFunc
+	handlerMap[charsb.CharacterKeyMapChangeHandle] = handler.CharacterKeyMapChangeHandleFunc
+	handlerMap[buddy2.BuddyOperationHandle] = handler.BuddyOperationHandleFunc
+	handlerMap[charsb.CharacterExpressionHandle] = handler.CharacterExpressionHandleFunc
+	handlerMap[npcsb.NPCStartConversationHandle] = handler.NPCStartConversationHandleFunc
+	handlerMap[npcsb.NPCContinueConversationHandle] = handler.NPCContinueConversationHandleFunc
+	handlerMap[guildsb.GuildOperationHandle] = handler.GuildOperationHandleFunc
+	handlerMap[guildsb.GuildInviteRejectHandle] = handler.GuildInviteRejectHandleFunc
+	handlerMap[famesb.FameChangeHandle] = handler.FameChangeHandleFunc
+	handlerMap[charsb.CharacterDistributeApHandle] = handler.CharacterDistributeApHandleFunc
+	handlerMap[charsb.CharacterAutoDistributeApHandle] = handler.CharacterAutoDistributeApHandleFunc
+	handlerMap[guildsb.GuildBBSHandle] = handler.GuildBBSHandleFunc
+	handlerMap[charsb.CharacterChairPortableHandle] = handler.CharacterChairPortableHandleFunc
+	handlerMap[charsb.CharacterChairInteractionHandle] = handler.CharacterChairFixedHandleFunc
+	handlerMap[dropsb.DropPickUpHandle] = handler.DropPickUpHandleFunc
+	handlerMap[charsb.CharacterDropMesoHandle] = handler.CharacterDropMesoHandleFunc
 	handlerMap[handler.CharacterMeleeAttackHandle] = handler.CharacterMeleeAttackHandleFunc
 	handlerMap[handler.CharacterRangedAttackHandle] = handler.CharacterRangedAttackHandleFunc
 	handlerMap[handler.CharacterMagicAttackHandle] = handler.CharacterMagicAttackHandleFunc
 	handlerMap[handler.CharacterTouchAttackHandle] = handler.CharacterTouchAttackHandleFunc
-	handlerMap[handler.CharacterHealOverTimeHandle] = handler.CharacterHealOverTimeHandleFunc
-	handlerMap[handler.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
-	handlerMap[handler.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
+	handlerMap[charsb.CharacterHealOverTimeHandle] = handler.CharacterHealOverTimeHandleFunc
+	handlerMap[packetmodel.CharacterDamageHandle] = handler.CharacterDamageHandleFunc
+	handlerMap[charsb.CharacterDistributeSpHandle] = handler.CharacterDistributeSpHandleFunc
 	handlerMap[handler.CharacterUseSkillHandle] = handler.CharacterUseSkillHandleFunc
-	handlerMap[handler.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
-	handlerMap[handler.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
-	handlerMap[handler.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
-	handlerMap[handler.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
-	handlerMap[handler.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
-	handlerMap[handler.PetMovementHandle] = handler.PetMovementHandleFunc
-	handlerMap[handler.PetSpawnHandle] = handler.PetSpawnHandleFunc
-	handlerMap[handler.PetCommandHandle] = handler.PetCommandHandleFunc
-	handlerMap[handler.PetChatHandle] = handler.PetChatHandleFunc
-	handlerMap[handler.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
-	handlerMap[handler.PetFoodHandle] = handler.PetFoodHandleFunc
-	handlerMap[handler.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
-	handlerMap[handler.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
-	handlerMap[handler.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
-	handlerMap[handler.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
-	handlerMap[handler.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
-	handlerMap[handler.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
-	handlerMap[handler.PetItemUseHandle] = handler.PetItemUseHandleFunc
-	handlerMap[handler.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
-	handlerMap[handler.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
-	handlerMap[handler.NPCShopHandle] = handler.NPCShopHandleFunc
-	handlerMap[handler.CompartmentMerge] = handler.CompartmentMergeHandleFunc
-	handlerMap[handler.CompartmentSort] = handler.CompartmentSortHandleFunc
-	handlerMap[handler.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
-	handlerMap[handler.NoteOperationHandle] = handler.NoteOperationHandleFunc
-	handlerMap[handler.QuestActionHandle] = handler.QuestActionHandleFunc
-	handlerMap[handler.StorageOperationHandle] = handler.StorageOperationHandleFunc
-	handlerMap[handler.ReactorHitHandle] = handler.ReactorHitHandleFunc
-	handlerMap[handler.PongHandle] = handler.PongHandleFunc
-	handlerMap[handler.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
+	handlerMap[charsb.CharacterBuffCancelHandle] = handler.CharacterBuffCancelHandleFunc
+	handlerMap[cashsb.CharacterCashItemUseHandle] = handler.CharacterCashItemUseHandleFunc
+	handlerMap[charsb.ChalkboardCloseHandle] = handler.ChalkboardCloseHandleHandleFunc
+	handlerMap[chatSB.CharacterChatWhisperHandle] = handler.CharacterChatWhisperHandleFunc
+	handlerMap[messengersb.MessengerOperationHandle] = handler.MessengerOperationHandleFunc
+	handlerMap[petsb.PetMovementHandle] = handler.PetMovementHandleFunc
+	handlerMap[petsb.PetSpawnHandle] = handler.PetSpawnHandleFunc
+	handlerMap[petsb.PetCommandHandle] = handler.PetCommandHandleFunc
+	handlerMap[petsb.PetChatHandle] = handler.PetChatHandleFunc
+	handlerMap[petsb.PetDropPickUpHandle] = handler.PetDropPickUpHandleFunc
+	handlerMap[petsb.PetFoodHandle] = handler.PetFoodHandleFunc
+	handlerMap[invsb.CharacterItemUseHandle] = handler.CharacterItemUseHandleFunc
+	handlerMap[charsb.CharacterItemCancelHandle] = handler.CharacterItemCancelHandleFunc
+	handlerMap[invsb.CharacterItemUseTownScrollHandle] = handler.CharacterItemUseTownScrollHandleFunc
+	handlerMap[invsb.CharacterItemUseScrollHandle] = handler.CharacterItemUseScrollHandleFunc
+	handlerMap[character2.CharacterSkillMacroHandle] = handler.CharacterSkillMacroHandleFunc
+	handlerMap[petsb.PetItemExcludeHandle] = handler.PetItemExcludeHandleFunc
+	handlerMap[petsb.PetItemUseHandle] = handler.PetItemUseHandleFunc
+	handlerMap[cashsb.CashShopOperationHandle] = handler.CashShopOperationHandleFunc
+	handlerMap[cashsb.CashShopCheckWalletHandle] = handler.CashShopCheckWalletHandleFunc
+	handlerMap[npcsb.NPCShopHandle] = handler.NPCShopHandleFunc
+	handlerMap[invsb.CompartmentMergeRequestHandle] = handler.CompartmentMergeHandleFunc
+	handlerMap[invsb.CompartmentSortRequestHandle] = handler.CompartmentSortHandleFunc
+	handlerMap[invsb.CharacterItemUseSummonBagHandle] = handler.CharacterItemUseSummonBagHandleFunc
+	handlerMap[notesb.NoteOperationHandle] = handler.NoteOperationHandleFunc
+	handlerMap[questsb.QuestActionHandle] = handler.QuestActionHandleFunc
+	handlerMap[storagesb.StorageOperationHandle] = handler.StorageOperationHandleFunc
+	handlerMap[reactorsb.ReactorHitHandle] = handler.ReactorHitHandleFunc
+	handlerMap[socketsb.PongHandle] = handler.PongHandleFunc
+	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
+	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
+	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
 	return handlerMap
 }
 
@@ -497,53 +555,21 @@ func produceValidators() map[string]handler.MessageValidator {
 	return validatorMap
 }
 
-func getWriterProducer(l logrus.FieldLogger) func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
-	return func(writerConfig []writer2.RestModel, wl []string, w socket2.OpWriter) writer.Producer {
-		rwm := make(map[string]writer.BodyFunc)
-		for _, wc := range writerConfig {
-			op, err := strconv.ParseUint(wc.OpCode, 0, 16)
-			if err != nil {
-				l.WithError(err).Errorf("Unable to configure writer [%s] for opcode [%s].", wc.Writer, wc.OpCode)
-				continue
+func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+	return func(adapter handler.Adapter) func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+		return func(handlerConfig []opcodes.HandlerConfig, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
+			adapt := func(name string, v interface{}, h interface{}, options map[string]interface{}) request.Handler {
+				return adapter(name, v.(handler.MessageValidator), h.(handler.MessageHandler), options)
 			}
-
-			for _, wn := range wl {
-				if wn == wc.Writer {
-					rwm[wc.Writer] = writer.MessageGetter(w.Write(uint16(op)), wc.Options)
-				}
+			vmGeneric := make(map[string]interface{})
+			for k, v := range vm {
+				vmGeneric[k] = v
 			}
-		}
-		return writer.ProducerGetter(rwm)
-	}
-}
-
-func handlerProducer(l logrus.FieldLogger) func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-	return func(adapter handler.Adapter) func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-		return func(handlerConfig []handler2.RestModel, vm map[string]handler.MessageValidator, hm map[string]handler.MessageHandler) socket2.HandlerProducer {
-			handlers := make(map[uint16]request.Handler)
-			for _, hc := range handlerConfig {
-				var v handler.MessageValidator
-				var ok bool
-				if v, ok = vm[hc.Validator]; !ok {
-					l.Warnf("Unable to locate validator [%s] for handler[%s].", hc.Validator, hc.Handler)
-					continue
-				}
-
-				var h handler.MessageHandler
-				if h, ok = hm[hc.Handler]; !ok {
-					continue
-				}
-
-				op, err := strconv.ParseUint(hc.OpCode, 0, 16)
-				if err != nil {
-					l.WithError(err).Warnf("Unable to configure handler [%s] for opcode [%s].", hc.Handler, hc.OpCode)
-					continue
-				}
-
-				l.Debugf("Configuring opcode [%s] with validator [%s] and handler [%s].", hc.OpCode, hc.Validator, hc.Handler)
-				handlers[uint16(op)] = adapter(hc.Handler, v, h, hc.Options)
+			hmGeneric := make(map[string]interface{})
+			for k, v := range hm {
+				hmGeneric[k] = v
 			}
-
+			handlers := opcodes.BuildHandlerMap(l, handlerConfig, vmGeneric, hmGeneric, adapt)
 			return func() map[uint16]request.Handler {
 				return handlers
 			}

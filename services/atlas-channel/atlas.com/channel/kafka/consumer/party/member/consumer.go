@@ -11,6 +11,8 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas-constants/channel"
+	partypkt "github.com/Chronicle20/atlas-packet/party"
+	partycb "github.com/Chronicle20/atlas-packet/party/clientbound"
 	"github.com/Chronicle20/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas-kafka/message"
@@ -20,6 +22,29 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
+
+func toPartyMembers(p party.Model, forChannel channel.Id) []partypkt.PartyMember {
+	members := make([]partypkt.PartyMember, 0, len(p.Members()))
+	for _, m := range p.Members() {
+		chId := int32(m.ChannelId())
+		if !m.Online() {
+			chId = -2
+		}
+		mapId := uint32(0)
+		if forChannel == m.ChannelId() {
+			mapId = uint32(m.MapId())
+		}
+		members = append(members, partypkt.PartyMember{
+			Id:        m.Id(),
+			Name:      m.Name(),
+			JobId:     uint16(m.JobId()),
+			Level:     uint16(m.Level()),
+			ChannelId: chId,
+			MapId:     mapId,
+		})
+	}
+	return members
+}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -117,7 +142,7 @@ func partyUpdate(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 	return func(ctx context.Context) func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
 			return func(p party.Model, tc character.Model, forChannel channel.Id) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.PartyOperation)(writer.PartyUpdateBody(l)(p, tc, forChannel))
+				return session.Announce(l)(ctx)(wp)(partycb.PartyOperationWriter)(partycb.PartyUpdateBody(p.Id(), toPartyMembers(p, forChannel), p.LeaderId()))
 			}
 		}
 	}

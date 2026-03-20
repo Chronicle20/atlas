@@ -1,11 +1,13 @@
 package writer
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-socket/response"
+	atlas_packet "github.com/Chronicle20/atlas-packet"
+	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
+	"github.com/Chronicle20/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 
@@ -13,7 +15,6 @@ type WorldMessageMode string
 
 const (
 	// WorldMessage CWvsContext::OnBroadcastMsg
-	WorldMessage = "WorldMessage"
 
 	WorldMessageNotice           = WorldMessageMode("NOTICE")
 	WorldMessagePopUp            = WorldMessageMode("POP_UP")
@@ -36,16 +37,12 @@ const (
 	WorldMessageUnk8             = WorldMessageMode("UNKNOWN_8") // present in v95+
 )
 
-func WorldMessageNoticeBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return WorldMessageBody(l)(WorldMessageNotice, []string{message}, 0, false, "", NoOpOperator)
-	}
+func WorldMessageNoticeBody(message string) packet.Encode {
+	return worldMessageBody(WorldMessageNotice, []string{message}, 0, false, "", 0, 0)
 }
 
-func WorldMessagePopUpBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return WorldMessageBody(l)(WorldMessagePopUp, []string{message}, 0, false, "", NoOpOperator)
-	}
+func WorldMessagePopUpBody(message string) packet.Encode {
+	return worldMessageBody(WorldMessagePopUp, []string{message}, 0, false, "", 0, 0)
 }
 
 func decorateNameForMessage(medal string, characterName string) string {
@@ -63,204 +60,69 @@ func decorateMegaphoneMessage(medal string, characterName string, message string
 	return fmt.Sprintf("%s : %s", name, message)
 }
 
-func WorldMessageMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
-	return func(medal string, characterName string, message string) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageMegaphone, []string{actualMessage}, 0, false, "", NoOpOperator)
-	}
+func WorldMessageTopScrollBody(message string) packet.Encode {
+	return worldMessageBody(WorldMessageTopScroll, []string{message}, 0, false, "", 0, 0)
 }
 
-func WorldMessageSuperMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) BodyProducer {
-	return func(medal string, characterName string, message string, channelId channel.Id, whispersOn bool) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageSuperMegaphone, []string{actualMessage}, channelId, whispersOn, "", NoOpOperator)
-	}
+func WorldMessagePinkTextBody(medal string, characterName string, message string) packet.Encode {
+	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
+	return worldMessageBody(WorldMessagePinkText, []string{actualMessage}, 0, false, "", 0, 0)
 }
 
-func WorldMessageTopScrollBody(l logrus.FieldLogger) func(message string) BodyProducer {
-	return func(message string) BodyProducer {
-		return WorldMessageBody(l)(WorldMessageTopScroll, []string{message}, 0, false, "", NoOpOperator)
-	}
+func WorldMessageBlueTextBody(medal string, characterName string, message string) packet.Encode {
+	actualMessage := decorateMegaphoneMessage(medal, characterName, message)
+	return worldMessageBody(WorldMessageBlueText, []string{actualMessage}, 0, false, "", 0, 0)
 }
 
-func WorldMessageClearTopScrollBody(l logrus.FieldLogger) func() BodyProducer {
-	return func() BodyProducer {
-		return WorldMessageBody(l)(WorldMessageTopScroll, []string{""}, 0, false, "", NoOpOperator)
-	}
+func WorldMessageGachaponMegaphoneBody(medal string, characterName string, channelId channel.Id, townName string, itemId uint32) packet.Encode {
+	actualMessage := decorateNameForMessage(medal, characterName)
+	return worldMessageBody(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, itemId, 0)
 }
 
-func WorldMessagePinkTextBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
-	return func(medal string, characterName string, message string) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessagePinkText, []string{actualMessage}, 0, false, "", NoOpOperator)
-	}
-}
-
-func WorldMessageBlueTextBody(l logrus.FieldLogger) func(medal string, characterName string, message string) BodyProducer {
-	return func(medal string, characterName string, message string) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(0))
-	}
-}
-
-func WorldMessageBlueTextWithItemBody(l logrus.FieldLogger) func(medal string, characterName string, message string, itemId uint32) BodyProducer {
-	return func(medal string, characterName string, message string, itemId uint32) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageBlueText, []string{actualMessage}, 0, false, "", ItemIdOperator(itemId))
-	}
-}
-
-func WorldMessageNPCBody(l logrus.FieldLogger) func(message string, npcId uint32) BodyProducer {
-	return func(message string, npcId uint32) BodyProducer {
-		return WorldMessageBody(l)(WorldMessageBlueText, []string{message}, 0, false, "", NPCIdOperator(l)(npcId))
-	}
-}
-
-func WorldMessageItemMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) BodyProducer {
-	return func(medal string, characterName string, message string, channelId channel.Id, operator model.Operator[*response.Writer], whispersOn bool) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageItemMegaphone, []string{actualMessage}, channelId, whispersOn, "", operator)
-	}
-}
-
-func WorldMessageYellowMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, message string, channelId channel.Id) BodyProducer {
-	return func(medal string, characterName string, message string, channelId channel.Id) BodyProducer {
-		actualMessage := decorateMegaphoneMessage(medal, characterName, message)
-		return WorldMessageBody(l)(WorldMessageYellowMegaphone, []string{actualMessage}, channelId, false, "", NoOpOperator)
-	}
-}
-
-func WorldMessageMultiMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) BodyProducer {
-	return func(medal string, characterName string, messages []string, channelId channel.Id, whispersOn bool) BodyProducer {
-		actualMessages := make([]string, 0)
-		for _, m := range messages {
-			actualMessages = append(actualMessages, decorateMegaphoneMessage(medal, characterName, m))
-		}
-		return WorldMessageBody(l)(WorldMessageMultiMegaphone, actualMessages, channelId, whispersOn, "", NoOpOperator)
-	}
-}
-
-func WorldMessageGachaponMegaphoneBody(l logrus.FieldLogger) func(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) BodyProducer {
-	return func(medal string, characterName string, channelId channel.Id, townName string, operator model.Operator[*response.Writer]) BodyProducer {
-		actualMessage := decorateNameForMessage(medal, characterName)
-		return WorldMessageBody(l)(WorldMessageGachapon, []string{actualMessage}, channelId, false, townName, operator)
-	}
-}
-
-func NoOpOperator(_ *response.Writer) error {
-	return nil
-}
-
-func ItemIdOperator(itemId uint32) func(w *response.Writer) error {
-	return func(w *response.Writer) error {
-		w.WriteInt(itemId)
-		return nil
-	}
-}
-
-func SlotAsIntOperator(slot int16) model.Operator[*response.Writer] {
-	return func(w *response.Writer) error {
-		w.WriteInt32(int32(slot))
-		return nil
-	}
-}
-
-func NPCIdOperator(l logrus.FieldLogger) func(npcId uint32) model.Operator[*response.Writer] {
-	return func(npcId uint32) model.Operator[*response.Writer] {
-		return func(w *response.Writer) error {
-			if npcId == 0 {
-				l.Warnf("NPC should be provided for NPC mode.")
-				w.WriteInt(9010000)
-			} else {
-				w.WriteInt(npcId)
-			}
-			return nil
-		}
-	}
-}
-
-func WorldMessageBody(l logrus.FieldLogger) func(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, operator model.Operator[*response.Writer]) BodyProducer {
-	return func(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, operator model.Operator[*response.Writer]) BodyProducer {
-		return func(w *response.Writer, options map[string]interface{}) []byte {
-			weatherItemId := uint32(0)
-
-			if len(messages) > 1 && mode != WorldMessageMultiMegaphone {
-				l.Warnf("Client will only relay a maximum of 1 message in this mode.")
-			} else if len(messages) > 3 {
-				l.Warnf("Client will only relay a maximum of 3 messages in a multi megaphone.")
-			}
-
+func worldMessageBody(mode WorldMessageMode, messages []string, channel channel.Id, whispersOn bool, townName string, itemId uint32, slot int32) packet.Encode {
+	return func(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+		return func(options map[string]interface{}) []byte {
 			modeByte := getWorldMessageMode(l)(options, mode)
-			w.WriteByte(modeByte)
-			if mode == WorldMessageTopScroll {
-				if len(messages[0]) == 0 {
-					w.WriteBool(false)
-				} else {
-					w.WriteBool(true)
+
+			switch mode {
+			case WorldMessageNotice, WorldMessagePopUp, WorldMessageMegaphone, WorldMessagePinkText,
+				WorldMessageClipboardNotice1, WorldMessageClipboardNotice2:
+				return chatpkt.NewWorldMessageSimple(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageTopScroll:
+				return chatpkt.NewWorldMessageTopScroll(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageSuperMegaphone:
+				return chatpkt.NewWorldMessageSuperMegaphone(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
+			case WorldMessageBlueText, WorldMessageNPC:
+				return chatpkt.NewWorldMessageBlueText(modeByte, messages[0], itemId).Encode(l, ctx)(options)
+			case WorldMessageItemMegaphone:
+				return chatpkt.NewWorldMessageItemMegaphone(modeByte, messages[0], byte(channel), whispersOn, slot).Encode(l, ctx)(options)
+			case WorldMessageYellowMegaphone:
+				return chatpkt.NewWorldMessageYellowMegaphone(modeByte, messages[0], byte(channel)).Encode(l, ctx)(options)
+			case WorldMessageMultiMegaphone:
+				if len(messages) > 3 {
+					l.Warnf("Client will only relay a maximum of 3 messages in a multi megaphone.")
 				}
+				return chatpkt.NewWorldMessageMultiMegaphone(modeByte, messages, byte(channel), whispersOn).Encode(l, ctx)(options)
+			case WorldMessageGachapon:
+				return chatpkt.NewWorldMessageGachapon(modeByte, messages[0], townName, itemId).Encode(l, ctx)(options)
+			case WorldMessageWeather:
+				return chatpkt.NewWorldMessageWeather(modeByte, messages[0], 0).Encode(l, ctx)(options)
+			case WorldMessageUnk3, WorldMessageUnk4:
+				return chatpkt.NewWorldMessageUnknown3(modeByte, messages[0], itemId).Encode(l, ctx)(options)
+			case WorldMessageUnk7:
+				return chatpkt.NewWorldMessageUnknown7(modeByte, messages[0]).Encode(l, ctx)(options)
+			case WorldMessageUnk8:
+				return chatpkt.NewWorldMessageUnknown8(modeByte, messages[0], byte(channel), whispersOn).Encode(l, ctx)(options)
+			default:
+				l.Warnf("Unhandled world message mode [%s].", mode)
+				return nil
 			}
-			w.WriteAsciiString(messages[0])
-			if mode == WorldMessageSuperMegaphone {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-			} else if mode == WorldMessageBlueText {
-				_ = operator(w)
-			} else if mode == WorldMessageNPC {
-				_ = operator(w)
-			} else if mode == WorldMessageItemMegaphone {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-				w.WriteBool(true)
-				_ = operator(w)
-			} else if mode == WorldMessageYellowMegaphone {
-				w.WriteByte(byte(channel))
-			} else if mode == WorldMessageMultiMegaphone {
-				w.WriteByte(byte(len(messages)))
-				for _, m := range messages[1:] {
-					w.WriteAsciiString(m)
-				}
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-			} else if mode == WorldMessageWeather {
-				w.WriteInt(weatherItemId)
-			} else if mode == WorldMessageGachapon {
-				w.WriteInt(0)                // ?
-				w.WriteAsciiString(townName) // town name
-				_ = operator(w)
-			} else if mode == WorldMessageUnk3 || mode == WorldMessageUnk4 {
-				w.WriteAsciiString("doo") // character name
-				_ = operator(w)
-			} else if mode == WorldMessageUnk7 {
-				w.WriteInt(0) // item id
-			} else if mode == WorldMessageUnk8 {
-				w.WriteByte(byte(channel))
-				w.WriteBool(whispersOn)
-			}
-			return w.Bytes()
 		}
 	}
 }
 
 func getWorldMessageMode(l logrus.FieldLogger) func(options map[string]interface{}, key WorldMessageMode) byte {
 	return func(options map[string]interface{}, key WorldMessageMode) byte {
-		var genericCodes interface{}
-		var ok bool
-		if genericCodes, ok = options["operations"]; !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		var codes map[string]interface{}
-		if codes, ok = genericCodes.(map[string]interface{}); !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-
-		op, ok := codes[string(key)].(float64)
-		if !ok {
-			l.Errorf("Code [%s] not configured for use. Defaulting to 99 which will likely cause a client crash.", key)
-			return 99
-		}
-		return byte(op)
+		return atlas_packet.ResolveCode(l, options, "operations", string(key))
 	}
 }

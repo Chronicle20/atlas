@@ -1,11 +1,8 @@
 package socket
 
-import (
-	"atlas-login/configuration/tenant/socket/handler"
-	"atlas-login/configuration/tenant/socket/writer"
-)
+import "github.com/Chronicle20/atlas-opcodes"
 
 type RestModel struct {
-	Handlers []handler.RestModel `json:"handlers"`
-	Writers  []writer.RestModel  `json:"writers"`
+	Handlers []opcodes.HandlerConfig `json:"handlers"`
+	Writers  []opcodes.WriterConfig  `json:"writers"`
 }

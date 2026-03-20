@@ -6,7 +6,6 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/server"
 	"atlas-channel/session"
-	socketmodel "atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
 	"context"
 	"time"
@@ -19,6 +18,8 @@ import (
 	"github.com/Chronicle20/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
+	charpkt "github.com/Chronicle20/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
 )
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -74,7 +75,7 @@ func announceQuestStarted(l logrus.FieldLogger) func(ctx context.Context) func(w
 	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
 			return func(questId uint32, progress string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationUpdateQuestRecordBody(l)(uint16(questId), progress))
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationUpdateQuestRecordBody(uint16(questId), progress))
 			}
 		}
 	}
@@ -103,23 +104,23 @@ func announceQuestCompleted(l logrus.FieldLogger) func(ctx context.Context) func
 			return func(questId uint32, completedAt time.Time, items []quest.ItemReward) model.Operator[session.Model] {
 				return func(s session.Model) error {
 					// Send status message to update quest record
-					_ = session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationCompleteQuestRecordBody(l)(uint16(questId), completedAt))(s)
+					_ = session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationCompleteQuestRecordBody(uint16(questId), completedAt))(s)
 
 					// Convert items to QuestReward model
-					rewards := make([]socketmodel.QuestReward, len(items))
+					rewards := make([]charcb.QuestReward, len(items))
 					for i, item := range items {
-						rewards[i] = socketmodel.NewQuestReward(item.ItemId, item.Amount)
+						rewards[i] = charcb.QuestReward{ItemId: item.ItemId, Amount: item.Amount}
 					}
 
 					// Send quest effect to player showing rewards
 					if len(rewards) > 0 {
-						_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterQuestEffectBody(l)("", rewards, 0))(s)
+						_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterQuestEffectBody("", rewards, 0))(s)
 					}
 
-					_ = session.Announce(l)(ctx)(wp)(writer.CharacterEffect)(writer.CharacterQuestCompleteEffectBody(l)())(s)
+					_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterQuestCompleteEffectBody())(s)
 
 					// Announce quest complete effect to other players in the map
-					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(writer.CharacterEffectForeign)(writer.CharacterQuestCompleteEffectForeignBody(l)(s.CharacterId())))
+					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterQuestCompleteEffectForeignBody(s.CharacterId())))
 
 					return nil
 				}
@@ -149,7 +150,7 @@ func announceQuestForfeited(l logrus.FieldLogger) func(ctx context.Context) func
 	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(questId uint32) model.Operator[session.Model] {
 			return func(questId uint32) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationForfeitQuestRecordBody(l)(uint16(questId)))
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationForfeitQuestRecordBody(uint16(questId)))
 			}
 		}
 	}
@@ -176,7 +177,7 @@ func announceQuestProgressUpdated(l logrus.FieldLogger) func(ctx context.Context
 	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
 			return func(questId uint32, progress string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(writer.CharacterStatusMessage)(writer.CharacterStatusMessageOperationUpdateQuestRecordBody(l)(uint16(questId), progress))
+				return session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationUpdateQuestRecordBody(uint16(questId), progress))
 			}
 		}
 	}

@@ -139,13 +139,13 @@ func (p *Processor) GetSlotMax(templateId uint32) (uint32, error) {
 func (p *Processor) Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID) func(a Model) error {
 		return func(a Model) error {
-			p.l.Debugf("Attempting to delete asset [%d].", a.Id())
+			p.l.Debugf("Attempting to delete asset [%d] templateId [%d] slot [%d] from compartment [%s] for character [%d].", a.Id(), a.TemplateId(), a.Slot(), compartmentId, characterId)
 			err := deleteById(p.db.WithContext(p.ctx), a.Id())
 			if err != nil {
-				p.l.WithError(err).Errorf("Unable to delete asset [%d].", a.Id())
+				p.l.WithError(err).Errorf("Unable to delete asset [%d] templateId [%d] slot [%d] from compartment [%s] for character [%d].", a.Id(), a.TemplateId(), a.Slot(), compartmentId, characterId)
 				return err
 			}
-			p.l.Debugf("Deleted asset [%d].", a.Id())
+			p.l.Infof("Deleted asset [%d] templateId [%d] slot [%d] from compartment [%s] for character [%d].", a.Id(), a.TemplateId(), a.Slot(), compartmentId, characterId)
 			return mb.Put(asset.EnvEventTopicStatus, DeletedEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot()))
 		}
 	}

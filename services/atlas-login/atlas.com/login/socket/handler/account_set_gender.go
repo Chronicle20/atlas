@@ -7,22 +7,21 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
+	account2 "github.com/Chronicle20/atlas-packet/account/serverbound"
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
-const SetGenderHandle = "SetGenderHandle"
+func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	return func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+		p := account2.SetGender{}
+		p.Decode(l, ctx)(r, readerOptions)
+		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
 
-func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	setAccountResultFunc := session.Announce(l)(wp)(writer.SetAccountResult)
-	return func(s session.Model, r *request.Reader) {
-		confirmed := r.ReadBool()
-		gender := r.ReadByte()
-		l.Debugf("Reading [%s] message. body={confirmed=%t, gender=%d}", SetGenderHandle, confirmed, gender)
-
-		var success = confirmed
-		if confirmed {
-			err := account.NewProcessor(l, ctx).UpdateGender(s.AccountId(), gender)
+		success := p.Set()
+		if p.Set() {
+			err := account.NewProcessor(l, ctx).UpdateGender(s.AccountId(), p.Gender())
 			if err != nil {
 				l.WithError(err).Errorf("Unable to update the gender of account [%d].", s.AccountId())
 				success = false
@@ -34,7 +33,7 @@ func SetGenderHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Pr
 			as.NewProcessor(l, ctx).Destroy(s.SessionId(), s.AccountId())
 		}
 
-		err := setAccountResultFunc(s, writer.SetAccountResultBody(gender, success))
+		err := session.Announce(l)(ctx)(wp)(loginpkt.SetAccountResultWriter)(loginpkt.NewSetAccountResult(p.Gender(), success).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to issue set account result")
 		}

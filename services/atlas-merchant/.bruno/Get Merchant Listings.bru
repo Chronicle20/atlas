@@ -1,0 +1,11 @@
+meta {
+  name: Get Merchant Listings
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{scheme}}://{{host}}:{{port}}/api/merchants/{{shopId}}/relationships/listings
+  body: none
+  auth: none
+}

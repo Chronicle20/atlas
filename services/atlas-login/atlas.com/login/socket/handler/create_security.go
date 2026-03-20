@@ -6,20 +6,21 @@ import (
 	"context"
 	"math/rand"
 
+	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
 	"github.com/Chronicle20/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 
 const CreateSecurityHandle = "CreateSecurityHandle"
 
-func CreateSecurityHandleFunc(l logrus.FieldLogger, _ context.Context, wp writer.Producer) func(s session.Model, r *request.Reader) {
-	loginAuthFunc := session.Announce(l)(wp)(writer.LoginAuth)
+func CreateSecurityHandleFunc(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, r *request.Reader, readerOptions map[string]interface{}) {
+	loginAuthFunc := session.Announce(l)(ctx)(wp)(loginpkt.LoginAuthWriter)
 
-	return func(s session.Model, _ *request.Reader) {
+	return func(s session.Model, _ *request.Reader, readerOptions map[string]interface{}) {
 		loginScreen := [2]string{"MapLogin", "MapLogin1"}
 		randomIndex := rand.Intn(len(loginScreen))
 
-		err := loginAuthFunc(s, writer.LoginAuthBody(loginScreen[randomIndex]))
+		err := loginAuthFunc(loginpkt.NewLoginAuth(loginScreen[randomIndex]).Encode)(s)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce login screen.")
 		}

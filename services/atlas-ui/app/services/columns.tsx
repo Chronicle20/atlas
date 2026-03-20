@@ -29,7 +29,9 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Service>[] => [
     cell: ({ row }) => {
       const id = row.getValue("id") as string;
       return (
-        <span className="font-mono text-xs">{id}</span>
+        <Link href={`/services/${id}`} className="font-mono text-xs text-primary hover:underline">
+          {id}
+        </Link>
       );
     },
   },
@@ -74,9 +76,6 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Service>[] => [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/services/${service.id}`}>View Service</Link>
-            </DropdownMenuItem>
             {onDelete && (
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"

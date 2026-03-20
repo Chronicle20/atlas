@@ -22,6 +22,14 @@ export const getColumns = ({ onDelete, onClone, onCreateTenant }: ColumnProps): 
     {
         accessorKey: "id",
         header: "Id",
+        cell: ({ row }) => {
+            const id = row.getValue("id") as string;
+            return (
+                <Link href={"/templates/" + id + "/properties"} className="font-mono text-primary hover:underline">
+                    {id}
+                </Link>
+            );
+        },
     },
     {
         accessorKey: "attributes.region",
@@ -49,11 +57,6 @@ export const getColumns = ({ onDelete, onClone, onCreateTenant }: ColumnProps): 
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={"/templates/" + id + "/properties"}>
-                                View Template
-                            </Link>
-                        </DropdownMenuItem>
                         {onClone && (
                             <DropdownMenuItem 
                                 onClick={() => onClone(id)}

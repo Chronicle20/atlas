@@ -103,7 +103,7 @@ export default function GuildDetailPage() {
                                             {title.name}
                                         </Badge>
                                     </TooltipTrigger>
-                                    <TooltipContent>
+                                    <TooltipContent copyable>
                                         <p>{String(title.index)}</p>
                                     </TooltipContent>
                                 </Tooltip>
@@ -157,7 +157,7 @@ function getMemberColumns(titles: GuildTitle[]): ColumnDef<GuildMember>[] {
                                         {name}
                                     </Badge>
                                 </TooltipTrigger>
-                                <TooltipContent>
+                                <TooltipContent copyable>
                                     <p>{String(value)}</p>
                                 </TooltipContent>
                             </Tooltip>

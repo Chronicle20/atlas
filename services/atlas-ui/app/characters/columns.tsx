@@ -79,7 +79,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                                     {name}
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent copyable>
                                 <p>{String(value)}</p>
                             </TooltipContent>
                         </Tooltip>
@@ -132,7 +132,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                                                 GM
                                             </Badge>
                                         </TooltipTrigger>
-                                        <TooltipContent>
+                                        <TooltipContent copyable>
                                             <p>{String(gm)}</p>
                                         </TooltipContent>
                                     </Tooltip>

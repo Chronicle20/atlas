@@ -1,9 +1,6 @@
 "use client"
 
 import {ColumnDef} from "@tanstack/react-table"
-import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
-import {Button} from "@/components/ui/button";
-import {MoreHorizontal} from "lucide-react";
 import type {TenantConfig} from "@/types/models/tenant";
 import {Guild} from "@/types/models/guild";
 import {Character} from "@/types/models/character";
@@ -28,6 +25,11 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
         {
             accessorKey: "attributes.name",
             header: "Name",
+            cell: ({row}) => (
+                <Link href={"/guilds/" + row.original.id} className="font-medium text-primary hover:underline">
+                    {row.original.attributes.name}
+                </Link>
+            ),
         },
         {
             accessorKey: "attributes.leaderId",
@@ -79,27 +81,5 @@ export function getColumns({tenant, characterMap}: ColumnProps): ColumnDef<Guild
             accessorKey: "attributes.capacity",
             header: "Capacity",
         },
-        {
-            id: "actions",
-            cell: ({row}) => {
-                return (
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Open menu</span>
-                                <MoreHorizontal className="h-4 w-4"/>
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
-                                <Link href={"/guilds/" + row.getValue("id")}>
-                                    View Guild
-                                </Link>
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
-                )
-            },
-        }
     ]
 }

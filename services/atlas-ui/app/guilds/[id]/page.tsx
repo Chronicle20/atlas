@@ -12,6 +12,7 @@ import {useTenant} from "@/context/tenant-context";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {getJobNameById} from "@/lib/jobs";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
+import Link from "next/link";
 import {TenantConfig} from "@/types/models/tenant";
 import { PageLoader, ErrorDisplay } from "@/components/common";
 
@@ -133,6 +134,11 @@ function getMemberColumns(titles: GuildTitle[]): ColumnDef<GuildMember>[] {
         {
             accessorKey: "name",
             header: "Name",
+            cell: ({row}) => (
+                <Link href={"/characters/" + row.original.characterId} className="font-medium text-primary hover:underline">
+                    {row.original.name}
+                </Link>
+            ),
         },
         {
             accessorKey: "level",

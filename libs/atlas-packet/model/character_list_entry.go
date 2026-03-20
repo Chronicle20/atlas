@@ -12,6 +12,7 @@ import (
 type CharacterListEntry struct {
 	statistics  CharacterStatistics
 	avatar      Avatar
+	viewAll     bool
 	gm          bool
 	rank        uint32
 	rankMove    uint32
@@ -19,10 +20,11 @@ type CharacterListEntry struct {
 	jobRankMove uint32
 }
 
-func NewCharacterListEntry(statistics CharacterStatistics, avatar Avatar, gm bool, rank uint32, rankMove uint32, jobRank uint32, jobRankMove uint32) CharacterListEntry {
+func NewCharacterListEntry(statistics CharacterStatistics, avatar Avatar, viewAll bool, gm bool, rank uint32, rankMove uint32, jobRank uint32, jobRankMove uint32) CharacterListEntry {
 	return CharacterListEntry{
 		statistics:  statistics,
 		avatar:      avatar,
+		viewAll:     viewAll,
 		gm:          gm,
 		rank:        rank,
 		rankMove:    rankMove,
@@ -32,55 +34,62 @@ func NewCharacterListEntry(statistics CharacterStatistics, avatar Avatar, gm boo
 }
 
 func (m CharacterListEntry) Statistics() CharacterStatistics { return m.statistics }
+func (m CharacterListEntry) ViewAll() bool                   { return m.viewAll }
 func (m CharacterListEntry) Gm() bool                       { return m.gm }
 func (m CharacterListEntry) Rank() uint32                    { return m.rank }
 func (m CharacterListEntry) RankMove() uint32                { return m.rankMove }
 func (m CharacterListEntry) JobRank() uint32                 { return m.jobRank }
 func (m CharacterListEntry) JobRankMove() uint32             { return m.jobRankMove }
 
-func (m CharacterListEntry) Write(l logrus.FieldLogger, ctx context.Context, w *response.Writer, options map[string]interface{}, viewAll bool) {
+func (m CharacterListEntry) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
 	t := tenant.MustFromContext(ctx)
-	w.WriteByteArray(m.statistics.Encode(l, ctx)(options))
-	w.WriteByteArray(m.avatar.Encode(l, ctx)(options))
-	if !viewAll {
-		w.WriteByte(0)
-	}
-	if m.gm {
-		w.WriteByte(0)
-		return
-	}
+	return func(options map[string]interface{}) []byte {
+		w.WriteByteArray(m.statistics.Encode(l, ctx)(options))
+		w.WriteByteArray(m.avatar.Encode(l, ctx)(options))
+		if !m.viewAll {
+			w.WriteByte(0)
+		}
+		if m.gm {
+			w.WriteByte(0)
+			return w.Bytes()
+		}
 
-	if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-		w.WriteInt(1) // auto select first character
-	}
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+			w.WriteInt(1) // auto select first character
+		}
 
-	w.WriteByte(1) // world rank enabled
-	w.WriteInt(m.rank)
-	w.WriteInt(m.rankMove)
-	w.WriteInt(m.jobRank)
-	w.WriteInt(m.jobRankMove)
+		w.WriteByte(1) // world rank enabled
+		w.WriteInt(m.rank)
+		w.WriteInt(m.rankMove)
+		w.WriteInt(m.jobRank)
+		w.WriteInt(m.jobRankMove)
+		return w.Bytes()
+	}
 }
 
-func (m *CharacterListEntry) Read(l logrus.FieldLogger, ctx context.Context, r *request.Reader, options map[string]interface{}, viewAll bool) {
+func (m *CharacterListEntry) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
-	m.statistics.Decode(l, ctx)(r, options)
-	m.avatar.Decode(l, ctx)(r, options)
-	if !viewAll {
-		_ = r.ReadByte()
-	}
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.statistics.Decode(l, ctx)(r, options)
+		m.avatar.Decode(l, ctx)(r, options)
+		if !m.viewAll {
+			_ = r.ReadByte()
+		}
 
-	rankEnabled := r.ReadByte()
-	if rankEnabled == 0 {
-		m.gm = true
-		return
-	}
+		rankEnabled := r.ReadByte()
+		if rankEnabled == 0 {
+			m.gm = true
+			return
+		}
 
-	if t.Region() == "GMS" && t.MajorVersion() <= 28 {
-		_ = r.ReadUint32() // auto select
-	}
+		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
+			_ = r.ReadUint32() // auto select
+		}
 
-	m.rank = r.ReadUint32()
-	m.rankMove = r.ReadUint32()
-	m.jobRank = r.ReadUint32()
-	m.jobRankMove = r.ReadUint32()
+		m.rank = r.ReadUint32()
+		m.rankMove = r.ReadUint32()
+		m.jobRank = r.ReadUint32()
+		m.jobRankMove = r.ReadUint32()
+	}
 }

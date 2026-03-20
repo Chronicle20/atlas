@@ -50,7 +50,7 @@ func (m CharacterList) Encode(l logrus.FieldLogger, ctx context.Context) func(op
 
 		w.WriteByte(byte(len(m.characters)))
 		for _, c := range m.characters {
-			c.Write(l, ctx, w, options, false)
+			w.WriteByteArray(c.Encode(l, ctx)(options))
 		}
 
 		if t.Region() == "GMS" && t.MajorVersion() <= 28 {
@@ -85,7 +85,7 @@ func (m *CharacterList) Decode(l logrus.FieldLogger, ctx context.Context) func(r
 		count := r.ReadByte()
 		m.characters = make([]model.CharacterListEntry, count)
 		for i := byte(0); i < count; i++ {
-			m.characters[i].Read(l, ctx, r, options, false)
+			m.characters[i].Decode(l, ctx)(r, options)
 		}
 
 		if t.Region() == "GMS" && t.MajorVersion() <= 28 {

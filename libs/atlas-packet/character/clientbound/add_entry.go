@@ -30,7 +30,7 @@ func (m AddCharacterEntry) Encode(l logrus.FieldLogger, ctx context.Context) fun
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.code)
-		m.character.Write(l, ctx, w, options, false)
+		w.WriteByteArray(m.character.Encode(l, ctx)(options))
 		return w.Bytes()
 	}
 }
@@ -38,6 +38,6 @@ func (m AddCharacterEntry) Encode(l logrus.FieldLogger, ctx context.Context) fun
 func (m *AddCharacterEntry) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.code = r.ReadByte()
-		m.character.Read(l, ctx, r, options, false)
+		m.character.Decode(l, ctx)(r, options)
 	}
 }

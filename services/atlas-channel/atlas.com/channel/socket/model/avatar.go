@@ -12,9 +12,11 @@ func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {
 	for _, t := range slot.Slots {
 		if s, ok := c.Equipment().Get(t.Type); ok {
 			if s.CashEquipable != nil {
-				if s.Equipable != nil {
-					equips[s.Position*-1] = s.Equipable.TemplateId()
-				}
+				equips[s.Position*-1] = s.CashEquipable.TemplateId()
+				continue
+			}
+			if s.Equipable != nil {
+				equips[s.Position*-1] = s.Equipable.TemplateId()
 			}
 		}
 	}
@@ -22,11 +24,9 @@ func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {
 	for _, t := range slot.Slots {
 		if s, ok := c.Equipment().Get(t.Type); ok {
 			if s.CashEquipable != nil {
-				maskedEquips[s.Position*-1] = s.CashEquipable.TemplateId()
-				continue
-			}
-			if s.Equipable != nil {
-				maskedEquips[s.Position*-1] = s.Equipable.TemplateId()
+				if s.Equipable != nil {
+					maskedEquips[s.Position*-1] = s.Equipable.TemplateId()
+				}
 			}
 		}
 	}

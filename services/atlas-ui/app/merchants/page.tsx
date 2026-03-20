@@ -95,6 +95,7 @@ function MerchantsPageContent() {
 
     setSearchLoading(true);
     setHasSearched(true);
+    autoSearched.current = true;
     router.replace(`${pathname}?tab=search&q=${encodeURIComponent(searchQuery.trim())}`, { scroll: false });
 
     try {

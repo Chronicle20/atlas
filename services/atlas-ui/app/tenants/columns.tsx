@@ -24,6 +24,11 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
     {
         accessorKey: "attributes.name",
         header: "Name",
+        cell: ({ row }) => (
+            <Link href={"/tenants/" + row.original.id + "/properties"} className="font-medium text-primary hover:underline">
+                {row.original.attributes.name}
+            </Link>
+        ),
     },
     {
         accessorKey: "attributes.region",
@@ -51,11 +56,6 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                            <Link href={"/tenants/" + id + "/properties"}>
-                                View Tenant
-                            </Link>
-                        </DropdownMenuItem>
                         {onDelete && (
                             <DropdownMenuItem 
                                 className="text-destructive focus:text-destructive"

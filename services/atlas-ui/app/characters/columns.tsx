@@ -13,6 +13,7 @@ import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import Link from "next/link";
 import {ChangeMapDialog} from "@/components/features/characters/ChangeMapDialog";
+import {ChangeGmDialog} from "@/components/features/characters/ChangeGmDialog";
 import {useState} from "react";
 import {charactersService} from "@/services/api/characters.service";
 import {toast} from "sonner";
@@ -58,7 +59,11 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
             cell: ({row}) => {
                 const accountId = String(row.getValue("attributes_accountId"))
                 const account = accountMap.get(accountId)
-                return account?.attributes.name ?? "Unknown"
+                return (
+                    <Link href={"/accounts/" + accountId} className="text-primary hover:underline">
+                        {account?.attributes.name ?? "Unknown"}
+                    </Link>
+                )
             }
         },
         {
@@ -79,7 +84,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                                     {name}
                                 </Badge>
                             </TooltipTrigger>
-                            <TooltipContent>
+                            <TooltipContent copyable>
                                 <p>{String(value)}</p>
                             </TooltipContent>
                         </Tooltip>
@@ -132,7 +137,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
                                                 GM
                                             </Badge>
                                         </TooltipTrigger>
-                                        <TooltipContent>
+                                        <TooltipContent copyable>
                                             <p>{String(gm)}</p>
                                         </TooltipContent>
                                     </Tooltip>
@@ -171,6 +176,7 @@ export const getColumns = ({tenant, tenantConfig, accountMap, onRefresh}: Column
 
 function CharacterActions({ character, tenant, onRefresh }: { character: Character; tenant: Tenant | null; onRefresh?: () => void }) {
     const [changeMapOpen, setChangeMapOpen] = useState(false);
+    const [changeGmOpen, setChangeGmOpen] = useState(false);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
@@ -202,6 +208,9 @@ function CharacterActions({ character, tenant, onRefresh }: { character: Charact
                     <DropdownMenuItem onClick={() => setChangeMapOpen(true)}>
                         Change Map
                     </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setChangeGmOpen(true)}>
+                        {character.attributes.gm > 0 ? "Change GM Status" : "Promote to GM"}
+                    </DropdownMenuItem>
                     <DropdownMenuItem className="text-destructive" onClick={() => setDeleteDialogOpen(true)}>
                         Delete Character
                     </DropdownMenuItem>
@@ -211,6 +220,12 @@ function CharacterActions({ character, tenant, onRefresh }: { character: Charact
                 character={character}
                 open={changeMapOpen}
                 onOpenChange={setChangeMapOpen}
+                {...(onRefresh && { onSuccess: onRefresh })}
+            />
+            <ChangeGmDialog
+                character={character}
+                open={changeGmOpen}
+                onOpenChange={setChangeGmOpen}
                 {...(onRefresh && { onSuccess: onRefresh })}
             />
             <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>

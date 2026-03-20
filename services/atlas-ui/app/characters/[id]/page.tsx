@@ -12,10 +12,12 @@ import {inventoryService, type InventoryResponse, type Compartment, type Asset} 
 import {TenantConfig} from "@/types/models/tenant";
 import {createErrorFromUnknown} from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { MapPin, Shield } from "lucide-react";
 import { MapCell } from "@/components/map-cell";
 import Link from "next/link";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
+import { ChangeGmDialog } from "@/components/features/characters/ChangeGmDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
 import { QuestStatusTabs } from "@/components/features/quests";
@@ -45,6 +47,7 @@ export default function CharacterDetailPage() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [assetToDelete, setAssetToDelete] = useState<{ compartmentId: string, assetId: string } | null>(null)
     const [changeMapDialogOpen, setChangeMapDialogOpen] = useState(false)
+    const [changeGmDialogOpen, setChangeGmDialogOpen] = useState(false)
 
     // Function to open delete confirmation dialog
     const openDeleteDialog = (compartmentId: string, assetId: string) => {
@@ -69,6 +72,18 @@ export default function CharacterDetailPage() {
             setDeletingAsset(null);
             setDeleteDialogOpen(false);
             setAssetToDelete(null);
+        }
+    };
+
+    // Function to handle successful GM change
+    const handleGmChangeSuccess = async () => {
+        if (!activeTenant || !id) return;
+
+        try {
+            const updatedCharacter = await charactersService.getById(activeTenant, String(id));
+            setCharacter(updatedCharacter);
+        } catch (err: unknown) {
+            console.error("Failed to refresh character data:", err);
         }
     };
 
@@ -141,10 +156,7 @@ export default function CharacterDetailPage() {
             <div className="flex flex-row gap-6">
                 {/* Character Rendering */}
                 <Card className="w-auto flex-shrink-0">
-                    <CardHeader className="pb-2">
-                        <CardTitle>Avatar</CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex justify-center pt-2 pb-4">
+                    <CardContent className="flex justify-center pt-4 pb-4">
                         <CharacterRenderer
                             character={character}
                             inventory={equippedItems}
@@ -162,15 +174,29 @@ export default function CharacterDetailPage() {
                     <CardHeader>
                         <div className="flex items-center justify-between">
                             <CardTitle>Attributes</CardTitle>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setChangeMapDialogOpen(true)}
-                                className="flex items-center gap-2"
-                            >
-                                <MapPin className="h-4 w-4" />
-                                Change Map
-                            </Button>
+                            <div className="flex items-center gap-2">
+                                {character.attributes.gm > 0 && (
+                                    <Badge variant="destructive">GM {character.attributes.gm}</Badge>
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setChangeGmDialogOpen(true)}
+                                    className="flex items-center gap-2"
+                                >
+                                    <Shield className="h-4 w-4" />
+                                    {character.attributes.gm > 0 ? "Change GM" : "Promote to GM"}
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setChangeMapDialogOpen(true)}
+                                    className="flex items-center gap-2"
+                                >
+                                    <MapPin className="h-4 w-4" />
+                                    Change Map
+                                </Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
@@ -273,6 +299,14 @@ export default function CharacterDetailPage() {
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Change GM Dialog */}
+            <ChangeGmDialog
+                character={character}
+                open={changeGmDialogOpen}
+                onOpenChange={setChangeGmDialogOpen}
+                onSuccess={handleGmChangeSuccess}
+            />
 
             {/* Change Map Dialog */}
             <ChangeMapDialog

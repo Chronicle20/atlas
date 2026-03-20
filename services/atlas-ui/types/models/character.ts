@@ -42,4 +42,5 @@ export interface CharacterAttributes {
 // Character update request types
 export interface UpdateCharacterData {
     mapId?: number;
+    gm?: number;
 }

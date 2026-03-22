@@ -258,7 +258,7 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 						var bs []buff.Model
 						bs, err = buff.NewProcessor(l, ctx).GetByCharacterId(s.CharacterId())
 						if err != nil {
-							l.WithError(err).Errorf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
+							l.WithError(err).Debugf("Unable to retrieve active buffs for character [%d].", s.CharacterId())
 							return
 						}
 						err = session.Announce(l)(ctx)(wp)(charcb.CharacterBuffGiveWriter)(writer.CharacterBuffGiveBody(bs))(s)

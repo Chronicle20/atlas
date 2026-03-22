@@ -183,42 +183,42 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			go func() {
 				err = monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn monsters for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn monsters for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
 				err = drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn drops for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
 				err = reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn reactors for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn reactors for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
 				err = chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn chalkboards for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
 				err = chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn drops for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn chairs for character [%d].", s.CharacterId())
 				}
 			}()
 
 			go func() {
 				err = merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn merchants for character [%d].", s.CharacterId())
+					l.WithError(err).Debugf("Unable to spawn merchants for character [%d].", s.CharacterId())
 				}
 			}()
 
@@ -227,7 +227,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(s.CharacterId())))
 				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
 				if err != nil {
-					l.WithError(err).Errorf("Unable to announce character [%d] health to party members.", s.CharacterId())
+					l.WithError(err).Debugf("Unable to announce character [%d] health to party members.", s.CharacterId())
 				}
 
 				_ = model.ForEachSlice(oip, func(oid uint32) error {

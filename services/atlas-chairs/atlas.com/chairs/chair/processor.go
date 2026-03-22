@@ -99,7 +99,7 @@ func (p *ProcessorImpl) Clear(field field.Model, characterId uint32) error {
 	p.l.Debugf("Attempting to clear for character [%d].", characterId)
 	c, err := p.GetById(characterId)
 	if err != nil {
-		p.l.WithError(err).Errorf("Failed to get chair for character [%d].", characterId)
+		p.l.WithError(err).Debugf("Failed to get chair for character [%d].", characterId)
 		return err
 	}
 	existed := GetRegistry().Clear(p.ctx, characterId)

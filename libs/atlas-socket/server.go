@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/Chronicle20/atlas-socket/crypto"
@@ -202,7 +203,7 @@ func run(l logrus.FieldLogger, ctx context.Context, wg *sync.WaitGroup) func(con
 					}
 					continue
 				}
-				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) {
+				if errors.Is(err, io.EOF) || errors.Is(err, net.ErrClosed) || errors.Is(err, syscall.ECONNRESET) {
 					l.Infof("Connection ended.")
 				} else {
 					l.WithError(err).Errorf("Error reading from connection.")

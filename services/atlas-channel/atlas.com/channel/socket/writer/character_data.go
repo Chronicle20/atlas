@@ -7,9 +7,9 @@ import (
 	model2 "atlas-channel/socket/model"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.CharacterData {

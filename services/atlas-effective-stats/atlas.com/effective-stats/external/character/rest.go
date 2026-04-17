@@ -3,7 +3,7 @@ package character
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // RestModel represents a character from atlas-character service

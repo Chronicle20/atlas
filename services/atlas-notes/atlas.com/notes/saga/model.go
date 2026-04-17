@@ -3,8 +3,8 @@ package saga
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // Re-export types from atlas-saga shared library

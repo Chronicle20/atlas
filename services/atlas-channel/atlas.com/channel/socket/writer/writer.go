@@ -1,7 +1,7 @@
 package writer
 
 import (
-	sw "github.com/Chronicle20/atlas-socket/writer"
+	sw "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 )
 
 type BodyFunc = sw.BodyFunc

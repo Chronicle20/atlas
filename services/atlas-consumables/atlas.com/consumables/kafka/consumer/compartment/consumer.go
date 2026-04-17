@@ -4,8 +4,8 @@ import (
 	consumer2 "atlas-consumables/kafka/consumer"
 	"atlas-consumables/kafka/message/compartment"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 )
 

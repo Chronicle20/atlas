@@ -35,6 +35,30 @@ Triggers full data processing for the current tenant. Deletes all existing docum
 
 ---
 
+### GET /api/data/status
+
+Returns the ingested-document state for the current tenant. Always 200.
+
+#### Response Model
+
+```json
+{
+  "data": {
+    "type": "dataStatus",
+    "id": "<tenantId>",
+    "attributes": {
+      "documentCount": 18204,
+      "updatedAt": "2026-04-17T18:10:00Z"
+    }
+  }
+}
+```
+
+- `documentCount` — number of `documents` rows with `tenant_id = ?`.
+- `updatedAt` — `MAX(updated_at)` across those rows, RFC 3339; `null` when `documentCount` is 0.
+
+---
+
 ### GET /api/data/cash/items
 
 Returns all cash items.

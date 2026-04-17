@@ -14,10 +14,10 @@ import (
 	party_quest "atlas-messages/command/party_quest"
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-messages/tracing"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 const serviceName = "atlas-messages"

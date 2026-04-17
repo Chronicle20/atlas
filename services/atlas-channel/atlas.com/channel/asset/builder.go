@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	af "github.com/Chronicle20/atlas-constants/asset"
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 	"github.com/google/uuid"
 )
 

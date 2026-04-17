@@ -3,8 +3,8 @@ package clientbound
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas-packet/party"
-	pt "github.com/Chronicle20/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/party"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestLeftRoundTrip(t *testing.T) {

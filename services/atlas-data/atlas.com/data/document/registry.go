@@ -4,7 +4,7 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Registry[I string, M Identifier[I]] struct {

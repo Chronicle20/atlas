@@ -3,7 +3,7 @@ package skill
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -83,4 +83,12 @@ func SetLevel(level byte) EntityUpdateFunction {
 
 func deleteByCharacter(db *gorm.DB, characterId uint32) error {
 	return db.Where("character_id = ?", characterId).Delete(&Entity{}).Error
+}
+
+// deleteSkill removes a single skill for a character. Returns (true, nil) if a
+// row was deleted, (false, nil) if no matching row existed, and (_, err) on
+// database error. Used by the saga-compensation delete path (plan Phase 5).
+func deleteSkill(db *gorm.DB, characterId uint32, skillId uint32) (bool, error) {
+	res := db.Where("character_id = ? AND id = ?", characterId, skillId).Delete(&Entity{})
+	return res.RowsAffected > 0, res.Error
 }

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 // Builder provides a fluent interface for constructing invite Model instances

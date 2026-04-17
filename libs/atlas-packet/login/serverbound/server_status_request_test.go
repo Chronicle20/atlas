@@ -3,9 +3,9 @@ package serverbound
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
-	pt "github.com/Chronicle20/atlas-packet/test"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestServerStatusRequestRoundTrip(t *testing.T) {

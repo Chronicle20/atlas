@@ -9,10 +9,10 @@ import (
 	"atlas-channel/party"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	skill2 "github.com/Chronicle20/atlas-constants/skill"
-	model2 "github.com/Chronicle20/atlas-model/model"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/sirupsen/logrus"
 )
 

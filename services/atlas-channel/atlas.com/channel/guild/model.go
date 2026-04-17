@@ -5,7 +5,7 @@ import (
 	"atlas-channel/guild/title"
 	"sort"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Model struct {

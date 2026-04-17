@@ -9,16 +9,16 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
-	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
-	questpkt "github.com/Chronicle20/atlas-packet/quest/clientbound"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	questpkt "github.com/Chronicle20/atlas/libs/atlas-packet/quest/clientbound"
 )
 
 // InitConsumers initializes the instance transport event consumers

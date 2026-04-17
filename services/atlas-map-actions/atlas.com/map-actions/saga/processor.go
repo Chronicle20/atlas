@@ -5,7 +5,7 @@ import (
 	"atlas-map-actions/kafka/producer"
 	"context"
 
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/sirupsen/logrus"
 )
 

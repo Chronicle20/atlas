@@ -84,7 +84,7 @@ The system supports **multi-tenancy** — a single deployment can host multiple 
 | Redis | 7+ | Caching layer (effective stats, sessions) |
 | Nginx | Latest | Ingress proxy for inter-service REST routing |
 
-For Kubernetes deployments, infrastructure secrets (DB credentials, etc.) are configured in `base.yaml`. The shared ConfigMap (`atlas-env`) in `services/atlas-env.yaml` defines connection endpoints for all services.
+For Kubernetes deployments, all manifests live under `deploy/k8s/`. Infrastructure secrets (DB credentials, etc.) are in `deploy/k8s/secrets.yaml` (gitignored; copy from `secrets.example.yaml`). The shared ConfigMap (`atlas-env`) in `deploy/k8s/env-configmap.yaml` defines connection endpoints for all services.
 
 ### Running Locally
 
@@ -103,18 +103,29 @@ Each service runs as a standalone binary on port 8080. Services communicate asyn
 
 ### Kubernetes Deployment
 
-Atlas is designed to run on Kubernetes. Base infrastructure is defined in `base.yaml` (namespace + secrets), with per-service manifests in each service directory and an nginx ingress in `atlas-ingress.yml`.
+All Atlas Kubernetes manifests live under `deploy/k8s/` in a flat layout: `namespace.yaml`, `secrets.yaml` (gitignored — generate from `secrets.example.yaml`), `env-configmap.yaml`, `ingress.yaml`, plus one `atlas-<name>.yaml` per service.
 
 ```bash
-# Apply base infrastructure
-kubectl apply -f base.yaml
-
-# Deploy a service
-kubectl apply -f services/atlas-account/atlas-account.yml
-
-# Deploy ingress
-kubectl apply -f atlas-ingress.yml
+# Apply namespace first, then everything else
+kubectl apply -f deploy/k8s/namespace.yaml
+kubectl apply -f deploy/k8s/
 ```
+
+The nginx ingress routes are single-sourced in `deploy/shared/routes.conf` and inlined into the K8s ConfigMap by `deploy/scripts/sync-k8s-ingress-routes.sh`. After editing routes, run that script (use `--check` in CI) before committing.
+
+### Local Docker Compose
+
+`deploy/compose/` ships a three-file compose stack against host-provided infra (Postgres, Redis, Kafka, Tempo via `host-gateway`). Copy `.env.example` to `.env` and edit, then:
+
+```bash
+./deploy/compose/up.sh                  # core HTTP/Kafka services + nginx (default)
+./deploy/compose/up.sh socket           # just atlas-login + atlas-channel
+./deploy/compose/up.sh all -d           # everything, detached
+./deploy/compose/down.sh all
+./deploy/compose/logs.sh core -f atlas-account
+```
+
+All invocations share the `atlas` compose project and the `atlas` Docker network, so running `core` and `socket` in separate terminals still gets cross-stack name resolution.
 
 ## Project Structure
 
@@ -125,8 +136,11 @@ atlas/
 ├── tools/             # Build and maintenance scripts
 ├── dev/               # Development plans and audits
 ├── .github/           # CI/CD workflows and config
-├── base.yaml          # K8s namespace and secrets
-├── atlas-ingress.yml  # Nginx ingress routing
+├── deploy/            # All deployment artifacts
+│   ├── k8s/           #   Flat Kubernetes manifests (namespace, secrets, env, ingress, per-service)
+│   ├── compose/       #   Local docker-compose stack (core + socket overlays + nginx)
+│   ├── shared/        #   Shared sources (nginx routes.conf)
+│   └── scripts/       #   Tooling (sync-k8s-ingress-routes.sh)
 └── go.work            # Go workspace
 ```
 
@@ -343,10 +357,11 @@ The monorepo uses Go workspaces (`go.work`) so all modules resolve locally. Chan
 
 1. Create service directory under `services/atlas-<name>/`
 2. Add entry to `.github/config/services.json`
-3. Create Kubernetes manifest (`atlas-<name>.yml`)
+3. Create Kubernetes manifest at `deploy/k8s/atlas-<name>.yaml`
 4. Create Dockerfile (copy an existing service's Dockerfile as a template — all use the same multi-stage pattern)
-5. Add ingress route in `atlas-ingress.yml` if the service exposes REST
-6. Add to `go.work`
+5. Add a compose entry to `deploy/compose/docker-compose.core.yml` (or `docker-compose.socket.yml` for raw-TCP services)
+6. Add ingress route in `deploy/shared/routes.conf` if the service exposes REST, then run `./deploy/scripts/sync-k8s-ingress-routes.sh`
+7. Add to `go.work`
 
 ### Common Patterns
 
@@ -358,7 +373,7 @@ The monorepo uses Go workspaces (`go.work`) so all modules resolve locally. Chan
 
 ## Environment Variables
 
-All services share a common set of environment variables defined in the `atlas-env` ConfigMap (`services/atlas-env.yaml`). Service-specific variables are set in each service's Kubernetes manifest.
+All services share a common set of environment variables defined in the `atlas-env` ConfigMap (`deploy/k8s/env-configmap.yaml`). Service-specific variables are set in each service's Kubernetes manifest under `deploy/k8s/atlas-<name>.yaml`.
 
 ### Shared (atlas-env ConfigMap)
 
@@ -412,7 +427,7 @@ All collections include tenant context headers (`TENANT_ID`, `REGION`, `MAJOR_VE
 ### Inter-service REST calls failing
 
 - All REST calls route through the Nginx ingress — verify `BASE_SERVICE_URL` points to the ingress
-- Check that the target service is running and registered in `atlas-ingress.yml`
+- Check that the target service is running and registered in `deploy/shared/routes.conf` (regenerate `deploy/k8s/ingress.yaml` afterward via `deploy/scripts/sync-k8s-ingress-routes.sh`)
 - Tenant context headers must be present on all requests
 
 ### Kafka consumer not receiving events

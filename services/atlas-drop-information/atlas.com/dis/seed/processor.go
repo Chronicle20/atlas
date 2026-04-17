@@ -12,7 +12,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"

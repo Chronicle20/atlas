@@ -4,7 +4,7 @@ import (
 	"atlas-login/character"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 )
 
 func TestBuilder_Build(t *testing.T) {

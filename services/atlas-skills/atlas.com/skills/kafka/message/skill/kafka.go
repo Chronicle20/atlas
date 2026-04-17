@@ -3,7 +3,7 @@ package skill
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -11,6 +11,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
 	CommandTypeRequestCreate = "REQUEST_CREATE"
 	CommandTypeRequestUpdate = "REQUEST_UPDATE"
+	CommandTypeRequestDelete = "REQUEST_DELETE"
 	CommandTypeSetCooldown   = "SET_COOLDOWN"
 )
 
@@ -41,10 +42,18 @@ type SetCooldownBody struct {
 	Cooldown uint32 `json:"cooldown"`
 }
 
+// RequestDeleteBody is the saga-correlated REQUEST_DELETE command body.
+// Used by the orchestrator's character-creation reverse-walk compensator
+// (plan Phase 5 / Phase 6). Idempotent on missing skill row.
+type RequestDeleteBody struct {
+	SkillId uint32 `json:"skillId"`
+}
+
 const (
 	EnvStatusEventTopic            = "EVENT_TOPIC_SKILL_STATUS"
 	StatusEventTypeCreated         = "CREATED"
 	StatusEventTypeUpdated         = "UPDATED"
+	StatusEventTypeDeleted         = "DELETED"
 	StatusEventTypeCooldownApplied = "COOLDOWN_APPLIED"
 	StatusEventTypeCooldownExpired = "COOLDOWN_EXPIRED"
 )
@@ -76,3 +85,6 @@ type StatusEventCooldownAppliedBody struct {
 
 type StatusEventCooldownExpiredBody struct {
 }
+
+// StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
+type StatusEventDeletedBody struct{}

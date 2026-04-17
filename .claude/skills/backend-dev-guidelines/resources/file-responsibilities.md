@@ -150,7 +150,7 @@ package status
 import (
     "myservice/rest"
     "fmt"
-    "github.com/Chronicle20/atlas-rest/requests"
+    "github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 func getBaseRequest() string {

@@ -4,9 +4,9 @@ import (
 	"atlas-transports/kafka/message"
 	"atlas-transports/transport"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	map2 "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 )
 

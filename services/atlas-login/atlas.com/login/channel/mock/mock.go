@@ -3,9 +3,9 @@ package mock
 import (
 	"atlas-login/channel"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // MockProcessor is a mock implementation of channel.Processor for testing

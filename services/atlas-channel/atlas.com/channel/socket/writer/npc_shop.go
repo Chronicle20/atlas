@@ -4,10 +4,10 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/npc/shops/commodities"
 
-	"github.com/Chronicle20/atlas-constants/item"
-	skill2 "github.com/Chronicle20/atlas-constants/skill"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 

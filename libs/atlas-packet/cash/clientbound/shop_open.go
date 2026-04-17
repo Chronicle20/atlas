@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

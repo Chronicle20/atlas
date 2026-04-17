@@ -3,11 +3,11 @@ package main
 import (
 	"atlas-wz-extractor/extraction"
 	"atlas-wz-extractor/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-wz-extractor/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-wz-extractor"
@@ -57,7 +57,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup())(GetServer())).
+		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup(), extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir})(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

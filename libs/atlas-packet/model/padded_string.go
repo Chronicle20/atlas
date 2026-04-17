@@ -3,8 +3,8 @@ package model
 import (
 	"strings"
 
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 )
 
 func WritePaddedString(w *response.Writer, str string, number int) {

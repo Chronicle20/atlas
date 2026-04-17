@@ -5,7 +5,7 @@ import (
 	"atlas-consumables/equipable"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 )
 

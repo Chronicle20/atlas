@@ -1,10 +1,10 @@
-module github.com/Chronicle20/atlas-database
+module github.com/Chronicle20/atlas/libs/atlas-database
 
 go 1.24.4
 
 require (
-	github.com/Chronicle20/atlas-model v1.2.5
-	github.com/Chronicle20/atlas-tenant v1.0.7
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/google/uuid v1.6.0
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
@@ -31,3 +31,7 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
+
+replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant

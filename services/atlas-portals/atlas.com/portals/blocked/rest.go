@@ -3,7 +3,7 @@ package blocked
 import (
 	"fmt"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // RestModel represents a blocked portal in JSON:API format

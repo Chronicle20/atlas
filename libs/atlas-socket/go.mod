@@ -1,4 +1,4 @@
-module github.com/Chronicle20/atlas-socket
+module github.com/Chronicle20/atlas/libs/atlas-socket
 
 go 1.25.0
 

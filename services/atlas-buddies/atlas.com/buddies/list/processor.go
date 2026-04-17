@@ -3,7 +3,7 @@ package list
 import (
 	"atlas-buddies/buddy"
 	"atlas-buddies/character"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-buddies/invite"
 	"atlas-buddies/kafka/message"
 	list2 "atlas-buddies/kafka/message/list"
@@ -12,10 +12,10 @@ import (
 	"context"
 	"errors"
 
-	character2 "github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	character2 "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

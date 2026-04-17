@@ -7,7 +7,7 @@ import (
 	"atlas-world/test"
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

@@ -3,7 +3,7 @@ package validation
 import (
 	"strconv"
 
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 const (

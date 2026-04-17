@@ -6,9 +6,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	sh "github.com/Chronicle20/atlas-socket/handler"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-tenant"
+	sh "github.com/Chronicle20/atlas/libs/atlas-socket/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 func TestModel_Accessors(t *testing.T) {

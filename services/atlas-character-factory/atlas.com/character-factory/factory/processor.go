@@ -10,9 +10,9 @@ import (
 	"fmt"
 	"time"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -136,10 +136,14 @@ func (p *ProcessorImpl) Create(ctx context.Context, input RestModel) (string, er
 // as a sentinel value; the saga orchestrator's result forwarding will inject the actual
 // characterId after the CreateCharacter step completes.
 func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl template.RestModel) saga.Saga {
+	// Character creation caps the orchestrator's backstop timer at 10s so the
+	// client's socket is released within the login latency budget (see PRD §4.1 /
+	// plan Phase 4.5). The orchestrator otherwise defaults to 30s.
 	builder := saga.NewBuilder().
 		SetTransactionId(transactionId).
 		SetSagaType(saga.CharacterCreation).
-		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId))
+		SetInitiatedBy(fmt.Sprintf("account_%d", input.AccountId)).
+		SetTimeout(10 * time.Second)
 
 	// Step 1: Create character
 	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, saga.CharacterCreatePayload{

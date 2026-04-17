@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"time"
 
-	af "github.com/Chronicle20/atlas-constants/asset"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 )
 

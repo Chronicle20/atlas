@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 var (

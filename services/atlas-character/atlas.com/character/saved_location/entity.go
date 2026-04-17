@@ -1,7 +1,7 @@
 package saved_location
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

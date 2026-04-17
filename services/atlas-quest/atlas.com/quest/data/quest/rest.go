@@ -3,7 +3,7 @@ package quest
 import (
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // RestModel represents the full quest definition from atlas-data

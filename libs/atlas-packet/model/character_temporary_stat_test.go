@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/character"
-	pt "github.com/Chronicle20/atlas-packet/test"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 func TestCTSForeignEmptyRoundTrip(t *testing.T) {

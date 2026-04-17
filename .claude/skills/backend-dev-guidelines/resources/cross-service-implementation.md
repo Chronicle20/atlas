@@ -542,7 +542,7 @@ package status
 import (
     "myservice/rest"
     "fmt"
-    "github.com/Chronicle20/atlas-rest/requests"
+    "github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 // getBaseRequest returns the base URL from environment variable
@@ -635,7 +635,7 @@ package status
 import (
     "atlas-npc-conversations/rest"
     "fmt"
-    "github.com/Chronicle20/atlas-rest/requests"
+    "github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 func getBaseRequest() string {

@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type RestModel struct {

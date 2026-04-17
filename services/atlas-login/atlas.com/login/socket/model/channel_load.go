@@ -1,6 +1,6 @@
 package model
 
-import "github.com/Chronicle20/atlas-constants/channel"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 
 type Load struct {
 	channelId channel.Id

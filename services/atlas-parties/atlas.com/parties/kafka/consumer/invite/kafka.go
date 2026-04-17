@@ -1,6 +1,6 @@
 package invite
 
-import "github.com/Chronicle20/atlas-constants/world"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
 const (
 	EnvEventStatusTopic           = "EVENT_TOPIC_INVITE_STATUS"

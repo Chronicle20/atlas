@@ -3,7 +3,7 @@ package operation
 import (
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // Model represents an operation to be executed

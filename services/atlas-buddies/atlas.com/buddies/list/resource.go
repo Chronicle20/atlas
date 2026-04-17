@@ -9,9 +9,9 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"

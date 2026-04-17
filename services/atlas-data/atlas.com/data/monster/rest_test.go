@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Chronicle20/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
 )

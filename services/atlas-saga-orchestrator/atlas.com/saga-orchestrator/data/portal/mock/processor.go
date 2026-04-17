@@ -3,8 +3,8 @@ package mock
 import (
 	"atlas-saga-orchestrator/data/portal"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-model/model"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the portal.Processor interface

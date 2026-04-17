@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-model/testutil"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/testutil"
 )
 
 // TestGoroutineLeakDetectorIntegration demonstrates the proper usage of testutil.GoroutineLeakDetector

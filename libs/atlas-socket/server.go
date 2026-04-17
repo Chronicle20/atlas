@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Chronicle20/atlas-socket/crypto"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/crypto"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

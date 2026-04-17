@@ -3,8 +3,8 @@ package clientbound
 import (
 	"testing"
 
-	constants "github.com/Chronicle20/atlas-constants/stat"
-	pt "github.com/Chronicle20/atlas-packet/test"
+	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func testStatOptions() map[string]interface{} {

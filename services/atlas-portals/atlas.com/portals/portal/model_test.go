@@ -5,7 +5,7 @@ import (
 	"atlas-portals/test"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 func TestModel_HasScript(t *testing.T) {

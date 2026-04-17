@@ -3,7 +3,7 @@ package character
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 func CreateCharacter(ctx context.Context) func(ch channel.Model, characterId uint32, name string) Model {

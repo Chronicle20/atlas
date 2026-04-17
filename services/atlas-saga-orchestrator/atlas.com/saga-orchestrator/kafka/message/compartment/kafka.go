@@ -4,9 +4,9 @@ import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -164,6 +164,9 @@ const (
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
 	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
+
+	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 
 type StatusEvent[E any] struct {

@@ -152,14 +152,16 @@ vars {
 Optionally add sample request `.bru` files for the service's endpoints.
 
 ## 5. Ingress Route (REST services only)
-**File:** `atlas-ingress.yml`
+**File:** `deploy/shared/routes.conf`
 
-Add a location block **alphabetically** in the nginx config section:
+Add a location block **alphabetically** in the shared routes file (single-sourced for K8s and compose):
 ```nginx
 location ~ ^/api/<service-path>(/.*)?$ {
-  proxy_pass http://atlas-<service>.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-<service>:8080;
 }
 ```
+
+After editing, run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate the inlined K8s ConfigMap in `deploy/k8s/ingress.yaml`.
 
 ## 6. Post-Scaffold Verification
 After scaffolding is complete, run these skills to verify the work:

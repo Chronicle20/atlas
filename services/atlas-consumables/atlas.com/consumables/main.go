@@ -6,11 +6,11 @@ import (
 	"atlas-consumables/kafka/consumer/consumable"
 	"atlas-consumables/logger"
 	mapCharacter "atlas-consumables/map/character"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-consumables/tracing"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 const serviceName = "atlas-consumables"

@@ -1,7 +1,7 @@
 package macro
 
 import (
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 type Model struct {

@@ -6,11 +6,11 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"context"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -52,6 +52,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterStatChangedEvent))); err != nil {
+			return err
+		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCharacterDeletedEvent))); err != nil {
 			return err
 		}
 		return nil
@@ -143,5 +146,19 @@ func handleCharacterStatChangedEvent(l logrus.FieldLogger, ctx context.Context, 
 	if e.Type != character2.StatusEventTypeStatChanged {
 		return
 	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+// handleCharacterDeletedEvent drives StepCompleted(true) when atlas-character
+// responds to a saga-correlated DELETE_CHARACTER command (the reverse-walk
+// compensator; plan Phase 5 / Phase 6).
+func handleCharacterDeletedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventDeletedBody]) {
+	if e.Type != character2.StatusEventTypeDeleted {
+		return
+	}
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"character_id":   e.CharacterId,
+	}).Debug("Character deleted, marking saga compensation step completed.")
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }

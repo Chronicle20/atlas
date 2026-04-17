@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -29,6 +29,7 @@ type testDocumentEntity struct {
 	Type       string          `gorm:"not null"`
 	DocumentId uint32          `gorm:"not null"`
 	Content    json.RawMessage `gorm:"type:text;not null"`
+	UpdatedAt  time.Time       `gorm:"autoUpdateTime"`
 }
 
 func (e testDocumentEntity) TableName() string {
@@ -207,8 +208,7 @@ func testGetSingleEquipmentEndpoint(t *testing.T, testServer *httptest.Server, t
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Equipment handler returns 500 for all errors including not found
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }
 
@@ -245,8 +245,7 @@ func testGetEquipmentSlotsEndpoint(t *testing.T, testServer *httptest.Server, te
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Equipment handler returns 500 for all errors including not found
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 }
 
@@ -281,7 +280,7 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 	t.Run("DifferentTenantNoData", func(t *testing.T) {
 		differentTenantId := uuid.New()
 
-		// For single-item endpoint, different tenant should get 500 (not found)
+		// For single-item endpoint, different tenant should get 404 (not found)
 		url := fmt.Sprintf("%s/data/equipment/1302000", testServer.URL)
 		req := createRequestWithTenant("GET", url, differentTenantId)
 
@@ -290,8 +289,8 @@ func testTenantIsolation(t *testing.T, testServer *httptest.Server, originalTena
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		// Equipment exists but not for this tenant - returns 500
-		assert.Equal(t, http.StatusInternalServerError, resp.StatusCode)
+		// Equipment exists but not for this tenant - returns 404
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
 	})
 
 	t.Run("OriginalTenantHasData", func(t *testing.T) {

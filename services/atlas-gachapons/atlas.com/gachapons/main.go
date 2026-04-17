@@ -1,18 +1,18 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-gachapons/gachapon"
 	"atlas-gachapons/global"
 	"atlas-gachapons/item"
 	"atlas-gachapons/logger"
 	"atlas-gachapons/reward"
 	"atlas-gachapons/seed"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-gachapons/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-gachapons"

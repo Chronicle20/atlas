@@ -3,8 +3,8 @@ package mock
 import (
 	"atlas-pets/skill"
 
-	skill2 "github.com/Chronicle20/atlas-constants/skill"
-	"github.com/Chronicle20/atlas-model/model"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Processor struct {

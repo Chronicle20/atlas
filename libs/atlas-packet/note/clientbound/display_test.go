@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-packet/note"
-	pt "github.com/Chronicle20/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/note"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestNoteDisplayRoundTrip(t *testing.T) {

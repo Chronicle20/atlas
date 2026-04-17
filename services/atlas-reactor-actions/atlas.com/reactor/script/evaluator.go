@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-rest/requests"
-	"github.com/Chronicle20/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

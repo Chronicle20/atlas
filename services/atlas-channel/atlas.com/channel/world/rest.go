@@ -4,8 +4,8 @@ import (
 	"atlas-channel/channel"
 	"strconv"
 
-	worldConstants "github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
+	worldConstants "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 

@@ -8,7 +8,7 @@ import (
 	"atlas-data/point"
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 

@@ -4,7 +4,7 @@ import (
 	"atlas-portals/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus"
 )
 

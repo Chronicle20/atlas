@@ -3,8 +3,8 @@ package invite
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Model struct {

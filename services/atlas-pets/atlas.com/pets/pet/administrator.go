@@ -4,7 +4,7 @@ import (
 	"atlas-pets/pet/exclude"
 	"errors"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
 )
 

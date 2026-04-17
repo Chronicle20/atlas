@@ -1,11 +1,11 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/stat"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 
@@ -31,6 +31,7 @@ const (
 	CommandResetStats          = "RESET_STATS"
 	CommandClampHP             = "CLAMP_HP"
 	CommandClampMP             = "CLAMP_MP"
+	CommandDeleteCharacter     = "DELETE_CHARACTER"
 
 	ExperienceDistributionTypeWhite        = "WHITE"
 	ExperienceDistributionTypeYellow       = "YELLOW"
@@ -184,6 +185,12 @@ type DeductExperienceCommandBody struct {
 type ResetStatsCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 }
+
+// DeleteCharacterCommandBody is the saga-correlated delete-character command.
+// All necessary identifiers (transactionId, characterId, worldId) live on the
+// Command[E] envelope; no body fields are needed. Idempotent on missing row —
+// see PRD §4.3.1 / §4.8 and plan Phase 5.4.
+type DeleteCharacterCommandBody struct{}
 
 const (
 	EnvEventTopicCharacterStatus     = "EVENT_TOPIC_CHARACTER_STATUS"

@@ -1,0 +1,15 @@
+networks:
+  atlas:
+    name: atlas
+
+services:
+  nginx:
+    image: nginx:alpine
+    container_name: atlas-ingress
+    networks: [atlas]
+    ports:
+      - "${INGRESS_HOST_PORT:-8080}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./routes.conf:/etc/nginx/routes.conf:ro
+    restart: unless-stopped

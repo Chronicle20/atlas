@@ -10,8 +10,8 @@ import (
 	"atlas-login/world"
 	"context"
 
-	"github.com/Chronicle20/atlas-packet/login/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

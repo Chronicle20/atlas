@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestAsyncSlice(t *testing.T) {

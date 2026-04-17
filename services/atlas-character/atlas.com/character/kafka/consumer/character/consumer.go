@@ -6,13 +6,13 @@ import (
 	character2 "atlas-character/kafka/message/character"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -90,6 +90,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampMP(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeleteCharacter(db)))); err != nil {
 				return err
 			}
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
@@ -349,7 +352,21 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetMapId(c.Body.MapId).
 			Build()
 
-		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
+		// PRD §4.6 / plan Phase 9: capture and log the CreateAndEmit error
+		// rather than discarding. CreateAndEmit already emits
+		// creationFailedEventProvider on every internal error path
+		// (see character/processor.go:CreateAndEmit), so the saga
+		// orchestrator's character-status consumer receives the failure
+		// signal regardless. This log line makes the failure visible in
+		// operational logs with full saga correlation.
+		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"account_id":     c.Body.AccountId,
+				"world_id":       c.Body.WorldId,
+				"name":           c.Body.Name,
+			}).Error("Character creation failed; creationFailedEventProvider has been emitted.")
+		}
 	}
 }
 
@@ -392,5 +409,24 @@ func handleClampMP(db *gorm.DB) message.Handler[character2.Command[character2.Cl
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ClampMPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.MaxValue)
+	}
+}
+
+// handleDeleteCharacter handles the saga-correlated DELETE_CHARACTER command
+// used by the orchestrator's character-creation reverse-walk compensator
+// (plan Phase 5 / Phase 6). The delete is idempotent on missing rows: an
+// absent target emits a synthetic DELETED event so the orchestrator's
+// StepCompleted correlator treats it as success.
+func handleDeleteCharacter(db *gorm.DB) message.Handler[character2.Command[character2.DeleteCharacterCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.DeleteCharacterCommandBody]) {
+		if c.Type != character2.CommandDeleteCharacter {
+			return
+		}
+		if err := character.NewProcessor(l, ctx, db).DeleteForSagaCompensationAndEmit(c.TransactionId, c.CharacterId); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"character_id":   c.CharacterId,
+			}).Error("Saga-compensation delete failed.")
+		}
 	}
 }

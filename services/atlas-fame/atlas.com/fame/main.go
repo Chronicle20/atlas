@@ -5,11 +5,11 @@ import (
 	"atlas-fame/kafka/consumer/character"
 	fame2 "atlas-fame/kafka/consumer/fame"
 	"atlas-fame/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-fame/tracing"
 
-	database "github.com/Chronicle20/atlas-database"
-	"github.com/Chronicle20/atlas-kafka/consumer"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 const serviceName = "atlas-fame"

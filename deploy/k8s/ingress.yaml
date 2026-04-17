@@ -1,0 +1,433 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-ingress-configmap
+  namespace: atlas
+data:
+  nginx.conf: |
+    worker_processes  1;
+
+    events {
+      worker_connections  1024;
+    }
+
+
+    http {
+      include mime.types;
+      default_type  application/octet-stream;
+
+      sendfile        on;
+
+      keepalive_timeout  300;
+      proxy_read_timeout 30;
+      proxy_connect_timeout 10;
+      proxy_send_timeout 30;
+      send_timeout 30;
+
+      underscores_in_headers on;
+
+      server {
+        listen       80;
+        server_name  dev.atlas.home;
+
+        client_max_body_size 500M;
+
+        resolver 10.43.0.10 valid=30s;
+
+        proxy_pass_request_headers on;
+        proxy_set_header TENANT_ID $http_tenant_id;
+        proxy_set_header REGION $http_region;
+        proxy_set_header MAJOR_VERSION $http_major_version;
+        proxy_set_header MINOR_VERSION $http_minor_version;
+
+        include /etc/nginx/routes.conf;
+      }
+    }
+  routes.conf: |
+    location ~ ^/api/merchants(/.*)?$ {
+      proxy_pass http://atlas-merchant:8080;
+    }
+
+    location ~ ^/api/messengers(/.*)?$ {
+      proxy_pass http://atlas-messengers:8080;
+    }
+
+    location ~ ^/api/parties(/.*)?$ {
+      proxy_pass http://atlas-parties:8080;
+    }
+
+    location ~ ^/api/party-quests(/.*)?$ {
+      proxy_pass http://atlas-party-quests:8080;
+    }
+
+    location ~ ^/api/portals/blocked(/.*)?$ {
+      proxy_pass http://atlas-portals:8080;
+    }
+
+    location ~ ^/api/portals(/.*)?$ {
+      proxy_pass http://atlas-portal-actions:8080;
+    }
+
+    location ~ ^/api/guilds(/.*)?$ {
+      proxy_pass http://atlas-guilds:8080;
+    }
+
+    location ~ ^/api/pets(/.*)?$ {
+      proxy_pass http://atlas-pets:8080;
+    }
+
+    location ~ ^/api/accounts/[^/]+/cash-shop(/.*)?$ {
+      proxy_pass http://atlas-cashshop:8080;
+    }
+
+    location ~ ^/api/accounts/[^/]+/wallet(/.*)?$ {
+      proxy_pass http://atlas-cashshop:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/buddy-list(/.*)?$ {
+      proxy_pass http://atlas-buddies:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/visits(/.*)?$ {
+      proxy_pass http://atlas-maps:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/buffs(/.*)?$ {
+      proxy_pass http://atlas-buffs:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/invites(/.*)?$ {
+      proxy_pass http://atlas-invites:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/keys(/.*)?$ {
+      proxy_pass http://atlas-keys:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/pets(/.*)?$ {
+      proxy_pass http://atlas-pets:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/quests(/.*)?$ {
+      proxy_pass http://atlas-quest:8080;
+    }
+
+    location ~ ^/api/quests/conversations(/.*)?$ {
+      proxy_pass http://atlas-npc-conversations:8080;
+    }
+
+    location ~ ^/api/quests/[^/]+/conversation(/.*)?$ {
+      proxy_pass http://atlas-npc-conversations:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/skills(/.*)?$ {
+      proxy_pass http://atlas-skills:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/macros(/.*)?$ {
+      proxy_pass http://atlas-skills:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/cash-shop(/.*)?$ {
+      proxy_pass http://atlas-cashshop:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/inventory(/.*)?$ {
+      proxy_pass http://atlas-inventory:8080;
+    }
+
+    location ~ ^/api/characters/[^/]+/notes(/.*)?$ {
+      proxy_pass http://atlas-notes:8080;
+    }
+
+    location ~ ^/api/cash-shop(/.*)?$ {
+      proxy_pass http://atlas-cashshop:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/drops(/.*)?$ {
+      proxy_pass http://atlas-drops:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chalkboards(/.*)?$ {
+      proxy_pass http://atlas-chalkboards:8080;
+    }
+
+    location ~ ^/api/chalkboards(/.*)?$ {
+      proxy_pass http://atlas-chalkboards:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/chairs(/.*)?$ {
+      proxy_pass http://atlas-chairs:8080;
+    }
+
+    location ~ ^/api/chairs(/.*)?$ {
+      proxy_pass http://atlas-chairs:8080;
+    }
+
+    location ~ ^/api/drops/seed$ {
+      proxy_pass http://atlas-drop-information:8080;
+    }
+
+    location ~ ^/api/continents/drops$ {
+      proxy_pass http://atlas-drop-information:8080;
+    }
+
+    location ~ ^/api/drops(/.*)?$ {
+      proxy_pass http://atlas-drops:8080;
+    }
+
+    location ~ ^/api/configurations(/.*)?$ {
+      proxy_pass http://atlas-configurations:8080;
+    }
+
+    location ~ ^/api/assets(/.*)?$ {
+      proxy_pass http://atlas-assets:8080$1;
+    }
+
+    location ~ ^/api/accounts(/.*)?$ {
+      proxy_pass http://atlas-account:8080;
+    }
+
+    location ~ ^/api/bans(/.*)?$ {
+      proxy_pass http://atlas-ban:8080;
+    }
+
+    location ~ ^/api/characters/seed(/.*)?$ {
+      proxy_pass http://atlas-character-factory:8080;
+    }
+
+    location ~ ^/api/characters(/.*)?$ {
+      proxy_pass http://atlas-character:8080;
+    }
+
+    location ~ ^/api/data(/.*)?$ {
+      proxy_pass http://atlas-data:8080;
+    }
+
+    location ~ ^/api/wz(/.*)?$ {
+      proxy_pass http://atlas-wz-extractor:8080;
+    }
+
+    location ~ ^/api/gachapons(/.*)?$ {
+      proxy_pass http://atlas-gachapons:8080;
+    }
+
+    location ~ ^/api/global-items(/.*)?$ {
+      proxy_pass http://atlas-gachapons:8080;
+    }
+
+    location ~ ^/api/history(/.*)?$ {
+      proxy_pass http://atlas-ban:8080;
+    }
+
+    location ~ ^/api/maps/actions(/.*)?$ {
+      proxy_pass http://atlas-map-actions:8080;
+    }
+
+    location ~ ^/api/maps/[^/]+/actions(/.*)?$ {
+      proxy_pass http://atlas-map-actions:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/characters(/.*)?$ {
+      proxy_pass http://atlas-maps:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/weather(/.*)?$ {
+      proxy_pass http://atlas-maps:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/monsters(/.*)?$ {
+      proxy_pass http://atlas-monsters:8080;
+    }
+
+    location ~ ^/api/monsters/[^/]+/drops(/.*)?$ {
+      proxy_pass http://atlas-drop-information:8080;
+    }
+
+    location ~ ^/api/monsters(/.*)?$ {
+      proxy_pass http://atlas-monsters:8080;
+    }
+
+    location ~ ^/api/npcs/conversations(/.*)?$ {
+      proxy_pass http://atlas-npc-conversations:8080;
+    }
+
+    location ~ ^/api/npcs/[^/]+/conversations(/.*)?$ {
+      proxy_pass http://atlas-npc-conversations:8080;
+    }
+
+    location ~ ^/api/npcs(/.*)?$ {
+      proxy_pass http://atlas-npc-shops:8080;
+    }
+
+    location ~ ^/api/notes(/.*)?$ {
+      proxy_pass http://atlas-notes:8080;
+    }
+
+    location ~ ^/api/shops(/.*)?$ {
+      proxy_pass http://atlas-npc-shops:8080;
+    }
+
+    location ~ ^/api/storage(/.*)?$ {
+      proxy_pass http://atlas-storage:8080;
+    }
+
+    location ~ ^/api/tenants(/.*)?$ {
+      proxy_pass http://atlas-tenants:8080;
+    }
+
+    location ~ ^/api/transports(/.*)?$ {
+      proxy_pass http://atlas-transports:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/maps/[^/]+/instances/[^/]+/reactors(/.*)?$ {
+      proxy_pass http://atlas-reactors:8080;
+    }
+
+    location ~ ^/api/reactors/actions(/.*)?$ {
+      proxy_pass http://atlas-reactor-actions:8080;
+    }
+
+    location ~ ^/api/reactors/[^/]+/actions(/.*)?$ {
+      proxy_pass http://atlas-reactor-actions:8080;
+    }
+
+    location ~ ^/api/reactors/[^/]+/drops(/.*)?$ {
+      proxy_pass http://atlas-drop-information:8080;
+    }
+
+    location ~ ^/api/reactors(/.*)?$ {
+      proxy_pass http://atlas-reactors:8080;
+    }
+
+    location ~ ^/api/sagas(/.*)?$ {
+      proxy_pass http://atlas-saga-orchestrator:8080;
+    }
+
+    location ~ ^/api/validations(/.*)?$ {
+      proxy_pass http://atlas-query-aggregator:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/rates(/.*)?$ {
+      proxy_pass http://atlas-rates:8080;
+    }
+
+    location ~ ^/api/worlds/[^/]+/channels/[^/]+/characters/[^/]+/stats(/.*)?$ {
+      proxy_pass http://atlas-effective-stats:8080;
+    }
+
+    location ~ ^/api/worlds(/.*)?$ {
+      proxy_pass http://atlas-world:8080;
+    }
+
+    location /_next/webpack-hmr {
+      proxy_pass http://atlas-ui:3000;
+      proxy_http_version 1.1;
+      proxy_set_header Upgrade $http_upgrade;
+      proxy_set_header Connection "upgrade";
+      proxy_read_timeout 3600;
+      proxy_send_timeout 3600;
+    }
+
+    location / {
+      proxy_pass http://atlas-ui:3000;
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: atlas-ingress
+  template:
+    metadata:
+      labels:
+        app: atlas-ingress
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: atlas-ingress
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          failureThreshold: 3
+        volumeMounts:
+        - name: nginx-conf-volume
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        - name: nginx-conf-volume
+          mountPath: /etc/nginx/routes.conf
+          subPath: routes.conf
+      volumes:
+      - name: nginx-conf-volume
+        configMap:
+          name: atlas-ingress-configmap
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-ingress
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: atlas-ingress
+  namespace: atlas
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: dev.atlas.home
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: atlas-ingress
+            port:
+              number: 80
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: atlas-ingress-pdb
+  namespace: atlas
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: atlas-ingress

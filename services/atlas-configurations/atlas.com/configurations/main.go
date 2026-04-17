@@ -1,17 +1,17 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-configurations/logger"
 	"atlas-configurations/seeder"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
 	"atlas-configurations/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-configurations"

@@ -3,7 +3,7 @@ package serverbound
 import (
 	"testing"
 
-	"github.com/Chronicle20/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestMonsterMovement(t *testing.T) {

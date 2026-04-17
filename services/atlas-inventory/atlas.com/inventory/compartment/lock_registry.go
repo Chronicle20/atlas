@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	goredis "github.com/redis/go-redis/v9"
 )
 

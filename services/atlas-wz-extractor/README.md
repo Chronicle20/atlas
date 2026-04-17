@@ -6,24 +6,35 @@ Extraction is tenant-aware. Output is organized by tenant ID, region, and game v
 
 ## Usage Guide
 
-### 1. Place WZ Files
+### 1. Upload WZ Files
 
-Copy the `.wz` files you want to extract into the input directory. In Kubernetes this is the NFS volume mounted at `/usr/wz-input` (backed by `atlas-wz-input-pvc`). For local development the path is set by the `INPUT_WZ_DIR` environment variable.
+WZ files are staged per tenant under `INPUT_WZ_DIR/<tenantId>/<region>/<major>.<minor>/` — the extractor does **not** read from the flat `INPUT_WZ_DIR/*.wz` layout. Upload a zip via `PATCH /api/wz/input` (see below); the service extracts entries into the tenant-scoped directory.
 
 ```
 <INPUT_WZ_DIR>/
-├── Character.wz
-├── Item.wz
-├── Map.wz
-├── Mob.wz
-├── Npc.wz
-├── Reactor.wz
-├── Skill.wz
-├── String.wz
-└── ...
+└── <tenantId>/
+    └── <region>/
+        └── <majorVersion>.<minorVersion>/
+            ├── Character.wz
+            ├── Item.wz
+            ├── Map.wz
+            └── ...
 ```
 
-All `*.wz` files in this directory will be processed. You may include any combination of WZ files -- the service processes whatever it finds and skips files it cannot parse.
+All top-level `*.wz` files in the tenant directory are processed during extraction. Zip entries with nested paths, non-`.wz` extensions, or zip-slip patterns are rejected at upload time.
+
+**Upload example:**
+
+```bash
+curl -X PATCH http://localhost:8083/api/wz/input \
+  -H "TENANT_ID: 4ec40a5a-e596-4613-b498-e42450505e91" \
+  -H "REGION: GMS" \
+  -H "MAJOR_VERSION: 83" \
+  -H "MINOR_VERSION: 1" \
+  -F "zip_file=@wz-bundle.zip"
+```
+
+A concurrent upload or extraction for the same tenant returns `409 Conflict`.
 
 ### 2. Trigger Extraction
 

@@ -4,10 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 
-	"github.com/Chronicle20/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestAssetEquipable(t *testing.T) {

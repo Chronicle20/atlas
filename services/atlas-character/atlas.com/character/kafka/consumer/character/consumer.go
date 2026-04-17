@@ -92,6 +92,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampMP(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDeleteCharacter(db)))); err != nil {
+				return err
+			}
 			t, _ = topic.EnvProvider(l)(character2.EnvCommandTopicMovement)()
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleMovementEvent(db)))); err != nil {
 				return err
@@ -392,5 +395,24 @@ func handleClampMP(db *gorm.DB) message.Handler[character2.Command[character2.Cl
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ClampMPAndEmit(c.TransactionId, cha, c.CharacterId, c.Body.MaxValue)
+	}
+}
+
+// handleDeleteCharacter handles the saga-correlated DELETE_CHARACTER command
+// used by the orchestrator's character-creation reverse-walk compensator
+// (plan Phase 5 / Phase 6). The delete is idempotent on missing rows: an
+// absent target emits a synthetic DELETED event so the orchestrator's
+// StepCompleted correlator treats it as success.
+func handleDeleteCharacter(db *gorm.DB) message.Handler[character2.Command[character2.DeleteCharacterCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.DeleteCharacterCommandBody]) {
+		if c.Type != character2.CommandDeleteCharacter {
+			return
+		}
+		if err := character.NewProcessor(l, ctx, db).DeleteForSagaCompensationAndEmit(c.TransactionId, c.CharacterId); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"character_id":   c.CharacterId,
+			}).Error("Saga-compensation delete failed.")
+		}
 	}
 }

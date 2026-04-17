@@ -37,6 +37,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandSetCooldown(db)))); err != nil {
 				return err
 			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCommandRequestDelete(db)))); err != nil {
+				return err
+			}
 			return nil
 		}
 	}
@@ -75,5 +78,23 @@ func handleCommandSetCooldown(db *gorm.DB) message.Handler[skill2.Command[skill2
 		}
 
 		_, _ = skill.NewProcessor(l, ctx, db).SetCooldownAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.SkillId, c.Body.Cooldown)
+	}
+}
+
+// handleCommandRequestDelete handles the saga-correlated REQUEST_DELETE command
+// used by the orchestrator's character-creation reverse-walk compensator
+// (plan Phase 5 / Phase 6). Idempotent on missing rows.
+func handleCommandRequestDelete(db *gorm.DB) message.Handler[skill2.Command[skill2.RequestDeleteBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c skill2.Command[skill2.RequestDeleteBody]) {
+		if c.Type != skill2.CommandTypeRequestDelete {
+			return
+		}
+		if err := skill.NewProcessor(l, ctx, db).DeleteForSagaCompensationAndEmit(c.TransactionId, c.WorldId, c.CharacterId, c.Body.SkillId); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"character_id":   c.CharacterId,
+				"skill_id":       c.Body.SkillId,
+			}).Error("Saga-compensation delete skill failed.")
+		}
 	}
 }

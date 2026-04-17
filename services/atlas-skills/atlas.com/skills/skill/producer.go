@@ -94,6 +94,38 @@ func statusEventCooldownAppliedProvider(transactionId uuid.UUID, worldId world.I
 	return producer.SingleMessageProvider(key, value)
 }
 
+// deleteCommandProvider emits REQUEST_DELETE on COMMAND_TOPIC_SKILL — used by
+// the saga orchestrator for character-creation reverse-walk compensation
+// (plan Phase 5 / Phase 6).
+func deleteCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.Command[skill2.RequestDeleteBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          skill2.CommandTypeRequestDelete,
+		Body: skill2.RequestDeleteBody{
+			SkillId: skillId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// statusEventDeletedProvider emits DELETED on EVENT_TOPIC_SKILL_STATUS once a
+// saga-compensation delete has been processed (row deleted or already absent).
+func statusEventDeletedProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.StatusEvent[skill2.StatusEventDeletedBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		SkillId:       skillId,
+		Type:          skill2.StatusEventTypeDeleted,
+		Body:          skill2.StatusEventDeletedBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func statusEventCooldownExpiredProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &skill2.StatusEvent[skill2.StatusEventCooldownExpiredBody]{

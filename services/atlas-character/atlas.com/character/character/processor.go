@@ -60,6 +60,7 @@ type Processor interface {
 	DeleteByAccountIdAndEmit(accountId uint32) error
 	DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error
 	DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, characterId uint32) error
+	DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
 	LoginAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	LogoutAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
@@ -291,28 +292,33 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID,
 	}
 }
 
-// DeleteForSagaCompensationAndEmit is the saga-correlated delete entry point.
-// It is idempotent on missing rows: if the character no longer exists, the
-// method still emits StatusEventTypeDeleted so the orchestrator's correlator
-// records the compensation step as completed. See PRD §4.3.1 / §4.8 and plan
-// Phase 5 for the idempotency contract.
+// DeleteForSagaCompensation is the buffer-based inner form of the saga-correlated
+// delete. Idempotent on missing rows: if the character is absent, a synthetic
+// DELETED event is still buffered so the orchestrator's correlator records the
+// compensation step as completed. See PRD §4.3.1 / §4.8 and plan Phase 5.
+func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32) error {
+		_, err := p.GetById()(characterId)
+		if err == nil {
+			return p.Delete(mb)(transactionId, characterId)
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"character_id":   characterId,
+		}).Info("Character already absent; buffering synthetic DELETED event for saga compensation.")
+		return mb.Put(character2.EnvEventTopicCharacterStatus, deletedEventProvider(transactionId, characterId, 0))
+	}
+}
+
+// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with the
+// producer emit flow. See DeleteForSagaCompensation for the idempotency
+// contract.
 func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, characterId uint32) error {
-	c, err := p.GetById()(characterId)
-	if err == nil {
-		return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-			return p.Delete(buf)(transactionId, characterId)
-		})
-	}
-	if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-	_ = c
-	p.l.WithFields(logrus.Fields{
-		"transaction_id": transactionId.String(),
-		"character_id":   characterId,
-	}).Info("Character already absent; emitting synthetic DELETED event for saga compensation.")
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return buf.Put(character2.EnvEventTopicCharacterStatus, deletedEventProvider(transactionId, characterId, 0))
+		return p.DeleteForSagaCompensation(buf)(transactionId, characterId)
 	})
 }
 

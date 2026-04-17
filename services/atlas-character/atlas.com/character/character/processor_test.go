@@ -729,3 +729,46 @@ func TestMapIdValidationWithNonExistentCharacter(t *testing.T) {
 		t.Error("Error should be about character not found, not map validation")
 	}
 }
+
+
+// TestDeleteForSagaCompensation_Existing covers the happy path: an existing
+// character row is deleted and a saga-correlated DELETED event is buffered
+// (plan Phase 5). Uses the buffer-based variant to avoid Kafka dependency.
+func TestDeleteForSagaCompensation_Existing(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	cp := character.NewProcessor(testLogger(), tctx, db)
+
+	input := character.NewModelBuilder().SetAccountId(7001).SetWorldId(0).SetName("DeleteMe").SetLevel(1).SetExperience(0).Build()
+	buf := message.NewBuffer()
+	created, err := cp.Create(buf)(uuid.New(), input)
+	if err != nil {
+		t.Fatalf("setup: create character: %v", err)
+	}
+
+	txId := uuid.New()
+	if err := cp.DeleteForSagaCompensation(buf)(txId, created.Id()); err != nil {
+		t.Fatalf("DeleteForSagaCompensation returned error on existing row: %v", err)
+	}
+
+	// Row should be gone.
+	if _, err := cp.GetById()(created.Id()); err == nil {
+		t.Fatalf("character %d still exists after delete", created.Id())
+	}
+}
+
+// TestDeleteForSagaCompensation_Missing covers the idempotency contract from
+// plan Phase 5.4: an absent character row must not error — the processor
+// still buffers a synthetic DELETED event.
+func TestDeleteForSagaCompensation_Missing(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	cp := character.NewProcessor(testLogger(), tctx, db)
+
+	buf := message.NewBuffer()
+	txId := uuid.New()
+	err := cp.DeleteForSagaCompensation(buf)(txId, 99999 /* never created */)
+	if err != nil {
+		t.Fatalf("DeleteForSagaCompensation should be idempotent on missing row, got error: %v", err)
+	}
+}

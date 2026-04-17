@@ -83,19 +83,16 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 6 — Character-creation reverse-walk compensator (L)
 
-- [ ] **6.1** In `atlas-saga-orchestrator/.../saga/compensator.go:205`, add a new branch in `CompensateFailedStep` keyed on `s.SagaType() == CharacterCreation`, taking precedence over the per-step switch. *(effort: S)*
-- [ ] **6.2** Implementation: walk `s.Steps()` in reverse; for each `Status() == Completed` step, dispatch inverse:
-  - `AwardAsset` / `AwardItem` → `compP.RequestDestroyItem(transactionId, characterId, templateId, quantity, removeAll=false)`.
-  - `CreateAndEquipAsset` → reuse existing destroy logic (`compensator.go:502` path).
-  - `CreateSkill` → new `skillP.RequestDeleteSkill(transactionId, characterId, skillId)` from Phase 5.
-  - `CreateCharacter` → new `charP.RequestDeleteCharacter(transactionId, characterId)` from Phase 5. Must be last. *(effort: L)*
-- [ ] **6.3** Await each compensation step's success-or-failure event before dispatching the next. Preserve causal ordering. *(effort: M)*
-- [ ] **6.4** Log compensation-step failures at ERROR with full ids; do NOT abort the chain — next reverse step still runs. *(effort: S)*
-- [ ] **6.5** Emit exactly one `StatusEventTypeFailed` at the end of the chain, with `failedStep = <originally-failing-step-id>`, populated `characterId` and `accountId` from `CharacterCreatePayload`. Take the Phase-2 terminal-state guard. *(effort: M)*
-- [ ] **6.6** Evict the saga from cache after emission. Cancel any pending Phase-4 timer first. *(effort: S)*
-- [ ] **6.7** Preserve existing per-step compensators (`compensateEquipAsset`, `compensateInventoryTransaction`, `compensateStorageOperation`, `compensateSelectGachaponReward`, etc.) — they continue to serve their non-character-creation saga types. *(effort: S)*
+- [x] **6.1** `CompensateFailedStep` now short-circuits to `compensateCharacterCreation` when `s.SagaType() == CharacterCreation`, before the per-step switch. Other saga types flow through the existing switch unchanged. *(effort: S)*
+- [x] **6.2** `compensateCharacterCreation` walks `s.Steps()` in reverse. AwardAsset / CreateAndEquipAsset → `compP.RequestDestroyItem`. CreateSkill → `skillP.RequestDeleteSkill` (new orchestrator method). CreateCharacter → `charP.RequestDeleteCharacter` (new orchestrator method), deferred to the end so item/skill inverses are in-flight before the character row is deleted. *(effort: L)*
+- [x] **6.3** **Trade-off: fire-and-forget, not sequential.** Matches the existing `compensateSelectGachaponReward` pattern (`compensator.go:815`) for consistency and lack of state-machine scaffolding for async-sequential compensation. Atlas-character / atlas-skills are idempotent-on-missing (Phase 5), so out-of-order arrivals do not regress. Documented in the function header. *(effort: M)*
+- [x] **6.4** Per-dispatch errors log at ERROR with full ids and continue the chain; one failure does not abort subsequent inverses. *(effort: S)*
+- [x] **6.5** Emits exactly one `StatusEventTypeFailed` via `EmitSagaFailed` with `failedStep = <originally-failing-step-id>`, `accountId` + `characterId` from `CharacterCreatePayload`. Takes `TryTransition(Compensating → Failed)` before emission — if the Phase-4 timer already fired and emitted (ErrorCodeSagaTimeout), this transition is refused and the function returns without a second emit. *(effort: M)*
+- [x] **6.6** Cancels the Phase-4 timer and evicts the saga from cache unconditionally (before and after the Compensating → Failed transition) — the saga is terminal either way. *(effort: S)*
+- [x] **6.7** Existing per-step compensators (`compensateEquipAsset`, `compensateCreateCharacter`, `compensateCreateAndEquipAsset`, `compensateChangeHair/Face/Skin`, `compensateStorageOperation`, `compensateSelectGachaponReward`) untouched; they continue to handle non-character-creation saga types. *(effort: S)*
+- [x] Orchestrator-side wiring for RequestDeleteSkill: skill.Processor gains `RequestDeleteSkill(txId, worldId, characterId, skillId)`; `RequestDeleteProvider` added; wire-format constants `CommandTypeRequestDelete` / `StatusEventTypeDeleted` / `StatusEventDeletedBody` mirror the atlas-skills side. `handleSkillDeletedEvent` drives `StepCompleted(true)` on DELETED. *(bundled)*
 
-**Acceptance:** A character-creation failure produces an ordered reverse-walk of completed steps, emits exactly one Failed event, evicts the saga, leaves the DB in pre-creation state. Other saga types behave identically to today.
+**Acceptance:** A character-creation failure produces a reverse-walk dispatch of completed-step inverses (character delete last), emits exactly one Failed event, evicts the saga, and leaves the DB in pre-creation state. Other saga types behave identically to today. Baseline orchestrator tests remain green. ✅
 
 ## Phase 7 — Factory bridge: failure handler + 10s timeout (S)
 

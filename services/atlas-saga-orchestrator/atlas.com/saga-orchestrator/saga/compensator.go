@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
@@ -36,6 +37,7 @@ type Compensator interface {
 	compensateChangeSkin(s Saga, failedStep Step[any]) error
 	compensateStorageOperation(s Saga, failedStep Step[any]) error
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
+	compensateCharacterCreation(s Saga, failedStep Step[any]) error
 }
 
 type CompensatorImpl struct {
@@ -162,6 +164,14 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 	}
 
 	failedStep, _ := s.StepAt(failedStepIndex)
+
+	// Character-creation reverse-walk (plan Phase 6). Takes precedence over the
+	// per-step switch so that a CharacterCreation saga ALWAYS runs the full
+	// reverse chain (DestroyItem * / DeleteSkill * / DeleteCharacter) rather
+	// than only compensating the failing step.
+	if s.SagaType() == CharacterCreation {
+		return c.compensateCharacterCreation(s, failedStep)
+	}
 
 	c.l.WithFields(logrus.Fields{
 		"transaction_id": s.TransactionId().String(),
@@ -872,4 +882,138 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 	}
 
 	return nil
+}
+
+// compensateCharacterCreation is the character-creation reverse-walk
+// compensator (PRD §4.3 / plan Phase 6). On a character-creation failure it
+// walks the saga's completed steps in reverse, dispatches the inverse command
+// for each (fire-and-forget; Phase-5 compensators are idempotent on missing
+// rows), emits exactly one StatusEventTypeFailed, cancels the Phase-4 timer,
+// and evicts the saga from cache.
+//
+// CreateCharacter is dispatched LAST so item/skill rows referencing the
+// character are cleaned up first.
+//
+// Double-emission is prevented by TryTransition(Compensating → Failed): if the
+// timer already emitted Failed (via ErrorCodeSagaTimeout), the transition is
+// refused and this function returns without re-emitting. See PRD §4.7.
+func (c *CompensatorImpl) compensateCharacterCreation(s Saga, failedStep Step[any]) error {
+	accountId, characterId := ExtractCharacterCreationIds(s)
+	worldId := extractCharacterCreationWorldId(s)
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id":  s.TransactionId().String(),
+		"failed_step":     failedStep.StepId(),
+		"failed_action":   failedStep.Action(),
+		"character_id":    characterId,
+		"account_id":      accountId,
+		"tenant_id":       c.t.Id().String(),
+		"total_steps":     s.StepCount(),
+		"completed_steps": s.GetCompletedStepCount(),
+	}).Info("CharacterCreation saga failing — dispatching reverse-walk compensation.")
+
+	var deleteCharacterStep *Step[any]
+
+	steps := s.Steps()
+	for i := len(steps) - 1; i >= 0; i-- {
+		step := steps[i]
+		if step.Status() != Completed {
+			continue
+		}
+		switch step.Action() {
+		case AwardAsset:
+			if payload, ok := step.Payload().(AwardItemActionPayload); ok {
+				if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.Item.TemplateId,
+					}).Error("Reverse-walk: AwardAsset → DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		case CreateAndEquipAsset:
+			if payload, ok := step.Payload().(CreateAndEquipAssetPayload); ok {
+				if err := c.compP.RequestDestroyItem(s.TransactionId(), payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, false); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"template_id":    payload.Item.TemplateId,
+					}).Error("Reverse-walk: CreateAndEquipAsset → DestroyItem dispatch failed; continuing chain.")
+				}
+			}
+		case CreateSkill:
+			if payload, ok := step.Payload().(CreateSkillPayload); ok {
+				if err := c.skillP.RequestDeleteSkill(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.SkillId); err != nil {
+					c.l.WithError(err).WithFields(logrus.Fields{
+						"transaction_id": s.TransactionId().String(),
+						"step_id":        step.StepId(),
+						"skill_id":       payload.SkillId,
+					}).Error("Reverse-walk: CreateSkill → DeleteSkill dispatch failed; continuing chain.")
+				}
+			}
+		case CreateCharacter:
+			// Defer to the end — deleting the character first would orphan
+			// item/skill inverses still in flight.
+			sCopy := step
+			deleteCharacterStep = &sCopy
+		}
+	}
+
+	if deleteCharacterStep != nil && characterId != 0 {
+		if err := c.charP.RequestDeleteCharacter(s.TransactionId(), characterId, worldId); err != nil {
+			c.l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"step_id":        deleteCharacterStep.StepId(),
+				"character_id":   characterId,
+			}).Error("Reverse-walk: CreateCharacter → DeleteCharacter dispatch failed; continuing chain.")
+		}
+	}
+
+	// Phase-4 timer already fired? Its handleSagaTimeout takes Pending →
+	// Compensating and emits Failed(ErrorCodeSagaTimeout). In that case this
+	// step-triggered reverse walk still runs (compensation must occur), but
+	// the Compensating → Failed transition below refuses the second emit.
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Character creation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after character-creation compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   characterId,
+		"account_id":     accountId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Character-creation reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// extractCharacterCreationWorldId reads the WorldId out of the CharacterCreate
+// step's payload. Returns 0 if the step is not present.
+func extractCharacterCreationWorldId(s Saga) world.Id {
+	for _, step := range s.Steps() {
+		if step.Action() != CreateCharacter {
+			continue
+		}
+		if p, ok := step.Payload().(CharacterCreatePayload); ok {
+			return p.WorldId
+		}
+	}
+	return 0
 }

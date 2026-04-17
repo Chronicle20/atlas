@@ -11,6 +11,7 @@ const (
 	EnvCommandTopic          = "COMMAND_TOPIC_SKILL"
 	CommandTypeRequestCreate = "REQUEST_CREATE"
 	CommandTypeRequestUpdate = "REQUEST_UPDATE"
+	CommandTypeRequestDelete = "REQUEST_DELETE"
 )
 
 type Command[E any] struct {
@@ -35,10 +36,17 @@ type RequestUpdateBody struct {
 	Expiration  time.Time `json:"expiration"`
 }
 
+// RequestDeleteBody is the saga-correlated REQUEST_DELETE command body used
+// by the character-creation reverse-walk compensator (plan Phase 5 / 6).
+type RequestDeleteBody struct {
+	SkillId uint32 `json:"skillId"`
+}
+
 const (
 	EnvStatusEventTopic    = "EVENT_TOPIC_SKILL_STATUS"
 	StatusEventTypeCreated = "CREATED"
 	StatusEventTypeUpdated = "UPDATED"
+	StatusEventTypeDeleted = "DELETED"
 )
 
 type StatusEvent[E any] struct {
@@ -61,3 +69,6 @@ type StatusEventUpdatedBody struct {
 	MasterLevel byte      `json:"masterLevel"`
 	Expiration  time.Time `json:"expiration"`
 }
+
+// StatusEventDeletedBody is the empty body emitted alongside StatusEventTypeDeleted.
+type StatusEventDeletedBody struct{}

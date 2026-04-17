@@ -1,7 +1,15 @@
-x-atlas-defaults: &atlas-defaults
+x-atlas-infra: &atlas-infra
   env_file: .env
   networks: [atlas]
   restart: unless-stopped
+
+x-atlas-defaults: &atlas-defaults
+  <<: *atlas-infra
+  depends_on:
+    atlas-configurations:
+      condition: service_healthy
+    atlas-tenants:
+      condition: service_healthy
 
 services:
   atlas-login:

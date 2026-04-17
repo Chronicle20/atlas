@@ -1,7 +1,18 @@
-x-atlas-defaults: &atlas-defaults
+x-atlas-infra: &atlas-infra
   env_file: .env
   networks: [atlas]
   restart: unless-stopped
+
+# Services using &atlas-defaults wait for atlas-configurations and atlas-tenants
+# to pass their healthchecks before starting. This removes the crashloop storm
+# that used to happen on cold start while those two services were still seeding.
+x-atlas-defaults: &atlas-defaults
+  <<: *atlas-infra
+  depends_on:
+    atlas-configurations:
+      condition: service_healthy
+    atlas-tenants:
+      condition: service_healthy
 
 services:
   atlas-account:
@@ -124,7 +135,7 @@ services:
       SERVICE_TYPE: character-factory
 
   atlas-configurations:
-    <<: *atlas-defaults
+    <<: *atlas-infra
     container_name: atlas-configurations
     build:
       context: ../..
@@ -133,6 +144,12 @@ services:
     environment:
       LOG_LEVEL: debug
       DB_NAME: atlas-configurations
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/configurations/tenants >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
 
   atlas-consumables:
     <<: *atlas-defaults
@@ -516,7 +533,7 @@ services:
       EVENT_TOPIC_STORAGE_STATUS: EVENT_TOPIC_STORAGE_STATUS
 
   atlas-tenants:
-    <<: *atlas-defaults
+    <<: *atlas-infra
     container_name: atlas-tenants
     build:
       context: ../..
@@ -525,6 +542,12 @@ services:
     environment:
       LOG_LEVEL: info
       DB_NAME: atlas-tenants
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/api/tenants >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
 
   atlas-transports:
     <<: *atlas-defaults

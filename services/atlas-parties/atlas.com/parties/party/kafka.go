@@ -1,6 +1,6 @@
 package party
 
-import "github.com/Chronicle20/atlas-constants/world"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
 const (
 	EnvCommandTopic           = "COMMAND_TOPIC_PARTY"

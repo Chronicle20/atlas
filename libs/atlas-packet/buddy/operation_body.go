@@ -3,10 +3,10 @@ package buddy
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	"github.com/Chronicle20/atlas-packet/buddy/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/buddy/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

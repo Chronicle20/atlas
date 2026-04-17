@@ -3,7 +3,7 @@ package mock
 import (
 	"atlas-query-aggregator/inventory"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorImpl is a mock implementation of the inventory.Processor interface

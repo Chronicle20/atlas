@@ -6,9 +6,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	inventory2 "github.com/Chronicle20/atlas-packet/inventory/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	inventory2 "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

@@ -3,8 +3,8 @@ package consumer
 import (
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/sirupsen/logrus"
 )
 

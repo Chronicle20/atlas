@@ -1,8 +1,8 @@
 package character
 
 import (
-	"github.com/Chronicle20/atlas-constants/job"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (

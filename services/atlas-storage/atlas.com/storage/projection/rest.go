@@ -4,8 +4,8 @@ import (
 	"atlas-storage/asset"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 // RestModel represents a projection in JSON:API format

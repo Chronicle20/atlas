@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	atlas "github.com/Chronicle20/atlas-redis"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )

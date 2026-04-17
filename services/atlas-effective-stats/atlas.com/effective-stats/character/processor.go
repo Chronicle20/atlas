@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

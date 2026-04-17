@@ -3,7 +3,7 @@ package world
 import (
 	"atlas-login/channel"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type State byte

@@ -3,9 +3,9 @@ package model
 import (
 	"context"
 
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"strings"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // MockRoute defines a single route handler for the mock server

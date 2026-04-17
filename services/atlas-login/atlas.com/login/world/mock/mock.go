@@ -3,8 +3,8 @@ package mock
 import (
 	"atlas-login/world"
 
-	world2 "github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
+	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // MockProcessor is a mock implementation of world.Processor for testing

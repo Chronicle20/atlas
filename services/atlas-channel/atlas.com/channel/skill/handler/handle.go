@@ -4,8 +4,8 @@ import (
 	"atlas-channel/data/skill/effect"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/sirupsen/logrus"
 )
 

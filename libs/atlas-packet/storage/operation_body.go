@@ -3,10 +3,10 @@ package storage
 import (
 	"context"
 
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	"github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-packet/storage/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

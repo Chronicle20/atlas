@@ -4,7 +4,7 @@ import (
 	"atlas-query-aggregator/guild/member"
 	"atlas-query-aggregator/guild/title"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 type Model struct {

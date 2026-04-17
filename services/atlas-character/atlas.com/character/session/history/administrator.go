@@ -3,7 +3,7 @@ package history
 import (
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

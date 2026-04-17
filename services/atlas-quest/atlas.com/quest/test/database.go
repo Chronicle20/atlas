@@ -5,7 +5,7 @@ import (
 	"atlas-quest/quest/progress"
 	"testing"
 
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"

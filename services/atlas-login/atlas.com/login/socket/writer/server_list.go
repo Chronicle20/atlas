@@ -5,10 +5,10 @@ import (
 	"atlas-login/world"
 	"context"
 
-	world2 "github.com/Chronicle20/atlas-constants/world"
-	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/packet"
+	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

@@ -6,7 +6,7 @@ import (
 	channel2 "atlas-world/kafka/consumer/channel"
 	"atlas-world/logger"
 	"atlas-world/rate"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-world/tasks"
 	"atlas-world/tracing"
 	"atlas-world/world"
@@ -14,10 +14,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-model/model"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
 	"go.opentelemetry.io/otel"
 )

@@ -3,7 +3,7 @@ package mock
 import (
 	"atlas-transports/channel"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // Compile-time interface compliance check

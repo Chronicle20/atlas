@@ -2,19 +2,19 @@ package main
 
 import (
 	"atlas-npc/commodities"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	character2 "atlas-npc/kafka/consumer/character"
 	shops2 "atlas-npc/kafka/consumer/shops"
 	"atlas-npc/logger"
 	"atlas-npc/seed"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-npc/shops"
 	"atlas-npc/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-npc-shops"

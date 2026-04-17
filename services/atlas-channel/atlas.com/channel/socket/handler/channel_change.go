@@ -9,10 +9,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	channel3 "github.com/Chronicle20/atlas-packet/channel/serverbound"
+	channel3 "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-socket/request"
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

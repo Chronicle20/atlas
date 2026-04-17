@@ -4,7 +4,7 @@ import (
 	"atlas-consumables/kafka/message/compartment"
 	"context"
 
-	"github.com/Chronicle20/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

@@ -4,8 +4,8 @@ import (
 	"atlas-party-quests/instance"
 	"atlas-party-quests/kafka/message"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
 )
 

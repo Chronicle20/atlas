@@ -1,6 +1,6 @@
 package cashshop
 
-import "github.com/Chronicle20/atlas-constants/world"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
 const (
 	EnvEventTopicStatus           = "EVENT_TOPIC_CASH_SHOP_STATUS"

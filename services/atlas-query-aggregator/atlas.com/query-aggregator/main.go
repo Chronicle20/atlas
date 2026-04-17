@@ -2,12 +2,12 @@ package main
 
 import (
 	"atlas-query-aggregator/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-query-aggregator/tracing"
 	"atlas-query-aggregator/validation"
 	"os"
 
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-query-aggregator"

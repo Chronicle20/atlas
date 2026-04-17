@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-storage/asset"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-storage/kafka/consumer/account"
 	"atlas-storage/kafka/consumer/character"
 	"atlas-storage/kafka/consumer/compartment"
@@ -11,13 +11,13 @@ import (
 	"atlas-storage/projection"
 	"atlas-storage/service"
 	"atlas-storage/storage"
-	lifecycle "github.com/Chronicle20/atlas-service"
+	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-storage/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"gorm.io/gorm"
 )
 

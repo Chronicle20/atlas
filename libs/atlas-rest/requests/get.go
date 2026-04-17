@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Chronicle20/atlas-retry"
+	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/sirupsen/logrus"
 )
 

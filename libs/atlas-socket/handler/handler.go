@@ -3,8 +3,8 @@ package handler
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/writer"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	"github.com/sirupsen/logrus"
 )
 

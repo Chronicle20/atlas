@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

@@ -4,7 +4,7 @@ import (
 	"atlas-query-aggregator/transport"
 	"fmt"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // ProcessorImpl is a mock implementation of the transport.Processor interface

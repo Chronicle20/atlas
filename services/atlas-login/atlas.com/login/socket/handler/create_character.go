@@ -6,9 +6,9 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
-	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
-	charsb "github.com/Chronicle20/atlas-packet/character/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

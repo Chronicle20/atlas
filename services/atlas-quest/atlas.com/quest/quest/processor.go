@@ -3,7 +3,7 @@ package quest
 import (
 	dataquest "atlas-quest/data/quest"
 	"atlas-quest/data/validation"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	questmessage "atlas-quest/kafka/message/quest"
 	"atlas-quest/kafka/message/saga"
 	sagaproducer "atlas-quest/kafka/producer/saga"
@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

@@ -1,9 +1,9 @@
 package saga
 
 import (
-	"github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/segmentio/kafka-go"
 )
 

@@ -6,9 +6,9 @@ import (
 	"atlas-channel/guild"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-socket/packet"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

@@ -11,7 +11,7 @@ import (
 	"atlas-guilds/kafka/consumer/invite"
 	thread2 "atlas-guilds/kafka/consumer/thread"
 	"atlas-guilds/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
@@ -19,10 +19,10 @@ import (
 	"os"
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-guilds"

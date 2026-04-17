@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-tenant"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 )
 

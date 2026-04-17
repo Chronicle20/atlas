@@ -3,8 +3,8 @@ package script
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )

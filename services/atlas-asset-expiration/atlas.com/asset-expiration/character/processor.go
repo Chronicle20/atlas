@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
-	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

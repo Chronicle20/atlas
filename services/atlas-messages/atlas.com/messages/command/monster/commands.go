@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	monster2 "github.com/Chronicle20/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/sirupsen/logrus"
 )
 

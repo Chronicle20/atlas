@@ -6,8 +6,8 @@ import (
 	cskill "atlas-character/skill"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/job"
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 type mockSkillDataProcessor struct {

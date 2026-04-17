@@ -5,9 +5,9 @@ import (
 	"atlas-channel/character"
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	inventory2 "github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // MockProcessor is a test double for character.Processor

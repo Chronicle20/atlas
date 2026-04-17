@@ -5,13 +5,13 @@ import (
 	note_consumer "atlas-notes/kafka/consumer/note"
 	"atlas-notes/logger"
 	"atlas-notes/note"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-notes/tracing"
 	"os"
 
-	database "github.com/Chronicle20/atlas-database"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-notes"

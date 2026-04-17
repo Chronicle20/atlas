@@ -3,7 +3,7 @@ package inventory
 import (
 	"atlas-cashshop/cashshop/inventory/compartment"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Model represents a cash shop inventory with multiple compartments

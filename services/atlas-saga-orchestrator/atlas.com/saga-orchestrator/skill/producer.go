@@ -4,9 +4,9 @@ import (
 	skill2 "atlas-saga-orchestrator/kafka/message/skill"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )

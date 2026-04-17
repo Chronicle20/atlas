@@ -1,9 +1,9 @@
 package script
 
 import (
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas-script-core/operation"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
 // PortalScript represents a portal script loaded from JSON

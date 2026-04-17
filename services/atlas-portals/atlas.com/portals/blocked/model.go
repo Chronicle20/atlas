@@ -1,6 +1,6 @@
 package blocked
 
-import _map "github.com/Chronicle20/atlas-constants/map"
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 // Model represents a blocked portal for a character
 type Model struct {

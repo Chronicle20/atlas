@@ -68,7 +68,7 @@ func (p *ProcessorImpl) Create(name string) (Model, error) {
 
 For queries that must span all tenants (e.g., startup recovery, admin operations):
 ```go
-import database "github.com/Chronicle20/atlas-database"
+import database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 // Bypass automatic tenant filtering
 ctx := database.WithoutTenantFilter(ctx)
@@ -79,7 +79,7 @@ db.WithContext(ctx).Find(&allResults)
 
 Tests that create SQLite databases directly (not via `database.Connect()`) must register callbacks manually:
 ```go
-import database "github.com/Chronicle20/atlas-database"
+import database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 func setupTestDB(t *testing.T) *gorm.DB {
     db, _ := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})

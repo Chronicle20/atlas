@@ -4,8 +4,8 @@ import (
 	ban2 "atlas-ban/kafka/message/ban"
 	"math/rand"
 
-	kafkago "github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
+	kafkago "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 )
 

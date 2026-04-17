@@ -3,7 +3,7 @@ package clientbound
 import (
 	"testing"
 
-	pt "github.com/Chronicle20/atlas-packet/test"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestForeignEmblemChangedRoundTrip(t *testing.T) {

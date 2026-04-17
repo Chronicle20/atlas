@@ -3,7 +3,7 @@ package account
 import (
 	"sync"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type Key struct {

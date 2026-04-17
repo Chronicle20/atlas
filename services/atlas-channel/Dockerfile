@@ -62,17 +62,17 @@ COPY services/atlas-channel/atlas.com/channel services/atlas-channel/atlas.com/c
 # Force local resolution of Chronicle20/atlas-* modules (bypasses unreachable github.com publishes).
 RUN cd services/atlas-channel/atlas.com/channel && \
     go mod edit \
-      -replace=github.com/Chronicle20/atlas-constants=/app/libs/atlas-constants \
-      -replace=github.com/Chronicle20/atlas-kafka=/app/libs/atlas-kafka \
-      -replace=github.com/Chronicle20/atlas-model=/app/libs/atlas-model \
-      -replace=github.com/Chronicle20/atlas-opcodes=/app/libs/atlas-opcodes \
-      -replace=github.com/Chronicle20/atlas-packet=/app/libs/atlas-packet \
-      -replace=github.com/Chronicle20/atlas-rest=/app/libs/atlas-rest \
-      -replace=github.com/Chronicle20/atlas-retry=/app/libs/atlas-retry \
-      -replace=github.com/Chronicle20/atlas-saga=/app/libs/atlas-saga \
-      -replace=github.com/Chronicle20/atlas-service=/app/libs/atlas-service \
-      -replace=github.com/Chronicle20/atlas-socket=/app/libs/atlas-socket \
-      -replace=github.com/Chronicle20/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-constants=/app/libs/atlas-constants \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-kafka=/app/libs/atlas-kafka \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-model=/app/libs/atlas-model \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-opcodes=/app/libs/atlas-opcodes \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-packet=/app/libs/atlas-packet \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-socket=/app/libs/atlas-socket \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
     && go mod tidy
 
 # Build

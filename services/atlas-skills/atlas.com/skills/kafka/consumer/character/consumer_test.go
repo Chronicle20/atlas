@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	skillconst "github.com/Chronicle20/atlas-constants/skill"
-	"github.com/Chronicle20/atlas-constants/world"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

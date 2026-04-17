@@ -3,14 +3,14 @@ package main
 import (
 	session2 "atlas-asset-expiration/kafka/consumer/session"
 	"atlas-asset-expiration/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-asset-expiration/task"
 	"atlas-asset-expiration/tracing"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 const serviceName = "atlas-asset-expiration"

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestConfig(t *testing.T) {

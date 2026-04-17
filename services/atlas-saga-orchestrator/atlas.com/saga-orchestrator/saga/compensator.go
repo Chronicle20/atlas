@@ -38,6 +38,14 @@ type Compensator interface {
 	compensateStorageOperation(s Saga, failedStep Step[any]) error
 	compensateSelectGachaponReward(s Saga, failedStep Step[any]) error
 	compensateCharacterCreation(s Saga, failedStep Step[any]) error
+
+	// DispatchCharacterCreationRollbacks is the dispatch half of the reverse-walk
+	// compensator. It fires the inverse commands (DestroyItem / DeleteSkill /
+	// DeleteCharacter-last) for each completed step of a CharacterCreation saga.
+	// No lifecycle transitions, no Failed emission, no cache eviction — callers
+	// handle those. Used both by the step-driven compensator and by the timer-
+	// fire path in saga/timer.go (PRD §4.3 / plan Phase 4.3).
+	DispatchCharacterCreationRollbacks(s Saga)
 }
 
 type CompensatorImpl struct {
@@ -899,7 +907,6 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 // refused and this function returns without re-emitting. See PRD §4.7.
 func (c *CompensatorImpl) compensateCharacterCreation(s Saga, failedStep Step[any]) error {
 	accountId, characterId := ExtractCharacterCreationIds(s)
-	worldId := extractCharacterCreationWorldId(s)
 
 	c.l.WithFields(logrus.Fields{
 		"transaction_id":  s.TransactionId().String(),
@@ -911,6 +918,55 @@ func (c *CompensatorImpl) compensateCharacterCreation(s Saga, failedStep Step[an
 		"total_steps":     s.StepCount(),
 		"completed_steps": s.GetCompletedStepCount(),
 	}).Info("CharacterCreation saga failing — dispatching reverse-walk compensation.")
+
+	c.DispatchCharacterCreationRollbacks(s)
+
+	// Phase-4 timer already fired? Its handleSagaTimeout takes Pending →
+	// Compensating, dispatches rollbacks, and emits Failed(ErrorCodeSagaTimeout).
+	// In that race, the timer beats us to Compensating → Failed, and this
+	// step-triggered reverse walk returns without a second emit.
+	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
+		c.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
+		return nil
+	}
+
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
+
+	reason := fmt.Sprintf("Character creation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
+	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
+		c.l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"tenant_id":      c.t.Id().String(),
+		}).Error("Failed to emit saga failed event after character-creation compensation.")
+		return err
+	}
+
+	c.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"character_id":   characterId,
+		"account_id":     accountId,
+		"tenant_id":      c.t.Id().String(),
+	}).Info("Character-creation reverse-walk compensation complete; saga terminated.")
+	return nil
+}
+
+// DispatchCharacterCreationRollbacks walks the saga's completed steps in
+// reverse and dispatches the inverse compensation command for each. This is
+// the pure "dispatch" half of the reverse-walk — no lifecycle transitions,
+// no event emission, no cache eviction. Callers are responsible for those.
+//
+// CreateCharacter is deferred to the end so item/skill inverses are in flight
+// before the character row is removed. Phase-5 compensators are idempotent on
+// missing rows, so out-of-order downstream arrival is safe.
+func (c *CompensatorImpl) DispatchCharacterCreationRollbacks(s Saga) {
+	_, characterId := ExtractCharacterCreationIds(s)
+	worldId := extractCharacterCreationWorldId(s)
 
 	var deleteCharacterStep *Step[any]
 
@@ -968,40 +1024,6 @@ func (c *CompensatorImpl) compensateCharacterCreation(s Saga, failedStep Step[an
 			}).Error("Reverse-walk: CreateCharacter → DeleteCharacter dispatch failed; continuing chain.")
 		}
 	}
-
-	// Phase-4 timer already fired? Its handleSagaTimeout takes Pending →
-	// Compensating and emits Failed(ErrorCodeSagaTimeout). In that case this
-	// step-triggered reverse walk still runs (compensation must occur), but
-	// the Compensating → Failed transition below refuses the second emit.
-	if !GetCache().TryTransition(c.ctx, s.TransactionId(), SagaLifecycleCompensating, SagaLifecycleFailed) {
-		c.l.WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId().String(),
-			"tenant_id":      c.t.Id().String(),
-		}).Info("saga already in terminal Failed state; reverse-walk emission skipped.")
-		SagaTimers().Cancel(s.TransactionId())
-		GetCache().Remove(c.ctx, s.TransactionId())
-		return nil
-	}
-
-	SagaTimers().Cancel(s.TransactionId())
-	GetCache().Remove(c.ctx, s.TransactionId())
-
-	reason := fmt.Sprintf("Character creation failed at step [%s] action [%s]", failedStep.StepId(), failedStep.Action())
-	if err := EmitSagaFailed(c.l, c.ctx, s, sagaMsg.ErrorCodeUnknown, reason, failedStep.StepId()); err != nil {
-		c.l.WithError(err).WithFields(logrus.Fields{
-			"transaction_id": s.TransactionId().String(),
-			"tenant_id":      c.t.Id().String(),
-		}).Error("Failed to emit saga failed event after character-creation compensation.")
-		return err
-	}
-
-	c.l.WithFields(logrus.Fields{
-		"transaction_id": s.TransactionId().String(),
-		"character_id":   characterId,
-		"account_id":     accountId,
-		"tenant_id":      c.t.Id().String(),
-	}).Info("Character-creation reverse-walk compensation complete; saga terminated.")
-	return nil
 }
 
 // extractCharacterCreationWorldId reads the WorldId out of the CharacterCreate

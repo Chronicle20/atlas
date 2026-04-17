@@ -339,6 +339,20 @@ func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, suc
 		return nil
 	}
 
+	// Terminal-state guard: the first failure-signal takes Pending → Compensating.
+	// Later callers (late StepCompleted(false), timer) see the transition fail and
+	// short-circuit, which prevents duplicate Failed emissions in Phase 3+. See PRD §4.7.
+	if !success && !s.Failing() {
+		if !GetCache().TryTransition(p.ctx, transactionId, SagaLifecyclePending, SagaLifecycleCompensating) {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": transactionId.String(),
+				"saga_type":      s.SagaType(),
+				"tenant_id":      p.t.Id().String(),
+			}).Info("saga already terminal, late completion ignored")
+			return nil
+		}
+	}
+
 	if s.Failing() {
 		err = p.MarkFurthestCompletedStepFailed(transactionId)
 		if err != nil {
@@ -764,7 +778,21 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
-		GetCache().Remove(p.ctx,s.TransactionId())
+
+		// Terminal-state guard: only the first observer of the success-terminal
+		// state gets to emit Completed. A late observer (e.g., re-entry after
+		// another goroutine already handled completion) sees the transition fail
+		// and returns silently.
+		if !GetCache().TryTransition(p.ctx, s.TransactionId(), SagaLifecyclePending, SagaLifecycleCompleted) {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"tenant_id":      p.t.Id().String(),
+			}).Info("saga already terminal, completion emission skipped")
+			return nil
+		}
+
+		GetCache().Remove(p.ctx, s.TransactionId())
 
 		// Emit saga completion event
 		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s))

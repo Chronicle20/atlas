@@ -96,13 +96,13 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 7 — Factory bridge: failure handler + 10s timeout (S)
 
-- [ ] **7.1** In `atlas-character-factory/.../kafka/consumer/saga/consumer.go`, add `handleSagaFailedEvent` alongside the existing `handleSagaCompletedEvent`. Register via `AdaptHandler`. *(effort: S)*
-- [ ] **7.2** Filter: `StatusEventType == Failed && SagaType == CharacterCreation`. Log and drop otherwise. *(effort: S)*
-- [ ] **7.3** Extract `AccountId` from `StatusEventFailedBody` (Phase 1.1). Call `FailedEventStatusProvider(accountId, reason)` (Phase 1.5) to emit `FAILED` on `EVENT_TOPIC_SEED_STATUS`. *(effort: S)*
-- [ ] **7.4** In the factory's REST handler that creates the saga, pass `timeout: 10 * time.Second` on the outbound command. *(effort: S)*
-- [ ] **7.5** Verify no in-flight tracking map is needed — sagaType filter is sufficient (confirmed in PRD §4.4). *(effort: S)*
+- [x] **7.1** `handleSagaFailedEvent` added to `kafka/consumer/saga/consumer.go` alongside `handleSagaCompletedEvent`; both registered via `AdaptHandler` in `InitHandlers`. *(effort: S)*
+- [x] **7.2** Filter is strict on `StatusEventType == Failed && SagaType == CharacterCreation`; non-matching events log at DEBUG and return. *(effort: S)*
+- [x] **7.3** Factory's `kafka/message/saga/kafka.go` gains `StatusEventTypeFailed` + `StatusEventFailedBody` (mirroring the orchestrator wire format, including the Phase 1.1 `AccountId`). Handler extracts `AccountId` and calls `seed.FailedEventStatusProvider(accountId, reason)` to emit FAILED on `EVENT_TOPIC_SEED_STATUS`. An `accountId == 0` body logs at WARN and drops — cannot route. *(effort: S)*
+- [x] **7.4** Factory REST path already passes `SetTimeout(10 * time.Second)` via Phase 4.5 in `buildCharacterCreationSaga`. *(effort: S)*
+- [x] **7.5** No in-flight tracking map is used — the `sagaType == CharacterCreation` filter is authoritative. Documented in the handler header. *(effort: S)*
 
-**Acceptance:** Failure events on `EVENT_TOPIC_SAGA_STATUS` for character-creation sagas are re-emitted as `FAILED` on `EVENT_TOPIC_SEED_STATUS` with correct `accountId`; factory command includes `timeout: 10s`.
+**Acceptance:** Failure events on `EVENT_TOPIC_SAGA_STATUS` for character-creation sagas are re-emitted as `FAILED` on `EVENT_TOPIC_SEED_STATUS` with correct `accountId`; factory command includes `timeout: 10s`. ✅
 
 ## Phase 8 — atlas-login failure handler (S)
 

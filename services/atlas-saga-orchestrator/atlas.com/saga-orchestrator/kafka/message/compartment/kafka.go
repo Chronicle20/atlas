@@ -164,6 +164,9 @@ const (
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
 	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
+
+	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 
 type StatusEvent[E any] struct {

@@ -155,3 +155,18 @@ func ErrorEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func CreationFailedEventStatusProvider(transactionId uuid.UUID, id uuid.UUID, characterId uint32, errorCode string, message string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.StatusEvent[compartment.CreationFailedStatusEventBody]{
+		TransactionId: transactionId,
+		CharacterId:   characterId,
+		CompartmentId: id,
+		Type:          compartment.StatusEventTypeCreationFailed,
+		Body: compartment.CreationFailedStatusEventBody{
+			ErrorCode: errorCode,
+			Message:   message,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -19,6 +19,7 @@ import (
 	"github.com/Chronicle20/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas-constants/item"
 	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas-rest/requests"
 	tenant "github.com/Chronicle20/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -292,7 +293,11 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				// TODO wire up template tradeBlock data to set UNTRADEABLE flag during asset creation
 				ea, err := p.statProcessor.GetById(templateId)
 				if err != nil {
-					p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+					if errors.Is(err, requests.ErrNotFound) {
+						p.l.WithError(err).Errorf("Equipment template [%d] not present in atlas-data; seed data is likely missing.", templateId)
+					} else {
+						p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+					}
 					return err
 				}
 				b.SetStrength(getRandomStat(ea.Strength(), 5)).

@@ -175,10 +175,14 @@ const (
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeAccepted             = "ACCEPTED"
 	StatusEventTypeReleased             = "RELEASED"
+	StatusEventTypeCreationFailed       = "CREATION_FAILED"
 	StatusEventTypeError                = "ERROR"
 
 	AcceptCommandFailed  = "ACCEPT_COMMAND_FAILED"
 	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
+
+	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 
 type StatusEvent[E any] struct {
@@ -237,4 +241,9 @@ type ReleasedEventBody struct {
 type ErrorEventBody struct {
 	ErrorCode     string    `json:"errorCode"`
 	TransactionId uuid.UUID `json:"transactionId"`
+}
+
+type CreationFailedStatusEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }

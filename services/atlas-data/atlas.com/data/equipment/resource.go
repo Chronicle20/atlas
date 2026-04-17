@@ -2,6 +2,7 @@ package equipment
 
 import (
 	"atlas-data/rest"
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -31,7 +32,12 @@ func handleGetEquipmentStatistics(db *gorm.DB) func(d *rest.HandlerDependency, c
 				s := NewStorage(d.Logger(), db)
 				res, err := s.GetById(d.Context())(strconv.Itoa(int(equipmentId)))
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Unable to get equipment.")
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						d.Logger().WithError(err).Warnf("Equipment template [%d] not found; seed data may be missing.", equipmentId)
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Unable to get equipment [%d].", equipmentId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -50,7 +56,12 @@ func handleGetEquipmentSlots(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 				s := NewStorage(d.Logger(), db)
 				res, err := s.GetById(d.Context())(strconv.Itoa(int(equipmentId)))
 				if err != nil {
-					d.Logger().WithError(err).Errorf("Unable to get equipment.")
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						d.Logger().WithError(err).Warnf("Equipment template [%d] not found; seed data may be missing.", equipmentId)
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(err).Errorf("Unable to get equipment [%d].", equipmentId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}

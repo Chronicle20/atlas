@@ -157,10 +157,11 @@ const (
 
 // Saga represents the entire saga transaction.
 type Saga struct {
-	TransactionId uuid.UUID   `json:"transactionId"` // Unique ID for the transaction
-	SagaType      Type        `json:"sagaType"`      // Type of the saga (e.g., inventory_transaction)
-	InitiatedBy   string      `json:"initiatedBy"`   // Who initiated the saga (e.g., NPC ID, user)
-	Steps         []Step[any] `json:"steps"`         // List of steps in the saga
+	TransactionId uuid.UUID   `json:"transactionId"`       // Unique ID for the transaction
+	SagaType      Type        `json:"sagaType"`            // Type of the saga (e.g., inventory_transaction)
+	InitiatedBy   string      `json:"initiatedBy"`         // Who initiated the saga (e.g., NPC ID, user)
+	Timeout       int64       `json:"timeout,omitempty"`   // Optional per-saga timeout in milliseconds; 0 → orchestrator default (30s)
+	Steps         []Step[any] `json:"steps"`               // List of steps in the saga
 }
 
 // Failing returns true if any step has failed status

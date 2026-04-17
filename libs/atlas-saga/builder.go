@@ -11,6 +11,7 @@ type Builder struct {
 	transactionId uuid.UUID
 	sagaType      Type
 	initiatedBy   string
+	timeout       time.Duration
 	steps         []Step[any]
 }
 
@@ -40,6 +41,13 @@ func (b *Builder) SetInitiatedBy(initiatedBy string) *Builder {
 	return b
 }
 
+// SetTimeout sets the per-saga timeout. Zero/negative means "let the
+// orchestrator apply its default" (30s; see the orchestrator's DefaultSagaTimeout).
+func (b *Builder) SetTimeout(timeout time.Duration) *Builder {
+	b.timeout = timeout
+	return b
+}
+
 // AddStep adds a step to the saga
 func (b *Builder) AddStep(stepId string, status Status, action Action, payload any) *Builder {
 	now := time.Now()
@@ -57,10 +65,15 @@ func (b *Builder) AddStep(stepId string, status Status, action Action, payload a
 
 // Build constructs and returns a new Saga instance
 func (b *Builder) Build() Saga {
+	var timeoutMs int64
+	if b.timeout > 0 {
+		timeoutMs = b.timeout.Milliseconds()
+	}
 	return Saga{
 		TransactionId: b.transactionId,
 		SagaType:      b.sagaType,
 		InitiatedBy:   b.initiatedBy,
+		Timeout:       timeoutMs,
 		Steps:         b.steps,
 	}
 }

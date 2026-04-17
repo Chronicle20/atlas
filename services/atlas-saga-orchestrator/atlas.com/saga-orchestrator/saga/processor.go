@@ -233,9 +233,17 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		return err
 	}
 
+	// Arm the per-saga timeout backstop. A saga that never produces a
+	// terminal-state transition (all downstream services wedged / timed out)
+	// will trip this timer and emit Failed with ErrorCodeSagaTimeout.
+	// See PRD §4.1 / plan Phase 4. The timer is cancelled on every normal
+	// terminal transition below.
+	SagaTimers().Schedule(p.l, p.t, saga.TransactionId(), saga.Timeout())
+
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": saga.TransactionId().String(),
 		"saga_type":      saga.SagaType(),
+		"timeout":        saga.Timeout().String(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Saga inserted into cache")
 
@@ -351,6 +359,8 @@ func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, suc
 			}).Info("saga already terminal, late completion ignored")
 			return nil
 		}
+		// Cancel the Phase-4 timeout backstop — we have taken over failure handling.
+		SagaTimers().Cancel(transactionId)
 	}
 
 	if s.Failing() {
@@ -792,6 +802,8 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			return nil
 		}
 
+		// Cancel the Phase-4 timeout backstop — normal terminal, no timer needed.
+		SagaTimers().Cancel(s.TransactionId())
 		GetCache().Remove(p.ctx, s.TransactionId())
 
 		// Emit saga completion event
@@ -890,6 +902,8 @@ func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause 
 		}).Info("saga already terminal, step sync-error emission skipped")
 		return
 	}
+	// Cancel the Phase-4 timeout backstop — we have taken over failure handling.
+	SagaTimers().Cancel(s.TransactionId())
 
 	emitErr := EmitSagaFailed(p.l, p.ctx, s, saga.ErrorCodeUnknown, cause.Error(), st.StepId())
 	if emitErr != nil {

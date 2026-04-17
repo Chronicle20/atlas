@@ -4,8 +4,8 @@ import (
 	"atlas-consumables/asset"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 )

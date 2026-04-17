@@ -4,7 +4,7 @@ import (
 	"atlas-transports/transport"
 	"time"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // RouteRestModel is the JSON:API resource for routes

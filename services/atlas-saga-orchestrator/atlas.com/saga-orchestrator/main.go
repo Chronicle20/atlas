@@ -1,7 +1,7 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-saga-orchestrator/kafka/consumer/asset"
 	"atlas-saga-orchestrator/kafka/consumer/buddylist"
 	"atlas-saga-orchestrator/kafka/consumer/cashshop"
@@ -18,15 +18,15 @@ import (
 	storageCompartment "atlas-saga-orchestrator/kafka/consumer/storage/compartment"
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-saga-orchestrator/tracing"
 	"os"
 	"strconv"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/sirupsen/logrus"
 )
 

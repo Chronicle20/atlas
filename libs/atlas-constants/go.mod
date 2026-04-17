@@ -1,4 +1,4 @@
-module github.com/Chronicle20/atlas-constants
+module github.com/Chronicle20/atlas/libs/atlas-constants
 
 go 1.24.4
 

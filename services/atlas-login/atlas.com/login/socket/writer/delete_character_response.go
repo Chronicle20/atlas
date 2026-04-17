@@ -3,10 +3,10 @@ package writer
 import (
 	"context"
 
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 

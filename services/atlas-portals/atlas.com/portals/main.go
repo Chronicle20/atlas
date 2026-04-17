@@ -5,13 +5,13 @@ import (
 	"atlas-portals/kafka/consumer/character"
 	"atlas-portals/logger"
 	"atlas-portals/portal"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-portals/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-portals"

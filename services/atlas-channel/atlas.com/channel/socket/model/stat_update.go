@@ -1,6 +1,6 @@
 package model
 
-import "github.com/Chronicle20/atlas-constants/stat"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 
 type StatUpdate struct {
 	statType stat.Type

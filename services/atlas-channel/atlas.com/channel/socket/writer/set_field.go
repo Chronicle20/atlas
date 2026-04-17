@@ -5,10 +5,10 @@ import (
 	"atlas-channel/character"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	fieldcb "github.com/Chronicle20/atlas-packet/field/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	fieldcb "github.com/Chronicle20/atlas/libs/atlas-packet/field/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

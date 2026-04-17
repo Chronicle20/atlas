@@ -3,7 +3,7 @@ package saga
 import (
 	"github.com/google/uuid"
 
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 // Re-export types from atlas-saga shared library

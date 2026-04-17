@@ -2,19 +2,19 @@ package main
 
 import (
 	"atlas-buddies/buddy"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-buddies/kafka/consumer/cashshop"
 	"atlas-buddies/kafka/consumer/character"
 	invite2 "atlas-buddies/kafka/consumer/invite"
 	list2 "atlas-buddies/kafka/consumer/list"
 	"atlas-buddies/list"
 	"atlas-buddies/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-buddies/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-buddies"

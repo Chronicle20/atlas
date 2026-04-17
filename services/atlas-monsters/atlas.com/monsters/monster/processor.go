@@ -10,11 +10,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	map2 "github.com/Chronicle20/atlas-constants/map"
-	monster2 "github.com/Chronicle20/atlas-constants/monster"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	map2 "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )

@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	atlasItem "github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	atlasItem "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/sirupsen/logrus"
 )
 

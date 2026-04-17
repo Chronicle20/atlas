@@ -5,7 +5,7 @@ import (
 	"atlas-npc-conversations/kafka/producer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/sirupsen/logrus"
 )
 

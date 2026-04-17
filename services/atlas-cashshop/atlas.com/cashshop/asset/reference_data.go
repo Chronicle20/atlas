@@ -3,7 +3,7 @@ package asset
 import (
 	"time"
 
-	af "github.com/Chronicle20/atlas-constants/asset"
+	af "github.com/Chronicle20/atlas/libs/atlas-constants/asset"
 )
 
 type EquipableReferenceData struct {

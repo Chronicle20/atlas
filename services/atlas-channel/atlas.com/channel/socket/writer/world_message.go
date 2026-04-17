@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	chatpkt "github.com/Chronicle20/atlas-packet/chat/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	chatpkt "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

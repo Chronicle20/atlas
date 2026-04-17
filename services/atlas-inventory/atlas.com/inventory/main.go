@@ -3,19 +3,19 @@ package main
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/compartment"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/inventory"
 	"atlas-inventory/kafka/consumer/character"
 	compartment2 "atlas-inventory/kafka/consumer/compartment"
 	"atlas-inventory/kafka/consumer/drop"
 	"atlas-inventory/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-inventory/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-inventory"

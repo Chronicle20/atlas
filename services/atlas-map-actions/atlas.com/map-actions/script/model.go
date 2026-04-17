@@ -1,8 +1,8 @@
 package script
 
 import (
-	"github.com/Chronicle20/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
 // MapScript represents a map script loaded from JSON

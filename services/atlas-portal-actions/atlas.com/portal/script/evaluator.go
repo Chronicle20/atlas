@@ -7,8 +7,8 @@ import (
 
 	"atlas-portal-actions/validation"
 
-	"github.com/Chronicle20/atlas-script-core/condition"
-	scriptctx "github.com/Chronicle20/atlas-script-core/context"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
 	"github.com/sirupsen/logrus"
 )
 

@@ -4,16 +4,16 @@ import (
 	"os"
 
 	"atlas-portal-actions/action"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	saga "atlas-portal-actions/kafka/consumer/saga"
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-portal-actions/tracing"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-portal-actions"

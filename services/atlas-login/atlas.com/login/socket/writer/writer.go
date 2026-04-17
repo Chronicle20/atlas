@@ -1,8 +1,8 @@
 package writer
 
 import (
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	sw "github.com/Chronicle20/atlas-socket/writer"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	sw "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	"github.com/sirupsen/logrus"
 )
 

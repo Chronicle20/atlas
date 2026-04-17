@@ -1,18 +1,18 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-marriages/kafka/consumer/character"
 	"atlas-marriages/kafka/consumer/marriage"
 	"atlas-marriages/logger"
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-marriages/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-marriages"

@@ -10,16 +10,16 @@ import (
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
 	"context"
-	"github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	model2 "github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
-	npcpkt "github.com/Chronicle20/atlas-packet/npc/clientbound"
-	petpkt "github.com/Chronicle20/atlas-packet/pet/clientbound"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
 )
 
 type Processor struct {

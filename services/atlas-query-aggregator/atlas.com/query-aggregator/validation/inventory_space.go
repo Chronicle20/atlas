@@ -5,8 +5,8 @@ import (
 	"atlas-query-aggregator/item"
 	"math"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	atlasItem "github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	atlasItem "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 // CalculateInventorySpace determines if a character can hold X quantity of an item

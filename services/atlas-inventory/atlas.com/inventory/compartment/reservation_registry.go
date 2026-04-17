@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )

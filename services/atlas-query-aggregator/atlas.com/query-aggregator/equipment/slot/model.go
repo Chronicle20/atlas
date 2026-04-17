@@ -3,7 +3,7 @@ package slot
 import (
 	"atlas-query-aggregator/asset"
 
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 )
 
 type Model struct {

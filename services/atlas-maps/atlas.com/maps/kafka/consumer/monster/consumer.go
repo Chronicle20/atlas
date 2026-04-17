@@ -7,13 +7,13 @@ import (
 	monster2 "atlas-maps/map/monster"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

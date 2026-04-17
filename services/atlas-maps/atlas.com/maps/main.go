@@ -1,7 +1,7 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	mapConsumer "atlas-maps/kafka/consumer/map"
@@ -10,16 +10,16 @@ import (
 	_map "atlas-maps/map"
 	spawnMonster "atlas-maps/map/monster"
 	"atlas-maps/map/weather"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
 	"atlas-maps/visit"
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-maps"

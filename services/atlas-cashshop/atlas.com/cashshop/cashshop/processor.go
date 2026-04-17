@@ -8,7 +8,7 @@ import (
 	compartment2 "atlas-cashshop/character/compartment"
 	inventory2 "atlas-cashshop/character/inventory"
 	dataPet "atlas-cashshop/data/pet"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-cashshop/kafka/message"
 	"atlas-cashshop/kafka/message/cashshop"
 	"atlas-cashshop/kafka/producer"
@@ -18,10 +18,10 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-constants/job"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

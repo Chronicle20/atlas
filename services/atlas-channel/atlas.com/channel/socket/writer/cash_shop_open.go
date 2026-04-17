@@ -6,8 +6,8 @@ import (
 	"atlas-channel/character"
 	"context"
 
-	cashpkt "github.com/Chronicle20/atlas-packet/cash/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
+	cashpkt "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

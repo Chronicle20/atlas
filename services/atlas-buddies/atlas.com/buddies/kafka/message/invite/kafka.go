@@ -1,9 +1,9 @@
 package invite
 
 import (
-	"github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-constants/invite"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/invite"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 const (

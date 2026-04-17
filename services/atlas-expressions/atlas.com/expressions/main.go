@@ -5,13 +5,13 @@ import (
 	expression2 "atlas-expressions/kafka/consumer/expression"
 	_map "atlas-expressions/kafka/consumer/map"
 	"atlas-expressions/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-expressions/tasks"
 	"atlas-expressions/tracing"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 )
 
 const serviceName = "atlas-expressions"

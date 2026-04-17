@@ -8,11 +8,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-model/model"
-	notepkt "github.com/Chronicle20/atlas-packet/note"
-	notecb "github.com/Chronicle20/atlas-packet/note/clientbound"
-	notesb "github.com/Chronicle20/atlas-packet/note/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	notepkt "github.com/Chronicle20/atlas/libs/atlas-packet/note"
+	notecb "github.com/Chronicle20/atlas/libs/atlas-packet/note/clientbound"
+	notesb "github.com/Chronicle20/atlas/libs/atlas-packet/note/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

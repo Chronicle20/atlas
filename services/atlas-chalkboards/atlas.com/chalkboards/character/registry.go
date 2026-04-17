@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	atlas "github.com/Chronicle20/atlas-redis"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 )
 

@@ -5,11 +5,11 @@ import (
 	"math"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

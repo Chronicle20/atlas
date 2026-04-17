@@ -7,10 +7,10 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-model/model"
-	chatCB "github.com/Chronicle20/atlas-packet/chat/clientbound"
-	chat "github.com/Chronicle20/atlas-packet/chat/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
+	chat "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

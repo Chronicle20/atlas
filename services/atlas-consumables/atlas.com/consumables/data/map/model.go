@@ -1,6 +1,6 @@
 package _map
 
-import _map "github.com/Chronicle20/atlas-constants/map"
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 type Model struct {
 	returnMapId _map.Id

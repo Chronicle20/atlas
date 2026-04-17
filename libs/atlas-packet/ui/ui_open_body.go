@@ -3,8 +3,8 @@ package ui
 import (
 	"context"
 
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	"github.com/Chronicle20/atlas-packet/ui/clientbound"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/ui/clientbound"
 	"github.com/sirupsen/logrus"
 )
 

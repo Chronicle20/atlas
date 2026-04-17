@@ -3,7 +3,7 @@ package mock
 import (
 	"atlas-npc-conversations/conversation"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // ProcessorMock is a mock implementation of the conversation.Processor interface

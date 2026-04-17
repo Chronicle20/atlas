@@ -9,10 +9,10 @@ import (
 	"atlas-portal-actions/action"
 	portalsaga "atlas-portal-actions/saga"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-script-core/operation"
-	"github.com/Chronicle20/atlas-saga"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

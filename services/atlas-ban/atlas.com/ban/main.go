@@ -2,19 +2,19 @@ package main
 
 import (
 	"atlas-ban/ban"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-ban/history"
 	account2 "atlas-ban/kafka/consumer/account"
 	ban2 "atlas-ban/kafka/consumer/ban"
 	"atlas-ban/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-ban/tasks"
 	"atlas-ban/tracing"
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-ban"

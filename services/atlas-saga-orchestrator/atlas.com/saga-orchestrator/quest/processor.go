@@ -6,7 +6,7 @@ import (
 	"atlas-saga-orchestrator/kafka/message/quest"
 	"atlas-saga-orchestrator/kafka/producer"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

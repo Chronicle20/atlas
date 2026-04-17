@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"go.opentelemetry.io/otel"

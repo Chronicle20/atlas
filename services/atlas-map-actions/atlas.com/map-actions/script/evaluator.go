@@ -7,8 +7,8 @@ import (
 
 	"atlas-map-actions/validation"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/sirupsen/logrus"
 )
 

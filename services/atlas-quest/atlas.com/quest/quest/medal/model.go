@@ -1,6 +1,6 @@
 package medal
 
-import _map "github.com/Chronicle20/atlas-constants/map"
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 // Model represents a visited map for a medal quest
 type Model struct {

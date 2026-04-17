@@ -3,7 +3,7 @@ package job
 import (
 	"math"
 
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 type Job struct {

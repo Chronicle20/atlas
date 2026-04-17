@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type TenantVariant struct {

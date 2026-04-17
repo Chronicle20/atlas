@@ -4,8 +4,8 @@ import (
 	"atlas-transports/character"
 	"atlas-transports/kafka/message"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Compile-time interface compliance check

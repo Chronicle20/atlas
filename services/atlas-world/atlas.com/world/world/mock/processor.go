@@ -3,8 +3,8 @@ package mock
 import (
 	"atlas-world/world"
 
-	worldConstant "github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
+	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Processor is a mock implementation of world.Processor for testing

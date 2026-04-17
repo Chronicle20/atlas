@@ -7,9 +7,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	invite2 "github.com/Chronicle20/atlas-constants/invite"
-	guildsb "github.com/Chronicle20/atlas-packet/guild/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	invite2 "github.com/Chronicle20/atlas/libs/atlas-constants/invite"
+	guildsb "github.com/Chronicle20/atlas/libs/atlas-packet/guild/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

@@ -1,7 +1,7 @@
 package _map
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/document"
 	"atlas-data/map/monster"
 	"atlas-data/map/npc"
@@ -16,8 +16,8 @@ import (
 	"strconv"
 	"strings"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-model/model"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

@@ -3,7 +3,7 @@ package retry
 import (
 	"context"
 
-	retry2 "github.com/Chronicle20/atlas-retry"
+	retry2 "github.com/Chronicle20/atlas/libs/atlas-retry"
 )
 
 // Config re-exports the shared retry configuration.

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Chronicle20/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas-script-core/operation"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

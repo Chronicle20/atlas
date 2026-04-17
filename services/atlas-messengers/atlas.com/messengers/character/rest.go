@@ -3,8 +3,8 @@ package character
 import (
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/jtumidanski/api2go/jsonapi"
 )
 

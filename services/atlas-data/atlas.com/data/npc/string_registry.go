@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 type NpcString struct {

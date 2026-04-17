@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 	testlog "github.com/sirupsen/logrus/hooks/test"
 )

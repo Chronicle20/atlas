@@ -3,7 +3,7 @@ package compartment
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/equipment"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -15,15 +15,15 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-rest/requests"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

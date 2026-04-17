@@ -1,7 +1,7 @@
 package mock
 
 import (
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 // ProcessorImpl is a mock implementation of the map.Processor interface

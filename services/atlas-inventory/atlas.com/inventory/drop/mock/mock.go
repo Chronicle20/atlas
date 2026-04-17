@@ -4,7 +4,7 @@ import (
 	"atlas-inventory/kafka/message"
 	dropMsg "atlas-inventory/kafka/message/drop"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 )
 
 type ProcessorImpl struct {

@@ -3,7 +3,7 @@ package equipment
 import (
 	"atlas-cashshop/character/equipment/slot"
 
-	slot2 "github.com/Chronicle20/atlas-constants/inventory/slot"
+	slot2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 )
 
 type Model struct {

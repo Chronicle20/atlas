@@ -6,8 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	atlas "github.com/Chronicle20/atlas-redis"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )

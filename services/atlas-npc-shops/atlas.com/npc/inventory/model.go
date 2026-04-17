@@ -3,8 +3,8 @@ package inventory
 import (
 	"atlas-npc/compartment"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 type Model struct {

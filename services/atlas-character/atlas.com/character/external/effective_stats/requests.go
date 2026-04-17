@@ -3,8 +3,8 @@ package effective_stats
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (

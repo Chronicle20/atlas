@@ -2,7 +2,7 @@ package main
 
 import (
 	"atlas-character/character"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	account2 "atlas-character/kafka/consumer/account"
 	character2 "atlas-character/kafka/consumer/character"
 	"atlas-character/kafka/consumer/drop"
@@ -11,16 +11,16 @@ import (
 	"atlas-character/saved_location"
 	"atlas-character/service"
 	"atlas-character/session"
-	lifecycle "github.com/Chronicle20/atlas-service"
+	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
 	"atlas-character/tracing"
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 import _ "net/http/pprof"
 

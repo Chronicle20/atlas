@@ -1,6 +1,6 @@
 package job
 
-import "github.com/Chronicle20/atlas-constants/job"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/job"
 
 func JobFromIndex(jobIndex uint32, subJobIndex uint32) job.Id {
 	jobId := job.BeginnerId

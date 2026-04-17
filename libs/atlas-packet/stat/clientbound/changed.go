@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sort"
 
-	constants "github.com/Chronicle20/atlas-constants/stat"
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
+	constants "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 

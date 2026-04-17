@@ -3,7 +3,7 @@ package mock
 import (
 	"atlas-login/account"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // MockProcessor is a mock implementation of account.Processor for testing

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

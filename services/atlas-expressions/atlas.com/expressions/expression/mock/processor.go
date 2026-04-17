@@ -4,7 +4,7 @@ import (
 	"atlas-expressions/expression"
 	"atlas-expressions/kafka/message"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
 )
 

@@ -5,8 +5,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/request"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

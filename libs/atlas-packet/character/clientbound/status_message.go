@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas-socket/request"
-	"github.com/Chronicle20/atlas-socket/response"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

@@ -56,15 +56,15 @@ COPY services/atlas-notes/atlas.com/notes services/atlas-notes/atlas.com/notes
 # Force local resolution of Chronicle20/atlas-* modules (bypasses unreachable github.com publishes).
 RUN cd services/atlas-notes/atlas.com/notes && \
     go mod edit \
-      -replace=github.com/Chronicle20/atlas-constants=/app/libs/atlas-constants \
-      -replace=github.com/Chronicle20/atlas-database=/app/libs/atlas-database \
-      -replace=github.com/Chronicle20/atlas-kafka=/app/libs/atlas-kafka \
-      -replace=github.com/Chronicle20/atlas-model=/app/libs/atlas-model \
-      -replace=github.com/Chronicle20/atlas-rest=/app/libs/atlas-rest \
-      -replace=github.com/Chronicle20/atlas-retry=/app/libs/atlas-retry \
-      -replace=github.com/Chronicle20/atlas-saga=/app/libs/atlas-saga \
-      -replace=github.com/Chronicle20/atlas-service=/app/libs/atlas-service \
-      -replace=github.com/Chronicle20/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-constants=/app/libs/atlas-constants \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-database=/app/libs/atlas-database \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-kafka=/app/libs/atlas-kafka \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-model=/app/libs/atlas-model \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
     && go mod tidy
 
 # Build

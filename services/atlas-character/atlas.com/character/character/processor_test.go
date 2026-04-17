@@ -6,9 +6,9 @@ import (
 	"context"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	database "github.com/Chronicle20/atlas-database"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"

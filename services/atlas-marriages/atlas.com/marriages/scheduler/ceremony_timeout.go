@@ -6,8 +6,8 @@ import (
 
 	"atlas-marriages/marriage"
 
-	"github.com/Chronicle20/atlas-retry"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-retry"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

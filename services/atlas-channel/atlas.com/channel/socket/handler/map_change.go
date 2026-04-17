@@ -12,9 +12,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	fieldsb "github.com/Chronicle20/atlas-packet/field/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	fieldsb "github.com/Chronicle20/atlas/libs/atlas-packet/field/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

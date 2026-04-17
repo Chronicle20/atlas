@@ -1,7 +1,7 @@
 package reactor
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

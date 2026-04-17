@@ -6,11 +6,11 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-constants/item"
-	pet2 "github.com/Chronicle20/atlas-packet/pet/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	pet2 "github.com/Chronicle20/atlas/libs/atlas-packet/pet/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

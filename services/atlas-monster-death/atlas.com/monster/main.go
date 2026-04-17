@@ -3,10 +3,10 @@ package main
 import (
 	"atlas-monster-death/kafka/consumer/monster"
 	"atlas-monster-death/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-monster-death/tracing"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 )
 
 const serviceName = "atlas-monster-death"

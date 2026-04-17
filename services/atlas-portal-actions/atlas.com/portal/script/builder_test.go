@@ -3,9 +3,9 @@ package script
 import (
 	"testing"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-script-core/condition"
-	"github.com/Chronicle20/atlas-script-core/operation"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/operation"
 )
 
 func TestPortalScriptBuilder_Build(t *testing.T) {

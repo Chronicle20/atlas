@@ -6,8 +6,8 @@ import (
 	"context"
 	"math/rand"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

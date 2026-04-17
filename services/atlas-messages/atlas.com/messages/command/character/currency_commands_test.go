@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/sirupsen/logrus/hooks/test"
 	"golang.org/x/net/context"
 )

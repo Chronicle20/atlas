@@ -3,17 +3,17 @@ package main
 import (
 	"atlas-drops-information/continent"
 	drop2 "atlas-drops-information/continent/drop"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-drops-information/logger"
 	"atlas-drops-information/monster/drop"
 	"atlas-drops-information/reactor"
 	drop3 "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/seed"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-drops-information/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-drops-information"

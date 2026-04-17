@@ -3,7 +3,7 @@ package character
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
 const (

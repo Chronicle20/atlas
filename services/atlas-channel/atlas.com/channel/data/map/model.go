@@ -1,6 +1,6 @@
 package map_
 
-import _map "github.com/Chronicle20/atlas-constants/map"
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 type Model struct {
 	clock       bool

@@ -6,9 +6,9 @@ import (
 	"atlas-saga-orchestrator/kafka/message/consumable"
 	"atlas-saga-orchestrator/kafka/producer"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

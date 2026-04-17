@@ -4,9 +4,9 @@ import (
 	"atlas-channel/asset"
 	"context"
 
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	model "github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-socket/response"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	model "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 

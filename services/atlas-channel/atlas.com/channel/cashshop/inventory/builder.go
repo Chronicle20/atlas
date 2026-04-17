@@ -4,7 +4,7 @@ import (
 	"atlas-channel/cashshop/inventory/compartment"
 	"errors"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ErrInvalidAccountId is returned when the accountId is invalid (zero)

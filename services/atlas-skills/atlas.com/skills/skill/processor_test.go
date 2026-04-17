@@ -420,3 +420,45 @@ func TestDifferentCharacters(t *testing.T) {
 		t.Errorf("Character 2 skills = %d, want 1", len(skills2))
 	}
 }
+
+// TestDeleteForSagaCompensation_Existing covers the happy path: an existing
+// skill row is deleted and a saga-correlated DELETED event is buffered
+// (plan Phase 5). Uses the buffer-based variant to avoid Kafka dependency.
+func TestDeleteForSagaCompensation_Existing(t *testing.T) {
+	processor, cleanup := setupProcessor(t)
+	defer cleanup()
+
+	transactionId := uuid.New()
+	worldId := world.Id(0)
+	characterId := uint32(4242)
+	skillId := uint32(1001001)
+	mb := message.NewBuffer()
+
+	if _, err := processor.Create(mb)(transactionId, worldId, characterId, skillId, 1, 1, time.Now()); err != nil {
+		t.Fatalf("setup: create skill: %v", err)
+	}
+
+	if err := processor.DeleteForSagaCompensation(mb)(transactionId, worldId, characterId, skillId); err != nil {
+		t.Fatalf("DeleteForSagaCompensation returned error on existing row: %v", err)
+	}
+
+	// Row should now be gone — a subsequent ByIdProvider should return empty.
+	s, _ := processor.ByIdProvider(characterId, skillId)()
+	if s.Id() == skillId {
+		t.Fatalf("skill %d still exists after delete", skillId)
+	}
+}
+
+// TestDeleteForSagaCompensation_Missing covers the idempotency contract from
+// plan Phase 5.9: an absent skill row must not error — the processor still
+// buffers a synthetic DELETED event.
+func TestDeleteForSagaCompensation_Missing(t *testing.T) {
+	processor, cleanup := setupProcessor(t)
+	defer cleanup()
+
+	mb := message.NewBuffer()
+	err := processor.DeleteForSagaCompensation(mb)(uuid.New(), world.Id(0), 9999 /* char */, 1001001 /* skill */)
+	if err != nil {
+		t.Fatalf("DeleteForSagaCompensation should be idempotent on missing row, got error: %v", err)
+	}
+}

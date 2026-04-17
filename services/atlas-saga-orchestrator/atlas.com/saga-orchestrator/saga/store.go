@@ -251,6 +251,84 @@ func (s *PostgresStore) UpdateStatusFailed(ctx context.Context, transactionId uu
 	s.mu.Unlock()
 }
 
+// lifecycleToStatus maps the in-process lifecycle state to the DB `status`
+// column string. The existing column values ("active" / "compensating" /
+// "completed" / "failed") are preserved for backward compatibility.
+func lifecycleToStatus(l SagaLifecycleState) string {
+	switch l {
+	case SagaLifecyclePending:
+		return "active"
+	case SagaLifecycleCompensating:
+		return "compensating"
+	case SagaLifecycleCompleted:
+		return "completed"
+	case SagaLifecycleFailed:
+		return "failed"
+	}
+	return ""
+}
+
+// statusToLifecycle reverses lifecycleToStatus.
+func statusToLifecycle(s string) (SagaLifecycleState, bool) {
+	switch s {
+	case "active":
+		return SagaLifecyclePending, true
+	case "compensating":
+		return SagaLifecycleCompensating, true
+	case "completed":
+		return SagaLifecycleCompleted, true
+	case "failed":
+		return SagaLifecycleFailed, true
+	}
+	return "", false
+}
+
+// TryTransition performs an atomic conditional UPDATE on the saga row: the
+// lifecycle moves from `from` to `to` only if the current row status matches.
+// Returns false when the saga is missing, when the transition is disallowed
+// by IsValidTransition, or when another writer has already changed status.
+func (s *PostgresStore) TryTransition(ctx context.Context, transactionId uuid.UUID, from, to SagaLifecycleState) bool {
+	if !IsValidTransition(from, to) {
+		return false
+	}
+	fromStatus := lifecycleToStatus(from)
+	toStatus := lifecycleToStatus(to)
+	if fromStatus == "" || toStatus == "" {
+		return false
+	}
+	result := s.db.WithContext(ctx).Model(&Entity{}).
+		Where("transaction_id = ? AND status = ?", transactionId, fromStatus).
+		Updates(map[string]interface{}{
+			"status":     toStatus,
+			"updated_at": time.Now(),
+		})
+	if result.Error != nil {
+		s.l.WithError(result.Error).WithField("transaction_id", transactionId.String()).Error("TryTransition update failed")
+		return false
+	}
+	return result.RowsAffected > 0
+}
+
+// GetLifecycle returns the current lifecycle state of a saga, or (zero, false)
+// if the saga does not exist (or the DB-side status is not recognized).
+func (s *PostgresStore) GetLifecycle(ctx context.Context, transactionId uuid.UUID) (SagaLifecycleState, bool) {
+	var row struct {
+		Status string
+	}
+	err := s.db.WithContext(ctx).Model(&Entity{}).
+		Select("status").
+		Where("transaction_id = ?", transactionId).
+		First(&row).Error
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", false
+		}
+		s.l.WithError(err).WithField("transaction_id", transactionId.String()).Error("GetLifecycle query failed")
+		return "", false
+	}
+	return statusToLifecycle(row.Status)
+}
+
 func entityToSaga(e Entity) (Saga, error) {
 	var saga Saga
 	err := json.Unmarshal(e.SagaData, &saga)

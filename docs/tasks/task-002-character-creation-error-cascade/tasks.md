@@ -33,12 +33,12 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 2 — Orchestrator terminal-state guard (M)
 
-- [ ] **2.1** Add a terminal-state field to the saga cache entry (`Pending → Compensating → Failed` / `Pending → Completed`). Decide: mutex on the entry vs. atomic status field — match the cache's existing concurrency style. *(effort: M)*
-- [ ] **2.2** Expose an atomic check-and-mark helper (`cache.TryTransition(txId, from, to) (ok bool)`) consumed by `StepCompleted`, the forthcoming timer, and `CompensateFailedStep`. *(effort: S)*
-- [ ] **2.3** Update `StepCompleted` so it takes the guard before acting: `ok := TryTransition(Pending, Compensating)` on failure, or completion transition on success. On `!ok`, log "saga already terminal, late completion ignored" and return `nil`. *(effort: M)*
-- [ ] **2.4** Unit test: concurrent double-transition attempts — exactly one wins; the loser is a no-op. *(effort: S)*
+- [x] **2.1** `SagaLifecycleState` (pending/compensating/failed/completed) lives in new `saga/lifecycle.go`. `InMemoryCache` entries carry `lifecycle` alongside `saga`; `PostgresStore` uses the existing `status` column (mapping in `lifecycleToStatus`/`statusToLifecycle`). Concurrency style matches the caches: InMemory uses the existing `sync.RWMutex`; Postgres uses a conditional UPDATE. *(effort: M)*
+- [x] **2.2** `Cache.TryTransition(ctx, txId, from, to) bool` + `Cache.GetLifecycle(ctx, txId)` added to the interface, both implementations, and both honor `IsValidTransition`. *(effort: S)*
+- [x] **2.3** `stepCompletedWithResultOnce` now takes `TryTransition(Pending → Compensating)` on the first failure; losers log "saga already terminal, late completion ignored" and return nil. `Step()` now takes `TryTransition(Pending → Completed)` in the success-terminal branch before emitting completion. *(effort: M)*
+- [x] **2.4** `saga/lifecycle_test.go` covers `IsValidTransition`, Put→Pending default, Put-preserves-lifecycle, invalid from, missing saga, 128-goroutine concurrent winner, and timer-vs-step race (both `-race` clean). *(effort: S)*
 
-**Acceptance:** Saga cache exposes a state machine; `StepCompleted` respects it; unit test for concurrent transitions passes; existing tests still green.
+**Acceptance:** Saga cache exposes a state machine; `StepCompleted`/`Step` respect it; concurrent-transition unit tests pass under `-race`; existing `saga`, `saga/mock`, and `kafka/consumer/saga` tests remain green. ✅
 
 ## Phase 3 — Guaranteed Failed emission on all error paths (M)
 

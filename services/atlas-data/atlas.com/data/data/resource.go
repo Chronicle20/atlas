@@ -18,6 +18,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			r := router.PathPrefix("/data").Subrouter()
 			r.HandleFunc("/process", rest.RegisterHandler(l)(si)("process", processData(db))).Methods(http.MethodPost)
+			r.HandleFunc("/status", rest.RegisterHandler(l)(si)("get_status", handleGetStatus(db))).Methods(http.MethodGet)
 		}
 	}
 }

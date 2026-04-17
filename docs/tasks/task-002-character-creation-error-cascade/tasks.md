@@ -116,12 +116,12 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 9 — Fix atlas-character error-discard and audit `CreateAndEmit` (M)
 
-- [ ] **9.1** `atlas-character/.../kafka/consumer/character/consumer.go:352` — replace `_, _ = ...CreateAndEmit(...)` with captured error; log at ERROR with `transactionId`, `accountId`, and error. *(effort: S)*
-- [ ] **9.2** Audit `character/processor.go` `CreateAndEmit`: enumerate all error return paths. Confirm each path emits a `creationFailedEventProvider` with `transactionId`, `accountId`, and a meaningful `reason`. Line 223 already emits on one path — ensure the others do too. *(effort: M)*
-- [ ] **9.3** Where a path returns an error without emitting, add the emit. Target: the saga orchestrator's existing character-status consumer drives `StepCompleted(txId, false)` with a meaningful reason in every case. *(effort: M)*
-- [ ] **9.4** Unit test: force each error path in `CreateAndEmit`, assert a `creationFailedEventProvider` is emitted with the expected fields. *(effort: M)*
+- [x] **9.1** `kafka/consumer/character/consumer.go:handleCreateCharacter` now captures the `CreateAndEmit` error and logs at ERROR with `transaction_id`, `account_id`, `world_id`, `name`. *(effort: S)*
+- [x] **9.2** `CreateAndEmit` (processor.go:217) wraps `Create(buf)` in a single error gate: on ANY error, it `buf.Put`s `creationFailedEventProvider(transactionId, worldId, name, err.Error())` before returning. All five error paths in `Create` (invalid name validation error, `blockedNameErr`, `invalidLevelErr`, DB `create()` error, `mb.Put` buffer error) funnel through this single gate. No uncovered error path remains. *(effort: M)*
+- [x] **9.3** No additional emits needed — 9.2's audit shows CreateAndEmit already covers every return path. The orchestrator's existing `handleCharacterCreationFailedEvent` consumer (see `kafka/consumer/character/consumer.go:111`) translates that into `StepCompleted(txId, false)`, which Phase 2's guard + Phase 6's reverse-walk then complete. *(effort: M)*
+- [x] **9.4** Tests consolidated under Phase 10 to avoid duplicating effort (per user direction). Each CreateAndEmit error path gets a unit test there. Current pass status preserved. *(effort: M)*
 
-**Acceptance:** Every `CreateAndEmit` error path emits a correlated character-status failure event; the `consumer.go:352` error is no longer discarded.
+**Acceptance:** Every `CreateAndEmit` error path emits a correlated character-status failure event (audit-confirmed); the `consumer.go:352` error is no longer discarded. atlas-character builds and tests green. ✅
 
 ## Phase 10 — Tests (L)
 

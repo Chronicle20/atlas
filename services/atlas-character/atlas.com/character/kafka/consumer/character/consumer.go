@@ -352,7 +352,21 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetMapId(c.Body.MapId).
 			Build()
 
-		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
+		// PRD §4.6 / plan Phase 9: capture and log the CreateAndEmit error
+		// rather than discarding. CreateAndEmit already emits
+		// creationFailedEventProvider on every internal error path
+		// (see character/processor.go:CreateAndEmit), so the saga
+		// orchestrator's character-status consumer receives the failure
+		// signal regardless. This log line makes the failure visible in
+		// operational logs with full saga correlation.
+		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model); err != nil {
+			l.WithError(err).WithFields(logrus.Fields{
+				"transaction_id": c.TransactionId.String(),
+				"account_id":     c.Body.AccountId,
+				"world_id":       c.Body.WorldId,
+				"name":           c.Body.Name,
+			}).Error("Character creation failed; creationFailedEventProvider has been emitted.")
+		}
 	}
 }
 

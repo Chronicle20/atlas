@@ -33,6 +33,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSkillUpdatedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSkillDeletedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -46,6 +49,15 @@ func handleSkillCreatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2
 
 func handleSkillUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventUpdatedBody]) {
 	if e.Type != skill2.StatusEventTypeUpdated {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+// handleSkillDeletedEvent drives StepCompleted(true) when atlas-skills responds
+// to a saga-correlated REQUEST_DELETE (plan Phase 5 / Phase 6).
+func handleSkillDeletedEvent(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventDeletedBody]) {
+	if e.Type != skill2.StatusEventTypeDeleted {
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)

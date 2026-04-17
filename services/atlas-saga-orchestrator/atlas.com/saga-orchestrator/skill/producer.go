@@ -28,6 +28,22 @@ func RequestCreateProvider(transactionId uuid.UUID, worldId world.Id, characterI
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RequestDeleteProvider emits the saga-correlated REQUEST_DELETE command on
+// COMMAND_TOPIC_SKILL (plan Phase 5 / Phase 6).
+func RequestDeleteProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.Command[skill2.RequestDeleteBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          skill2.CommandTypeRequestDelete,
+		Body: skill2.RequestDeleteBody{
+			SkillId: skillId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestUpdateProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &skill2.Command[skill2.RequestUpdateBody]{

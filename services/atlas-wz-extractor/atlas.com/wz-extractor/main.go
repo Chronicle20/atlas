@@ -57,7 +57,7 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
-		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup())(GetServer())).
+		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup(), extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir})(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

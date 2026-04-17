@@ -32,22 +32,23 @@ func NewProcessor(inputDir, outputXmlDir, outputImgDir string) Processor {
 
 func (p *processorImpl) Extract(l logrus.FieldLogger, ctx context.Context, xmlOnly, imagesOnly bool) error {
 	t := tenant.MustFromContext(ctx)
-	version := fmt.Sprintf("%d.%d", t.MajorVersion(), t.MinorVersion())
-	xmlOutPath := filepath.Join(p.outputXmlDir, t.Id().String(), t.Region(), version)
-	imgOutPath := filepath.Join(p.outputImgDir, t.Id().String(), t.Region(), version)
-	return p.runExtraction(l, xmlOutPath, imgOutPath, xmlOnly, imagesOnly)
+	tenantPath := TenantPath(t)
+	inputPath := filepath.Join(p.inputDir, tenantPath)
+	xmlOutPath := filepath.Join(p.outputXmlDir, tenantPath)
+	imgOutPath := filepath.Join(p.outputImgDir, tenantPath)
+	return p.runExtraction(l, inputPath, xmlOutPath, imgOutPath, xmlOnly, imagesOnly)
 }
 
-func (p *processorImpl) runExtraction(l logrus.FieldLogger, xmlOutPath, imgOutPath string, xmlOnly, imagesOnly bool) error {
-	wzFiles, err := filepath.Glob(filepath.Join(p.inputDir, "*.wz"))
+func (p *processorImpl) runExtraction(l logrus.FieldLogger, inputPath, xmlOutPath, imgOutPath string, xmlOnly, imagesOnly bool) error {
+	wzFiles, err := filepath.Glob(filepath.Join(inputPath, "*.wz"))
 	if err != nil {
 		return fmt.Errorf("unable to list WZ files: %w", err)
 	}
 	if len(wzFiles) == 0 {
-		return fmt.Errorf("no WZ files found in [%s]", p.inputDir)
+		return fmt.Errorf("no WZ files found in [%s]", inputPath)
 	}
 
-	l.Infof("Found [%d] WZ files in [%s].", len(wzFiles), p.inputDir)
+	l.Infof("Found [%d] WZ files in [%s].", len(wzFiles), inputPath)
 
 	for _, wzPath := range wzFiles {
 		wzName := filepath.Base(wzPath)

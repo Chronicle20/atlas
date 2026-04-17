@@ -30,6 +30,7 @@ type testDocumentEntity struct {
 	Type       string          `gorm:"not null"`
 	DocumentId uint32          `gorm:"not null"`
 	Content    json.RawMessage `gorm:"type:text;not null"`
+	UpdatedAt  time.Time       `gorm:"autoUpdateTime"`
 }
 
 func (e testDocumentEntity) TableName() string {

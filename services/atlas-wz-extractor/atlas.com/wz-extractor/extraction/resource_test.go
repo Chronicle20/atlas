@@ -54,9 +54,13 @@ func (m *mockProcessor) waitForExtract(t *testing.T) {
 }
 
 func setupRouter(p Processor, wg *sync.WaitGroup) *mux.Router {
+	return setupRouterWithDirs(p, wg, Dirs{})
+}
+
+func setupRouterWithDirs(p Processor, wg *sync.WaitGroup, dirs Dirs) *mux.Router {
 	router := mux.NewRouter()
 	l, _ := test.NewNullLogger()
-	initFn := InitResource(p, wg)
+	initFn := InitResource(p, wg, dirs)
 	routeInit := initFn(serverInfo{})
 	routeInit(router, l)
 	return router

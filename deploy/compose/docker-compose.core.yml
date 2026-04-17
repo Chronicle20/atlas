@@ -1,0 +1,578 @@
+x-atlas-defaults: &atlas-defaults
+  env_file: .env
+  networks: [atlas]
+  restart: unless-stopped
+
+services:
+  atlas-account:
+    <<: *atlas-defaults
+    container_name: atlas-account
+    build:
+      context: ../..
+      dockerfile: services/atlas-account/Dockerfile
+    image: atlas-account:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-accounts
+
+  atlas-asset-expiration:
+    <<: *atlas-defaults
+    container_name: atlas-asset-expiration
+    build:
+      context: ../..
+      dockerfile: services/atlas-asset-expiration/Dockerfile
+    image: atlas-asset-expiration:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      EXPIRATION_CHECK_INTERVAL_SECONDS: "60"
+
+  atlas-assets:
+    <<: *atlas-defaults
+    container_name: atlas-assets
+    # Service-local build context: Dockerfile COPYs nginx.conf relative to its directory.
+    build:
+      context: ../../services/atlas-assets
+      dockerfile: Dockerfile
+    image: atlas-assets:${ATLAS_IMAGE_TAG:-local}
+    volumes:
+      - ../../tmp/assets:/usr/assets
+
+  atlas-ban:
+    <<: *atlas-defaults
+    container_name: atlas-ban
+    build:
+      context: ../..
+      dockerfile: services/atlas-ban/Dockerfile
+    image: atlas-ban:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-ban
+
+  atlas-buddies:
+    <<: *atlas-defaults
+    container_name: atlas-buddies
+    build:
+      context: ../..
+      dockerfile: services/atlas-buddies/Dockerfile
+    image: atlas-buddies:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-buddies
+
+  atlas-buffs:
+    <<: *atlas-defaults
+    container_name: atlas-buffs
+    build:
+      context: ../..
+      dockerfile: services/atlas-buffs/Dockerfile
+    image: atlas-buffs:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-cashshop:
+    <<: *atlas-defaults
+    container_name: atlas-cashshop
+    build:
+      context: ../..
+      dockerfile: services/atlas-cashshop/Dockerfile
+    image: atlas-cashshop:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-cashshop
+
+  atlas-chairs:
+    <<: *atlas-defaults
+    container_name: atlas-chairs
+    build:
+      context: ../..
+      dockerfile: services/atlas-chairs/Dockerfile
+    image: atlas-chairs:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-chalkboards:
+    <<: *atlas-defaults
+    container_name: atlas-chalkboards
+    build:
+      context: ../..
+      dockerfile: services/atlas-chalkboards/Dockerfile
+    image: atlas-chalkboards:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-character:
+    <<: *atlas-defaults
+    container_name: atlas-character
+    build:
+      context: ../..
+      dockerfile: services/atlas-character/Dockerfile
+    image: atlas-character:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-characters
+      SERVICE_MODE: MIXED
+
+  atlas-character-factory:
+    <<: *atlas-defaults
+    container_name: atlas-character-factory
+    build:
+      context: ../..
+      dockerfile: services/atlas-character-factory/Dockerfile
+    image: atlas-character-factory:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      SERVICE_ID: 00000000-0000-0000-0000-000000000000
+      SERVICE_TYPE: character-factory
+
+  atlas-configurations:
+    <<: *atlas-defaults
+    container_name: atlas-configurations
+    build:
+      context: ../..
+      dockerfile: services/atlas-configurations/Dockerfile
+    image: atlas-configurations:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-configurations
+
+  atlas-consumables:
+    <<: *atlas-defaults
+    container_name: atlas-consumables
+    build:
+      context: ../..
+      dockerfile: services/atlas-consumables/Dockerfile
+    image: atlas-consumables:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-data:
+    <<: *atlas-defaults
+    container_name: atlas-data
+    build:
+      context: ../..
+      dockerfile: services/atlas-data/Dockerfile
+    image: atlas-data:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-data
+      ZIP_DIR: /usr/data
+    volumes:
+      - ../../tmp/data:/usr/data
+
+  atlas-drop-information:
+    <<: *atlas-defaults
+    container_name: atlas-drop-information
+    build:
+      context: ../..
+      dockerfile: services/atlas-drop-information/Dockerfile
+    image: atlas-drop-information:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-drops
+      SERVICE_ID: 00000000-0000-0000-0000-000000000000
+      SERVICE_TYPE: drops-information-service
+      MONSTER_DROPS_PATH: /drops/monsters
+      CONTINENT_DROPS_PATH: /drops/continents
+      REACTOR_DROPS_PATH: /drops/reactors
+
+  atlas-drops:
+    <<: *atlas-defaults
+    container_name: atlas-drops
+    build:
+      context: ../..
+      dockerfile: services/atlas-drops/Dockerfile
+    image: atlas-drops:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      SERVICE_ID: 00000000-0000-0000-0000-000000000000
+      SERVICE_TYPE: drops-service
+
+  atlas-effective-stats:
+    <<: *atlas-defaults
+    container_name: atlas-effective-stats
+    build:
+      context: ../..
+      dockerfile: services/atlas-effective-stats/Dockerfile
+    image: atlas-effective-stats:${ATLAS_IMAGE_TAG:-local}
+
+  atlas-expressions:
+    <<: *atlas-defaults
+    container_name: atlas-expressions
+    build:
+      context: ../..
+      dockerfile: services/atlas-expressions/Dockerfile
+    image: atlas-expressions:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-fame:
+    <<: *atlas-defaults
+    container_name: atlas-fame
+    build:
+      context: ../..
+      dockerfile: services/atlas-fame/Dockerfile
+    image: atlas-fame:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-fame
+
+  atlas-gachapons:
+    <<: *atlas-defaults
+    container_name: atlas-gachapons
+    build:
+      context: ../..
+      dockerfile: services/atlas-gachapons/Dockerfile
+    image: atlas-gachapons:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-gachapons
+
+  atlas-guilds:
+    <<: *atlas-defaults
+    container_name: atlas-guilds
+    build:
+      context: ../..
+      dockerfile: services/atlas-guilds/Dockerfile
+    image: atlas-guilds:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-guilds
+
+  atlas-inventory:
+    <<: *atlas-defaults
+    container_name: atlas-inventory
+    build:
+      context: ../..
+      dockerfile: services/atlas-inventory/Dockerfile
+    image: atlas-inventory:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-inventory
+
+  atlas-invites:
+    <<: *atlas-defaults
+    container_name: atlas-invites
+    build:
+      context: ../..
+      dockerfile: services/atlas-invites/Dockerfile
+    image: atlas-invites:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-keys:
+    <<: *atlas-defaults
+    container_name: atlas-keys
+    build:
+      context: ../..
+      dockerfile: services/atlas-keys/Dockerfile
+    image: atlas-keys:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-keys
+
+  atlas-map-actions:
+    <<: *atlas-defaults
+    container_name: atlas-map-actions
+    build:
+      context: ../..
+      dockerfile: services/atlas-map-actions/Dockerfile
+    image: atlas-map-actions:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-map-actions
+      MAP_SCRIPTS_DIR: /scripts/map
+
+  atlas-maps:
+    <<: *atlas-defaults
+    container_name: atlas-maps
+    build:
+      context: ../..
+      dockerfile: services/atlas-maps/Dockerfile
+    image: atlas-maps:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-maps
+
+  atlas-merchant:
+    <<: *atlas-defaults
+    container_name: atlas-merchant
+    build:
+      context: ../..
+      dockerfile: services/atlas-merchant/Dockerfile
+    image: atlas-merchant:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-merchant
+
+  atlas-messages:
+    <<: *atlas-defaults
+    container_name: atlas-messages
+    build:
+      context: ../..
+      dockerfile: services/atlas-messages/Dockerfile
+    image: atlas-messages:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-messengers:
+    <<: *atlas-defaults
+    container_name: atlas-messengers
+    build:
+      context: ../..
+      dockerfile: services/atlas-messengers/Dockerfile
+    image: atlas-messengers:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-monster-death:
+    <<: *atlas-defaults
+    container_name: atlas-monster-death
+    build:
+      context: ../..
+      dockerfile: services/atlas-monster-death/Dockerfile
+    image: atlas-monster-death:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-monsters:
+    <<: *atlas-defaults
+    container_name: atlas-monsters
+    build:
+      context: ../..
+      dockerfile: services/atlas-monsters/Dockerfile
+    image: atlas-monsters:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: info
+
+  atlas-notes:
+    <<: *atlas-defaults
+    container_name: atlas-notes
+    build:
+      context: ../..
+      dockerfile: services/atlas-notes/Dockerfile
+    image: atlas-notes:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-notes
+
+  atlas-npc-conversations:
+    <<: *atlas-defaults
+    container_name: atlas-npc-conversations
+    build:
+      context: ../..
+      dockerfile: services/atlas-npc-conversations/Dockerfile
+    image: atlas-npc-conversations:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-npc-conversations
+      NPC_CONVERSATIONS_PATH: /conversations/npc
+      QUEST_CONVERSATIONS_PATH: /conversations/quests
+
+  atlas-npc-shops:
+    <<: *atlas-defaults
+    container_name: atlas-npc-shops
+    build:
+      context: ../..
+      dockerfile: services/atlas-npc-shops/Dockerfile
+    image: atlas-npc-shops:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-npc-shops
+
+  atlas-parties:
+    <<: *atlas-defaults
+    container_name: atlas-parties
+    build:
+      context: ../..
+      dockerfile: services/atlas-parties/Dockerfile
+    image: atlas-parties:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-party-quests:
+    <<: *atlas-defaults
+    container_name: atlas-party-quests
+    build:
+      context: ../..
+      dockerfile: services/atlas-party-quests/Dockerfile
+    image: atlas-party-quests:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-party-quests
+
+  atlas-pets:
+    <<: *atlas-defaults
+    container_name: atlas-pets
+    build:
+      context: ../..
+      dockerfile: services/atlas-pets/Dockerfile
+    image: atlas-pets:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-pets
+
+  atlas-portal-actions:
+    <<: *atlas-defaults
+    container_name: atlas-portal-actions
+    build:
+      context: ../..
+      dockerfile: services/atlas-portal-actions/Dockerfile
+    image: atlas-portal-actions:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-portal-actions
+      PORTAL_SCRIPTS_DIR: /scripts/portals
+      QUERY_AGGREGATOR_URL: http://atlas-query-aggregator:8080
+
+  atlas-portals:
+    <<: *atlas-defaults
+    container_name: atlas-portals
+    build:
+      context: ../..
+      dockerfile: services/atlas-portals/Dockerfile
+    image: atlas-portals:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-query-aggregator:
+    <<: *atlas-defaults
+    container_name: atlas-query-aggregator
+    build:
+      context: ../..
+      dockerfile: services/atlas-query-aggregator/Dockerfile
+    image: atlas-query-aggregator:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-quest:
+    <<: *atlas-defaults
+    container_name: atlas-quest
+    build:
+      context: ../..
+      dockerfile: services/atlas-quest/Dockerfile
+    image: atlas-quest:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-quest
+
+  atlas-rates:
+    <<: *atlas-defaults
+    container_name: atlas-rates
+    build:
+      context: ../..
+      dockerfile: services/atlas-rates/Dockerfile
+    image: atlas-rates:${ATLAS_IMAGE_TAG:-local}
+
+  atlas-reactor-actions:
+    <<: *atlas-defaults
+    container_name: atlas-reactor-actions
+    build:
+      context: ../..
+      dockerfile: services/atlas-reactor-actions/Dockerfile
+    image: atlas-reactor-actions:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-reactor-actions
+      REACTOR_ACTIONS_DIR: /scripts/reactors
+
+  atlas-reactors:
+    <<: *atlas-defaults
+    container_name: atlas-reactors
+    build:
+      context: ../..
+      dockerfile: services/atlas-reactors/Dockerfile
+    image: atlas-reactors:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+
+  atlas-saga-orchestrator:
+    <<: *atlas-defaults
+    container_name: atlas-saga-orchestrator
+    build:
+      context: ../..
+      dockerfile: services/atlas-saga-orchestrator/Dockerfile
+    image: atlas-saga-orchestrator:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-saga-orchestrator
+      SAGA_DEFAULT_TIMEOUT: 5m
+      SAGA_REAPER_INTERVAL: 30s
+      SAGA_RECOVERY_ENABLED: "true"
+
+  atlas-skills:
+    <<: *atlas-defaults
+    container_name: atlas-skills
+    build:
+      context: ../..
+      dockerfile: services/atlas-skills/Dockerfile
+    image: atlas-skills:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      DB_NAME: atlas-skills
+
+  atlas-storage:
+    <<: *atlas-defaults
+    container_name: atlas-storage
+    build:
+      context: ../..
+      dockerfile: services/atlas-storage/Dockerfile
+    image: atlas-storage:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      DB_NAME: atlas-storage
+      SERVICE_MODE: MIXED
+      COMMAND_TOPIC_STORAGE: COMMAND_TOPIC_STORAGE
+      EVENT_TOPIC_STORAGE_STATUS: EVENT_TOPIC_STORAGE_STATUS
+
+  atlas-tenants:
+    <<: *atlas-defaults
+    container_name: atlas-tenants
+    build:
+      context: ../..
+      dockerfile: services/atlas-tenants/Dockerfile
+    image: atlas-tenants:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: info
+      DB_NAME: atlas-tenants
+
+  atlas-transports:
+    <<: *atlas-defaults
+    container_name: atlas-transports
+    build:
+      context: ../..
+      dockerfile: services/atlas-transports/Dockerfile
+    image: atlas-transports:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: info
+
+  atlas-ui:
+    <<: *atlas-defaults
+    container_name: atlas-ui
+    build:
+      context: ../..
+      dockerfile: services/atlas-ui/Dockerfile
+    image: atlas-ui:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      NEXT_PUBLIC_ROOT_API_URL: http://atlas-ingress:8080
+    ports:
+      - "3000:3000"
+
+  atlas-world:
+    <<: *atlas-defaults
+    container_name: atlas-world
+    build:
+      context: ../..
+      dockerfile: services/atlas-world/Dockerfile
+    image: atlas-world:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      SERVICE_ID: 00000000-0000-0000-0000-000000000000
+      SERVICE_TYPE: world-service
+
+  atlas-wz-extractor:
+    <<: *atlas-defaults
+    container_name: atlas-wz-extractor
+    build:
+      context: ../..
+      dockerfile: services/atlas-wz-extractor/Dockerfile
+    image: atlas-wz-extractor:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      INPUT_WZ_DIR: /usr/wz-input
+      OUTPUT_IMG_DIR: /usr/assets
+      OUTPUT_XML_DIR: /usr/data
+    volumes:
+      - ../../tmp/wz-input:/usr/wz-input
+      - ../../tmp/data:/usr/data
+      - ../../tmp/assets:/usr/assets

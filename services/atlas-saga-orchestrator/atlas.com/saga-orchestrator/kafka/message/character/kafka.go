@@ -29,7 +29,13 @@ const (
 	CommandChangeMP            = "CHANGE_MP"
 	CommandSetHP               = "SET_HP"
 	CommandResetStats          = "RESET_STATS"
+	CommandDeleteCharacter     = "DELETE_CHARACTER"
 )
+
+// DeleteCharacterCommandBody is the saga-correlated delete-character command
+// used by the character-creation reverse-walk compensator (plan Phase 5 / 6).
+// The target's transactionId/characterId/worldId live on the Command[E] envelope.
+type DeleteCharacterCommandBody struct{}
 
 const (
 	ExperienceDistributionTypeWhite        = "WHITE"

@@ -54,6 +54,11 @@ type Processor interface {
 	RequestCreate(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error
 
 	RequestUpdate(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error
+
+	// DeleteForSagaCompensationAndEmit deletes a skill for a saga compensation step.
+	// Idempotent on missing rows — an absent skill still emits StatusEventTypeDeleted
+	// so the orchestrator's correlator treats it as success (plan Phase 5).
+	DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
 }
 
 // ProcessorImpl implements the Processor interface
@@ -254,4 +259,24 @@ func (p *ProcessorImpl) RequestCreate(transactionId uuid.UUID, worldId world.Id,
 // RequestUpdate sends a command to update a skill
 func (p *ProcessorImpl) RequestUpdate(transactionId uuid.UUID, worldId world.Id, characterId uint32, id uint32, level byte, masterLevel byte, expiration time.Time) error {
 	return producer.ProviderImpl(p.l)(p.ctx)(skill2.EnvCommandTopic)(updateCommandProvider(transactionId, worldId, characterId, id, level, masterLevel, expiration))
+}
+
+// DeleteForSagaCompensationAndEmit deletes a skill row idempotently and emits a
+// saga-correlated DELETED status event. An absent skill is treated as success.
+// See PRD §4.3.1 / §4.8 and plan Phase 5.
+func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		existed, err := deleteSkill(p.db.WithContext(p.ctx), characterId, skillId)
+		if err != nil {
+			return err
+		}
+		if !existed {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": transactionId.String(),
+				"character_id":   characterId,
+				"skill_id":       skillId,
+			}).Info("Skill already absent; emitting synthetic DELETED event for saga compensation.")
+		}
+		return buf.Put(skill2.EnvStatusEventTopic, statusEventDeletedProvider(transactionId, worldId, characterId, skillId))
+	})
 }

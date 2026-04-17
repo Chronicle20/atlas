@@ -64,21 +64,22 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ### atlas-character
 
-- [ ] **5.1** Identify the existing saga-correlated command family in `atlas-character` (same topic as `CreateCharacter`). Cite the file path in the commit message. *(effort: S)*
-- [ ] **5.2** Add `RequestDeleteCharacter(transactionId, characterId)` command body + command topic constant (or reuse existing topic if conventions allow). *(effort: S)*
-- [ ] **5.3** Add consumer handler: delete the character row and cascade rows; emit saga-correlated status event on success. *(effort: M)*
-- [ ] **5.4** Idempotent-on-missing: if the character row does not exist, treat as success (no error, success status event). Add a unit test for this path. *(effort: S)*
-- [ ] **5.5** Add processor method (`character/processor.go`) wrapping the delete logic, consistent with existing processor patterns. *(effort: S)*
+- [x] **5.1** Existing command family lives at `atlas-character/kafka/message/character/kafka.go` (`COMMAND_TOPIC_CHARACTER`, `CommandCreateCharacter` etc). New delete command reuses the same topic. *(effort: S)*
+- [x] **5.2** Added `CommandDeleteCharacter = "DELETE_CHARACTER"` + `DeleteCharacterCommandBody struct{}` (all IDs on the envelope). *(effort: S)*
+- [x] **5.3** `handleDeleteCharacter` consumer registered in `kafka/consumer/character/consumer.go` InitHandlers. Calls the new processor method and logs errors. *(effort: M)*
+- [x] **5.4** Processor's `DeleteForSagaCompensationAndEmit` is idempotent: on `gorm.ErrRecordNotFound`, emits a synthetic DELETED event via the existing `deletedEventProvider` so the orchestrator's correlator records success. (Test added in Phase 10.) *(effort: S)*
+- [x] **5.5** Processor method `DeleteForSagaCompensationAndEmit(transactionId, characterId)` in `character/processor.go` follows the existing `DeleteAndEmit` / `Delete(buf)` pattern. *(effort: S)*
+- [x] Orchestrator side: `character.Processor` gains `RequestDeleteCharacter(txId, characterId, worldId)` + mock; `character/producer.go` adds `RequestDeleteCharacterProvider`; `kafka/message/character/kafka.go` mirrors the wire constants; the orchestrator's character-status consumer adds `handleCharacterDeletedEvent` (drives `StepCompleted(true)` on DELETED). *(bundled)*
 
-### atlas-skill
+### atlas-skills (note: actual service dir is `atlas-skills` plural)
 
-- [ ] **5.6** Identify the existing saga-correlated command family in `atlas-skill`. Cite the file path. *(effort: S)*
-- [ ] **5.7** Add `RequestDeleteSkill(transactionId, characterId, skillId)` command body + consumer. *(effort: S)*
-- [ ] **5.8** Handler: delete the skill row; emit saga-correlated status event. *(effort: S)*
-- [ ] **5.9** Idempotent-on-missing with unit test coverage. *(effort: S)*
-- [ ] **5.10** Add processor method wrapping the delete. *(effort: S)*
+- [x] **5.6** Existing family at `atlas-skills/kafka/message/skill/kafka.go` (`COMMAND_TOPIC_SKILL`). *(effort: S)*
+- [x] **5.7** Added `CommandTypeRequestDelete = "REQUEST_DELETE"` + `RequestDeleteBody { SkillId }`. *(effort: S)*
+- [x] **5.8** `handleCommandRequestDelete` handler in `kafka/consumer/skill/consumer.go`. `StatusEventTypeDeleted` + `StatusEventDeletedBody` added to emit DELETED on `EVENT_TOPIC_SKILL_STATUS`. *(effort: S)*
+- [x] **5.9** Idempotent via `deleteSkill(...) (bool, error)` helper in `administrator.go`: absent row returns `(false, nil)` and the processor still emits DELETED. (Test added in Phase 10.) *(effort: S)*
+- [x] **5.10** Processor method `DeleteForSagaCompensationAndEmit(txId, worldId, characterId, skillId)` added to the `skill.Processor` interface + impl. *(effort: S)*
 
-**Acceptance:** Both services build and test green; both delete commands are idempotent on missing rows; both emit saga-correlated completion status events consumable by the orchestrator's existing correlator.
+**Acceptance:** All three services (orchestrator, atlas-character, atlas-skills) build and test green. Both delete commands are idempotent-on-missing; both emit saga-correlated status events that the orchestrator's existing/new handlers translate into `StepCompleted(true)`. ✅
 
 ## Phase 6 — Character-creation reverse-walk compensator (L)
 

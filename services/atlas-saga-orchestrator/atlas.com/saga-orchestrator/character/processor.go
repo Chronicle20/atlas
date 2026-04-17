@@ -42,6 +42,7 @@ type Processor interface {
 	ChangeSkinAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
 	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
 	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
+	RequestDeleteCharacter(transactionId uuid.UUID, characterId uint32, worldId world.Id) error
 	SetHPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	ResetStatsAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
@@ -205,6 +206,14 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
 		return mb.Put(character2.EnvCommandTopic, RequestCreateCharacterProvider(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId))
+	})
+}
+
+// RequestDeleteCharacter is the saga-compensation dispatch for CreateCharacter.
+// Used by the character-creation reverse-walk compensator (plan Phase 6).
+func (p *ProcessorImpl) RequestDeleteCharacter(transactionId uuid.UUID, characterId uint32, worldId world.Id) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return mb.Put(character2.EnvCommandTopic, RequestDeleteCharacterProvider(transactionId, characterId, worldId))
 	})
 }
 

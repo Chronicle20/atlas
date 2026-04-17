@@ -197,6 +197,20 @@ func ResetStatsProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+// RequestDeleteCharacterProvider emits the saga-correlated DELETE_CHARACTER
+// command consumed by atlas-character (plan Phase 5 / Phase 6).
+func RequestDeleteCharacterProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.DeleteCharacterCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandDeleteCharacter,
+		Body:          character2.DeleteCharacterCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func RequestCreateCharacterProvider(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(accountId))
 	value := &character2.Command[character2.CreateCharacterCommandBody]{

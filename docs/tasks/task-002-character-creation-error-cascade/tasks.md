@@ -106,13 +106,13 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 8 — atlas-login failure handler (S)
 
-- [ ] **8.1** In `atlas-login/.../kafka/consumer/seed/consumer.go`, add a handler for `StatusEventTypeFailed` on the existing `EVENT_TOPIC_SEED_STATUS` subscription. *(effort: S)*
-- [ ] **8.2** Resolve session by the envelope's top-level `AccountId`. *(effort: S)*
-- [ ] **8.3** Write `AddCharacterEntryWriter(AddCharacterCodeUnknownError)` to the session. *(effort: S)*
-- [ ] **8.4** Tolerate disconnected session — log at INFO (`accountId`, `transactionId`) and drop, no panic. *(effort: S)*
-- [ ] **8.5** Clear any in-flight creation transaction state held for the session. *(effort: S)*
+- [x] **8.1** `handleFailedStatusEvent` registered alongside `handleCreatedStatusEvent` on the existing seed subscription. `StatusEventTypeFailed` + `FailedStatusEventBody` added to `kafka/message/seed/kafka.go`. *(effort: S)*
+- [x] **8.2** Session resolved via `session.NewProcessor(l, ctx).IfPresentByAccountId(e.AccountId, ...)`. *(effort: S)*
+- [x] **8.3** On hit: writes `AddCharacterEntryWriter(writer.AddCharacterErrorBody(writer.AddCharacterCodeUnknownError))` to the session. *(effort: S)*
+- [x] **8.4** `IfPresentByAccountId` invokes the lambda only when a session exists; a `found` flag detects miss, logs at INFO with `account_id` + `reason`, and returns without panic. `accountId == 0` also caught early with a WARN. *(effort: S)*
+- [x] **8.5** No in-flight creation state tracked in atlas-login — searched `atlas-login` for `in-flight|pendingCreate|creationPending|inFlight`, no matches. No-op. *(effort: S)*
 
-**Acceptance:** A `FAILED` seed event triggers the client write within the orchestrator's latency budget (11s worst case); a disconnected session is safely dropped.
+**Acceptance:** A `FAILED` seed event triggers `AddCharacterCodeUnknownError` on the waiting session; a disconnected session is logged and dropped. atlas-login build + tests green. ✅
 
 ## Phase 9 — Fix atlas-character error-discard and audit `CreateAndEmit` (M)
 

@@ -1,0 +1,10 @@
+# Node / Next.js build artifacts that would otherwise be pulled into
+# image builds from the repo root context and collide with in-container builds.
+**/node_modules
+**/.next
+**/.next/**
+
+# Host-only tooling output — none of this is needed inside images.
+**/*.log
+.git
+.github

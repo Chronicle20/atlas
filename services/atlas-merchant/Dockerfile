@@ -42,6 +42,19 @@ COPY libs/atlas-tenant libs/atlas-tenant
 
 COPY services/atlas-merchant/atlas.com/merchant services/atlas-merchant/atlas.com/merchant
 
+# Force local resolution of Chronicle20/atlas-* modules (bypasses unreachable github.com publishes).
+RUN cd services/atlas-merchant/atlas.com/merchant && \
+    go mod edit \
+      -replace=github.com/Chronicle20/atlas-constants=/app/libs/atlas-constants \
+      -replace=github.com/Chronicle20/atlas-database=/app/libs/atlas-database \
+      -replace=github.com/Chronicle20/atlas-kafka=/app/libs/atlas-kafka \
+      -replace=github.com/Chronicle20/atlas-model=/app/libs/atlas-model \
+      -replace=github.com/Chronicle20/atlas-redis=/app/libs/atlas-redis \
+      -replace=github.com/Chronicle20/atlas-rest=/app/libs/atlas-rest \
+      -replace=github.com/Chronicle20/atlas-retry=/app/libs/atlas-retry \
+      -replace=github.com/Chronicle20/atlas-tenant=/app/libs/atlas-tenant \
+    && go mod tidy
+
 RUN go build -C services/atlas-merchant/atlas.com/merchant -o /server
 
 FROM alpine:3.23

@@ -1,0 +1,41 @@
+x-atlas-defaults: &atlas-defaults
+  env_file: .env
+  networks: [atlas]
+  restart: unless-stopped
+
+services:
+  atlas-login:
+    <<: *atlas-defaults
+    container_name: atlas-login
+    build:
+      context: ../..
+      dockerfile: services/atlas-login/Dockerfile
+    image: atlas-login:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530856
+      SERVICE_TYPE: login-service
+    ports:
+      - "1200:1200"
+      - "8300:8300"
+      - "8700:8700"
+      - "9200:9200"
+      - "9500:9500"
+      - "18500:18500"
+
+  atlas-channel:
+    <<: *atlas-defaults
+    container_name: atlas-channel
+    build:
+      context: ../..
+      dockerfile: services/atlas-channel/Dockerfile
+    image: atlas-channel:${ATLAS_IMAGE_TAG:-local}
+    environment:
+      LOG_LEVEL: debug
+      SERVICE_ID: e7fb1d7e-47b8-46bd-97dc-867d93530000
+      SERVICE_TYPE: channel-service
+    ports:
+      - "1201:1201"
+      - "8301:8301"
+      - "8701:8701"
+      - "18501:18501"

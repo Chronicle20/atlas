@@ -2218,6 +2218,7 @@ func (h *HandlerImpl) handleStartInstanceTransport(s Saga, st Step[any]) error {
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
 				s.TransactionId(),
+				0,
 				payload.CharacterId,
 				string(s.SagaType()),
 				errorCode,
@@ -2481,6 +2482,7 @@ func (h *HandlerImpl) handleRegisterPartyQuest(s Saga, st Step[any]) error {
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
 				s.TransactionId(),
+				0,
 				payload.CharacterId,
 				string(s.SagaType()),
 				errorCode,
@@ -2530,6 +2532,7 @@ func (h *HandlerImpl) handleWarpPartyQuestMembersToMap(s Saga, st Step[any]) err
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
 				s.TransactionId(),
+				0,
 				payload.CharacterId,
 				string(s.SagaType()),
 				errorCode,
@@ -2744,6 +2747,7 @@ func (h *HandlerImpl) handleEnterPartyQuestBonus(s Saga, st Step[any]) error {
 		emitErr := producer.ProviderImpl(h.l)(h.ctx)(saga2.EnvStatusEventTopic)(
 			FailedStatusEventProvider(
 				s.TransactionId(),
+				0,
 				payload.CharacterId,
 				string(s.SagaType()),
 				errorCode,

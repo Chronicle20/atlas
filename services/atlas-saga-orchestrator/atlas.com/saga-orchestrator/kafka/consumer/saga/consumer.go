@@ -14,6 +14,22 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// extractInboundCharacterCreationIds mirrors saga2.ExtractCharacterCreationIds
+// but reads directly from the inbound command (pre-cache-insert). Needed for
+// the Put()-error path where the saga never entered the cache.
+func extractInboundCharacterCreationIds(c saga2.Saga) (accountId, characterId uint32) {
+	for _, step := range c.Steps() {
+		if step.Action() != saga2.CreateCharacter {
+			continue
+		}
+		if p, ok := step.Payload().(saga2.CharacterCreatePayload); ok {
+			accountId = p.AccountId
+		}
+		return
+	}
+	return
+}
+
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
@@ -47,6 +63,23 @@ func handleSagaCommand(l logrus.FieldLogger, ctx context.Context, c saga2.Saga) 
 	err := processor.Put(c)
 	if err != nil {
 		logger.WithError(err).Error("Failed to insert saga into cache")
+
+		// Emit a Failed event so downstream waiters (the factory bridge, the
+		// login seed consumer) do not hang forever on a saga that never
+		// actually entered step execution. See PRD §4.2 / plan Phase 3.1.
+		//
+		// The terminal-state guard in the cache does not apply here because
+		// processor.Put() failed to install the entry. A duplicate emission
+		// is not possible at this site: if Put() succeeded, we'd take the
+		// success branch; if it failed, no timer or StepCompleted exists to
+		// race with.
+		accountId, characterId := extractInboundCharacterCreationIds(c)
+		emitErr := saga2.EmitSagaFailedByIds(logger, ctx,
+			c.TransactionId(), string(c.SagaType()), accountId, characterId,
+			saga.ErrorCodeUnknown, err.Error(), "")
+		if emitErr != nil {
+			logger.WithError(emitErr).Error("Failed to emit saga failed event on Put() error")
+		}
 		return
 	}
 

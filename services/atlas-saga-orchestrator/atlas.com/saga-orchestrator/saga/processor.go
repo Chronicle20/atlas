@@ -843,6 +843,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	// Get the handler for this action type
 	handler, exists := p.handle.GetHandler(st.Action())
 	if !exists {
+		unknownErr := fmt.Errorf("unknown action type: %s", st.Action())
 		p.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId().String(),
 			"saga_type":      s.SagaType(),
@@ -850,11 +851,54 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"action":         st.Action(),
 			"tenant_id":      p.t.Id().String(),
 		}).Error("Unknown action type encountered. Saga cannot be processed.")
-		return fmt.Errorf("unknown action type: %s", st.Action())
+		p.emitFailedFromStepSyncError(s, st, unknownErr)
+		return unknownErr
 	}
 
-	// Execute the handler
-	return handler(s, st)
+	// Execute the handler. A synchronous error here would otherwise travel back
+	// to the Kafka consumer and be dropped (PRD §4.2 / plan Phase 3.2). Take the
+	// terminal-state guard and emit StatusEventTypeFailed before propagating the
+	// error up (propagation preserved so the Kafka consumer can log with context).
+	handlerErr := handler(s, st)
+	if handlerErr != nil {
+		p.l.WithError(handlerErr).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        st.StepId(),
+			"action":         st.Action(),
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Saga step handler returned a synchronous error.")
+		p.emitFailedFromStepSyncError(s, st, handlerErr)
+	}
+	return handlerErr
+}
+
+// emitFailedFromStepSyncError takes the terminal-state guard and emits Failed
+// for a synchronous step-handler error (PRD §4.2 / plan Phase 3.2). A loser
+// (state already non-Pending) logs and returns without emitting.
+//
+// The saga is intentionally NOT evicted from the cache here: existing per-step
+// compensation flows (compensateEquipAsset, compensateCreateAndEquipAsset, etc.)
+// still run for non-character-creation sagas, and the Phase-6 reverse-walk
+// evicts for character-creation sagas.
+func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause error) {
+	if !GetCache().TryTransition(p.ctx, s.TransactionId(), SagaLifecyclePending, SagaLifecycleCompensating) {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        st.StepId(),
+			"tenant_id":      p.t.Id().String(),
+		}).Info("saga already terminal, step sync-error emission skipped")
+		return
+	}
+
+	emitErr := EmitSagaFailed(p.l, p.ctx, s, saga.ErrorCodeUnknown, cause.Error(), st.StepId())
+	if emitErr != nil {
+		p.l.WithError(emitErr).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        st.StepId(),
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Failed to emit saga failed event on step sync-error.")
+	}
 }
 
 // expandAndProcessStep expands high-level actions into concrete steps and processes them

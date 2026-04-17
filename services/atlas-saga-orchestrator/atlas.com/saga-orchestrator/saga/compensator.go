@@ -189,7 +189,7 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 
 		// Emit saga failed event
 		err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
-			FailedStatusEventProvider(s.TransactionId(), characterId, string(s.SagaType()), sagaMsg.ErrorCodeUnknown, "Validation failed", failedStep.StepId()))
+			FailedStatusEventProvider(s.TransactionId(), 0, characterId, string(s.SagaType()), sagaMsg.ErrorCodeUnknown, "Validation failed", failedStep.StepId()))
 		if err != nil {
 			c.l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": s.TransactionId().String(),
@@ -768,6 +768,7 @@ func (c *CompensatorImpl) compensateStorageOperation(s Saga, failedStep Step[any
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
 		FailedStatusEventProvider(
 			s.TransactionId(),
+			0,
 			characterId,
 			string(s.SagaType()),
 			errorCode,
@@ -850,6 +851,7 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
 		FailedStatusEventProvider(
 			s.TransactionId(),
+			0,
 			characterId,
 			string(s.SagaType()),
 			sagaMsg.ErrorCodeUnknown,

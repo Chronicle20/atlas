@@ -37,10 +37,20 @@ func TestTimerRegistry_ScheduleAndFire(t *testing.T) {
 	}
 	assert.False(t, SagaTimers().Has(s.TransactionId()), "timer should have self-cleaned after firing")
 
-	// Lifecycle should now be Compensating (the timer took the guard).
-	state, ok := GetCache().GetLifecycle(ctx, s.TransactionId())
-	assert.True(t, ok)
-	assert.Equal(t, SagaLifecycleCompensating, state)
+	// After the timer fires, handleSagaTimeout walks the full flow:
+	//   Pending → Compensating → (dispatch rollbacks) → Failed → evict.
+	// The saga no longer exists in the cache, so GetLifecycle returns
+	// (zero, false). This verifies the bug fix: prior to the fix the timer
+	// stopped at Compensating and left the saga in cache forever.
+	deadline = time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if _, ok := GetCache().GetLifecycle(ctx, s.TransactionId()); !ok {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	_, ok := GetCache().GetLifecycle(ctx, s.TransactionId())
+	assert.False(t, ok, "saga should be evicted after timer finalization")
 }
 
 func TestTimerRegistry_CancelPreventsFire(t *testing.T) {

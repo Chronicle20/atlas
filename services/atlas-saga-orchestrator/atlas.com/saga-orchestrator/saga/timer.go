@@ -77,10 +77,14 @@ func (r *TimerRegistry) Has(txId uuid.UUID) bool {
 }
 
 // handleSagaTimeout is the time.AfterFunc callback body for a saga's timeout
-// backstop. It takes the terminal-state guard (Pending → Compensating) and,
-// if it wins, emits a Failed event with ErrorCodeSagaTimeout. The Phase-6
-// reverse-walk compensator picks up the saga from Compensating and runs the
-// rollback chain for character-creation sagas.
+// backstop (PRD §4.1-4.3 / plan Phase 4). It takes the terminal-state guard
+// (Pending → Compensating), drives the reverse-walk rollback dispatches for
+// CharacterCreation sagas, finalizes the lifecycle (Compensating → Failed),
+// and emits exactly one Failed event with ErrorCodeSagaTimeout.
+//
+// Without the dispatch step here, a wedged CharacterCreation saga would emit
+// Failed correctly but leave the character + inventory rows behind in the DB
+// — see the task-002 bugfix commit for details.
 func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID, timeout time.Duration) {
 	c := GetCache()
 	s, ok := c.GetById(ctx, txId)
@@ -97,10 +101,30 @@ func handleSagaTimeout(l logrus.FieldLogger, ctx context.Context, txId uuid.UUID
 	}
 	reason := fmt.Sprintf("saga exceeded timeout of %s", timeout)
 	l.WithFields(logrus.Fields{
-		"transaction_id": txId.String(),
-		"saga_type":      s.SagaType(),
-		"timeout":        timeout.String(),
-	}).Warn("saga timed out, emitting Failed")
+		"transaction_id":  txId.String(),
+		"saga_type":       s.SagaType(),
+		"timeout":         timeout.String(),
+		"completed_steps": s.GetCompletedStepCount(),
+	}).Warn("saga timed out, dispatching compensation + emitting Failed")
+
+	// Dispatch the inverse commands for CharacterCreation sagas. Fire-and-forget;
+	// Phase-5 delete commands (atlas-character, atlas-skills) are idempotent on
+	// missing rows, so out-of-order arrival is safe.
+	if s.SagaType() == CharacterCreation {
+		NewCompensator(l, ctx).DispatchCharacterCreationRollbacks(s)
+	}
+
+	// Finalize the lifecycle. If someone else already took Compensating → Failed
+	// (unlikely — stepCompleted(false) would have cancelled this timer), skip the
+	// emit to avoid duplicates.
+	if !c.TryTransition(ctx, txId, SagaLifecycleCompensating, SagaLifecycleFailed) {
+		l.WithFields(logrus.Fields{
+			"transaction_id": txId.String(),
+		}).Info("saga already finalized by another path, timeout emission skipped")
+		c.Remove(ctx, txId)
+		return
+	}
+	c.Remove(ctx, txId)
 
 	failedStep := ""
 	if step, ok := s.GetCurrentStep(); ok {

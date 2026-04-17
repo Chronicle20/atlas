@@ -33,6 +33,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSagaCompletedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSagaFailedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -70,6 +73,54 @@ func handleSagaCompletedEvent(l logrus.FieldLogger, ctx context.Context, e saga.
 
 	l.Debugf("Seed completion event emitted successfully for account [%d] character [%d]",
 		accountId, characterId)
+}
+
+// handleSagaFailedEvent re-emits a CharacterCreation saga failure as a FAILED
+// event on EVENT_TOPIC_SEED_STATUS so atlas-login can write
+// AddCharacterCodeUnknownError to the waiting session (PRD §4.4 / plan Phase 7).
+//
+// Filtered strictly by sagaType so other saga types' failures (inventory,
+// storage, gachapon, etc.) do NOT leak onto the seed topic. No in-flight
+// tracking map is needed — sagaType is the authoritative filter.
+func handleSagaFailedEvent(l logrus.FieldLogger, ctx context.Context, e saga.StatusEvent[saga.StatusEventFailedBody]) {
+	if e.Type != saga.StatusEventTypeFailed {
+		return
+	}
+	if e.Body.SagaType != string(sharedsaga.CharacterCreation) {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"saga_type":      e.Body.SagaType,
+			"failed_step":    e.Body.FailedStep,
+		}).Debug("Saga FAILED event for non-character-creation saga; dropping.")
+		return
+	}
+
+	accountId := e.Body.AccountId
+	if accountId == 0 {
+		l.WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"failed_step":    e.Body.FailedStep,
+			"error_code":     e.Body.ErrorCode,
+		}).Warn("CharacterCreation saga FAILED but accountId is 0; cannot route to login.")
+		return
+	}
+
+	l.WithFields(logrus.Fields{
+		"transaction_id": e.TransactionId.String(),
+		"account_id":     accountId,
+		"character_id":   e.Body.CharacterId,
+		"failed_step":    e.Body.FailedStep,
+		"error_code":     e.Body.ErrorCode,
+		"reason":         e.Body.Reason,
+	}).Info("Re-emitting character-creation FAILED as seed FAILED for login handoff.")
+
+	seedProducer := producer.ProviderImpl(l)(ctx)(seedMessage.EnvEventTopicStatus)
+	if err := seedProducer(seed.FailedEventStatusProvider(accountId, e.Body.Reason)); err != nil {
+		l.WithError(err).WithFields(logrus.Fields{
+			"transaction_id": e.TransactionId.String(),
+			"account_id":     accountId,
+		}).Error("Failed to emit seed FAILED event.")
+	}
 }
 
 func extractUint32(m map[string]any, key string) uint32 {

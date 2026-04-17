@@ -241,11 +241,16 @@ type (
 // Local Saga model (immutable, private fields)
 // ============================================================
 
+// DefaultSagaTimeout is the timeout applied when an inbound saga command
+// body has an absent or zero `timeout` field. See PRD §4.1 / plan Phase 1.3.
+const DefaultSagaTimeout = 30 * time.Second
+
 // Saga represents the entire saga transaction.
 type Saga struct {
 	transactionId uuid.UUID
 	sagaType      Type
 	initiatedBy   string
+	timeout       time.Duration
 	steps         []Step[any]
 }
 
@@ -257,6 +262,14 @@ func (s Saga) SagaType() Type { return s.sagaType }
 
 // InitiatedBy returns who initiated the saga
 func (s Saga) InitiatedBy() string { return s.initiatedBy }
+
+// Timeout returns the saga timeout (default 30s when unset).
+func (s Saga) Timeout() time.Duration {
+	if s.timeout <= 0 {
+		return DefaultSagaTimeout
+	}
+	return s.timeout
+}
 
 // Steps returns a copy of the steps slice
 func (s Saga) Steps() []Step[any] {
@@ -278,28 +291,33 @@ func (s Saga) StepCount() int {
 	return len(s.steps)
 }
 
-// MarshalJSON implements json.Marshaler for Saga
+// MarshalJSON implements json.Marshaler for Saga.
+// `timeout` is emitted in integer milliseconds.
 func (s Saga) MarshalJSON() ([]byte, error) {
 	type alias struct {
 		TransactionId uuid.UUID   `json:"transactionId"`
 		SagaType      Type        `json:"sagaType"`
 		InitiatedBy   string      `json:"initiatedBy"`
+		Timeout       int64       `json:"timeout,omitempty"`
 		Steps         []Step[any] `json:"steps"`
 	}
 	return json.Marshal(alias{
 		TransactionId: s.transactionId,
 		SagaType:      s.sagaType,
 		InitiatedBy:   s.initiatedBy,
+		Timeout:       s.timeout.Milliseconds(),
 		Steps:         s.steps,
 	})
 }
 
-// UnmarshalJSON implements json.Unmarshaler for Saga
+// UnmarshalJSON implements json.Unmarshaler for Saga.
+// `timeout` is decoded from integer milliseconds; absent/zero → DefaultSagaTimeout.
 func (s *Saga) UnmarshalJSON(data []byte) error {
 	type alias struct {
 		TransactionId uuid.UUID   `json:"transactionId"`
 		SagaType      Type        `json:"sagaType"`
 		InitiatedBy   string      `json:"initiatedBy"`
+		Timeout       int64       `json:"timeout"`
 		Steps         []Step[any] `json:"steps"`
 	}
 	var a alias
@@ -309,6 +327,11 @@ func (s *Saga) UnmarshalJSON(data []byte) error {
 	s.transactionId = a.TransactionId
 	s.sagaType = a.SagaType
 	s.initiatedBy = a.InitiatedBy
+	if a.Timeout > 0 {
+		s.timeout = time.Duration(a.Timeout) * time.Millisecond
+	} else {
+		s.timeout = DefaultSagaTimeout
+	}
 	s.steps = a.Steps
 	return nil
 }
@@ -505,6 +528,7 @@ func (s Saga) WithStepStatus(index int, status Status) (Saga, error) {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}, nil
 }
@@ -532,6 +556,7 @@ func (s Saga) WithStepResult(index int, result map[string]any) (Saga, error) {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}, nil
 }
@@ -559,6 +584,7 @@ func (s Saga) WithStepPayload(index int, payload any) (Saga, error) {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}, nil
 }
@@ -579,6 +605,7 @@ func (s Saga) WithStep(step Step[any]) (Saga, error) {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}, nil
 }
@@ -605,6 +632,7 @@ func (s Saga) WithStepAfterIndex(index int, step Step[any]) (Saga, error) {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}, nil
 }
@@ -618,6 +646,7 @@ func (s Saga) WithSteps(steps []Step[any]) Saga {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         newSteps,
 	}
 }

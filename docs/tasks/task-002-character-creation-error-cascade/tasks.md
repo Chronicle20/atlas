@@ -22,14 +22,14 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 1 — Wire-format extensions, no behavior change (S)
 
-- [ ] **1.1** Add `AccountId uint32 \`json:"accountId"\`` to `StatusEventFailedBody` in `atlas-saga-orchestrator/.../kafka/message/saga/kafka.go` (~line 36). *(effort: S)*
-- [ ] **1.2** Add `ErrorCodeSagaTimeout = "SAGA_TIMEOUT"` constant alongside existing error codes in the same file. *(effort: S)*
-- [ ] **1.3** Extend the saga-creation command body (`COMMAND_TOPIC_SAGA`) with an optional `timeout` field (integer milliseconds). Default to 30s when absent/zero at decode time. *(effort: S)*
-- [ ] **1.4** Add `StatusEventTypeFailed = "FAILED"` + `FailedStatusEventBody` (with optional `Reason string`) to `atlas-character-factory/.../kafka/message/seed/kafka.go`. *(effort: S)*
-- [ ] **1.5** Add `FailedEventStatusProvider(accountId uint32, reason string)` to `atlas-character-factory/.../kafka/producer/seed/producer.go`, mirroring the existing `CreatedEventStatusProvider`. *(effort: S)*
-- [ ] **1.6** `go build ./...` for `atlas-saga-orchestrator` and `atlas-character-factory`. No emission or consumption yet — pure shape additions. *(effort: S)*
+- [x] **1.1** Add `AccountId uint32` to `StatusEventFailedBody`. *(effort: S)*
+- [x] **1.2** Add `ErrorCodeSagaTimeout = "SAGA_TIMEOUT"` constant. *(effort: S)*
+- [x] **1.3** Extend `Saga` with `timeout time.Duration`; marshal as ms in JSON; decode defaults to 30s via `DefaultSagaTimeout`. Builder gets `SetTimeout`; `Saga.Timeout()` returns the effective value. *(effort: S)*
+- [x] **1.4** Add `StatusEventTypeFailed` + `FailedStatusEventBody` to factory seed kafka.go. *(effort: S)*
+- [x] **1.5** Add `FailedEventStatusProvider(accountId, reason)` to factory seed producer.go. *(effort: S)*
+- [x] **1.6** `go build ./...` for orchestrator + factory — green. `go test ./saga/... ./kafka/...` still green. *(effort: S)*
 
-**Acceptance:** All five new fields/constants compile. Existing tests still pass. Nothing consumes the new shapes; nothing emits them.
+**Acceptance:** All five new fields/constants compile. Existing tests still pass. Nothing consumes the new shapes; nothing emits them. ✅
 
 ## Phase 2 — Orchestrator terminal-state guard (M)
 

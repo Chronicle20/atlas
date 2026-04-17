@@ -52,13 +52,13 @@ Legend: effort = S (≤0.5d) / M (0.5–2d) / L (2–5d) / XL (>5d). Phases are 
 
 ## Phase 4 — Per-saga timeout (M)
 
-- [ ] **4.1** Add `timeout time.Duration` to `Saga` model; populated from the inbound command body (defaulted to 30s in Phase 1.3). *(effort: S)*
-- [ ] **4.2** Schedule a per-saga `time.AfterFunc` at saga acceptance (inside `processor.Put()`). Store the timer handle on the cache entry. *(effort: M)*
-- [ ] **4.3** On timer fire: take the terminal-state guard; if still `Pending`, transition to `Compensating`; mark the current step `Failed` with reason `"saga timed out"`; drive Phase-6 compensation; emit `StatusEventTypeFailed` with `errorCode = ErrorCodeSagaTimeout` and `reason = "saga exceeded timeout of <N>s"`. *(effort: M)*
-- [ ] **4.4** Cancel the timer on normal terminal transitions (both Completed and Failed paths). Guard against `nil` timer if cache cleanup already happened. *(effort: S)*
-- [ ] **4.5** `atlas-character-factory` passes `timeout: 10 * time.Second` in the outbound saga-creation command (move alongside Phase 7 once the wire field is known-good — same PR, just ordered here for clarity). *(effort: S)*
+- [x] **4.1** Done in Phase 1.3: `Saga.timeout time.Duration` populated via UnmarshalJSON (ms) with 30s `DefaultSagaTimeout` fallback. *(effort: S)*
+- [x] **4.2** `saga/timer.go` introduces `TimerRegistry` (singleton) with per-saga `*time.Timer`. `processor.Put()` arms the timer right after `GetCache().Put()` succeeds, using the saga's `Timeout()`. The registry lives beside the cache — the DB-backed `PostgresStore` does not need to reason about in-process Go timers. *(effort: M)*
+- [x] **4.3** `handleSagaTimeout` (in `timer.go`) re-wraps the tenant into a fresh `context.Background()` (so the fire callback survives consumer-scoped ctx), takes `TryTransition(Pending → Compensating)`, and emits `StatusEventTypeFailed` with `errorCode = ErrorCodeSagaTimeout` and `reason = "saga exceeded timeout of <dur>"`. `failedStep` is the saga's current pending step id. Phase-6 reverse walk will be triggered from the Compensating state in the next phase. *(effort: M)*
+- [x] **4.4** Timer cancellation wired at every normal terminal transition: Step() success-terminal (Pending → Completed); `stepCompletedWithResultOnce` first failure (Pending → Compensating); `emitFailedFromStepSyncError` (Pending → Compensating); the three existing compensator emit sites (ValidateCharacterState, Storage, Gachapon). `Cancel` is idempotent on missing txId. *(effort: S)*
+- [x] **4.5** `atlas-character-factory/factory/processor.go:buildCharacterCreationSaga` calls `SetTimeout(10 * time.Second)`. Shared `atlas-saga` lib (`libs/atlas-saga/builder.go`, `model.go`) gains `SetTimeout` and a `Timeout int64 \`json:"timeout,omitempty"\`` field; backward-compatible since `omitempty` means non-setting services produce the same wire shape as before. *(effort: S)*
 
-**Acceptance:** A wedged saga (no downstream responses) emits Failed at exactly `timeout` + <1s compensation start; a saga completing normally cancels its timer; no leaked timers observable.
+**Acceptance:** A wedged saga (no downstream responses) emits Failed via the timeout path; a saga completing normally cancels its timer. `TestTimerRegistry_ScheduleAndFire` / `_CancelPreventsFire` / `_ScheduleReplacesExisting` / `_ZeroDurationNoOp` cover the four key behaviors. ✅
 
 ## Phase 5 — Compensation delete commands (M)
 

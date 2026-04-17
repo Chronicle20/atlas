@@ -181,8 +181,9 @@ func (c *CompensatorImpl) CompensateFailedStep(s Saga) error {
 			"tenant_id":      c.t.Id().String(),
 		}).Info("Validation failed - terminating saga without compensation.")
 
-		// Remove saga from cache
-		GetCache().Remove(c.ctx,s.TransactionId())
+		// Cancel the Phase-4 timeout backstop and remove saga from cache.
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(c.ctx, s.TransactionId())
 
 		// Extract character ID from the validation payload
 		characterId := ExtractCharacterId(failedStep)
@@ -761,8 +762,9 @@ func (c *CompensatorImpl) compensateStorageOperation(s Saga, failedStep Step[any
 		"tenant_id":      c.t.Id().String(),
 	}).Info("Storage operation failed - terminating saga with error event.")
 
-	// Remove saga from cache
-	GetCache().Remove(c.ctx,s.TransactionId())
+	// Cancel the Phase-4 timeout backstop and remove saga from cache.
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
 
 	// Emit saga failed event with context-appropriate error information
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(
@@ -844,8 +846,9 @@ func (c *CompensatorImpl) compensateSelectGachaponReward(s Saga, failedStep Step
 		}
 	}
 
-	// Remove saga from cache
-	GetCache().Remove(c.ctx,s.TransactionId())
+	// Cancel the Phase-4 timeout backstop and remove saga from cache.
+	SagaTimers().Cancel(s.TransactionId())
+	GetCache().Remove(c.ctx, s.TransactionId())
 
 	// Emit saga failed event
 	err := producer.ProviderImpl(c.l)(c.ctx)(sagaMsg.EnvStatusEventTopic)(

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"time"
 
-	channelConstant "github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 

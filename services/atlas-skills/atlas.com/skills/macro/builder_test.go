@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 func TestNewModelBuilder(t *testing.T) {

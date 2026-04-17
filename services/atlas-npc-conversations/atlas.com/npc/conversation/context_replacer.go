@@ -1,7 +1,7 @@
 package conversation
 
 import (
-	scriptctx "github.com/Chronicle20/atlas-script-core/context"
+	scriptctx "github.com/Chronicle20/atlas/libs/atlas-script-core/context"
 )
 
 // Re-export functions from atlas-script-core/context

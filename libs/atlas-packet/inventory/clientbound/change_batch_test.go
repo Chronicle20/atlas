@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-packet/inventory"
-	"github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-packet/test"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestChangeBatchQuantityUpdateRoundTrip(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"atlas-channel/world"
 	"testing"
 
-	worldId "github.com/Chronicle20/atlas-constants/world"
+	worldId "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
 func TestNewModelBuilder(t *testing.T) {

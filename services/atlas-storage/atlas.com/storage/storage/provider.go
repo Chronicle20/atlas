@@ -3,7 +3,7 @@ package storage
 import (
 	"atlas-storage/asset"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )

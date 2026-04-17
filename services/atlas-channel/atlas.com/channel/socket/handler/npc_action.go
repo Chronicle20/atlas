@@ -7,9 +7,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	npcpacket "github.com/Chronicle20/atlas-packet/npc/clientbound"
-	npcsb "github.com/Chronicle20/atlas-packet/npc/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	npcpacket "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
+	npcsb "github.com/Chronicle20/atlas/libs/atlas-packet/npc/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

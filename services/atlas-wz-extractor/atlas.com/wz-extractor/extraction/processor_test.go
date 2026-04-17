@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -22,7 +22,7 @@ func TestRunExtraction_NoWzFiles(t *testing.T) {
 	dir := t.TempDir()
 	p := &processorImpl{inputDir: dir, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(l, t.TempDir(), t.TempDir(), false, false)
+	err := p.runExtraction(l, dir, t.TempDir(), t.TempDir(), false, false)
 	if err == nil {
 		t.Fatal("expected error for empty input directory")
 	}
@@ -34,9 +34,32 @@ func TestRunExtraction_NoWzFiles(t *testing.T) {
 func TestRunExtraction_InvalidInputDir(t *testing.T) {
 	p := &processorImpl{inputDir: "/nonexistent/path/that/should/not/exist", outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(l, t.TempDir(), t.TempDir(), false, false)
+	err := p.runExtraction(l, "/nonexistent/path/that/should/not/exist", t.TempDir(), t.TempDir(), false, false)
 	if err == nil {
 		t.Fatal("expected error for nonexistent input directory")
+	}
+}
+
+func TestRunExtraction_NoFallbackToFlatInput(t *testing.T) {
+	rootInput := t.TempDir()
+	// put a .wz at the flat, non-tenant-scoped level
+	if err := os.WriteFile(filepath.Join(rootInput, "Test.wz"), []byte("dummy"), 0644); err != nil {
+		t.Fatalf("unable to write flat fixture: %v", err)
+	}
+	// tenant-scoped subdir is empty
+	tenantScoped := filepath.Join(rootInput, "some-tenant", "GMS", "83.1")
+	if err := os.MkdirAll(tenantScoped, 0o755); err != nil {
+		t.Fatalf("unable to mkdir: %v", err)
+	}
+
+	p := &processorImpl{inputDir: rootInput, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
+	l, _ := test.NewNullLogger()
+	err := p.runExtraction(l, tenantScoped, t.TempDir(), t.TempDir(), false, false)
+	if err == nil {
+		t.Fatal("expected no-WZ-files error despite flat-level fixture")
+	}
+	if got := err.Error(); got != "no WZ files found in ["+tenantScoped+"]" {
+		t.Errorf("unexpected error: %s", got)
 	}
 }
 
@@ -52,8 +75,12 @@ func TestExtract_OutputPathConstruction(t *testing.T) {
 	xmlDir := t.TempDir()
 	imgDir := t.TempDir()
 
-	// Create a dummy .wz file (will fail to parse, but we verify the path is constructed)
-	dummyPath := filepath.Join(inputDir, "Test.wz")
+	// Place the dummy .wz under the tenant-scoped path (flat-dir fallback is gone).
+	tenantInput := filepath.Join(inputDir, tenantId.String(), "GMS", "83.1")
+	if err := os.MkdirAll(tenantInput, 0o755); err != nil {
+		t.Fatalf("unable to mkdir tenant input: %v", err)
+	}
+	dummyPath := filepath.Join(tenantInput, "Test.wz")
 	if err := os.WriteFile(dummyPath, []byte("not a valid wz file"), 0644); err != nil {
 		t.Fatalf("unable to create dummy file: %v", err)
 	}
@@ -104,8 +131,11 @@ func TestExtract_TenantPathFormat(t *testing.T) {
 			xmlDir := t.TempDir()
 			imgDir := t.TempDir()
 
-			// Create a dummy .wz file
-			if err := os.WriteFile(filepath.Join(inputDir, "Test.wz"), []byte("dummy"), 0644); err != nil {
+			tenantInput := filepath.Join(inputDir, tenantId.String(), tc.region, tc.wantVer)
+			if err := os.MkdirAll(tenantInput, 0o755); err != nil {
+				t.Fatalf("unable to mkdir tenant input: %v", err)
+			}
+			if err := os.WriteFile(filepath.Join(tenantInput, "Test.wz"), []byte("dummy"), 0644); err != nil {
 				t.Fatalf("unable to create dummy file: %v", err)
 			}
 

@@ -3,13 +3,13 @@ package character
 import (
 	character2 "atlas-saga-orchestrator/kafka/message/character"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
@@ -193,6 +193,20 @@ func ResetStatsProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 		Body: character2.ResetStatsCommandBody{
 			ChannelId: ch.Id(),
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RequestDeleteCharacterProvider emits the saga-correlated DELETE_CHARACTER
+// command consumed by atlas-character (plan Phase 5 / Phase 6).
+func RequestDeleteCharacterProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.DeleteCharacterCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          character2.CommandDeleteCharacter,
+		Body:          character2.DeleteCharacterCommandBody{},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

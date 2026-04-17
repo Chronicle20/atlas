@@ -4,7 +4,7 @@ import (
 	"atlas-transports/instance"
 	"time"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 type InstanceRouteRestModel struct {

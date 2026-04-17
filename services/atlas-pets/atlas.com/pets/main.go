@@ -2,22 +2,22 @@ package main
 
 import (
 	charReg "atlas-pets/character"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-pets/kafka/consumer/asset"
 	"atlas-pets/kafka/consumer/character"
 	pet2 "atlas-pets/kafka/consumer/pet"
 	"atlas-pets/logger"
 	"atlas-pets/pet"
 	"atlas-pets/pet/exclude"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-pets/tasks"
 	"atlas-pets/tracing"
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-pets"

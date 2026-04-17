@@ -7,20 +7,51 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Chronicle20/atlas-rest/server"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 )
 
-func InitResource(p Processor, wg *sync.WaitGroup) func(si jsonapi.ServerInformation) server.RouteInitializer {
+type Dirs struct {
+	InputDir     string
+	OutputXmlDir string
+}
+
+func InitResource(p Processor, wg *sync.WaitGroup, dirs Dirs) func(si jsonapi.ServerInformation) server.RouteInitializer {
+	u := &uploadDeps{inputDir: dirs.InputDir}
+	s := &statusDeps{inputDir: dirs.InputDir, outputXmlDir: dirs.OutputXmlDir}
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			register := rest.RegisterHandler(l)(si)
-			r := router.PathPrefix("/wz/extractions").Subrouter()
-			r.HandleFunc("", register("create_extraction", handleExtract(p, wg))).Methods(http.MethodPost)
+
+			ext := router.PathPrefix("/wz/extractions").Subrouter()
+			ext.HandleFunc("", register("create_extraction", handleExtract(p, wg))).Methods(http.MethodPost)
+			ext.HandleFunc("", register("get_extraction_status", s.handleExtractionStatus())).Methods(http.MethodGet)
+
+			in := router.PathPrefix("/wz/input").Subrouter()
+			in.HandleFunc("", register("upload_wz", u.handleUploadBridge())).Methods(http.MethodPatch)
+			in.HandleFunc("", register("get_input_status", s.handleInputStatus())).Methods(http.MethodGet)
 		}
+	}
+}
+
+func (u *uploadDeps) handleUploadBridge() rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return u.handleUpload(d.Logger(), d.Context())
+	}
+}
+
+func (s *statusDeps) handleInputStatus() rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return s.renderInputStatus(d.Logger(), d.Context())
+	}
+}
+
+func (s *statusDeps) handleExtractionStatus() rest.GetHandler {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return s.renderExtractionStatus(d.Logger(), d.Context())
 	}
 }
 
@@ -39,6 +70,9 @@ func handleExtract(p Processor, wg *sync.WaitGroup) rest.GetHandler {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
+				key := TenantKey(t)
+				m := Acquire(key)
+				defer Release(m)
 				if err := p.Extract(d.Logger(), asyncCtx, xmlOnly, imagesOnly); err != nil {
 					d.Logger().WithError(err).Errorf("Extraction failed.")
 				} else {

@@ -3,7 +3,7 @@ package test
 import (
 	"atlas-portals/portal"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
 // PortalFixture contains test data for creating portal models

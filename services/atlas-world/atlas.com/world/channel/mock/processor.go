@@ -4,9 +4,9 @@ import (
 	"atlas-world/channel"
 	"atlas-world/kafka/message"
 
-	channelConstant "github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // Processor is a mock implementation of channel.Processor for testing

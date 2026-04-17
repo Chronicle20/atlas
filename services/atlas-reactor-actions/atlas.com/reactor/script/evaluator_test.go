@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Chronicle20/atlas-script-core/condition"
+	"github.com/Chronicle20/atlas/libs/atlas-script-core/condition"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )

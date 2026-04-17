@@ -3,8 +3,8 @@ package character
 import (
 	"encoding/json"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/google/uuid"
 )
 

@@ -6,13 +6,13 @@ import (
 	chalkboard2 "atlas-chalkboards/kafka/consumer/chalkboard"
 	"atlas-chalkboards/kafka/consumer/character"
 	"atlas-chalkboards/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-chalkboards/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-chalkboards"

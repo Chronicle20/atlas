@@ -4,7 +4,7 @@ import (
 	"atlas-cashshop/cashshop/inventory"
 	"atlas-cashshop/cashshop/inventory/asset"
 	"atlas-cashshop/cashshop/inventory/compartment"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-cashshop/kafka/consumer/account"
 	"atlas-cashshop/kafka/consumer/cashshop"
 	compartment2 "atlas-cashshop/kafka/consumer/cashshop/compartment"
@@ -12,14 +12,14 @@ import (
 	itemConsumer "atlas-cashshop/kafka/consumer/item"
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 	"atlas-cashshop/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-cashshop/tracing"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-cashshop"

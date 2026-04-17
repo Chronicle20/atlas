@@ -1,6 +1,6 @@
 package stat
 
-import "github.com/Chronicle20/atlas-constants/character"
+import "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 
 type Model struct {
 	Type   character.TemporaryStatType

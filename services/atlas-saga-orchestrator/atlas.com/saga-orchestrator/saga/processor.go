@@ -17,8 +17,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -233,9 +233,17 @@ func (p *ProcessorImpl) Put(saga Saga) error {
 		return err
 	}
 
+	// Arm the per-saga timeout backstop. A saga that never produces a
+	// terminal-state transition (all downstream services wedged / timed out)
+	// will trip this timer and emit Failed with ErrorCodeSagaTimeout.
+	// See PRD §4.1 / plan Phase 4. The timer is cancelled on every normal
+	// terminal transition below.
+	SagaTimers().Schedule(p.l, p.t, saga.TransactionId(), saga.Timeout())
+
 	p.l.WithFields(logrus.Fields{
 		"transaction_id": saga.TransactionId().String(),
 		"saga_type":      saga.SagaType(),
+		"timeout":        saga.Timeout().String(),
 		"tenant_id":      p.t.Id().String(),
 	}).Debug("Saga inserted into cache")
 
@@ -337,6 +345,22 @@ func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, suc
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("Duplicate step completion received — saga has no pending steps, ignoring.")
 		return nil
+	}
+
+	// Terminal-state guard: the first failure-signal takes Pending → Compensating.
+	// Later callers (late StepCompleted(false), timer) see the transition fail and
+	// short-circuit, which prevents duplicate Failed emissions in Phase 3+. See PRD §4.7.
+	if !success && !s.Failing() {
+		if !GetCache().TryTransition(p.ctx, transactionId, SagaLifecyclePending, SagaLifecycleCompensating) {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": transactionId.String(),
+				"saga_type":      s.SagaType(),
+				"tenant_id":      p.t.Id().String(),
+			}).Info("saga already terminal, late completion ignored")
+			return nil
+		}
+		// Cancel the Phase-4 timeout backstop — we have taken over failure handling.
+		SagaTimers().Cancel(transactionId)
 	}
 
 	if s.Failing() {
@@ -764,7 +788,23 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"saga_type":      s.SagaType(),
 			"tenant_id":      p.t.Id().String(),
 		}).Debug("No steps remaining to progress.")
-		GetCache().Remove(p.ctx,s.TransactionId())
+
+		// Terminal-state guard: only the first observer of the success-terminal
+		// state gets to emit Completed. A late observer (e.g., re-entry after
+		// another goroutine already handled completion) sees the transition fail
+		// and returns silently.
+		if !GetCache().TryTransition(p.ctx, s.TransactionId(), SagaLifecyclePending, SagaLifecycleCompleted) {
+			p.l.WithFields(logrus.Fields{
+				"transaction_id": s.TransactionId().String(),
+				"saga_type":      s.SagaType(),
+				"tenant_id":      p.t.Id().String(),
+			}).Info("saga already terminal, completion emission skipped")
+			return nil
+		}
+
+		// Cancel the Phase-4 timeout backstop — normal terminal, no timer needed.
+		SagaTimers().Cancel(s.TransactionId())
+		GetCache().Remove(p.ctx, s.TransactionId())
 
 		// Emit saga completion event
 		err := producer.ProviderImpl(p.l)(p.ctx)(saga.EnvStatusEventTopic)(CompletedStatusEventProvider(s))
@@ -815,6 +855,7 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 	// Get the handler for this action type
 	handler, exists := p.handle.GetHandler(st.Action())
 	if !exists {
+		unknownErr := fmt.Errorf("unknown action type: %s", st.Action())
 		p.l.WithFields(logrus.Fields{
 			"transaction_id": s.TransactionId().String(),
 			"saga_type":      s.SagaType(),
@@ -822,11 +863,56 @@ func (p *ProcessorImpl) Step(transactionId uuid.UUID) error {
 			"action":         st.Action(),
 			"tenant_id":      p.t.Id().String(),
 		}).Error("Unknown action type encountered. Saga cannot be processed.")
-		return fmt.Errorf("unknown action type: %s", st.Action())
+		p.emitFailedFromStepSyncError(s, st, unknownErr)
+		return unknownErr
 	}
 
-	// Execute the handler
-	return handler(s, st)
+	// Execute the handler. A synchronous error here would otherwise travel back
+	// to the Kafka consumer and be dropped (PRD §4.2 / plan Phase 3.2). Take the
+	// terminal-state guard and emit StatusEventTypeFailed before propagating the
+	// error up (propagation preserved so the Kafka consumer can log with context).
+	handlerErr := handler(s, st)
+	if handlerErr != nil {
+		p.l.WithError(handlerErr).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"saga_type":      s.SagaType(),
+			"step_id":        st.StepId(),
+			"action":         st.Action(),
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Saga step handler returned a synchronous error.")
+		p.emitFailedFromStepSyncError(s, st, handlerErr)
+	}
+	return handlerErr
+}
+
+// emitFailedFromStepSyncError takes the terminal-state guard and emits Failed
+// for a synchronous step-handler error (PRD §4.2 / plan Phase 3.2). A loser
+// (state already non-Pending) logs and returns without emitting.
+//
+// The saga is intentionally NOT evicted from the cache here: existing per-step
+// compensation flows (compensateEquipAsset, compensateCreateAndEquipAsset, etc.)
+// still run for non-character-creation sagas, and the Phase-6 reverse-walk
+// evicts for character-creation sagas.
+func (p *ProcessorImpl) emitFailedFromStepSyncError(s Saga, st Step[any], cause error) {
+	if !GetCache().TryTransition(p.ctx, s.TransactionId(), SagaLifecyclePending, SagaLifecycleCompensating) {
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        st.StepId(),
+			"tenant_id":      p.t.Id().String(),
+		}).Info("saga already terminal, step sync-error emission skipped")
+		return
+	}
+	// Cancel the Phase-4 timeout backstop — we have taken over failure handling.
+	SagaTimers().Cancel(s.TransactionId())
+
+	emitErr := EmitSagaFailed(p.l, p.ctx, s, saga.ErrorCodeUnknown, cause.Error(), st.StepId())
+	if emitErr != nil {
+		p.l.WithError(emitErr).WithFields(logrus.Fields{
+			"transaction_id": s.TransactionId().String(),
+			"step_id":        st.StepId(),
+			"tenant_id":      p.t.Id().String(),
+		}).Error("Failed to emit saga failed event on step sync-error.")
+	}
 }
 
 // expandAndProcessStep expands high-level actions into concrete steps and processes them

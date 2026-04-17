@@ -4,9 +4,9 @@ import (
 	skill2 "atlas-saga-orchestrator/kafka/message/skill"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
@@ -23,6 +23,22 @@ func RequestCreateProvider(transactionId uuid.UUID, worldId world.Id, characterI
 			Level:       level,
 			MasterLevel: masterLevel,
 			Expiration:  expiration,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// RequestDeleteProvider emits the saga-correlated REQUEST_DELETE command on
+// COMMAND_TOPIC_SKILL (plan Phase 5 / Phase 6).
+func RequestDeleteProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &skill2.Command[skill2.RequestDeleteBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          skill2.CommandTypeRequestDelete,
+		Body: skill2.RequestDeleteBody{
+			SkillId: skillId,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

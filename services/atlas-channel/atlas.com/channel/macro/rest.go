@@ -3,7 +3,7 @@ package macro
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 type RestModel struct {

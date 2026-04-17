@@ -2,6 +2,7 @@ package document
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ type Entity struct {
 	Type       string          `gorm:"not null"`
 	DocumentId uint32          `gorm:"not null"`
 	Content    json.RawMessage `gorm:"type:json;not null"`
+	UpdatedAt  time.Time       `gorm:"autoUpdateTime"`
 }
 
 func (e Entity) TableName() string {

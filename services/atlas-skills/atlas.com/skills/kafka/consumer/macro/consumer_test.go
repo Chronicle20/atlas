@@ -7,8 +7,8 @@ import (
 	"atlas-skills/test"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/skill"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	logtest "github.com/sirupsen/logrus/hooks/test"
 )

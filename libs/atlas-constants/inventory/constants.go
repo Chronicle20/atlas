@@ -3,7 +3,7 @@ package inventory
 import (
 	"math"
 
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type Type int8

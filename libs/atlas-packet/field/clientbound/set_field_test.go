@@ -3,9 +3,9 @@ package clientbound
 import (
 	"testing"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	"github.com/Chronicle20/atlas-constants/channel"
-	pt "github.com/Chronicle20/atlas-packet/test"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestSetFieldRoundTrip(t *testing.T) {

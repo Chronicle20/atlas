@@ -8,11 +8,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	inventoryConst "github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	inventoryConst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

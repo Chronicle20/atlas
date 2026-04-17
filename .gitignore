@@ -50,3 +50,5 @@ services/atlas-storage/.env
 /services/atlas-skills/atlas.com/skills/atlas-skills
 /services/atlas-tenants/atlas.com/tenants/atlas-tenants
 /services/atlas-merchant/atlas.com/merchant/atlas-merchant
+deploy/compose/.env
+deploy/k8s/secrets.yaml

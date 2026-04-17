@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-model/async"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/async"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // GoroutineLeakDetector helps detect goroutine leaks in tests

@@ -2,15 +2,15 @@ package inventory
 
 import (
 	"atlas-inventory/compartment"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	inventory2 "atlas-inventory/kafka/message/inventory"
 	"atlas-inventory/kafka/producer"
 	"context"
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"

@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
@@ -30,6 +30,7 @@ type testDocumentEntity struct {
 	Type       string          `gorm:"not null"`
 	DocumentId uint32          `gorm:"not null"`
 	Content    json.RawMessage `gorm:"type:text;not null"`
+	UpdatedAt  time.Time       `gorm:"autoUpdateTime"`
 }
 
 func (e testDocumentEntity) TableName() string {

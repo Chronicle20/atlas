@@ -7,12 +7,12 @@ import (
 	"context"
 	"math"
 
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-constants/job"
-	skill2 "github.com/Chronicle20/atlas-constants/skill"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

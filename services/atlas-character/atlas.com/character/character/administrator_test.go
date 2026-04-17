@@ -6,8 +6,8 @@ import (
 	"context"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
 

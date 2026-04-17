@@ -3,9 +3,9 @@ package serverbound
 import (
 	"testing"
 
-	channel2 "github.com/Chronicle20/atlas-constants/channel"
+	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 
-	pt "github.com/Chronicle20/atlas-packet/test"
+	pt "github.com/Chronicle20/atlas/libs/atlas-packet/test"
 )
 
 func TestChannelChangeRequestRoundTrip(t *testing.T) {

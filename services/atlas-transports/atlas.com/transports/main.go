@@ -10,7 +10,7 @@ import (
 	"atlas-transports/kafka/consumer/instance_transport"
 	_map "atlas-transports/kafka/consumer/map"
 	"atlas-transports/logger"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-transports/tenant"
 	"atlas-transports/tracing"
 	"atlas-transports/transport"
@@ -18,10 +18,10 @@ import (
 	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const serviceName = "atlas-transports"

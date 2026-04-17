@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	kafkaProducer "github.com/Chronicle20/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"

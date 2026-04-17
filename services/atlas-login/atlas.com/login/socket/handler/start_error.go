@@ -5,8 +5,8 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-packet/socket/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/socket/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 func TestProcessorMock_GetSkillLevel_Success(t *testing.T) {

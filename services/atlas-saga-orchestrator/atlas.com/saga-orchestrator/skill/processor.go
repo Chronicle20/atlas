@@ -7,7 +7,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -17,6 +17,9 @@ type Processor interface {
 	RequestCreate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
 	RequestUpdateAndEmit(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
 	RequestUpdate(mb *message.Buffer) func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error
+	// RequestDeleteSkill is the saga-compensation dispatch for CreateSkill
+	// (plan Phase 5 / Phase 6).
+	RequestDeleteSkill(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error
 }
 
 type ProcessorImpl struct {
@@ -55,4 +58,12 @@ func (p *ProcessorImpl) RequestUpdate(mb *message.Buffer) func(transactionId uui
 	return func(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32, level byte, masterLevel byte, expiration time.Time) error {
 		return mb.Put(skill2.EnvCommandTopic, RequestUpdateProvider(transactionId, worldId, characterId, skillId, level, masterLevel, expiration))
 	}
+}
+
+// RequestDeleteSkill emits the saga-correlated REQUEST_DELETE command used by
+// the character-creation reverse-walk compensator.
+func (p *ProcessorImpl) RequestDeleteSkill(transactionId uuid.UUID, worldId world.Id, characterId uint32, skillId uint32) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return mb.Put(skill2.EnvCommandTopic, RequestDeleteProvider(transactionId, worldId, characterId, skillId))
+	})
 }

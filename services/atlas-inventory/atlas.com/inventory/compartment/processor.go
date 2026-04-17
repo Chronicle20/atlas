@@ -3,7 +3,7 @@ package compartment
 import (
 	"atlas-inventory/asset"
 	"atlas-inventory/data/equipment"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/drop"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/compartment"
@@ -15,14 +15,15 @@ import (
 	"sort"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -962,11 +963,13 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 		p.l.Debugf("Character [%d] attempting to create asset in inventory [%d].", characterId, inventoryType)
 
 		var a asset.Model
+		var compartmentId uuid.UUID
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.WithTransaction(tx).GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
 				return err
 			}
+			compartmentId = c.Id()
 
 			// Attempt to merge into an existing stack for non-equip, non-rechargeable stackable items
 			if inventoryType != inventory.TypeValueEquip && quantity > 0 && rechargeable == 0 {
@@ -1013,6 +1016,11 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to create asset in inventory [%d].", characterId, inventoryType)
+			errorCode := compartment.CreateAssetUnknownError
+			if errors.Is(txErr, requests.ErrNotFound) {
+				errorCode = compartment.CreateAssetTemplateNotFound
+			}
+			_ = mb.Put(compartment.EnvEventTopicStatus, CreationFailedEventStatusProvider(transactionId, compartmentId, characterId, errorCode, txErr.Error()))
 			return txErr
 		}
 		p.l.Debugf("Character [%d] created asset [%d].", characterId, a.Id())

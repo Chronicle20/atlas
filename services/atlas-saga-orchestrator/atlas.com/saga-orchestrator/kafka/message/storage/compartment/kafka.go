@@ -3,8 +3,8 @@ package compartment
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
 
-	"github.com/Chronicle20/atlas-constants/asset"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 )
 

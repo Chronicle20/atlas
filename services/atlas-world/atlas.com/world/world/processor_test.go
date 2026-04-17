@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	channelConstant "github.com/Chronicle20/atlas-constants/channel"
-	worldConstant "github.com/Chronicle20/atlas-constants/world"
+	channelConstant "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	worldConstant "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

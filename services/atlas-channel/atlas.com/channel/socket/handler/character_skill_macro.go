@@ -6,9 +6,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/skill"
-	character2 "github.com/Chronicle20/atlas-packet/character"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

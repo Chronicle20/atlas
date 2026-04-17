@@ -3,9 +3,9 @@ package opcodes
 import (
 	"strconv"
 
-	socket "github.com/Chronicle20/atlas-socket"
-	"github.com/Chronicle20/atlas-socket/request"
-	sw "github.com/Chronicle20/atlas-socket/writer"
+	socket "github.com/Chronicle20/atlas/libs/atlas-socket"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	sw "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	"github.com/sirupsen/logrus"
 )
 

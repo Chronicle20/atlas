@@ -5,14 +5,14 @@ import (
 	reactor2 "atlas-reactors/kafka/consumer/reactor"
 	"atlas-reactors/logger"
 	"atlas-reactors/reactor"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-reactors/tasks"
 	"atlas-reactors/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	atlas "github.com/Chronicle20/atlas-redis"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-reactors"

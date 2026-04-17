@@ -1,7 +1,7 @@
 package gachapon
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
 	"gorm.io/gorm"
 )

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Chronicle20/atlas-socket"
+	"github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/sirupsen/logrus"
 )
 

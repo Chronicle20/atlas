@@ -3,7 +3,7 @@ package macro
 import (
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 type modelBuilder struct {

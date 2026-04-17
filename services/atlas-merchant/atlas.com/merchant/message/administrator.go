@@ -3,8 +3,8 @@ package message
 import (
 	"time"
 
-	database "github.com/Chronicle20/atlas-database"
-	"github.com/Chronicle20/atlas-model/model"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

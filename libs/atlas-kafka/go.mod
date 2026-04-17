@@ -1,4 +1,4 @@
-module github.com/Chronicle20/atlas-kafka
+module github.com/Chronicle20/atlas/libs/atlas-kafka
 
 go 1.25.0
 
@@ -11,6 +11,9 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0
+	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
@@ -23,3 +26,9 @@ require (
 	golang.org/x/net v0.50.0 // indirect
 	golang.org/x/sys v0.41.0 // indirect
 )
+
+replace github.com/Chronicle20/atlas/libs/atlas-model => ../atlas-model
+
+replace github.com/Chronicle20/atlas/libs/atlas-retry => ../atlas-retry
+
+replace github.com/Chronicle20/atlas/libs/atlas-tenant => ../atlas-tenant

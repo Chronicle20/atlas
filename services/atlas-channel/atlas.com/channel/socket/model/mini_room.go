@@ -4,11 +4,11 @@ import (
 	"atlas-channel/asset"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/item"
-	interactionpkt "github.com/Chronicle20/atlas-packet/interaction"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	interactionpkt "github.com/Chronicle20/atlas/libs/atlas-packet/interaction"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 

@@ -10,14 +10,14 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	"github.com/Chronicle20/atlas-constants/skill"
-	model2 "github.com/Chronicle20/atlas-model/model"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/request"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas-packet/character"
-	charcb "github.com/Chronicle20/atlas-packet/character/clientbound"
-	statpkt "github.com/Chronicle20/atlas-packet/stat/clientbound"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 )
 
 const CharacterUseSkillHandle = "CharacterUseSkillHandle"

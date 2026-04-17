@@ -57,15 +57,16 @@ When modifying any service code:
 
 1. **Implement changes** to primary files (model.go, processor.go, etc.)
 2. **Update ingress configuration** if REST endpoints were added/modified
-   - Open `atlas-ingress.yml` at the root of the atlas directory
+   - Open `deploy/shared/routes.conf` (single source for both K8s ingress and compose nginx)
    - Check if a location block exists for your service's `/api/<service-name>` path
-   - If missing, add a new nginx location block following the existing pattern:
+   - If missing, add a new nginx location block following the existing pattern (use the bare container name; no `.atlas.svc.cluster.local` suffix):
      ```nginx
      location ~ ^/api/<service-name>(/.*)?$ {
-       proxy_pass http://atlas-<service-name>.atlas.svc.cluster.local:8080;
+       proxy_pass http://atlas-<service-name>:8080;
      }
      ```
    - Place it alphabetically among other service routes for maintainability
+   - Run `./deploy/scripts/sync-k8s-ingress-routes.sh` to regenerate `deploy/k8s/ingress.yaml` from the shared file
 3. **Update service README** if API contracts changed
    - Navigate to the service's README.md (e.g., `services/atlas-<service>/atlas.com/<service>/README.md`)
    - Update the REST Endpoints table with correct paths, methods, and query parameters

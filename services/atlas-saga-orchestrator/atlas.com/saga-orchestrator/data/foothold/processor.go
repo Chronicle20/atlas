@@ -3,7 +3,7 @@ package foothold
 import (
 	"context"
 
-	_map "github.com/Chronicle20/atlas-constants/map"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/sirupsen/logrus"
 )
 

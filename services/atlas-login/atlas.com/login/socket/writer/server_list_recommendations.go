@@ -4,9 +4,9 @@ import (
 	"atlas-login/socket/model"
 	"context"
 
-	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/packet"
+	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

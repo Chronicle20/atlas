@@ -1,7 +1,7 @@
 package main
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	assetConsumer "atlas-quest/kafka/consumer/asset"
 	characterConsumer "atlas-quest/kafka/consumer/character"
 	monsterConsumer "atlas-quest/kafka/consumer/monster"
@@ -9,12 +9,12 @@ import (
 	"atlas-quest/logger"
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-quest/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-quest"

@@ -7,7 +7,7 @@ import (
 	"math/rand"
 	"time"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

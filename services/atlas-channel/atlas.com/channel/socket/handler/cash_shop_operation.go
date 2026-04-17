@@ -7,9 +7,9 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	cashcb "github.com/Chronicle20/atlas-packet/cash/clientbound"
-	cashsb "github.com/Chronicle20/atlas-packet/cash/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	cashcb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/clientbound"
+	cashsb "github.com/Chronicle20/atlas/libs/atlas-packet/cash/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

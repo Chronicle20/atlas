@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-kafka/producer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 )
 
 func TestProposalCreatedEventProvider(t *testing.T) {

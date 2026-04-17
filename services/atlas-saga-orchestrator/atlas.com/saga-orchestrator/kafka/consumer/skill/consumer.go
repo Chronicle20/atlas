@@ -6,11 +6,11 @@ import (
 	"atlas-saga-orchestrator/saga"
 	"context"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-kafka/handler"
-	"github.com/Chronicle20/atlas-kafka/message"
-	"github.com/Chronicle20/atlas-kafka/topic"
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -33,6 +33,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSkillUpdatedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleSkillDeletedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -46,6 +49,15 @@ func handleSkillCreatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2
 
 func handleSkillUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventUpdatedBody]) {
 	if e.Type != skill2.StatusEventTypeUpdated {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+// handleSkillDeletedEvent drives StepCompleted(true) when atlas-skills responds
+// to a saga-correlated REQUEST_DELETE (plan Phase 5 / Phase 6).
+func handleSkillDeletedEvent(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventDeletedBody]) {
+	if e.Type != skill2.StatusEventTypeDeleted {
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)

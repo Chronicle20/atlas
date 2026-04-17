@@ -7,9 +7,9 @@ import (
 	buddylist2 "atlas-saga-orchestrator/kafka/message/buddylist"
 	"atlas-saga-orchestrator/kafka/producer"
 
-	"github.com/Chronicle20/atlas-constants/character"
-	"github.com/Chronicle20/atlas-constants/world"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

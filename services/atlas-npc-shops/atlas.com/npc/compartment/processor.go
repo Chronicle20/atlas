@@ -5,8 +5,8 @@ import (
 	compartmentMessage "atlas-npc/kafka/message/compartment"
 	"errors"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type Processor interface {

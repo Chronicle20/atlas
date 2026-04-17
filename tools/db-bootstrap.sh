@@ -76,6 +76,7 @@ DBS=(
   atlas-map-actions
   atlas-maps
   atlas-marriages
+  atlas-merchant
   atlas-notes
   atlas-npc-conversations
   atlas-npc-shops
@@ -84,6 +85,7 @@ DBS=(
   atlas-portal-actions
   atlas-quest
   atlas-reactor-actions
+  atlas-saga-orchestrator
   atlas-skills
   atlas-storage
   atlas-tenants
@@ -152,5 +154,3 @@ done
 
 
 echo "== Done."
-
-

@@ -8,10 +8,10 @@ import (
 	"atlas-login/world"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
-	loginCB "github.com/Chronicle20/atlas-packet/login/clientbound"
-	loginSB "github.com/Chronicle20/atlas-packet/login/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	loginCB "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
+	loginSB "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

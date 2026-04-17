@@ -4,7 +4,7 @@ import (
 	"atlas-tenants/kafka/message"
 	"atlas-tenants/tenant"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 )
 

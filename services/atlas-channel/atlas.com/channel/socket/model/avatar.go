@@ -3,8 +3,8 @@ package model
 import (
 	"atlas-channel/character"
 
-	"github.com/Chronicle20/atlas-constants/inventory/slot"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
 func NewFromCharacter(c character.Model, mega bool) packetmodel.Avatar {

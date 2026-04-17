@@ -3,7 +3,7 @@ package atlas_packet
 import (
 	"fmt"
 
-	"github.com/Chronicle20/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 )
 
 type Packet interface {

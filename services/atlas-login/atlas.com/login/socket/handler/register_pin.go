@@ -7,9 +7,9 @@ import (
 	"atlas-login/socket/writer"
 	"context"
 
-	account2 "github.com/Chronicle20/atlas-packet/account/serverbound"
-	loginpkt "github.com/Chronicle20/atlas-packet/login/clientbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	account2 "github.com/Chronicle20/atlas/libs/atlas-packet/account/serverbound"
+	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

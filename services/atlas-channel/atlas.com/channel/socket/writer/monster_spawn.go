@@ -4,10 +4,10 @@ import (
 	"atlas-channel/monster"
 	"context"
 
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	monsterpkt "github.com/Chronicle20/atlas-packet/monster/clientbound"
-	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-tenant"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	database "github.com/Chronicle20/atlas-database"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"

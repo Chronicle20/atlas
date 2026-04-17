@@ -1,6 +1,8 @@
 package saga
 
 import (
+	"time"
+
 	"github.com/google/uuid"
 )
 
@@ -9,6 +11,7 @@ type Builder struct {
 	transactionId uuid.UUID
 	sagaType      Type
 	initiatedBy   string
+	timeout       time.Duration
 	steps         []Step[any]
 }
 
@@ -28,6 +31,7 @@ func Clone(s Saga) *Builder {
 		transactionId: s.transactionId,
 		sagaType:      s.sagaType,
 		initiatedBy:   s.initiatedBy,
+		timeout:       s.timeout,
 		steps:         steps,
 	}
 }
@@ -47,6 +51,13 @@ func (b *Builder) SetSagaType(sagaType Type) *Builder {
 // SetInitiatedBy sets who initiated the saga
 func (b *Builder) SetInitiatedBy(initiatedBy string) *Builder {
 	b.initiatedBy = initiatedBy
+	return b
+}
+
+// SetTimeout sets the saga timeout. Zero or negative values mean "use default
+// at read time" (see Saga.Timeout / DefaultSagaTimeout).
+func (b *Builder) SetTimeout(timeout time.Duration) *Builder {
+	b.timeout = timeout
 	return b
 }
 
@@ -77,6 +88,7 @@ func (b *Builder) Build() (Saga, error) {
 		transactionId: b.transactionId,
 		sagaType:      b.sagaType,
 		initiatedBy:   b.initiatedBy,
+		timeout:       b.timeout,
 		steps:         b.steps,
 	}, nil
 }

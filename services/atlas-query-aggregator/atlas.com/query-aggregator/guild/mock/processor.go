@@ -3,7 +3,7 @@ package mock
 import (
 	"atlas-query-aggregator/guild"
 
-	"github.com/Chronicle20/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
 // ProcessorMock is a mock implementation of the guild.Processor interface

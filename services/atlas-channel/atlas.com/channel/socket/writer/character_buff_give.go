@@ -4,10 +4,10 @@ import (
 	"atlas-channel/character/buff"
 	"context"
 
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
-	packetmodel "github.com/Chronicle20/atlas-packet/model"
-	"github.com/Chronicle20/atlas-socket/packet"
-	"github.com/Chronicle20/atlas-tenant"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 

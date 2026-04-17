@@ -3,10 +3,10 @@ package character
 import (
 	"context"
 
-	atlas_packet "github.com/Chronicle20/atlas-packet"
-	"github.com/Chronicle20/atlas-packet/character/clientbound"
-	"github.com/Chronicle20/atlas-constants/skill"
-	"github.com/Chronicle20/atlas-socket/packet"
+	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
+	"github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	"github.com/sirupsen/logrus"
 )
 

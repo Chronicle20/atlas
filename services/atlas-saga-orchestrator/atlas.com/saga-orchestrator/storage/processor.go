@@ -10,9 +10,9 @@ import (
 	storageCompartment "atlas-saga-orchestrator/kafka/message/storage/compartment"
 	"atlas-saga-orchestrator/kafka/producer"
 
-	"github.com/Chronicle20/atlas-constants/asset"
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/asset"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

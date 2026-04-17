@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	sharedsaga "github.com/Chronicle20/atlas-saga"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/google/uuid"
 )
 

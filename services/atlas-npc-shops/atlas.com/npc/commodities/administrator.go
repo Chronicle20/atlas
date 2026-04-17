@@ -1,10 +1,10 @@
 package commodities
 
 import (
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"context"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )

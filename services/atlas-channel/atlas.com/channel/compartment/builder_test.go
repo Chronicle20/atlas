@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
 )
 

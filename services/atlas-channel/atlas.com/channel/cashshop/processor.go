@@ -8,7 +8,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

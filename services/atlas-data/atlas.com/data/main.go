@@ -8,7 +8,7 @@ import (
 	"atlas-data/cosmetic/face"
 	"atlas-data/cosmetic/hair"
 	"atlas-data/data"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/document"
 	"atlas-data/equipment"
 	"atlas-data/etc"
@@ -22,14 +22,14 @@ import (
 	"atlas-data/pet"
 	"atlas-data/quest"
 	"atlas-data/reactor"
-	"github.com/Chronicle20/atlas-service"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
 	"atlas-data/tracing"
 	"os"
 
-	"github.com/Chronicle20/atlas-kafka/consumer"
-	"github.com/Chronicle20/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-data"

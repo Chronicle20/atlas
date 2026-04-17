@@ -3,7 +3,7 @@ package session
 import (
 	"strconv"
 
-	"github.com/Chronicle20/atlas-socket/response"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	"github.com/sirupsen/logrus"
 )
 

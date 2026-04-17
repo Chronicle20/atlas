@@ -19,6 +19,7 @@ const (
 	ErrorCodeNotEnoughMesos = "NOT_ENOUGH_MESOS"
 	ErrorCodeInventoryFull  = "INVENTORY_FULL"
 	ErrorCodeStorageFull    = "STORAGE_FULL"
+	ErrorCodeSagaTimeout    = "SAGA_TIMEOUT"
 	ErrorCodeUnknown        = "UNKNOWN"
 )
 
@@ -37,6 +38,7 @@ type StatusEventFailedBody struct {
 	Reason      string `json:"reason"`
 	FailedStep  string `json:"failedStep"`
 	CharacterId uint32 `json:"characterId"`
+	AccountId   uint32 `json:"accountId"`
 	SagaType    string `json:"sagaType"`
 	ErrorCode   string `json:"errorCode"`
 }

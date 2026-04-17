@@ -3,7 +3,7 @@ package character
 import (
 	"atlas-character/data/portal"
 	skill3 "atlas-character/data/skill"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-character/drop"
 	"atlas-character/external/effective_stats"
 	"atlas-character/kafka/message"
@@ -17,15 +17,15 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/channel"
-	"github.com/Chronicle20/atlas-constants/field"
-	"github.com/Chronicle20/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas-constants/map"
-	"github.com/Chronicle20/atlas-constants/skill"
-	"github.com/Chronicle20/atlas-constants/stat"
-	"github.com/Chronicle20/atlas-constants/world"
-	"github.com/Chronicle20/atlas-model/model"
-	"github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -59,6 +59,8 @@ type Processor interface {
 	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
 	DeleteByAccountIdAndEmit(accountId uint32) error
 	DeleteByAccountId(mb *message.Buffer) func(accountId uint32) error
+	DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, characterId uint32) error
+	DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
 	LoginAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	LogoutAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
@@ -288,6 +290,36 @@ func (p *ProcessorImpl) Delete(mb *message.Buffer) func(transactionId uuid.UUID,
 		}
 		return nil
 	}
+}
+
+// DeleteForSagaCompensation is the buffer-based inner form of the saga-correlated
+// delete. Idempotent on missing rows: if the character is absent, a synthetic
+// DELETED event is still buffered so the orchestrator's correlator records the
+// compensation step as completed. See PRD §4.3.1 / §4.8 and plan Phase 5.
+func (p *ProcessorImpl) DeleteForSagaCompensation(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error {
+	return func(transactionId uuid.UUID, characterId uint32) error {
+		_, err := p.GetById()(characterId)
+		if err == nil {
+			return p.Delete(mb)(transactionId, characterId)
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		p.l.WithFields(logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"character_id":   characterId,
+		}).Info("Character already absent; buffering synthetic DELETED event for saga compensation.")
+		return mb.Put(character2.EnvEventTopicCharacterStatus, deletedEventProvider(transactionId, characterId, 0))
+	}
+}
+
+// DeleteForSagaCompensationAndEmit wraps DeleteForSagaCompensation with the
+// producer emit flow. See DeleteForSagaCompensation for the idempotency
+// contract.
+func (p *ProcessorImpl) DeleteForSagaCompensationAndEmit(transactionId uuid.UUID, characterId uint32) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.DeleteForSagaCompensation(buf)(transactionId, characterId)
+	})
 }
 
 func (p *ProcessorImpl) DeleteByAccountIdAndEmit(accountId uint32) error {

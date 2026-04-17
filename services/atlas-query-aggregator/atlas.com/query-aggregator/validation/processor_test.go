@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	inventory_type "github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-model/model"
+	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )

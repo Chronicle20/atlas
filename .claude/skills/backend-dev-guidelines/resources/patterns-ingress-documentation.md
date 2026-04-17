@@ -22,7 +22,7 @@ Failing to update these causes:
 
 ### When to Update Ingress
 
-Update `atlas-ingress.yml` when:
+Update `deploy/shared/routes.conf` when:
 - ✅ Adding new REST endpoints to a service
 - ✅ Adding a new service with REST endpoints
 - ✅ Changing the base path of existing endpoints
@@ -36,12 +36,14 @@ Do NOT update ingress for:
 
 ### Ingress File Location
 
-**File:** `atlas-ingress.yml` (at the root of the atlas directory)
+**File:** `deploy/shared/routes.conf`
+
+This file is the single source for nginx route definitions. It is bind-mounted into the compose nginx container directly and inlined into the K8s `atlas-ingress-configmap` ConfigMap (`deploy/k8s/ingress.yaml`) by `deploy/scripts/sync-k8s-ingress-routes.sh`. After editing, run the sync script before committing.
 
 This file contains:
-- Nginx configuration (lines 8-240)
 - Multiple `location` blocks routing traffic to different services
 - Each service gets a regex pattern matching its API path
+- Bare service/container names (no `.atlas.svc.cluster.local` suffix; resolved by both K8s DNS and Docker embedded DNS)
 
 ---
 
@@ -51,7 +53,7 @@ This file contains:
 
 ```nginx
 location ~ ^/api/<service-name>(/.*)?$ {
-  proxy_pass http://atlas-<service-name>.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-<service-name>:8080;
 }
 ```
 
@@ -59,14 +61,14 @@ location ~ ^/api/<service-name>(/.*)?$ {
 
 ```nginx
 location ~ ^/api/storage(/.*)?$ {
-  proxy_pass http://atlas-storage.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-storage:8080;
 }
 ```
 
 **Breakdown:**
 - `location ~ ^/api/storage(/.*)?$` - Regex pattern matching `/api/storage` and all subpaths
-- `proxy_pass http://atlas-storage.atlas.svc.cluster.local:8080` - Kubernetes service URL
-- Service name format: `atlas-<service>.atlas.svc.cluster.local:8080`
+- `proxy_pass http://atlas-storage:8080` - Kubernetes service URL
+- Service name format: `atlas-<service>:8080`
 - Port is typically `8080` (verify in service's Kubernetes deployment if different)
 
 ---
@@ -78,15 +80,15 @@ Place new routes **alphabetically** among existing services for maintainability.
 **Example:**
 ```nginx
 location ~ ^/api/shops(/.*)?$ {
-  proxy_pass http://atlas-npc-shops.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-npc-shops:8080;
 }
 
 location ~ ^/api/storage(/.*)?$ {
-  proxy_pass http://atlas-storage.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-storage:8080;
 }
 
 location ~ ^/api/tenants(/.*)?$ {
-  proxy_pass http://atlas-tenants.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-tenants:8080;
 }
 ```
 
@@ -96,9 +98,15 @@ location ~ ^/api/tenants(/.*)?$ {
 
 After updating ingress configuration:
 
-1. **Apply the configuration** (if testing locally):
+1. **Sync the K8s ConfigMap and apply** (if testing on a cluster):
    ```bash
-   kubectl apply -f atlas-ingress.yml
+   ./deploy/scripts/sync-k8s-ingress-routes.sh
+   kubectl apply -f deploy/k8s/ingress.yaml
+   ```
+
+   For local compose testing, just restart the nginx container (it bind-mounts `routes.conf` directly):
+   ```bash
+   docker compose --project-name atlas restart nginx
    ```
 
 2. **Wait for nginx reload**:
@@ -271,7 +279,7 @@ Before claiming documentation is complete:
 - [ ] Command/event descriptions are clear and accurate
 
 ### Ingress Configuration
-- [ ] Service has a location block in `atlas-ingress.yml`
+- [ ] Service has a location block in `deploy/shared/routes.conf`
 - [ ] Location pattern matches service's base path
 - [ ] Kubernetes service name is correct
 - [ ] Route is placed alphabetically
@@ -303,12 +311,12 @@ func InitializeRoutes(si jsonapi.ServerInformation) func(db *gorm.DB) server.Rou
 
 ### Step 2: Verify Ingress Configuration
 
-**File:** `atlas-ingress.yml`
+**File:** `deploy/shared/routes.conf`
 
 Check if route exists:
 ```nginx
 location ~ ^/api/storage(/.*)?$ {
-  proxy_pass http://atlas-storage.atlas.svc.cluster.local:8080;
+  proxy_pass http://atlas-storage:8080;
 }
 ```
 
@@ -404,7 +412,7 @@ This pattern integrates into the Standard Implementation Workflow:
 
 | Task | File | What to Update |
 |------|------|---------------|
-| Add REST endpoint | `atlas-ingress.yml` | Add nginx location block |
+| Add REST endpoint | `deploy/shared/routes.conf` | Add nginx location block |
 | Add REST endpoint | `services/.../README.md` | Add row to REST Endpoints table |
 | Add Kafka command | `services/.../README.md` | Add row to Kafka Commands table |
 | Add Kafka event | `services/.../README.md` | Add row to Kafka Events table |

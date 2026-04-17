@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	tenant "github.com/Chronicle20/atlas-tenant"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"

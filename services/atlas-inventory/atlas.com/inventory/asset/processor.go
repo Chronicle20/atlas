@@ -5,7 +5,7 @@ import (
 	"atlas-inventory/data/equipment/statistics"
 	"atlas-inventory/data/etc"
 	"atlas-inventory/data/setup"
-	database "github.com/Chronicle20/atlas-database"
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-inventory/kafka/message"
 	"atlas-inventory/kafka/message/asset"
 	"atlas-inventory/kafka/producer"
@@ -16,10 +16,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Chronicle20/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas-constants/item"
-	"github.com/Chronicle20/atlas-model/model"
-	tenant "github.com/Chronicle20/atlas-tenant"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
@@ -292,7 +293,11 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 				// TODO wire up template tradeBlock data to set UNTRADEABLE flag during asset creation
 				ea, err := p.statProcessor.GetById(templateId)
 				if err != nil {
-					p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+					if errors.Is(err, requests.ErrNotFound) {
+						p.l.WithError(err).Errorf("Equipment template [%d] not present in atlas-data; seed data is likely missing.", templateId)
+					} else {
+						p.l.WithError(err).Errorf("Unable to get equipment stats for item [%d].", templateId)
+					}
 					return err
 				}
 				b.SetStrength(getRandomStat(ea.Strength(), 5)).

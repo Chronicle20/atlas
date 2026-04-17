@@ -7,10 +7,10 @@ import (
 	"atlas-login/world"
 	"context"
 
-	world2 "github.com/Chronicle20/atlas-constants/world"
-	charpkt "github.com/Chronicle20/atlas-packet/character/clientbound"
-	loginpkt "github.com/Chronicle20/atlas-packet/login/serverbound"
-	"github.com/Chronicle20/atlas-socket/request"
+	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	loginpkt "github.com/Chronicle20/atlas/libs/atlas-packet/login/serverbound"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
 )
 

@@ -3,7 +3,7 @@ package guild
 import (
 	"testing"
 
-	world2 "github.com/Chronicle20/atlas-constants/world"
+	world2 "github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"

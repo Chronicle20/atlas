@@ -1,6 +1,6 @@
 package portal
 
-import _map "github.com/Chronicle20/atlas-constants/map"
+import _map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 
 type RestModel struct {
 	Id          string  `json:"-"`

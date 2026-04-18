@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Tests for guild React Query hooks
  */
@@ -18,16 +19,16 @@ import type { Guild, GuildAttributes, GuildMember } from '@/types/models/guild';
 import type { Tenant } from '@/types/models/tenant';
 
 // Mock the guilds service
-jest.mock('@/services/api/guilds.service', () => ({
+vi.mock('@/services/api/guilds.service', () => ({
   guildsService: {
-    getAll: jest.fn(),
-    getById: jest.fn(),
-    getByWorld: jest.fn(),
-    search: jest.fn(),
-    getWithSpace: jest.fn(),
-    getRankings: jest.fn(),
-    exists: jest.fn(),
-    getMemberCount: jest.fn(),
+    getAll: vi.fn(),
+    getById: vi.fn(),
+    getByWorld: vi.fn(),
+    search: vi.fn(),
+    getWithSpace: vi.fn(),
+    getRankings: vi.fn(),
+    exists: vi.fn(),
+    getMemberCount: vi.fn(),
   },
 }));
 
@@ -92,12 +93,12 @@ function createWrapper() {
 
 describe('useGuilds', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Query Hooks', () => {
     it('should fetch all guilds successfully', async () => {
-      (guildsService.getAll as jest.Mock).mockResolvedValue(mockGuilds);
+      (guildsService.getAll as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
 
       const { result } = renderHook(() => useGuilds(mockTenant), {
         wrapper: createWrapper(),
@@ -112,7 +113,7 @@ describe('useGuilds', () => {
     });
 
     it('should fetch guild by ID successfully', async () => {
-      (guildsService.getById as jest.Mock).mockResolvedValue(mockGuild);
+      (guildsService.getById as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuild);
 
       const { result } = renderHook(() => useGuild(mockTenant, 'guild-1'), {
         wrapper: createWrapper(),
@@ -127,7 +128,7 @@ describe('useGuilds', () => {
     });
 
     it('should fetch guilds by world ID successfully', async () => {
-      (guildsService.getByWorld as jest.Mock).mockResolvedValue(mockGuilds);
+      (guildsService.getByWorld as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
 
       const { result } = renderHook(() => useGuildsByWorld(mockTenant, 1), {
         wrapper: createWrapper(),
@@ -142,7 +143,7 @@ describe('useGuilds', () => {
     });
 
     it('should search guilds successfully', async () => {
-      (guildsService.search as jest.Mock).mockResolvedValue(mockGuilds);
+      (guildsService.search as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
 
       const { result } = renderHook(() => useGuildSearch(mockTenant, 'Test'), {
         wrapper: createWrapper(),
@@ -157,7 +158,7 @@ describe('useGuilds', () => {
     });
 
     it('should fetch guilds with space successfully', async () => {
-      (guildsService.getWithSpace as jest.Mock).mockResolvedValue(mockGuilds);
+      (guildsService.getWithSpace as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
 
       const { result } = renderHook(() => useGuildsWithSpace(mockTenant), {
         wrapper: createWrapper(),
@@ -172,7 +173,7 @@ describe('useGuilds', () => {
     });
 
     it('should fetch guild rankings successfully', async () => {
-      (guildsService.getRankings as jest.Mock).mockResolvedValue(mockGuilds);
+      (guildsService.getRankings as ReturnType<typeof vi.fn>).mockResolvedValue(mockGuilds);
 
       const { result } = renderHook(() => useGuildRankings(mockTenant), {
         wrapper: createWrapper(),

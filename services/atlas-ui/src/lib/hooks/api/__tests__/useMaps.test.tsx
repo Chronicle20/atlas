@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Tests for useMaps React Query hooks
  */
@@ -31,32 +32,32 @@ const mockTenant: Tenant = {
   },
 };
 
-jest.mock('@/context/tenant-context', () => ({
+vi.mock('@/context/tenant-context', () => ({
   useTenant: () => ({
     activeTenant: mockTenant,
     tenants: [mockTenant],
     loading: false,
-    setActiveTenant: jest.fn(),
-    refreshTenants: jest.fn(),
-    refreshAndSelectTenant: jest.fn(),
-    fetchTenantConfiguration: jest.fn(),
+    setActiveTenant: vi.fn(),
+    refreshTenants: vi.fn(),
+    refreshAndSelectTenant: vi.fn(),
+    fetchTenantConfiguration: vi.fn(),
   }),
 }));
 
 // Mock the maps service
-jest.mock('@/services/api/maps.service', () => ({
+vi.mock('@/services/api/maps.service', () => ({
   mapsService: {
-    getAllMaps: jest.fn(),
-    getMapById: jest.fn(),
-    searchMapsByName: jest.fn(),
-    getMapsByStreetName: jest.fn(),
-    createMap: jest.fn(),
-    updateMap: jest.fn(),
-    deleteMap: jest.fn(),
+    getAllMaps: vi.fn(),
+    getMapById: vi.fn(),
+    searchMapsByName: vi.fn(),
+    getMapsByStreetName: vi.fn(),
+    createMap: vi.fn(),
+    updateMap: vi.fn(),
+    deleteMap: vi.fn(),
   },
 }));
 
-const mockMapsService = jest.mocked(mapsService);
+const mockMapsService = vi.mocked(mapsService);
 
 // Test data
 const mockMapData: MapData = {
@@ -96,11 +97,11 @@ function createWrapper() {
 
 describe('useMaps hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe('Query hooks', () => {
@@ -247,7 +248,7 @@ describe('useMaps hooks', () => {
   describe('Utility hooks', () => {
     it('should provide invalidation functions', () => {
       const queryClient = new QueryClient();
-      const invalidateAllSpy = jest.spyOn(queryClient, 'invalidateQueries');
+      const invalidateAllSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const { result } = renderHook(() => useInvalidateMaps(), {
         wrapper: ({ children }) => <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>,

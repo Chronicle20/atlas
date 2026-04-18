@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -8,27 +9,27 @@ import type { Account, AccountAttributes } from '@/types/models/account';
 import type { Tenant } from '@/types/models/tenant';
 
 // Mock the API client
-jest.mock('@/lib/api/client', () => ({
+vi.mock('@/lib/api/client', () => ({
   api: {
-    getList: jest.fn(),
-    getOne: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    patch: jest.fn(),
-    delete: jest.fn(),
-    upload: jest.fn(),
-    download: jest.fn(),
-    clearCacheByPattern: jest.fn(),
-    getCacheStats: jest.fn(),
-    setTenant: jest.fn(),
+    getList: vi.fn(),
+    getOne: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    upload: vi.fn(),
+    download: vi.fn(),
+    clearCacheByPattern: vi.fn(),
+    getCacheStats: vi.fn(),
+    setTenant: vi.fn(),
   },
 }));
 
-const mockApi = api as jest.Mocked<typeof api>;
+const mockApi = api as MockedFunction<typeof api>;
 
 describe('AccountsService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockTenant: Tenant = {

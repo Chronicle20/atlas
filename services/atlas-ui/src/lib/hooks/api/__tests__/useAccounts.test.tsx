@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Tests for account React Query hooks
  */
@@ -22,8 +23,8 @@ import {
 } from '../useAccounts';
 
 // Mock the accounts service
-jest.mock('@/services/api/accounts.service');
-const mockAccountsService = accountsService as jest.Mocked<typeof accountsService>;
+vi.mock('@/services/api/accounts.service');
+const mockAccountsService = accountsService as MockedFunction<typeof accountsService>;
 
 // Test data
 const mockTenant: Tenant = {
@@ -106,7 +107,7 @@ function createWrapper() {
 
 describe('useAccounts hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('useAccounts', () => {

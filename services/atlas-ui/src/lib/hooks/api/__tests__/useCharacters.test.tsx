@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -19,15 +20,15 @@ import type { Tenant } from '@/types/models/tenant';
 import { ReactNode } from 'react';
 
 // Mock the characters service
-jest.mock('@/services/api/characters.service', () => ({
+vi.mock('@/services/api/characters.service', () => ({
   charactersService: {
-    getAll: jest.fn(),
-    getById: jest.fn(),
-    update: jest.fn(),
+    getAll: vi.fn(),
+    getById: vi.fn(),
+    update: vi.fn(),
   },
 }));
 
-const mockCharactersService = charactersService as jest.Mocked<typeof charactersService>;
+const mockCharactersService = charactersService as MockedFunction<typeof charactersService>;
 
 // Test data
 const mockTenant: Tenant = {
@@ -107,7 +108,7 @@ function createWrapper() {
 
 describe('useCharacters hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Query Keys', () => {

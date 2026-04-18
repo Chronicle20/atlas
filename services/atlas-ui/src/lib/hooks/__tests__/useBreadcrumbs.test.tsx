@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Tests for useBreadcrumbs hook
  */
@@ -9,20 +10,21 @@ import * as utils from '@/lib/breadcrumbs/utils';
 import * as routes from '@/lib/breadcrumbs/routes';
 
 // Mock dependencies
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-  usePathname: jest.fn(),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),
+  useNavigate: vi.fn(),
+  useLocation: vi.fn(() => ({ pathname: '/' })),
 }));
 
-jest.mock('@/context/tenant-context', () => ({
-  useTenant: jest.fn(),
+vi.mock('@/context/tenant-context', () => ({
+  useTenant: vi.fn(),
 }));
 
-jest.mock('@/lib/breadcrumbs/resolvers', () => ({
-  resolveEntityLabel: jest.fn(),
-  preloadEntityLabels: jest.fn(),
-  invalidateEntityLabels: jest.fn(),
-  getEntityTypeFromRoute: jest.fn(),
+vi.mock('@/lib/breadcrumbs/resolvers', () => ({
+  resolveEntityLabel: vi.fn(),
+  preloadEntityLabels: vi.fn(),
+  invalidateEntityLabels: vi.fn(),
+  getEntityTypeFromRoute: vi.fn(),
   EntityType: {
     ACCOUNT: 'account',
     CHARACTER: 'character',
@@ -33,29 +35,29 @@ jest.mock('@/lib/breadcrumbs/resolvers', () => ({
   },
 }));
 
-jest.mock('@/lib/breadcrumbs/utils', () => ({
-  parsePathname: jest.fn(),
-  buildBreadcrumbPath: jest.fn(),
-  filterVisibleBreadcrumbs: jest.fn(),
-  getParentBreadcrumb: jest.fn(),
-  getBreadcrumbKey: jest.fn(),
+vi.mock('@/lib/breadcrumbs/utils', () => ({
+  parsePathname: vi.fn(),
+  buildBreadcrumbPath: vi.fn(),
+  filterVisibleBreadcrumbs: vi.fn(),
+  getParentBreadcrumb: vi.fn(),
+  getBreadcrumbKey: vi.fn(),
 }));
 
-jest.mock('@/lib/breadcrumbs/routes', () => ({
-  findRouteConfig: jest.fn(),
-  getBreadcrumbsFromRoute: jest.fn(),
+vi.mock('@/lib/breadcrumbs/routes', () => ({
+  findRouteConfig: vi.fn(),
+  getBreadcrumbsFromRoute: vi.fn(),
 }));
 
 // Import mocked modules
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTenant } from '@/context/tenant-context';
 
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
-const mockUsePathname = usePathname as jest.MockedFunction<typeof usePathname>;
-const mockUseTenant = useTenant as jest.MockedFunction<typeof useTenant>;
-const mockResolvers = resolvers as jest.Mocked<typeof resolvers>;
-const mockUtils = utils as jest.Mocked<typeof utils>;
-const mockRoutes = routes as jest.Mocked<typeof routes>;
+const mockUseNavigate = useNavigate as MockedFunction<typeof useNavigate>;
+const mockUseLocation = useLocation as MockedFunction<typeof useLocation>;
+const mockUseTenant = useTenant as MockedFunction<typeof useTenant>;
+const mockResolvers = resolvers as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
+const mockUtils = utils as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
+const mockRoutes = routes as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
 
 // Test data
 const mockTenant = {
@@ -105,25 +107,18 @@ const mockRouteConfig = {
 describe('useBreadcrumbs', () => {
   beforeEach(() => {
     // Reset all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Setup default mock implementations
-    mockUsePathname.mockReturnValue('/characters/char-123');
-    mockUseRouter.mockReturnValue({
-      push: jest.fn(),
-      replace: jest.fn(),
-      refresh: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      prefetch: jest.fn(),
-    });
+    mockUseLocation.mockReturnValue({ pathname: '/characters/char-123', search: '', hash: '', state: null, key: 'default' });
+    mockUseNavigate.mockReturnValue(vi.fn());
     mockUseTenant.mockReturnValue({
       activeTenant: mockTenant,
       tenants: [mockTenant],
       loading: false,
-      setActiveTenant: jest.fn(),
-      refreshTenants: jest.fn(),
-      fetchTenantConfiguration: jest.fn(),
+      setActiveTenant: vi.fn(),
+      refreshTenants: vi.fn(),
+      fetchTenantConfiguration: vi.fn(),
     });
 
     // Setup breadcrumb utility mocks
@@ -219,15 +214,8 @@ describe('useBreadcrumbs', () => {
 
   describe('navigation utilities', () => {
     it('should navigate to parent when goToParent is called', () => {
-      const mockPush = jest.fn();
-      mockUseRouter.mockReturnValue({
-        push: mockPush,
-        replace: jest.fn(),
-        refresh: jest.fn(),
-        back: jest.fn(),
-        forward: jest.fn(),
-        prefetch: jest.fn(),
-      });
+      const mockPush = vi.fn();
+      mockUseNavigate.mockReturnValue(mockPush);
 
       const { result } = renderHook(() => useBreadcrumbs());
 
@@ -239,15 +227,8 @@ describe('useBreadcrumbs', () => {
     });
 
     it('should navigate to specific breadcrumb', () => {
-      const mockPush = jest.fn();
-      mockUseRouter.mockReturnValue({
-        push: mockPush,
-        replace: jest.fn(),
-        refresh: jest.fn(),
-        back: jest.fn(),
-        forward: jest.fn(),
-        prefetch: jest.fn(),
-      });
+      const mockPush = vi.fn();
+      mockUseNavigate.mockReturnValue(mockPush);
 
       const { result } = renderHook(() => useBreadcrumbs());
 
@@ -357,9 +338,9 @@ describe('useBreadcrumbs', () => {
         activeTenant: null,
         tenants: [],
         loading: false,
-        setActiveTenant: jest.fn(),
-        refreshTenants: jest.fn(),
-        fetchTenantConfiguration: jest.fn(),
+        setActiveTenant: vi.fn(),
+        refreshTenants: vi.fn(),
+        fetchTenantConfiguration: vi.fn(),
       });
 
       const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));

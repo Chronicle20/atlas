@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Tests for template React Query hooks
  */
@@ -29,9 +30,9 @@ import {
 import type { Template, TemplateAttributes } from '@/types/models/template';
 
 // Mock the templates service
-jest.mock('@/services/api/templates.service');
+vi.mock('@/services/api/templates.service');
 
-const mockTemplatesService = templateService.templatesService as jest.Mocked<typeof templateService.templatesService>;
+const mockTemplatesService = templateService.templatesService as MockedFunction<typeof templateService.templatesService>;
 
 // Sample test data
 const mockTemplate: Template = {
@@ -110,7 +111,7 @@ function createWrapper() {
 
 describe('useTemplates hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Query Keys', () => {
@@ -204,8 +205,8 @@ describe('useTemplates hooks', () => {
   describe('useCreateTemplate', () => {
     it('should create new template', async () => {
       const queryClient = new QueryClient();
-      const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
-      const setQueryDataSpy = jest.spyOn(queryClient, 'setQueryData');
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
 
       mockTemplatesService.create.mockResolvedValue(mockTemplate);
 
@@ -233,9 +234,9 @@ describe('useTemplates hooks', () => {
   describe('useUpdateTemplate', () => {
     it('should update template with optimistic updates', async () => {
       const queryClient = new QueryClient();
-      const cancelQueriesSpy = jest.spyOn(queryClient, 'cancelQueries');
-      const getQueryDataSpy = jest.spyOn(queryClient, 'getQueryData').mockReturnValue(mockTemplate);
-      const setQueryDataSpy = jest.spyOn(queryClient, 'setQueryData');
+      const cancelQueriesSpy = vi.spyOn(queryClient, 'cancelQueries');
+      const getQueryDataSpy = vi.spyOn(queryClient, 'getQueryData').mockReturnValue(mockTemplate);
+      const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
 
       const updatedTemplate = { ...mockTemplate, attributes: { ...mockTemplate.attributes, region: 'EMS' } };
       mockTemplatesService.update.mockResolvedValue(updatedTemplate);
@@ -268,8 +269,8 @@ describe('useTemplates hooks', () => {
   describe('useDeleteTemplate', () => {
     it('should delete template with optimistic updates', async () => {
       const queryClient = new QueryClient();
-      const cancelQueriesSpy = jest.spyOn(queryClient, 'cancelQueries');
-      const removeQueriesSpy = jest.spyOn(queryClient, 'removeQueries');
+      const cancelQueriesSpy = vi.spyOn(queryClient, 'cancelQueries');
+      const removeQueriesSpy = vi.spyOn(queryClient, 'removeQueries');
 
       mockTemplatesService.delete.mockResolvedValue();
 
@@ -482,7 +483,7 @@ describe('useTemplates hooks', () => {
     describe('useInvalidateTemplates', () => {
       it('should provide cache invalidation functions', () => {
         const queryClient = new QueryClient();
-        const invalidateQueriesSpy = jest.spyOn(queryClient, 'invalidateQueries');
+        const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
         const wrapper = ({ children }: { children: ReactNode }) => (
           <QueryClientProvider client={queryClient}>

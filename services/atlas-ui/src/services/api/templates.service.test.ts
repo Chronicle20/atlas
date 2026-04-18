@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -7,26 +8,26 @@ import { api } from '@/lib/api/client';
 import type { Template, TemplateAttributes } from '@/types/models/template';
 
 // Mock the API client
-jest.mock('@/lib/api/client', () => ({
+vi.mock('@/lib/api/client', () => ({
   api: {
-    getList: jest.fn(),
-    getOne: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    patch: jest.fn(),
-    delete: jest.fn(),
-    upload: jest.fn(),
-    download: jest.fn(),
-    clearCacheByPattern: jest.fn(),
-    getCacheStats: jest.fn(),
+    getList: vi.fn(),
+    getOne: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    upload: vi.fn(),
+    download: vi.fn(),
+    clearCacheByPattern: vi.fn(),
+    getCacheStats: vi.fn(),
   },
 }));
 
-const mockApi = api as jest.Mocked<typeof api>;
+const mockApi = api as MockedFunction<typeof api>;
 
 describe('TemplatesService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockTemplateAttributes: TemplateAttributes = {
@@ -417,7 +418,7 @@ describe('TemplatesService', () => {
       expect(result.type).toBe('application/json');
       
       // Mock the Blob text method for testing
-      const mockText = jest.fn().mockResolvedValue(JSON.stringify([mockTemplate]));
+      const mockText = vi.fn().mockResolvedValue(JSON.stringify([mockTemplate]));
       (result as any).text = mockText;
       
       const content = await result.text();
@@ -435,7 +436,7 @@ describe('TemplatesService', () => {
       
       // Mock the Blob text method for testing
       const csvContent = 'ID,Region,Major Version,Minor Version,Uses Pin,Character Templates Count,NPCs Count,Handlers Count,Writers Count,Worlds Count\ntemplate-1,GMS,83,1,false,1,1,1,1,1';
-      const mockText = jest.fn().mockResolvedValue(csvContent);
+      const mockText = vi.fn().mockResolvedValue(csvContent);
       (result as any).text = mockText;
       
       const content = await result.text();

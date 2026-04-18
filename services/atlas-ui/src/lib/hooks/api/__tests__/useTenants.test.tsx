@@ -1,3 +1,4 @@
+import { vi } from 'vitest';
 /**
  * Tests for useTenants React Query hooks
  */
@@ -24,18 +25,18 @@ import {
 } from '../useTenants';
 
 // Mock the tenants service
-jest.mock('@/services/api/tenants.service', () => ({
+vi.mock('@/services/api/tenants.service', () => ({
   tenantsService: {
-    getAllTenants: jest.fn(),
-    getTenantById: jest.fn(),
-    createTenant: jest.fn(),
-    updateTenant: jest.fn(),
-    deleteTenant: jest.fn(),
-    getAllTenantConfigurations: jest.fn(),
-    getTenantConfigurationById: jest.fn(),
-    createTenantConfiguration: jest.fn(),
-    updateTenantConfiguration: jest.fn(),
-    createTenantFromTemplate: jest.fn(),
+    getAllTenants: vi.fn(),
+    getTenantById: vi.fn(),
+    createTenant: vi.fn(),
+    updateTenant: vi.fn(),
+    deleteTenant: vi.fn(),
+    getAllTenantConfigurations: vi.fn(),
+    getTenantConfigurationById: vi.fn(),
+    createTenantConfiguration: vi.fn(),
+    updateTenantConfiguration: vi.fn(),
+    createTenantFromTemplate: vi.fn(),
   },
 }));
 
@@ -91,7 +92,7 @@ function createWrapper() {
 
 describe('useTenants hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Query key factories', () => {
@@ -108,7 +109,7 @@ describe('useTenants hooks', () => {
     describe('useTenants', () => {
       it('should fetch all tenants successfully', async () => {
         const mockTenants = [mockTenant];
-        (tenantsService.getAllTenants as jest.Mock).mockResolvedValue(mockTenants);
+        (tenantsService.getAllTenants as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenants);
 
         const { result } = renderHook(() => useTenants(), {
           wrapper: createWrapper(),
@@ -124,7 +125,7 @@ describe('useTenants hooks', () => {
 
       it('should pass options to service', async () => {
         const options = { signal: new AbortController().signal };
-        (tenantsService.getAllTenants as jest.Mock).mockResolvedValue([]);
+        (tenantsService.getAllTenants as ReturnType<typeof vi.fn>).mockResolvedValue([]);
 
         renderHook(() => useTenants(options), {
           wrapper: createWrapper(),
@@ -138,7 +139,7 @@ describe('useTenants hooks', () => {
 
     describe('useTenant', () => {
       it('should fetch tenant by ID successfully', async () => {
-        (tenantsService.getTenantById as jest.Mock).mockResolvedValue(mockTenant);
+        (tenantsService.getTenantById as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenant);
 
         const { result } = renderHook(() => useTenant('test-tenant-1'), {
           wrapper: createWrapper(),
@@ -164,7 +165,7 @@ describe('useTenants hooks', () => {
 
     describe('useCreateTenant', () => {
       it('should create tenant successfully', async () => {
-        (tenantsService.createTenant as jest.Mock).mockResolvedValue(mockTenant);
+        (tenantsService.createTenant as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenant);
 
         const { result } = renderHook(() => useCreateTenant(), {
           wrapper: createWrapper(),
@@ -182,8 +183,8 @@ describe('useTenants hooks', () => {
 
       it('should handle creation errors', async () => {
         const error = new Error('Creation failed');
-        (tenantsService.createTenant as jest.Mock).mockRejectedValue(error);
-        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+        (tenantsService.createTenant as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
         const { result } = renderHook(() => useCreateTenant(), {
           wrapper: createWrapper(),
@@ -205,7 +206,7 @@ describe('useTenants hooks', () => {
     describe('useUpdateTenant', () => {
       it('should update tenant successfully', async () => {
         const updatedTenant = { ...mockTenant, attributes: { ...mockTenant.attributes, name: 'Updated' } };
-        (tenantsService.updateTenant as jest.Mock).mockResolvedValue(updatedTenant);
+        (tenantsService.updateTenant as ReturnType<typeof vi.fn>).mockResolvedValue(updatedTenant);
 
         const { result } = renderHook(() => useUpdateTenant(), {
           wrapper: createWrapper(),
@@ -225,7 +226,7 @@ describe('useTenants hooks', () => {
 
     describe('useDeleteTenant', () => {
       it('should delete tenant successfully', async () => {
-        (tenantsService.deleteTenant as jest.Mock).mockResolvedValue(undefined);
+        (tenantsService.deleteTenant as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
         const { result } = renderHook(() => useDeleteTenant(), {
           wrapper: createWrapper(),
@@ -246,7 +247,7 @@ describe('useTenants hooks', () => {
     describe('useTenantConfigurations', () => {
       it('should fetch all configurations successfully', async () => {
         const mockConfigs = [mockTenantConfig];
-        (tenantsService.getAllTenantConfigurations as jest.Mock).mockResolvedValue(mockConfigs);
+        (tenantsService.getAllTenantConfigurations as ReturnType<typeof vi.fn>).mockResolvedValue(mockConfigs);
 
         const { result } = renderHook(() => useTenantConfigurations(), {
           wrapper: createWrapper(),
@@ -263,7 +264,7 @@ describe('useTenants hooks', () => {
 
     describe('useTenantConfiguration', () => {
       it('should fetch configuration by ID successfully', async () => {
-        (tenantsService.getTenantConfigurationById as jest.Mock).mockResolvedValue(mockTenantConfig);
+        (tenantsService.getTenantConfigurationById as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenantConfig);
 
         const { result } = renderHook(() => useTenantConfiguration('test-config-1'), {
           wrapper: createWrapper(),
@@ -280,7 +281,7 @@ describe('useTenants hooks', () => {
 
     describe('useCreateTenantConfiguration', () => {
       it('should create configuration successfully', async () => {
-        (tenantsService.createTenantConfiguration as jest.Mock).mockResolvedValue(mockTenantConfig);
+        (tenantsService.createTenantConfiguration as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenantConfig);
 
         const { result } = renderHook(() => useCreateTenantConfiguration(), {
           wrapper: createWrapper(),
@@ -303,7 +304,7 @@ describe('useTenants hooks', () => {
     describe('useUpdateTenantConfiguration', () => {
       it('should update configuration successfully', async () => {
         const updatedConfig = { ...mockTenantConfig, attributes: { ...mockTenantConfig.attributes, usesPin: true } };
-        (tenantsService.updateTenantConfiguration as jest.Mock).mockResolvedValue(updatedConfig);
+        (tenantsService.updateTenantConfiguration as ReturnType<typeof vi.fn>).mockResolvedValue(updatedConfig);
 
         const { result } = renderHook(() => useUpdateTenantConfiguration(), {
           wrapper: createWrapper(),
@@ -326,7 +327,7 @@ describe('useTenants hooks', () => {
     describe('useCreateFromTemplate', () => {
       it('should create from template', () => {
         const templateAttributes = { ...mockTenantConfig.attributes };
-        (tenantsService.createTenantFromTemplate as jest.Mock).mockReturnValue(templateAttributes);
+        (tenantsService.createTenantFromTemplate as ReturnType<typeof vi.fn>).mockReturnValue(templateAttributes);
 
         const { result } = renderHook(() => useCreateFromTemplate());
 

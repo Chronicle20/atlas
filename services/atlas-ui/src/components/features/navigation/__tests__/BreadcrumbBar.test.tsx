@@ -1,42 +1,39 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
 
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import { useNavigate } from "react-router-dom";
+import { render as rtlRender, screen, waitFor } from '@testing-library/react';
+import { useNavigate, MemoryRouter } from "react-router-dom";
 import { BreadcrumbBar, SimpleBreadcrumbBar } from '../BreadcrumbBar';
+
+function render(ui: React.ReactElement) {
+  return rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+}
 import { useTenant } from '@/context/tenant-context';
 import { useBreadcrumbs } from '@/lib/hooks/useBreadcrumbs';
 
 // Mock dependencies
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn(),
-  usePathname: jest.fn(() => '/characters/123'),
+vi.mock('react-router-dom', async () => ({
+  ...(await vi.importActual<typeof import('react-router-dom')>('react-router-dom')),
+
+  useNavigate: vi.fn(),
+  useLocation: vi.fn(() => ({ pathname: '/characters/123' })),
+
 }));
 
-jest.mock('@/context/tenant-context', () => ({
-  useTenant: jest.fn(),
+vi.mock('@/context/tenant-context', () => ({
+  useTenant: vi.fn(),
 }));
 
-jest.mock('@/lib/hooks/useBreadcrumbs', () => ({
-  useBreadcrumbs: jest.fn(),
+vi.mock('@/lib/hooks/useBreadcrumbs', () => ({
+  useBreadcrumbs: vi.fn(),
 }));
 
-// Mock Link component
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href, ...props }: { children: React.ReactNode; href: string; [key: string]: unknown }) => (
-    <a href={href} {...props}>
-      {children}
-    </a>
-  );
-  MockLink.displayName = 'MockLink';
-  return MockLink;
-});
-
-const mockUseTenant = useTenant as jest.MockedFunction<typeof useTenant>;
-const mockUseBreadcrumbs = useBreadcrumbs as jest.MockedFunction<typeof useBreadcrumbs>;
-const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
+const mockUseTenant = useTenant as MockedFunction<typeof useTenant>;
+const mockUseBreadcrumbs = useBreadcrumbs as MockedFunction<typeof useBreadcrumbs>;
+const mockUseNavigate = useNavigate as MockedFunction<typeof useNavigate>;
 
 // Test data
 const mockTenant = {
@@ -86,20 +83,20 @@ const mockBreadcrumbsResult = {
     entityType: 'character',
   },
   navigation: {
-    goToParent: jest.fn(),
-    navigateTo: jest.fn(),
-    getParent: jest.fn(() => mockBreadcrumbs[1]),
+    goToParent: vi.fn(),
+    navigateTo: vi.fn(),
+    getParent: vi.fn(() => mockBreadcrumbs[1]),
   },
   resolution: {
-    resolveLabel: jest.fn(),
-    invalidateLabels: jest.fn(),
-    preloadLabels: jest.fn(),
+    resolveLabel: vi.fn(),
+    invalidateLabels: vi.fn(),
+    preloadLabels: vi.fn(),
     resolutionStates: new Map(),
   },
   utils: {
-    getCacheKey: jest.fn(() => 'cache-key'),
+    getCacheKey: vi.fn(() => 'cache-key'),
     isValidRoute: true,
-    getFilteredBreadcrumbs: jest.fn(() => mockBreadcrumbs),
+    getFilteredBreadcrumbs: vi.fn(() => mockBreadcrumbs),
   },
 };
 
@@ -110,25 +107,18 @@ describe('BreadcrumbBar', () => {
       tenants: [mockTenant],
       activeTenant: mockTenant,
       loading: false,
-      setActiveTenant: jest.fn(),
-      refreshTenants: jest.fn(),
-      fetchTenantConfiguration: jest.fn(),
+      setActiveTenant: vi.fn(),
+      refreshTenants: vi.fn(),
+      fetchTenantConfiguration: vi.fn(),
     });
 
     mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult);
 
-    mockUseRouter.mockReturnValue({
-      push: jest.fn(),
-      replace: jest.fn(),
-      back: jest.fn(),
-      forward: jest.fn(),
-      refresh: jest.fn(),
-      prefetch: jest.fn(),
-    });
+    mockUseNavigate.mockReturnValue(vi.fn());
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Basic Rendering', () => {
@@ -150,9 +140,9 @@ describe('BreadcrumbBar', () => {
         tenants: [],
         activeTenant: null,
         loading: true,
-        setActiveTenant: jest.fn(),
-        refreshTenants: jest.fn(),
-        fetchTenantConfiguration: jest.fn(),
+        setActiveTenant: vi.fn(),
+        refreshTenants: vi.fn(),
+        fetchTenantConfiguration: vi.fn(),
       });
 
       render(<BreadcrumbBar />);
@@ -177,7 +167,7 @@ describe('BreadcrumbBar', () => {
     });
 
     it('should handle error state gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation();
       
       mockUseBreadcrumbs.mockReturnValue({
         ...mockBreadcrumbsResult,
@@ -302,9 +292,9 @@ describe('BreadcrumbBar', () => {
         tenants: [],
         activeTenant: null,
         loading: false,
-        setActiveTenant: jest.fn(),
-        refreshTenants: jest.fn(),
-        fetchTenantConfiguration: jest.fn(),
+        setActiveTenant: vi.fn(),
+        refreshTenants: vi.fn(),
+        fetchTenantConfiguration: vi.fn(),
       });
 
       render(<BreadcrumbBar />);
@@ -338,9 +328,9 @@ describe('SimpleBreadcrumbBar', () => {
       tenants: [mockTenant],
       activeTenant: mockTenant,
       loading: false,
-      setActiveTenant: jest.fn(),
-      refreshTenants: jest.fn(),
-      fetchTenantConfiguration: jest.fn(),
+      setActiveTenant: vi.fn(),
+      refreshTenants: vi.fn(),
+      fetchTenantConfiguration: vi.fn(),
     });
 
     mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult);

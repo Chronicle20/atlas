@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -30,20 +31,20 @@ import type { Tenant } from '@/types/models/tenant';
 import { ReactNode } from 'react';
 
 // Mock the inventory service
-jest.mock('@/services/api/inventory.service', () => ({
+vi.mock('@/services/api/inventory.service', () => ({
   inventoryService: {
-    getInventory: jest.fn(),
-    getCompartments: jest.fn(),
-    getCompartmentAssets: jest.fn(),
-    getInventorySummary: jest.fn(),
-    hasAsset: jest.fn(),
-    deleteAsset: jest.fn(),
-    getCompartmentTypeName: jest.fn(),
-    getAssetsForCompartment: jest.fn(),
+    getInventory: vi.fn(),
+    getCompartments: vi.fn(),
+    getCompartmentAssets: vi.fn(),
+    getInventorySummary: vi.fn(),
+    hasAsset: vi.fn(),
+    deleteAsset: vi.fn(),
+    getCompartmentTypeName: vi.fn(),
+    getAssetsForCompartment: vi.fn(),
   },
 }));
 
-const mockInventoryService = inventoryService as jest.Mocked<typeof inventoryService>;
+const mockInventoryService = inventoryService as MockedFunction<typeof inventoryService>;
 
 // Test data
 const mockTenant: Tenant = {
@@ -216,7 +217,7 @@ function createWrapper() {
 
 describe('useInventory hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Query Keys', () => {

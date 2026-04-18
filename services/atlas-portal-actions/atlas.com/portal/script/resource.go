@@ -85,7 +85,7 @@ func GetScriptsByPortalHandler(d *rest.HandlerDependency, c *rest.HandlerContext
 		return func(w http.ResponseWriter, r *http.Request) {
 			m, err := NewProcessor(d.Logger(), d.Context(), d.DB()).ByPortalIdProvider(portalId)()
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				d.Logger().WithError(err).Errorf("Script not found for portal [%s].", portalId)
+				d.Logger().WithField("portalId", portalId).Debugf("No script configured for portal.")
 				w.WriteHeader(http.StatusNotFound)
 				return
 			}

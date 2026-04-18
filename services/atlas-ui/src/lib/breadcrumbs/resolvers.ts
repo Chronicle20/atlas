@@ -47,21 +47,23 @@ export interface ResolvedLabel {
   isFallback: boolean;
 }
 
-// Entity type mapping for resolver selection
-export enum EntityType {
-  ACCOUNT = 'account',
-  CHARACTER = 'character',
-  GUILD = 'guild',
-  NPC = 'npc',
-  SERVICE = 'service',
-  TEMPLATE = 'template',
-  TENANT = 'tenant',
-  MONSTER = 'monster',
-  MAP = 'map',
-  REACTOR = 'reactor',
-  PORTAL = 'portal',
-  ITEM = 'item',
-}
+// Entity type mapping for resolver selection. Expressed as a const object
+// (see src/types/models/ban.ts BanType comment re: erasableSyntaxOnly).
+export const EntityType = {
+  ACCOUNT: 'account',
+  CHARACTER: 'character',
+  GUILD: 'guild',
+  NPC: 'npc',
+  SERVICE: 'service',
+  TEMPLATE: 'template',
+  TENANT: 'tenant',
+  MONSTER: 'monster',
+  MAP: 'map',
+  REACTOR: 'reactor',
+  PORTAL: 'portal',
+  ITEM: 'item',
+} as const;
+export type EntityType = typeof EntityType[keyof typeof EntityType];
 
 // Default resolver options
 const DEFAULT_OPTIONS: Required<ResolverOptions> = {
@@ -195,9 +197,11 @@ const resolverCache = new ResolverCache();
 
 // Special error type for distinguishing between service errors and fallback scenarios
 class ResolverError extends Error {
-  constructor(message: string, public isServiceError: boolean = false) {
+  isServiceError: boolean;
+  constructor(message: string, isServiceError: boolean = false) {
     super(message);
     this.name = 'ResolverError';
+    this.isServiceError = isServiceError;
   }
 }
 
@@ -243,7 +247,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.SERVICE]: async (tenant, entityId, options = {}) => {
+  [EntityType.SERVICE]: async (_tenant, entityId, options = {}) => {
     try {
       const service = await servicesService.getServiceById(entityId, options);
       return getServiceTypeDisplayName(service.attributes.type);
@@ -253,7 +257,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.TEMPLATE]: async (tenant, entityId, options = {}) => {
+  [EntityType.TEMPLATE]: async (_tenant, entityId, options = {}) => {
     try {
       // Note: Templates service doesn't require tenant context for getById
       const template = await templatesService.getById(entityId, options);
@@ -265,7 +269,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.TENANT]: async (tenant, entityId, options = {}) => {
+  [EntityType.TENANT]: async (_tenant, entityId, options = {}) => {
     try {
       const targetTenant = await tenantsService.getTenantById(entityId, options);
       return targetTenant.attributes?.name || `Tenant ${entityId}`;
@@ -309,7 +313,7 @@ const resolvers: Record<EntityType, EntityResolver> = {
     return `Portal ${entityId}`;
   },
 
-  [EntityType.ITEM]: async (tenant, entityId, options = {}) => {
+  [EntityType.ITEM]: async (tenant, entityId, _options = {}) => {
     try {
       const item = await itemStringsService.getItemString(entityId, tenant);
       return item.attributes?.name || `Item ${entityId}`;

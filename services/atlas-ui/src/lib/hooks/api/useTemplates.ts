@@ -145,7 +145,7 @@ export function useUpdateTemplate(): UseMutationResult<
       }
       console.error('Failed to update template:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: templateKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: templateKeys.lists() });
@@ -312,7 +312,7 @@ export function useDeleteTemplatesBatch(): UseMutationResult<
       
       return { previousTemplates };
     },
-    onError: (error, variables, context) => {
+    onError: (error, _variables, context) => {
       // Restore templates to cache on error
       if (context?.previousTemplates) {
         context.previousTemplates.forEach(({ id, template }) => {

@@ -179,9 +179,9 @@ export function isServerError(error: unknown): error is ServerError {
  * Utility function to create an ApiError from an HTTP response
  */
 export function createApiErrorFromResponse(
-  statusCode: number, 
-  message: string, 
-  code?: string
+  statusCode: number,
+  message: string,
+  _code?: string,
 ): ApiErrorType {
   switch (statusCode) {
     case 400:
@@ -226,18 +226,6 @@ export function createApiErrorFromResponse(
         code: 'NETWORK_ERROR' 
       } as NetworkError;
   }
-}
-
-/**
- * Get a default error code based on HTTP status code
- */
-function getDefaultErrorCode(statusCode: number): string {
-  if (statusCode >= 400 && statusCode < 500) {
-    return 'CLIENT_ERROR';
-  } else if (statusCode >= 500) {
-    return 'SERVER_ERROR';
-  }
-  return 'UNKNOWN_ERROR';
 }
 
 /**

@@ -1,5 +1,5 @@
 
-import { ColumnDef } from "@tanstack/react-table"
+import { type ColumnDef } from "@tanstack/react-table"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Zap, CheckCircle } from "lucide-react"
 import {

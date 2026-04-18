@@ -13,7 +13,7 @@ export interface PortalScriptData {
 }
 
 class PortalScriptsService {
-  async getScriptsByPortal(portalId: string, tenant: Tenant): Promise<PortalScriptData | null> {
+  async getScriptsByPortal(portalId: string, _tenant: Tenant): Promise<PortalScriptData | null> {
     try {
       const results = await api.getList<PortalScriptData>(`/api/portals/${portalId}/scripts`);
       return results[0] ?? null;

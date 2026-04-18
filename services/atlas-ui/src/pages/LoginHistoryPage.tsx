@@ -2,7 +2,7 @@
 import { useTenant } from "@/context/tenant-context";
 import { useCallback, useState } from "react";
 import { loginHistoryService } from "@/services/api/login-history.service";
-import { LoginHistoryEntry, BanType } from "@/types/models/ban";
+import { type LoginHistoryEntry, BanType } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
 import { Toaster, toast } from "sonner";
 import { createErrorFromUnknown } from "@/types/api/errors";

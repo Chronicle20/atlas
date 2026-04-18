@@ -106,15 +106,17 @@ export interface InventoryResponse {
 }
 
 /**
- * Compartment type enumeration mapping
+ * Compartment type enumeration mapping. Expressed as a const object (see
+ * src/types/models/ban.ts BanType comment re: erasableSyntaxOnly).
  */
-export enum CompartmentType {
-  EQUIPABLES = 1,
-  CONSUMABLES = 2,
-  SETUP = 3,
-  ETC = 4,
-  CASH = 5,
-}
+export const CompartmentType = {
+  EQUIPABLES: 1,
+  CONSUMABLES: 2,
+  SETUP: 3,
+  ETC: 4,
+  CASH: 5,
+} as const;
+export type CompartmentType = typeof CompartmentType[keyof typeof CompartmentType];
 
 class InventoryService {
   private basePath = '/api/characters';
@@ -162,7 +164,7 @@ class InventoryService {
   /**
    * Fetch inventory data for a character
    */
-  async getInventory(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
+  async getInventory(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
     // Set tenant for this request
     // Use the API client to fetch inventory - use get() instead of getOne() to preserve included array
     return api.get<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
@@ -172,7 +174,7 @@ class InventoryService {
    * Delete an asset from inventory
    */
   async deleteAsset(
-    tenant: Tenant,
+    _tenant: Tenant,
     characterId: string,
     compartmentId: string,
     assetId: string,

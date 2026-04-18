@@ -1,7 +1,6 @@
 import {useSidebar} from "@/components/ui/sidebar"
 import {Button} from "@/components/ui/button";
 import {PanelLeft} from "lucide-react";
-import * as React from "react";
 
 export function SidebarToggle() {
     const {toggleSidebar} = useSidebar()

@@ -1,12 +1,12 @@
 
-import { ColumnDef } from "@tanstack/react-table"
+import { type ColumnDef } from "@tanstack/react-table"
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";
-import {MoreHorizontal, LogOut, Shield, ShieldOff, Loader2} from "lucide-react";
+import {MoreHorizontal, Shield, ShieldOff, Loader2} from "lucide-react";
 import {accountsService} from "@/services/api/accounts.service";
-import {Account} from "@/types/models/account";
+import {type Account} from "@/types/models/account";
 import { Link } from "react-router-dom";
 import type {Tenant} from "@/types/models/tenant";
 import type {CheckBanAttributes} from "@/types/models/ban";

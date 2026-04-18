@@ -25,7 +25,7 @@ class GuildsService {
   /**
    * Get all guilds for a tenant
    */
-  async getAll(tenant: Tenant, options?: ServiceOptions): Promise<Guild[]> {
+  async getAll(_tenant: Tenant, options?: ServiceOptions): Promise<Guild[]> {
     const guilds = await api.getList<Guild>(this.basePath, options);
     return this.sortGuilds(guilds);
   }
@@ -33,7 +33,7 @@ class GuildsService {
   /**
    * Get guild by ID for a tenant
    */
-  async getById(tenant: Tenant, guildId: string, options?: ServiceOptions): Promise<Guild> {
+  async getById(_tenant: Tenant, guildId: string, options?: ServiceOptions): Promise<Guild> {
     const guild = await api.getOne<Guild>(`${this.basePath}/${guildId}`, options);
     return this.transformGuildResponse(guild);
   }

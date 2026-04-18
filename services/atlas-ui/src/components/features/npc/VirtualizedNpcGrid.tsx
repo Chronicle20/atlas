@@ -2,7 +2,7 @@ import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { NpcCard } from "./NpcCard";
 import { NpcCardSkeleton } from "./NpcCardSkeleton";
 import { User } from "lucide-react";
-import { NPC } from "@/types/models/npc";
+import { type NPC } from "@/types/models/npc";
 
 interface VirtualizedNpcGridProps {
   npcs: NPC[];

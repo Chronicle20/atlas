@@ -125,7 +125,7 @@ function getWeaponType(itemId: number): WeaponType {
 /**
  * Two-handed weapon types for stance determination
  */
-const TWO_HANDED_WEAPON_TYPES = new Set([
+const TWO_HANDED_WEAPON_TYPES: Set<WeaponType> = new Set([
   WeaponType.TwoHandedSword,
   WeaponType.TwoHandedAxe,
   WeaponType.TwoHandedMace,

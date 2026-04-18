@@ -8,7 +8,7 @@ import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { Link } from "react-router-dom";
 import { useTenant } from "@/context/tenant-context";
-import { mapEntitiesService, type MapPortalData } from "@/services/api/map-entities.service";
+import { mapEntitiesService } from "@/services/api/map-entities.service";
 
 export function PortalDetailPage() {
   const params = useParams();

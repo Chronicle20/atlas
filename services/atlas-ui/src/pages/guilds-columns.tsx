@@ -1,8 +1,8 @@
 
-import {ColumnDef} from "@tanstack/react-table"
+import {type ColumnDef} from "@tanstack/react-table"
 import type {TenantConfig} from "@/types/models/tenant";
-import {Guild} from "@/types/models/guild";
-import {Character} from "@/types/models/character";
+import {type Guild} from "@/types/models/guild";
+import {type Character} from "@/types/models/character";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
 import {Badge} from "@/components/ui/badge";
 import { Link } from "react-router-dom";

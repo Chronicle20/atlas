@@ -6,7 +6,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal, ShoppingBag, MessageCircle, Upload } from "lucide-react";
 import { useMemo } from "react";
 import { Link } from "react-router-dom";
-import { NPC } from "@/types/models/npc";
+import { type NPC } from "@/types/models/npc";
 import { NpcImage } from "./NpcImage";
 import { NpcErrorBoundary } from "./NpcErrorBoundary";
 import { useNpcErrorHandler } from "@/lib/hooks/useNpcErrorHandler";

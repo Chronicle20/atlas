@@ -1,13 +1,18 @@
 // Ban domain model types
 
 /**
- * Ban type enumeration matching backend constants
+ * Ban type enumeration matching backend constants.
+ *
+ * Expressed as a const object rather than a TS `enum` so the type-only
+ * strip the Vite/ESBuild toolchain performs is lossless (see
+ * `erasableSyntaxOnly` in tsconfig.app.json).
  */
-export enum BanType {
-    IP = 0,
-    HWID = 1,
-    Account = 2
-}
+export const BanType = {
+    IP: 0,
+    HWID: 1,
+    Account: 2,
+} as const;
+export type BanType = typeof BanType[keyof typeof BanType];
 
 /**
  * Human-readable labels for ban types
@@ -19,16 +24,17 @@ export const BanTypeLabels: Record<BanType, string> = {
 };
 
 /**
- * Reason codes for bans
+ * Reason codes for bans (see BanType comment re: const-object shape).
  */
-export enum BanReasonCode {
-    Unspecified = 0,
-    Spamming = 1,
-    Hacking = 2,
-    TermsViolation = 3,
-    Harassment = 4,
-    Other = 5
-}
+export const BanReasonCode = {
+    Unspecified: 0,
+    Spamming: 1,
+    Hacking: 2,
+    TermsViolation: 3,
+    Harassment: 4,
+    Other: 5,
+} as const;
+export type BanReasonCode = typeof BanReasonCode[keyof typeof BanReasonCode];
 
 /**
  * Human-readable labels for reason codes

@@ -20,8 +20,8 @@ function transformBan(data: Ban): Ban {
     ...data,
     attributes: {
       ...data.attributes,
-      banType: Number(data.attributes.banType),
-      reasonCode: Number(data.attributes.reasonCode),
+      banType: Number(data.attributes.banType) as typeof data.attributes.banType,
+      reasonCode: Number(data.attributes.reasonCode) as typeof data.attributes.reasonCode,
       permanent: Boolean(data.attributes.permanent),
       expiresAt: String(data.attributes.expiresAt),
     },

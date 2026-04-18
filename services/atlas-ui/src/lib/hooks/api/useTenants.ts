@@ -113,7 +113,7 @@ export function useUpdateTenant(): UseMutationResult<
       }
       console.error('Failed to update tenant:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: tenantKeys.basicDetail(variables.tenant.id) });
       queryClient.invalidateQueries({ queryKey: tenantKeys.basicLists() });
@@ -249,7 +249,7 @@ export function useUpdateTenantConfiguration(): UseMutationResult<
       }
       console.error('Failed to update tenant configuration:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: tenantKeys.configDetail(variables.tenant.id) });
       queryClient.invalidateQueries({ queryKey: tenantKeys.configLists() });

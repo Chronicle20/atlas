@@ -25,7 +25,6 @@ import {
   useInvalidateServices,
 } from "@/lib/hooks/api/useServices";
 import type {
-  Service,
   TaskConfig,
   LoginTenant,
   ChannelTenant,

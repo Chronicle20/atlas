@@ -1,6 +1,6 @@
 
-import {ColumnDef} from "@tanstack/react-table"
-import {Commodity} from "@/types/models/npc";
+import {type ColumnDef} from "@tanstack/react-table"
+import {type Commodity} from "@/types/models/npc";
 import {Button} from "@/components/ui/button";
 import {MoreHorizontal} from "lucide-react";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";

@@ -117,7 +117,7 @@ export function useUpdateService(): UseMutationResult<
       }
       console.error('Failed to update service:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Clear API client cache for services
       api.clearCacheByPattern('services');
 

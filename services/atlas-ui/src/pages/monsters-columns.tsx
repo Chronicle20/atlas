@@ -1,5 +1,5 @@
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import type { MonsterData } from "@/types/models/monster";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";

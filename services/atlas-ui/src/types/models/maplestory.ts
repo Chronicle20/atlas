@@ -4,31 +4,32 @@
  */
 
 import type { Character } from './character';
-import type { Asset } from '@/services/api/inventory.service';
 
 /**
- * Weapon type enumeration based on MapleStory item classification
- * Matches the Go backend weapon type constants
+ * Weapon type enumeration based on MapleStory item classification.
+ * Expressed as a const object (see ban.ts BanType comment re:
+ * erasableSyntaxOnly).
  */
-export enum WeaponType {
-  OneHandedSword = 0,
-  OneHandedAxe = 1,
-  OneHandedMace = 2,
-  Dagger = 3,
-  Wand = 7,
-  Staff = 8,
-  TwoHandedSword = 10,
-  TwoHandedAxe = 11,
-  TwoHandedMace = 12,
-  Spear = 13,
-  Polearm = 14,
-  Bow = 15,
-  Crossbow = 16,
-  Claw = 17,
-  Knuckle = 18,
-  Gun = 19,
-  None = 99,
-}
+export const WeaponType = {
+  OneHandedSword: 0,
+  OneHandedAxe: 1,
+  OneHandedMace: 2,
+  Dagger: 3,
+  Wand: 7,
+  Staff: 8,
+  TwoHandedSword: 10,
+  TwoHandedAxe: 11,
+  TwoHandedMace: 12,
+  Spear: 13,
+  Polearm: 14,
+  Bow: 15,
+  Crossbow: 16,
+  Claw: 17,
+  Knuckle: 18,
+  Gun: 19,
+  None: 99,
+} as const;
+export type WeaponType = typeof WeaponType[keyof typeof WeaponType];
 
 /**
  * Equipment data structure mapping inventory slots to item IDs

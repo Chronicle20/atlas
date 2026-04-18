@@ -53,12 +53,12 @@ export function useUpdateWallet(): UseMutationResult<
 
       return { previousWallet };
     },
-    onError: (error, { tenant, accountId }, context) => {
+    onError: (_error, { tenant, accountId }, context) => {
       if (context?.previousWallet) {
         queryClient.setQueryData(walletKeys.detail(tenant, accountId), context.previousWallet);
       }
     },
-    onSettled: (data, error, { tenant, accountId }) => {
+    onSettled: (_data, _error, { tenant, accountId }) => {
       queryClient.invalidateQueries({ queryKey: walletKeys.detail(tenant, accountId) });
     },
   });

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { InventoryCard, InventoryCardSkeleton } from './InventoryCard';
 import { cn } from '@/lib/utils';
 import { useItemDataCache } from '@/lib/hooks/useItemData';

@@ -13,7 +13,7 @@ class CharactersService {
   /**
    * Get all characters for a tenant
    */
-  async getAll(tenant: Tenant, options?: ServiceOptions): Promise<Character[]> {
+  async getAll(_tenant: Tenant, options?: ServiceOptions): Promise<Character[]> {
     // Set tenant for this request
     // Use the API client to fetch characters
     return api.getList<Character>(this.basePath, options);
@@ -22,7 +22,7 @@ class CharactersService {
   /**
    * Get character by ID for a tenant
    */
-  async getById(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Character> {
+  async getById(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Character> {
     // Set tenant for this request
     // Use the API client to fetch a single character
     return api.getOne<Character>(`${this.basePath}/${characterId}`, options);
@@ -31,14 +31,14 @@ class CharactersService {
   /**
    * Delete a character permanently
    */
-  async deleteCharacter(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<void> {
+  async deleteCharacter(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${this.basePath}/${characterId}`, options);
   }
 
   /**
    * Update existing character with JSON:API format
    */
-  async update(tenant: Tenant, characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
+  async update(_tenant: Tenant, characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
     // Set tenant for this request
     // Prepare the JSON:API formatted request body
     const requestBody = {

@@ -1,4 +1,4 @@
-import {createContext, ReactNode, useContext, useEffect, useRef, useState} from "react";
+import {createContext, type ReactNode, useContext, useEffect, useRef, useState} from "react";
 import {useQueryClient} from "@tanstack/react-query";
 import {tenantsService} from "@/services/api";
 import {api} from "@/lib/api/client";
@@ -24,7 +24,7 @@ export function TenantProvider({children}: { children: ReactNode }) {
     const [activeTenant, setActiveTenantState] = useState<Tenant | null>(null);
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const [_error, setError] = useState<string | null>(null);
 
     const LOCAL_STORAGE_KEY = "activeTenantId";
 

@@ -1,11 +1,11 @@
 
-import {ColumnDef} from "@tanstack/react-table"
+import {type ColumnDef} from "@tanstack/react-table"
 import type {Tenant, TenantConfig} from "@/types/models/tenant";
 import {getJobNameById} from "@/lib/jobs";
 import {Badge} from "@/components/ui/badge";
 import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import {Character} from "@/types/models/character";
-import {Account} from "@/types/models/account";
+import {type Character} from "@/types/models/character";
+import {type Account} from "@/types/models/account";
 import {MapCell} from "@/components/map-cell";
 import {DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger} from "@/components/ui/dropdown-menu";
 import {Button} from "@/components/ui/button";

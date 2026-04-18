@@ -3,7 +3,7 @@
  * Defines all application routes and their breadcrumb metadata
  */
 
-import { BreadcrumbSegment } from './utils';
+import { type BreadcrumbSegment } from './utils';
 
 // Types for route configuration
 export interface RouteConfig {

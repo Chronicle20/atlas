@@ -260,8 +260,14 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 - [ ] Route-level `React.lazy` splitting for the 46 pages. The current bundle is a single ~1.1 MB chunk (gzip ~300 KB). Lazy-load detail pages and rarely-visited routes to shrink the initial payload.
 - [ ] Revisit the one `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build` (`src/lib/breadcrumbs/resolvers.ts` dynamically imports service modules that are also statically imported by hooks).
 
-### Phase 4 deferral (data fetching consolidation — whole phase)
-- [ ] Replace every remaining `useState` + `useEffect` + service-call pattern with a React Query hook. Create missing hooks under `src/lib/hooks/api/use-<resource>.ts`. Centralise query keys in `src/lib/hooks/api/query-keys.ts`. Wire `useMutation.onSuccess` → `queryClient.invalidateQueries` for every write hook. Delete the legacy `lib/hooks/` wrappers (`useNpcData`, `useItemData`, `useMobData`, `useSkillData`). Completion bar: `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0.
+### Phase 4 (data fetching consolidation — in progress)
+
+Six pages migrated to React Query so far: AccountsPage, CharactersPage, GuildsPage, QuestsPage, BansPage, GuildDetailPage. Two new hook modules added (`useQuests`, `useBans`) alongside the existing ~15 under `src/lib/hooks/api/`.
+
+- [ ] Convert the remaining 27 pages that still carry a `useEffect` (run `grep -rln useEffect services/atlas-ui/src/pages/`). Detail pages (`ItemDetailPage`, `MerchantDetailPage`, `NpcDetailPage`, etc.) and form pages (`templates-handlers-form`, etc.) are the bulk; filter/search pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`) need careful conversion because their `useEffect` interacts with `useSearchParams` — audit the push/replace flow at the same time (see Phase 3 deferral on `useSearchParams`).
+- [ ] Centralise query keys in a single `src/lib/hooks/api/query-keys.ts` module. Today each hook file declares its own `xKeys = { all, lists, list, details, detail }` — fine for the ~17 existing modules, but worth factoring if a shared invalidation layer is added later.
+- [ ] Delete the legacy `lib/hooks/` wrappers (`useNpcData`, `useItemData`, `useMobData`, `useSkillData`) once their callers move to the `lib/hooks/api/use<Resource>` variants.
+- [ ] Completion bar: `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0.
 
 ### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
 

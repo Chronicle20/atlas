@@ -337,7 +337,7 @@ describe('Entity Label Resolution', () => {
   });
 
   describe('Batch Resolution', () => {
-    it.skip('should resolve multiple entities', async () => {
+    it('should resolve multiple entities', async () => {
       const { charactersService } = await import('@/services/api');
       (charactersService.getById as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({
@@ -375,7 +375,7 @@ describe('Entity Label Resolution', () => {
       expect(charactersService.getById).toHaveBeenCalledTimes(2);
     });
 
-    it.skip('should handle mixed success and failure in batch', async () => {
+    it('should handle mixed success and failure in batch', async () => {
       const { charactersService } = await import('@/services/api');
       (charactersService.getById as ReturnType<typeof vi.fn>)
         .mockResolvedValueOnce({

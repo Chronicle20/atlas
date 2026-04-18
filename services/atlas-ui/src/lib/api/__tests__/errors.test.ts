@@ -361,10 +361,11 @@ describe('Error Context and Config', () => {
       expect(config.includeTechnicalDetails).toBe(true);
     });
 
-    it.skip('should not set technical details in production', () => {
-      process.env.NODE_ENV = 'production';
+    it('should not set technical details in production', () => {
+      vi.stubEnv('DEV', false);
       const config = createErrorConfig({});
       expect(config.includeTechnicalDetails).toBe(false);
+      vi.unstubAllEnvs();
     });
 
     it('should merge custom options', () => {
@@ -400,13 +401,14 @@ describe('Error Logging and Sanitization', () => {
       );
     });
 
-    it.skip('should not log errors in production mode', () => {
-      process.env.NODE_ENV = 'production';
+    it('should not log errors in production mode', () => {
+      vi.stubEnv('DEV', false);
       const error = new Error('Test error');
 
       logError(error);
 
       expect(mockConsoleError).not.toHaveBeenCalled();
+      vi.unstubAllEnvs();
     });
 
     it('should call logError and process context data', () => {

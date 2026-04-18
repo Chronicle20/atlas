@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -79,6 +80,34 @@ func MergeCommandProvider(characterId uint32, inventoryType inventory.Type) mode
 		InventoryType: byte(inventoryType),
 		Type:          compartment.CommandMerge,
 		Body:          compartment.MergeCommandBody{},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func RequestReserveCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.RequestReserveCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandRequestReserve,
+		Body: compartment.RequestReserveCommandBody{
+			TransactionId: transactionId,
+			Items:         items,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ConsumeCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &compartment.Command[compartment.ConsumeCommandBody]{
+		CharacterId:   characterId,
+		InventoryType: byte(inventoryType),
+		Type:          compartment.CommandConsume,
+		Body: compartment.ConsumeCommandBody{
+			TransactionId: transactionId,
+			Slot:          slot,
+		},
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -817,7 +817,13 @@ func (p *Processor) ConsumeAsset(mb *message.Buffer) func(transactionId uuid.UUI
 			reservedQty := GetReservationRegistry().GetReservedQuantity(p.t, characterId, inventoryType, slot)
 			initialQty := a.Quantity() - reservedQty
 			if initialQty <= 1 {
-				err = p.assetProcessor.WithTransaction(tx).Delete(mb)(transactionId, characterId, c.Id())(a)
+				if item.IsRechargeable(item.Id(a.TemplateId())) {
+					// Rechargeables (throwing stars, bullets) retain an empty row so players
+					// can recharge them at an NPC shop instead of repurchasing a stack.
+					err = p.assetProcessor.WithTransaction(tx).UpdateQuantity(mb)(transactionId, characterId, c.Id(), a, 0)
+				} else {
+					err = p.assetProcessor.WithTransaction(tx).Delete(mb)(transactionId, characterId, c.Id())(a)
+				}
 				if err != nil {
 					return err
 				}

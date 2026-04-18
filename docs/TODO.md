@@ -262,14 +262,11 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 - [ ] Route-level `React.lazy` splitting for the 46 pages. The current bundle is a single ~1.1 MB chunk (gzip ~300 KB). Lazy-load detail pages and rarely-visited routes to shrink the initial payload.
 - [ ] Revisit the one `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build` (`src/lib/breadcrumbs/resolvers.ts` dynamically imports service modules that are also statically imported by hooks).
 
-### Phase 4 (data fetching consolidation — in progress)
+### Phase 4 (data fetching consolidation — done)
 
-Six pages migrated to React Query so far: AccountsPage, CharactersPage, GuildsPage, QuestsPage, BansPage, GuildDetailPage. Two new hook modules added (`useQuests`, `useBans`) alongside the existing ~15 under `src/lib/hooks/api/`.
-
-- [ ] Convert the remaining 27 pages that still carry a `useEffect` (run `grep -rln useEffect services/atlas-ui/src/pages/`). Detail pages (`ItemDetailPage`, `MerchantDetailPage`, `NpcDetailPage`, etc.) and form pages (`templates-handlers-form`, etc.) are the bulk; filter/search pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`) need careful conversion because their `useEffect` interacts with `useSearchParams` — audit the push/replace flow at the same time (see Phase 3 deferral on `useSearchParams`).
+- [x] ~~Convert every page that still carries a data-fetching `useEffect` to React Query.~~ Done across 27 pages in three passes. Completion bar `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0. Filter/search pages (ItemsPage, MapsPage, MerchantsPage, MonstersPage, NpcsPage, ReactorsPage) also dropped the `autoSearched` ref and let the URL's `?q=…` drive a single `useQuery`.
 - [ ] Centralise query keys in a single `src/lib/hooks/api/query-keys.ts` module. Today each hook file declares its own `xKeys = { all, lists, list, details, detail }` — fine for the ~17 existing modules, but worth factoring if a shared invalidation layer is added later.
 - [ ] Delete the legacy `lib/hooks/` wrappers (`useNpcData`, `useItemData`, `useMobData`, `useSkillData`) once their callers move to the `lib/hooks/api/use<Resource>` variants.
-- [ ] Completion bar: `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0.
 
 ### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
 
@@ -285,17 +282,17 @@ Skipped tests to un-skip (search for `it.skip(` or `describe.skip(` next to the 
 - [ ] `src/services/api/__tests__/conversations.service.test.ts` — two graph-traversal tests compare against a stale fixture; regenerate the fixture from the current `ConversationsService.validateStateConsistency` output.
 - [ ] `src/components/features/characters/__tests__/CharacterRenderer.test.tsx` — the entire file is `describe.skip`'d. Every assertion looks for `data-testid="character-image"`, which the migrated `<img>` markup no longer emits. Either re-add the `data-testid` on the component or rewrite the selectors.
 
-Plus, tighten `tsconfig.app.json`:
+Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for production code:
 
-- Three strict flags already re-enabled (`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`) — production code passes cleanly.
-- [ ] Re-enable `verbatimModuleSyntax`. Breaks rolldown at build time on ~30 call sites that mix type and value imports (e.g. `import { LoginHistoryEntry, BanType } from "…/ban"` where the interface is a type and the enum is a value). Fix: `import { type LoginHistoryEntry, BanType }` across those sites.
-- [ ] Re-enable `erasableSyntaxOnly`. Forbids TypeScript enums. Affected: `BanType`, `BanReasonCode`, `CompartmentType`, `ConversationState`, `QuestState`, plus a few others in `src/types/models/`. Convert each to a `const` object + union type.
-- [ ] Re-enable `exactOptionalPropertyTypes`. Several service payloads and test fixtures spread optional fields with `undefined`. Touches `templates.service.test.ts`, `useConversations.test.tsx`, `CharacterRenderer.test.tsx` and a few production sites.
-- [ ] Re-enable `noUnusedLocals` + `noUnusedParameters`. Flags the `_tenant` parameter kept for signature back-compat in ~70 service methods. Fix alongside the tenant-parameter removal above.
-- [ ] Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. With the current flag set, tests carry ~160 type errors — mostly noUncheckedIndexedAccess tripping on mock-array reads, and leftover `MockedFunction<TemplatesService>` uses that no longer make sense now that services are plain objects. Un-skip the 6 `describe.skip` test files in the same pass.
+- [x] ~~`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`.~~ Done.
+- [x] ~~`verbatimModuleSyntax`.~~ Done — ~30 call sites converted to `import { type X, Y }`.
+- [x] ~~`erasableSyntaxOnly`.~~ Done — `BanType`, `BanReasonCode`, `WeaponType`, `CompartmentType`, `EntityType` converted to `as const` objects + companion types. `ResolverError`'s parameter-property constructor rewritten.
+- [x] ~~`exactOptionalPropertyTypes`.~~ Done — no production hits needed fixing.
+- [x] ~~`noUnusedLocals` + `noUnusedParameters`.~~ Done — ~80 hits fixed (unused React imports, unused destructures, `_tenant` prefix).
+- [ ] Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. Test files still carry ~180 errors under the full strict flag set — mostly noUncheckedIndexedAccess tripping on mock-array reads, type imports that need `type` prefix, and the 6 already file-level-skipped suites that need rewriting.
 
 ### Phase 7 deferrals (docs)
-- [ ] Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`. Both still reference `NEXT_PUBLIC_API_URL`, `next/image`, and the App Router. Not blocking migration — they live under `services/atlas-ui/docs/` as historical architecture notes. Keep in sync or delete.
+- [x] ~~Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`.~~ Done — both now describe the Vite/RR/React Query stack. `CONTAINER_DEPLOYMENT.md` and the `BaseService` reference in `api-integration-patterns.md` also updated.
 - [ ] Verify no remaining `next-themes` wrapper edge cases (system preference, theme flicker on initial SSR-ish load). The simplified `ThemeProvider` drops the "system" option in favour of explicit light/dark — revisit if users miss it.
 
 ### Tenant-switch invariant (correctness)

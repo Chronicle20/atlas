@@ -30,7 +30,7 @@ Base URL: https://maplestory.io/api/{region}/{version}/
 The MapleStory API integration is implemented in `/services/api/maplestory.service.ts`:
 
 ```typescript
-export class MapleStoryService extends BaseService {
+export class MapleStoryService {
   /**
    * Fetches item icon URL from MapleStory.io API
    */

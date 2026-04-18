@@ -9,7 +9,13 @@ import { api, cache } from '../client';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
-describe('API Client Response Caching', () => {
+// Skipped wholesale after task-004's client.ts shrink. The client's
+// internal cache + dedup + stale-while-revalidate layers were deleted
+// (React Query owns caching now). All assertions in this file target
+// deleted primitives (api.clearCache / cache.defaultOptions / etc.).
+// Delete the file in a follow-up PR, or rewrite as a React Query
+// integration test if the behaviour is still valued.
+describe.skip('API Client Response Caching', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     api.clearCache();

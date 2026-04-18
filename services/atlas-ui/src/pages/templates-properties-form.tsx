@@ -1,15 +1,14 @@
 
-import { Button } from "@/components/ui/button"
-import {Form, FormControl, FormDescription, FormField as ShadcnFormField, FormItem, FormLabel } from "@/components/ui/form"
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
-import { z } from "zod"
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField as ShadcnFormField, FormItem, FormLabel } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import { useParams } from "react-router-dom";
 import { Switch } from "@/components/ui/switch";
-import {useEffect, useState} from "react";
-import {templatesService} from "@/services/api";
-import type {Template} from "@/types/models/template";
-import {toast} from "sonner";
+import { useEffect } from "react";
+import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
+import { toast } from "sonner";
 import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 const propertiesFormSchema = z.object({
@@ -29,11 +28,13 @@ const propertiesFormSchema = z.object({
 type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
-    const { id } = useParams(); // Get templates ID from URL
+    const { id } = useParams();
+    const templateQuery = useTemplate(String(id ?? ""));
+    const updateTemplate = useUpdateTemplate();
 
-    const [template, setTemplate] = useState<Template>();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const template = templateQuery.data ?? null;
+    const loading = templateQuery.isLoading;
+    const error = templateQuery.error?.message ?? null;
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -47,49 +48,34 @@ export function PropertiesForm() {
     });
 
     useEffect(() => {
-        if (!id) return; // Ensure id is available
+        if (template) {
+            form.reset({
+                region: template.attributes.region || "",
+                major: template.attributes.majorVersion || 0,
+                minor: template.attributes.minorVersion || 0,
+                usesPin: template.attributes.usesPin || false,
+            });
+        }
+    }, [template, form]);
 
-        setLoading(true); // Show loading while fetching
-
-        templatesService.getById(String(id))
-            .then((template) => {
-                setTemplate(template);
-
-                form.reset({
-                    region: template?.attributes.region || "",
-                    major: template?.attributes.majorVersion || 0,
-                    minor: template?.attributes.minorVersion || 0,
-                    usesPin: template?.attributes.usesPin || false,
-                });
-            })
-            .catch((err) => {
-                setError(err.message);
-            })
-            .finally(() => setLoading(false));
-    }, [id, form]);
-
-    const onSubmit = async (data : PropertiesFormValues) => {
+    const onSubmit = (data: PropertiesFormValues) => {
         if (!template) return;
+        updateTemplate.mutate(
+            {
+                id: template.id,
+                updates: {
+                    region: data.region,
+                    majorVersion: data.major,
+                    minorVersion: data.minor,
+                    usesPin: data.usesPin,
+                },
+            },
+            { onSuccess: () => toast.success("Successfully saved template.") },
+        );
+    };
 
-        templatesService.update(template.id, {
-            region: data.region,
-            majorVersion: data.major,
-            minorVersion: data.minor,
-            usesPin: data.usesPin,
-        }).then((updatedTemplate) => {
-            setTemplate(updatedTemplate);
-            toast.success("Successfully saved template.");
-        });
-        form.reset({
-            region: template?.attributes.region || "",
-            major: template?.attributes.majorVersion || 0,
-            minor: template?.attributes.minorVersion || 0,
-            usesPin: template?.attributes.usesPin || false,
-        });
-    }
-
-    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />;
+    if (error) return <ErrorDisplay error={error} />;
 
     return (
         <Form {...form}>

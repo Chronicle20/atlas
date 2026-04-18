@@ -1,97 +1,66 @@
-
-import {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
+import { useEffect } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {useTenant} from "@/context/tenant-context";
-import {X} from "lucide-react";
-import {tenantsService} from "@/services/api";
-import {TenantConfig} from "@/types/models/tenant";
-import {OptionsField} from "@/components/unknown-options";
-import {toast} from "sonner";
+import { X } from "lucide-react";
+import { useTenantConfiguration, useUpdateTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { OptionsField } from "@/components/unknown-options";
+import { toast } from "sonner";
+
+interface FormValues {
+    handlers: {
+        opCode: string;
+        validator: string;
+        handler: string;
+        options: unknown;
+    }[];
+}
 
 export function HandlersForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {fetchTenantConfiguration} = useTenant();
-    const [tenant, setTenant] = useState<TenantConfig | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { id } = useParams();
+    const tenantQuery = useTenantConfiguration(id ?? "");
+    const updateTenantConfig = useUpdateTenantConfiguration();
 
-    interface FormValues {
-        handlers: {
-            opCode: string;
-            validator: string;
-            handler: string;
-            options: unknown;
-        }[];
-    }
+    const tenant = tenantQuery.data ?? null;
+    const loading = tenantQuery.isLoading;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            handlers: []
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { handlers: [] } });
 
-    const {fields, append, remove} = useFieldArray({
-        control: form.control,
-        name: "handlers"
-    });
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "handlers" });
 
-    // Fetch the full tenant configuration
     useEffect(() => {
-        const fetchTenant = async () => {
-            try {
-                setLoading(true);
-                if (id) {
-                    const tenantConfig = await fetchTenantConfiguration(id as string);
-                    setTenant(tenantConfig);
-
-                    // Update form with tenant data
-                    form.reset({
-                        handlers: tenantConfig.attributes.socket.handlers.map(handler => ({
-                            opCode: handler.opCode || "",
-                            validator: handler.validator || "",
-                            handler: handler.handler || "",
-                            options: handler.options,
-                        }))
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching tenant configuration:", error);
-                toast.error("Failed to load tenant configuration");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTenant();
-    }, [id, fetchTenantConfiguration, form]);
-
-    const onSubmit = async (data: FormValues) => {
-        if (!tenant) return;
-
-        try {
-            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
-                socket: {
-                    handlers: data.handlers,
-                    writers: tenant.attributes.socket.writers || [],
-                },
+        if (tenant) {
+            form.reset({
+                handlers: tenant.attributes.socket.handlers.map(handler => ({
+                    opCode: handler.opCode || "",
+                    validator: handler.validator || "",
+                    handler: handler.handler || "",
+                    options: handler.options,
+                })),
             });
-
-            if (updatedTenant) {
-                setTenant(updatedTenant);
-                toast.success("Successfully saved tenant configuration.");
-
-                form.reset({
-                    handlers: updatedTenant.attributes.socket.handlers,
-                });
-            }
-        } catch (error) {
-            console.error("Error updating tenant configuration:", error);
-            toast.error("Failed to update tenant configuration");
         }
-    }
+    }, [tenant, form]);
+
+    const onSubmit = (data: FormValues) => {
+        if (!tenant) return;
+        updateTenantConfig.mutate(
+            {
+                tenant,
+                updates: {
+                    socket: {
+                        handlers: data.handlers,
+                        writers: tenant.attributes.socket.writers || [],
+                    },
+                },
+            },
+            {
+                onSuccess: () => toast.success("Successfully saved tenant configuration."),
+                onError: () => toast.error("Failed to update tenant configuration"),
+            },
+        );
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
@@ -110,53 +79,45 @@ export function HandlersForm() {
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.opCode`}
-                                render={({field}) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Operation Code</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="0x00" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
+                                        <FormControl><Input placeholder="0x00" {...field} /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.validator`}
-                                render={({field}) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Validator</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                             <FormField
                                 control={form.control}
                                 name={`handlers.${index}.handler`}
-                                render={({field}) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Handler</FormLabel>
-                                        <FormControl>
-                                            <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
+                                        <FormControl><Input {...field} /></FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
-                        <OptionsField form={form} path={`handlers.${index}.options`}/>
-                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
-                                onClick={() => remove(index)}>
-                            <X/>
+                        <OptionsField form={form} path={`handlers.${index}.options`} />
+                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon" onClick={() => remove(index)}>
+                            <X />
                         </Button>
                     </div>
                 ))}
                 <div className="flex flex-row gap-2 justify-between">
-                    <Button type="button"
-                            onClick={() => append({opCode: "", validator: "", handler: "", options: null})}>
+                    <Button type="button" onClick={() => append({ opCode: "", validator: "", handler: "", options: null })}>
                         Add
                     </Button>
                     <Button type="submit">Save</Button>

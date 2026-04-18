@@ -1,15 +1,14 @@
 
-import {useEffect, useState} from "react";
-import {useForm, useFieldArray, UseFormReturn, FieldValues, Path, useWatch, PathValue, SubmitHandler} from "react-hook-form";
-import {Form, FormField, FormItem, FormLabel, FormControl, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { useForm, useFieldArray, type UseFormReturn, type FieldValues, type Path, useWatch, type PathValue, type SubmitHandler } from "react-hook-form";
+import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {X, Plus} from "lucide-react"
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {templatesService} from "@/services/api";
-import type {Template} from "@/types/models/template";
-import {toast} from "sonner";
+import { X, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
+import { toast } from "sonner";
 import { LoadingSpinner, ErrorDisplay } from "@/components/common";
 
 interface FormValues {
@@ -32,73 +31,51 @@ interface FormValues {
 }
 
 export function TemplatesForm() {
-    const { id } = useParams(); // Get templates ID from URL
+    const { id } = useParams();
+    const templateQuery = useTemplate(String(id ?? ""));
+    const updateTemplate = useUpdateTemplate();
 
-    const [template, setTemplate] = useState<Template>();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const template = templateQuery.data ?? null;
+    const loading = templateQuery.isLoading;
+    const error = templateQuery.error?.message ?? null;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            templates: []
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { templates: [] } });
 
     useEffect(() => {
-        if (!id) return; // Ensure id is available
+        if (template) {
+            form.reset({
+                templates: template.attributes.characters.templates.map(t => ({
+                    jobIndex: t.jobIndex,
+                    subJobIndex: t.subJobIndex,
+                    gender: t.gender,
+                    mapId: t.mapId,
+                    faces: t.faces,
+                    hairs: t.hairs,
+                    hairColors: t.hairColors,
+                    skinColors: t.skinColors,
+                    tops: t.tops,
+                    bottoms: t.bottoms,
+                    shoes: t.shoes,
+                    weapons: t.weapons,
+                    items: t.items,
+                    skills: t.skills,
+                })),
+            });
+        }
+    }, [template, form]);
 
-        setLoading(true); // Show loading while fetching
+    const { fields, remove } = useFieldArray({ control: form.control, name: "templates" });
 
-        templatesService.getById(String(id))
-            .then((template) => {
-                setTemplate(template);
-
-                if (template) {
-                    const formValues: FormValues = {
-                        templates: template.attributes.characters.templates.map(t => ({
-                            jobIndex: t.jobIndex,
-                            subJobIndex: t.subJobIndex,
-                            gender: t.gender,
-                            mapId: t.mapId,
-                            faces: t.faces,
-                            hairs: t.hairs,
-                            hairColors: t.hairColors,
-                            skinColors: t.skinColors,
-                            tops: t.tops,
-                            bottoms: t.bottoms,
-                            shoes: t.shoes,
-                            weapons: t.weapons,
-                            items: t.items,
-                            skills: t.skills,
-                        }))
-                    };
-                    form.reset(formValues);
-                }
-            })
-            .catch((err) => setError(err.message))
-            .finally(() => setLoading(false));
-    }, [id, form]);
-
-    const {fields, remove} = useFieldArray({
-        control: form.control,
-        name: "templates"
-    });
-
-    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = (data) => {
         if (!template) return;
-        
-        templatesService.update(template.id, {
-            characters: {
-                templates: data.templates,
-            },
-        }).then((updatedTemplate) => {
-            setTemplate(updatedTemplate);
-            toast.success("Successfully saved template.");
-        });
-    }
+        updateTemplate.mutate(
+            { id: template.id, updates: { characters: { templates: data.templates } } },
+            { onSuccess: () => toast.success("Successfully saved template.") },
+        );
+    };
 
-    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />;
+    if (error) return <ErrorDisplay error={error} />;
 
     return (
         <Form {...form}>

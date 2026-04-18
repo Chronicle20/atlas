@@ -1,14 +1,12 @@
-
-import {useEffect, useState} from "react";
-import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
-import {Form} from "@/components/ui/form";
-import {Button} from "@/components/ui/button";
+import { useEffect } from "react";
+import { useFieldArray, useForm, type SubmitHandler } from "react-hook-form";
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {X} from "lucide-react";
-import {templatesService} from "@/services/api";
-import type {Template} from "@/types/models/template";
-import {OptionsField} from "@/components/unknown-options";
-import {toast} from "sonner";
+import { X } from "lucide-react";
+import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
+import { OptionsField } from "@/components/unknown-options";
+import { toast } from "sonner";
 import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 interface FormValues {
@@ -21,66 +19,55 @@ interface FormValues {
 }
 
 export function HandlersForm() {
-    const {id} = useParams(); // Get templates ID from URL
+    const { id } = useParams();
+    const templateQuery = useTemplate(String(id ?? ""));
+    const updateTemplate = useUpdateTemplate();
 
-    const [template, setTemplate] = useState<Template>();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const template = templateQuery.data ?? null;
+    const loading = templateQuery.isLoading;
+    const error = templateQuery.error?.message ?? null;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            handlers: [],
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { handlers: [] } });
 
     useEffect(() => {
-        if (!id) return; // Ensure id is available
+        if (template) {
+            form.reset({
+                handlers: template.attributes.socket.handlers.map(handler => ({
+                    opCode: handler.opCode,
+                    validator: handler.validator,
+                    handler: handler.handler,
+                    options: handler.options,
+                })),
+            });
+        }
+    }, [template, form]);
 
-        setLoading(true); // Show loading while fetching
-
-        templatesService.getById(String(id))
-            .then((template) => {
-                setTemplate(template);
-
-                if (template) {
-                    const formValues: FormValues = {
-                        handlers: template.attributes.socket.handlers.map(handler => ({
-                            opCode: handler.opCode,
-                            validator: handler.validator,
-                            handler: handler.handler,
-                            options: handler.options,
-                        }))
-                    };
-                    form.reset(formValues);
-                }
-            })
-            .catch((err) => {
-                setError(err.message);
-            })
-            .finally(() => setLoading(false));
-    }, [id, form]);
-
-    const {fields, append, remove} = useFieldArray({
+    const { fields, append, remove } = useFieldArray({
         control: form.control,
-        name: "handlers"
+        name: "handlers",
     });
 
-    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = (data) => {
         if (!template) return;
-        
-        templatesService.update(template.id, {
-            socket: {
-                handlers: data.handlers,
-                writers: template.attributes.socket.writers || [],
-            },
-        }).then((updatedTemplate) => {
-            setTemplate(updatedTemplate);
-            toast.success("Successfully saved template.");
-        });
-    }
 
-    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
+        updateTemplate.mutate(
+            {
+                id: template.id,
+                updates: {
+                    socket: {
+                        handlers: data.handlers,
+                        writers: template.attributes.socket.writers || [],
+                    },
+                },
+            },
+            {
+                onSuccess: () => toast.success("Successfully saved template."),
+            },
+        );
+    };
+
+    if (loading) return <LoadingSpinner />;
+    if (error) return <ErrorDisplay error={error} />;
 
     return (
         <Form {...form}>
@@ -88,36 +75,18 @@ export function HandlersForm() {
                 {fields.map((field, index) => (
                     <div key={field.id} className="border p-4 rounded-md gap-2 relative flex flex-col justify-stretch">
                         <div className="gap-2 flex flex-row justify-stretch">
-                            <FormField
-                                control={form.control}
-                                name={`handlers.${index}.opCode`}
-                                label="Operation Code"
-                                type="text"
-                                placeholder="0x00"
-                            />
-                            <FormField
-                                control={form.control}
-                                name={`handlers.${index}.validator`}
-                                label="Validator"
-                                type="text"
-                            />
-                            <FormField
-                                control={form.control}
-                                name={`handlers.${index}.handler`}
-                                label="Handler"
-                                type="text"
-                            />
+                            <FormField control={form.control} name={`handlers.${index}.opCode`} label="Operation Code" type="text" placeholder="0x00" />
+                            <FormField control={form.control} name={`handlers.${index}.validator`} label="Validator" type="text" />
+                            <FormField control={form.control} name={`handlers.${index}.handler`} label="Handler" type="text" />
                         </div>
-                        <OptionsField form={form} path={`handlers.${index}.options`}/>
-                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon"
-                                onClick={() => remove(index)}>
-                            <X/>
+                        <OptionsField form={form} path={`handlers.${index}.options`} />
+                        <Button type="button" className="absolute top-0 right-0" variant="ghost" size="icon" onClick={() => remove(index)}>
+                            <X />
                         </Button>
                     </div>
                 ))}
                 <div className="flex flex-row gap-2 justify-between">
-                    <Button type="button"
-                            onClick={() => append({opCode: "", validator: "", handler: "", options: null})}>
+                    <Button type="button" onClick={() => append({ opCode: "", validator: "", handler: "", options: null })}>
                         Add
                     </Button>
                     <Button type="submit">Save</Button>

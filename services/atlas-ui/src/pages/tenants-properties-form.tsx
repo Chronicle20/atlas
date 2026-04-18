@@ -1,17 +1,15 @@
 
-import {Button} from "@/components/ui/button"
-import {Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form"
-import {zodResolver} from "@hookform/resolvers/zod";
-import {useForm} from "react-hook-form";
-import {Input} from "@/components/ui/input"
-import {z} from "zod"
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { z } from "zod";
 import { useParams } from "react-router-dom";
-import {useTenant} from "@/context/tenant-context";
-import {Switch} from "@/components/ui/switch";
-import {useEffect, useState} from "react";
-import {tenantsService} from "@/services/api";
-import {TenantConfig} from "@/types/models/tenant";
-import {toast} from "sonner";
+import { Switch } from "@/components/ui/switch";
+import { useEffect } from "react";
+import { useTenantConfiguration, useUpdateTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { toast } from "sonner";
 
 const propertiesFormSchema = z.object({
     region: z
@@ -30,10 +28,12 @@ const propertiesFormSchema = z.object({
 type PropertiesFormValues = z.infer<typeof propertiesFormSchema>
 
 export function PropertiesForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {fetchTenantConfiguration} = useTenant()
-    const [tenant, setTenant] = useState<TenantConfig | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { id } = useParams();
+    const tenantQuery = useTenantConfiguration(id ?? "");
+    const updateTenantConfig = useUpdateTenantConfiguration();
+
+    const tenant = tenantQuery.data ?? null;
+    const loading = tenantQuery.isLoading;
 
     const form = useForm<PropertiesFormValues>({
         resolver: zodResolver(propertiesFormSchema),
@@ -44,63 +44,37 @@ export function PropertiesForm() {
             usesPin: false,
         },
         mode: "onChange",
-    })
+    });
 
-    // Fetch the full tenant configuration
     useEffect(() => {
-        const fetchTenant = async () => {
-            try {
-                setLoading(true);
-                if (id) {
-                    const tenantConfig = await fetchTenantConfiguration(id as string);
-                    setTenant(tenantConfig);
-
-                    // Update form with tenant data
-                    form.reset({
-                        region: tenantConfig.attributes.region,
-                        major: tenantConfig.attributes.majorVersion,
-                        minor: tenantConfig.attributes.minorVersion,
-                        usesPin: tenantConfig.attributes.usesPin,
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching tenant configuration:", error);
-                toast.error("Failed to load tenant configuration");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTenant();
-    }, [id, fetchTenantConfiguration, form]);
-
-    const onSubmit = async (data: PropertiesFormValues) => {
-        if (!tenant) return;
-
-        try {
-            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
-                region: data.region,
-                majorVersion: data.major,
-                minorVersion: data.minor,
-                usesPin: data.usesPin,
+        if (tenant) {
+            form.reset({
+                region: tenant.attributes.region,
+                major: tenant.attributes.majorVersion,
+                minor: tenant.attributes.minorVersion,
+                usesPin: tenant.attributes.usesPin,
             });
-
-            if (updatedTenant) {
-                setTenant(updatedTenant);
-                toast.success("Successfully saved tenant configuration.");
-
-                form.reset({
-                    region: updatedTenant.attributes.region,
-                    major: updatedTenant.attributes.majorVersion,
-                    minor: updatedTenant.attributes.minorVersion,
-                    usesPin: updatedTenant.attributes.usesPin,
-                });
-            }
-        } catch (error) {
-            console.error("Error updating tenant configuration:", error);
-            toast.error("Failed to update tenant configuration");
         }
-    }
+    }, [tenant, form]);
+
+    const onSubmit = (data: PropertiesFormValues) => {
+        if (!tenant) return;
+        updateTenantConfig.mutate(
+            {
+                tenant,
+                updates: {
+                    region: data.region,
+                    majorVersion: data.major,
+                    minorVersion: data.minor,
+                    usesPin: data.usesPin,
+                },
+            },
+            {
+                onSuccess: () => toast.success("Successfully saved tenant configuration."),
+                onError: () => toast.error("Failed to update tenant configuration"),
+            },
+        );
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;

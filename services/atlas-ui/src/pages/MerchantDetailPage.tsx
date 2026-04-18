@@ -1,13 +1,11 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { merchantsService } from "@/services/api/merchants.service";
-import type { MerchantShop, MerchantListing } from "@/types/models/merchant";
-import type { TenantConfig } from "@/services/api/tenants.service";
+import type { MerchantListing } from "@/types/models/merchant";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { getShopTypeName, getShopTypeBadgeVariant, getShopStateName, getShopStateBadgeVariant } from "@/types/models/merchant";
-import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -26,43 +24,31 @@ import { MapCell } from "@/components/map-cell";
 import { ItemNameCell } from "@/components/item-name-cell";
 
 export function MerchantDetailPage() {
-  const { activeTenant, fetchTenantConfiguration } = useTenant();
+  const { activeTenant } = useTenant();
   const params = useParams();
   const shopId = params.id as string;
 
-  const [shop, setShop] = useState<MerchantShop | null>(null);
-  const [listings, setListings] = useState<MerchantListing[]>([]);
-  const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const shopQuery = useQuery({
+    queryKey: ["merchants", "shop", activeTenant?.id ?? "no-tenant", shopId],
+    queryFn: () => merchantsService.getShopById(shopId, activeTenant!),
+    enabled: !!activeTenant && !!shopId,
+    staleTime: 60 * 1000,
+  });
 
-  useEffect(() => {
-    if (!activeTenant || !shopId) return;
+  const listingsQuery = useQuery({
+    queryKey: ["merchants", "listings", activeTenant?.id ?? "no-tenant", shopId],
+    queryFn: () => merchantsService.getShopListings(shopId, activeTenant!),
+    enabled: !!activeTenant && !!shopId,
+    staleTime: 60 * 1000,
+  });
 
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
+  const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
-      try {
-        const [shopData, listingData, config] = await Promise.all([
-          merchantsService.getShopById(shopId, activeTenant),
-          merchantsService.getShopListings(shopId, activeTenant),
-          fetchTenantConfiguration(activeTenant.id),
-        ]);
-        setShop(shopData);
-        setListings(listingData);
-        setTenantConfig(config);
-      } catch (err: unknown) {
-        const errorInfo = createErrorFromUnknown(err, "Failed to load merchant details");
-        setError(errorInfo.message);
-        toast.error(errorInfo.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [activeTenant, shopId, fetchTenantConfiguration]);
+  const shop = shopQuery.data ?? null;
+  const listings: MerchantListing[] = listingsQuery.data ?? [];
+  const tenantConfig = tenantConfigQuery.data ?? null;
+  const loading = shopQuery.isLoading || listingsQuery.isLoading || tenantConfigQuery.isLoading;
+  const error = shopQuery.error?.message ?? listingsQuery.error?.message ?? null;
 
   if (loading) {
     return <PageLoader />;

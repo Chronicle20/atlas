@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Base service tests
  * Validates the functionality of the BaseService class
@@ -7,18 +8,18 @@ import { BaseService, type ServiceOptions, type BatchResult } from '../base.serv
 import { api } from '@/lib/api/client';
 
 // Mock the API client
-jest.mock('@/lib/api/client', () => ({
+vi.mock('@/lib/api/client', () => ({
   api: {
-    getList: jest.fn(),
-    getOne: jest.fn(),
-    post: jest.fn(),
-    put: jest.fn(),
-    patch: jest.fn(),
-    delete: jest.fn(),
-    upload: jest.fn(),
-    download: jest.fn(),
-    clearCacheByPattern: jest.fn(),
-    getCacheStats: jest.fn(),
+    getList: vi.fn(),
+    getOne: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn(),
+    upload: vi.fn(),
+    download: vi.fn(),
+    clearCacheByPattern: vi.fn(),
+    getCacheStats: vi.fn(),
   },
 }));
 
@@ -103,11 +104,11 @@ class TestService extends BaseService {
 
 describe('BaseService', () => {
   let testService: TestService;
-  const mockApi = api as jest.Mocked<typeof api>;
+  const mockApi = api as MockedFunction<typeof api>;
 
   beforeEach(() => {
     testService = new TestService();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getAll', () => {

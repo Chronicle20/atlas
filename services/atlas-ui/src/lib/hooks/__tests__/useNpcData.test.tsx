@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Unit tests for useNpcData hook
  */
@@ -19,26 +20,26 @@ const mockActiveTenant = {
   },
 };
 
-jest.mock('@/context/tenant-context', () => ({
+vi.mock('@/context/tenant-context', () => ({
   useTenant: () => ({ activeTenant: mockActiveTenant }),
 }));
 
 // Mock the NPC service
-jest.mock('@/services/api/npcs.service', () => ({
+vi.mock('@/services/api/npcs.service', () => ({
   npcsService: {
-    getNpcName: jest.fn(),
+    getNpcName: vi.fn(),
   },
 }));
 
 // Mock the asset URL utility
-jest.mock('@/lib/utils/asset-url', () => ({
-  getAssetIconUrl: jest.fn(
+vi.mock('@/lib/utils/asset-url', () => ({
+  getAssetIconUrl: vi.fn(
     (tenantId: string, region: string, majorVersion: number, minorVersion: number, category: string, entityId: number) =>
       `/api/assets/${tenantId}/${region}/${majorVersion}.${minorVersion}/${category}/${entityId}/icon.png`
   ),
 }));
 
-const mockNpcsService = npcsService as jest.Mocked<typeof npcsService>;
+const mockNpcsService = npcsService as MockedFunction<typeof npcsService>;
 
 describe('useNpcData', () => {
   let queryClient: QueryClient;
@@ -59,7 +60,7 @@ describe('useNpcData', () => {
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
 
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -110,7 +111,7 @@ describe('useNpcData', () => {
     it('should call success callback when data is fetched', async () => {
       mockNpcsService.getNpcName.mockResolvedValue('Snail');
 
-      const onSuccess = jest.fn();
+      const onSuccess = vi.fn();
 
       renderHook(() => useNpcData(1001, { onSuccess }), { wrapper });
 

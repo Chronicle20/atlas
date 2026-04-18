@@ -1,81 +1,78 @@
+import { vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ErrorPage, Error404Page, Error500Page } from '../ErrorPage';
 
-// Mock Next.js Link component
-jest.mock('next/link', () => {
-  const MockLink = ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  );
-  MockLink.displayName = 'MockLink';
-  return MockLink;
-});
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 describe('ErrorPage', () => {
   it('renders 404 error page correctly', () => {
-    render(<ErrorPage statusCode={404} />);
-    
+    renderWithRouter(<ErrorPage statusCode={404} />);
+
     expect(screen.getByText('Page Not Found')).toBeInTheDocument();
     expect(screen.getByText(/The page you.*re looking for doesn.*t exist or has been moved/)).toBeInTheDocument();
     expect(screen.getByText('Error Code: 404')).toBeInTheDocument();
   });
 
   it('renders 500 error page correctly', () => {
-    render(<ErrorPage statusCode={500} />);
-    
+    renderWithRouter(<ErrorPage statusCode={500} />);
+
     expect(screen.getByText('Internal Server Error')).toBeInTheDocument();
     expect(screen.getByText(/unexpected error occurred on the server/)).toBeInTheDocument();
     expect(screen.getByText('Error Code: 500')).toBeInTheDocument();
   });
 
   it('renders custom title and message', () => {
-    render(
-      <ErrorPage 
-        statusCode={404} 
-        title="Custom Title" 
-        message="Custom message" 
+    renderWithRouter(
+      <ErrorPage
+        statusCode={404}
+        title="Custom Title"
+        message="Custom message"
       />
     );
-    
+
     expect(screen.getByText('Custom Title')).toBeInTheDocument();
     expect(screen.getByText('Custom message')).toBeInTheDocument();
   });
 
   it('shows retry button when enabled', () => {
-    const mockRetry = jest.fn();
-    render(
-      <ErrorPage 
-        statusCode={500} 
-        showRetryButton={true} 
-        onRetry={mockRetry} 
+    const mockRetry = vi.fn();
+    renderWithRouter(
+      <ErrorPage
+        statusCode={500}
+        showRetryButton={true}
+        onRetry={mockRetry}
       />
     );
-    
+
     const retryButton = screen.getByRole('button', { name: /try again/i });
     expect(retryButton).toBeInTheDocument();
-    
+
     fireEvent.click(retryButton);
     expect(mockRetry).toHaveBeenCalledTimes(1);
   });
 
   it('shows go back button when enabled', () => {
-    const mockBack = jest.fn();
+    const mockBack = vi.fn();
     Object.defineProperty(window, 'history', {
       value: { back: mockBack },
       writable: true,
     });
 
-    render(<ErrorPage statusCode={404} showBackButton={true} />);
-    
+    renderWithRouter(<ErrorPage statusCode={404} showBackButton={true} />);
+
     const backButton = screen.getByRole('button', { name: /go back/i });
     expect(backButton).toBeInTheDocument();
-    
+
     fireEvent.click(backButton);
     expect(mockBack).toHaveBeenCalledTimes(1);
   });
 
   it('shows home button by default', () => {
-    render(<ErrorPage statusCode={404} />);
-    
+    renderWithRouter(<ErrorPage statusCode={404} />);
+
     const homeLink = screen.getByRole('link', { name: /go home/i });
     expect(homeLink).toBeInTheDocument();
     expect(homeLink).toHaveAttribute('href', '/');
@@ -84,16 +81,16 @@ describe('ErrorPage', () => {
 
 describe('Pre-configured error pages', () => {
   it('renders Error404Page with correct defaults', () => {
-    render(<Error404Page />);
-    
+    renderWithRouter(<Error404Page />);
+
     expect(screen.getByText('Page Not Found')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /go home/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /go back/i })).toBeInTheDocument();
   });
 
   it('renders Error500Page with correct defaults', () => {
-    render(<Error500Page />);
-    
+    renderWithRouter(<Error500Page />);
+
     expect(screen.getByText('Internal Server Error')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /go home/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /try again/i })).toBeInTheDocument();

@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Tests for useConversations React Query hooks
  */
@@ -21,8 +22,8 @@ import type { Conversation, ConversationAttributes } from '@/types/models/conver
 import type { Tenant } from '@/types/models/tenant';
 
 // Mock the conversationsService
-jest.mock('@/services/api/conversations.service');
-const mockConversationsService = conversationsService as jest.Mocked<typeof conversationsService>;
+vi.mock('@/services/api/conversations.service');
+const mockConversationsService = conversationsService as MockedFunction<typeof conversationsService>;
 
 // Mock data
 const mockTenant: Tenant = {
@@ -128,11 +129,11 @@ function createWrapper() {
 
 describe('useConversations hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ============================================================================

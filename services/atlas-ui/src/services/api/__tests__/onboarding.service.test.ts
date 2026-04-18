@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -13,26 +14,26 @@ import { templatesService } from '../templates.service';
 import type { Template } from '@/types/models/template';
 
 // Mock the tenants service
-jest.mock('../tenants.service', () => ({
+vi.mock('../tenants.service', () => ({
   tenantsService: {
-    createTenant: jest.fn(),
-    createTenantConfiguration: jest.fn(),
+    createTenant: vi.fn(),
+    createTenantConfiguration: vi.fn(),
   },
 }));
 
 // Mock the templates service
-jest.mock('../templates.service', () => ({
+vi.mock('../templates.service', () => ({
   templatesService: {
-    getByRegionAndVersion: jest.fn(),
+    getByRegionAndVersion: vi.fn(),
   },
 }));
 
-const mockTenantsService = tenantsService as jest.Mocked<typeof tenantsService>;
-const mockTemplatesService = templatesService as jest.Mocked<typeof templatesService>;
+const mockTenantsService = tenantsService as MockedFunction<typeof tenantsService>;
+const mockTemplatesService = templatesService as MockedFunction<typeof templatesService>;
 
 describe('OnboardingService', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   const mockTemplate: Template = {

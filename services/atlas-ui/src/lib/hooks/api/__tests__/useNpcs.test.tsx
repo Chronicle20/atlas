@@ -1,3 +1,4 @@
+import { vi, type MockedFunction } from 'vitest';
 /**
  * Tests for useNpcs React Query hooks
  */
@@ -23,8 +24,8 @@ import type { NPC, Shop, Commodity, CommodityAttributes, ShopResponse } from '@/
 import type { Tenant } from '@/types/models/tenant';
 
 // Mock the npcsService
-jest.mock('@/services/api/npcs.service');
-const mockNpcsService = npcsService as jest.Mocked<typeof npcsService>;
+vi.mock('@/services/api/npcs.service');
+const mockNpcsService = npcsService as MockedFunction<typeof npcsService>;
 
 // Mock data
 const mockTenant: Tenant = {
@@ -125,11 +126,11 @@ function createWrapper() {
 
 describe('useNpcs hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // ============================================================================

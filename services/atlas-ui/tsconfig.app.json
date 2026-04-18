@@ -24,5 +24,10 @@
     }
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx", "src/**/__tests__/**", "src/**/tests/**", "src/lib/api/examples/**"]
+  "exclude": [
+    "src/lib/api/examples/**",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__tests__/**"
+  ]
 }

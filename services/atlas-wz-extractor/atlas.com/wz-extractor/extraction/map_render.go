@@ -33,9 +33,12 @@ func RenderMaps(ctx context.Context, l logrus.FieldLogger, f *wz.File, outputDir
 		return nil
 	}
 
+	// Backgrounds are intentionally skipped — the scope decision from the
+	// spike keeps the render black where no tile/obj was placed, avoiding
+	// horizon-seam artifacts from the parallax collapse.
 	opts := mapimage.Options{
 		MaxPixels:         maxPixelsFromEnv(l),
-		RenderBackgrounds: true,
+		RenderBackgrounds: false,
 	}
 
 	workers := runtime.NumCPU()

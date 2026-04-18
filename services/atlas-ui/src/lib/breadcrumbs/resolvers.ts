@@ -6,6 +6,19 @@
  */
 
 import type { Tenant } from '@/types/models/tenant';
+import {
+  accountsService,
+  charactersService,
+  guildsService,
+  npcsService,
+  templatesService,
+  tenantsService,
+  monstersService,
+  mapsService,
+  reactorsService,
+  itemStringsService,
+} from '@/services/api';
+import { servicesService, getServiceTypeDisplayName } from '@/services/api/services.service';
 
 // Types for resolver functions
 export type EntityResolver<T = string> = (
@@ -191,7 +204,6 @@ class ResolverError extends Error {
 // Entity resolver implementations
 const resolvers: Record<EntityType, EntityResolver> = {
   [EntityType.ACCOUNT]: async (tenant, entityId, options = {}) => {
-    const { accountsService } = await import('@/services/api');
     try {
       const account = await accountsService.getAccountById(tenant, entityId, options);
       return account.attributes?.name || `Account ${entityId}`;
@@ -202,7 +214,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.CHARACTER]: async (tenant, entityId, options = {}) => {
-    const { charactersService } = await import('@/services/api');
     try {
       const character = await charactersService.getById(tenant, entityId, options);
       return character.attributes?.name || `Character ${entityId}`;
@@ -213,7 +224,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.GUILD]: async (tenant, entityId, options = {}) => {
-    const { guildsService } = await import('@/services/api');
     try {
       const guild = await guildsService.getById(tenant, entityId, options);
       return guild.attributes?.name || `Guild ${entityId}`;
@@ -224,7 +234,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.NPC]: async (tenant, entityId, options = {}) => {
-    const { npcsService } = await import('@/services/api');
     try {
       const npc = await npcsService.getNPCById(parseInt(entityId), tenant, options);
       return npc?.name || `NPC ${entityId}`;
@@ -235,7 +244,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.SERVICE]: async (tenant, entityId, options = {}) => {
-    const { servicesService, getServiceTypeDisplayName } = await import('@/services/api/services.service');
     try {
       const service = await servicesService.getServiceById(entityId, options);
       return getServiceTypeDisplayName(service.attributes.type);
@@ -246,7 +254,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.TEMPLATE]: async (tenant, entityId, options = {}) => {
-    const { templatesService } = await import('@/services/api');
     try {
       // Note: Templates service doesn't require tenant context for getById
       const template = await templatesService.getById(entityId, options);
@@ -259,7 +266,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.TENANT]: async (tenant, entityId, options = {}) => {
-    const { tenantsService } = await import('@/services/api');
     try {
       const targetTenant = await tenantsService.getTenantById(entityId, options);
       return targetTenant.attributes?.name || `Tenant ${entityId}`;
@@ -270,7 +276,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.MONSTER]: async (tenant, entityId, options = {}) => {
-    const { monstersService } = await import('@/services/api');
     try {
       const monster = await monstersService.getMonsterById(entityId, tenant, options);
       return monster.attributes?.name || `Monster ${entityId}`;
@@ -281,7 +286,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.MAP]: async (tenant, entityId, options = {}) => {
-    const { mapsService } = await import('@/services/api');
     try {
       const map = await mapsService.getMapById(entityId, tenant, options);
       return map.attributes?.name || `Map ${entityId}`;
@@ -292,7 +296,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.REACTOR]: async (tenant, entityId, options = {}) => {
-    const { reactorsService } = await import('@/services/api');
     try {
       const reactor = await reactorsService.getReactorById(entityId, tenant, options);
       return reactor.attributes?.name || `Reactor ${entityId}`;
@@ -307,7 +310,6 @@ const resolvers: Record<EntityType, EntityResolver> = {
   },
 
   [EntityType.ITEM]: async (tenant, entityId, options = {}) => {
-    const { itemStringsService } = await import('@/services/api');
     try {
       const item = await itemStringsService.getItemString(entityId, tenant);
       return item.attributes?.name || `Item ${entityId}`;

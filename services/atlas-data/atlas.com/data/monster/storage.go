@@ -1,4 +1,4 @@
-package _map
+package monster
 
 import (
 	"context"
@@ -23,13 +23,11 @@ func NewStorage(l logrus.FieldLogger, db *gorm.DB) *Storage {
 	return &Storage{
 		l:   l,
 		db:  db,
-		doc: document.NewStorage[string, RestModel](l, db, GetModelRegistry(), "MAP"),
+		doc: document.NewStorage[string, RestModel](l, db, GetModelRegistry(), "MONSTER"),
 	}
 }
 
-func (s *Storage) Logger() logrus.FieldLogger {
-	return s.l
-}
+func (s *Storage) Logger() logrus.FieldLogger { return s.l }
 
 func (s *Storage) ByIdProvider(ctx context.Context) func(id string) model.Provider[RestModel] {
 	return s.doc.ByIdProvider(ctx)
@@ -51,20 +49,19 @@ func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[Rest
 	return func(m RestModel) model.Provider[RestModel] {
 		t := tenant.MustFromContext(ctx)
 		txErr := s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			scoped := document.NewStorage[string, RestModel](s.l, tx, GetModelRegistry(), "MAP")
+			scoped := document.NewStorage[string, RestModel](s.l, tx, GetModelRegistry(), "MONSTER")
 			if _, err := scoped.Add(ctx)(m)(); err != nil {
 				return err
 			}
 			ie := SearchIndexEntity{
-				TenantId:   t.Id(),
-				MapId:      uint32(m.Id),
-				Name:       m.Name,
-				StreetName: m.StreetName,
-				UpdatedAt:  time.Now(),
+				TenantId:  t.Id(),
+				MonsterId: m.Id,
+				Name:      m.Name,
+				UpdatedAt: time.Now(),
 			}
 			return searchindex.Upsert(tx, &ie,
-				[]string{"tenant_id", "map_id"},
-				[]string{"name", "street_name", "updated_at"},
+				[]string{"tenant_id", "monster_id"},
+				[]string{"name", "updated_at"},
 			)
 		})
 		if txErr != nil {
@@ -77,15 +74,9 @@ func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[Rest
 func (s *Storage) Clear(ctx context.Context) error {
 	t := tenant.MustFromContext(ctx)
 	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("type = ?", "MAP").Delete(&document.Entity{}).Error; err != nil {
+		if err := tx.Where("type = ?", "MONSTER").Delete(&document.Entity{}).Error; err != nil {
 			return err
 		}
 		return searchindex.DeleteAllForTenant(tx, t.Id(), &SearchIndexEntity{})
 	})
-}
-
-func DeleteAllSearchIndex(ctx context.Context) func(db *gorm.DB) error {
-	return func(db *gorm.DB) error {
-		return db.WithContext(ctx).Where("1 = 1").Delete(&SearchIndexEntity{}).Error
-	}
 }

@@ -94,9 +94,13 @@ export const npcsService = {
     }
   },
 
-  async searchNpcs(query: string): Promise<NpcSearchResult[]> {
-    const npcs = await api.getList<{ id: string; attributes: { name: string } }>(
-      `/api/data/npcs?search=${encodeURIComponent(query)}`,
+  async searchNpcs(query: string, storebankOnly = false): Promise<NpcSearchResult[]> {
+    const params = new URLSearchParams();
+    if (query) params.set("search", query);
+    if (storebankOnly) params.set("filter[storebank]", "true");
+    const qs = params.toString();
+    const npcs = await api.getList<{ id: string; attributes: { name: string; storebank?: boolean } }>(
+      `/api/data/npcs${qs ? `?${qs}` : ""}`,
     );
     return npcs.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
   },

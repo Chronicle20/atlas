@@ -1,13 +1,13 @@
 package item
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
 	"strconv"
 	"sync"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -20,10 +20,6 @@ func GetStringModelRegistry() *document.Registry[string, StringRestModel] {
 		isReg = document.NewRegistry[string, StringRestModel]()
 	})
 	return isReg
-}
-
-func NewStringStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, StringRestModel] {
-	return document.NewStorage(l, db, GetStringModelRegistry(), "ITEM_STRING")
 }
 
 func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Context) func(path string) error {
@@ -44,7 +40,7 @@ func InitStringFlat(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.Con
 	}
 }
 
-func addStringItems(ctx context.Context, s *document.Storage[string, StringRestModel], nodes []xml.Node) error {
+func addStringItems(ctx context.Context, s *StringStorage, nodes []xml.Node) error {
 	for _, mxml := range nodes {
 		if _, aErr := strconv.Atoi(mxml.Name); aErr != nil {
 			if err := addStringItems(ctx, s, mxml.ChildNodes); err != nil {

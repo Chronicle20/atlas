@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { monstersService } from '@/services/api/monsters.service';
 import { useTenant } from '@/context/tenant-context';
 import type { MonsterData } from '@/types/models/monster';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 
 export const monsterKeys = {
   all: ['monsters'] as const,

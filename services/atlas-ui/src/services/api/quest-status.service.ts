@@ -1,197 +1,86 @@
-/**
- * Quest Status Service
- *
- * Provides character quest status data from atlas-quest service:
- * - Character quest status listing (started, completed)
- * - Quest progress tracking
- * - Integration with tenant context
- */
+import { api } from "@/lib/api/client";
+import { type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import type { CharacterQuestStatus, QuestState } from "@/types/models/quest";
+import type { Tenant } from "@/types/models/tenant";
 
-import { BaseService, type ServiceOptions, type QueryOptions } from './base.service';
-import type { CharacterQuestStatus, QuestState } from '@/types/models/quest';
-import type { Tenant } from '@/types/models/tenant';
+const BASE_PATH = "/api/characters";
 
-/**
- * Query options specific to quest statuses
- */
 export interface QuestStatusQueryOptions extends QueryOptions {
-    /** Filter by quest state */
-    state?: QuestState;
+  state?: QuestState;
 }
 
-/**
- * Quest Status service class for fetching character quest data
- */
-class QuestStatusService extends BaseService {
-    protected basePath = '/api/characters';
-
-    /**
-     * Process service options with quest status-specific defaults
-     */
-    private processServiceOptions(options?: ServiceOptions): ServiceOptions {
-        return {
-            ...options,
-            // Quest status data changes, use shorter cache
-            cacheConfig: options?.cacheConfig || {
-                ttl: 1 * 60 * 1000, // 1 minute
-                staleWhileRevalidate: true,
-                maxStaleTime: 30 * 1000, // 30 seconds
-            },
-        };
+export const questStatusService = {
+  async getByCharacterId(
+    _tenant: Tenant,
+    characterId: string,
+    options?: QuestStatusQueryOptions,
+  ): Promise<CharacterQuestStatus[]> {
+    const url = `${BASE_PATH}/${characterId}/quests`;
+    const statuses = await api.getList<CharacterQuestStatus>(url, options);
+    if (options?.state !== undefined) {
+      return statuses.filter(s => s.attributes.state === options.state);
     }
+    return statuses;
+  },
 
-    /**
-     * Get all quest statuses for a character
-     */
-    async getByCharacterId(
-        tenant: Tenant,
-        characterId: string,
-        options?: QuestStatusQueryOptions
-    ): Promise<CharacterQuestStatus[]> {
-        const { api } = await import('@/lib/api/client');
-        const processedOptions = this.processServiceOptions(options);
-        const url = `${this.basePath}/${characterId}/quests`;
-        const statuses = await api.getList<CharacterQuestStatus>(url, processedOptions);
+  async getStartedQuests(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<CharacterQuestStatus[]> {
+    return api.getList<CharacterQuestStatus>(`${BASE_PATH}/${characterId}/quests/started`, options);
+  },
 
-        // Apply state filter if specified
-        if (options?.state !== undefined) {
-            return statuses.filter(s => s.attributes.state === options.state);
-        }
+  async getCompletedQuests(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<CharacterQuestStatus[]> {
+    return api.getList<CharacterQuestStatus>(`${BASE_PATH}/${characterId}/quests/completed`, options);
+  },
 
-        return statuses;
+  async getQuestStatus(
+    _tenant: Tenant,
+    characterId: string,
+    questId: string,
+    options?: ServiceOptions,
+  ): Promise<CharacterQuestStatus> {
+    return api.getOne<CharacterQuestStatus>(`${BASE_PATH}/${characterId}/quests/${questId}`, options);
+  },
+
+  async hasStartedQuest(tenant: Tenant, characterId: string, questId: string, options?: ServiceOptions): Promise<boolean> {
+    try {
+      const status = await questStatusService.getQuestStatus(tenant, characterId, questId, options);
+      return status.attributes.state === 1;
+    } catch {
+      return false;
     }
+  },
 
-    /**
-     * Get started quests for a character
-     */
-    async getStartedQuests(
-        tenant: Tenant,
-        characterId: string,
-        options?: ServiceOptions
-    ): Promise<CharacterQuestStatus[]> {
-        const { api } = await import('@/lib/api/client');
-        const processedOptions = this.processServiceOptions(options);
-        const url = `${this.basePath}/${characterId}/quests/started`;
-        return api.getList<CharacterQuestStatus>(url, processedOptions);
+  async hasCompletedQuest(tenant: Tenant, characterId: string, questId: string, options?: ServiceOptions): Promise<boolean> {
+    try {
+      const status = await questStatusService.getQuestStatus(tenant, characterId, questId, options);
+      return status.attributes.state === 2;
+    } catch {
+      return false;
     }
+  },
 
-    /**
-     * Get completed quests for a character
-     */
-    async getCompletedQuests(
-        tenant: Tenant,
-        characterId: string,
-        options?: ServiceOptions
-    ): Promise<CharacterQuestStatus[]> {
-        const { api } = await import('@/lib/api/client');
-        const processedOptions = this.processServiceOptions(options);
-        const url = `${this.basePath}/${characterId}/quests/completed`;
-        return api.getList<CharacterQuestStatus>(url, processedOptions);
+  async getCompletionCount(tenant: Tenant, characterId: string, questId: string, options?: ServiceOptions): Promise<number> {
+    try {
+      const status = await questStatusService.getQuestStatus(tenant, characterId, questId, options);
+      return status.attributes.completedCount;
+    } catch {
+      return 0;
     }
+  },
 
-    /**
-     * Get a specific quest status for a character
-     */
-    async getQuestStatus(
-        tenant: Tenant,
-        characterId: string,
-        questId: string,
-        options?: ServiceOptions
-    ): Promise<CharacterQuestStatus> {
-        const { api } = await import('@/lib/api/client');
-        const processedOptions = this.processServiceOptions(options);
-        const url = `${this.basePath}/${characterId}/quests/${questId}`;
-        return api.getOne<CharacterQuestStatus>(url, processedOptions);
-    }
+  async forfeitQuest(_tenant: Tenant, characterId: string, questId: string, options?: ServiceOptions): Promise<void> {
+    await api.post<void>(`${BASE_PATH}/${characterId}/quests/${questId}/forfeit`, {}, options);
+  },
 
-    /**
-     * Check if a character has started a quest
-     */
-    async hasStartedQuest(
-        tenant: Tenant,
-        characterId: string,
-        questId: string,
-        options?: ServiceOptions
-    ): Promise<boolean> {
-        try {
-            const status = await this.getQuestStatus(tenant, characterId, questId, options);
-            return status.attributes.state === 1; // Started
-        } catch {
-            return false;
-        }
-    }
+  async getQuestStats(
+    tenant: Tenant,
+    characterId: string,
+    options?: ServiceOptions,
+  ): Promise<{ started: number; completed: number; total: number }> {
+    const allStatuses = await questStatusService.getByCharacterId(tenant, characterId, options);
+    const started = allStatuses.filter(s => s.attributes.state === 1).length;
+    const completed = allStatuses.filter(s => s.attributes.state === 2).length;
+    return { started, completed, total: allStatuses.length };
+  },
+};
 
-    /**
-     * Check if a character has completed a quest
-     */
-    async hasCompletedQuest(
-        tenant: Tenant,
-        characterId: string,
-        questId: string,
-        options?: ServiceOptions
-    ): Promise<boolean> {
-        try {
-            const status = await this.getQuestStatus(tenant, characterId, questId, options);
-            return status.attributes.state === 2; // Completed
-        } catch {
-            return false;
-        }
-    }
-
-    /**
-     * Get quest completion count for a character
-     */
-    async getCompletionCount(
-        tenant: Tenant,
-        characterId: string,
-        questId: string,
-        options?: ServiceOptions
-    ): Promise<number> {
-        try {
-            const status = await this.getQuestStatus(tenant, characterId, questId, options);
-            return status.attributes.completedCount;
-        } catch {
-            return 0;
-        }
-    }
-
-    /**
-     * Forfeit a quest for a character
-     */
-    async forfeitQuest(
-        tenant: Tenant,
-        characterId: string,
-        questId: string,
-        options?: ServiceOptions
-    ): Promise<void> {
-        const { api } = await import('@/lib/api/client');
-        const url = `${this.basePath}/${characterId}/quests/${questId}/forfeit`;
-        await api.post<void>(url, {}, options);
-    }
-
-    /**
-     * Get quest statistics for a character
-     */
-    async getQuestStats(
-        tenant: Tenant,
-        characterId: string,
-        options?: ServiceOptions
-    ): Promise<{ started: number; completed: number; total: number }> {
-        const allStatuses = await this.getByCharacterId(tenant, characterId, options);
-
-        const started = allStatuses.filter(s => s.attributes.state === 1).length;
-        const completed = allStatuses.filter(s => s.attributes.state === 2).length;
-
-        return {
-            started,
-            completed,
-            total: allStatuses.length,
-        };
-    }
-}
-
-// Create and export a singleton instance
-export const questStatusService = new QuestStatusService();
-
-// Export types
 export type { CharacterQuestStatus, QuestState };

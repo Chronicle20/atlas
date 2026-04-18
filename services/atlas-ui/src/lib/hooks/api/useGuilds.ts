@@ -12,7 +12,7 @@
 
 import { useQuery, useQueryClient, type UseQueryResult } from '@tanstack/react-query';
 import { guildsService, type Guild, type GuildAttributes, type GuildMember } from '@/services/api/guilds.service';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 import type { Tenant } from '@/types/models/tenant';
 
 // Query keys for consistent cache management

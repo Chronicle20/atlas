@@ -12,7 +12,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { accountsService, type Account, type AccountAttributes, type AccountQueryOptions } from '@/services/api/accounts.service';
 import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions } from '@/services/api/base.service';
+import type { ServiceOptions } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const accountKeys = {

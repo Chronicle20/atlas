@@ -1,26 +1,24 @@
-import { BaseService, type QueryOptions } from './base.service';
-import { api } from '@/lib/api/client';
-import type { Tenant } from '@/types/models/tenant';
-import type { MerchantShop, MerchantListing, ListingSearchResult } from '@/types/models/merchant';
+import { api } from "@/lib/api/client";
+import { buildQueryString, type QueryOptions } from "@/lib/api/query-params";
+import type { Tenant } from "@/types/models/tenant";
+import type { MerchantShop, MerchantListing, ListingSearchResult } from "@/types/models/merchant";
 
-class MerchantsService extends BaseService {
-  protected basePath = '/api/merchants';
+const BASE_PATH = "/api/merchants";
 
-  async getAllShops(tenant: Tenant, options?: QueryOptions): Promise<MerchantShop[]> {
-    return this.getAll<MerchantShop>(options);
-  }
+export const merchantsService = {
+  async getAllShops(_tenant: Tenant, options?: QueryOptions): Promise<MerchantShop[]> {
+    return api.getList<MerchantShop>(`${BASE_PATH}${buildQueryString(options)}`, options);
+  },
 
-  async getShopById(shopId: string, tenant: Tenant): Promise<MerchantShop> {
-    return this.getById<MerchantShop>(shopId);
-  }
+  async getShopById(shopId: string, _tenant: Tenant): Promise<MerchantShop> {
+    return api.getOne<MerchantShop>(`${BASE_PATH}/${shopId}`);
+  },
 
-  async getShopListings(shopId: string, tenant: Tenant): Promise<MerchantListing[]> {
-    return api.getList<MerchantListing>(`${this.basePath}/${shopId}/relationships/listings`);
-  }
+  async getShopListings(shopId: string, _tenant: Tenant): Promise<MerchantListing[]> {
+    return api.getList<MerchantListing>(`${BASE_PATH}/${shopId}/relationships/listings`);
+  },
 
-  async searchListings(itemId: number, tenant: Tenant): Promise<ListingSearchResult[]> {
-    return api.getList<ListingSearchResult>(`${this.basePath}/search/listings?itemId=${itemId}`);
-  }
-}
-
-export const merchantsService = new MerchantsService();
+  async searchListings(itemId: number, _tenant: Tenant): Promise<ListingSearchResult[]> {
+    return api.getList<ListingSearchResult>(`${BASE_PATH}/search/listings?itemId=${itemId}`);
+  },
+};

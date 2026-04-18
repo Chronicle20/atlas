@@ -3,7 +3,7 @@ import { gachaponsService } from '@/services/api/gachapons.service';
 import { useTenant } from '@/context/tenant-context';
 import type { GachaponData } from '@/types/models/gachapon';
 import type { GachaponRewardData } from '@/types/models/gachapon-reward';
-import type { QueryOptions } from '@/services/api/base.service';
+import type { QueryOptions } from '@/lib/api/query-params';
 
 export const gachaponKeys = {
   all: ['gachapons'] as const,

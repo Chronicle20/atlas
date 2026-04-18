@@ -6,7 +6,7 @@ import { useQuery, useQueryClient, type UseQueryResult } from "@tanstack/react-q
 import { questsService, type QuestQueryOptions } from "@/services/api/quests.service";
 import type { QuestDefinition } from "@/types/models/quest";
 import type { Tenant } from "@/types/models/tenant";
-import type { ServiceOptions } from "@/services/api/base.service";
+import type { ServiceOptions } from "@/lib/api/query-params";
 
 export const questKeys = {
   all: ["quests"] as const,

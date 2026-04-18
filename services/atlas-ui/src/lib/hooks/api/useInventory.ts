@@ -19,7 +19,7 @@ import type {
   CompartmentType 
 } from '@/services/api/inventory.service';
 import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions } from '@/services/api/base.service';
+import type { ServiceOptions } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const inventoryKeys = {

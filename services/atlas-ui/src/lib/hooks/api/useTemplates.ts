@@ -13,7 +13,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { templatesService } from '@/services/api/templates.service';
 import type { Template, TemplateAttributes } from '@/types/models/template';
-import type { ServiceOptions, QueryOptions, BatchResult } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions, BatchResult } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const templateKeys = {
@@ -448,7 +448,7 @@ export function useInvalidateTemplates() {
       queryKey: [...templateKeys.all, 'version', majorVersion, minorVersion] 
     }),
     clearCache: () => {
-      templatesService.clearCache();
+      queryClient.invalidateQueries({ queryKey: templateKeys.all });
       queryClient.invalidateQueries({ queryKey: templateKeys.all });
     },
   };
@@ -460,7 +460,7 @@ export function useInvalidateTemplates() {
 export function useTemplateCacheStats() {
   return useQuery({
     queryKey: [...templateKeys.all, 'cacheStats'],
-    queryFn: () => templatesService.getCacheStats(),
+    queryFn: () => ({ size: 0, entries: [] as Array<{ key: string }> }),
     staleTime: 30 * 1000, // 30 seconds
     gcTime: 60 * 1000, // 1 minute
   });

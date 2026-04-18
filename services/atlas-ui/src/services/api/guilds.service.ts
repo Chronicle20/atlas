@@ -11,7 +11,7 @@
  * through in-game systems via Kafka events.
  */
 
-import type { ServiceOptions } from './base.service';
+import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Guild, GuildAttributes, GuildMember } from '@/types/models/guild';
 import type { Tenant } from '@/types/models/tenant';
 import { api } from '@/lib/api/client';

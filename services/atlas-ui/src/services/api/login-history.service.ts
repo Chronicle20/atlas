@@ -1,104 +1,57 @@
-/**
- * Login History Service
- *
- * Provides login history retrieval functionality including:
- * - History lookup by IP address
- * - History lookup by HWID
- * - History lookup by account ID
- */
+import { api } from "@/lib/api/client";
+import type { ServiceOptions } from "@/lib/api/query-params";
+import type { LoginHistoryEntry } from "@/types/models/ban";
+import type { Tenant } from "@/types/models/tenant";
 
-import { BaseService, type ServiceOptions } from './base.service';
-import type { LoginHistoryEntry } from '@/types/models/ban';
-import type { Tenant } from '@/types/models/tenant';
-import { api } from '@/lib/api/client';
+const BASE_PATH = "/api/history";
 
-/**
- * Login History service class extending BaseService
- */
-class LoginHistoryService extends BaseService {
-    protected basePath = '/api/history';
-
-    /**
-     * Transform response data to ensure consistent structure
-     */
-    protected override transformResponse<T>(data: T): T {
-        if (this.isLoginHistoryEntry(data)) {
-            const transformed = { ...data };
-            transformed.attributes = {
-                ...transformed.attributes,
-                accountId: Number(transformed.attributes.accountId),
-                success: Boolean(transformed.attributes.success),
-            };
-            return transformed as T;
-        }
-        return data;
-    }
-
-    /**
-     * Get login history by IP address
-     */
-    async getByIp(tenant: Tenant, ip: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        const url = `${this.basePath}?ip=${encodeURIComponent(ip)}`;
-        const entries = await api.getList<LoginHistoryEntry>(url, options);
-        return entries.map(item => this.transformResponse(item));
-    }
-
-    /**
-     * Get login history by HWID
-     */
-    async getByHwid(tenant: Tenant, hwid: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        const url = `${this.basePath}?hwid=${encodeURIComponent(hwid)}`;
-        const entries = await api.getList<LoginHistoryEntry>(url, options);
-        return entries.map(item => this.transformResponse(item));
-    }
-
-    /**
-     * Get login history by account ID
-     */
-    async getByAccountId(tenant: Tenant, accountId: number, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        const url = `${this.basePath}/accounts/${accountId}`;
-        const entries = await api.getList<LoginHistoryEntry>(url, options);
-        return entries.map(item => this.transformResponse(item));
-    }
-
-    /**
-     * Search login history with multiple criteria
-     */
-    async search(
-        tenant: Tenant,
-        criteria: { ip?: string; hwid?: string; accountId?: number },
-        options?: ServiceOptions
-    ): Promise<LoginHistoryEntry[]> {
-        // Prioritize by specificity: accountId > hwid > ip
-        if (criteria.accountId) {
-            return this.getByAccountId(tenant, criteria.accountId, options);
-        }
-        if (criteria.hwid) {
-            return this.getByHwid(tenant, criteria.hwid, options);
-        }
-        if (criteria.ip) {
-            return this.getByIp(tenant, criteria.ip, options);
-        }
-        return [];
-    }
-
-    // === TYPE GUARDS ===
-
-    private isLoginHistoryEntry(data: unknown): data is LoginHistoryEntry {
-        return (
-            typeof data === 'object' &&
-            data !== null &&
-            'id' in data &&
-            'attributes' in data &&
-            typeof (data as LoginHistoryEntry).attributes === 'object' &&
-            'accountId' in (data as LoginHistoryEntry).attributes &&
-            'accountName' in (data as LoginHistoryEntry).attributes
-        );
-    }
+function transformEntry(data: LoginHistoryEntry): LoginHistoryEntry {
+  return {
+    ...data,
+    attributes: {
+      ...data.attributes,
+      accountId: Number(data.attributes.accountId),
+      success: Boolean(data.attributes.success),
+    },
+  };
 }
 
-// Create and export a singleton instance
-export const loginHistoryService = new LoginHistoryService();
+export const loginHistoryService = {
+  async getByIp(_tenant: Tenant, ip: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+    const entries = await api.getList<LoginHistoryEntry>(
+      `${BASE_PATH}?ip=${encodeURIComponent(ip)}`,
+      options,
+    );
+    return entries.map(transformEntry);
+  },
 
-// Export types for use in other files
+  async getByHwid(_tenant: Tenant, hwid: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+    const entries = await api.getList<LoginHistoryEntry>(
+      `${BASE_PATH}?hwid=${encodeURIComponent(hwid)}`,
+      options,
+    );
+    return entries.map(transformEntry);
+  },
+
+  async getByAccountId(_tenant: Tenant, accountId: number, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
+    const entries = await api.getList<LoginHistoryEntry>(
+      `${BASE_PATH}/accounts/${accountId}`,
+      options,
+    );
+    return entries.map(transformEntry);
+  },
+
+  async search(
+    tenant: Tenant,
+    criteria: { ip?: string; hwid?: string; accountId?: number },
+    options?: ServiceOptions,
+  ): Promise<LoginHistoryEntry[]> {
+    // Prioritise by specificity: accountId > hwid > ip
+    if (criteria.accountId) return loginHistoryService.getByAccountId(tenant, criteria.accountId, options);
+    if (criteria.hwid) return loginHistoryService.getByHwid(tenant, criteria.hwid, options);
+    if (criteria.ip) return loginHistoryService.getByIp(tenant, criteria.ip, options);
+    return [];
+  },
+};
+
 export type { LoginHistoryEntry };

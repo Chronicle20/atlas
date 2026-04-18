@@ -6,7 +6,7 @@ import { useMutation, useQuery, useQueryClient, type UseMutationResult, type Use
 import { bansService, type BanQueryOptions } from "@/services/api/bans.service";
 import type { Ban, BanType, CreateBanRequest } from "@/types/models/ban";
 import type { Tenant } from "@/types/models/tenant";
-import type { ServiceOptions } from "@/services/api/base.service";
+import type { ServiceOptions } from "@/lib/api/query-params";
 
 export const banKeys = {
   all: ["bans"] as const,

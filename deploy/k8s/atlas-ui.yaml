@@ -18,9 +18,9 @@ spec:
       - name: ui
         image: ghcr.io/chronicle20/atlas-ui/atlas-ui:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 80
         env:
-        - name: NEXT_PUBLIC_ROOT_API_URL
+        - name: VITE_ROOT_API_URL
           value: "http://atlas-ingress.atlas.svc.cluster.local"
 ---
 apiVersion: v1
@@ -33,4 +33,4 @@ spec:
     app: atlas-ui
   ports:
   - protocol: TCP
-    port: 3000
+    port: 80

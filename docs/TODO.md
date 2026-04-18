@@ -243,3 +243,60 @@ that is not available on the wire:
   - `after_login.go:99` (login) - PIN termination implemented
   - Pre-compute HP/MP TODO (character) - removed from code
 - **Updated line numbers** across inventory, login, character, and set_field writer
+
+---
+
+## atlas-ui Frontend
+
+Deferred items from task-004 (Vite + React Router migration). The migration itself merged Phases 0, 1, 2, 3, 6, and 7; the items below were explicitly held back — in most cases because addressing them in the same PR would have multiplied the diff without changing feature parity, which was the migration's only correctness bar.
+
+### Phase 2 deferrals (API client shrink)
+
+- [x] ~~Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target~~ — Done. Reduced from 1801 LOC → 333 LOC by deleting the cache layer, request deduplication, progress tracker, stream downloads, and retry state machine (React Query owns those responsibilities now).
+- [x] ~~Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules.~~ Done — see the `refactor(atlas-ui): remove per-call api.setTenant duplicates` commit.
+- [x] ~~Delete `services/atlas-ui/src/services/api/base.service.ts`~~ — Done. Every service rewritten as a plain object. Types extracted to `src/lib/api/query-params.ts` (145 LOC). Total API-layer LOC went from 2300 → 478 (79% reduction).
+- [x] ~~Drop the `_tenant` parameter from service method signatures.~~ Done — 23 service files + ~60 caller sites updated; test assertions re-baselined.
+
+### Phase 3 deferrals (page port)
+- [ ] Audit `useSearchParams` semantics on filter-heavy pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`). The Phase 3 mechanical rewrite destructured the RR v7 tuple (`const [searchParams] = useSearchParams()`) so call sites compile, but the exact push/replace flow on filter changes should be spot-checked against Next.js behaviour (R1 in risks.md).
+- [x] ~~Route-level `React.lazy` splitting for the 46 pages.~~ Done — main chunk is 256 KB (77 KB gzip); detail/rare pages lazy-load.
+- [x] ~~Revisit the `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build`.~~ No longer emitted by the current build.
+
+### Phase 4 (data fetching consolidation — done)
+
+- [x] ~~Convert every page that still carries a data-fetching `useEffect` to React Query.~~ Done across 27 pages in three passes. Completion bar `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0. Filter/search pages (ItemsPage, MapsPage, MerchantsPage, MonstersPage, NpcsPage, ReactorsPage) also dropped the `autoSearched` ref and let the URL's `?q=…` drive a single `useQuery`.
+- Query keys stay colocated with each hook module (`xKeys = { all, lists, list, details, detail }`). Keeping them local is idiomatic React Query; factor into a shared `query-keys.ts` only if a cross-module invalidation layer becomes a real need.
+- The `lib/hooks/useNpcData` / `useItemData` / `useMobData` / `useSkillData` hooks stay: they do non-trivial composition (service call + `getAssetIconUrl` derivation + batch/cache helpers) that the `lib/hooks/api/use<Resource>` hooks don't replicate. Delete them only if the composition moves into an equivalent `api/` hook.
+
+### Phase 5 (Jest → Vitest — mechanical migration shipped; follow-ups below)
+
+The mechanical migration landed: `jest.*` → `vi.*`, `next/navigation` + `next/link` mocks swapped for `react-router-dom` equivalents. Follow-up cleanup reports **471 passed / 0 skipped / 0 failed** across 26 test files (Vitest). Tests are excluded from `tsc -b` because test files carry pre-existing semantic type errors that are orthogonal to the migration.
+
+All previously-skipped tests have been resolved:
+
+- [x] ~~`src/components/features/tenants/__tests__/CreateTenantDialog.test.tsx`~~ — fixed region selector to tolerate multiple matches.
+- [x] ~~`src/lib/utils/__tests__/toast.test.ts`~~ — swapped `jest.fn` → `vi.fn`.
+- [x] ~~`src/lib/api/__tests__/errors.test.ts`~~ — production-mode cases now use `vi.stubEnv('DEV', false)`.
+- [x] ~~`src/lib/breadcrumbs/__tests__/resolvers.test.ts`~~ — batch-resolution tests un-skipped; the helpers already resolve correctly under Vitest.
+- [x] ~~`src/components/features/characters/__tests__/CharacterRenderer.test.tsx`~~ — reintroduced `data-testid="character-image"` on the migrated `<img>` markup.
+- Deleted obsolete `accounts.service.test.ts`, `templates.service.test.ts`, `useTemplates.test.tsx`, and `conversations.service.test.ts` — they targeted class-based `BaseService` methods (`validate`, `transformResponse`, etc.) removed in the plain-object rewrite. Current surfaces are covered by the hook tests under `lib/hooks/api/__tests__/`.
+
+Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for production code:
+
+- [x] ~~`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`.~~ Done.
+- [x] ~~`verbatimModuleSyntax`.~~ Done — ~30 call sites converted to `import { type X, Y }`.
+- [x] ~~`erasableSyntaxOnly`.~~ Done — `BanType`, `BanReasonCode`, `WeaponType`, `CompartmentType`, `EntityType` converted to `as const` objects + companion types. `ResolverError`'s parameter-property constructor rewritten.
+- [x] ~~`exactOptionalPropertyTypes`.~~ Done — no production hits needed fixing.
+- [x] ~~`noUnusedLocals` + `noUnusedParameters`.~~ Done — ~80 hits fixed (unused React imports, unused destructures, `_tenant` prefix).
+- [x] ~~Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`.~~ Done — 157 errors cleared across 12 test files: swapped `MockedFunction<typeof serviceObject>` → `Mocked<typeof serviceObject>` (or `vi.mocked(x)`) so the plain-object services typecheck; rebuilt `TenantBasic` mocks against the current `{ name, region, majorVersion, minorVersion }` schema; narrowed mock fixtures to satisfy `exactOptionalPropertyTypes`; swapped Jest-only `fail` for `expect.fail`; dropped stray unused imports. Test files now compile under the same strict flags as production code.
+
+### Phase 7 deferrals (docs)
+- [x] ~~Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`.~~ Done — both now describe the Vite/RR/React Query stack. `CONTAINER_DEPLOYMENT.md` and the `BaseService` reference in `api-integration-patterns.md` also updated.
+- [ ] Verify no remaining `next-themes` wrapper edge cases (system preference, theme flicker on initial SSR-ish load). The simplified `ThemeProvider` drops the "system" option in favour of explicit light/dark — revisit if users miss it.
+
+### Tenant-switch invariant (correctness)
+- [ ] Manual smoke test: tenant switching invalidates the React Query cache (new invariant from Phase 2, see `docs/tasks/task-004-atlas-ui-vite-migration/risks.md` R6). The Vitest covers the effect firing; a real-tenant E2E check is still needed.
+- [ ] Manual smoke test: all four tenant headers (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, SCREAMING_SNAKE_CASE) reach Go services unchanged — verify in devtools or server logs.
+
+### Playwright (not in task-004 scope)
+- [ ] No existing e2e suite. A smoke-test Playwright project covering the 46 routes + tenant switch would catch regressions that feature-parity refactors are prone to.

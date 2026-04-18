@@ -1,75 +1,41 @@
-# Container Deployment Guide
+# Container deployment
 
-This document explains how to properly deploy the Atlas UI application in containerized environments to avoid common image optimization issues.
+Atlas UI is a static Vite-built SPA served by nginx. The production image has two stages: a `node:24-alpine` builder that runs `npm ci && npm run build`, and an `nginx:alpine` runtime that copies `dist/` to `/usr/share/nginx/html` and serves on port 80 with a `try_files $uri $uri/ /index.html` SPA fallback.
 
-## Environment Variables
+There is no Node.js at runtime. There is no image-optimisation layer. Plain `<img>` tags do their own thing; nothing in the container needs `DOCKER_ENV` or `DISABLE_IMAGE_OPTIMIZATION` to be set.
 
-### Required for Container Environments
-
-Set one of the following environment variables to enable container-optimized image handling:
+## Build
 
 ```bash
-# For Docker containers
-DOCKER_ENV=true
-
-# Alternative: Kubernetes environments are auto-detected via KUBERNETES_SERVICE_HOST
-# Alternative: Force disable image optimization
-DISABLE_IMAGE_OPTIMIZATION=true
+# From the atlas repo root (Dockerfile context is the repo root):
+docker build -f services/atlas-ui/Dockerfile -t atlas-ui:local .
+docker run --rm -p 3000:80 atlas-ui:local
 ```
 
-## Docker Deployment
+The compose-mapped host port stays at 3000 for local-dev compatibility (`3000:80` in `deploy/compose/docker-compose.core.yml`).
 
-### Dockerfile Example
+## Environment variables
 
-```dockerfile
-FROM node:18-alpine
+All runtime configuration is baked into the bundle at build time (that's how Vite env vars work — they're `import.meta.env.VITE_*`). Changing them after the fact requires a rebuild. Pass them at build time or in the compose / k8s build step:
 
-WORKDIR /app
+| Variable | Purpose |
+|---|---|
+| `VITE_ROOT_API_URL` | Base URL for API requests (falls back to `window.location.origin` at runtime). |
+| `VITE_BUILD_VERSION` | Attached to every error report. |
+| `VITE_ERROR_ENDPOINT` | Remote error sink URL. If unset, remote error logging is disabled. |
+| `VITE_ERROR_API_KEY` | Auth header for the error sink. |
+| `VITE_ASSET_BASE_URL` | Override for the `/api/assets` prefix used by `getAssetIconUrl`. |
 
-# Copy package files
-COPY package*.json ./
-RUN npm ci
+## Kubernetes
 
-# Copy source code
-COPY . .
-
-# Set environment variables
-ENV NODE_ENV=production
-ENV DOCKER_ENV=true
-
-# Build the application
-RUN npm run build
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
-```
-
-### Docker Compose Example
-
-```yaml
-version: '3.8'
-services:
-  atlas-ui:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - DOCKER_ENV=true
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
-    restart: unless-stopped
-```
-
-## Kubernetes Deployment
-
-Kubernetes environments are automatically detected via the `KUBERNETES_SERVICE_HOST` environment variable that Kubernetes injects automatically.
+The deploy manifest lives at `deploy/k8s/atlas-ui.yaml`:
 
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: atlas-ui
+  namespace: atlas
 spec:
   replicas: 2
   selector:
@@ -81,45 +47,32 @@ spec:
         app: atlas-ui
     spec:
       containers:
-      - name: atlas-ui
-        image: atlas-ui:latest
+      - name: ui
+        image: ghcr.io/chronicle20/atlas-ui/atlas-ui:latest
         ports:
-        - containerPort: 3000
+        - containerPort: 80
         env:
-        - name: NODE_ENV
-          value: "production"
-        - name: NEXT_PUBLIC_API_URL
-          value: "https://api.atlas.example.com"
+        - name: VITE_ROOT_API_URL
+          value: "http://atlas-ingress.atlas.svc.cluster.local"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-ui
+  namespace: atlas
+spec:
+  selector:
+    app: atlas-ui
+  ports:
+  - protocol: TCP
+    port: 80
 ```
+
+The ingress proxies the catch-all `location /` at `deploy/k8s/ingress.yaml` and `deploy/shared/routes.conf` both point at `atlas-ui:80`. The `/_next/webpack-hmr` blocks from the Next.js era have been removed.
 
 ## Troubleshooting
 
-### Image Loading Issues
-
-If you're still experiencing 400 errors with images in containers:
-
-1. **Check Environment Variables**: Ensure `DOCKER_ENV=true` is set
-2. **Verify Container Detection**: The app automatically detects containers in production
-3. **External Images**: All external images (maplestory.io) are automatically unoptimized
-4. **SVG Files**: All SVG files are automatically unoptimized
-
-### Debug Mode
-
-To debug image loading in containers, you can check the environment detection:
-
-```javascript
-// In browser console or server logs
-console.log('Container Environment:', process.env.DOCKER_ENV === 'true');
-console.log('Kubernetes Environment:', process.env.KUBERNETES_SERVICE_HOST !== undefined);
-console.log('Production Mode:', process.env.NODE_ENV === 'production');
-```
-
-### Performance Considerations
-
-In container environments:
-- Images are served unoptimized to avoid Next.js optimization issues
-- External images (maplestory.io API) bypass optimization entirely  
-- SVG files are never optimized
-- Image loading strategy defaults to 'eager' for better reliability
-
-This approach trades some optimization for reliability in containerized deployments.
+- **Blank page after navigation refresh**: verify `try_files $uri $uri/ /index.html` is in `services/atlas-ui/nginx.conf`. Without the SPA fallback, `curl http://host:80/accounts/123` returns 404 because there's no file at that path.
+- **API calls fail with CORS errors**: the app expects `VITE_ROOT_API_URL` to be same-origin or behind a reverse proxy that injects the atlas tenant headers. The dev server handles this with a proxy in `vite.config.ts`; the production runtime relies on the ingress.
+- **Tenant headers missing**: `TENANT_ID` / `REGION` / `MAJOR_VERSION` / `MINOR_VERSION` are set by `TenantProvider`'s effect calling `api.setTenant(activeTenant)`. If the console is full of 400s with "missing tenant", the tenant hasn't been picked from the tenant list yet — usually because `GET /api/tenants` returned an empty array.
+- **Bundle looks stale after deploy**: Vite generates hashed filenames (`assets/index-abcd.js`). If the browser is loading an old hash, check the ingress's cache-control headers — CloudFront / Cloudflare in front of nginx sometimes caches `index.html` too aggressively.

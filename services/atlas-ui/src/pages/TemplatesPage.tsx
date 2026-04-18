@@ -1,0 +1,350 @@
+
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
+import { getColumns } from "@/pages/templates-columns";
+import { useState } from "react";
+import { useTemplates, useInvalidateTemplates, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
+import { templatesService, onboardingService, ConfigurationCreationError } from "@/services/api";
+import type { Template } from "@/types/models/template";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { toast } from "sonner";
+import {TemplatePageSkeleton} from "@/components/common/skeletons/TemplatePageSkeleton";
+
+// Form schema for clone template
+const cloneTemplateFormSchema = z.object({
+    region: z
+        .string()
+        .min(3, {
+            message: "Region must be 3 characters.",
+        })
+        .max(3, {
+            message: "Region must be 3 characters.",
+        }),
+    majorVersion: z.number(),
+    minorVersion: z.number(),
+});
+
+type CloneTemplateFormValues = z.infer<typeof cloneTemplateFormSchema>;
+
+
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+export function TemplatesPage() {
+    const templatesQuery = useTemplates();
+    const createTemplate = useCreateTemplate();
+    const deleteTemplate = useDeleteTemplate();
+    const { invalidateAll } = useInvalidateTemplates();
+
+    const templates = templatesQuery.data ?? [];
+    const loading = templatesQuery.isLoading;
+    const error = templatesQuery.error?.message ?? null;
+
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
+
+    // Clone template state
+    const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+    const [templateToClone, setTemplateToClone] = useState<Template | null>(null);
+    // createTemplate.isPending tracks clone state
+
+    // Create tenant from template state
+    const [createTenantDialogOpen, setCreateTenantDialogOpen] = useState(false);
+    const [templateForTenant, setTemplateForTenant] = useState<Template | null>(null);
+    const [isCreatingTenant, setIsCreatingTenant] = useState(false);
+
+    // Clone template form
+    const form = useForm<CloneTemplateFormValues>({
+        resolver: zodResolver(cloneTemplateFormSchema),
+        defaultValues: {
+            region: "",
+            majorVersion: 0,
+            minorVersion: 0,
+        },
+        mode: "onChange",
+    });
+
+
+    const fetchDataAgain = () => invalidateAll();
+
+    const openDeleteDialog = (id: string) => {
+        setTemplateToDelete(id);
+        setDeleteDialogOpen(true);
+    };
+
+    const handleDeleteTemplate = () => {
+        if (!templateToDelete) return;
+        deleteTemplate.mutate(
+            { id: templateToDelete },
+            {
+                onSettled: () => {
+                    setDeleteDialogOpen(false);
+                    setTemplateToDelete(null);
+                },
+            },
+        );
+    };
+
+    // Function to open clone dialog
+    const openCloneDialog = (id: string) => {
+        const template = templates.find(t => t.id === id);
+        if (template) {
+            setTemplateToClone(template);
+            setCloneDialogOpen(true);
+
+            // Reset form with empty values for region, majorVersion, and minorVersion
+            form.reset({
+                region: "",
+                majorVersion: 0,
+                minorVersion: 0,
+            });
+        }
+    };
+
+    const handleCloneTemplate = (data: CloneTemplateFormValues) => {
+        if (!templateToClone) return;
+
+        const clonedAttributes = templatesService.cloneTemplate(templateToClone);
+        clonedAttributes.region = data.region;
+        clonedAttributes.majorVersion = data.majorVersion;
+        clonedAttributes.minorVersion = data.minorVersion;
+
+        createTemplate.mutate(clonedAttributes, {
+            onSuccess: (newTemplate) => {
+                toast.success("Template cloned successfully");
+                setCloneDialogOpen(false);
+                setTemplateToClone(null);
+                window.location.replace(`/templates/${newTemplate.id}/properties`);
+            },
+            onError: () => toast.error("Failed to clone template"),
+        });
+    };
+
+    // Function to open create tenant dialog
+    const openCreateTenantDialog = (id: string) => {
+        const template = templates.find(t => t.id === id);
+        if (template) {
+            setTemplateForTenant(template);
+            setCreateTenantDialogOpen(true);
+        }
+    };
+
+    // Function to handle tenant creation from template
+    const handleCreateTenantFromTemplate = async () => {
+        if (!templateForTenant) return;
+
+        try {
+            setIsCreatingTenant(true);
+
+            // Use onboarding service for complete tenant creation
+            // This creates both the tenant in atlas-tenants AND the configuration in atlas-configurations
+            const tenantName = `Tenant from Template ${templateForTenant.id}`;
+            const result = await onboardingService.onboardTenant(tenantName, templateForTenant);
+
+            // Show success message
+            toast.success("Tenant created successfully with full configuration");
+
+            // Close the dialog
+            setCreateTenantDialogOpen(false);
+            setTemplateForTenant(null);
+
+            // Navigate to the new tenant
+            window.location.replace(`/tenants/${result.tenant.id}/properties`);
+        } catch (err: unknown) {
+            console.error("Failed to create tenant:", err);
+
+            // Provide specific error messages for different failure scenarios
+            if (err instanceof ConfigurationCreationError) {
+                toast.error(`Tenant created but configuration failed. Tenant ID: ${err.tenantId}. Please retry configuration manually.`);
+            } else {
+                toast.error("Failed to create tenant");
+            }
+        } finally {
+            setIsCreatingTenant(false);
+        }
+    };
+
+    const columns = getColumns({ 
+        onDelete: openDeleteDialog,
+        onClone: openCloneDialog,
+        onCreateTenant: openCreateTenantDialog
+    });
+
+    if (loading) {
+        return <TemplatePageSkeleton />;
+    }
+
+    return (
+        <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
+            <div className="items-center justify-between space-y-2">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight">Templates</h2>
+                </div>
+            </div>
+            <div className="mt-4">
+                <DataTableWrapper 
+                    columns={columns} 
+                    data={templates} 
+                    error={error}
+                    onRefresh={fetchDataAgain}
+                    emptyState={{
+                        title: "No templates found",
+                        description: "There are no templates to display at this time."
+                    }}
+                />
+            </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the template.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteTemplate}
+                            disabled={deleteTemplate.isPending}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {deleteTemplate.isPending ? "Deleting..." : "Delete"}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Clone Template Dialog */}
+            <Dialog open={cloneDialogOpen} onOpenChange={setCloneDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Clone Template</DialogTitle>
+                        <DialogDescription>
+                            Create a new template based on the selected template. Please provide the required information.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(handleCloneTemplate)} className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="region"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Region</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter region (3 characters)" {...field} />
+                                        </FormControl>
+                                        <FormDescription>
+                                            The MapleStory region (3 characters).
+                                        </FormDescription>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="majorVersion"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Major Version</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Enter major version" 
+                                                {...field}
+                                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            The MapleStory major version.
+                                        </FormDescription>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="minorVersion"
+                                render={({field}) => (
+                                    <FormItem>
+                                        <FormLabel>Minor Version</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                type="number" 
+                                                placeholder="Enter minor version" 
+                                                {...field}
+                                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                                            />
+                                        </FormControl>
+                                        <FormDescription>
+                                            The MapleStory minor version.
+                                        </FormDescription>
+                                        <FormMessage/>
+                                    </FormItem>
+                                )}
+                            />
+                            <DialogFooter>
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={() => setCloneDialogOpen(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button 
+                                    type="submit" 
+                                    disabled={createTemplate.isPending}
+                                >
+                                    {createTemplate.isPending ? "Cloning..." : "Clone Template"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create Tenant from Template Dialog */}
+            <Dialog open={createTenantDialogOpen} onOpenChange={setCreateTenantDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create Tenant from Template</DialogTitle>
+                        <DialogDescription>
+                            Create a new tenant based on the selected template. All information from the template will be used.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            onClick={() => setCreateTenantDialogOpen(false)}
+                        >
+                            Cancel
+                        </Button>
+                        <Button 
+                            onClick={handleCreateTenantFromTemplate} 
+                            disabled={isCreatingTenant}
+                        >
+                            {isCreatingTenant ? "Creating..." : "Create Tenant"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+        </div>
+    );
+}

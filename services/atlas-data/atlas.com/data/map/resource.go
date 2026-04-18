@@ -7,12 +7,15 @@ import (
 	"atlas-data/map/reactor"
 	"atlas-data/point"
 	"atlas-data/rest"
+	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -26,6 +29,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 
 			r := router.PathPrefix("/data/maps").Subrouter()
 			r.HandleFunc("", registerGet("get_maps", handleGetMapsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/search-index/backfill", rest.RegisterHandler(l)(si)("backfill_map_search_index", handleBackfillSearchIndex(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest(db))).Queries("name", "{name}").Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest(db))).Methods(http.MethodGet)
@@ -44,17 +48,18 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			searchQuery := strings.TrimSpace(r.URL.Query().Get("search"))
+			if _, hasSearch := r.URL.Query()["search"]; hasSearch {
+				handleSearchMaps(db)(d, c)(searchQuery, r.URL.Query().Get("limit"))(w, r)
+				return
+			}
+
 			s := NewStorage(d.Logger(), db)
 			res, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve maps.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
-			}
-
-			searchQuery := r.URL.Query().Get("search")
-			if searchQuery != "" {
-				res = filterMaps(res, searchQuery, 50)
 			}
 
 			query := r.URL.Query()
@@ -64,23 +69,76 @@ func handleGetMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	}
 }
 
-func filterMaps(maps []RestModel, search string, limit int) []RestModel {
-	searchLower := strings.ToLower(search)
-	searchId, isNumeric := strconv.Atoi(search)
-	results := make([]RestModel, 0)
-	for _, m := range maps {
-		if isNumeric == nil && int(m.Id) == searchId {
-			results = append(results, m)
-		} else if strings.Contains(strings.ToLower(m.Name), searchLower) {
-			results = append(results, m)
-		} else if strings.Contains(strings.ToLower(m.StreetName), searchLower) {
-			results = append(results, m)
-		}
-		if len(results) >= limit {
-			break
+func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
+		return func(q, limitRaw string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				if q == "" {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if len(q) > SearchMaxQueryLen {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				limit := SearchMaxLimit
+				if limitRaw != "" {
+					parsed, err := strconv.Atoi(limitRaw)
+					if err != nil || parsed <= 0 {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					if parsed > SearchMaxLimit {
+						parsed = SearchMaxLimit
+					}
+					limit = parsed
+				}
+
+				start := time.Now()
+				results, err := SearchByQuery(d.Logger(), db)(d.Context())(q, limit)
+				elapsedMs := time.Since(start).Milliseconds()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Map search failed.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				if t, terr := tenant.FromContext(d.Context())(); terr == nil {
+					d.Logger().WithFields(logrus.Fields{
+						"tenant_id":   t.Id().String(),
+						"query_len":   len(q),
+						"result_ct":   len(results),
+						"elapsed_ms":  elapsedMs,
+					}).Debugf("Map search served.")
+				}
+
+				rms := make([]SearchResultRestModel, 0, len(results))
+				for _, s := range results {
+					rms = append(rms, SearchResultRestModel{Id: _map.Id(s.Id), Name: s.Name, StreetName: s.StreetName})
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			}
 		}
 	}
-	return results
+}
+
+func handleBackfillSearchIndex(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			res, err := Backfill(d.Logger())(d.Context())(db)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Map search index backfill failed.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			_ = json.NewEncoder(w).Encode(res)
+		}
+	}
 }
 
 func handleGetMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

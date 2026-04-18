@@ -11,7 +11,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { mapsService, type MapData, type MapAttributes } from '@/services/api/maps.service';
 import { useTenant } from '@/context/tenant-context';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const mapKeys = {

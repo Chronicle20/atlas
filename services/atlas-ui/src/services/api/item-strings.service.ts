@@ -1,18 +1,16 @@
-import { BaseService, type QueryOptions } from './base.service';
-import { api } from '@/lib/api/client';
-import type { Tenant } from '@/types/models/tenant';
-import type { ItemStringData } from '@/types/models/item-string';
+import { api } from "@/lib/api/client";
+import { buildQueryString, type QueryOptions } from "@/lib/api/query-params";
+import type { Tenant } from "@/types/models/tenant";
+import type { ItemStringData } from "@/types/models/item-string";
 
-class ItemStringsService extends BaseService {
-  protected basePath = '/api/data/item-strings';
+const BASE_PATH = "/api/data/item-strings";
 
-  async getAllItemStrings(tenant: Tenant, options?: QueryOptions): Promise<ItemStringData[]> {
-    return this.getAll<ItemStringData>(options);
-  }
+export const itemStringsService = {
+  async getAllItemStrings(_tenant: Tenant, options?: QueryOptions): Promise<ItemStringData[]> {
+    return api.getList<ItemStringData>(`${BASE_PATH}${buildQueryString(options)}`, options);
+  },
 
-  async getItemString(itemId: string, tenant: Tenant): Promise<ItemStringData> {
-    return this.getById<ItemStringData>(itemId);
-  }
-}
-
-export const itemStringsService = new ItemStringsService();
+  async getItemString(itemId: string, _tenant: Tenant): Promise<ItemStringData> {
+    return api.getOne<ItemStringData>(`${BASE_PATH}/${itemId}`);
+  },
+};

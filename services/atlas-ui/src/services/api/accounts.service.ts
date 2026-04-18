@@ -1,276 +1,152 @@
-/**
- * Accounts Service
- * 
- * Provides comprehensive account management functionality including:
- * - Account retrieval operations with tenant context
- * - Account session management
- * - Enhanced error handling and caching
- * - Request cancellation and deduplication support
- */
+import { api } from "@/lib/api/client";
+import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import type { Account, AccountAttributes } from "@/types/models/account";
+import type { Tenant } from "@/types/models/tenant";
 
-import { BaseService, type ServiceOptions, type QueryOptions, type ValidationError } from './base.service';
-import type { Account, AccountAttributes } from '@/types/models/account';
-import type { Tenant } from '@/types/models/tenant';
-import { api } from '@/lib/api/client';
+const BASE_PATH = "/api/accounts";
 
-/**
- * Account-specific query options
- */
 interface AccountQueryOptions extends QueryOptions {
-  /** Filter by account name */
   name?: string;
-  /** Filter by logged in status */
   loggedIn?: boolean;
-  /** Filter by language */
   language?: string;
-  /** Filter by country */
   country?: string;
 }
 
-/**
- * Accounts service class extending BaseService with account-specific functionality
- */
-class AccountsService extends BaseService {
-  protected basePath = '/api/accounts';
+function transformAccount(data: Account): Account {
+  return {
+    ...data,
+    attributes: {
+      ...data.attributes,
+      loggedIn: Number(data.attributes.loggedIn),
+      lastLogin: Number(data.attributes.lastLogin),
+      gender: Number(data.attributes.gender),
+      characterSlots: Number(data.attributes.characterSlots),
+      pinAttempts: Number(data.attributes.pinAttempts),
+      picAttempts: Number(data.attributes.picAttempts),
+      tos: Boolean(data.attributes.tos),
+    },
+  };
+}
 
-  /**
-   * Validate account data before API calls
-   */
-  protected override validate<T>(data: T): ValidationError[] {
-    const errors: ValidationError[] = [];
+function sortAccounts(accounts: Account[]): Account[] {
+  return accounts.sort((a, b) =>
+    a.attributes.name.toLowerCase().localeCompare(b.attributes.name.toLowerCase()),
+  );
+}
 
-    if (this.isAccountAttributes(data)) {
-      if (!data.name || data.name.trim().length === 0) {
-        errors.push({ field: 'name', message: 'Account name is required' });
-      }
-      if (data.name && data.name.length > 12) {
-        errors.push({ field: 'name', message: 'Account name must be 12 characters or less' });
-      }
-      if (!data.pin || data.pin.trim().length === 0) {
-        errors.push({ field: 'pin', message: 'PIN is required' });
-      }
-      if (data.pin && data.pin.length > 8) {
-        errors.push({ field: 'pin', message: 'PIN must be 8 characters or less' });
-      }
-      if (!data.pic || data.pic.trim().length === 0) {
-        errors.push({ field: 'pic', message: 'PIC is required' });
-      }
-      if (data.pic && data.pic.length > 8) {
-        errors.push({ field: 'pic', message: 'PIC must be 8 characters or less' });
-      }
-      if (data.characterSlots < 0 || data.characterSlots > 30) {
-        errors.push({ field: 'characterSlots', message: 'Character slots must be between 0 and 30' });
-      }
-      if (data.gender < 0 || data.gender > 1) {
-        errors.push({ field: 'gender', message: 'Gender must be 0 (male) or 1 (female)' });
-      }
-    }
+function buildAccountQuery(options?: AccountQueryOptions): QueryOptions {
+  const queryOptions: QueryOptions = { ...options };
+  if (!options) return queryOptions;
 
-    return errors;
-  }
+  const filters: Record<string, unknown> = { ...queryOptions.filters };
+  if (options.name) filters.name = options.name;
+  if (options.loggedIn !== undefined) filters.loggedIn = options.loggedIn;
+  if (options.language) filters.language = options.language;
+  if (options.country) filters.country = options.country;
+  if (Object.keys(filters).length > 0) queryOptions.filters = filters;
 
-  /**
-   * Transform response data to ensure consistent structure
-   */
-  protected override transformResponse<T>(data: T): T {
-    if (this.isAccount(data)) {
-      // Ensure all numeric fields are properly typed
-      const transformed = { ...data };
-      transformed.attributes = {
-        ...transformed.attributes,
-        loggedIn: Number(transformed.attributes.loggedIn),
-        lastLogin: Number(transformed.attributes.lastLogin),
-        gender: Number(transformed.attributes.gender),
-        characterSlots: Number(transformed.attributes.characterSlots),
-        pinAttempts: Number(transformed.attributes.pinAttempts),
-        picAttempts: Number(transformed.attributes.picAttempts),
-        tos: Boolean(transformed.attributes.tos),
-      };
-      return transformed as T;
-    }
-    return data;
-  }
+  return queryOptions;
+}
 
-  /**
-   * Sort accounts by name (case-insensitive)
-   */
-  private sortAccounts(accounts: Account[]): Account[] {
-    return accounts.sort((a, b) => 
-      a.attributes.name.toLowerCase().localeCompare(b.attributes.name.toLowerCase())
+export const accountsService = {
+  async getAllAccounts(_tenant: Tenant, options?: AccountQueryOptions): Promise<Account[]> {
+    const queryOptions = buildAccountQuery(options);
+    const accounts = await api.getList<Account>(
+      `${BASE_PATH}${buildQueryString(queryOptions)}`,
+      queryOptions,
     );
-  }
+    return sortAccounts(accounts.map(transformAccount));
+  },
 
-  /**
-   * Get all accounts for a specific tenant with sorting and filtering
-   */
-  async getAllAccounts(tenant: Tenant, options?: AccountQueryOptions): Promise<Account[]> {
-    // Build query options with account-specific filters
-    const queryOptions: QueryOptions = { ...options };
-    if (options?.name) {
-      queryOptions.filters = { ...queryOptions.filters, name: options.name };
-    }
-    if (options?.loggedIn !== undefined) {
-      queryOptions.filters = { ...queryOptions.filters, loggedIn: options.loggedIn };
-    }
-    if (options?.language) {
-      queryOptions.filters = { ...queryOptions.filters, language: options.language };
-    }
-    if (options?.country) {
-      queryOptions.filters = { ...queryOptions.filters, country: options.country };
-    }
+  async getAccountById(_tenant: Tenant, id: string, options?: ServiceOptions): Promise<Account> {
+    const account = await api.getOne<Account>(`${BASE_PATH}/${id}`, options);
+    return transformAccount(account);
+  },
 
-    const accounts = await this.getAll<Account>(queryOptions);
-    return this.sortAccounts(accounts);
-  }
-
-  /**
-   * Get account by ID for a specific tenant
-   */
-  async getAccountById(tenant: Tenant, id: string, options?: ServiceOptions): Promise<Account> {
-    return this.getById<Account>(id, options);
-  }
-
-  /**
-   * Check if an account exists for a specific tenant
-   */
   async accountExists(tenant: Tenant, id: string, options?: ServiceOptions): Promise<boolean> {
-    return this.exists(id, options);
-  }
+    try {
+      await accountsService.getAccountById(tenant, id, options);
+      return true;
+    } catch (error) {
+      if (error && typeof error === "object" && "status" in error && (error as { status: number }).status === 404) {
+        return false;
+      }
+      throw error;
+    }
+  },
 
-  /**
-   * Get accounts by name pattern (case-insensitive search)
-   */
   async searchAccountsByName(tenant: Tenant, namePattern: string, options?: ServiceOptions): Promise<Account[]> {
-    const queryOptions: AccountQueryOptions = {
+    return accountsService.getAllAccounts(tenant, {
       ...options,
       search: namePattern,
-      name: namePattern
-    };
-    
-    return this.getAllAccounts(tenant, queryOptions);
-  }
+      name: namePattern,
+    });
+  },
 
-  /**
-   * Get logged-in accounts for a specific tenant
-   */
   async getLoggedInAccounts(tenant: Tenant, options?: ServiceOptions): Promise<Account[]> {
-    const queryOptions: AccountQueryOptions = {
-      ...options,
-      loggedIn: true
-    };
-    
-    return this.getAllAccounts(tenant, queryOptions);
-  }
+    return accountsService.getAllAccounts(tenant, { ...options, loggedIn: true });
+  },
 
-  /**
-   * Terminate account session - Force logout an account
-   */
-  async terminateAccountSession(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
-    const processedOptions = options ? { ...options } : {};
+  async terminateAccountSession(_tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
+    return api.delete(`${BASE_PATH}/${accountId}/session`, options);
+  },
 
-    return api.delete(`${this.basePath}/${accountId}/session`, processedOptions);
-  }
+  async deleteAccount(_tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
+    return api.delete(`${BASE_PATH}/${accountId}`, options);
+  },
 
-  /**
-   * Delete an account permanently
-   */
-  async deleteAccount(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
-    return api.delete(`${this.basePath}/${accountId}`, options);
-  }
-
-  /**
-   * Get account statistics for a tenant
-   */
   async getAccountStats(tenant: Tenant, options?: ServiceOptions): Promise<{
     total: number;
     loggedIn: number;
     totalCharacterSlots: number;
     averageCharacterSlots: number;
   }> {
-    const accounts = await this.getAllAccounts(tenant, options);
-
-    const stats = {
-      total: accounts.length,
-      loggedIn: accounts.filter(acc => acc.attributes.loggedIn > 0).length,
-      totalCharacterSlots: accounts.reduce((sum, acc) => sum + acc.attributes.characterSlots, 0),
-      averageCharacterSlots: 0
+    const accounts = await accountsService.getAllAccounts(tenant, options);
+    const total = accounts.length;
+    const loggedIn = accounts.filter(acc => acc.attributes.loggedIn > 0).length;
+    const totalCharacterSlots = accounts.reduce((sum, acc) => sum + acc.attributes.characterSlots, 0);
+    return {
+      total,
+      loggedIn,
+      totalCharacterSlots,
+      averageCharacterSlots: total > 0 ? totalCharacterSlots / total : 0,
     };
-    
-    stats.averageCharacterSlots = stats.total > 0 ? stats.totalCharacterSlots / stats.total : 0;
-    
-    return stats;
-  }
+  },
 
-  /**
-   * Batch terminate multiple account sessions
-   */
   async terminateMultipleSessions(
     tenant: Tenant,
     accountIds: string[],
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
     const successful: string[] = [];
     const failed: Array<{ id: string; error: string }> = [];
-    
-    // Process terminations with limited concurrency to avoid overwhelming the server
     const concurrency = 3;
+
     for (let i = 0; i < accountIds.length; i += concurrency) {
       const batch = accountIds.slice(i, i + concurrency);
-      
-      const promises = batch.map(async (accountId): Promise<{ success: true; accountId: string } | { success: false; accountId: string; error: string }> => {
-        try {
-          await this.terminateAccountSession(tenant, accountId, options);
-          return { success: true, accountId };
-        } catch (error) {
-          return { 
-            success: false,
-            accountId,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          };
-        }
-      });
-      
-      const results = await Promise.all(promises);
-      
-      results.forEach(result => {
-        if (result.success) {
-          successful.push(result.accountId);
-        } else {
-          failed.push({ id: result.accountId, error: result.error });
-        }
-      });
+      const results = await Promise.all(
+        batch.map(async (accountId) => {
+          try {
+            await accountsService.terminateAccountSession(tenant, accountId, options);
+            return { success: true as const, accountId };
+          } catch (error) {
+            return {
+              success: false as const,
+              accountId,
+              error: error instanceof Error ? error.message : "Unknown error",
+            };
+          }
+        }),
+      );
+
+      for (const result of results) {
+        if (result.success) successful.push(result.accountId);
+        else failed.push({ id: result.accountId, error: result.error });
+      }
     }
-    
+
     return { successful, failed };
-  }
+  },
+};
 
-  // === TYPE GUARDS ===
-
-  private isAccount(data: unknown): data is Account {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'id' in data &&
-      'attributes' in data &&
-      typeof (data as any).attributes === 'object' &&
-      'name' in (data as any).attributes
-    );
-  }
-
-  private isAccountAttributes(data: unknown): data is AccountAttributes {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'name' in data &&
-      'pin' in data &&
-      'pic' in data &&
-      'characterSlots' in data
-    );
-  }
-}
-
-// Create and export a singleton instance
-export const accountsService = new AccountsService();
-
-// Export types for use in other files
 export type { Account, AccountAttributes, AccountQueryOptions };

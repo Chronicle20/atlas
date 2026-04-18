@@ -2,7 +2,7 @@ import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { reactorsService } from '@/services/api/reactors.service';
 import { useTenant } from '@/context/tenant-context';
 import type { ReactorData } from '@/types/models/reactor';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 
 export const reactorKeys = {
   all: ['reactors'] as const,

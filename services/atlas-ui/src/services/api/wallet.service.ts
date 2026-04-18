@@ -1,35 +1,31 @@
-import { BaseService, type ServiceOptions } from './base.service';
-import type { Wallet, WalletAttributes } from '@/types/models/wallet';
-import type { Tenant } from '@/types/models/tenant';
-import { api } from '@/lib/api/client';
+import { api } from "@/lib/api/client";
+import type { ServiceOptions } from "@/lib/api/query-params";
+import type { Wallet, WalletAttributes } from "@/types/models/wallet";
+import type { Tenant } from "@/types/models/tenant";
 
-class WalletService extends BaseService {
-  protected basePath = '/api/accounts';
+const BASE_PATH = "/api/accounts";
 
-  async getWallet(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<Wallet> {
-    const processedOptions = options ? { ...options } : {};
-    return api.getOne<Wallet>(`${this.basePath}/${accountId}/wallet`, processedOptions);
-  }
+export const walletService = {
+  async getWallet(_tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<Wallet> {
+    return api.getOne<Wallet>(`${BASE_PATH}/${accountId}/wallet`, options);
+  },
 
   async updateWallet(
-    tenant: Tenant,
+    _tenant: Tenant,
     accountId: string,
     credit: number,
     points: number,
     prepaid: number,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<Wallet> {
     const body = {
       data: {
-        type: 'wallets',
+        type: "wallets",
         attributes: { credit, points, prepaid },
       },
     };
-    const processedOptions = options ? { ...options } : {};
-    return api.patch<Wallet>(`${this.basePath}/${accountId}/wallet`, body, processedOptions);
-  }
-}
-
-export const walletService = new WalletService();
+    return api.patch<Wallet>(`${BASE_PATH}/${accountId}/wallet`, body, options);
+  },
+};
 
 export type { Wallet, WalletAttributes };

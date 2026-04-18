@@ -1,568 +1,270 @@
-/**
- * NPCs Service
- * 
- * Provides comprehensive NPC management functionality including:
- * - NPC discovery and listing (combines shop and conversation data)
- * - Shop management (create, update, delete shops)
- * - Commodity management (add, update, delete items in shops)
- * - Integration with conversations service
- * - Enhanced error handling and validation
- * - Batch operations for bulk commodity management
- */
+import { api } from "@/lib/api/client";
+import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
+import { conversationsService } from "./conversations.service";
+import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse } from "@/types/models/npc";
+import type { Tenant } from "@/types/models/tenant";
 
-import { BaseService, type ServiceOptions, type QueryOptions, type ValidationError } from './base.service';
-import { api } from '@/lib/api/client';
-import { conversationsService } from './conversations.service';
-import type { ApiSingleResponse } from '@/types/api/responses';
-import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse } from '@/types/models/npc';
-import type { Tenant } from '@/types/models/tenant';
+const BASE_PATH = "/api/npcs";
 
-// Input types for JSON:API requests
 interface CreateShopInput {
   data: {
-    type: 'shops';
+    type: "shops";
     id: string;
-    attributes: {
-      npcId: number;
-      recharger?: boolean;
-    };
-    relationships: {
-      commodities: {
-        data: Array<{ type: 'commodities'; id: string }>;
-      };
-    };
+    attributes: { npcId: number; recharger?: boolean };
+    relationships: { commodities: { data: Array<{ type: "commodities"; id: string }> } };
   };
-  included: Array<{
-    type: 'commodities';
-    id: string;
-    attributes: Omit<CommodityAttributes, 'id'>;
-  }>;
+  included: Array<{ type: "commodities"; id: string; attributes: Omit<CommodityAttributes, "id"> }>;
 }
 
 interface UpdateShopInput {
   data: {
-    type: 'shops';
+    type: "shops";
     id: string;
-    attributes: {
-      npcId: number;
-      recharger?: boolean;
-    };
-    relationships: {
-      commodities: {
-        data: Array<{ type: 'commodities'; id: string }>;
-      };
-    };
+    attributes: { npcId: number; recharger?: boolean };
+    relationships: { commodities: { data: Array<{ type: "commodities"; id: string }> } };
   };
-  included: Array<{
-    type: 'commodities';
-    id: string;
-    attributes: CommodityAttributes;
-  }>;
+  included: Array<{ type: "commodities"; id: string; attributes: CommodityAttributes }>;
 }
 
 interface CreateCommodityInput {
-  data: {
-    type: 'commodities';
-    attributes: CommodityAttributes;
-  };
+  data: { type: "commodities"; attributes: CommodityAttributes };
 }
 
 interface UpdateCommodityInput {
-  data: {
-    type: 'commodities';
-    attributes: Partial<CommodityAttributes>;
-  };
+  data: { type: "commodities"; attributes: Partial<CommodityAttributes> };
 }
 
-/**
- * NPCs service class extending BaseService with NPC-specific functionality
- */
-class NpcsService extends BaseService {
-  protected basePath = '/api/npcs';
-
-  /**
-   * Validate commodity data before API calls
-   */
-  protected override validate<T>(data: T): ValidationError[] {
-    const errors: ValidationError[] = [];
-
-    if (this.isCommodityAttributes(data)) {
-      if (data.templateId <= 0) {
-        errors.push({ field: 'templateId', message: 'Template ID must be positive' });
-      }
-      if (data.mesoPrice < 0) {
-        errors.push({ field: 'mesoPrice', message: 'Meso price must be non-negative' });
-      }
-      if (data.discountRate < 0 || data.discountRate > 100) {
-        errors.push({ field: 'discountRate', message: 'Discount rate must be between 0 and 100' });
-      }
-      if (data.tokenPrice < 0) {
-        errors.push({ field: 'tokenPrice', message: 'Token price must be non-negative' });
-      }
-      if (data.period < 0) {
-        errors.push({ field: 'period', message: 'Period must be non-negative' });
-      }
-      if (data.levelLimit < 0) {
-        errors.push({ field: 'levelLimit', message: 'Level limit must be non-negative' });
-      }
-    }
-
-    return errors;
+function validateCommodity(data: CommodityAttributes): ValidationError[] {
+  const errors: ValidationError[] = [];
+  if (data.templateId <= 0) errors.push({ field: "templateId", message: "Template ID must be positive" });
+  if (data.mesoPrice < 0) errors.push({ field: "mesoPrice", message: "Meso price must be non-negative" });
+  if (data.discountRate < 0 || data.discountRate > 100) {
+    errors.push({ field: "discountRate", message: "Discount rate must be between 0 and 100" });
   }
+  if (data.tokenPrice < 0) errors.push({ field: "tokenPrice", message: "Token price must be non-negative" });
+  if (data.period < 0) errors.push({ field: "period", message: "Period must be non-negative" });
+  if (data.levelLimit < 0) errors.push({ field: "levelLimit", message: "Level limit must be non-negative" });
+  return errors;
+}
 
-  /**
-   * Transform request data to proper API format
-   */
-  protected override transformRequest<T>(data: T): T {
-    // Handle JSON:API formatted inputs
-    if (this.isCreateShopInput(data) || this.isUpdateShopInput(data) || 
-        this.isCreateCommodityInput(data) || this.isUpdateCommodityInput(data)) {
-      return data;
-    }
-
-    return data;
+function throwIfInvalidCommodity(attrs: CommodityAttributes, shouldValidate: boolean): void {
+  if (!shouldValidate) return;
+  const errors = validateCommodity(attrs);
+  if (errors.length > 0) {
+    throw new Error(`Commodity validation failed: ${errors.map(e => e.message).join(", ")}`);
   }
+}
 
+export const npcsService = {
   /**
-   * Get all NPCs by combining shop and conversation data
-   * This method aggregates NPCs from both shops and conversations APIs
+   * Combine shop and conversation lookups into a single NPC list.
    */
-  async getAllNPCs(tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
+  async getAllNPCs(_tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
     try {
-      // Set tenant context for API calls
-      // Fetch NPCs with shops
-      const shops = await api.getList<Shop>('/api/shops', this.processServiceOptions(options));
-      
-      // Extract NPCs from shops data
-      const npcsWithShops = shops.map((shop: Shop) => ({
+      const shops = await api.getList<Shop>("/api/shops", options);
+      const npcsWithShops: NPC[] = shops.map((shop: Shop) => ({
         id: shop.attributes.npcId,
         hasShop: true,
-        hasConversation: false
+        hasConversation: false,
       }));
 
-      // Fetch NPCs with conversations
       try {
         const conversations = await conversationsService.getAll();
-
-        // Extract NPCs from conversations data
-        const npcsWithConversations = conversations.map(conversation => ({
+        const npcsWithConversations: NPC[] = conversations.map(conversation => ({
           id: conversation.attributes.npcId,
           hasShop: false,
-          hasConversation: true
+          hasConversation: true,
         }));
 
-        // Combine NPCs from both sources, avoiding duplicates
         const npcMap = new Map<number, NPC>();
-
-        // Add NPCs with shops
-        npcsWithShops.forEach((npc: NPC) => {
-          npcMap.set(npc.id, npc);
-        });
-
-        // Add or update NPCs with conversations
+        npcsWithShops.forEach(npc => npcMap.set(npc.id, npc));
         npcsWithConversations.forEach(npc => {
-          if (npcMap.has(npc.id)) {
-            // NPC already exists (has a shop), update to indicate it also has a conversation
-            const existingNpc = npcMap.get(npc.id)!;
-            existingNpc.hasConversation = true;
-          } else {
-            // New NPC (only has conversation)
-            npcMap.set(npc.id, npc);
-          }
+          const existing = npcMap.get(npc.id);
+          if (existing) existing.hasConversation = true;
+          else npcMap.set(npc.id, npc);
         });
 
-        // Convert map back to array and sort by ID
         return Array.from(npcMap.values()).sort((a, b) => a.id - b.id);
       } catch (conversationError) {
-        console.error('Failed to fetch NPCs with conversations:', conversationError);
-        // If fetching conversations fails, return just the NPCs with shops
+        console.error("Failed to fetch NPCs with conversations:", conversationError);
         return npcsWithShops.sort((a, b) => a.id - b.id);
       }
     } catch (error) {
-      console.error('Failed to fetch NPCs:', error);
-      throw new Error('Unable to retrieve NPC data. Please try again later.');
+      console.error("Failed to fetch NPCs:", error);
+      throw new Error("Unable to retrieve NPC data. Please try again later.");
     }
-  }
+  },
 
-  /**
-   * Search NPCs by ID or name via atlas-data
-   */
-  async searchNpcs(query: string, tenant: Tenant): Promise<NpcSearchResult[]> {
+  async searchNpcs(query: string, _tenant: Tenant): Promise<NpcSearchResult[]> {
     const npcs = await api.getList<{ id: string; attributes: { name: string } }>(
       `/api/data/npcs?search=${encodeURIComponent(query)}`,
     );
-    return npcs.map(npc => ({
-      id: parseInt(npc.id),
-      name: npc.attributes.name,
-    }));
-  }
+    return npcs.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
+  },
 
-  /**
-   * Get NPC shop details with commodities
-   */
-  async getNPCShop(npcId: number, tenant: Tenant, options?: ServiceOptions): Promise<ShopResponse> {
-    const processedOptions = this.processServiceOptions(options);
-    return api.get<ShopResponse>(`${this.basePath}/${npcId}/shop?include=commodities`, processedOptions);
-  }
+  async getNPCShop(npcId: number, _tenant: Tenant, options?: ServiceOptions): Promise<ShopResponse> {
+    return api.get<ShopResponse>(`${BASE_PATH}/${npcId}/shop?include=commodities`, options);
+  },
 
-  /**
-   * Create a new shop for an NPC with initial commodities
-   */
   async createShop(
     npcId: number,
-    commodities: Omit<CommodityAttributes, 'id'>[],
-    tenant: Tenant,
+    commodities: Omit<CommodityAttributes, "id">[],
+    _tenant: Tenant,
     recharger?: boolean,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<Shop> {
-    // Validate commodities
-    if (options?.validate !== false) {
-      for (const commodity of commodities) {
-        const validationErrors = this.validate(commodity);
-        if (validationErrors.length > 0) {
-          throw new Error(`Commodity validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
-        }
-      }
+    const shouldValidate = options?.validate !== false;
+    for (const commodity of commodities) {
+      throwIfInvalidCommodity(commodity as CommodityAttributes, shouldValidate);
     }
 
-    // Create commodity data for included section
     const includedCommodities = commodities.map((commodity, index) => ({
-      type: 'commodities' as const,
-      id: `temp-id-${index}`, // Temporary ID, will be replaced by server
-      attributes: commodity
+      type: "commodities" as const,
+      id: `temp-id-${index}`,
+      attributes: commodity,
     }));
-
-    // Create commodity references for relationships section
-    const commodityReferences = includedCommodities.map(commodity => ({
-      type: 'commodities' as const,
-      id: commodity.id
-    }));
+    const commodityReferences = includedCommodities.map(c => ({ type: "commodities" as const, id: c.id }));
 
     const input: CreateShopInput = {
       data: {
-        type: 'shops',
+        type: "shops",
         id: `shop-${npcId}`,
-        attributes: {
-          npcId: npcId,
-          ...(recharger !== undefined && { recharger })
-        },
-        relationships: {
-          commodities: {
-            data: commodityReferences
-          }
-        }
+        attributes: { npcId, ...(recharger !== undefined && { recharger }) },
+        relationships: { commodities: { data: commodityReferences } },
       },
-      included: includedCommodities
+      included: includedCommodities,
     };
 
-    const processedOptions = this.processServiceOptions(options);
-    const response = await api.post<{ data: Shop }>(
-      `${this.basePath}/${npcId}/shop`, 
-      input, 
-      processedOptions
-    );
-    
+    const response = await api.post<{ data: Shop }>(`${BASE_PATH}/${npcId}/shop`, input, options);
     return response.data;
-  }
+  },
 
-  /**
-   * Update an existing shop with new commodity data
-   */
   async updateShop(
     npcId: number,
     commodities: Commodity[],
-    tenant: Tenant,
+    _tenant: Tenant,
     recharger?: boolean,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<Shop> {
-    // Validate commodities
-    if (options?.validate !== false) {
-      for (const commodity of commodities) {
-        const validationErrors = this.validate(commodity.attributes);
-        if (validationErrors.length > 0) {
-          throw new Error(`Commodity validation failed: ${validationErrors.map(e => e.message).join(', ')}`);
-        }
-      }
+    const shouldValidate = options?.validate !== false;
+    for (const commodity of commodities) {
+      throwIfInvalidCommodity(commodity.attributes, shouldValidate);
     }
 
-    // Create commodity references for relationships section
-    const commodityReferences = commodities.map(commodity => ({
-      type: 'commodities' as const,
-      id: commodity.id
-    }));
-
-    // Create included commodities
-    const includedCommodities = commodities.map(commodity => ({
-      type: 'commodities' as const,
-      id: commodity.id,
-      attributes: commodity.attributes
+    const commodityReferences = commodities.map(c => ({ type: "commodities" as const, id: c.id }));
+    const includedCommodities = commodities.map(c => ({
+      type: "commodities" as const,
+      id: c.id,
+      attributes: c.attributes,
     }));
 
     const input: UpdateShopInput = {
       data: {
-        type: 'shops',
+        type: "shops",
         id: `shop-${npcId}`,
-        attributes: {
-          npcId: npcId,
-          ...(recharger !== undefined && { recharger })
-        },
-        relationships: {
-          commodities: {
-            data: commodityReferences
-          }
-        }
+        attributes: { npcId, ...(recharger !== undefined && { recharger }) },
+        relationships: { commodities: { data: commodityReferences } },
       },
-      included: includedCommodities
+      included: includedCommodities,
     };
 
-    const processedOptions = this.processServiceOptions(options);
-    const response = await api.put<{ data: Shop }>(
-      `${this.basePath}/${npcId}/shop`, 
-      input, 
-      processedOptions
-    );
-    
+    const response = await api.put<{ data: Shop }>(`${BASE_PATH}/${npcId}/shop`, input, options);
     return response.data;
-  }
+  },
 
-  /**
-   * Add a new commodity to an NPC's shop
-   */
   async createCommodity(
     npcId: number,
     commodityAttributes: CommodityAttributes,
-    tenant: Tenant,
-    options?: ServiceOptions
+    _tenant: Tenant,
+    options?: ServiceOptions,
   ): Promise<Commodity> {
-    const input: CreateCommodityInput = {
-      data: {
-        type: 'commodities',
-        attributes: commodityAttributes
-      }
-    };
-
-    const processedOptions = this.processServiceOptions(options);
+    const input: CreateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
     const response = await api.post<{ data: Commodity }>(
-      `${this.basePath}/${npcId}/shop/relationships/commodities`, 
-      input, 
-      processedOptions
+      `${BASE_PATH}/${npcId}/shop/relationships/commodities`,
+      input,
+      options,
     );
-    
     return response.data;
-  }
+  },
 
-  /**
-   * Update an existing commodity in an NPC's shop
-   */
   async updateCommodity(
     npcId: number,
     commodityId: string,
     commodityAttributes: Partial<CommodityAttributes>,
-    tenant: Tenant,
-    options?: ServiceOptions
+    _tenant: Tenant,
+    options?: ServiceOptions,
   ): Promise<Commodity> {
-    const input: UpdateCommodityInput = {
-      data: {
-        type: 'commodities',
-        attributes: commodityAttributes
-      }
-    };
-
-    const processedOptions = this.processServiceOptions(options);
+    const input: UpdateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
     const response = await api.put<{ data: Commodity }>(
-      `${this.basePath}/${npcId}/shop/relationships/commodities/${commodityId}`, 
-      input, 
-      processedOptions
+      `${BASE_PATH}/${npcId}/shop/relationships/commodities/${commodityId}`,
+      input,
+      options,
     );
-    
     return response.data;
-  }
+  },
 
-  /**
-   * Remove a commodity from an NPC's shop
-   */
   async deleteCommodity(
     npcId: number,
     commodityId: string,
-    tenant: Tenant,
-    options?: ServiceOptions
+    _tenant: Tenant,
+    options?: ServiceOptions,
   ): Promise<void> {
-    const processedOptions = this.processServiceOptions(options);
     return api.delete(
-      `${this.basePath}/${npcId}/shop/relationships/commodities/${commodityId}`, 
-      processedOptions
+      `${BASE_PATH}/${npcId}/shop/relationships/commodities/${commodityId}`,
+      options,
     );
-  }
+  },
 
-  /**
-   * Delete all commodities for a specific NPC
-   */
   async deleteAllCommoditiesForNPC(
     npcId: number,
-    tenant: Tenant,
-    options?: ServiceOptions
+    _tenant: Tenant,
+    options?: ServiceOptions,
   ): Promise<void> {
-    const processedOptions = this.processServiceOptions(options);
-    return api.delete(
-      `${this.basePath}/${npcId}/shop/relationships/commodities`, 
-      processedOptions
-    );
-  }
+    return api.delete(`${BASE_PATH}/${npcId}/shop/relationships/commodities`, options);
+  },
 
-  /**
-   * Delete all shops (bulk operation)
-   */
-  async deleteAllShops(tenant: Tenant, options?: ServiceOptions): Promise<void> {
-    const processedOptions = this.processServiceOptions(options);
-    return api.delete('/api/shops', processedOptions);
-  }
+  async deleteAllShops(_tenant: Tenant, options?: ServiceOptions): Promise<void> {
+    return api.delete("/api/shops", options);
+  },
 
-  /**
-   * Batch create commodities for an NPC
-   */
   async createCommoditiesBatch(
     npcId: number,
     commodities: CommodityAttributes[],
     tenant: Tenant,
-    options?: ServiceOptions
+    options?: ServiceOptions,
   ): Promise<Commodity[]> {
     const results: Commodity[] = [];
-    
     for (const commodity of commodities) {
       try {
-        const result = await this.createCommodity(npcId, commodity, tenant, options);
+        const result = await npcsService.createCommodity(npcId, commodity, tenant, options);
         results.push(result);
       } catch (error) {
         console.error(`Failed to create commodity for NPC ${npcId}:`, error);
         throw error;
       }
     }
-    
     return results;
-  }
+  },
 
-  /**
-   * Get NPCs that have shops
-   */
   async getNPCsWithShops(tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await this.getAllNPCs(tenant, options);
+    const allNPCs = await npcsService.getAllNPCs(tenant, options);
     return allNPCs.filter(npc => npc.hasShop);
-  }
+  },
 
-  /**
-   * Get NPCs that have conversations
-   */
   async getNPCsWithConversations(tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await this.getAllNPCs(tenant, options);
+    const allNPCs = await npcsService.getAllNPCs(tenant, options);
     return allNPCs.filter(npc => npc.hasConversation);
-  }
+  },
 
-  /**
-   * Check if an NPC exists and what features it has
-   */
   async getNPCById(npcId: number, tenant: Tenant, options?: ServiceOptions): Promise<NPC | null> {
-    const allNPCs = await this.getAllNPCs(tenant, options);
+    const allNPCs = await npcsService.getAllNPCs(tenant, options);
     return allNPCs.find(npc => npc.id === npcId) || null;
-  }
+  },
 
-  /**
-   * Get NPC name from atlas-data
-   */
-  async getNpcName(npcId: number, tenant: Tenant): Promise<string> {
+  async getNpcName(npcId: number, _tenant: Tenant): Promise<string> {
     const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
     return npc.attributes.name;
-  }
-
-  // === HELPER METHODS ===
-
-  /**
-   * Process service options and merge with defaults
-   */
-  private processServiceOptions(options?: ServiceOptions): any {
-    const processedOptions: any = { ...options };
-    
-    // Configure caching (NPCs data changes frequently, use shorter cache)
-    if (options?.useCache !== false) {
-      processedOptions.cacheConfig = options?.cacheConfig || {
-        ttl: 2 * 60 * 1000, // 2 minutes
-        staleWhileRevalidate: true,
-        maxStaleTime: 30 * 1000, // 30 seconds
-      };
-    } else {
-      processedOptions.cacheConfig = false;
-    }
-    
-    return processedOptions;
-  }
-
-  // === TYPE GUARDS ===
-
-  private isCommodityAttributes(data: unknown): data is CommodityAttributes {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'templateId' in data &&
-      'mesoPrice' in data &&
-      'discountRate' in data &&
-      'tokenTemplateId' in data &&
-      'tokenPrice' in data &&
-      'period' in data &&
-      'levelLimit' in data
-    );
-  }
-
-  private isCreateShopInput(data: unknown): data is CreateShopInput {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'data' in data &&
-      'included' in data &&
-      typeof (data as any).data === 'object' &&
-      (data as any).data.type === 'shops'
-    );
-  }
-
-  private isUpdateShopInput(data: unknown): data is UpdateShopInput {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'data' in data &&
-      'included' in data &&
-      typeof (data as any).data === 'object' &&
-      (data as any).data.type === 'shops'
-    );
-  }
-
-  private isCreateCommodityInput(data: unknown): data is CreateCommodityInput {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'data' in data &&
-      typeof (data as any).data === 'object' &&
-      (data as any).data.type === 'commodities'
-    );
-  }
-
-  private isUpdateCommodityInput(data: unknown): data is UpdateCommodityInput {
-    return (
-      typeof data === 'object' &&
-      data !== null &&
-      'data' in data &&
-      typeof (data as any).data === 'object' &&
-      (data as any).data.type === 'commodities'
-    );
-  }
-}
-
-// Create and export a singleton instance
-export const npcsService = new NpcsService();
-
-// Export types for use in other files  
-export type {
-  NPC,
-  NpcSearchResult,
-  Shop,
-  Commodity,
-  CommodityAttributes,
-  ShopResponse
+  },
 };
+
+export type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse };

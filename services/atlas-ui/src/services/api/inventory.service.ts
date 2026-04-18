@@ -2,7 +2,7 @@
  * Inventory management service
  * Handles all inventory-related API operations with tenant support
  */
-import type { ServiceOptions } from './base.service';
+import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Tenant } from '@/types/models/tenant';
 import { api } from '@/lib/api/client';
 

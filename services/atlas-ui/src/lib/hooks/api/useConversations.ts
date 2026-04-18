@@ -12,7 +12,7 @@
 
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { conversationsService, type ConversationCreateRequest, type ConversationUpdateRequest } from '@/services/api/conversations.service';
-import type { BatchResult, BatchOptions } from '@/services/api/base.service';
+import type { BatchResult, BatchOptions } from '@/lib/api/query-params';
 import type { 
   Conversation, 
   ConversationAttributes,
@@ -27,7 +27,7 @@ import type {
   ConversationState
 } from '@/types/models/conversation';
 import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const conversationKeys = {
@@ -61,7 +61,7 @@ export function useConversations(
 ): UseQueryResult<Conversation[], Error> {
   return useQuery({
     queryKey: conversationKeys.list(tenant, options),
-    queryFn: () => conversationsService.getAll<Conversation>({ ...options, useCache: false }),
+    queryFn: () => conversationsService.getAll({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 3 * 60 * 1000, // 3 minutes (conversations change less frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
@@ -554,7 +554,7 @@ export function useInvalidateConversations() {
      * Clear conversations cache
      */
     clearCache: () => {
-      conversationsService.clearCache();
+      queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
     },
   };
@@ -573,7 +573,7 @@ export function usePrefetchConversations() {
     prefetchConversations: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: conversationKeys.list(tenant, options),
-        queryFn: () => conversationsService.getAll<Conversation>(options),
+        queryFn: () => conversationsService.getAll(options),
         staleTime: 3 * 60 * 1000,
       }),
     
@@ -614,7 +614,7 @@ export function usePrefetchConversations() {
  */
 export function useConversationCacheStats() {
   return {
-    getCacheStats: () => conversationsService.getCacheStats(),
+    getCacheStats: () => ({ size: 0, entries: [] as Array<{ key: string }> }),
   };
 }
 

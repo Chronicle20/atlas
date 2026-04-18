@@ -3,17 +3,14 @@
  * Central export point for all API services
  */
 
-// Export base service class
-export { BaseService } from './base.service';
-
-// Export types
+// Export shared service types (moved out of the deleted base.service.ts).
 export type {
   ServiceOptions,
   BatchOptions,
   QueryOptions,
   BatchResult,
   ValidationError,
-} from './base.service';
+} from '@/lib/api/query-params';
 
 // Export service-specific types
 export type {

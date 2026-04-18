@@ -2,7 +2,7 @@
  * Character management service
  * Handles all character-related API operations with tenant support
  */
-import type { ServiceOptions } from './base.service';
+import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import type { Tenant } from '@/types/models/tenant';
 import { api } from '@/lib/api/client';

@@ -13,7 +13,7 @@
 import { useMutation, useQuery, useQueryClient, type UseMutationResult, type UseQueryResult } from '@tanstack/react-query';
 import { npcsService, type NPC, type Shop, type Commodity, type CommodityAttributes, type ShopResponse } from '@/services/api/npcs.service';
 import type { Tenant } from '@/types/models/tenant';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 
 // Query keys for consistent cache management
 export const npcKeys = {

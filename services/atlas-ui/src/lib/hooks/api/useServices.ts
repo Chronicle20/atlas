@@ -14,7 +14,7 @@ import {
   type CreateServiceInput,
   type UpdateServiceInput,
 } from '@/services/api/services.service';
-import type { ServiceOptions, QueryOptions } from '@/services/api/base.service';
+import type { ServiceOptions, QueryOptions } from '@/lib/api/query-params';
 import { api } from '@/lib/api/client';
 
 // Query keys for consistent cache management

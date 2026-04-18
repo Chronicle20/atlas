@@ -1,34 +1,30 @@
-import { BaseService, type ServiceOptions, type QueryOptions } from './base.service';
-import { api } from '@/lib/api/client';
-import type { Tenant } from '@/types/models/tenant';
-import type { MonsterData } from '@/types/models/monster';
+import { api } from "@/lib/api/client";
+import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import type { Tenant } from "@/types/models/tenant";
+import type { MonsterData } from "@/types/models/monster";
 
-class MonstersService extends BaseService {
-  protected basePath = '/api/data/monsters';
+const BASE_PATH = "/api/data/monsters";
 
-  async getAllMonsters(tenant: Tenant, options?: QueryOptions): Promise<MonsterData[]> {
-    const monsters = await this.getAll<MonsterData>(options);
-    return monsters.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-  }
-
-  async getMonsterById(id: string, tenant: Tenant, options?: ServiceOptions): Promise<MonsterData> {
-    return this.getById<MonsterData>(id, options);
-  }
-
-  async getMonsterName(id: string, tenant: Tenant): Promise<string> {
-    const monster = await this.getById<MonsterData>(id);
-    return monster.attributes.name;
-  }
-
-  async searchMonsters(query: string, tenant: Tenant, options?: QueryOptions): Promise<MonsterData[]> {
-    const searchOptions: QueryOptions = {
-      ...options,
-      search: query,
-      useCache: false,
-    };
-    const monsters = await this.getAll<MonsterData>(searchOptions);
-    return monsters.sort((a, b) => parseInt(a.id) - parseInt(b.id));
-  }
+async function fetchAllSorted(options?: QueryOptions): Promise<MonsterData[]> {
+  const monsters = await api.getList<MonsterData>(`${BASE_PATH}${buildQueryString(options)}`, options);
+  return monsters.sort((a, b) => parseInt(a.id) - parseInt(b.id));
 }
 
-export const monstersService = new MonstersService();
+export const monstersService = {
+  async getAllMonsters(_tenant: Tenant, options?: QueryOptions): Promise<MonsterData[]> {
+    return fetchAllSorted(options);
+  },
+
+  async getMonsterById(id: string, _tenant: Tenant, options?: ServiceOptions): Promise<MonsterData> {
+    return api.getOne<MonsterData>(`${BASE_PATH}/${id}`, options);
+  },
+
+  async getMonsterName(id: string, _tenant: Tenant): Promise<string> {
+    const monster = await api.getOne<MonsterData>(`${BASE_PATH}/${id}`);
+    return monster.attributes.name;
+  },
+
+  async searchMonsters(query: string, _tenant: Tenant, options?: QueryOptions): Promise<MonsterData[]> {
+    return fetchAllSorted({ ...options, search: query });
+  },
+};

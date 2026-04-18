@@ -16,7 +16,7 @@ export function useWallet(
 ): UseQueryResult<Wallet, Error> {
   return useQuery({
     queryKey: walletKeys.detail(tenant, accountId),
-    queryFn: () => walletService.getWallet(tenant, accountId, { ...options, useCache: false }),
+    queryFn: () => walletService.getWallet( accountId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!accountId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -31,8 +31,8 @@ export function useUpdateWallet(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, accountId, credit, points, prepaid }) =>
-      walletService.updateWallet(tenant, accountId, credit, points, prepaid),
+    mutationFn: ({ accountId, credit, points, prepaid }) =>
+      walletService.updateWallet( accountId, credit, points, prepaid),
     onMutate: async ({ tenant, accountId, credit, points, prepaid }) => {
       await queryClient.cancelQueries({ queryKey: walletKeys.detail(tenant, accountId) });
 

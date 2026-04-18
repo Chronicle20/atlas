@@ -250,7 +250,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInventoryResponse);
-      expect(mockInventoryService.getInventory).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
+      expect(mockInventoryService.getInventory).toHaveBeenCalledWith('123', { useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -304,7 +304,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCompartments);
-      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
+      expect(mockInventoryService.getCompartments).toHaveBeenCalledWith('123', { useCache: false });
     });
   });
 
@@ -322,7 +322,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockAssets);
-      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith(mockTenant, '123', 'comp-1', { useCache: false });
+      expect(mockInventoryService.getCompartmentAssets).toHaveBeenCalledWith('123', 'comp-1', { useCache: false });
     });
 
     it('should not fetch when compartmentId is not provided', () => {
@@ -350,7 +350,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInventorySummary);
-      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith(mockTenant, '123', { useCache: false });
+      expect(mockInventoryService.getInventorySummary).toHaveBeenCalledWith('123', { useCache: false });
     });
   });
 
@@ -368,7 +368,7 @@ describe('useInventory hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith(mockTenant, '123', 'asset-1', { useCache: false });
+      expect(mockInventoryService.hasAsset).toHaveBeenCalledWith('123', 'asset-1', { useCache: false });
     });
 
     it('should not fetch when assetId is not provided', () => {
@@ -390,7 +390,6 @@ describe('useInventory hooks', () => {
       const { result } = renderHook(() => useDeleteAsset(), { wrapper });
 
       result.current.mutate({
-        tenant: mockTenant,
         characterId: '123',
         compartmentId: 'comp-1',
         assetId: 'asset-1',
@@ -401,7 +400,6 @@ describe('useInventory hooks', () => {
       });
 
       expect(mockInventoryService.deleteAsset).toHaveBeenCalledWith(
-        mockTenant,
         '123',
         'comp-1',
         'asset-1',
@@ -417,7 +415,6 @@ describe('useInventory hooks', () => {
       const { result } = renderHook(() => useDeleteAsset(), { wrapper });
 
       result.current.mutate({
-        tenant: mockTenant,
         characterId: '123',
         compartmentId: 'comp-1',
         assetId: 'asset-1',

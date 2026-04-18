@@ -65,7 +65,7 @@ export function useMobData(
       );
 
       try {
-        const name = await monstersService.getMonsterName(mobId.toString(), activeTenant);
+        const name = await monstersService.getMonsterName(mobId.toString());
         return { id: mobId, name, iconUrl, cached: false };
       } catch (error) {
         console.error(`Failed to fetch mob name for ID ${mobId}:`, error);

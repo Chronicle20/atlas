@@ -38,7 +38,7 @@ function ItemsPageContent() {
   // The URL's `q` parameter is the source of truth for what's been searched.
   const itemsQuery = useQuery<ItemSearchResult[], Error>({
     queryKey: ["items", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => itemsService.searchItems(urlQuery, activeTenant!),
+    queryFn: () => itemsService.searchItems(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
     staleTime: 30 * 1000,
   });

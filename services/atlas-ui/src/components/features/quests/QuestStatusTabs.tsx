@@ -31,8 +31,8 @@ export function QuestStatusTabs({ characterId, tenant }: QuestStatusTabsProps) {
 
         try {
             const [started, completed] = await Promise.all([
-                questStatusService.getStartedQuests(tenant, characterId),
-                questStatusService.getCompletedQuests(tenant, characterId),
+                questStatusService.getStartedQuests( characterId),
+                questStatusService.getCompletedQuests( characterId),
             ])
             setStartedQuests(started)
             setCompletedQuests(completed)

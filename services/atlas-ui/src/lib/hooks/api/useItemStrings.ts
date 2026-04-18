@@ -12,7 +12,7 @@ export function useItemStrings(): UseQueryResult<ItemStringData[], Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: itemStringKeys.lists(),
-    queryFn: () => itemStringsService.getAllItemStrings(activeTenant!),
+    queryFn: () => itemStringsService.getAllItemStrings(),
     enabled: !!activeTenant,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
@@ -24,7 +24,7 @@ export function useItemName(itemId: string): UseQueryResult<string, Error> {
   return useQuery({
     queryKey: [...itemStringKeys.all, 'name', itemId],
     queryFn: async () => {
-      const item = await itemStringsService.getItemString(itemId, activeTenant!);
+      const item = await itemStringsService.getItemString(itemId);
       return item.attributes.name;
     },
     enabled: !!itemId && !!activeTenant,

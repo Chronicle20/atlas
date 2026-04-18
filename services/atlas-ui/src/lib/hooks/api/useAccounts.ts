@@ -42,7 +42,7 @@ export function useAccounts(
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.list(tenant, options),
-    queryFn: () => accountsService.getAllAccounts(tenant, { ...options, useCache: false }),
+    queryFn: () => accountsService.getAllAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (accounts change more frequently than tenants)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -59,7 +59,7 @@ export function useAccount(
 ): UseQueryResult<Account, Error> {
   return useQuery({
     queryKey: accountKeys.detail(tenant, id),
-    queryFn: () => accountsService.getAccountById(tenant, id, { ...options, useCache: false }),
+    queryFn: () => accountsService.getAccountById( id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -76,7 +76,7 @@ export function useAccountExists(
 ): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: [...accountKeys.detail(tenant, id), 'exists'],
-    queryFn: () => accountsService.accountExists(tenant, id, { ...options, useCache: false }),
+    queryFn: () => accountsService.accountExists(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
     staleTime: 1 * 60 * 1000, // 1 minute for existence checks
     gcTime: 2 * 60 * 1000,
@@ -93,7 +93,7 @@ export function useAccountSearch(
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.search(tenant, namePattern),
-    queryFn: () => accountsService.searchAccountsByName(tenant, namePattern, { ...options, useCache: false }),
+    queryFn: () => accountsService.searchAccountsByName(namePattern, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!namePattern && namePattern.length > 0,
     staleTime: 1 * 60 * 1000, // Search results can be more stale
     gcTime: 3 * 60 * 1000,
@@ -109,7 +109,7 @@ export function useLoggedInAccounts(
 ): UseQueryResult<Account[], Error> {
   return useQuery({
     queryKey: accountKeys.loggedIn(tenant),
-    queryFn: () => accountsService.getLoggedInAccounts(tenant, { ...options, useCache: false }),
+    queryFn: () => accountsService.getLoggedInAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 30 * 1000, // 30 seconds (login status changes frequently)
     gcTime: 2 * 60 * 1000,
@@ -131,7 +131,7 @@ export function useAccountStats(
 }, Error> {
   return useQuery({
     queryKey: accountKeys.stats(tenant),
-    queryFn: () => accountsService.getAccountStats(tenant, { ...options, useCache: false }),
+    queryFn: () => accountsService.getAccountStats({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -153,8 +153,8 @@ export function useTerminateAccountSession(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, accountId, options }) => 
-      accountsService.terminateAccountSession(tenant, accountId, options),
+    mutationFn: ({ accountId, options }) => 
+      accountsService.terminateAccountSession( accountId, options),
     onMutate: async ({ tenant, accountId }) => {
       // Cancel any outgoing refetches for this account
       await queryClient.cancelQueries({ queryKey: accountKeys.detail(tenant, accountId) });
@@ -204,8 +204,8 @@ export function useTerminateMultipleSessions(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, accountIds, options }) => 
-      accountsService.terminateMultipleSessions(tenant, accountIds, options),
+    mutationFn: ({ accountIds, options }) =>
+      accountsService.terminateMultipleSessions(accountIds, options),
     onMutate: async ({ tenant, accountIds }) => {
       // Cancel outgoing refetches for affected accounts
       const cancelPromises = accountIds.map(accountId =>
@@ -327,7 +327,7 @@ export function usePrefetchAccounts() {
     prefetchAccounts: (tenant: Tenant, options?: AccountQueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.list(tenant, options),
-        queryFn: () => accountsService.getAllAccounts(tenant, options),
+        queryFn: () => accountsService.getAllAccounts( options),
         staleTime: 2 * 60 * 1000,
       }),
     
@@ -337,7 +337,7 @@ export function usePrefetchAccounts() {
     prefetchAccount: (tenant: Tenant, id: string, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.detail(tenant, id),
-        queryFn: () => accountsService.getAccountById(tenant, id, options),
+        queryFn: () => accountsService.getAccountById( id, options),
         staleTime: 2 * 60 * 1000,
       }),
     
@@ -347,7 +347,7 @@ export function usePrefetchAccounts() {
     prefetchLoggedIn: (tenant: Tenant, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.loggedIn(tenant),
-        queryFn: () => accountsService.getLoggedInAccounts(tenant, options),
+        queryFn: () => accountsService.getLoggedInAccounts(options),
         staleTime: 30 * 1000,
       }),
     
@@ -357,7 +357,7 @@ export function usePrefetchAccounts() {
     prefetchStats: (tenant: Tenant, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: accountKeys.stats(tenant),
-        queryFn: () => accountsService.getAccountStats(tenant, options),
+        queryFn: () => accountsService.getAccountStats(options),
         staleTime: 2 * 60 * 1000,
       }),
   };

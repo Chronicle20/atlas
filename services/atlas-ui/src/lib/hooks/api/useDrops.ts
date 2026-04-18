@@ -14,7 +14,7 @@ export function useMonsterDrops(monsterId: string): UseQueryResult<DropData[], E
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: dropKeys.monster(monsterId),
-    queryFn: () => dropsService.getMonsterDrops(monsterId, activeTenant!),
+    queryFn: () => dropsService.getMonsterDrops(monsterId),
     enabled: !!monsterId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -25,7 +25,7 @@ export function useItemDrops(itemId: string): UseQueryResult<DropData[], Error> 
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: dropKeys.item(itemId),
-    queryFn: () => dropsService.getItemDrops(itemId, activeTenant!),
+    queryFn: () => dropsService.getItemDrops(itemId),
     enabled: !!itemId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -36,7 +36,7 @@ export function useReactorDrops(reactorId: string): UseQueryResult<ReactorDropDa
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: dropKeys.reactor(reactorId),
-    queryFn: () => dropsService.getReactorDrops(reactorId, activeTenant!),
+    queryFn: () => dropsService.getReactorDrops(reactorId),
     enabled: !!reactorId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

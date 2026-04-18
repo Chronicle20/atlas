@@ -42,7 +42,7 @@ export function AccountsPage() {
         const batch = accountList.slice(i, i + concurrency);
         const results = await Promise.allSettled(
           batch.map(async (account) => {
-            const result = await bansService.checkBan(activeTenant, { accountId: Number(account.id) });
+            const result = await bansService.checkBan({ accountId: Number(account.id) });
             return { accountId: account.id, result };
           })
         );
@@ -75,7 +75,7 @@ export function AccountsPage() {
     if (!activeTenant) return;
 
     try {
-      const bans = await bansService.getBansByType(activeTenant, BanType.Account);
+      const bans = await bansService.getBansByType(BanType.Account);
       const matchingBan = bans.find(b => b.attributes.value === account.id);
 
       if (matchingBan) {

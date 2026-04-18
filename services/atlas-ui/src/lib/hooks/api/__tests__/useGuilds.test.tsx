@@ -109,7 +109,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuilds);
       });
 
-      expect(guildsService.getAll).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(guildsService.getAll).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should fetch guild by ID successfully', async () => {
@@ -124,7 +124,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuild);
       });
 
-      expect(guildsService.getById).toHaveBeenCalledWith(mockTenant, 'guild-1', { useCache: false });
+      expect(guildsService.getById).toHaveBeenCalledWith('guild-1', { useCache: false });
     });
 
     it('should fetch guilds by world ID successfully', async () => {
@@ -139,7 +139,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuilds);
       });
 
-      expect(guildsService.getByWorld).toHaveBeenCalledWith(mockTenant, 1, { useCache: false });
+      expect(guildsService.getByWorld).toHaveBeenCalledWith(1, { useCache: false });
     });
 
     it('should search guilds successfully', async () => {
@@ -154,7 +154,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuilds);
       });
 
-      expect(guildsService.search).toHaveBeenCalledWith(mockTenant, 'Test', undefined, { useCache: false });
+      expect(guildsService.search).toHaveBeenCalledWith('Test', undefined, { useCache: false });
     });
 
     it('should fetch guilds with space successfully', async () => {
@@ -169,7 +169,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuilds);
       });
 
-      expect(guildsService.getWithSpace).toHaveBeenCalledWith(mockTenant, undefined, { useCache: false });
+      expect(guildsService.getWithSpace).toHaveBeenCalledWith(undefined, { useCache: false });
     });
 
     it('should fetch guild rankings successfully', async () => {
@@ -184,7 +184,7 @@ describe('useGuilds', () => {
         expect(result.current.data).toEqual(mockGuilds);
       });
 
-      expect(guildsService.getRankings).toHaveBeenCalledWith(mockTenant, undefined, 50, { useCache: false });
+      expect(guildsService.getRankings).toHaveBeenCalledWith(undefined, 50, { useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {

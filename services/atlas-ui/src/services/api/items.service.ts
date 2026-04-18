@@ -1,6 +1,5 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type QueryOptions } from "@/lib/api/query-params";
-import type { Tenant } from "@/types/models/tenant";
 import type { ItemStringData } from "@/types/models/item-string";
 import {
   getItemType,
@@ -16,7 +15,7 @@ import {
 const BASE_PATH = "/api/data/item-strings";
 
 export const itemsService = {
-  async searchItems(query: string, _tenant: Tenant, options?: QueryOptions): Promise<ItemSearchResult[]> {
+  async searchItems(query: string, options?: QueryOptions): Promise<ItemSearchResult[]> {
     const searchOptions: QueryOptions = { ...options, search: query };
     const items = await api.getList<ItemStringData>(
       `${BASE_PATH}${buildQueryString(searchOptions)}`,
@@ -29,39 +28,39 @@ export const itemsService = {
     }));
   },
 
-  async getItemName(itemId: string, _tenant: Tenant): Promise<string> {
+  async getItemName(itemId: string): Promise<string> {
     const item = await api.getOne<ItemStringData>(`${BASE_PATH}/${itemId}`);
     return item.attributes.name;
   },
 
-  async getEquipment(itemId: string, _tenant: Tenant): Promise<EquipmentData> {
+  async getEquipment(itemId: string): Promise<EquipmentData> {
     return api.getOne<EquipmentData>(`/api/data/equipment/${itemId}`);
   },
 
-  async getConsumable(itemId: string, _tenant: Tenant): Promise<ConsumableData> {
+  async getConsumable(itemId: string): Promise<ConsumableData> {
     return api.getOne<ConsumableData>(`/api/data/consumables/${itemId}`);
   },
 
-  async getSetup(itemId: string, _tenant: Tenant): Promise<SetupData> {
+  async getSetup(itemId: string): Promise<SetupData> {
     return api.getOne<SetupData>(`/api/data/setups/${itemId}`);
   },
 
-  async getEtc(itemId: string, _tenant: Tenant): Promise<EtcData> {
+  async getEtc(itemId: string): Promise<EtcData> {
     return api.getOne<EtcData>(`/api/data/etcs/${itemId}`);
   },
 
-  async getCashItem(itemId: string, _tenant: Tenant): Promise<CashItemData> {
+  async getCashItem(itemId: string): Promise<CashItemData> {
     return api.getOne<CashItemData>(`/api/data/cash/items/${itemId}`);
   },
 
-  async getItemDetail(itemId: string, tenant: Tenant): Promise<ItemDetailData> {
+  async getItemDetail(itemId: string): Promise<ItemDetailData> {
     const type = getItemType(itemId);
     switch (type) {
-      case "Equipment": return itemsService.getEquipment(itemId, tenant);
-      case "Consumable": return itemsService.getConsumable(itemId, tenant);
-      case "Setup": return itemsService.getSetup(itemId, tenant);
-      case "Etc": return itemsService.getEtc(itemId, tenant);
-      case "Cash": return itemsService.getCashItem(itemId, tenant);
+      case "Equipment": return itemsService.getEquipment(itemId);
+      case "Consumable": return itemsService.getConsumable(itemId);
+      case "Setup": return itemsService.getSetup(itemId);
+      case "Etc": return itemsService.getEtc(itemId);
+      case "Cash": return itemsService.getCashItem(itemId);
       default: throw new Error(`Unknown item type for ID ${itemId}`);
     }
   },

@@ -46,31 +46,31 @@ async function fetchJsonApi<A>(url: string, tenant: Tenant): Promise<A> {
 }
 
 class SeedService {
-  async seedDrops(_tenant: Tenant): Promise<void> {
+  async seedDrops(): Promise<void> {
     await api.post('/api/drops/seed', {});
   }
 
-  async seedGachapons(_tenant: Tenant): Promise<void> {
+  async seedGachapons(): Promise<void> {
     await api.post('/api/gachapons/seed', {});
   }
 
-  async seedNpcConversations(_tenant: Tenant): Promise<SeedResult> {
+  async seedNpcConversations(): Promise<SeedResult> {
     return api.post<SeedResult>('/api/npcs/conversations/seed', {});
   }
 
-  async seedQuestConversations(_tenant: Tenant): Promise<SeedResult> {
+  async seedQuestConversations(): Promise<SeedResult> {
     return api.post<SeedResult>('/api/quests/conversations/seed', {});
   }
 
-  async seedNpcShops(_tenant: Tenant): Promise<SeedResult> {
+  async seedNpcShops(): Promise<SeedResult> {
     return api.post<SeedResult>('/api/shops/seed', {});
   }
 
-  async seedPortalScripts(_tenant: Tenant): Promise<SeedResult> {
+  async seedPortalScripts(): Promise<SeedResult> {
     return api.post<SeedResult>('/api/portals/scripts/seed', {});
   }
 
-  async seedReactorScripts(_tenant: Tenant): Promise<SeedResult> {
+  async seedReactorScripts(): Promise<SeedResult> {
     return api.post<SeedResult>('/api/reactors/actions/seed', {});
   }
 

@@ -18,7 +18,7 @@ export function PortalDetailPage() {
 
   const { data: portal, isLoading, error, refetch } = useQuery({
     queryKey: ['maps', mapId, 'portals', portalId],
-    queryFn: () => mapEntitiesService.getPortal(mapId, portalId, activeTenant!),
+    queryFn: () => mapEntitiesService.getPortal(mapId, portalId),
     enabled: !!mapId && !!portalId && !!activeTenant,
     staleTime: 5 * 60 * 1000,
   });

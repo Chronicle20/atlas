@@ -1,7 +1,6 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
 import type { Account, AccountAttributes } from "@/types/models/account";
-import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/accounts";
 
@@ -49,7 +48,7 @@ function buildAccountQuery(options?: AccountQueryOptions): QueryOptions {
 }
 
 export const accountsService = {
-  async getAllAccounts(_tenant: Tenant, options?: AccountQueryOptions): Promise<Account[]> {
+  async getAllAccounts(options?: AccountQueryOptions): Promise<Account[]> {
     const queryOptions = buildAccountQuery(options);
     const accounts = await api.getList<Account>(
       `${BASE_PATH}${buildQueryString(queryOptions)}`,
@@ -58,14 +57,14 @@ export const accountsService = {
     return sortAccounts(accounts.map(transformAccount));
   },
 
-  async getAccountById(_tenant: Tenant, id: string, options?: ServiceOptions): Promise<Account> {
+  async getAccountById(id: string, options?: ServiceOptions): Promise<Account> {
     const account = await api.getOne<Account>(`${BASE_PATH}/${id}`, options);
     return transformAccount(account);
   },
 
-  async accountExists(tenant: Tenant, id: string, options?: ServiceOptions): Promise<boolean> {
+  async accountExists(id: string, options?: ServiceOptions): Promise<boolean> {
     try {
-      await accountsService.getAccountById(tenant, id, options);
+      await accountsService.getAccountById( id, options);
       return true;
     } catch (error) {
       if (error && typeof error === "object" && "status" in error && (error as { status: number }).status === 404) {
@@ -75,33 +74,33 @@ export const accountsService = {
     }
   },
 
-  async searchAccountsByName(tenant: Tenant, namePattern: string, options?: ServiceOptions): Promise<Account[]> {
-    return accountsService.getAllAccounts(tenant, {
+  async searchAccountsByName(namePattern: string, options?: ServiceOptions): Promise<Account[]> {
+    return accountsService.getAllAccounts({
       ...options,
       search: namePattern,
       name: namePattern,
     });
   },
 
-  async getLoggedInAccounts(tenant: Tenant, options?: ServiceOptions): Promise<Account[]> {
-    return accountsService.getAllAccounts(tenant, { ...options, loggedIn: true });
+  async getLoggedInAccounts(options?: ServiceOptions): Promise<Account[]> {
+    return accountsService.getAllAccounts({ ...options, loggedIn: true });
   },
 
-  async terminateAccountSession(_tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
+  async terminateAccountSession(accountId: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${BASE_PATH}/${accountId}/session`, options);
   },
 
-  async deleteAccount(_tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
+  async deleteAccount(accountId: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${BASE_PATH}/${accountId}`, options);
   },
 
-  async getAccountStats(tenant: Tenant, options?: ServiceOptions): Promise<{
+  async getAccountStats(options?: ServiceOptions): Promise<{
     total: number;
     loggedIn: number;
     totalCharacterSlots: number;
     averageCharacterSlots: number;
   }> {
-    const accounts = await accountsService.getAllAccounts(tenant, options);
+    const accounts = await accountsService.getAllAccounts( options);
     const total = accounts.length;
     const loggedIn = accounts.filter(acc => acc.attributes.loggedIn > 0).length;
     const totalCharacterSlots = accounts.reduce((sum, acc) => sum + acc.attributes.characterSlots, 0);
@@ -114,7 +113,6 @@ export const accountsService = {
   },
 
   async terminateMultipleSessions(
-    tenant: Tenant,
     accountIds: string[],
     options?: ServiceOptions,
   ): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
@@ -127,7 +125,7 @@ export const accountsService = {
       const results = await Promise.all(
         batch.map(async (accountId) => {
           try {
-            await accountsService.terminateAccountSession(tenant, accountId, options);
+            await accountsService.terminateAccountSession( accountId, options);
             return { success: true as const, accountId };
           } catch (error) {
             return {

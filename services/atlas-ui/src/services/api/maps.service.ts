@@ -1,6 +1,5 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
-import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/data/maps";
 
@@ -50,11 +49,11 @@ async function fetchAll(options?: QueryOptions): Promise<MapData[]> {
 }
 
 export const mapsService = {
-  async getAllMaps(_tenant: Tenant, options?: QueryOptions): Promise<MapData[]> {
+  async getAllMaps(options?: QueryOptions): Promise<MapData[]> {
     return fetchAll(options);
   },
 
-  async getMapById(id: string, _tenant: Tenant, options?: ServiceOptions): Promise<MapData> {
+  async getMapById(id: string, options?: ServiceOptions): Promise<MapData> {
     return api.getOne<MapData>(`${BASE_PATH}/${id}`, options);
   },
 
@@ -79,15 +78,15 @@ export const mapsService = {
     return api.delete(`${BASE_PATH}/${mapId}`, options);
   },
 
-  async searchMaps(query: string, _tenant: Tenant, options?: QueryOptions): Promise<MapData[]> {
+  async searchMaps(query: string, options?: QueryOptions): Promise<MapData[]> {
     return fetchAll({ ...options, search: query });
   },
 
-  async searchMapsByName(name: string, _tenant: Tenant, options?: ServiceOptions): Promise<MapData[]> {
+  async searchMapsByName(name: string, options?: ServiceOptions): Promise<MapData[]> {
     return fetchAll({ ...options, search: name, filters: { name } });
   },
 
-  async getMapsByStreetName(streetName: string, _tenant: Tenant, options?: ServiceOptions): Promise<MapData[]> {
+  async getMapsByStreetName(streetName: string, options?: ServiceOptions): Promise<MapData[]> {
     return fetchAll({ ...options, filters: { streetName } });
   },
 };

@@ -183,7 +183,7 @@ function CharacterActions({ character, tenant, onRefresh }: { character: Charact
         if (!tenant) return;
         try {
             setDeleting(true);
-            await charactersService.deleteCharacter(tenant, character.id);
+            await charactersService.deleteCharacter( character.id);
             toast.success("Successfully deleted character " + character.attributes.name);
             onRefresh?.();
         } catch (error) {

@@ -207,9 +207,9 @@ class ResolverError extends Error {
 
 // Entity resolver implementations
 const resolvers: Record<EntityType, EntityResolver> = {
-  [EntityType.ACCOUNT]: async (tenant, entityId, options = {}) => {
+  [EntityType.ACCOUNT]: async (_tenant, entityId, options = {}) => {
     try {
-      const account = await accountsService.getAccountById(tenant, entityId, options);
+      const account = await accountsService.getAccountById( entityId, options);
       return account.attributes?.name || `Account ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve account name for ID ${entityId}:`, error);
@@ -217,9 +217,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.CHARACTER]: async (tenant, entityId, options = {}) => {
+  [EntityType.CHARACTER]: async (_tenant, entityId, options = {}) => {
     try {
-      const character = await charactersService.getById(tenant, entityId, options);
+      const character = await charactersService.getById( entityId, options);
       return character.attributes?.name || `Character ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve character name for ID ${entityId}:`, error);
@@ -227,9 +227,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.GUILD]: async (tenant, entityId, options = {}) => {
+  [EntityType.GUILD]: async (_tenant, entityId, options = {}) => {
     try {
-      const guild = await guildsService.getById(tenant, entityId, options);
+      const guild = await guildsService.getById( entityId, options);
       return guild.attributes?.name || `Guild ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve guild name for ID ${entityId}:`, error);
@@ -237,9 +237,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.NPC]: async (tenant, entityId, options = {}) => {
+  [EntityType.NPC]: async (_tenant, entityId, options = {}) => {
     try {
-      const npc = await npcsService.getNPCById(parseInt(entityId), tenant, options);
+      const npc = await npcsService.getNPCById(parseInt(entityId), options);
       return npc?.name || `NPC ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve NPC name for ID ${entityId}:`, error);
@@ -279,9 +279,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.MONSTER]: async (tenant, entityId, options = {}) => {
+  [EntityType.MONSTER]: async (_tenant, entityId, options = {}) => {
     try {
-      const monster = await monstersService.getMonsterById(entityId, tenant, options);
+      const monster = await monstersService.getMonsterById(entityId, options);
       return monster.attributes?.name || `Monster ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve monster name for ID ${entityId}:`, error);
@@ -289,9 +289,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.MAP]: async (tenant, entityId, options = {}) => {
+  [EntityType.MAP]: async (_tenant, entityId, options = {}) => {
     try {
-      const map = await mapsService.getMapById(entityId, tenant, options);
+      const map = await mapsService.getMapById(entityId, options);
       return map.attributes?.name || `Map ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve map name for ID ${entityId}:`, error);
@@ -299,9 +299,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     }
   },
 
-  [EntityType.REACTOR]: async (tenant, entityId, options = {}) => {
+  [EntityType.REACTOR]: async (_tenant, entityId, options = {}) => {
     try {
-      const reactor = await reactorsService.getReactorById(entityId, tenant, options);
+      const reactor = await reactorsService.getReactorById(entityId, options);
       return reactor.attributes?.name || `Reactor ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve reactor name for ID ${entityId}:`, error);
@@ -313,9 +313,9 @@ const resolvers: Record<EntityType, EntityResolver> = {
     return `Portal ${entityId}`;
   },
 
-  [EntityType.ITEM]: async (tenant, entityId, _options = {}) => {
+  [EntityType.ITEM]: async (_tenant, entityId, _options = {}) => {
     try {
-      const item = await itemStringsService.getItemString(entityId, tenant);
+      const item = await itemStringsService.getItemString(entityId);
       return item.attributes?.name || `Item ${entityId}`;
     } catch (error) {
       console.warn(`Failed to resolve item name for ID ${entityId}:`, error);

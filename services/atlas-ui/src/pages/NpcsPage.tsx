@@ -46,7 +46,7 @@ function NpcsPageContent() {
 
   const searchQuery = useQuery<NpcSearchResult[], Error>({
     queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => npcsService.searchNpcs(urlQuery, activeTenant!),
+    queryFn: () => npcsService.searchNpcs(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
     staleTime: 30 * 1000,
   });
@@ -54,7 +54,7 @@ function NpcsPageContent() {
   const statusQuery = useQuery<Map<number, { hasShop: boolean; hasConversation: boolean }>, Error>({
     queryKey: ["npcs", "status-map", activeTenant?.id ?? "no-tenant"],
     queryFn: async () => {
-      const allNpcs = await npcsService.getAllNPCs(activeTenant!);
+      const allNpcs = await npcsService.getAllNPCs();
       const statusMap = new Map<number, { hasShop: boolean; hasConversation: boolean }>();
       allNpcs.forEach(npc => {
         statusMap.set(npc.id, { hasShop: npc.hasShop, hasConversation: npc.hasConversation });
@@ -142,7 +142,7 @@ function NpcsPageContent() {
     if (!activeTenant) return;
 
     try {
-      await npcsService.deleteAllShops(activeTenant);
+      await npcsService.deleteAllShops();
       toast.success("All shops deleted successfully");
       setIsDeleteAllShopsDialogOpen(false);
     } catch (err: unknown) {
@@ -165,7 +165,7 @@ function NpcsPageContent() {
 
       const rechargerValue = jsonData.data.attributes?.recharger;
 
-      await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, activeTenant, rechargerValue);
+      await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, rechargerValue);
       setIsBulkUpdateShopDialogOpen(false);
       setBulkUpdateShopJson("");
       toast.success("Shop updated successfully");

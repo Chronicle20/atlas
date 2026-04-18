@@ -2,7 +2,6 @@ import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
 import { conversationsService } from "./conversations.service";
 import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse } from "@/types/models/npc";
-import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/npcs";
 
@@ -59,7 +58,7 @@ export const npcsService = {
   /**
    * Combine shop and conversation lookups into a single NPC list.
    */
-  async getAllNPCs(_tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
+  async getAllNPCs(options?: QueryOptions): Promise<NPC[]> {
     try {
       const shops = await api.getList<Shop>("/api/shops", options);
       const npcsWithShops: NPC[] = shops.map((shop: Shop) => ({
@@ -95,21 +94,20 @@ export const npcsService = {
     }
   },
 
-  async searchNpcs(query: string, _tenant: Tenant): Promise<NpcSearchResult[]> {
+  async searchNpcs(query: string): Promise<NpcSearchResult[]> {
     const npcs = await api.getList<{ id: string; attributes: { name: string } }>(
       `/api/data/npcs?search=${encodeURIComponent(query)}`,
     );
     return npcs.map(npc => ({ id: parseInt(npc.id), name: npc.attributes.name }));
   },
 
-  async getNPCShop(npcId: number, _tenant: Tenant, options?: ServiceOptions): Promise<ShopResponse> {
+  async getNPCShop(npcId: number, options?: ServiceOptions): Promise<ShopResponse> {
     return api.get<ShopResponse>(`${BASE_PATH}/${npcId}/shop?include=commodities`, options);
   },
 
   async createShop(
     npcId: number,
     commodities: Omit<CommodityAttributes, "id">[],
-    _tenant: Tenant,
     recharger?: boolean,
     options?: ServiceOptions,
   ): Promise<Shop> {
@@ -142,7 +140,6 @@ export const npcsService = {
   async updateShop(
     npcId: number,
     commodities: Commodity[],
-    _tenant: Tenant,
     recharger?: boolean,
     options?: ServiceOptions,
   ): Promise<Shop> {
@@ -175,7 +172,6 @@ export const npcsService = {
   async createCommodity(
     npcId: number,
     commodityAttributes: CommodityAttributes,
-    _tenant: Tenant,
     options?: ServiceOptions,
   ): Promise<Commodity> {
     const input: CreateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
@@ -191,7 +187,6 @@ export const npcsService = {
     npcId: number,
     commodityId: string,
     commodityAttributes: Partial<CommodityAttributes>,
-    _tenant: Tenant,
     options?: ServiceOptions,
   ): Promise<Commodity> {
     const input: UpdateCommodityInput = { data: { type: "commodities", attributes: commodityAttributes } };
@@ -206,7 +201,6 @@ export const npcsService = {
   async deleteCommodity(
     npcId: number,
     commodityId: string,
-    _tenant: Tenant,
     options?: ServiceOptions,
   ): Promise<void> {
     return api.delete(
@@ -217,26 +211,24 @@ export const npcsService = {
 
   async deleteAllCommoditiesForNPC(
     npcId: number,
-    _tenant: Tenant,
     options?: ServiceOptions,
   ): Promise<void> {
     return api.delete(`${BASE_PATH}/${npcId}/shop/relationships/commodities`, options);
   },
 
-  async deleteAllShops(_tenant: Tenant, options?: ServiceOptions): Promise<void> {
+  async deleteAllShops(options?: ServiceOptions): Promise<void> {
     return api.delete("/api/shops", options);
   },
 
   async createCommoditiesBatch(
     npcId: number,
     commodities: CommodityAttributes[],
-    tenant: Tenant,
     options?: ServiceOptions,
   ): Promise<Commodity[]> {
     const results: Commodity[] = [];
     for (const commodity of commodities) {
       try {
-        const result = await npcsService.createCommodity(npcId, commodity, tenant, options);
+        const result = await npcsService.createCommodity(npcId, commodity, options);
         results.push(result);
       } catch (error) {
         console.error(`Failed to create commodity for NPC ${npcId}:`, error);
@@ -246,22 +238,22 @@ export const npcsService = {
     return results;
   },
 
-  async getNPCsWithShops(tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await npcsService.getAllNPCs(tenant, options);
+  async getNPCsWithShops(options?: QueryOptions): Promise<NPC[]> {
+    const allNPCs = await npcsService.getAllNPCs( options);
     return allNPCs.filter(npc => npc.hasShop);
   },
 
-  async getNPCsWithConversations(tenant: Tenant, options?: QueryOptions): Promise<NPC[]> {
-    const allNPCs = await npcsService.getAllNPCs(tenant, options);
+  async getNPCsWithConversations(options?: QueryOptions): Promise<NPC[]> {
+    const allNPCs = await npcsService.getAllNPCs( options);
     return allNPCs.filter(npc => npc.hasConversation);
   },
 
-  async getNPCById(npcId: number, tenant: Tenant, options?: ServiceOptions): Promise<NPC | null> {
-    const allNPCs = await npcsService.getAllNPCs(tenant, options);
+  async getNPCById(npcId: number, options?: ServiceOptions): Promise<NPC | null> {
+    const allNPCs = await npcsService.getAllNPCs( options);
     return allNPCs.find(npc => npc.id === npcId) || null;
   },
 
-  async getNpcName(npcId: number, _tenant: Tenant): Promise<string> {
+  async getNpcName(npcId: number): Promise<string> {
     const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
     return npc.attributes.name;
   },

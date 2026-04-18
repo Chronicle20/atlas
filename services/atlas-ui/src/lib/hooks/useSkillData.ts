@@ -65,7 +65,7 @@ export function useSkillData(
       );
 
       try {
-        const name = await skillsService.getSkillName(skillId.toString(), activeTenant);
+        const name = await skillsService.getSkillName(skillId.toString());
         return { id: skillId, name, iconUrl, cached: false };
       } catch (error) {
         console.error(`Failed to fetch skill name for ID ${skillId}:`, error);

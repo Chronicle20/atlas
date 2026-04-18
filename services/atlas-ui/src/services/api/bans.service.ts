@@ -1,7 +1,6 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
 import type { Ban, BanAttributes, CreateBanRequest, CheckBanResult, BanType } from "@/types/models/ban";
-import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/bans";
 
@@ -52,7 +51,7 @@ function validateCreateBan(data: CreateBanRequest): ValidationError[] {
 }
 
 export const bansService = {
-  async getAllBans(_tenant: Tenant, options?: BanQueryOptions): Promise<Ban[]> {
+  async getAllBans(options?: BanQueryOptions): Promise<Ban[]> {
     let url = BASE_PATH;
     if (options?.type !== undefined) {
       url += `?type=${options.type}`;
@@ -61,14 +60,14 @@ export const bansService = {
     return sortBans(bans.map(transformBan));
   },
 
-  async getBanById(_tenant: Tenant, id: string, options?: ServiceOptions): Promise<Ban> {
+  async getBanById(id: string, options?: ServiceOptions): Promise<Ban> {
     const ban = await api.getOne<Ban>(`${BASE_PATH}/${id}`, options);
     return transformBan(ban);
   },
 
-  async banExists(tenant: Tenant, id: string, options?: ServiceOptions): Promise<boolean> {
+  async banExists(id: string, options?: ServiceOptions): Promise<boolean> {
     try {
-      await bansService.getBanById(tenant, id, options);
+      await bansService.getBanById( id, options);
       return true;
     } catch (error) {
       if (error && typeof error === "object" && "status" in error && (error as { status: number }).status === 404) {
@@ -78,7 +77,7 @@ export const bansService = {
     }
   },
 
-  async createBan(_tenant: Tenant, data: CreateBanRequest, options?: ServiceOptions): Promise<Ban> {
+  async createBan(data: CreateBanRequest, options?: ServiceOptions): Promise<Ban> {
     const validationErrors = validateCreateBan(data);
     if (validationErrors.length > 0) {
       throw new Error(`Validation failed: ${validationErrors.map(e => e.message).join(", ")}`);
@@ -87,15 +86,15 @@ export const bansService = {
     return transformBan(response.data);
   },
 
-  async deleteBan(_tenant: Tenant, id: string, options?: ServiceOptions): Promise<void> {
+  async deleteBan(id: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${BASE_PATH}/${id}`, options);
   },
 
-  async expireBan(_tenant: Tenant, id: string, options?: ServiceOptions): Promise<void> {
+  async expireBan(id: string, options?: ServiceOptions): Promise<void> {
     await api.post(`${BASE_PATH}/${id}/expire`, {}, options);
   },
 
-  async checkBan(_tenant: Tenant, params: CheckBanParams, options?: ServiceOptions): Promise<CheckBanResult> {
+  async checkBan(params: CheckBanParams, options?: ServiceOptions): Promise<CheckBanResult> {
     const queryParams = new URLSearchParams();
     if (params.ip) queryParams.append("ip", params.ip);
     if (params.hwid) queryParams.append("hwid", params.hwid);
@@ -106,8 +105,8 @@ export const bansService = {
     return response.data;
   },
 
-  async getBansByType(tenant: Tenant, type: BanType, options?: ServiceOptions): Promise<Ban[]> {
-    return bansService.getAllBans(tenant, { ...options, type });
+  async getBansByType(type: BanType, options?: ServiceOptions): Promise<Ban[]> {
+    return bansService.getAllBans({ ...options, type });
   },
 };
 

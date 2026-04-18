@@ -137,7 +137,6 @@ describe('Entity Label Resolution', () => {
       });
 
       expect(charactersService.getById).toHaveBeenCalledWith(
-        mockTenant,
         '123',
         expect.any(Object)
       );

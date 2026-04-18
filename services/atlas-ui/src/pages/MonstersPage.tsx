@@ -37,7 +37,7 @@ function MonstersPageContent() {
 
   const monstersQuery = useQuery<MonsterData[], Error>({
     queryKey: ["monsters", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => monstersService.searchMonsters(urlQuery, activeTenant!),
+    queryFn: () => monstersService.searchMonsters(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
     staleTime: 30 * 1000,
   });

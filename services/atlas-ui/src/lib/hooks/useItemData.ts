@@ -84,7 +84,7 @@ export function useItemData(
       );
 
       try {
-        const name = await itemsService.getItemName(itemId.toString(), activeTenant);
+        const name = await itemsService.getItemName(itemId.toString());
         const result: ItemDataResult = { id: itemId, name, iconUrl, cached: false };
         if (options.onSuccess) options.onSuccess(result);
         return result;
@@ -142,7 +142,7 @@ export function useItemData(
           'item', prefetchItemId,
         );
         try {
-          const name = await itemsService.getItemName(prefetchItemId.toString(), activeTenant);
+          const name = await itemsService.getItemName(prefetchItemId.toString());
           return { id: prefetchItemId, name, iconUrl, cached: false };
         } catch {
           return { id: prefetchItemId, iconUrl, cached: false };
@@ -201,7 +201,7 @@ export function useItemBatchData(
           'item', itemId,
         );
         try {
-          const name = await itemsService.getItemName(itemId.toString(), activeTenant);
+          const name = await itemsService.getItemName(itemId.toString());
           return { id: itemId, name, iconUrl, cached: false };
         } catch (error) {
           return {
@@ -301,7 +301,7 @@ export function useItemDataCache() {
               'item', itemId,
             );
             try {
-              const name = await itemsService.getItemName(itemId.toString(), activeTenant);
+              const name = await itemsService.getItemName(itemId.toString());
               return { id: itemId, name, iconUrl, cached: false };
             } catch {
               return { id: itemId, iconUrl, cached: false };

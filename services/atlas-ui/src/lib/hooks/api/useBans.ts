@@ -24,7 +24,7 @@ export function useBans(
 ): UseQueryResult<Ban[], Error> {
   return useQuery({
     queryKey: banKeys.list(tenant, options),
-    queryFn: () => bansService.getAllBans(tenant!, options),
+    queryFn: () => bansService.getAllBans( options),
     enabled: !!tenant?.id,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -38,7 +38,7 @@ export function useBan(
 ): UseQueryResult<Ban, Error> {
   return useQuery({
     queryKey: banKeys.detail(tenant, id),
-    queryFn: () => bansService.getBanById(tenant!, id, options),
+    queryFn: () => bansService.getBanById( id, options),
     enabled: !!tenant?.id && !!id,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -52,7 +52,7 @@ export function useBansByType(
 ): UseQueryResult<Ban[], Error> {
   return useQuery({
     queryKey: [...banKeys.lists(), tenant?.id ?? "no-tenant", "type", type],
-    queryFn: () => bansService.getBansByType(tenant!, type, options),
+    queryFn: () => bansService.getBansByType(type, options),
     enabled: !!tenant?.id,
     staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -62,7 +62,7 @@ export function useBansByType(
 export function useCreateBan(): UseMutationResult<Ban, Error, { tenant: Tenant; data: CreateBanRequest }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ tenant, data }) => bansService.createBan(tenant, data),
+    mutationFn: ({ data }) => bansService.createBan( data),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }
@@ -70,7 +70,7 @@ export function useCreateBan(): UseMutationResult<Ban, Error, { tenant: Tenant; 
 export function useDeleteBan(): UseMutationResult<void, Error, { tenant: Tenant; id: string }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ tenant, id }) => bansService.deleteBan(tenant, id),
+    mutationFn: ({ id }) => bansService.deleteBan( id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }
@@ -78,7 +78,7 @@ export function useDeleteBan(): UseMutationResult<void, Error, { tenant: Tenant;
 export function useExpireBan(): UseMutationResult<void, Error, { tenant: Tenant; id: string }> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ tenant, id }) => bansService.expireBan(tenant, id),
+    mutationFn: ({ id }) => bansService.expireBan( id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: banKeys.all }),
   });
 }

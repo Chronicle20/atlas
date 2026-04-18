@@ -81,7 +81,7 @@ describe('useNpcData', () => {
 
       expect(result.current.name).toBe('Snail');
       expect(result.current.iconUrl).toBe('/api/assets/test-tenant/GMS/83.1/npc/1001/icon.png');
-      expect(mockNpcsService.getNpcName).toHaveBeenCalledWith(1001, mockActiveTenant);
+      expect(mockNpcsService.getNpcName).toHaveBeenCalledWith(1001);
     });
 
     it('should handle API errors gracefully', async () => {

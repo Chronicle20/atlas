@@ -38,14 +38,14 @@ export function ItemDetailPage() {
 
   const nameQuery = useQuery({
     queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", itemId],
-    queryFn: () => itemsService.getItemName(itemId, activeTenant!),
+    queryFn: () => itemsService.getItemName(itemId),
     enabled: !!activeTenant && !!itemId,
     staleTime: 10 * 60 * 1000,
   });
 
   const detailQuery = useQuery({
     queryKey: ["items", "detail", activeTenant?.id ?? "no-tenant", itemId, itemType],
-    queryFn: () => itemsService.getItemDetail(itemId, activeTenant!),
+    queryFn: () => itemsService.getItemDetail(itemId),
     enabled: !!activeTenant && !!itemId && itemType !== "Unknown",
     staleTime: 10 * 60 * 1000,
   });

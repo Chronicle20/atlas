@@ -29,7 +29,7 @@ export function NpcDetailPage() {
     const npcQuery = useQuery({
         queryKey: ["npcs", "detail", activeTenant?.id ?? "no-tenant", npcId],
         queryFn: async () => {
-            const npcData = await npcsService.getNPCById(npcId, activeTenant!);
+            const npcData = await npcsService.getNPCById(npcId);
             // If the NPC isn't in shops/conversations, synthesise a basic entry.
             return npcData ?? { id: npcId, hasShop: false, hasConversation: false };
         },

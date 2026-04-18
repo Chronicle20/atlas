@@ -26,7 +26,7 @@ export function NpcShopPage() {
 
     const shopQuery = useQuery({
         queryKey: shopKey,
-        queryFn: () => npcsService.getNPCShop(npcId, activeTenant!),
+        queryFn: () => npcsService.getNPCShop(npcId),
         enabled: !!activeTenant && npcId > 0,
         staleTime: 30 * 1000,
     });
@@ -115,7 +115,7 @@ export function NpcShopPage() {
         }
 
         try {
-            await npcsService.createCommodity(npcId, formData, activeTenant);
+            await npcsService.createCommodity(npcId, formData);
             setIsCreateDialogOpen(false);
             setFormData({
                 templateId: 0,
@@ -163,7 +163,7 @@ export function NpcShopPage() {
         }
 
         try {
-            await npcsService.updateCommodity(npcId, currentCommodity.id, formData, activeTenant);
+            await npcsService.updateCommodity(npcId, currentCommodity.id, formData);
             setIsEditDialogOpen(false);
             setCurrentCommodity(null);
             fetchDataAgain();
@@ -177,7 +177,7 @@ export function NpcShopPage() {
         if (!activeTenant) return;
 
         try {
-            await npcsService.deleteCommodity(npcId, commodityId, activeTenant);
+            await npcsService.deleteCommodity(npcId, commodityId);
             fetchDataAgain();
             toast.success("Commodity deleted successfully");
         } catch {
@@ -208,7 +208,7 @@ export function NpcShopPage() {
                 ? jsonData.data.attributes.recharger 
                 : recharger;
 
-            await npcsService.updateShop(npcId, commoditiesToUpdate, activeTenant, rechargerValue);
+            await npcsService.updateShop(npcId, commoditiesToUpdate, rechargerValue);
             setIsBulkUpdateDialogOpen(false);
             setBulkUpdateJson("");
             fetchDataAgain();
@@ -223,7 +223,7 @@ export function NpcShopPage() {
 
         try {
             setRecharger(checked);
-            await npcsService.updateShop(npcId, commodities, activeTenant, checked);
+            await npcsService.updateShop(npcId, commodities, checked);
             toast.success("Shop recharger status updated successfully");
         } catch (err) {
             // Revert state if update fails
@@ -286,7 +286,7 @@ export function NpcShopPage() {
         if (!activeTenant) return;
 
         try {
-            await npcsService.deleteAllCommoditiesForNPC(npcId, activeTenant);
+            await npcsService.deleteAllCommoditiesForNPC(npcId);
             toast.success("All commodities deleted successfully");
             setIsDeleteAllCommoditiesDialogOpen(false);
             fetchDataAgain();

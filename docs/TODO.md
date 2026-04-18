@@ -254,8 +254,8 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 
 - [x] ~~Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target~~ — Done. Reduced from 1801 LOC → 333 LOC by deleting the cache layer, request deduplication, progress tracker, stream downloads, and retry state machine (React Query owns those responsibilities now).
 - [x] ~~Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules.~~ Done — see the `refactor(atlas-ui): remove per-call api.setTenant duplicates` commit.
-- [ ] Delete `services/atlas-ui/src/services/api/base.service.ts` (still 499 LOC). Every service class extends `BaseService` and calls `this.getAll` / `this.getById` / `this.create` / etc. — full removal requires rewriting ~20 service modules to call `api.*` directly. The class-hierarchy collapse also frees up the `ServiceOptions` / `QueryOptions` / `BatchOptions` / `BatchResult` / `ValidationError` types to move into a shared `src/lib/api/query-params.ts` + `json-api.ts`. Follow-up PR.
-- [ ] Drop the `tenant` parameter from service method signatures once the duplicates are gone — currently redundant since `TenantProvider` already set the tenant on the client before the service method is called.
+- [x] ~~Delete `services/atlas-ui/src/services/api/base.service.ts`~~ — Done. Every service rewritten as a plain object. Types extracted to `src/lib/api/query-params.ts` (145 LOC). Total API-layer LOC went from 2300 → 478 (79% reduction).
+- [ ] Drop the `_tenant` parameter from service method signatures. The per-call `api.setTenant` cleanup and the base.service deletion both kept the argument for signature back-compat — every service method now prefixes it with `_` so ESLint doesn't flag it. Removing it requires updating every caller (hooks + pages + tests); easiest as a scripted rename once `noUnusedParameters` is enabled (see below).
 
 ### Phase 3 deferrals (page port)
 - [ ] Audit `useSearchParams` semantics on filter-heavy pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`). The Phase 3 mechanical rewrite destructured the RR v7 tuple (`const [searchParams] = useSearchParams()`) so call sites compile, but the exact push/replace flow on filter changes should be spot-checked against Next.js behaviour (R1 in risks.md).
@@ -285,7 +285,14 @@ Skipped tests to un-skip (search for `it.skip(` or `describe.skip(` next to the 
 - [ ] `src/services/api/__tests__/conversations.service.test.ts` — two graph-traversal tests compare against a stale fixture; regenerate the fixture from the current `ConversationsService.validateStateConsistency` output.
 - [ ] `src/components/features/characters/__tests__/CharacterRenderer.test.tsx` — the entire file is `describe.skip`'d. Every assertion looks for `data-testid="character-image"`, which the migrated `<img>` markup no longer emits. Either re-add the `data-testid` on the component or rewrite the selectors.
 
-Plus: re-enable the strict tsconfig flags (`verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `noUncheckedSideEffectImports`) and drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. Expect ~100 errors mostly in test files and `base.service.ts` generics — most will disappear when Phase 2's client shrink + base.service.ts deletion lands.
+Plus, tighten `tsconfig.app.json`:
+
+- Three strict flags already re-enabled (`noImplicitOverride`, `noUncheckedIndexedAccess`, `noUncheckedSideEffectImports`) — production code passes cleanly.
+- [ ] Re-enable `verbatimModuleSyntax`. Breaks rolldown at build time on ~30 call sites that mix type and value imports (e.g. `import { LoginHistoryEntry, BanType } from "…/ban"` where the interface is a type and the enum is a value). Fix: `import { type LoginHistoryEntry, BanType }` across those sites.
+- [ ] Re-enable `erasableSyntaxOnly`. Forbids TypeScript enums. Affected: `BanType`, `BanReasonCode`, `CompartmentType`, `ConversationState`, `QuestState`, plus a few others in `src/types/models/`. Convert each to a `const` object + union type.
+- [ ] Re-enable `exactOptionalPropertyTypes`. Several service payloads and test fixtures spread optional fields with `undefined`. Touches `templates.service.test.ts`, `useConversations.test.tsx`, `CharacterRenderer.test.tsx` and a few production sites.
+- [ ] Re-enable `noUnusedLocals` + `noUnusedParameters`. Flags the `_tenant` parameter kept for signature back-compat in ~70 service methods. Fix alongside the tenant-parameter removal above.
+- [ ] Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. With the current flag set, tests carry ~160 type errors — mostly noUncheckedIndexedAccess tripping on mock-array reads, and leftover `MockedFunction<TemplatesService>` uses that no longer make sense now that services are plain objects. Un-skip the 6 `describe.skip` test files in the same pass.
 
 ### Phase 7 deferrals (docs)
 - [ ] Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`. Both still reference `NEXT_PUBLIC_API_URL`, `next/image`, and the App Router. Not blocking migration — they live under `services/atlas-ui/docs/` as historical architecture notes. Keep in sync or delete.

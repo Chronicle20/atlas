@@ -104,9 +104,6 @@ class AccountsService extends BaseService {
    * Get all accounts for a specific tenant with sorting and filtering
    */
   async getAllAccounts(tenant: Tenant, options?: AccountQueryOptions): Promise<Account[]> {
-    // Set tenant context for this request
-    api.setTenant(tenant);
-    
     // Build query options with account-specific filters
     const queryOptions: QueryOptions = { ...options };
     if (options?.name) {
@@ -130,9 +127,6 @@ class AccountsService extends BaseService {
    * Get account by ID for a specific tenant
    */
   async getAccountById(tenant: Tenant, id: string, options?: ServiceOptions): Promise<Account> {
-    // Set tenant context for this request
-    api.setTenant(tenant);
-    
     return this.getById<Account>(id, options);
   }
 
@@ -140,9 +134,6 @@ class AccountsService extends BaseService {
    * Check if an account exists for a specific tenant
    */
   async accountExists(tenant: Tenant, id: string, options?: ServiceOptions): Promise<boolean> {
-    // Set tenant context for this request
-    api.setTenant(tenant);
-    
     return this.exists(id, options);
   }
 
@@ -175,9 +166,6 @@ class AccountsService extends BaseService {
    * Terminate account session - Force logout an account
    */
   async terminateAccountSession(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
-    // Set tenant context for this request
-    api.setTenant(tenant);
-
     const processedOptions = options ? { ...options } : {};
 
     return api.delete(`${this.basePath}/${accountId}/session`, processedOptions);
@@ -187,7 +175,6 @@ class AccountsService extends BaseService {
    * Delete an account permanently
    */
   async deleteAccount(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<void> {
-    api.setTenant(tenant);
     return api.delete(`${this.basePath}/${accountId}`, options);
   }
 
@@ -222,9 +209,6 @@ class AccountsService extends BaseService {
     accountIds: string[],
     options?: ServiceOptions
   ): Promise<{ successful: string[]; failed: Array<{ id: string; error: string }> }> {
-    // Set tenant context for this request
-    api.setTenant(tenant);
-    
     const successful: string[] = [];
     const failed: Array<{ id: string; error: string }> = [];
     

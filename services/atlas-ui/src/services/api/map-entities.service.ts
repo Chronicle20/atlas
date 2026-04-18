@@ -65,27 +65,22 @@ export interface MapMonsterData {
 
 class MapEntitiesService {
   async getPortals(mapId: string, tenant: Tenant): Promise<MapPortalData[]> {
-    api.setTenant(tenant);
     return api.getList<MapPortalData>(`/api/data/maps/${mapId}/portals`);
   }
 
   async getPortal(mapId: string, portalId: string, tenant: Tenant): Promise<MapPortalData> {
-    api.setTenant(tenant);
     return api.getOne<MapPortalData>(`/api/data/maps/${mapId}/portals/${portalId}`);
   }
 
   async getNpcs(mapId: string, tenant: Tenant): Promise<MapNpcData[]> {
-    api.setTenant(tenant);
     return api.getList<MapNpcData>(`/api/data/maps/${mapId}/npcs`);
   }
 
   async getReactors(mapId: string, tenant: Tenant): Promise<MapReactorData[]> {
-    api.setTenant(tenant);
     return api.getList<MapReactorData>(`/api/data/maps/${mapId}/reactors`);
   }
 
   async getMonsters(mapId: string, tenant: Tenant): Promise<MapMonsterData[]> {
-    api.setTenant(tenant);
     return api.getList<MapMonsterData>(`/api/data/maps/${mapId}/monsters`);
   }
 }

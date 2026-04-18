@@ -53,8 +53,6 @@ class QuestsService extends BaseService {
      */
     async getAllQuests(tenant: Tenant, options?: QuestQueryOptions): Promise<QuestDefinition[]> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         const quests = await api.getList<QuestDefinition>(this.basePath, processedOptions);
 
@@ -106,8 +104,6 @@ class QuestsService extends BaseService {
      */
     async getQuestById(tenant: Tenant, questId: string, options?: ServiceOptions): Promise<QuestDefinition> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         return api.getOne<QuestDefinition>(`${this.basePath}/${questId}`, processedOptions);
     }

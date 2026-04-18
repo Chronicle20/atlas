@@ -7,12 +7,10 @@ class ReactorsService extends BaseService {
   protected basePath = '/api/data/reactors';
 
   async getAllReactors(tenant: Tenant, options?: QueryOptions): Promise<ReactorData[]> {
-    api.setTenant(tenant);
     return this.getAll<ReactorData>(options);
   }
 
   async searchReactors(query: string, tenant: Tenant, options?: QueryOptions): Promise<ReactorData[]> {
-    api.setTenant(tenant);
     return this.getAll<ReactorData>({
       ...options,
       search: query,
@@ -21,7 +19,6 @@ class ReactorsService extends BaseService {
   }
 
   async getReactorById(id: string, tenant: Tenant, options?: ServiceOptions): Promise<ReactorData> {
-    api.setTenant(tenant);
     return this.getById<ReactorData>(id, options);
   }
 }

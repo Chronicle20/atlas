@@ -38,8 +38,6 @@ class LoginHistoryService extends BaseService {
      * Get login history by IP address
      */
     async getByIp(tenant: Tenant, ip: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        api.setTenant(tenant);
-
         const url = `${this.basePath}?ip=${encodeURIComponent(ip)}`;
         const entries = await api.getList<LoginHistoryEntry>(url, options);
         return entries.map(item => this.transformResponse(item));
@@ -49,8 +47,6 @@ class LoginHistoryService extends BaseService {
      * Get login history by HWID
      */
     async getByHwid(tenant: Tenant, hwid: string, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        api.setTenant(tenant);
-
         const url = `${this.basePath}?hwid=${encodeURIComponent(hwid)}`;
         const entries = await api.getList<LoginHistoryEntry>(url, options);
         return entries.map(item => this.transformResponse(item));
@@ -60,8 +56,6 @@ class LoginHistoryService extends BaseService {
      * Get login history by account ID
      */
     async getByAccountId(tenant: Tenant, accountId: number, options?: ServiceOptions): Promise<LoginHistoryEntry[]> {
-        api.setTenant(tenant);
-
         const url = `${this.basePath}/accounts/${accountId}`;
         const entries = await api.getList<LoginHistoryEntry>(url, options);
         return entries.map(item => this.transformResponse(item));

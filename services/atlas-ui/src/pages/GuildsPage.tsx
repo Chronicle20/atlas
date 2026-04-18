@@ -1,100 +1,60 @@
-
-import {useTenant} from "@/context/tenant-context";
-import {DataTableWrapper} from "@/components/common/DataTableWrapper";
-import {hiddenColumns} from "@/pages/guilds-columns";
-import {useCallback, useEffect, useState} from "react";
-import {guildsService} from "@/services/api/guilds.service";
-import {getColumns} from "@/pages/guilds-columns";
-import {Toaster} from "sonner";
-import {charactersService} from "@/services/api/characters.service";
-import {Guild} from "@/types/models/guild";
-import {Character} from "@/types/models/character";
-import {TenantConfig} from "@/types/models/tenant";
-import {createErrorFromUnknown} from "@/types/api/errors";
-import {GuildPageSkeleton} from "@/components/common/skeletons/GuildPageSkeleton";
-
+import { useTenant } from "@/context/tenant-context";
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
+import { getColumns, hiddenColumns } from "@/pages/guilds-columns";
+import { useGuilds, useInvalidateGuilds } from "@/lib/hooks/api/useGuilds";
+import { useCharacters, useInvalidateCharacters } from "@/lib/hooks/api/useCharacters";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { Toaster } from "sonner";
+import { GuildPageSkeleton } from "@/components/common/skeletons/GuildPageSkeleton";
 
 export function GuildsPage() {
-    const {activeTenant, fetchTenantConfiguration} = useTenant();
-    const [guilds, setGuilds] = useState<Guild[]>([]);
-    const [characters, setCharacters] = useState<Character[]>([]);
-    const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+  const { activeTenant } = useTenant();
+  const guildsQuery = useGuilds(activeTenant);
+  const charactersQuery = useCharacters(activeTenant!);
+  const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
+  const { invalidateAll: invalidateGuilds } = useInvalidateGuilds();
+  const { invalidateAll: invalidateCharacters } = useInvalidateCharacters();
 
-    const fetchDataAgain = useCallback(() => {
-        if (!activeTenant) return
+  const guilds = guildsQuery.data ?? [];
+  const characters = charactersQuery.data ?? [];
+  const tenantConfig = tenantConfigQuery.data ?? null;
 
-        setLoading(true)
+  const loading = guildsQuery.isLoading || charactersQuery.isLoading || tenantConfigQuery.isLoading;
+  const error = guildsQuery.error?.message ?? charactersQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
 
-        Promise.all([
-            guildsService.getAll(activeTenant),
-            charactersService.getAll(activeTenant),
-            fetchTenantConfiguration(activeTenant.id),
-        ])
-            .then(([guildData, characterData, tenantConfigData]) => {
-                setGuilds(guildData);
-                setCharacters(characterData);
-                setTenantConfig(tenantConfigData);
-            })
-            .catch((err: unknown) => {
-                const errorInfo = createErrorFromUnknown(err, "Failed to fetch guilds and tenant config");
-                setError(errorInfo.message);
-            })
-            .finally(() => setLoading(false));
-    }, [activeTenant, fetchTenantConfiguration])
+  const refresh = () => {
+    invalidateGuilds();
+    invalidateCharacters();
+  };
 
-    useEffect(() => {
-        if (!activeTenant) return
+  const characterMap = new Map(characters.map(c => [c.id, c]));
+  const columns = getColumns({ tenant: tenantConfig, characterMap });
 
-        setLoading(true)
+  if (loading) {
+    return <GuildPageSkeleton />;
+  }
 
-        Promise.all([
-            guildsService.getAll(activeTenant),
-            charactersService.getAll(activeTenant),
-            fetchTenantConfiguration(activeTenant.id),
-        ])
-            .then(([guildData, characterData, tenantConfigData]) => {
-                setGuilds(guildData);
-                setCharacters(characterData);
-                setTenantConfig(tenantConfigData);
-            })
-            .catch((err: unknown) => {
-                const errorInfo = createErrorFromUnknown(err, "Failed to fetch guilds and tenant config");
-                setError(errorInfo.message);
-            })
-            .finally(() => setLoading(false));
-    }, [activeTenant, fetchTenantConfiguration])
-
-    const characterMap = new Map(characters.map(c => [c.id, c]));
-
-    const columns = getColumns({ tenant: tenantConfig, characterMap });
-
-    if (loading) {
-        return <GuildPageSkeleton />;
-    }
-
-    return (
-        <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
-            <div className="items-center justify-between space-y-2">
-                <div>
-                    <h2 className="text-2xl font-bold tracking-tight">Guilds</h2>
-                </div>
-            </div>
-            <div className="mt-4">
-                <DataTableWrapper 
-                    columns={columns} 
-                    data={guilds} 
-                    error={error}
-                    onRefresh={fetchDataAgain} 
-                    initialVisibilityState={hiddenColumns}
-                    emptyState={{
-                        title: "No guilds found",
-                        description: "There are no guilds to display at this time."
-                    }}
-                />
-            </div>
-            <Toaster richColors/>
+  return (
+    <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
+      <div className="items-center justify-between space-y-2">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">Guilds</h2>
         </div>
-    );
+      </div>
+      <div className="mt-4">
+        <DataTableWrapper
+          columns={columns}
+          data={guilds}
+          error={error}
+          onRefresh={refresh}
+          initialVisibilityState={hiddenColumns}
+          emptyState={{
+            title: "No guilds found",
+            description: "There are no guilds to display at this time.",
+          }}
+        />
+      </div>
+      <Toaster richColors />
+    </div>
+  );
 }

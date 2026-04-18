@@ -11,6 +11,7 @@ import (
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type Identifier[I string] interface {
@@ -113,7 +114,10 @@ func (s *DbStorage[I, M]) Add(ctx context.Context) func(m M) model.Provider[M] {
 				DocumentId: uint32(docId),
 				Content:    data,
 			}
-			if err = tx.Create(&e).Error; err != nil {
+			if err = tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "type"}, {Name: "document_id"}},
+				DoUpdates: clause.AssignmentColumns([]string{"content", "updated_at"}),
+			}).Create(&e).Error; err != nil {
 				return err
 			}
 			return nil

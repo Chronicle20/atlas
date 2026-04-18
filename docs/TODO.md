@@ -251,9 +251,11 @@ that is not available on the wire:
 Deferred items from task-004 (Vite + React Router migration). The migration itself merged Phases 0, 1, 2, 3, 6, and 7; the items below were explicitly held back — in most cases because addressing them in the same PR would have multiplied the diff without changing feature parity, which was the migration's only correctness bar.
 
 ### Phase 2 deferrals (API client shrink)
-- [ ] Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target (currently ~1800). Pragmatic drops: unused cache primitives, progress-tracker bytes-per-second math, revalidation/dedupe layers that the new React Query-owned cache already provides.
-- [ ] Delete `services/atlas-ui/src/services/api/base.service.ts` (499 LOC) and inline `ServiceOptions`/`QueryOptions`/`BatchOptions`/`BatchResult`/`ValidationError` into `src/lib/api/query-params.ts` + `src/lib/api/json-api.ts`. Blocked on: every service module extends `BaseService` and ~15 hooks import the type exports. Restructure in a follow-up PR.
-- [ ] Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules. The `TenantProvider` effect now wires this centrally — the per-call invocations are redundant duplicates. Also drop the `tenant` parameter from service method signatures once the duplicates are gone.
+
+- [x] ~~Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target~~ — Done. Reduced from 1801 LOC → 333 LOC by deleting the cache layer, request deduplication, progress tracker, stream downloads, and retry state machine (React Query owns those responsibilities now).
+- [x] ~~Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules.~~ Done — see the `refactor(atlas-ui): remove per-call api.setTenant duplicates` commit.
+- [ ] Delete `services/atlas-ui/src/services/api/base.service.ts` (still 499 LOC). Every service class extends `BaseService` and calls `this.getAll` / `this.getById` / `this.create` / etc. — full removal requires rewriting ~20 service modules to call `api.*` directly. The class-hierarchy collapse also frees up the `ServiceOptions` / `QueryOptions` / `BatchOptions` / `BatchResult` / `ValidationError` types to move into a shared `src/lib/api/query-params.ts` + `json-api.ts`. Follow-up PR.
+- [ ] Drop the `tenant` parameter from service method signatures once the duplicates are gone — currently redundant since `TenantProvider` already set the tenant on the client before the service method is called.
 
 ### Phase 3 deferrals (page port)
 - [ ] Audit `useSearchParams` semantics on filter-heavy pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`). The Phase 3 mechanical rewrite destructured the RR v7 tuple (`const [searchParams] = useSearchParams()`) so call sites compile, but the exact push/replace flow on filter changes should be spot-checked against Next.js behaviour (R1 in risks.md).

@@ -45,8 +45,16 @@ runs:
         if [ "${{ github.event_name }}" = "pull_request" ]; then
           git fetch origin ${{ github.base_ref }} --depth=1
         else
-          # For push events, compare with previous commit
-          git fetch origin main --depth=2
+          # For push events, fetch the exact "before" SHA from the push payload.
+          # HEAD~1 is unreliable when pushes land in rapid succession: the ref
+          # may have advanced between the push and when checkout ran, and
+          # a second push's parent isn't reachable from the first push's HEAD.
+          BEFORE="${{ github.event.before }}"
+          ZERO="0000000000000000000000000000000000000000"
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO" ]; then
+            git fetch origin "$BEFORE" --depth=1 || \
+              echo "Warning: could not fetch before-SHA $BEFORE; will fall back to HEAD~1"
+          fi
         fi
 
     - name: Detect changed files and services
@@ -59,7 +67,16 @@ runs:
         elif [ -n "${{ inputs.base-ref }}" ]; then
           BASE_REF="${{ inputs.base-ref }}"
         else
-          BASE_REF="HEAD~1"
+          # Prefer the push payload's "before" SHA over HEAD~1. HEAD~1 assumes
+          # the checkout landed on the push's "after" SHA, which is racy when
+          # main advances between the push event and the runner starting.
+          BEFORE="${{ github.event.before }}"
+          ZERO="0000000000000000000000000000000000000000"
+          if [ -n "$BEFORE" ] && [ "$BEFORE" != "$ZERO" ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            BASE_REF="$BEFORE"
+          else
+            BASE_REF="HEAD~1"
+          fi
         fi
 
         echo "Comparing against: $BASE_REF"

@@ -432,8 +432,8 @@ describe('Toast Notification Utilities', () => {
       expect(mockToast.success).toHaveBeenCalledWith('Done!', expect.any(Object));
     });
 
-    it.skip('should retry on failure and eventually succeed', async () => {
-      const mockAction = jest
+    it('should retry on failure and eventually succeed', async () => {
+      const mockAction = vi
         .fn()
         .mockRejectedValueOnce(new Error('First failure'))
         .mockResolvedValueOnce(undefined);

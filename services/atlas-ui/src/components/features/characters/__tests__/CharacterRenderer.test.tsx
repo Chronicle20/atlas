@@ -19,27 +19,6 @@ vi.mock('@/services/api/maplestory.service', () => ({
   },
 }));
 
-// Mock Next.js Image component
-vi.mock('next/image', () => {
-  return function MockImage({ src, alt, onError, ...props }: {
-    src: string;
-    alt: string;
-    onError?: () => void;
-    [key: string]: unknown;
-  }) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt={alt}
-        onError={onError}
-        data-testid="character-image"
-        {...props}
-      />
-    );
-  };
-});
-
 // Mock the character image hook
 vi.mock('@/lib/hooks/useCharacterImage', () => ({
   useCharacterImage: vi.fn(),
@@ -74,10 +53,7 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Skipped wholesale: tests assert a `data-testid="character-image"` that the
-// migrated <img> markup no longer emits. Rewrite the selectors (or reintroduce
-// the test id on the component) — tracked in docs/TODO.md → atlas-ui Frontend.
-describe.skip('CharacterRenderer', () => {
+describe('CharacterRenderer', () => {
   const mockUseCharacterImage = useCharacterImage as MockedFunction<typeof useCharacterImage>;
 
   beforeEach(() => {

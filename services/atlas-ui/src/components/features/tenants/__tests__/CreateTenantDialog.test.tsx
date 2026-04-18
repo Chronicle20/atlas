@@ -78,7 +78,7 @@ describe('CreateTenantDialog', () => {
     onSuccess: vi.fn(),
   };
 
-  it.skip('renders dialog with form fields when open', async () => {
+  it('renders dialog with form fields when open', async () => {
     render(<CreateTenantDialog {...defaultProps} />);
 
     await waitFor(() => {
@@ -86,7 +86,7 @@ describe('CreateTenantDialog', () => {
     });
 
     expect(screen.getByPlaceholderText(/enter tenant name/i)).toBeInTheDocument();
-    expect(screen.getByText(/region/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/region/i).length).toBeGreaterThan(0);
   });
 
   it('fetches template options when dialog opens', async () => {

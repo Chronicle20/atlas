@@ -261,6 +261,7 @@ export function CharacterRenderer({
             height={sizeDimensions[size].height}
             className={cn('object-contain rounded-lg')}
             onError={handleFallbackError}
+            data-testid="character-image"
           />
         </div>
         {error && (
@@ -313,6 +314,7 @@ export function CharacterRenderer({
             onImageError?.(new Error(errorState.message));
           }
         }}
+        data-testid="character-image"
       />
       {/* Show cache indicator in development */}
       {import.meta.env.DEV && cached && (

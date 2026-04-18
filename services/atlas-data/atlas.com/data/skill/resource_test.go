@@ -26,9 +26,9 @@ import (
 // testDocumentEntity is a test-compatible version of document.Entity without PostgreSQL-specific defaults
 type testDocumentEntity struct {
 	Id         uuid.UUID       `gorm:"primaryKey;type:text"`
-	TenantId   uuid.UUID       `gorm:"type:text;not null"`
-	Type       string          `gorm:"not null"`
-	DocumentId uint32          `gorm:"not null"`
+	TenantId   uuid.UUID       `gorm:"type:text;not null;uniqueIndex:idx_documents_tenant_type_docid"`
+	Type       string          `gorm:"not null;uniqueIndex:idx_documents_tenant_type_docid"`
+	DocumentId uint32          `gorm:"not null;uniqueIndex:idx_documents_tenant_type_docid"`
 	Content    json.RawMessage `gorm:"type:text;not null"`
 	UpdatedAt  time.Time       `gorm:"autoUpdateTime"`
 }

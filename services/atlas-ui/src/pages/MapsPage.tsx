@@ -1,15 +1,18 @@
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Suspense, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { mapsService, type MapData } from "@/services/api/maps.service";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns, hiddenColumns } from "./maps-columns";
-import { Map, Search, Loader2 } from "lucide-react";
+import { Map, Loader2 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
+import { useDebounce } from "@/lib/utils/debounce";
+
+const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 250;
 
 export function MapsPage() {
   return (
@@ -24,39 +27,34 @@ function MapsPageContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(urlQuery);
+  const debounced = useDebounce(searchInput.trim(), DEBOUNCE_MS);
+
+  useEffect(() => {
+    const next = debounced;
+    if (next.length >= MIN_QUERY_LENGTH) {
+      if (next !== urlQuery) {
+        setSearchParams({ q: next }, { replace: true });
+      }
+    } else if (urlQuery !== "") {
+      setSearchParams({}, { replace: true });
+    }
+  }, [debounced, urlQuery, setSearchParams]);
 
   const mapsQuery = useQuery<MapData[], Error>({
     queryKey: ["maps", "search", activeTenant?.id ?? "no-tenant", urlQuery],
     queryFn: () => mapsService.searchMaps(urlQuery),
-    enabled: !!activeTenant && urlQuery.length > 0,
+    enabled: !!activeTenant && urlQuery.length >= MIN_QUERY_LENGTH,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   const maps = mapsQuery.data ?? [];
-  const loading = mapsQuery.isFetching;
-  const hasSearched = urlQuery.length > 0;
-
-  const handleSearch = () => {
-    if (!activeTenant) {
-      toast.error("No tenant selected");
-      return;
-    }
-    if (!searchInput.trim()) {
-      toast.error("Please enter a search term");
-      return;
-    }
-    setSearchParams({ q: searchInput.trim() }, { replace: true });
-  };
+  const fetching = mapsQuery.isFetching;
+  const hasSearched = urlQuery.length >= MIN_QUERY_LENGTH;
 
   const handleClear = () => {
     setSearchInput("");
     setSearchParams({}, { replace: true });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
   };
 
   return (
@@ -75,23 +73,17 @@ function MapsPageContent() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <Input
                 placeholder="Enter map ID, name, or street name..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
               />
-            </div>
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
+              {fetching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
-              Search
-            </Button>
-            <Button variant="outline" onClick={handleClear} disabled={loading}>
+            </div>
+            <Button variant="outline" onClick={handleClear}>
               Clear
             </Button>
           </div>

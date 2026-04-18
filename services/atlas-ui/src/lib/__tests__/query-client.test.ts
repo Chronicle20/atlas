@@ -44,7 +44,7 @@ describe('Query Client Configuration', () => {
       expect(retryDelay(2)).toBe(4000); // Third retry: 4 seconds
       expect(retryDelay(10)).toBe(30000); // Max retry: 30 seconds
     } else {
-      fail('retryDelay should be a function');
+      expect.fail('retryDelay should be a function');
     }
   });
 

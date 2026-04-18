@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -17,7 +17,7 @@ import {
 } from '../useCharacters';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import type { Tenant } from '@/types/models/tenant';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // Mock the characters service
 vi.mock('@/services/api/characters.service', () => ({
@@ -28,7 +28,7 @@ vi.mock('@/services/api/characters.service', () => ({
   },
 }));
 
-const mockCharactersService = charactersService as MockedFunction<typeof charactersService>;
+const mockCharactersService = charactersService as Mocked<typeof charactersService>;
 
 // Test data
 const mockTenant: Tenant = {
@@ -140,7 +140,7 @@ describe('useCharacters hooks', () => {
 
     it('should not fetch when tenant is not provided', () => {
       const { result } = renderHook(
-        () => useCharacters(null as Tenant | null),
+        () => useCharacters(null as unknown as Tenant),
         { wrapper: createWrapper() }
       );
 
@@ -201,6 +201,7 @@ describe('useCharacters hooks', () => {
       const { result } = renderHook(() => useUpdateCharacter(), { wrapper });
 
       result.current.mutate({
+        tenant: mockTenant,
         characterId: 'char-123',
         updates: mockUpdateData,
       });
@@ -223,6 +224,7 @@ describe('useCharacters hooks', () => {
       const { result } = renderHook(() => useUpdateCharacter(), { wrapper });
 
       result.current.mutate({
+        tenant: mockTenant,
         characterId: 'char-123',
         updates: mockUpdateData,
       });

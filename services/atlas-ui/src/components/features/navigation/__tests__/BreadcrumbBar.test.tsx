@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -31,17 +31,35 @@ vi.mock('@/lib/hooks/useBreadcrumbs', () => ({
   useBreadcrumbs: vi.fn(),
 }));
 
-const mockUseTenant = useTenant as MockedFunction<typeof useTenant>;
-const mockUseBreadcrumbs = useBreadcrumbs as MockedFunction<typeof useBreadcrumbs>;
-const mockUseNavigate = useNavigate as MockedFunction<typeof useNavigate>;
+const mockUseTenant = vi.mocked(useTenant);
+const mockUseBreadcrumbs = vi.mocked(useBreadcrumbs);
+const mockUseNavigate = vi.mocked(useNavigate);
+
+type TenantReturn = ReturnType<typeof useTenant>;
+type BreadcrumbsReturn = ReturnType<typeof useBreadcrumbs>;
+function tenantReturn(partial: Partial<TenantReturn>): TenantReturn {
+  return {
+    tenants: [],
+    activeTenant: null,
+    loading: false,
+    setActiveTenant: vi.fn(),
+    refreshTenants: vi.fn(),
+    refreshAndSelectTenant: vi.fn(),
+    fetchTenantConfiguration: vi.fn(),
+    ...partial,
+  } as TenantReturn;
+}
+function breadcrumbsReturn(partial: Partial<BreadcrumbsReturn>): BreadcrumbsReturn {
+  return { ...mockBreadcrumbsResult, ...partial } as unknown as BreadcrumbsReturn;
+}
 
 // Test data
 const mockTenant = {
   id: 'tenant-123',
-  type: 'tenant',
   attributes: {
     name: 'Test Tenant',
-    version: { major: 83, minor: 1 },
+    majorVersion: 83,
+    minorVersion: 1,
     region: 'GMS',
   },
 };
@@ -103,16 +121,12 @@ const mockBreadcrumbsResult = {
 describe('BreadcrumbBar', () => {
   beforeEach(() => {
     // Setup default mocks
-    mockUseTenant.mockReturnValue({
-      tenants: [mockTenant],
-      activeTenant: mockTenant,
-      loading: false,
-      setActiveTenant: vi.fn(),
-      refreshTenants: vi.fn(),
-      fetchTenantConfiguration: vi.fn(),
-    });
+    mockUseTenant.mockReturnValue(tenantReturn({
+      tenants: [mockTenant] as unknown as TenantReturn['tenants'],
+      activeTenant: mockTenant as unknown as TenantReturn['activeTenant'],
+    }));
 
-    mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult);
+    mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult as unknown as BreadcrumbsReturn);
 
     mockUseNavigate.mockReturnValue(vi.fn());
   });
@@ -136,14 +150,7 @@ describe('BreadcrumbBar', () => {
     });
 
     it('should render loading state when tenant is loading', () => {
-      mockUseTenant.mockReturnValue({
-        tenants: [],
-        activeTenant: null,
-        loading: true,
-        setActiveTenant: vi.fn(),
-        refreshTenants: vi.fn(),
-        fetchTenantConfiguration: vi.fn(),
-      });
+      mockUseTenant.mockReturnValue(tenantReturn({ loading: true }));
 
       render(<BreadcrumbBar />);
 
@@ -151,13 +158,12 @@ describe('BreadcrumbBar', () => {
     });
 
     it('should not render when route is invalid', async () => {
-      mockUseBreadcrumbs.mockReturnValue({
-        ...mockBreadcrumbsResult,
+      mockUseBreadcrumbs.mockReturnValue(breadcrumbsReturn({
         utils: {
           ...mockBreadcrumbsResult.utils,
           isValidRoute: false,
-        },
-      });
+        } as unknown as BreadcrumbsReturn['utils'],
+      }));
 
       const { container } = render(<BreadcrumbBar />);
 
@@ -167,12 +173,11 @@ describe('BreadcrumbBar', () => {
     });
 
     it('should handle error state gracefully', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation();
-      
-      mockUseBreadcrumbs.mockReturnValue({
-        ...mockBreadcrumbsResult,
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      mockUseBreadcrumbs.mockReturnValue(breadcrumbsReturn({
         error: new Error('Test error'),
-      });
+      }));
 
       render(<BreadcrumbBar />);
 
@@ -216,10 +221,7 @@ describe('BreadcrumbBar', () => {
 
   describe('Loading States', () => {
     it('should show loading indicators for dynamic breadcrumbs', async () => {
-      mockUseBreadcrumbs.mockReturnValue({
-        ...mockBreadcrumbsResult,
-        loading: true,
-      });
+      mockUseBreadcrumbs.mockReturnValue(breadcrumbsReturn({ loading: true }));
 
       render(<BreadcrumbBar showLoadingStates={true} />);
 
@@ -231,10 +233,7 @@ describe('BreadcrumbBar', () => {
     });
 
     it('should not show loading indicators when disabled', async () => {
-      mockUseBreadcrumbs.mockReturnValue({
-        ...mockBreadcrumbsResult,
-        loading: true,
-      });
+      mockUseBreadcrumbs.mockReturnValue(breadcrumbsReturn({ loading: true }));
 
       render(<BreadcrumbBar showLoadingStates={false} />);
 
@@ -254,10 +253,9 @@ describe('BreadcrumbBar', () => {
         { segment: 'level4', label: 'Level 4', href: '/level1/level2/level3/level4', dynamic: false, isCurrentPage: true },
       ];
 
-      mockUseBreadcrumbs.mockReturnValue({
-        ...mockBreadcrumbsResult,
+      mockUseBreadcrumbs.mockReturnValue(breadcrumbsReturn({
         breadcrumbs: longBreadcrumbs,
-      });
+      }));
 
       render(<BreadcrumbBar maxItems={3} showEllipsis={true} />);
 
@@ -288,14 +286,7 @@ describe('BreadcrumbBar', () => {
 
   describe('Tenant Context Integration', () => {
     it('should disable auto-resolve when no active tenant', async () => {
-      mockUseTenant.mockReturnValue({
-        tenants: [],
-        activeTenant: null,
-        loading: false,
-        setActiveTenant: vi.fn(),
-        refreshTenants: vi.fn(),
-        fetchTenantConfiguration: vi.fn(),
-      });
+      mockUseTenant.mockReturnValue(tenantReturn({}));
 
       render(<BreadcrumbBar />);
 
@@ -324,16 +315,12 @@ describe('BreadcrumbBar', () => {
 
 describe('SimpleBreadcrumbBar', () => {
   beforeEach(() => {
-    mockUseTenant.mockReturnValue({
-      tenants: [mockTenant],
-      activeTenant: mockTenant,
-      loading: false,
-      setActiveTenant: vi.fn(),
-      refreshTenants: vi.fn(),
-      fetchTenantConfiguration: vi.fn(),
-    });
+    mockUseTenant.mockReturnValue(tenantReturn({
+      tenants: [mockTenant] as unknown as TenantReturn['tenants'],
+      activeTenant: mockTenant as unknown as TenantReturn['activeTenant'],
+    }));
 
-    mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult);
+    mockUseBreadcrumbs.mockReturnValue(mockBreadcrumbsResult as unknown as BreadcrumbsReturn);
   });
 
   it('should render with simplified options', async () => {

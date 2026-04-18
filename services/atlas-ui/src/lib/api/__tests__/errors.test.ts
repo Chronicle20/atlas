@@ -61,12 +61,13 @@ function createAuthorizationError(message: string): AuthorizationError {
 }
 
 function createNotFoundError(message: string, resource?: string): NotFoundError {
-  return {
+  const base: NotFoundError = {
     message,
     statusCode: 404,
     code: 'NOT_FOUND',
-    resource,
   };
+  if (resource !== undefined) base.resource = resource;
+  return base;
 }
 
 function createServerError(message: string): ServerError {
@@ -78,12 +79,13 @@ function createServerError(message: string): ServerError {
 }
 
 function createValidationError(message: string, fieldErrors?: Record<string, string[]>): ValidationError {
-  return {
+  const base: ValidationError = {
     message,
     statusCode: 400,
     code: 'VALIDATION_ERROR',
-    fieldErrors,
   };
+  if (fieldErrors !== undefined) base.fieldErrors = fieldErrors;
+  return base;
 }
 
 function createNetworkError(message: string, statusCode: number = 0): NetworkError {
@@ -115,7 +117,7 @@ describe('Error Transformation Utilities', () => {
     });
 
     it('should use default message when no message available', () => {
-      const error = { statusCode: 999, code: 'UNKNOWN', message: null };
+      const error = { statusCode: 999, code: 'UNKNOWN', message: null } as unknown as Parameters<typeof transformApiError>[0];
       const result = transformApiError(error);
       expect(result).toBe('An unexpected error occurred. Please try again.');
     });
@@ -133,7 +135,7 @@ describe('Error Transformation Utilities', () => {
     });
 
     it('should use custom default message', () => {
-      const error = { statusCode: 999, code: undefined, message: undefined };
+      const error = { statusCode: 999, code: undefined, message: undefined } as unknown as Parameters<typeof transformApiError>[0];
       const result = transformApiError(error, { defaultMessage: 'Custom default' });
       expect(result).toBe('Custom default');
     });
@@ -421,7 +423,7 @@ describe('Error Logging and Sanitization', () => {
 
       logError(error, context);
 
-      const callArgs = mockConsoleError.mock.calls[0];
+      const callArgs = mockConsoleError.mock.calls[0]!;
       expect(callArgs[0]).toBe('Error occurred:');
       expect(callArgs[1].context.component).toBe('TestComponent');
       expect(callArgs[1].context.data).toBeTruthy();

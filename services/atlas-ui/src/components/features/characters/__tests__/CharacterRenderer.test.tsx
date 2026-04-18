@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Comprehensive tests for CharacterRenderer component with various equipment combinations
  */
@@ -34,7 +34,7 @@ vi.mock('@/lib/hooks/useIntersectionObserver', () => ({
   })),
 }));
 
-const mockMapleStoryService = mapleStoryService as MockedFunction<typeof mapleStoryService>;
+const mockMapleStoryService = mapleStoryService as Mocked<typeof mapleStoryService>;
 
 // Test wrapper with QueryClient
 function TestWrapper({ children }: { children: React.ReactNode }) {
@@ -54,7 +54,7 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 }
 
 describe('CharacterRenderer', () => {
-  const mockUseCharacterImage = useCharacterImage as MockedFunction<typeof useCharacterImage>;
+  const mockUseCharacterImage = vi.mocked(useCharacterImage);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -63,8 +63,8 @@ describe('CharacterRenderer', () => {
     mockUseCharacterImage.mockReturnValue({
       data: {
         url: 'https://maplestory.io/api/character/test.png',
-        character: {},
-        options: {},
+        character: {} as never,
+        options: {} as never,
         cached: false,
       },
       isLoading: false,
@@ -74,7 +74,7 @@ describe('CharacterRenderer', () => {
       prefetchVariants: vi.fn(),
       imageUrl: 'https://maplestory.io/api/character/test.png',
       cached: false,
-    });
+    } as unknown as ReturnType<typeof useCharacterImage>);
 
     // Mock the service methods
     mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
@@ -90,11 +90,11 @@ describe('CharacterRenderer', () => {
     });
   });
 
-  const mockCharacter: Character = {
+  const mockCharacter = {
     id: 'char1',
     type: 'character',
     attributes: {
-      accountId: 'acc1',
+      accountId: 1,
       name: 'TestWarrior',
       level: 85,
       jobId: 110,
@@ -132,12 +132,11 @@ describe('CharacterRenderer', () => {
     id: `asset-${slot}`,
     type: 'inventory',
     attributes: {
-      characterId: 'char1',
       slot,
       templateId,
       quantity: 1,
     },
-  });
+  } as unknown as Asset);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -182,7 +181,7 @@ describe('CharacterRenderer', () => {
 
   describe('Basic rendering', () => {
     it('should render character with no equipment', async () => {
-      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -201,7 +200,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-11, 1202000), // One-handed sword
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={basicEquipment} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={basicEquipment} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -224,7 +223,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-9, 1102000),  // Cape
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={armorSet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={armorSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -240,7 +239,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-11, 1302000), // One-handed sword
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={weaponSet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={weaponSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -261,7 +260,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-23, 1032000), // Earrings
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={accessorySet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={accessorySet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -275,7 +274,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-111, 1302001), // Cash Weapon
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={cashSet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={cashSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -290,7 +289,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(-111, 1302001), // Cash Weapon
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={mixedSet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={mixedSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -323,7 +322,7 @@ describe('CharacterRenderer', () => {
         createMockAsset(2, 2001000),   // Equipment in inventory
       ];
 
-      render(<CharacterRenderer character={mockCharacter} inventory={fullSet} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={fullSet} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -335,7 +334,7 @@ describe('CharacterRenderer', () => {
     it('should render with different sizes', async () => {
       // Test small size
       const { unmount } = render(
-        <CharacterRenderer character={mockCharacter} size="small" />,
+        <CharacterRenderer character={mockCharacter as unknown as Character} size="small" />,
         { wrapper: TestWrapper }
       );
 
@@ -349,7 +348,7 @@ describe('CharacterRenderer', () => {
       unmount();
 
       // Test medium size (default)
-      render(<CharacterRenderer character={mockCharacter} size="medium" />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} size="medium" />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -360,7 +359,7 @@ describe('CharacterRenderer', () => {
     });
 
     it('should use custom scale factor', async () => {
-      render(<CharacterRenderer character={mockCharacter} scale={4} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} scale={4} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -373,7 +372,7 @@ describe('CharacterRenderer', () => {
     it('should handle custom className', async () => {
       render(
         <CharacterRenderer
-          character={mockCharacter}
+          character={mockCharacter as unknown as Character}
           className="custom-class border-2"
         />,
         { wrapper: TestWrapper }
@@ -400,9 +399,9 @@ describe('CharacterRenderer', () => {
         prefetchVariants: vi.fn(),
         imageUrl: null,
         cached: false,
-      });
+      } as unknown as ReturnType<typeof useCharacterImage>);
 
-      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
       // Should show skeleton loading
       expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
@@ -419,9 +418,9 @@ describe('CharacterRenderer', () => {
         prefetchVariants: vi.fn(),
         imageUrl: null,
         cached: false,
-      });
+      } as unknown as ReturnType<typeof useCharacterImage>);
 
-      render(<CharacterRenderer character={mockCharacter} showLoading={false} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} showLoading={false} />, { wrapper: TestWrapper });
 
       // Should not show loading indicator when showLoading is false
       expect(screen.queryByRole('status')).not.toBeInTheDocument();
@@ -440,9 +439,9 @@ describe('CharacterRenderer', () => {
         prefetchVariants: vi.fn(),
         imageUrl: '/default-character-avatar.svg',
         cached: false,
-      });
+      } as unknown as ReturnType<typeof useCharacterImage>);
 
-      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -454,7 +453,7 @@ describe('CharacterRenderer', () => {
     });
 
     it('should handle image load errors', async () => {
-      render(<CharacterRenderer character={mockCharacter} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();
@@ -481,11 +480,11 @@ describe('CharacterRenderer', () => {
         prefetchVariants: vi.fn(),
         imageUrl: '/custom-avatar.png',
         cached: false,
-      });
+      } as unknown as ReturnType<typeof useCharacterImage>);
 
       render(
         <CharacterRenderer
-          character={mockCharacter}
+          character={mockCharacter as unknown as Character}
           fallbackAvatar="/custom-avatar.png"
         />,
         { wrapper: TestWrapper }
@@ -506,7 +505,7 @@ describe('CharacterRenderer', () => {
 
       render(
         <CharacterRenderer
-          character={mockCharacter}
+          character={mockCharacter as unknown as Character}
           onImageLoad={onImageLoad}
         />,
         { wrapper: TestWrapper }
@@ -534,10 +533,10 @@ describe('CharacterRenderer', () => {
         prefetchVariants: vi.fn(),
         imageUrl: '/default-character-avatar.svg',
         cached: false,
-      });
+      } as unknown as ReturnType<typeof useCharacterImage>);
 
       render(
-        <CharacterRenderer character={mockCharacter} />,
+        <CharacterRenderer character={mockCharacter as unknown as Character} />,
         { wrapper: TestWrapper }
       );
 
@@ -553,7 +552,7 @@ describe('CharacterRenderer', () => {
 
   describe('Different character types', () => {
     it('should render different job characters correctly', async () => {
-      const archerCharacter: Character = {
+      const archerCharacter = {
         ...mockCharacter,
         attributes: {
           ...mockCharacter.attributes,
@@ -572,7 +571,7 @@ describe('CharacterRenderer', () => {
 
       render(
         <CharacterRenderer
-          character={archerCharacter}
+          character={archerCharacter as unknown as Character}
           inventory={archerEquipment}
         />,
         { wrapper: TestWrapper }
@@ -587,7 +586,7 @@ describe('CharacterRenderer', () => {
     });
 
     it('should render female characters correctly', async () => {
-      const femaleCharacter: Character = {
+      const femaleCharacter = {
         ...mockCharacter,
         attributes: {
           ...mockCharacter.attributes,
@@ -598,7 +597,7 @@ describe('CharacterRenderer', () => {
         },
       };
 
-      render(<CharacterRenderer character={femaleCharacter} />, { wrapper: TestWrapper });
+      render(<CharacterRenderer character={femaleCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
       await waitFor(() => {
         expect(screen.getByTestId('character-image')).toBeInTheDocument();

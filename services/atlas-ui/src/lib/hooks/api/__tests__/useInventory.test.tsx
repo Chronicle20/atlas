@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -28,7 +28,7 @@ import type {
   Asset, 
 } from '@/services/api/inventory.service';
 import type { Tenant } from '@/types/models/tenant';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 
 // Mock the inventory service
 vi.mock('@/services/api/inventory.service', () => ({
@@ -44,7 +44,7 @@ vi.mock('@/services/api/inventory.service', () => ({
   },
 }));
 
-const mockInventoryService = inventoryService as MockedFunction<typeof inventoryService>;
+const mockInventoryService = inventoryService as Mocked<typeof inventoryService>;
 
 // Test data
 const mockTenant: Tenant = {
@@ -110,7 +110,7 @@ const mockAsset: Asset = {
     quantity: 1,
     ownerId: 123,
     flag: 0,
-    rechargeable: false,
+    rechargeable: 0,
     strength: 0,
     dexterity: 0,
     intelligence: 0,
@@ -127,19 +127,14 @@ const mockAsset: Asset = {
     speed: 0,
     jump: 0,
     slots: 0,
-    locked: false,
-    spikes: false,
-    karmaUsed: false,
-    cold: false,
-    canBeTraded: true,
     levelType: 0,
     level: 0,
     experience: 0,
     hammersApplied: 0,
     equippedSince: '',
-    cashId: 0,
+    cashId: '0',
     commodityId: 0,
-    purchaseBy: '',
+    purchaseBy: 0,
     petId: 0,
   },
 };
@@ -255,7 +250,7 @@ describe('useInventory hooks', () => {
 
     it('should not fetch when tenant is not provided', () => {
       const { result } = renderHook(
-        () => useInventory(null as Tenant | null, '123'),
+        () => useInventory(null as unknown as Tenant, '123'),
         { wrapper: createWrapper() }
       );
 
@@ -390,6 +385,7 @@ describe('useInventory hooks', () => {
       const { result } = renderHook(() => useDeleteAsset(), { wrapper });
 
       result.current.mutate({
+        tenant: mockTenant,
         characterId: '123',
         compartmentId: 'comp-1',
         assetId: 'asset-1',
@@ -415,6 +411,7 @@ describe('useInventory hooks', () => {
       const { result } = renderHook(() => useDeleteAsset(), { wrapper });
 
       result.current.mutate({
+        tenant: mockTenant,
         characterId: '123',
         compartmentId: 'comp-1',
         assetId: 'asset-1',

@@ -183,7 +183,7 @@ export function useTerminateAccountSession(): UseMutationResult<
       }
       console.error('Failed to terminate account session:', error);
     },
-    onSettled: (data, error, { tenant, accountId }) => {
+    onSettled: (_data, _error, { tenant, accountId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: accountKeys.detail(tenant, accountId) });
       queryClient.invalidateQueries({ queryKey: accountKeys.loggedIn(tenant) });
@@ -247,7 +247,7 @@ export function useTerminateMultipleSessions(): UseMutationResult<
       }
       console.error('Failed to terminate multiple account sessions:', error);
     },
-    onSettled: (data, error, { tenant, accountIds }) => {
+    onSettled: (_data, _error, { tenant, accountIds }) => {
       // Invalidate and refetch relevant queries
       accountIds.forEach(accountId => {
         queryClient.invalidateQueries({ queryKey: accountKeys.detail(tenant, accountId) });

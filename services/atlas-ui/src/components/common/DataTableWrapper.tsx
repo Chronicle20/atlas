@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { ColumnDef } from '@tanstack/react-table';
+import { type ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '@/components/data-table';
 import { PageLoader } from './PageLoader';
 import { ErrorDisplay } from './ErrorDisplay';

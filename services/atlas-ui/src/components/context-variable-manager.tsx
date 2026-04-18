@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { AlertCircle, CheckCircle, Info } from 'lucide-react';
 import type { Conversation } from '@/types/models/conversation';
 

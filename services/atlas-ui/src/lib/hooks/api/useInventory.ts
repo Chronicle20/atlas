@@ -210,7 +210,7 @@ export function useDeleteAsset(): UseMutationResult<
       }
       console.error('Failed to delete asset:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ 
         queryKey: inventoryKeys.inventory(variables.tenant, variables.characterId) 

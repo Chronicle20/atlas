@@ -13,7 +13,7 @@ export interface ReactorScriptData {
 }
 
 class ReactorScriptsService {
-  async getScriptsByReactor(reactorId: string, tenant: Tenant): Promise<ReactorScriptData | null> {
+  async getScriptsByReactor(reactorId: string, _tenant: Tenant): Promise<ReactorScriptData | null> {
     try {
       const results = await api.getList<ReactorScriptData>(`/api/reactors/${reactorId}/actions`);
       return results[0] ?? null;

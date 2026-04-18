@@ -141,7 +141,7 @@ export function useCreateShop(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, commodities, tenant, recharger, options }) => 
       npcsService.createShop(npcId, commodities, tenant, recharger, options),
-    onSuccess: (data, { tenant, npcId }) => {
+    onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -189,7 +189,7 @@ export function useUpdateShop(): UseMutationResult<
       }
       console.error('Failed to update shop:', error);
     },
-    onSettled: (data, error, { tenant, npcId }) => {
+    onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -220,7 +220,7 @@ export function useCreateCommodity(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, commodityAttributes, tenant, options }) => 
       npcsService.createCommodity(npcId, commodityAttributes, tenant, options),
-    onSuccess: (data, { tenant, npcId }) => {
+    onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate shop data to refresh commodities list
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -250,7 +250,7 @@ export function useUpdateCommodity(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, commodityId, commodityAttributes, tenant, options }) =>
       npcsService.updateCommodity(npcId, commodityId, commodityAttributes, tenant, options),
-    onMutate: async ({ tenant, npcId, commodityId }) => {
+    onMutate: async ({ tenant, npcId }) => {
       // Cancel any outgoing refetches for this shop
       await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       
@@ -266,7 +266,7 @@ export function useUpdateCommodity(): UseMutationResult<
       }
       console.error('Failed to update commodity:', error);
     },
-    onSettled: (data, error, { tenant, npcId }) => {
+    onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -334,7 +334,7 @@ export function useDeleteCommodity(): UseMutationResult<
       }
       console.error('Failed to delete commodity:', error);
     },
-    onSettled: (data, error, { tenant, npcId }) => {
+    onSettled: (_data, _error, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -359,7 +359,7 @@ export function useDeleteAllCommoditiesForNPC(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, tenant, options }) => 
       npcsService.deleteAllCommoditiesForNPC(npcId, tenant, options),
-    onSuccess: (data, { tenant, npcId }) => {
+    onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -386,7 +386,7 @@ export function useDeleteAllShops(): UseMutationResult<
   return useMutation({
     mutationFn: ({ tenant, options }) => 
       npcsService.deleteAllShops(tenant, options),
-    onSuccess: (data, { tenant }) => {
+    onSuccess: (_data, { tenant }) => {
       // Invalidate all NPC-related queries
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
       queryClient.invalidateQueries({ queryKey: npcKeys.withShops(tenant) });
@@ -415,7 +415,7 @@ export function useCreateCommoditiesBatch(): UseMutationResult<
   return useMutation({
     mutationFn: ({ npcId, commodities, tenant, options }) => 
       npcsService.createCommoditiesBatch(npcId, commodities, tenant, options),
-    onSuccess: (data, { tenant, npcId }) => {
+    onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate shop data to refresh commodities list
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
       queryClient.invalidateQueries({ queryKey: npcKeys.all });

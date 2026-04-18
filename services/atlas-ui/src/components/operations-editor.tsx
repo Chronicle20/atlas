@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 
 export interface Operation {

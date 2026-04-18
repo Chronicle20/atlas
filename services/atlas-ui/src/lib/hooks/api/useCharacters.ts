@@ -105,7 +105,7 @@ export function useUpdateCharacter(): UseMutationResult<
       }
       console.error('Failed to update character:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ 
         queryKey: characterKeys.detail(variables.tenant, variables.characterId) 

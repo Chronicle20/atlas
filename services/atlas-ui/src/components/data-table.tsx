@@ -1,4 +1,4 @@
-import {ColumnDef, flexRender, getCoreRowModel, useReactTable, VisibilityState,} from "@tanstack/react-table"
+import {type ColumnDef, flexRender, getCoreRowModel, useReactTable, type VisibilityState,} from "@tanstack/react-table"
 
 import {Table, TableBody, TableCell, TableHead, TableHeader, TableRow,} from "@/components/ui/table"
 import React from "react";

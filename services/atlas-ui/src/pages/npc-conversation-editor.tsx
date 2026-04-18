@@ -1,6 +1,6 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState, useCallback, useMemo, useRef, SetStateAction } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef, type SetStateAction } from "react";
 import { useParams } from "react-router-dom";
 import { conversationsService } from "@/services/api/conversations.service";
 import type {
@@ -9,8 +9,8 @@ import type {
   DialogueChoice,
 } from "@/types/models/conversation";
 import ReactFlow, {
-  Node,
-  Edge,
+  type Node,
+  type Edge,
   Background,
   useNodesState,
   useEdgesState,
@@ -19,11 +19,11 @@ import ReactFlow, {
   ConnectionLineType,
   Handle,
   Position,
-  NodeProps,
+  type NodeProps,
   addEdge,
-  Connection,
-  EdgeChange,
-  OnEdgeUpdateFunc,
+  type Connection,
+  type EdgeChange,
+  type OnEdgeUpdateFunc,
 
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -54,7 +54,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { OperationsEditor, type Operation } from "@/components/operations-editor";
-import { ConditionsBuilder, type Outcome, type Condition } from "@/components/conditions-builder";
+import { ConditionsBuilder, type Outcome } from "@/components/conditions-builder";
 import { ContextVariableManager } from "@/components/context-variable-manager";
 import { CraftActionEditor, type CraftActionData } from "@/components/craft-action-editor";
 

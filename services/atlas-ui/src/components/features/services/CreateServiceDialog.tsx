@@ -197,15 +197,6 @@ export function CreateServiceDialog({
 
   const canProceedFromType = serviceType !== null && !customIdError;
   const canProceedFromConfig = tasks.length > 0 || serviceType === "drops-service";
-  const canSubmitFromTenants =
-    (serviceType === "login-service" && loginTenants.every((t) => t.id && t.port > 0)) ||
-    (serviceType === "channel-service" &&
-      channelTenants.every(
-        (t) =>
-          t.id &&
-          t.ipAddress &&
-          t.worlds.every((w) => w.channels.every((c) => c.port > 0))
-      ));
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>

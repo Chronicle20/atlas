@@ -148,7 +148,7 @@ export function useUpdateMap(): UseMutationResult<
       }
       console.error('Failed to update map:', error);
     },
-    onSettled: (data, error, variables) => {
+    onSettled: (_data, _error, variables) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: mapKeys.detail(variables.map.id) });
       queryClient.invalidateQueries({ queryKey: mapKeys.lists() });

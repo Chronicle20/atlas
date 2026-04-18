@@ -1,5 +1,5 @@
 
-import { ColumnDef } from "@tanstack/react-table"
+import { type ColumnDef } from "@tanstack/react-table"
 import type { Tenant } from "@/types/models/tenant";
 import type { TenantConfig } from "@/services/api/tenants.service";
 import { Badge } from "@/components/ui/badge";

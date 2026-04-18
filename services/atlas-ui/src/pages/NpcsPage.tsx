@@ -75,7 +75,7 @@ function NpcsPageContent() {
   const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
   const [isDeleteAllShopsDialogOpen, setIsDeleteAllShopsDialogOpen] = useState(false);
   const [isBulkUpdateShopDialogOpen, setIsBulkUpdateShopDialogOpen] = useState(false);
-  const [selectedNpcId, setSelectedNpcId] = useState<number | null>(null);
+  const [selectedNpcId, _setSelectedNpcId] = useState<number | null>(null);
   const [createShopJson, setCreateShopJson] = useState("");
   const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 

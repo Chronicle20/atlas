@@ -1,11 +1,11 @@
 
-import { ColumnDef } from "@tanstack/react-table";
+import { type ColumnDef } from "@tanstack/react-table";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Eye, Trash2, Clock } from "lucide-react";
 import { BanTypeBadge } from "@/components/features/bans/BanTypeBadge";
 import { BanStatusBadge } from "@/components/features/bans/BanStatusBadge";
-import { Ban, BanReasonCodeLabels, isZeroTime, isBanActive } from "@/types/models/ban";
+import { type Ban, BanReasonCodeLabels, isZeroTime, isBanActive } from "@/types/models/ban";
 
 interface ColumnProps {
     onView?: (ban: Ban) => void;

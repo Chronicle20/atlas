@@ -318,7 +318,7 @@ export function useDeleteConversation(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, tenant, options }) =>
+    mutationFn: ({ id, options }) =>
       conversationsService.delete(id, options),
     onMutate: async ({ tenant, id }) => {
       // Cancel any outgoing refetches for this conversation
@@ -339,7 +339,7 @@ export function useDeleteConversation(): UseMutationResult<
       }
       console.error('Failed to delete conversation:', error);
     },
-    onSettled: (data, error, { tenant, id }) => {
+    onSettled: (_data, _error, { tenant, id }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });
@@ -443,7 +443,7 @@ export function useDeleteConversationsBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ ids, tenant, options, batchOptions }) =>
+    mutationFn: ({ ids, options, batchOptions }) =>
       conversationsService.deleteBatch(ids, options, batchOptions),
     onMutate: async ({ tenant, ids }) => {
       // Cancel outgoing refetches for affected conversations
@@ -478,7 +478,7 @@ export function useDeleteConversationsBatch(): UseMutationResult<
       }
       console.error('Failed to delete conversations batch:', error);
     },
-    onSettled: (data, error, { tenant, ids }) => {
+    onSettled: (_data, _error, { tenant, ids }) => {
       // Invalidate all conversation-related queries
       queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       queryClient.invalidateQueries({ queryKey: conversationKeys.byNpc() });

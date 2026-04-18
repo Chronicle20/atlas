@@ -64,23 +64,23 @@ export interface MapMonsterData {
 }
 
 class MapEntitiesService {
-  async getPortals(mapId: string, tenant: Tenant): Promise<MapPortalData[]> {
+  async getPortals(mapId: string, _tenant: Tenant): Promise<MapPortalData[]> {
     return api.getList<MapPortalData>(`/api/data/maps/${mapId}/portals`);
   }
 
-  async getPortal(mapId: string, portalId: string, tenant: Tenant): Promise<MapPortalData> {
+  async getPortal(mapId: string, portalId: string, _tenant: Tenant): Promise<MapPortalData> {
     return api.getOne<MapPortalData>(`/api/data/maps/${mapId}/portals/${portalId}`);
   }
 
-  async getNpcs(mapId: string, tenant: Tenant): Promise<MapNpcData[]> {
+  async getNpcs(mapId: string, _tenant: Tenant): Promise<MapNpcData[]> {
     return api.getList<MapNpcData>(`/api/data/maps/${mapId}/npcs`);
   }
 
-  async getReactors(mapId: string, tenant: Tenant): Promise<MapReactorData[]> {
+  async getReactors(mapId: string, _tenant: Tenant): Promise<MapReactorData[]> {
     return api.getList<MapReactorData>(`/api/data/maps/${mapId}/reactors`);
   }
 
-  async getMonsters(mapId: string, tenant: Tenant): Promise<MapMonsterData[]> {
+  async getMonsters(mapId: string, _tenant: Tenant): Promise<MapMonsterData[]> {
     return api.getList<MapMonsterData>(`/api/data/maps/${mapId}/monsters`);
   }
 }

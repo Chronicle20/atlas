@@ -1,6 +1,4 @@
-'use client';
-
-import React, { useCallback } from 'react';
+import { useCallback } from 'react';
 import { Trash2, Plus } from 'lucide-react';
 
 export interface CraftActionData {

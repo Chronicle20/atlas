@@ -1,4 +1,4 @@
-import {FieldValues, Path, PathValue, UseFormReturn, useWatch} from "react-hook-form";
+import {type FieldValues, type Path, type PathValue, type UseFormReturn, useWatch} from "react-hook-form";
 import {useState} from "react";
 import {FormLabel} from "@/components/ui/form";
 import {Button} from "@/components/ui/button";

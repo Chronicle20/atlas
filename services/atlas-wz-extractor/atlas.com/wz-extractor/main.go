@@ -6,6 +6,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-wz-extractor/tracing"
 	"os"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -57,6 +58,8 @@ func main() {
 		WithWaitGroup(tdm.WaitGroup()).
 		SetBasePath("/api/").
 		SetPort(os.Getenv("REST_PORT")).
+		SetReadTimeout(60 * time.Minute).
+		SetWriteTimeout(60 * time.Minute).
 		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup(), extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir})(GetServer())).
 		Run()
 

@@ -4,6 +4,7 @@ import (
 	"atlas-data/rest"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/gorilla/mux"
@@ -37,10 +38,31 @@ func handleGetMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 			}
 
 			query := r.URL.Query()
+			searchQuery := query.Get("search")
+			if searchQuery != "" {
+				results = filterMonsters(results, searchQuery, 50)
+			}
+
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
+}
+
+func filterMonsters(monsters []RestModel, search string, limit int) []RestModel {
+	searchLower := strings.ToLower(search)
+	results := make([]RestModel, 0)
+	for _, m := range monsters {
+		if strings.HasPrefix(strconv.Itoa(int(m.Id)), search) {
+			results = append(results, m)
+		} else if strings.Contains(strings.ToLower(m.Name), searchLower) {
+			results = append(results, m)
+		}
+		if len(results) >= limit {
+			break
+		}
+	}
+	return results
 }
 
 func handleGetMonsterRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

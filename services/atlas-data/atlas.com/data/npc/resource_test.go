@@ -1,7 +1,6 @@
 package npc
 
 import (
-	"atlas-data/document"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,6 +20,16 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type testSearchIndexEntity struct {
+	TenantId  uuid.UUID `gorm:"type:text;primaryKey"`
+	NpcId     uint32    `gorm:"primaryKey"`
+	Name      string    `gorm:"not null"`
+	Storebank bool      `gorm:"not null;default:false"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testSearchIndexEntity) TableName() string { return "npc_search_index" }
 
 // testDocumentEntity is a test-compatible version of document.Entity without PostgreSQL-specific defaults
 type testDocumentEntity struct {
@@ -84,7 +93,7 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&testDocumentEntity{})
+	err = db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{})
 	require.NoError(t, err)
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
@@ -153,7 +162,7 @@ func setupTestNpcData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	require.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	storage := document.NewStorage(l, db, GetModelRegistry(), "NPC")
+	storage := NewStorage(l, db)
 	for _, n := range npcs {
 		_, err := storage.Add(ctx)(n)()
 		require.NoError(t, err)

@@ -2,11 +2,14 @@ package npc
 
 import (
 	"atlas-data/rest"
+	"atlas-data/searchindex"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -25,37 +28,43 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 	}
 }
 
+type SearchResultRestModel struct {
+	Id        uint32 `json:"-"`
+	Name      string `json:"name"`
+	Storebank bool   `json:"storebank"`
+}
+
+func (r SearchResultRestModel) GetName() string { return "npcs" }
+func (r SearchResultRestModel) GetID() string   { return strconv.Itoa(int(r.Id)) }
+
+func (r *SearchResultRestModel) SetID(idStr string) error {
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 func handleGetNpcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			s := NewStorage(d.Logger(), db)
-
-			// Check for storebank filter
 			query := r.URL.Query()
-			storebankFilter := query.Get("filter[storebank]")
+			searchQuery := strings.TrimSpace(query.Get("search"))
+			_, hasSearch := query["search"]
+			storebankFilter := query.Get("filter[storebank]") == "true"
 
+			if hasSearch || storebankFilter {
+				handleSearchNpcs(db)(d, c)(searchQuery, hasSearch, storebankFilter, query.Get("limit"))(w, r)
+				return
+			}
+
+			s := NewStorage(d.Logger(), db)
 			results, err := s.GetAll(d.Context())
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Unable to retrieve NPCs.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
-			}
-
-			// Apply storebank filter if specified
-			if storebankFilter == "true" {
-				filtered := make([]RestModel, 0)
-				for _, n := range results {
-					if n.Storebank {
-						filtered = append(filtered, n)
-					}
-				}
-				results = filtered
-			}
-
-			// Apply search filter if specified
-			searchQuery := query.Get("search")
-			if searchQuery != "" {
-				results = filterNpcs(results, searchQuery, 50)
 			}
 
 			queryParams := jsonapi.ParseQueryFields(&query)
@@ -64,20 +73,78 @@ func handleGetNpcsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 	}
 }
 
-func filterNpcs(npcs []RestModel, search string, limit int) []RestModel {
-	searchLower := strings.ToLower(search)
-	results := make([]RestModel, 0)
-	for _, npc := range npcs {
-		if strings.HasPrefix(strconv.Itoa(int(npc.Id)), search) {
-			results = append(results, npc)
-		} else if strings.Contains(strings.ToLower(npc.Name), searchLower) {
-			results = append(results, npc)
-		}
-		if len(results) >= limit {
-			break
+func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
+		return func(q string, hasSearch, storebank bool, limitRaw string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				if hasSearch && q == "" {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if len(q) > searchindex.MaxQueryLen {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				limit := searchindex.MaxLimit
+				if limitRaw != "" {
+					parsed, err := strconv.Atoi(limitRaw)
+					if err != nil || parsed <= 0 {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					if parsed > searchindex.MaxLimit {
+						parsed = searchindex.MaxLimit
+					}
+					limit = parsed
+				}
+
+				spec := searchindex.QuerySpec[SearchIndexEntity]{
+					EntityIdColumn: "npc_id",
+					NameColumns:    []string{"name"},
+					Order:          "name ASC, npc_id ASC",
+					IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.NpcId) },
+				}
+				if storebank {
+					spec.ExtraPredicate = "storebank = ?"
+					spec.ExtraArgs = []interface{}{true}
+				}
+
+				start := time.Now()
+				var rows []SearchIndexEntity
+				var err error
+				if hasSearch {
+					rows, err = searchindex.Search(db, d.Context(), q, limit, spec)
+				} else {
+					rows, err = searchindex.SearchWithFilter(db, d.Context(), limit, spec)
+				}
+				elapsedMs := time.Since(start).Milliseconds()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("NPC search failed.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				if t, terr := tenant.FromContext(d.Context())(); terr == nil {
+					d.Logger().WithFields(logrus.Fields{
+						"tenant_id":  t.Id().String(),
+						"query_len":  len(q),
+						"result_ct":  len(rows),
+						"elapsed_ms": elapsedMs,
+						"storebank":  storebank,
+					}).Debugf("NPC search served.")
+				}
+
+				rms := make([]SearchResultRestModel, 0, len(rows))
+				for _, row := range rows {
+					rms = append(rms, SearchResultRestModel{Id: row.NpcId, Name: row.Name, Storebank: row.Storebank})
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			}
 		}
 	}
-	return results
 }
 
 func handleGetNpcRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

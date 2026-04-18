@@ -2,11 +2,14 @@ package reactor
 
 import (
 	"atlas-data/rest"
+	"atlas-data/searchindex"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
@@ -25,9 +28,33 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 	}
 }
 
+type SearchResultRestModel struct {
+	Id   uint32 `json:"-"`
+	Name string `json:"name"`
+}
+
+func (r SearchResultRestModel) GetName() string { return "reactors" }
+func (r SearchResultRestModel) GetID() string   { return strconv.Itoa(int(r.Id)) }
+
+func (r *SearchResultRestModel) SetID(idStr string) error {
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
+}
+
 func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
+			query := r.URL.Query()
+			searchQuery := strings.TrimSpace(query.Get("search"))
+			if _, hasSearch := query["search"]; hasSearch {
+				handleSearchReactors(db)(d, c)(searchQuery, query.Get("limit"))(w, r)
+				return
+			}
+
 			s := NewStorage(d.Logger(), db)
 			results, err := s.GetAll(d.Context())
 			if err != nil {
@@ -36,33 +63,71 @@ func handleGetReactorsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *re
 				return
 			}
 
-			query := r.URL.Query()
-
-			searchQuery := query.Get("search")
-			if searchQuery != "" {
-				results = filterReactors(results, searchQuery, 50)
-			}
-
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}
 	}
 }
 
-func filterReactors(reactors []RestModel, search string, limit int) []RestModel {
-	searchLower := strings.ToLower(search)
-	results := make([]RestModel, 0)
-	for _, reactor := range reactors {
-		if strings.HasPrefix(strconv.Itoa(int(reactor.Id)), search) {
-			results = append(results, reactor)
-		} else if strings.Contains(strings.ToLower(reactor.Name), searchLower) {
-			results = append(results, reactor)
-		}
-		if len(results) >= limit {
-			break
+func handleSearchReactors(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) func(q, limitRaw string) http.HandlerFunc {
+		return func(q, limitRaw string) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				if q == "" {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				if len(q) > searchindex.MaxQueryLen {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+				limit := searchindex.MaxLimit
+				if limitRaw != "" {
+					parsed, err := strconv.Atoi(limitRaw)
+					if err != nil || parsed <= 0 {
+						w.WriteHeader(http.StatusBadRequest)
+						return
+					}
+					if parsed > searchindex.MaxLimit {
+						parsed = searchindex.MaxLimit
+					}
+					limit = parsed
+				}
+
+				start := time.Now()
+				rows, err := searchindex.Search(db, d.Context(), q, limit, searchindex.QuerySpec[SearchIndexEntity]{
+					EntityIdColumn: "reactor_id",
+					NameColumns:    []string{"name"},
+					Order:          "name ASC, reactor_id ASC",
+					IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.ReactorId) },
+				})
+				elapsedMs := time.Since(start).Milliseconds()
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Reactor search failed.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				if t, terr := tenant.FromContext(d.Context())(); terr == nil {
+					d.Logger().WithFields(logrus.Fields{
+						"tenant_id":  t.Id().String(),
+						"query_len":  len(q),
+						"result_ct":  len(rows),
+						"elapsed_ms": elapsedMs,
+					}).Debugf("Reactor search served.")
+				}
+
+				rms := make([]SearchResultRestModel, 0, len(rows))
+				for _, row := range rows {
+					rms = append(rms, SearchResultRestModel{Id: row.ReactorId, Name: row.Name})
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			}
 		}
 	}
-	return results
 }
 
 func handleGetReactorRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {

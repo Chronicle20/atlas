@@ -3,20 +3,18 @@ package _map
 import (
 	"context"
 	"strconv"
-	"strings"
+
+	"atlas-data/searchindex"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
 const (
-	SearchMaxQueryLen = 128
-	SearchMaxLimit    = 50
+	SearchMaxQueryLen = searchindex.MaxQueryLen
+	SearchMaxLimit    = searchindex.MaxLimit
 )
 
 type SearchResult struct {
@@ -25,78 +23,25 @@ type SearchResult struct {
 	StreetName string
 }
 
-func SearchByQuery(l logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
+func SearchByQuery(_ logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
 	return func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
 		return func(q string, limit int) ([]SearchResult, error) {
-			t := tenant.MustFromContext(ctx)
-			bypass := database.WithoutTenantFilter(ctx)
-
-			results, seen, err := runTenantQueries(db, bypass, t.Id(), q, limit)
+			rows, err := searchindex.Search[SearchIndexEntity](db, ctx, q, limit, searchindex.QuerySpec[SearchIndexEntity]{
+				EntityIdColumn: "map_id",
+				NameColumns:    []string{"name", "street_name"},
+				Order:          "name ASC, map_id ASC",
+				IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.MapId) },
+			})
 			if err != nil {
 				return nil, err
 			}
-			if len(results) >= limit {
-				return results[:limit], nil
+			out := make([]SearchResult, 0, len(rows))
+			for _, r := range rows {
+				out = append(out, SearchResult{Id: r.MapId, Name: r.Name, StreetName: r.StreetName})
 			}
-
-			globalResults, _, err := runTenantQueries(db, bypass, uuid.Nil, q, limit)
-			if err != nil {
-				return nil, err
-			}
-			for _, gr := range globalResults {
-				if _, ok := seen[gr.Id]; ok {
-					continue
-				}
-				results = append(results, gr)
-				if len(results) >= limit {
-					break
-				}
-			}
-			return results, nil
+			return out, nil
 		}
 	}
-}
-
-func runTenantQueries(db *gorm.DB, ctx context.Context, tenantId uuid.UUID, q string, limit int) ([]SearchResult, map[uint32]struct{}, error) {
-	seen := make(map[uint32]struct{})
-	results := make([]SearchResult, 0, limit)
-
-	if numeric, err := strconv.Atoi(q); err == nil {
-		var row SearchIndexEntity
-		exactErr := db.WithContext(ctx).
-			Where("tenant_id = ? AND map_id = ?", tenantId, uint32(numeric)).
-			Take(&row).Error
-		if exactErr == nil {
-			results = append(results, SearchResult{Id: row.MapId, Name: row.Name, StreetName: row.StreetName})
-			seen[row.MapId] = struct{}{}
-		}
-	}
-
-	if len(results) >= limit {
-		return results, seen, nil
-	}
-
-	pattern := "%" + strings.ToLower(q) + "%"
-	var rows []SearchIndexEntity
-	err := db.WithContext(ctx).
-		Where("tenant_id = ? AND (LOWER(name) LIKE ? OR LOWER(street_name) LIKE ?)", tenantId, pattern, pattern).
-		Order("name ASC, map_id ASC").
-		Limit(limit).
-		Find(&rows).Error
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, r := range rows {
-		if _, ok := seen[r.MapId]; ok {
-			continue
-		}
-		results = append(results, SearchResult{Id: r.MapId, Name: r.Name, StreetName: r.StreetName})
-		seen[r.MapId] = struct{}{}
-		if len(results) >= limit {
-			break
-		}
-	}
-	return results, seen, nil
 }
 
 type SearchResultRestModel struct {

@@ -1,64 +1,29 @@
-
-import {useEffect, useState} from "react"
-import { useParams } from "react-router-dom";
-import {Badge} from "@/components/ui/badge"
-import {DataTableWrapper} from "@/components/common/DataTableWrapper"
-import {Toaster} from "@/components/ui/sonner"
-import {guildsService} from "@/services/api/guilds.service";
-import {Guild, GuildMember, GuildTitle} from "@/types/models/guild";
-import {ColumnDef} from "@tanstack/react-table";
-import {useTenant} from "@/context/tenant-context";
-import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
-import {getJobNameById} from "@/lib/jobs";
-import {Tooltip, TooltipContent, TooltipProvider, TooltipTrigger} from "@/components/ui/tooltip";
-import { Link } from "react-router-dom";
-import {TenantConfig} from "@/types/models/tenant";
+import { useParams, Link } from "react-router-dom";
+import { Badge } from "@/components/ui/badge";
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
+import { Toaster } from "@/components/ui/sonner";
+import { useGuild } from "@/lib/hooks/api/useGuilds";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import type { GuildMember, GuildTitle } from "@/types/models/guild";
+import type { ColumnDef } from "@tanstack/react-table";
+import { useTenant } from "@/context/tenant-context";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getJobNameById } from "@/lib/jobs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PageLoader, ErrorDisplay } from "@/components/common";
 
 export function GuildDetailPage() {
-    const {id} = useParams()
-    const {activeTenant, fetchTenantConfiguration} = useTenant()
+    const { id } = useParams();
+    const { activeTenant } = useTenant();
+    const guildQuery = useGuild(activeTenant!, id ?? "");
+    const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
-    const [guild, setGuild] = useState<Guild | null>(null)
-    const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const guild = guildQuery.data ?? null;
+    const tenantConfig = tenantConfigQuery.data ?? null;
+    const loading = guildQuery.isLoading || tenantConfigQuery.isLoading;
+    const error = guildQuery.error?.message ?? tenantConfigQuery.error?.message ?? null;
 
-    useEffect(() => {
-        if (!activeTenant || !id) return
-
-        let cancelled = false
-
-        setLoading(true)
-
-        // Fetch both guild data and tenant configuration
-        Promise.all([
-            guildsService.getById(activeTenant, String(id)),
-            fetchTenantConfiguration(activeTenant.id)
-        ])
-            .then(([guildData, tenantConfigData]) => {
-                if (!cancelled) {
-                    setGuild(guildData)
-                    setTenantConfig(tenantConfigData)
-                }
-            })
-            .catch((err) => {
-                if (!cancelled) {
-                    setError(err.message)
-                }
-            })
-            .finally(() => {
-                if (!cancelled) {
-                    setLoading(false)
-                }
-            })
-
-        return () => {
-            cancelled = true
-        }
-    }, [activeTenant, id, fetchTenantConfiguration])
-
-    if (loading) return <PageLoader />
+    if (loading) return <PageLoader />;
     if (error || !guild || !tenantConfig) return <ErrorDisplay error={error || "Guild or tenant configuration not found"} className="p-4" />;
 
     return (

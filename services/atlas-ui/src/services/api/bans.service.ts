@@ -90,8 +90,6 @@ class BansService extends BaseService {
      * Get all bans for a specific tenant with optional type filter
      */
     async getAllBans(tenant: Tenant, options?: BanQueryOptions): Promise<Ban[]> {
-        api.setTenant(tenant);
-
         let url = this.basePath;
         if (options?.type !== undefined) {
             url += `?type=${options.type}`;
@@ -105,7 +103,6 @@ class BansService extends BaseService {
      * Get ban by ID for a specific tenant
      */
     async getBanById(tenant: Tenant, id: string, options?: ServiceOptions): Promise<Ban> {
-        api.setTenant(tenant);
         return this.getById<Ban>(id, options);
     }
 
@@ -113,7 +110,6 @@ class BansService extends BaseService {
      * Check if a ban exists for a specific tenant
      */
     async banExists(tenant: Tenant, id: string, options?: ServiceOptions): Promise<boolean> {
-        api.setTenant(tenant);
         return this.exists(id, options);
     }
 
@@ -121,8 +117,6 @@ class BansService extends BaseService {
      * Create a new ban
      */
     async createBan(tenant: Tenant, data: CreateBanRequest, options?: ServiceOptions): Promise<Ban> {
-        api.setTenant(tenant);
-
         // Validate the data
         const validationErrors = this.validate(data);
         if (validationErrors.length > 0) {
@@ -137,7 +131,6 @@ class BansService extends BaseService {
      * Delete a ban by ID
      */
     async deleteBan(tenant: Tenant, id: string, options?: ServiceOptions): Promise<void> {
-        api.setTenant(tenant);
         return this.delete(id, options);
     }
 
@@ -145,7 +138,6 @@ class BansService extends BaseService {
      * Expire a ban early by setting its expiresAt to the current time
      */
     async expireBan(tenant: Tenant, id: string, options?: ServiceOptions): Promise<void> {
-        api.setTenant(tenant);
         await api.post(`${this.basePath}/${id}/expire`, {}, options);
     }
 
@@ -153,8 +145,6 @@ class BansService extends BaseService {
      * Check if a value is banned (IP, HWID, or account ID)
      */
     async checkBan(tenant: Tenant, params: CheckBanParams, options?: ServiceOptions): Promise<CheckBanResult> {
-        api.setTenant(tenant);
-
         const queryParams = new URLSearchParams();
         if (params.ip) queryParams.append('ip', params.ip);
         if (params.hwid) queryParams.append('hwid', params.hwid);

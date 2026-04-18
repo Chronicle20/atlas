@@ -129,8 +129,6 @@ class NpcsService extends BaseService {
     try {
       // Set tenant context for API calls
       const { api } = await import('@/lib/api/client');
-      api.setTenant(tenant);
-
       // Fetch NPCs with shops
       const shops = await api.getList<Shop>('/api/shops', this.processServiceOptions(options));
       
@@ -191,7 +189,6 @@ class NpcsService extends BaseService {
    */
   async searchNpcs(query: string, tenant: Tenant): Promise<NpcSearchResult[]> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
     const npcs = await api.getList<{ id: string; attributes: { name: string } }>(
       `/api/data/npcs?search=${encodeURIComponent(query)}`,
     );
@@ -206,8 +203,6 @@ class NpcsService extends BaseService {
    */
   async getNPCShop(npcId: number, tenant: Tenant, options?: ServiceOptions): Promise<ShopResponse> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-    
     const processedOptions = this.processServiceOptions(options);
     return api.get<ShopResponse>(`${this.basePath}/${npcId}/shop?include=commodities`, processedOptions);
   }
@@ -223,8 +218,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<Shop> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-
     // Validate commodities
     if (options?.validate !== false) {
       for (const commodity of commodities) {
@@ -286,8 +279,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<Shop> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-
     // Validate commodities
     if (options?.validate !== false) {
       for (const commodity of commodities) {
@@ -348,8 +339,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<Commodity> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-
     const input: CreateCommodityInput = {
       data: {
         type: 'commodities',
@@ -378,8 +367,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<Commodity> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-
     const input: UpdateCommodityInput = {
       data: {
         type: 'commodities',
@@ -407,8 +394,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<void> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-    
     const processedOptions = this.processServiceOptions(options);
     return api.delete(
       `${this.basePath}/${npcId}/shop/relationships/commodities/${commodityId}`, 
@@ -425,8 +410,6 @@ class NpcsService extends BaseService {
     options?: ServiceOptions
   ): Promise<void> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-    
     const processedOptions = this.processServiceOptions(options);
     return api.delete(
       `${this.basePath}/${npcId}/shop/relationships/commodities`, 
@@ -439,8 +422,6 @@ class NpcsService extends BaseService {
    */
   async deleteAllShops(tenant: Tenant, options?: ServiceOptions): Promise<void> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
-    
     const processedOptions = this.processServiceOptions(options);
     return api.delete('/api/shops', processedOptions);
   }
@@ -498,7 +479,6 @@ class NpcsService extends BaseService {
    */
   async getNpcName(npcId: number, tenant: Tenant): Promise<string> {
     const { api } = await import('@/lib/api/client');
-    api.setTenant(tenant);
     const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
     return npc.attributes.name;
   }

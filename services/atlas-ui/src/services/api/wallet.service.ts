@@ -7,7 +7,6 @@ class WalletService extends BaseService {
   protected basePath = '/api/accounts';
 
   async getWallet(tenant: Tenant, accountId: string, options?: ServiceOptions): Promise<Wallet> {
-    api.setTenant(tenant);
     const processedOptions = options ? { ...options } : {};
     return api.getOne<Wallet>(`${this.basePath}/${accountId}/wallet`, processedOptions);
   }
@@ -20,7 +19,6 @@ class WalletService extends BaseService {
     prepaid: number,
     options?: ServiceOptions
   ): Promise<Wallet> {
-    api.setTenant(tenant);
     const body = {
       data: {
         type: 'wallets',

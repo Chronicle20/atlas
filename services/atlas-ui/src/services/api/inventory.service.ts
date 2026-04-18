@@ -164,8 +164,6 @@ class InventoryService {
    */
   async getInventory(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Use the API client to fetch inventory - use get() instead of getOne() to preserve included array
     return api.get<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
   }
@@ -181,8 +179,6 @@ class InventoryService {
     options?: ServiceOptions
   ): Promise<void> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Use the API client to delete the asset
     return api.delete(
       `${this.basePath}/${characterId}/inventory/compartments/${compartmentId}/assets/${assetId}`,
@@ -195,8 +191,6 @@ class InventoryService {
    */
   async getCompartments(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Compartment[]> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Fetch full inventory and extract compartments
     const inventoryResponse = await this.getInventory(tenant, characterId, options);
     
@@ -216,8 +210,6 @@ class InventoryService {
     options?: ServiceOptions
   ): Promise<Asset[]> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Fetch full inventory
     const inventoryResponse = await this.getInventory(tenant, characterId, options);
     
@@ -246,8 +238,6 @@ class InventoryService {
   ): Promise<boolean> {
     try {
       // Set tenant for this request
-      api.setTenant(tenant);
-      
       // Fetch full inventory
       const inventoryResponse = await this.getInventory(tenant, characterId, options);
       
@@ -275,8 +265,6 @@ class InventoryService {
     }>;
   }> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Fetch full inventory
     const inventoryResponse = await this.getInventory(tenant, characterId, options);
     

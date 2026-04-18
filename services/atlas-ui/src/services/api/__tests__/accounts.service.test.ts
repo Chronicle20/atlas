@@ -195,7 +195,6 @@ describe('AccountsService', () => {
 
       const result = await accountsService.getAllAccounts(mockTenant);
 
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
       expect(mockApi.getList).toHaveBeenCalledWith('/api/accounts', expect.any(Object));
       expect(result).toHaveLength(2);
       // Check if sorted by name (anotheruser should come before testuser)
@@ -233,7 +232,6 @@ describe('AccountsService', () => {
 
       const result = await accountsService.getAccountById(mockTenant, 'account-1');
 
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
       expect(mockApi.getOne).toHaveBeenCalledWith('/api/accounts/account-1', expect.any(Object));
       expect(result).toEqual(mockAccount);
     });
@@ -245,7 +243,6 @@ describe('AccountsService', () => {
 
       const result = await accountsService.accountExists(mockTenant, 'account-1');
 
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
       expect(result).toBe(true);
     });
 
@@ -304,7 +301,6 @@ describe('AccountsService', () => {
 
       await accountsService.terminateAccountSession(mockTenant, 'account-1');
 
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
       expect(mockApi.delete).toHaveBeenCalledWith('/api/accounts/account-1/session', expect.any(Object));
     });
   });
@@ -348,7 +344,6 @@ describe('AccountsService', () => {
 
       const result = await accountsService.terminateMultipleSessions(mockTenant, ['account-1', 'account-2']);
 
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
       expect(mockApi.delete).toHaveBeenCalledTimes(2);
       expect(result.successful).toEqual(['account-1', 'account-2']);
       expect(result.failed).toHaveLength(0);
@@ -373,7 +368,6 @@ describe('AccountsService', () => {
 
       expect(mockApi.delete).toHaveBeenCalledTimes(10);
       // Verify batch processing by checking that not all calls happen simultaneously
-      expect(mockApi.setTenant).toHaveBeenCalledWith(mockTenant);
     });
   });
 

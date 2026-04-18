@@ -15,8 +15,6 @@ class CharactersService {
    */
   async getAll(tenant: Tenant, options?: ServiceOptions): Promise<Character[]> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Use the API client to fetch characters
     return api.getList<Character>(this.basePath, options);
   }
@@ -26,8 +24,6 @@ class CharactersService {
    */
   async getById(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Character> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Use the API client to fetch a single character
     return api.getOne<Character>(`${this.basePath}/${characterId}`, options);
   }
@@ -36,7 +32,6 @@ class CharactersService {
    * Delete a character permanently
    */
   async deleteCharacter(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<void> {
-    api.setTenant(tenant);
     return api.delete(`${this.basePath}/${characterId}`, options);
   }
 
@@ -45,8 +40,6 @@ class CharactersService {
    */
   async update(tenant: Tenant, characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
     // Set tenant for this request
-    api.setTenant(tenant);
-    
     // Prepare the JSON:API formatted request body
     const requestBody = {
       data: {

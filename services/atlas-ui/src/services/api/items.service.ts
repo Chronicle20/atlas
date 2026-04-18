@@ -17,7 +17,6 @@ class ItemsService extends BaseService {
   protected basePath = '/api/data/item-strings';
 
   async searchItems(query: string, tenant: Tenant, options?: QueryOptions): Promise<ItemSearchResult[]> {
-    api.setTenant(tenant);
     const searchOptions: QueryOptions = {
       ...options,
       search: query,
@@ -32,33 +31,27 @@ class ItemsService extends BaseService {
   }
 
   async getItemName(itemId: string, tenant: Tenant): Promise<string> {
-    api.setTenant(tenant);
     const item = await this.getById<ItemStringData>(itemId);
     return item.attributes.name;
   }
 
   async getEquipment(itemId: string, tenant: Tenant): Promise<EquipmentData> {
-    api.setTenant(tenant);
     return api.getOne<EquipmentData>(`/api/data/equipment/${itemId}`);
   }
 
   async getConsumable(itemId: string, tenant: Tenant): Promise<ConsumableData> {
-    api.setTenant(tenant);
     return api.getOne<ConsumableData>(`/api/data/consumables/${itemId}`);
   }
 
   async getSetup(itemId: string, tenant: Tenant): Promise<SetupData> {
-    api.setTenant(tenant);
     return api.getOne<SetupData>(`/api/data/setups/${itemId}`);
   }
 
   async getEtc(itemId: string, tenant: Tenant): Promise<EtcData> {
-    api.setTenant(tenant);
     return api.getOne<EtcData>(`/api/data/etcs/${itemId}`);
   }
 
   async getCashItem(itemId: string, tenant: Tenant): Promise<CashItemData> {
-    api.setTenant(tenant);
     return api.getOne<CashItemData>(`/api/data/cash/items/${itemId}`);
   }
 

@@ -49,8 +49,6 @@ class QuestStatusService extends BaseService {
         options?: QuestStatusQueryOptions
     ): Promise<CharacterQuestStatus[]> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         const url = `${this.basePath}/${characterId}/quests`;
         const statuses = await api.getList<CharacterQuestStatus>(url, processedOptions);
@@ -72,8 +70,6 @@ class QuestStatusService extends BaseService {
         options?: ServiceOptions
     ): Promise<CharacterQuestStatus[]> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         const url = `${this.basePath}/${characterId}/quests/started`;
         return api.getList<CharacterQuestStatus>(url, processedOptions);
@@ -88,8 +84,6 @@ class QuestStatusService extends BaseService {
         options?: ServiceOptions
     ): Promise<CharacterQuestStatus[]> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         const url = `${this.basePath}/${characterId}/quests/completed`;
         return api.getList<CharacterQuestStatus>(url, processedOptions);
@@ -105,8 +99,6 @@ class QuestStatusService extends BaseService {
         options?: ServiceOptions
     ): Promise<CharacterQuestStatus> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const processedOptions = this.processServiceOptions(options);
         const url = `${this.basePath}/${characterId}/quests/${questId}`;
         return api.getOne<CharacterQuestStatus>(url, processedOptions);
@@ -173,8 +165,6 @@ class QuestStatusService extends BaseService {
         options?: ServiceOptions
     ): Promise<void> {
         const { api } = await import('@/lib/api/client');
-        api.setTenant(tenant);
-
         const url = `${this.basePath}/${characterId}/quests/${questId}/forfeit`;
         await api.post<void>(url, {}, options);
     }

@@ -8,17 +8,14 @@ class GachaponsService extends BaseService {
   protected basePath = '/api/gachapons';
 
   async getAllGachapons(tenant: Tenant, options?: QueryOptions): Promise<GachaponData[]> {
-    api.setTenant(tenant);
     return this.getAll<GachaponData>(options);
   }
 
   async getGachaponById(id: string, tenant: Tenant): Promise<GachaponData> {
-    api.setTenant(tenant);
     return this.getById<GachaponData>(id);
   }
 
   async getPrizePool(gachaponId: string, tenant: Tenant): Promise<GachaponRewardData[]> {
-    api.setTenant(tenant);
     return api.getList<GachaponRewardData>(`${this.basePath}/${gachaponId}/prize-pool`);
   }
 }

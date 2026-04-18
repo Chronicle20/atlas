@@ -7,12 +7,10 @@ class ItemStringsService extends BaseService {
   protected basePath = '/api/data/item-strings';
 
   async getAllItemStrings(tenant: Tenant, options?: QueryOptions): Promise<ItemStringData[]> {
-    api.setTenant(tenant);
     return this.getAll<ItemStringData>(options);
   }
 
   async getItemString(itemId: string, tenant: Tenant): Promise<ItemStringData> {
-    api.setTenant(tenant);
     return this.getById<ItemStringData>(itemId);
   }
 }

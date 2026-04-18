@@ -4,17 +4,14 @@ import type { DropData, ReactorDropData } from '@/types/models/drop';
 
 class DropsService {
   async getMonsterDrops(monsterId: string, tenant: Tenant): Promise<DropData[]> {
-    api.setTenant(tenant);
     return api.getList<DropData>(`/api/monsters/${monsterId}/drops`);
   }
 
   async getReactorDrops(reactorId: string, tenant: Tenant): Promise<ReactorDropData[]> {
-    api.setTenant(tenant);
     return api.getList<ReactorDropData>(`/api/reactors/${reactorId}/drops`);
   }
 
   async getItemDrops(itemId: string, tenant: Tenant): Promise<DropData[]> {
-    api.setTenant(tenant);
     return api.getList<DropData>(`/api/items/${itemId}/drops`);
   }
 }

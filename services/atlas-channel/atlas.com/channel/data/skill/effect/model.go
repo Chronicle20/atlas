@@ -96,3 +96,7 @@ func (m Model) MonsterStatus() map[string]uint32 {
 func (m Model) CureAbnormalStatuses() []string {
 	return m.cureAbnormalStatuses
 }
+
+func (m Model) BulletConsume() uint16 {
+	return m.bulletConsume
+}

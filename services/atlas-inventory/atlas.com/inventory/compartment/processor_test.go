@@ -320,6 +320,121 @@ func TestMergeAndCompactOverflow(t *testing.T) {
 	}
 }
 
+// TestConsumeRechargeablePreservesRow verifies that consuming the final unit of a
+// rechargeable item (throwing stars, bullets) retains the row at qty=0 rather than
+// deleting it — required so players can recharge the empty stack at an NPC shop.
+func TestConsumeRechargeablePreservesRow(t *testing.T) {
+	cases := []struct {
+		name        string
+		characterId uint32
+		templateId  uint32
+	}{
+		{"throwing star", 101, 2070000},
+		{"bullet", 102, 2330000},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			l := testLogger()
+			te := testTenant()
+			ctx := tenant.WithContext(context.Background(), te)
+			db := testDatabase(t, l)
+
+			mb := message.NewBuffer()
+
+			dcpi := &dcp.ProcessorImpl{}
+			dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+				return consumable.Extract(consumable.RestModel{SlotMax: 100})
+			}
+
+			ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+			cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+			if _, err := cp.Create(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, 40); err != nil {
+				t.Fatalf("Failed to create compartment: %v", err)
+			}
+			slot := int16(1)
+			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0); err != nil {
+				t.Fatalf("Failed to create asset: %v", err)
+			}
+
+			txId := uuid.New()
+			if err := cp.RequestReserve(mb)(txId, tc.characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
+				t.Fatalf("Failed to reserve: %v", err)
+			}
+			if err := cp.ConsumeAsset(mb)(txId, tc.characterId, inventory.TypeValueUse, slot); err != nil {
+				t.Fatalf("Failed to consume: %v", err)
+			}
+
+			c, err := cp.GetByCharacterAndType(tc.characterId)(inventory.TypeValueUse)
+			if err != nil {
+				t.Fatalf("Failed to get compartment: %v", err)
+			}
+			found := false
+			for _, a := range c.Assets() {
+				if a.Slot() == slot {
+					found = true
+					if a.Quantity() != 0 {
+						t.Fatalf("%s row should be qty=0 after consume-last, got %d", tc.name, a.Quantity())
+					}
+				}
+			}
+			if !found {
+				t.Fatalf("%s row was deleted — expected to be retained at qty=0", tc.name)
+			}
+		})
+	}
+}
+
+// TestConsumeNonRechargeableDeletes is a regression guard: the delete-at-zero behavior
+// still applies for every non-rechargeable consumable — our change is gated on
+// item.IsRechargeable.
+func TestConsumeNonRechargeableDeletes(t *testing.T) {
+	characterId := uint32(1)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	// 2000000 — classification 200, generic consumable (potion family), not rechargeable.
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	txId := uuid.New()
+	slot := int16(1)
+	if err := cp.RequestReserve(mb)(txId, characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: 2000000, Quantity: 1}}); err != nil {
+		t.Fatalf("Failed to reserve: %v", err)
+	}
+	if err := cp.ConsumeAsset(mb)(txId, characterId, inventory.TypeValueUse, slot); err != nil {
+		t.Fatalf("Failed to consume: %v", err)
+	}
+
+	c, err := cp.GetByCharacterAndType(characterId)(inventory.TypeValueUse)
+	if err != nil {
+		t.Fatalf("Failed to get compartment: %v", err)
+	}
+	for _, a := range c.Assets() {
+		if a.Slot() == slot {
+			t.Fatalf("non-rechargeable row should have been deleted after consume-last")
+		}
+	}
+}
+
 // TestMergeAndCompactGood tests the behavior of the MergeAndCompact function
 // This test verifies that the MergeAndSort function correctly sorts assets by template ID
 func TestMergeAndCompactGood(t *testing.T) {

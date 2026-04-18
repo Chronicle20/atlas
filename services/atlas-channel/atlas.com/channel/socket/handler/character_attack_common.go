@@ -58,6 +58,11 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 					}
 
+					// Compute projectile consumption plan before broadcasting so planner
+					// errors surface before visible side effects. Emission happens post-broadcast.
+					pp := NewProjectileProcessor(l, ctx)
+					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se)
+
 					mp := monster.NewProcessor(l, ctx)
 					for _, di := range ai.DamageInfo() {
 						for _, d := range di.Damages() {
@@ -103,6 +108,15 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						}
 						return nil
 					})
+
+					// Projectile reservation + consume emits run fire-and-forget after the
+					// broadcast. Classic semantics: the projectile is expended the moment the
+					// server accepts the attack, regardless of broadcast success.
+					if hasProjectilePlan {
+						if perr := pp.Emit(s.CharacterId(), projectilePlan); perr != nil {
+							l.WithError(perr).Errorf("Failed to emit projectile consumption for character [%d].", s.CharacterId())
+						}
+					}
 
 					// TODO apply cooldown
 					// TODO cancel dark sight / wind walk

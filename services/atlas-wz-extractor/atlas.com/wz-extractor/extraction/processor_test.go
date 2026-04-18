@@ -22,7 +22,7 @@ func TestRunExtraction_NoWzFiles(t *testing.T) {
 	dir := t.TempDir()
 	p := &processorImpl{inputDir: dir, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(l, dir, t.TempDir(), t.TempDir(), false, false)
+	err := p.runExtraction(context.Background(), l, dir, t.TempDir(), t.TempDir(), false, false)
 	if err == nil {
 		t.Fatal("expected error for empty input directory")
 	}
@@ -34,7 +34,7 @@ func TestRunExtraction_NoWzFiles(t *testing.T) {
 func TestRunExtraction_InvalidInputDir(t *testing.T) {
 	p := &processorImpl{inputDir: "/nonexistent/path/that/should/not/exist", outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(l, "/nonexistent/path/that/should/not/exist", t.TempDir(), t.TempDir(), false, false)
+	err := p.runExtraction(context.Background(), l, "/nonexistent/path/that/should/not/exist", t.TempDir(), t.TempDir(), false, false)
 	if err == nil {
 		t.Fatal("expected error for nonexistent input directory")
 	}
@@ -54,7 +54,7 @@ func TestRunExtraction_NoFallbackToFlatInput(t *testing.T) {
 
 	p := &processorImpl{inputDir: rootInput, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(l, tenantScoped, t.TempDir(), t.TempDir(), false, false)
+	err := p.runExtraction(context.Background(), l, tenantScoped, t.TempDir(), t.TempDir(), false, false)
 	if err == nil {
 		t.Fatal("expected no-WZ-files error despite flat-level fixture")
 	}

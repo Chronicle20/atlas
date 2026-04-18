@@ -26,7 +26,7 @@ export function useQuests(
 ): UseQueryResult<QuestDefinition[], Error> {
   return useQuery({
     queryKey: questKeys.list(tenant, options),
-    queryFn: () => questsService.getAllQuests(tenant!, options),
+    queryFn: () => questsService.getAllQuests( options),
     enabled: !!tenant?.id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -39,7 +39,7 @@ export function useQuestCategories(
 ): UseQueryResult<string[], Error> {
   return useQuery({
     queryKey: questKeys.categories(tenant),
-    queryFn: () => questsService.getCategories(tenant!, options),
+    queryFn: () => questsService.getCategories(options),
     enabled: !!tenant?.id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -53,7 +53,7 @@ export function useQuest(
 ): UseQueryResult<QuestDefinition, Error> {
   return useQuery({
     queryKey: questKeys.detail(tenant, id),
-    queryFn: () => questsService.getQuestById(tenant!, id, options),
+    queryFn: () => questsService.getQuestById( id, options),
     enabled: !!tenant?.id && !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

@@ -60,7 +60,7 @@ export function LoginHistoryPage() {
             if (ip) criteria.ip = ip;
             if (hwid) criteria.hwid = hwid;
             if (accountId) criteria.accountId = Number(accountId);
-            const data = await loginHistoryService.search(activeTenant, criteria);
+            const data = await loginHistoryService.search(criteria);
             setEntries(data);
 
             if (data.length === 0) {

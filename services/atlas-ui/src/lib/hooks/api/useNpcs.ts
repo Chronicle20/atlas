@@ -45,7 +45,7 @@ export function useNPCs(
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.list(tenant, options),
-    queryFn: () => npcsService.getAllNPCs(tenant, { ...options, useCache: false }),
+    queryFn: () => npcsService.getAllNPCs({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (NPC data changes less frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -62,7 +62,7 @@ export function useNPC(
 ): UseQueryResult<NPC | null, Error> {
   return useQuery({
     queryKey: npcKeys.detail(tenant, npcId),
-    queryFn: () => npcsService.getNPCById(npcId, tenant, { ...options, useCache: false }),
+    queryFn: () => npcsService.getNPCById(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -78,7 +78,7 @@ export function useNPCsWithShops(
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withShops(tenant),
-    queryFn: () => npcsService.getNPCsWithShops(tenant, { ...options, useCache: false }),
+    queryFn: () => npcsService.getNPCsWithShops({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -94,7 +94,7 @@ export function useNPCsWithConversations(
 ): UseQueryResult<NPC[], Error> {
   return useQuery({
     queryKey: npcKeys.withConversations(tenant),
-    queryFn: () => npcsService.getNPCsWithConversations(tenant, { ...options, useCache: false }),
+    queryFn: () => npcsService.getNPCsWithConversations({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -111,7 +111,7 @@ export function useNPCShop(
 ): UseQueryResult<ShopResponse, Error> {
   return useQuery({
     queryKey: npcKeys.shop(tenant, npcId),
-    queryFn: () => npcsService.getNPCShop(npcId, tenant, { ...options, useCache: false }),
+    queryFn: () => npcsService.getNPCShop(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
     staleTime: 1 * 60 * 1000, // 1 minute (shop data changes more frequently)
     gcTime: 3 * 60 * 1000,
@@ -139,8 +139,8 @@ export function useCreateShop(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodities, tenant, recharger, options }) => 
-      npcsService.createShop(npcId, commodities, tenant, recharger, options),
+    mutationFn: ({ npcId, commodities, recharger, options }) =>
+      npcsService.createShop(npcId, commodities, recharger, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -171,8 +171,8 @@ export function useUpdateShop(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodities, tenant, recharger, options }) => 
-      npcsService.updateShop(npcId, commodities, tenant, recharger, options),
+    mutationFn: ({ npcId, commodities, recharger, options }) => 
+      npcsService.updateShop(npcId, commodities, recharger, options),
     onMutate: async ({ tenant, npcId }) => {
       // Cancel any outgoing refetches for this shop
       await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -218,8 +218,8 @@ export function useCreateCommodity(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodityAttributes, tenant, options }) => 
-      npcsService.createCommodity(npcId, commodityAttributes, tenant, options),
+    mutationFn: ({ npcId, commodityAttributes, options }) => 
+      npcsService.createCommodity(npcId, commodityAttributes, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate shop data to refresh commodities list
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -248,8 +248,8 @@ export function useUpdateCommodity(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodityId, commodityAttributes, tenant, options }) =>
-      npcsService.updateCommodity(npcId, commodityId, commodityAttributes, tenant, options),
+    mutationFn: ({ npcId, commodityId, commodityAttributes, options }) =>
+      npcsService.updateCommodity(npcId, commodityId, commodityAttributes, options),
     onMutate: async ({ tenant, npcId }) => {
       // Cancel any outgoing refetches for this shop
       await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -290,8 +290,8 @@ export function useDeleteCommodity(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodityId, tenant, options }) => 
-      npcsService.deleteCommodity(npcId, commodityId, tenant, options),
+    mutationFn: ({ npcId, commodityId, options }) => 
+      npcsService.deleteCommodity(npcId, commodityId, options),
     onMutate: async ({ tenant, npcId, commodityId }) => {
       // Cancel any outgoing refetches for this shop
       await queryClient.cancelQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -357,8 +357,8 @@ export function useDeleteAllCommoditiesForNPC(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, tenant, options }) => 
-      npcsService.deleteAllCommoditiesForNPC(npcId, tenant, options),
+    mutationFn: ({ npcId, options }) => 
+      npcsService.deleteAllCommoditiesForNPC(npcId, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -384,8 +384,8 @@ export function useDeleteAllShops(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, options }) => 
-      npcsService.deleteAllShops(tenant, options),
+    mutationFn: ({ options }) => 
+      npcsService.deleteAllShops( options),
     onSuccess: (_data, { tenant }) => {
       // Invalidate all NPC-related queries
       queryClient.invalidateQueries({ queryKey: npcKeys.all });
@@ -413,8 +413,8 @@ export function useCreateCommoditiesBatch(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ npcId, commodities, tenant, options }) => 
-      npcsService.createCommoditiesBatch(npcId, commodities, tenant, options),
+    mutationFn: ({ npcId, commodities, options }) =>
+      npcsService.createCommoditiesBatch(npcId, commodities, options),
     onSuccess: (_data, { tenant, npcId }) => {
       // Invalidate shop data to refresh commodities list
       queryClient.invalidateQueries({ queryKey: npcKeys.shop(tenant, npcId) });
@@ -500,7 +500,7 @@ export function usePrefetchNPCs() {
     prefetchNPCs: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.list(tenant, options),
-        queryFn: () => npcsService.getAllNPCs(tenant, options),
+        queryFn: () => npcsService.getAllNPCs( options),
         staleTime: 2 * 60 * 1000,
       }),
     
@@ -510,7 +510,7 @@ export function usePrefetchNPCs() {
     prefetchNPC: (tenant: Tenant, npcId: number, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.detail(tenant, npcId),
-        queryFn: () => npcsService.getNPCById(npcId, tenant, options),
+        queryFn: () => npcsService.getNPCById(npcId, options),
         staleTime: 2 * 60 * 1000,
       }),
     
@@ -520,7 +520,7 @@ export function usePrefetchNPCs() {
     prefetchShop: (tenant: Tenant, npcId: number, options?: ServiceOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.shop(tenant, npcId),
-        queryFn: () => npcsService.getNPCShop(npcId, tenant, options),
+        queryFn: () => npcsService.getNPCShop(npcId, options),
         staleTime: 1 * 60 * 1000,
       }),
     
@@ -530,7 +530,7 @@ export function usePrefetchNPCs() {
     prefetchWithShops: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.withShops(tenant),
-        queryFn: () => npcsService.getNPCsWithShops(tenant, options),
+        queryFn: () => npcsService.getNPCsWithShops(options),
         staleTime: 2 * 60 * 1000,
       }),
     
@@ -540,7 +540,7 @@ export function usePrefetchNPCs() {
     prefetchWithConversations: (tenant: Tenant, options?: QueryOptions) =>
       queryClient.prefetchQuery({
         queryKey: npcKeys.withConversations(tenant),
-        queryFn: () => npcsService.getNPCsWithConversations(tenant, options),
+        queryFn: () => npcsService.getNPCsWithConversations(options),
         staleTime: 2 * 60 * 1000,
       }),
   };

@@ -135,7 +135,7 @@ describe('useCharacters hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCharacters);
-      expect(mockCharactersService.getAll).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockCharactersService.getAll).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -179,7 +179,7 @@ describe('useCharacters hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCharacter);
-      expect(mockCharactersService.getById).toHaveBeenCalledWith(mockTenant, 'char-123', { useCache: false });
+      expect(mockCharactersService.getById).toHaveBeenCalledWith('char-123', { useCache: false });
     });
 
     it('should not fetch when characterId is not provided', () => {
@@ -201,7 +201,6 @@ describe('useCharacters hooks', () => {
       const { result } = renderHook(() => useUpdateCharacter(), { wrapper });
 
       result.current.mutate({
-        tenant: mockTenant,
         characterId: 'char-123',
         updates: mockUpdateData,
       });
@@ -211,7 +210,6 @@ describe('useCharacters hooks', () => {
       });
 
       expect(mockCharactersService.update).toHaveBeenCalledWith(
-        mockTenant,
         'char-123',
         mockUpdateData
       );
@@ -225,7 +223,6 @@ describe('useCharacters hooks', () => {
       const { result } = renderHook(() => useUpdateCharacter(), { wrapper });
 
       result.current.mutate({
-        tenant: mockTenant,
         characterId: 'char-123',
         updates: mockUpdateData,
       });

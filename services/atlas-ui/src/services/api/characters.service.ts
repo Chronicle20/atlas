@@ -4,7 +4,6 @@
  */
 import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
-import type { Tenant } from '@/types/models/tenant';
 import { api } from '@/lib/api/client';
 
 class CharactersService {
@@ -13,7 +12,7 @@ class CharactersService {
   /**
    * Get all characters for a tenant
    */
-  async getAll(_tenant: Tenant, options?: ServiceOptions): Promise<Character[]> {
+  async getAll(options?: ServiceOptions): Promise<Character[]> {
     // Set tenant for this request
     // Use the API client to fetch characters
     return api.getList<Character>(this.basePath, options);
@@ -22,7 +21,7 @@ class CharactersService {
   /**
    * Get character by ID for a tenant
    */
-  async getById(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Character> {
+  async getById(characterId: string, options?: ServiceOptions): Promise<Character> {
     // Set tenant for this request
     // Use the API client to fetch a single character
     return api.getOne<Character>(`${this.basePath}/${characterId}`, options);
@@ -31,14 +30,14 @@ class CharactersService {
   /**
    * Delete a character permanently
    */
-  async deleteCharacter(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<void> {
+  async deleteCharacter(characterId: string, options?: ServiceOptions): Promise<void> {
     return api.delete(`${this.basePath}/${characterId}`, options);
   }
 
   /**
    * Update existing character with JSON:API format
    */
-  async update(_tenant: Tenant, characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
+  async update(characterId: string, data: UpdateCharacterData, options?: ServiceOptions): Promise<void> {
     // Set tenant for this request
     // Prepare the JSON:API formatted request body
     const requestBody = {

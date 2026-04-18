@@ -55,7 +55,7 @@ export function useInventory(
 ): UseQueryResult<InventoryResponse, Error> {
   return useQuery({
     queryKey: inventoryKeys.inventory(tenant, characterId, options),
-    queryFn: () => inventoryService.getInventory(tenant, characterId, { ...options, useCache: false }),
+    queryFn: () => inventoryService.getInventory( characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000, // 30 seconds (inventory changes frequently)
     gcTime: 2 * 60 * 1000, // 2 minutes
@@ -72,7 +72,7 @@ export function useCompartments(
 ): UseQueryResult<Compartment[], Error> {
   return useQuery({
     queryKey: inventoryKeys.compartmentsList(tenant, characterId, options),
-    queryFn: () => inventoryService.getCompartments(tenant, characterId, { ...options, useCache: false }),
+    queryFn: () => inventoryService.getCompartments(characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -90,7 +90,7 @@ export function useCompartmentAssets(
 ): UseQueryResult<Asset[], Error> {
   return useQuery({
     queryKey: inventoryKeys.compartmentAssetsList(tenant, characterId, compartmentId, options),
-    queryFn: () => inventoryService.getCompartmentAssets(tenant, characterId, compartmentId, { ...options, useCache: false }),
+    queryFn: () => inventoryService.getCompartmentAssets(characterId, compartmentId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId && !!compartmentId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -116,7 +116,7 @@ export function useInventorySummary(
 }, Error> {
   return useQuery({
     queryKey: inventoryKeys.summary(tenant, characterId, options),
-    queryFn: () => inventoryService.getInventorySummary(tenant, characterId, { ...options, useCache: false }),
+    queryFn: () => inventoryService.getInventorySummary(characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -134,7 +134,7 @@ export function useHasAsset(
 ): UseQueryResult<boolean, Error> {
   return useQuery({
     queryKey: inventoryKeys.hasAsset(tenant, characterId, assetId, options),
-    queryFn: () => inventoryService.hasAsset(tenant, characterId, assetId, { ...options, useCache: false }),
+    queryFn: () => inventoryService.hasAsset(characterId, assetId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId && !!assetId,
     staleTime: 30 * 1000,
     gcTime: 2 * 60 * 1000,
@@ -156,8 +156,8 @@ export function useDeleteAsset(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, characterId, compartmentId, assetId, options }) => 
-      inventoryService.deleteAsset(tenant, characterId, compartmentId, assetId, options),
+    mutationFn: ({ characterId, compartmentId, assetId, options }) => 
+      inventoryService.deleteAsset( characterId, compartmentId, assetId, options),
     onMutate: async ({ tenant, characterId, compartmentId, assetId }) => {
       // Cancel any outgoing refetches for inventory-related queries
       await queryClient.cancelQueries({ queryKey: inventoryKeys.inventory(tenant, characterId) });
@@ -269,7 +269,7 @@ export function usePrefetchInventory() {
   return (tenant: Tenant, characterId: string, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: inventoryKeys.inventory(tenant, characterId, options),
-      queryFn: () => inventoryService.getInventory(tenant, characterId, options),
+      queryFn: () => inventoryService.getInventory( characterId, options),
       staleTime: 30 * 1000,
     });
   };
@@ -284,7 +284,7 @@ export function usePrefetchCompartments() {
   return (tenant: Tenant, characterId: string, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: inventoryKeys.compartmentsList(tenant, characterId, options),
-      queryFn: () => inventoryService.getCompartments(tenant, characterId, options),
+      queryFn: () => inventoryService.getCompartments(characterId, options),
       staleTime: 30 * 1000,
     });
   };
@@ -299,7 +299,7 @@ export function usePrefetchCompartmentAssets() {
   return (tenant: Tenant, characterId: string, compartmentId: string, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: inventoryKeys.compartmentAssetsList(tenant, characterId, compartmentId, options),
-      queryFn: () => inventoryService.getCompartmentAssets(tenant, characterId, compartmentId, options),
+      queryFn: () => inventoryService.getCompartmentAssets(characterId, compartmentId, options),
       staleTime: 30 * 1000,
     });
   };

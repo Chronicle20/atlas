@@ -3,7 +3,6 @@
  * Handles all inventory-related API operations with tenant support
  */
 import type { ServiceOptions } from '@/lib/api/query-params';
-import type { Tenant } from '@/types/models/tenant';
 import { api } from '@/lib/api/client';
 
 /**
@@ -164,7 +163,7 @@ class InventoryService {
   /**
    * Fetch inventory data for a character
    */
-  async getInventory(_tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
+  async getInventory(characterId: string, options?: ServiceOptions): Promise<InventoryResponse> {
     // Set tenant for this request
     // Use the API client to fetch inventory - use get() instead of getOne() to preserve included array
     return api.get<InventoryResponse>(`${this.basePath}/${characterId}/inventory`, options);
@@ -174,7 +173,6 @@ class InventoryService {
    * Delete an asset from inventory
    */
   async deleteAsset(
-    _tenant: Tenant,
     characterId: string,
     compartmentId: string,
     assetId: string,
@@ -191,10 +189,10 @@ class InventoryService {
   /**
    * Get inventory compartments for a character
    */
-  async getCompartments(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<Compartment[]> {
+  async getCompartments(characterId: string, options?: ServiceOptions): Promise<Compartment[]> {
     // Set tenant for this request
     // Fetch full inventory and extract compartments
-    const inventoryResponse = await this.getInventory(tenant, characterId, options);
+    const inventoryResponse = await this.getInventory(characterId, options);
     
     // Filter included items to get only compartments
     return inventoryResponse.included?.filter((item): item is Compartment => 
@@ -206,14 +204,13 @@ class InventoryService {
    * Get assets for a specific compartment
    */
   async getCompartmentAssets(
-    tenant: Tenant,
     characterId: string,
     compartmentId: string,
     options?: ServiceOptions
   ): Promise<Asset[]> {
     // Set tenant for this request
     // Fetch full inventory
-    const inventoryResponse = await this.getInventory(tenant, characterId, options);
+    const inventoryResponse = await this.getInventory(characterId, options);
     
     // Find the specific compartment
     const compartment = inventoryResponse.included.find(
@@ -233,7 +230,6 @@ class InventoryService {
    * Check if an asset exists in inventory
    */
   async hasAsset(
-    tenant: Tenant,
     characterId: string,
     assetId: string,
     options?: ServiceOptions
@@ -241,7 +237,7 @@ class InventoryService {
     try {
       // Set tenant for this request
       // Fetch full inventory
-      const inventoryResponse = await this.getInventory(tenant, characterId, options);
+      const inventoryResponse = await this.getInventory(characterId, options);
       
       // Check if asset exists in included items
       return inventoryResponse.included?.some(
@@ -256,7 +252,7 @@ class InventoryService {
   /**
    * Get inventory summary with compartment counts
    */
-  async getInventorySummary(tenant: Tenant, characterId: string, options?: ServiceOptions): Promise<{
+  async getInventorySummary(characterId: string, options?: ServiceOptions): Promise<{
     totalCompartments: number;
     totalAssets: number;
     compartmentSummary: Array<{
@@ -268,7 +264,7 @@ class InventoryService {
   }> {
     // Set tenant for this request
     // Fetch full inventory
-    const inventoryResponse = await this.getInventory(tenant, characterId, options);
+    const inventoryResponse = await this.getInventory(characterId, options);
     
     // Get compartments
     const compartments = inventoryResponse.included?.filter((item): item is Compartment => 

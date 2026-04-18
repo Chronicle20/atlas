@@ -197,7 +197,7 @@ describe.skip('AccountsService', () => {
     it('should fetch all accounts for a tenant and sort them', async () => {
       mockApi.getList.mockResolvedValue(mockAccounts);
 
-      const result = await accountsService.getAllAccounts(mockTenant);
+      const result = await accountsService.getAllAccounts();
 
       expect(mockApi.getList).toHaveBeenCalledWith('/api/accounts', expect.any(Object));
       expect(result).toHaveLength(2);
@@ -209,7 +209,7 @@ describe.skip('AccountsService', () => {
     it('should handle account filtering options', async () => {
       mockApi.getList.mockResolvedValue([mockAccount]);
 
-      await accountsService.getAllAccounts(mockTenant, {
+      await accountsService.getAllAccounts({
         name: 'testuser',
         loggedIn: true,
         language: 'en',
@@ -234,7 +234,7 @@ describe.skip('AccountsService', () => {
     it('should fetch account by ID with tenant context', async () => {
       mockApi.getOne.mockResolvedValue(mockAccount);
 
-      const result = await accountsService.getAccountById(mockTenant, 'account-1');
+      const result = await accountsService.getAccountById( 'account-1');
 
       expect(mockApi.getOne).toHaveBeenCalledWith('/api/accounts/account-1', expect.any(Object));
       expect(result).toEqual(mockAccount);
@@ -245,7 +245,7 @@ describe.skip('AccountsService', () => {
     it('should check if account exists', async () => {
       mockApi.getOne.mockResolvedValue(mockAccount);
 
-      const result = await accountsService.accountExists(mockTenant, 'account-1');
+      const result = await accountsService.accountExists('account-1');
 
       expect(result).toBe(true);
     });
@@ -255,7 +255,7 @@ describe.skip('AccountsService', () => {
       (error as any).status = 404;
       mockApi.getOne.mockRejectedValue(error);
 
-      const result = await accountsService.accountExists(mockTenant, 'non-existent');
+      const result = await accountsService.accountExists('non-existent');
 
       expect(result).toBe(false);
     });
@@ -265,7 +265,7 @@ describe.skip('AccountsService', () => {
     it('should search accounts by name pattern', async () => {
       mockApi.getList.mockResolvedValue([mockAccount]);
 
-      const result = await accountsService.searchAccountsByName(mockTenant, 'test');
+      const result = await accountsService.searchAccountsByName('test');
 
       expect(mockApi.getList).toHaveBeenCalledWith(
         expect.stringContaining('/api/accounts?'),
@@ -303,7 +303,7 @@ describe.skip('AccountsService', () => {
     it('should terminate account session', async () => {
       mockApi.delete.mockResolvedValue(undefined);
 
-      await accountsService.terminateAccountSession(mockTenant, 'account-1');
+      await accountsService.terminateAccountSession( 'account-1');
 
       expect(mockApi.delete).toHaveBeenCalledWith('/api/accounts/account-1/session', expect.any(Object));
     });
@@ -346,7 +346,7 @@ describe.skip('AccountsService', () => {
     it('should terminate multiple sessions successfully', async () => {
       mockApi.delete.mockResolvedValue(undefined);
 
-      const result = await accountsService.terminateMultipleSessions(mockTenant, ['account-1', 'account-2']);
+      const result = await accountsService.terminateMultipleSessions(['account-1', 'account-2']);
 
       expect(mockApi.delete).toHaveBeenCalledTimes(2);
       expect(result.successful).toEqual(['account-1', 'account-2']);
@@ -358,7 +358,7 @@ describe.skip('AccountsService', () => {
         .mockResolvedValueOnce(undefined) // First account succeeds
         .mockRejectedValueOnce(new Error('Session not found')); // Second account fails
 
-      const result = await accountsService.terminateMultipleSessions(mockTenant, ['account-1', 'account-2']);
+      const result = await accountsService.terminateMultipleSessions(['account-1', 'account-2']);
 
       expect(result.successful).toEqual(['account-1']);
       expect(result.failed).toEqual([{ id: 'account-2', error: 'Session not found' }]);
@@ -368,7 +368,7 @@ describe.skip('AccountsService', () => {
       mockApi.delete.mockResolvedValue(undefined);
       const manyAccountIds = Array.from({ length: 10 }, (_, i) => `account-${i + 1}`);
 
-      await accountsService.terminateMultipleSessions(mockTenant, manyAccountIds);
+      await accountsService.terminateMultipleSessions(manyAccountIds);
 
       expect(mockApi.delete).toHaveBeenCalledTimes(10);
       // Verify batch processing by checking that not all calls happen simultaneously

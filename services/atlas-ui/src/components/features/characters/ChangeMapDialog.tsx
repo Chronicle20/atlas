@@ -87,7 +87,7 @@ export function ChangeMapDialog({ character, open, onOpenChange, onSuccess }: Ch
     setIsLoading(true);
     
     try {
-      await charactersService.update(activeTenant, character.id, { mapId: mapIdNumber });
+      await charactersService.update( character.id, { mapId: mapIdNumber });
       toast.success(`Successfully changed ${character.attributes.name}'s map to ${mapIdNumber}`);
       
       // Reset form state on success

@@ -177,7 +177,7 @@ function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount,
     const handleLogout = async () => {
         if (!tenant) return;
         try {
-            await accountsService.terminateAccountSession(tenant, account.id);
+            await accountsService.terminateAccountSession( account.id);
             toast.success("Successfully logged out " + account.attributes.name);
             onRefresh?.();
         } catch (error) {
@@ -189,7 +189,7 @@ function AccountActions({ account, tenant, onRefresh, banStatuses, onBanAccount,
         if (!tenant) return;
         try {
             setDeleting(true);
-            await accountsService.deleteAccount(tenant, account.id);
+            await accountsService.deleteAccount( account.id);
             toast.success("Successfully deleted account " + account.attributes.name);
             onRefresh?.();
         } catch (error) {

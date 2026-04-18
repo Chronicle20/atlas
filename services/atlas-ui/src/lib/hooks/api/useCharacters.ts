@@ -34,7 +34,7 @@ export const characterKeys = {
 export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQueryResult<Character[], Error> {
   return useQuery({
     queryKey: characterKeys.list(tenant, options),
-    queryFn: () => charactersService.getAll(tenant, { ...options, useCache: false }),
+    queryFn: () => charactersService.getAll({ ...options, useCache: false }),
     enabled: !!tenant?.id,
     staleTime: 2 * 60 * 1000, // 2 minutes (characters change more frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
@@ -51,7 +51,7 @@ export function useCharacter(
 ): UseQueryResult<Character, Error> {
   return useQuery({
     queryKey: characterKeys.detail(tenant, characterId),
-    queryFn: () => charactersService.getById(tenant, characterId, { ...options, useCache: false }),
+    queryFn: () => charactersService.getById( characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
@@ -73,8 +73,8 @@ export function useUpdateCharacter(): UseMutationResult<
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ tenant, characterId, updates }) => 
-      charactersService.update(tenant, characterId, updates),
+    mutationFn: ({ characterId, updates }) => 
+      charactersService.update( characterId, updates),
     onMutate: async ({ tenant, characterId, updates }) => {
       // Cancel any outgoing refetches
       await queryClient.cancelQueries({ queryKey: characterKeys.detail(tenant, characterId) });
@@ -146,7 +146,7 @@ export function usePrefetchCharacters() {
   return (tenant: Tenant, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: characterKeys.list(tenant, options),
-      queryFn: () => charactersService.getAll(tenant, options),
+      queryFn: () => charactersService.getAll( options),
       staleTime: 2 * 60 * 1000,
     });
   };
@@ -161,7 +161,7 @@ export function usePrefetchCharacter() {
   return (tenant: Tenant, characterId: string, options?: ServiceOptions) => {
     queryClient.prefetchQuery({
       queryKey: characterKeys.detail(tenant, characterId),
-      queryFn: () => charactersService.getById(tenant, characterId, options),
+      queryFn: () => charactersService.getById( characterId, options),
       staleTime: 2 * 60 * 1000,
     });
   };

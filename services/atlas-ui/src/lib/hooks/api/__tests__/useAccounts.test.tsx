@@ -124,7 +124,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockAccounts);
-      expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -147,7 +147,7 @@ describe('useAccounts hooks', () => {
       );
 
       await waitFor(() => {
-        expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith(mockTenant, { ...options, useCache: false });
+        expect(mockAccountsService.getAllAccounts).toHaveBeenCalledWith({ ...options, useCache: false });
       });
     });
   });
@@ -166,7 +166,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockAccount);
-      expect(mockAccountsService.getAccountById).toHaveBeenCalledWith(mockTenant, 'account-1', { useCache: false });
+      expect(mockAccountsService.getAccountById).toHaveBeenCalledWith('account-1', { useCache: false });
     });
 
     it('should not fetch when tenant or ID is not provided', () => {
@@ -194,7 +194,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toBe(true);
-      expect(mockAccountsService.accountExists).toHaveBeenCalledWith(mockTenant, 'account-1', { useCache: false });
+      expect(mockAccountsService.accountExists).toHaveBeenCalledWith('account-1', { useCache: false });
     });
   });
 
@@ -212,7 +212,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual([mockAccount]);
-      expect(mockAccountsService.searchAccountsByName).toHaveBeenCalledWith(mockTenant, 'test', { useCache: false });
+      expect(mockAccountsService.searchAccountsByName).toHaveBeenCalledWith('test', { useCache: false });
     });
 
     it('should not search with empty pattern', () => {
@@ -241,7 +241,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual(loggedInAccounts);
-      expect(mockAccountsService.getLoggedInAccounts).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockAccountsService.getLoggedInAccounts).toHaveBeenCalledWith({ useCache: false });
     });
   });
 
@@ -259,7 +259,7 @@ describe('useAccounts hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockStats);
-      expect(mockAccountsService.getAccountStats).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockAccountsService.getAccountStats).toHaveBeenCalledWith({ useCache: false });
     });
   });
 
@@ -274,7 +274,6 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
-          tenant: mockTenant,
           accountId: 'account-1',
         });
       });
@@ -284,7 +283,6 @@ describe('useAccounts hooks', () => {
       });
 
       expect(mockAccountsService.terminateAccountSession).toHaveBeenCalledWith(
-        mockTenant,
         'account-1',
         undefined
       );
@@ -301,7 +299,6 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
-          tenant: mockTenant,
           accountId: 'account-1',
         });
       });
@@ -329,7 +326,6 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
-          tenant: mockTenant,
           accountIds: ['account-1', 'account-2'],
         });
       });
@@ -340,7 +336,6 @@ describe('useAccounts hooks', () => {
 
       expect(result.current.data).toEqual(mockResult);
       expect(mockAccountsService.terminateMultipleSessions).toHaveBeenCalledWith(
-        mockTenant,
         ['account-1', 'account-2'],
         undefined
       );

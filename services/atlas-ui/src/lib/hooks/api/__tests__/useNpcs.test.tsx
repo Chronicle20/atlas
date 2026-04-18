@@ -150,7 +150,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs);
-      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockNpcsService.getAllNPCs).toHaveBeenCalledWith({ useCache: false });
     });
 
     it('should not fetch when tenant is not provided', () => {
@@ -193,7 +193,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockNPCs[0]);
-      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, mockTenant, { useCache: false });
+      expect(mockNpcsService.getNPCById).toHaveBeenCalledWith(1, { useCache: false });
     });
 
     it('should return null when NPC is not found', async () => {
@@ -225,7 +225,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(npcsWithShops);
-      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockNpcsService.getNPCsWithShops).toHaveBeenCalledWith({ useCache: false });
     });
   });
 
@@ -243,7 +243,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(npcsWithConversations);
-      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockNpcsService.getNPCsWithConversations).toHaveBeenCalledWith({ useCache: false });
     });
   });
 
@@ -260,7 +260,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShopResponse);
-      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, mockTenant, { useCache: false });
+      expect(mockNpcsService.getNPCShop).toHaveBeenCalledWith(1, { useCache: false });
     });
   });
 
@@ -290,7 +290,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShop);
-      expect(mockNpcsService.createShop).toHaveBeenCalledWith(1, commodities, mockTenant, false, undefined);
+      expect(mockNpcsService.createShop).toHaveBeenCalledWith(1, commodities, false, undefined);
     });
 
     it('should handle create shop errors', async () => {
@@ -337,7 +337,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockShop);
-      expect(mockNpcsService.updateShop).toHaveBeenCalledWith(1, commodities, mockTenant, true, undefined);
+      expect(mockNpcsService.updateShop).toHaveBeenCalledWith(1, commodities, true, undefined);
     });
   });
 
@@ -360,7 +360,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCommodity);
-      expect(mockNpcsService.createCommodity).toHaveBeenCalledWith(1, mockCommodityAttributes, mockTenant, undefined);
+      expect(mockNpcsService.createCommodity).toHaveBeenCalledWith(1, mockCommodityAttributes, undefined);
     });
   });
 
@@ -386,7 +386,7 @@ describe('useNpcs hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockCommodity);
-      expect(mockNpcsService.updateCommodity).toHaveBeenCalledWith(1, 'commodity-1', updates, mockTenant, undefined);
+      expect(mockNpcsService.updateCommodity).toHaveBeenCalledWith(1, 'commodity-1', updates, undefined);
     });
   });
 
@@ -408,7 +408,7 @@ describe('useNpcs hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockNpcsService.deleteCommodity).toHaveBeenCalledWith(1, 'commodity-1', mockTenant, undefined);
+      expect(mockNpcsService.deleteCommodity).toHaveBeenCalledWith(1, 'commodity-1', undefined);
     });
   });
 

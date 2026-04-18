@@ -18,38 +18,38 @@ const extractionStatusKey = (tenantId: string) => ['extractionStatus', tenantId]
 const dataStatusKey = (tenantId: string) => ['dataStatus', tenantId] as const;
 
 export function useSeedDrops(): UseMutationResult<void, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedDrops(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedDrops() });
 }
 
 export function useSeedGachapons(): UseMutationResult<void, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedGachapons(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedGachapons() });
 }
 
 export function useSeedNpcConversations(): UseMutationResult<unknown, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedNpcConversations(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedNpcConversations() });
 }
 
 export function useSeedQuestConversations(): UseMutationResult<unknown, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedQuestConversations(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedQuestConversations() });
 }
 
 export function useSeedNpcShops(): UseMutationResult<unknown, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedNpcShops(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedNpcShops() });
 }
 
 export function useSeedPortalScripts(): UseMutationResult<unknown, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedPortalScripts(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedPortalScripts() });
 }
 
 export function useSeedReactorScripts(): UseMutationResult<unknown, Error, void> {
-  const { activeTenant } = useTenant();
-  return useMutation({ mutationFn: () => seedService.seedReactorScripts(activeTenant!) });
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedReactorScripts() });
 }
 
 export function useUploadWzFiles(): UseMutationResult<void, Error, File> {

@@ -69,7 +69,7 @@ export function ChangeGmDialog({ character, open, onOpenChange, onSuccess }: Cha
     setIsLoading(true);
 
     try {
-      await charactersService.update(activeTenant, character.id, { gm: gmValue });
+      await charactersService.update( character.id, { gm: gmValue });
       const action = gmValue > 0 ? "promoted to GM" : "demoted from GM";
       toast.success(`Successfully ${action}: ${character.attributes.name}`);
 

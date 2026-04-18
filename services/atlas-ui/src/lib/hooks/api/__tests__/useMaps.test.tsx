@@ -117,7 +117,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getAllMaps).toHaveBeenCalledWith(mockTenant, { useCache: false });
+      expect(mockMapsService.getAllMaps).toHaveBeenCalledWith({ useCache: false });
       expect(result.current.data).toEqual(mockMaps);
     });
 
@@ -132,7 +132,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getMapById).toHaveBeenCalledWith('1', mockTenant, { useCache: false });
+      expect(mockMapsService.getMapById).toHaveBeenCalledWith('1', { useCache: false });
       expect(result.current.data).toEqual(mockMapData);
     });
 
@@ -157,7 +157,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.searchMapsByName).toHaveBeenCalledWith('Test Map', mockTenant, { useCache: false });
+      expect(mockMapsService.searchMapsByName).toHaveBeenCalledWith('Test Map', { useCache: false });
       expect(result.current.data).toEqual(mockMaps);
     });
 
@@ -182,7 +182,7 @@ describe('useMaps hooks', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockMapsService.getMapsByStreetName).toHaveBeenCalledWith('Test Street', mockTenant, { useCache: false });
+      expect(mockMapsService.getMapsByStreetName).toHaveBeenCalledWith('Test Street', { useCache: false });
       expect(result.current.data).toEqual(mockMaps);
     });
   });

@@ -1,7 +1,6 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
 import type { QuestDefinition, QuestAttributes } from "@/types/models/quest";
-import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/data/quests";
 
@@ -50,17 +49,17 @@ function applyFilters(quests: QuestDefinition[], options?: QuestQueryOptions): Q
 }
 
 export const questsService = {
-  async getAllQuests(_tenant: Tenant, options?: QuestQueryOptions): Promise<QuestDefinition[]> {
+  async getAllQuests(options?: QuestQueryOptions): Promise<QuestDefinition[]> {
     const quests = await api.getList<QuestDefinition>(BASE_PATH, options);
     return applyFilters(quests, options).sort((a, b) => parseInt(a.id) - parseInt(b.id));
   },
 
-  async getQuestById(_tenant: Tenant, questId: string, options?: ServiceOptions): Promise<QuestDefinition> {
+  async getQuestById(questId: string, options?: ServiceOptions): Promise<QuestDefinition> {
     return api.getOne<QuestDefinition>(`${BASE_PATH}/${questId}`, options);
   },
 
-  async getCategories(tenant: Tenant, options?: ServiceOptions): Promise<string[]> {
-    const quests = await questsService.getAllQuests(tenant, options);
+  async getCategories(options?: ServiceOptions): Promise<string[]> {
+    const quests = await questsService.getAllQuests( options);
     const categories = new Set<string>();
     quests.forEach(q => {
       if (q.attributes.parent) categories.add(q.attributes.parent);
@@ -68,20 +67,20 @@ export const questsService = {
     return Array.from(categories).sort();
   },
 
-  async getQuestsByCategory(tenant: Tenant, category: string, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    return questsService.getAllQuests(tenant, { ...options, category });
+  async getQuestsByCategory(category: string, options?: ServiceOptions): Promise<QuestDefinition[]> {
+    return questsService.getAllQuests({ ...options, category });
   },
 
-  async getAutoStartQuests(tenant: Tenant, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    return questsService.getAllQuests(tenant, { ...options, autoStart: true });
+  async getAutoStartQuests(options?: ServiceOptions): Promise<QuestDefinition[]> {
+    return questsService.getAllQuests({ ...options, autoStart: true });
   },
 
-  async getAutoCompleteQuests(tenant: Tenant, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    return questsService.getAllQuests(tenant, { ...options, autoComplete: true });
+  async getAutoCompleteQuests(options?: ServiceOptions): Promise<QuestDefinition[]> {
+    return questsService.getAllQuests({ ...options, autoComplete: true });
   },
 
-  async getQuestsByNpc(tenant: Tenant, npcId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    const quests = await questsService.getAllQuests(tenant, options);
+  async getQuestsByNpc(npcId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
+    const quests = await questsService.getAllQuests( options);
     return quests.filter(q =>
       q.attributes.startRequirements.npcId === npcId ||
       q.attributes.endRequirements.npcId === npcId ||
@@ -90,37 +89,37 @@ export const questsService = {
     );
   },
 
-  async getQuestsRewardingItem(tenant: Tenant, itemId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    const quests = await questsService.getAllQuests(tenant, options);
+  async getQuestsRewardingItem(itemId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
+    const quests = await questsService.getAllQuests( options);
     return quests.filter(q =>
       q.attributes.startActions.items?.some(i => i.id === itemId) ||
       q.attributes.endActions.items?.some(i => i.id === itemId),
     );
   },
 
-  async getQuestsRequiringItem(tenant: Tenant, itemId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    const quests = await questsService.getAllQuests(tenant, options);
+  async getQuestsRequiringItem(itemId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
+    const quests = await questsService.getAllQuests( options);
     return quests.filter(q =>
       q.attributes.startRequirements.items?.some(i => i.id === itemId) ||
       q.attributes.endRequirements.items?.some(i => i.id === itemId),
     );
   },
 
-  async getQuestsRequiringMob(tenant: Tenant, mobId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
-    const quests = await questsService.getAllQuests(tenant, options);
+  async getQuestsRequiringMob(mobId: number, options?: ServiceOptions): Promise<QuestDefinition[]> {
+    const quests = await questsService.getAllQuests( options);
     return quests.filter(q =>
       q.attributes.startRequirements.mobs?.some(m => m.id === mobId) ||
       q.attributes.endRequirements.mobs?.some(m => m.id === mobId),
     );
   },
 
-  async getQuestChain(tenant: Tenant, startQuestId: string, options?: ServiceOptions): Promise<QuestDefinition[]> {
+  async getQuestChain(startQuestId: string, options?: ServiceOptions): Promise<QuestDefinition[]> {
     const chain: QuestDefinition[] = [];
     let currentQuestId: string | null = startQuestId;
 
     while (currentQuestId) {
       try {
-        const quest = await questsService.getQuestById(tenant, currentQuestId, options);
+        const quest = await questsService.getQuestById( currentQuestId, options);
         chain.push(quest);
         const nextQuestId = quest.attributes.endActions.nextQuest;
         currentQuestId = nextQuestId ? nextQuestId.toString() : null;

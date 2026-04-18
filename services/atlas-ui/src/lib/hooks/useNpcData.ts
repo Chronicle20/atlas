@@ -84,7 +84,7 @@ export function useNpcData(
       );
 
       try {
-        const name = await npcsService.getNpcName(npcId, activeTenant);
+        const name = await npcsService.getNpcName(npcId);
         const result: NpcDataResult = { id: npcId, name, iconUrl, cached: false };
         if (options.onSuccess) options.onSuccess(result);
         return result;
@@ -143,7 +143,7 @@ export function useNpcData(
           'npc', prefetchNpcId,
         );
         try {
-          const name = await npcsService.getNpcName(prefetchNpcId, activeTenant);
+          const name = await npcsService.getNpcName(prefetchNpcId);
           return { id: prefetchNpcId, name, iconUrl, cached: false };
         } catch {
           return { id: prefetchNpcId, iconUrl, cached: false };
@@ -202,7 +202,7 @@ export function useNpcBatchData(
           'npc', npcId,
         );
         try {
-          const name = await npcsService.getNpcName(npcId, activeTenant);
+          const name = await npcsService.getNpcName(npcId);
           return { id: npcId, name, iconUrl, cached: false };
         } catch (error) {
           return {

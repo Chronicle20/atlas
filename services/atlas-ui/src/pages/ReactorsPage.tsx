@@ -36,7 +36,7 @@ function ReactorsPageContent() {
 
   const reactorsQuery = useQuery<ReactorData[], Error>({
     queryKey: ["reactors", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => reactorsService.searchReactors(urlQuery, activeTenant!),
+    queryFn: () => reactorsService.searchReactors(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
     staleTime: 30 * 1000,
   });

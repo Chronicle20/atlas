@@ -36,17 +36,17 @@ export function MerchantsPage() {
   );
 }
 
-async function searchListingsByQuery(query: string, activeTenant: NonNullable<ReturnType<typeof useTenant>["activeTenant"]>): Promise<ListingSearchResult[]> {
+async function searchListingsByQuery(query: string, _activeTenant: NonNullable<ReturnType<typeof useTenant>["activeTenant"]>): Promise<ListingSearchResult[]> {
   const itemId = parseInt(query, 10);
   if (!isNaN(itemId) && String(itemId) === query) {
-    return merchantsService.searchListings(itemId, activeTenant);
+    return merchantsService.searchListings(itemId);
   }
-  const items = await itemsService.searchItems(query, activeTenant);
+  const items = await itemsService.searchItems(query);
   if (items.length === 0) return [];
   const itemsToSearch = items.slice(0, 10);
   const allResults: ListingSearchResult[] = [];
   for (const item of itemsToSearch) {
-    const data = await merchantsService.searchListings(parseInt(item.id, 10), activeTenant);
+    const data = await merchantsService.searchListings(parseInt(item.id, 10));
     allResults.push(...data);
   }
   return allResults;
@@ -61,7 +61,7 @@ function MerchantsPageContent() {
 
   const shopsQuery = useQuery<MerchantShop[], Error>({
     queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant"],
-    queryFn: () => merchantsService.getAllShops(activeTenant!),
+    queryFn: () => merchantsService.getAllShops(),
     enabled: !!activeTenant,
     staleTime: 60 * 1000,
   });

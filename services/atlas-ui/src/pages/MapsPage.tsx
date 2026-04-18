@@ -27,7 +27,7 @@ function MapsPageContent() {
 
   const mapsQuery = useQuery<MapData[], Error>({
     queryKey: ["maps", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => mapsService.searchMaps(urlQuery, activeTenant!),
+    queryFn: () => mapsService.searchMaps(urlQuery),
     enabled: !!activeTenant && urlQuery.length > 0,
     staleTime: 30 * 1000,
   });

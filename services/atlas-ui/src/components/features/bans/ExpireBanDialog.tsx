@@ -36,7 +36,7 @@ export function ExpireBanDialog({ ban, open, onOpenChange, tenant, onSuccess }: 
         setIsExpiring(true);
 
         try {
-            await bansService.expireBan(tenant, ban.id);
+            await bansService.expireBan( ban.id);
             toast.success("Ban expired successfully");
             onOpenChange(false);
             onSuccess?.();

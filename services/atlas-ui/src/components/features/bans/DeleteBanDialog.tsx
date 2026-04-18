@@ -36,7 +36,7 @@ export function DeleteBanDialog({ ban, open, onOpenChange, tenant, onSuccess }: 
         setIsDeleting(true);
 
         try {
-            await bansService.deleteBan(tenant, ban.id);
+            await bansService.deleteBan( ban.id);
             toast.success("Ban deleted successfully");
             onOpenChange(false);
             onSuccess?.();

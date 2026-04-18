@@ -19,7 +19,7 @@ export function useGachapons(options?: QueryOptions): UseQueryResult<GachaponDat
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: gachaponKeys.list(options),
-    queryFn: () => gachaponsService.getAllGachapons(activeTenant!, { ...options, useCache: false }),
+    queryFn: () => gachaponsService.getAllGachapons({ ...options, useCache: false }),
     enabled: !!activeTenant,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -30,7 +30,7 @@ export function useGachapon(id: string): UseQueryResult<GachaponData, Error> {
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: gachaponKeys.detail(id),
-    queryFn: () => gachaponsService.getGachaponById(id, activeTenant!),
+    queryFn: () => gachaponsService.getGachaponById(id),
     enabled: !!activeTenant && !!id,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
@@ -41,7 +41,7 @@ export function useGachaponPrizePool(gachaponId: string): UseQueryResult<Gachapo
   const { activeTenant } = useTenant();
   return useQuery({
     queryKey: gachaponKeys.prizePool(gachaponId),
-    queryFn: () => gachaponsService.getPrizePool(gachaponId, activeTenant!),
+    queryFn: () => gachaponsService.getPrizePool(gachaponId),
     enabled: !!activeTenant && !!gachaponId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,

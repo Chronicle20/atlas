@@ -15,7 +15,7 @@ export function ItemNameCell({ itemId, tenant }: { itemId: string; tenant: Tenan
         if (!tenant || !itemId || itemNameCache.has(itemId)) return
 
         setIsLoading(true)
-        itemsService.getItemName(itemId, tenant)
+        itemsService.getItemName(itemId)
             .then((itemName) => {
                 itemNameCache.set(itemId, itemName)
                 setName(itemName)

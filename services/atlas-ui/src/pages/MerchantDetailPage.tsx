@@ -30,14 +30,14 @@ export function MerchantDetailPage() {
 
   const shopQuery = useQuery({
     queryKey: ["merchants", "shop", activeTenant?.id ?? "no-tenant", shopId],
-    queryFn: () => merchantsService.getShopById(shopId, activeTenant!),
+    queryFn: () => merchantsService.getShopById(shopId),
     enabled: !!activeTenant && !!shopId,
     staleTime: 60 * 1000,
   });
 
   const listingsQuery = useQuery({
     queryKey: ["merchants", "listings", activeTenant?.id ?? "no-tenant", shopId],
-    queryFn: () => merchantsService.getShopListings(shopId, activeTenant!),
+    queryFn: () => merchantsService.getShopListings(shopId),
     enabled: !!activeTenant && !!shopId,
     staleTime: 60 * 1000,
   });

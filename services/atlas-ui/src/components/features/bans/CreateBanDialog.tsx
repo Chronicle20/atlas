@@ -131,7 +131,7 @@ export function CreateBanDialog({ open, onOpenChange, tenant, onSuccess, prefill
                 issuedBy: values.issuedBy || "",
             };
 
-            await bansService.createBan(tenant, request);
+            await bansService.createBan( request);
             toast.success("Ban created successfully");
             form.reset();
             onOpenChange(false);

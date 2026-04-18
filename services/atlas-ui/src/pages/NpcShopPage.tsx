@@ -1,8 +1,8 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { npcsService } from "@/services/api";
-import { Commodity, CommodityAttributes, Shop } from "@/types/models/npc";
+import type { Commodity, CommodityAttributes } from "@/types/models/npc";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import {hiddenColumns} from "@/pages/npc-shop-columns";
 import { getColumns } from "./npc-shop-columns";
@@ -21,11 +21,24 @@ export function NpcShopPage() {
     const params = useParams();
     const npcId = Number(params.id);
 
-    const [, setShop] = useState<Shop | null>(null);
-    const [commodities, setCommodities] = useState<Commodity[]>([]);
+    const queryClient = useQueryClient();
+    const shopKey = ["npcs", "shop", activeTenant?.id ?? "no-tenant", npcId] as const;
+
+    const shopQuery = useQuery({
+        queryKey: shopKey,
+        queryFn: () => npcsService.getNPCShop(npcId, activeTenant!),
+        enabled: !!activeTenant && npcId > 0,
+        staleTime: 30 * 1000,
+    });
+
+    const commodities: Commodity[] = shopQuery.data?.included ?? [];
     const [recharger, setRecharger] = useState<boolean>(false);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const loading = shopQuery.isLoading;
+    const error = shopQuery.error?.message ?? null;
+
+    useEffect(() => {
+        setRecharger(shopQuery.data?.data.attributes.recharger ?? false);
+    }, [shopQuery.data]);
 
     // Dialog states
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -44,30 +57,9 @@ export function NpcShopPage() {
         levelLimit: 0
     });
 
-    const fetchDataAgain = useCallback(() => {
-        if (!activeTenant) return;
-
-        setLoading(true);
-
-        npcsService.getNPCShop(npcId, activeTenant)
-            .then((response) => {
-                setShop(response.data);
-                // Set recharger state from shop data
-                setRecharger(response.data.attributes.recharger || false);
-                // Extract commodities from included array if available
-                if (response.included && response.included.length > 0) {
-                    setCommodities(response.included);
-                } else {
-                    setCommodities([]);
-                }
-            })
-            .catch((err) => setError(err.message))
-            .finally(() => setLoading(false));
-    }, [activeTenant, npcId]);
-
-    useEffect(() => {
-        fetchDataAgain();
-    }, [activeTenant, npcId, fetchDataAgain]);
+    const fetchDataAgain = () => {
+        queryClient.invalidateQueries({ queryKey: shopKey });
+    };
 
     // Reset form data when dialogs are closed
     useEffect(() => {

@@ -1,16 +1,15 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { mapsService, type MapData } from "@/services/api/maps.service";
 import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { columns, hiddenColumns } from "./maps-columns";
 import { Map, Search, Loader2 } from "lucide-react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 export function MapsPage() {
   return (
@@ -22,51 +21,36 @@ export function MapsPage() {
 
 function MapsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pathname = useLocation().pathname;
-  const initialQuery = searchParams.get("q") ?? "";
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [maps, setMaps] = useState<MapData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const autoSearched = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(urlQuery);
 
-  const handleSearch = useCallback(async () => {
+  const mapsQuery = useQuery<MapData[], Error>({
+    queryKey: ["maps", "search", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => mapsService.searchMaps(urlQuery, activeTenant!),
+    enabled: !!activeTenant && urlQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const maps = mapsQuery.data ?? [];
+  const loading = mapsQuery.isFetching;
+  const hasSearched = urlQuery.length > 0;
+
+  const handleSearch = () => {
     if (!activeTenant) {
       toast.error("No tenant selected");
       return;
     }
-
-    if (!searchQuery.trim()) {
+    if (!searchInput.trim()) {
       toast.error("Please enter a search term");
       return;
     }
-
-    setLoading(true);
-    setHasSearched(true);
-    navigate(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-
-    try {
-      const data = await mapsService.searchMaps(searchQuery.trim(), activeTenant);
-      setMaps(data);
-
-      if (data.length === 0) {
-        toast.info("No maps found matching your search");
-      }
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search maps");
-      toast.error(errorInfo.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTenant, searchQuery, navigate, pathname]);
+    setSearchParams({ q: searchInput.trim() }, { replace: true });
+  };
 
   const handleClear = () => {
-    setSearchQuery("");
-    setMaps([]);
-    setHasSearched(false);
-    navigate(pathname, { replace: true });
+    setSearchInput("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -74,13 +58,6 @@ function MapsPageContent() {
       handleSearch();
     }
   };
-
-  useEffect(() => {
-    if (activeTenant && initialQuery && !autoSearched.current) {
-      autoSearched.current = true;
-      handleSearch();
-    }
-  }, [activeTenant, initialQuery, handleSearch]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
@@ -101,8 +78,8 @@ function MapsPageContent() {
             <div className="flex-1">
               <Input
                 placeholder="Enter map ID, name, or street name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
             </div>
@@ -126,8 +103,8 @@ function MapsPageContent() {
           <DataTableWrapper
             columns={columns}
             data={maps}
-            error={null}
-            onRefresh={handleSearch}
+            error={mapsQuery.error?.message ?? null}
+            onRefresh={() => mapsQuery.refetch()}
             initialVisibilityState={hiddenColumns}
             emptyState={{
               title: "No maps found",

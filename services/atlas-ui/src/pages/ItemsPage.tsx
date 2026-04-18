@@ -1,10 +1,9 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { itemsService } from "@/services/api/items.service";
 import { type ItemSearchResult, getItemTypeBadgeVariant } from "@/types/models/item";
 import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Package, Search, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 export function ItemsPage() {
@@ -33,51 +31,37 @@ export function ItemsPage() {
 
 function ItemsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pathname = useLocation().pathname;
-  const initialQuery = searchParams.get("q") ?? "";
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [items, setItems] = useState<ItemSearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const autoSearched = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(urlQuery);
 
-  const handleSearch = useCallback(async () => {
+  // The URL's `q` parameter is the source of truth for what's been searched.
+  const itemsQuery = useQuery<ItemSearchResult[], Error>({
+    queryKey: ["items", "search", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => itemsService.searchItems(urlQuery, activeTenant!),
+    enabled: !!activeTenant && urlQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const items = itemsQuery.data ?? [];
+  const loading = itemsQuery.isFetching;
+  const hasSearched = urlQuery.length > 0;
+
+  const handleSearch = () => {
     if (!activeTenant) {
       toast.error("No tenant selected");
       return;
     }
-
-    if (!searchQuery.trim()) {
+    if (!searchInput.trim()) {
       toast.error("Please enter a search term");
       return;
     }
-
-    setLoading(true);
-    setHasSearched(true);
-    navigate(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-
-    try {
-      const data = await itemsService.searchItems(searchQuery.trim(), activeTenant);
-      setItems(data);
-
-      if (data.length === 0) {
-        toast.info("No items found matching your search");
-      }
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search items");
-      toast.error(errorInfo.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTenant, searchQuery, navigate, pathname]);
+    setSearchParams({ q: searchInput.trim() }, { replace: true });
+  };
 
   const handleClear = () => {
-    setSearchQuery("");
-    setItems([]);
-    setHasSearched(false);
-    navigate(pathname, { replace: true });
+    setSearchInput("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -85,13 +69,6 @@ function ItemsPageContent() {
       handleSearch();
     }
   };
-
-  useEffect(() => {
-    if (activeTenant && initialQuery && !autoSearched.current) {
-      autoSearched.current = true;
-      handleSearch();
-    }
-  }, [activeTenant, initialQuery, handleSearch]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
@@ -112,8 +89,8 @@ function ItemsPageContent() {
             <div className="flex-1">
               <Input
                 placeholder="Enter item ID or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
             </div>
@@ -145,7 +122,9 @@ function ItemsPageContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 flex flex-col">
-            {items.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Searching...</div>
+            ) : items.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No items found matching your search criteria.
               </div>
@@ -170,40 +149,40 @@ function ItemsPageContent() {
                         parseInt(item.id),
                       ) : '';
                       return (
-                      <TableRow key={item.id}>
-                        <TableCell>
-                          {iconUrl ? (
-                            <img
-                              src={iconUrl}
-                              alt={item.name}
-                              width={32}
-                              height={32}
-                              className="object-contain"
-                            />
-                          ) : (
-                            <Package className="h-8 w-8 text-muted-foreground" />
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Link to={`/items/${item.id}`}>
-                                  <Badge variant="secondary">{item.name}</Badge>
-                                </Link>
-                              </TooltipTrigger>
-                              <TooltipContent copyable>
-                                <p>{item.id}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={getItemTypeBadgeVariant(item.type)}>
-                            {item.type}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            {iconUrl ? (
+                              <img
+                                src={iconUrl}
+                                alt={item.name}
+                                width={32}
+                                height={32}
+                                className="object-contain"
+                              />
+                            ) : (
+                              <Package className="h-8 w-8 text-muted-foreground" />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Link to={`/items/${item.id}`}>
+                                    <Badge variant="secondary">{item.name}</Badge>
+                                  </Link>
+                                </TooltipTrigger>
+                                <TooltipContent copyable>
+                                  <p>{item.id}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="secondary" className={getItemTypeBadgeVariant(item.type)}>
+                              {item.type}
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
                       );
                     })}
                   </TableBody>

@@ -1,10 +1,9 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { monstersService } from "@/services/api/monsters.service";
 import type { MonsterData } from "@/types/models/monster";
 import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,8 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skull, Search, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 
 export function MonstersPage() {
@@ -33,51 +31,36 @@ export function MonstersPage() {
 
 function MonstersPageContent() {
   const { activeTenant } = useTenant();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pathname = useLocation().pathname;
-  const initialQuery = searchParams.get("q") ?? "";
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [monsters, setMonsters] = useState<MonsterData[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const autoSearched = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(urlQuery);
 
-  const handleSearch = useCallback(async () => {
+  const monstersQuery = useQuery<MonsterData[], Error>({
+    queryKey: ["monsters", "search", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => monstersService.searchMonsters(urlQuery, activeTenant!),
+    enabled: !!activeTenant && urlQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const monsters = monstersQuery.data ?? [];
+  const loading = monstersQuery.isFetching;
+  const hasSearched = urlQuery.length > 0;
+
+  const handleSearch = () => {
     if (!activeTenant) {
       toast.error("No tenant selected");
       return;
     }
-
-    if (!searchQuery.trim()) {
+    if (!searchInput.trim()) {
       toast.error("Please enter a search term");
       return;
     }
-
-    setLoading(true);
-    setHasSearched(true);
-    navigate(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-
-    try {
-      const data = await monstersService.searchMonsters(searchQuery.trim(), activeTenant);
-      setMonsters(data);
-
-      if (data.length === 0) {
-        toast.info("No monsters found matching your search");
-      }
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search monsters");
-      toast.error(errorInfo.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTenant, searchQuery, navigate, pathname]);
+    setSearchParams({ q: searchInput.trim() }, { replace: true });
+  };
 
   const handleClear = () => {
-    setSearchQuery("");
-    setMonsters([]);
-    setHasSearched(false);
-    navigate(pathname, { replace: true });
+    setSearchInput("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -85,13 +68,6 @@ function MonstersPageContent() {
       handleSearch();
     }
   };
-
-  useEffect(() => {
-    if (activeTenant && initialQuery && !autoSearched.current) {
-      autoSearched.current = true;
-      handleSearch();
-    }
-  }, [activeTenant, initialQuery, handleSearch]);
 
   return (
     <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
@@ -112,8 +88,8 @@ function MonstersPageContent() {
             <div className="flex-1">
               <Input
                 placeholder="Enter monster ID or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
             </div>
@@ -145,7 +121,9 @@ function MonstersPageContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 flex flex-col">
-            {monsters.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8 text-muted-foreground">Searching...</div>
+            ) : monsters.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No monsters found matching your search criteria.
               </div>

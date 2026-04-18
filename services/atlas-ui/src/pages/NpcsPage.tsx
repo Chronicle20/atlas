@@ -1,6 +1,6 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { npcsService } from "@/services/api";
 import { type NpcSearchResult, type Commodity } from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
@@ -19,10 +19,9 @@ import {
 } from "@/components/ui/table";
 import { Users, Search, Loader2, ShoppingBag, MessageCircle } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { lazy } from "react";
@@ -41,17 +40,36 @@ export function NpcsPage() {
 
 function NpcsPageContent() {
   const { activeTenant } = useTenant();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pathname = useLocation().pathname;
-  const initialQuery = searchParams.get("q") ?? "";
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [results, setResults] = useState<NpcSearchResult[]>([]);
-  const [npcStatus, setNpcStatus] = useState<Map<number, { hasShop: boolean; hasConversation: boolean }>>(new Map());
-  const [loading, setLoading] = useState(false);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const autoSearched = useRef(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlQuery = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(urlQuery);
+
+  const searchQuery = useQuery<NpcSearchResult[], Error>({
+    queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => npcsService.searchNpcs(urlQuery, activeTenant!),
+    enabled: !!activeTenant && urlQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const statusQuery = useQuery<Map<number, { hasShop: boolean; hasConversation: boolean }>, Error>({
+    queryKey: ["npcs", "status-map", activeTenant?.id ?? "no-tenant"],
+    queryFn: async () => {
+      const allNpcs = await npcsService.getAllNPCs(activeTenant!);
+      const statusMap = new Map<number, { hasShop: boolean; hasConversation: boolean }>();
+      allNpcs.forEach(npc => {
+        statusMap.set(npc.id, { hasShop: npc.hasShop, hasConversation: npc.hasConversation });
+      });
+      return statusMap;
+    },
+    enabled: !!activeTenant && (searchQuery.data?.length ?? 0) > 0,
+    staleTime: 60 * 1000,
+  });
+
+  const results = searchQuery.data ?? [];
+  const loading = searchQuery.isFetching;
+  const statusLoading = statusQuery.isFetching;
+  const npcStatus = statusQuery.data ?? new Map<number, { hasShop: boolean; hasConversation: boolean }>();
+  const hasSearched = urlQuery.length > 0;
 
   // Shop management state
   const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
@@ -61,57 +79,21 @@ function NpcsPageContent() {
   const [createShopJson, setCreateShopJson] = useState("");
   const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
-  const handleSearch = useCallback(async () => {
+  const handleSearch = () => {
     if (!activeTenant) {
       toast.error("No tenant selected");
       return;
     }
-
-    if (!searchQuery.trim()) {
+    if (!searchInput.trim()) {
       toast.error("Please enter a search term");
       return;
     }
-
-    setLoading(true);
-    setHasSearched(true);
-    navigate(`${pathname}?q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-
-    try {
-      const data = await npcsService.searchNpcs(searchQuery.trim(), activeTenant);
-      setResults(data);
-
-      if (data.length === 0) {
-        toast.info("No NPCs found matching your search");
-      } else {
-        // Lazy load shop/conversation status
-        setStatusLoading(true);
-        npcsService.getAllNPCs(activeTenant)
-          .then((allNpcs) => {
-            const statusMap = new Map<number, { hasShop: boolean; hasConversation: boolean }>();
-            allNpcs.forEach(npc => {
-              statusMap.set(npc.id, { hasShop: npc.hasShop, hasConversation: npc.hasConversation });
-            });
-            setNpcStatus(statusMap);
-          })
-          .catch((err) => {
-            console.error("Failed to load NPC status:", err);
-          })
-          .finally(() => setStatusLoading(false));
-      }
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search NPCs");
-      toast.error(errorInfo.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTenant, searchQuery, navigate, pathname]);
+    setSearchParams({ q: searchInput.trim() }, { replace: true });
+  };
 
   const handleClear = () => {
-    setSearchQuery("");
-    setResults([]);
-    setNpcStatus(new Map());
-    setHasSearched(false);
-    navigate(pathname, { replace: true });
+    setSearchInput("");
+    setSearchParams({}, { replace: true });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,13 +101,6 @@ function NpcsPageContent() {
       handleSearch();
     }
   };
-
-  useEffect(() => {
-    if (activeTenant && initialQuery && !autoSearched.current) {
-      autoSearched.current = true;
-      handleSearch();
-    }
-  }, [activeTenant, initialQuery, handleSearch]);
 
   const handleCreateShop = async () => {
     if (!activeTenant) return;
@@ -224,8 +199,8 @@ function NpcsPageContent() {
             <div className="flex-1">
               <Input
                 placeholder="Enter NPC ID or name..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 onKeyDown={handleKeyDown}
               />
             </div>

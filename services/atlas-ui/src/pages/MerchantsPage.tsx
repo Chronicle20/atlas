@@ -1,13 +1,12 @@
-
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { merchantsService } from "@/services/api/merchants.service";
 import { itemsService } from "@/services/api/items.service";
-import type { MerchantShop } from "@/types/models/merchant";
-import type { ListingSearchResult } from "@/types/models/merchant";
+import type { MerchantShop, ListingSearchResult } from "@/types/models/merchant";
 import type { TenantConfig } from "@/services/api/tenants.service";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,8 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Store, Search, Loader2 } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { DataTableWrapper } from "@/components/common/DataTableWrapper";
 import { getColumns, hiddenColumns } from "./merchants-columns";
@@ -38,104 +36,69 @@ export function MerchantsPage() {
   );
 }
 
+async function searchListingsByQuery(query: string, activeTenant: NonNullable<ReturnType<typeof useTenant>["activeTenant"]>): Promise<ListingSearchResult[]> {
+  const itemId = parseInt(query, 10);
+  if (!isNaN(itemId) && String(itemId) === query) {
+    return merchantsService.searchListings(itemId, activeTenant);
+  }
+  const items = await itemsService.searchItems(query, activeTenant);
+  if (items.length === 0) return [];
+  const itemsToSearch = items.slice(0, 10);
+  const allResults: ListingSearchResult[] = [];
+  for (const item of itemsToSearch) {
+    const data = await merchantsService.searchListings(parseInt(item.id, 10), activeTenant);
+    allResults.push(...data);
+  }
+  return allResults;
+}
+
 function MerchantsPageContent() {
-  const { activeTenant, fetchTenantConfiguration } = useTenant();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const pathname = useLocation().pathname;
+  const { activeTenant } = useTenant();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get("tab") ?? "shops";
-  const initialQuery = searchParams.get("q") ?? "";
+  const urlQuery = searchParams.get("q") ?? "";
+  const [searchInput, setSearchInput] = useState(urlQuery);
 
-  const [shops, setShops] = useState<MerchantShop[]>([]);
-  const [tenantConfig, setTenantConfig] = useState<TenantConfig | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const shopsQuery = useQuery<MerchantShop[], Error>({
+    queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant"],
+    queryFn: () => merchantsService.getAllShops(activeTenant!),
+    enabled: !!activeTenant,
+    staleTime: 60 * 1000,
+  });
 
-  const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [searchResults, setSearchResults] = useState<ListingSearchResult[]>([]);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const autoSearched = useRef(false);
+  const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
 
-  const fetchShops = useCallback(async () => {
-    if (!activeTenant) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const [data, config] = await Promise.all([
-        merchantsService.getAllShops(activeTenant),
-        fetchTenantConfiguration(activeTenant.id),
-      ]);
-      setShops(data);
-      setTenantConfig(config);
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to fetch merchants");
-      setError(errorInfo.message);
-    } finally {
-      setLoading(false);
-    }
-  }, [activeTenant, fetchTenantConfiguration]);
+  const searchResultsQuery = useQuery<ListingSearchResult[], Error>({
+    queryKey: ["merchants", "search-listings", activeTenant?.id ?? "no-tenant", urlQuery],
+    queryFn: () => searchListingsByQuery(urlQuery, activeTenant!),
+    enabled: !!activeTenant && urlQuery.length > 0,
+    staleTime: 30 * 1000,
+  });
 
-  useEffect(() => {
-    fetchShops();
-  }, [fetchShops]);
+  const shops = shopsQuery.data ?? [];
+  const loading = shopsQuery.isLoading;
+  const error = shopsQuery.error?.message ?? null;
+  const tenantConfig: TenantConfig | null = tenantConfigQuery.data ?? null;
 
-  const handleSearch = useCallback(async () => {
+  const searchResults = searchResultsQuery.data ?? [];
+  const searchLoading = searchResultsQuery.isFetching;
+  const hasSearched = urlQuery.length > 0;
+
+  const handleSearch = () => {
     if (!activeTenant) {
       toast.error("No tenant selected");
       return;
     }
-    if (!searchQuery.trim()) {
+    if (!searchInput.trim()) {
       toast.error("Please enter an item ID or name");
       return;
     }
-
-    setSearchLoading(true);
-    setHasSearched(true);
-    autoSearched.current = true;
-    navigate(`${pathname}?tab=search&q=${encodeURIComponent(searchQuery.trim())}`, { replace: true });
-
-    try {
-      const query = searchQuery.trim();
-      const itemId = parseInt(query, 10);
-
-      if (!isNaN(itemId) && String(itemId) === query) {
-        const data = await merchantsService.searchListings(itemId, activeTenant);
-        setSearchResults(data);
-        if (data.length === 0) {
-          toast.info("No listings found for this item");
-        }
-      } else {
-        const items = await itemsService.searchItems(query, activeTenant);
-        if (items.length === 0) {
-          toast.info("No items found matching your search");
-          setSearchResults([]);
-        } else {
-          const itemsToSearch = items.slice(0, 10);
-          const allResults: ListingSearchResult[] = [];
-          for (const item of itemsToSearch) {
-            const data = await merchantsService.searchListings(parseInt(item.id, 10), activeTenant);
-            allResults.push(...data);
-          }
-          setSearchResults(allResults);
-          if (allResults.length === 0) {
-            toast.info("No listings found for matching items");
-          }
-        }
-      }
-    } catch (err: unknown) {
-      const errorInfo = createErrorFromUnknown(err, "Failed to search listings");
-      toast.error(errorInfo.message);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, [activeTenant, searchQuery, navigate, pathname]);
+    setSearchParams({ tab: "search", q: searchInput.trim() }, { replace: true });
+  };
 
   const handleClear = () => {
-    setSearchQuery("");
-    setSearchResults([]);
-    setHasSearched(false);
-    navigate(`${pathname}?tab=search`, { replace: true });
+    setSearchInput("");
+    setSearchParams({ tab: "search" }, { replace: true });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -144,12 +107,15 @@ function MerchantsPageContent() {
     }
   };
 
-  useEffect(() => {
-    if (activeTenant && initialQuery && initialTab === "search" && !autoSearched.current) {
-      autoSearched.current = true;
-      handleSearch();
+  const handleTabChange = (value: string) => {
+    if (value === "search") {
+      const next: Record<string, string> = { tab: "search" };
+      if (urlQuery) next["q"] = urlQuery;
+      setSearchParams(next, { replace: true });
+    } else {
+      setSearchParams({ tab: "shops" }, { replace: true });
     }
-  }, [activeTenant, initialQuery, initialTab, handleSearch]);
+  };
 
   const columns = getColumns({ tenant: activeTenant, tenantConfig });
 
@@ -160,7 +126,7 @@ function MerchantsPageContent() {
         <h2 className="text-2xl font-bold tracking-tight">Merchants</h2>
       </div>
 
-      <Tabs defaultValue={initialTab} className="flex-1 min-h-0 flex flex-col">
+      <Tabs defaultValue={initialTab} onValueChange={handleTabChange} className="flex-1 min-h-0 flex flex-col">
         <TabsList>
           <TabsTrigger value="shops">Shops</TabsTrigger>
           <TabsTrigger value="search">Search Listings</TabsTrigger>
@@ -172,7 +138,7 @@ function MerchantsPageContent() {
             data={shops}
             loading={loading}
             error={error}
-            onRefresh={fetchShops}
+            onRefresh={() => shopsQuery.refetch()}
             initialVisibilityState={hiddenColumns}
             emptyState={{ title: "No merchant shops found", description: "There are no active merchant shops for this tenant." }}
           />
@@ -191,8 +157,8 @@ function MerchantsPageContent() {
                 <div className="flex-1">
                   <Input
                     placeholder="Enter item ID or name..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
                 </div>
@@ -224,7 +190,9 @@ function MerchantsPageContent() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 min-h-0 flex flex-col">
-                {searchResults.length === 0 ? (
+                {searchLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Searching...</div>
+                ) : searchResults.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     No listings found matching your search criteria.
                   </div>

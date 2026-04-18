@@ -19,7 +19,7 @@ NAMESPACE="atlas"
 CONFIGMAP_NAME="atlas-ingress-configmap"
 INGRESS_DEPLOYMENT="atlas-ingress"
 ANNOTATION_PREFIX="debug.atlas.io"
-SERVICE_DNS_SUFFIX=".atlas.svc.cluster.local"
+SERVICE_DNS_SUFFIX=""
 
 # Colors for output
 RED='\033[0;31m'
@@ -166,7 +166,7 @@ scale_deployment() {
 # -------------------------------
 get_nginx_config() {
   kubectl get configmap "$CONFIGMAP_NAME" -n "$NAMESPACE" \
-    -o jsonpath='{.data.nginx\.conf}'
+    -o jsonpath='{.data.routes\.conf}'
 }
 
 patch_nginx_config() {
@@ -181,7 +181,7 @@ patch_nginx_config() {
   cat > "$tmpfile" <<EOF
 {
   "data": {
-    "nginx.conf": $(echo "$new_config" | jq -Rs .)
+    "routes.conf": $(echo "$new_config" | jq -Rs .)
   }
 }
 EOF

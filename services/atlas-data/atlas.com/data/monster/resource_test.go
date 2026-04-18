@@ -1,7 +1,6 @@
 package monster
 
 import (
-	"atlas-data/document"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -35,6 +34,15 @@ type testDocumentEntity struct {
 func (e testDocumentEntity) TableName() string {
 	return "documents"
 }
+
+type testSearchIndexEntity struct {
+	TenantId  uuid.UUID `gorm:"type:text;primaryKey"`
+	MonsterId uint32    `gorm:"primaryKey"`
+	Name      string    `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testSearchIndexEntity) TableName() string { return "monster_search_index" }
 
 // TestMonsterResourceIntegration tests the REST API endpoints for monster functionality
 // Note: Monster only has single-item endpoints (/{monsterId} and /{monsterId}/loseItems), no collection endpoint
@@ -82,7 +90,7 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&testDocumentEntity{})
+	err = db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{})
 	require.NoError(t, err)
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
@@ -166,7 +174,7 @@ func setupTestMonsterData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	require.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	storage := document.NewStorage(l, db, GetModelRegistry(), "MONSTER")
+	storage := NewStorage(l, db)
 	for _, m := range monsters {
 		_, err := storage.Add(ctx)(m)()
 		require.NoError(t, err)

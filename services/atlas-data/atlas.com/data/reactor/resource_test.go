@@ -1,7 +1,6 @@
 package reactor
 
 import (
-	"atlas-data/document"
 	"atlas-data/point"
 	"context"
 	"encoding/json"
@@ -36,6 +35,15 @@ type testDocumentEntity struct {
 func (e testDocumentEntity) TableName() string {
 	return "documents"
 }
+
+type testSearchIndexEntity struct {
+	TenantId  uuid.UUID `gorm:"type:text;primaryKey"`
+	ReactorId uint32    `gorm:"primaryKey"`
+	Name      string    `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testSearchIndexEntity) TableName() string { return "reactor_search_index" }
 
 // TestReactorResourceIntegration tests the REST API endpoints for reactor functionality
 // Note: Reactor only has single-item endpoint (/{reactorId}), no collection endpoint
@@ -78,7 +86,7 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&testDocumentEntity{})
+	err = db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{})
 	require.NoError(t, err)
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
@@ -160,7 +168,7 @@ func setupTestReactorData(t *testing.T, db *gorm.DB, tenantId uuid.UUID) {
 	require.NoError(t, err)
 	ctx := tenant.WithContext(context.Background(), tn)
 
-	storage := document.NewStorage(l, db, GetModelRegistry(), "REACTOR")
+	storage := NewStorage(l, db)
 	for _, r := range reactors {
 		_, err := storage.Add(ctx)(r)()
 		require.NoError(t, err)

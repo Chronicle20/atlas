@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Tests for account React Query hooks
  */
@@ -24,16 +24,16 @@ import {
 
 // Mock the accounts service
 vi.mock('@/services/api/accounts.service');
-const mockAccountsService = accountsService as MockedFunction<typeof accountsService>;
+const mockAccountsService = accountsService as Mocked<typeof accountsService>;
 
 // Test data
 const mockTenant: Tenant = {
   id: 'tenant-1',
   attributes: {
-    regionName: 'Test Region',
+    name: 'Test Tenant',
+    region: 'GMS',
     majorVersion: 83,
     minorVersion: 1,
-    locale: 'en_US',
   },
 };
 
@@ -274,6 +274,7 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
+          tenant: mockTenant,
           accountId: 'account-1',
         });
       });
@@ -299,6 +300,7 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
+          tenant: mockTenant,
           accountId: 'account-1',
         });
       });
@@ -326,6 +328,7 @@ describe('useAccounts hooks', () => {
 
       await act(async () => {
         result.current.mutate({
+          tenant: mockTenant,
           accountIds: ['account-1', 'account-2'],
         });
       });

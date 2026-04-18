@@ -7,8 +7,6 @@ import type {
   CharacterRenderOptions,
   EquipmentData,
   MapleStoryCharacterData,
-  CharacterImageResult,
-  EquipmentExtractionResult,
 } from '@/types/models/maplestory';
 import type { Character } from '@/types/models/character';
 import type { Asset } from '@/services/api/inventory.service';
@@ -52,7 +50,7 @@ describe('MapleStoryService', () => {
       });
 
       it('should handle different stances', () => {
-        const stand2Options = { ...baseCharacterOptions, stance: 'stand2' };
+        const stand2Options: CharacterRenderOptions = { ...baseCharacterOptions, stance: 'stand2' };
         const url = service.generateCharacterUrl(stand2Options);
 
         expect(url).toContain('stand2');
@@ -88,7 +86,6 @@ describe('MapleStoryService', () => {
         const options = {
           ...baseCharacterOptions,
           equipment: weaponSet,
-          stance: undefined // Let it auto-detect stance
         };
         const url = service.generateCharacterUrl(options);
 
@@ -215,10 +212,10 @@ describe('MapleStoryService', () => {
       weaponTestCases.forEach(({ weaponId, expectedStance, category }) => {
         it(`should use ${expectedStance} stance for ${category} (${weaponId})`, () => {
           const weaponEquipment: EquipmentData = { '-11': weaponId };
-          const options = {
-            ...baseCharacterOptions,
+          const { stance: _s, ...base } = baseCharacterOptions;
+          const options: CharacterRenderOptions = {
+            ...base,
             equipment: weaponEquipment,
-            stance: undefined // Let it auto-detect stance
           };
           const url = service.generateCharacterUrl(options);
 
@@ -229,10 +226,10 @@ describe('MapleStoryService', () => {
 
       it('should check cash weapon slot when regular weapon slot is empty', () => {
         const cashWeaponEquipment: EquipmentData = { '-111': 1402000 }; // Cash two-handed sword
-        const options = {
-          ...baseCharacterOptions,
+        const { stance: _s, ...base } = baseCharacterOptions;
+        const options: CharacterRenderOptions = {
+          ...base,
           equipment: cashWeaponEquipment,
-          stance: undefined // Let it auto-detect stance
         };
         const url = service.generateCharacterUrl(options);
 
@@ -263,7 +260,7 @@ describe('MapleStoryService', () => {
       });
 
       it('should include renderMode parameter', () => {
-        const options = { ...baseCharacterOptions, renderMode: 'compact' };
+        const options: CharacterRenderOptions = { ...baseCharacterOptions, renderMode: 'compact' };
         const url = service.generateCharacterUrl(options);
 
         expect(url).toContain('renderMode=compact');
@@ -304,12 +301,11 @@ describe('MapleStoryService', () => {
       id: `asset-${slot}`,
       type: 'inventory',
       attributes: {
-        characterId: 'char1',
         slot,
         templateId,
         quantity: 1,
       },
-    });
+    } as unknown as Asset);
 
     it('should extract basic equipped items', () => {
       const inventory: Asset[] = [
@@ -430,11 +426,11 @@ describe('MapleStoryService', () => {
   });
 
   describe('Character Data Conversion', () => {
-    const mockCharacter: Character = {
+    const mockCharacter = {
       id: 'char1',
       type: 'character',
       attributes: {
-        accountId: 'acc1',
+        accountId: 1,
         name: 'TestWarrior',
         level: 85,
         jobId: 110, // Fighter
@@ -475,7 +471,7 @@ describe('MapleStoryService', () => {
         createMockAsset(-11, 1302000), // One-handed sword
       ];
 
-      const result = service.characterToMapleStoryData(mockCharacter, inventory);
+      const result = service.characterToMapleStoryData(mockCharacter as unknown as Character, inventory);
 
       expect(result).toEqual({
         id: 'char1',
@@ -495,7 +491,7 @@ describe('MapleStoryService', () => {
     });
 
     it('should convert character data without equipment', () => {
-      const result = service.characterToMapleStoryData(mockCharacter, []);
+      const result = service.characterToMapleStoryData(mockCharacter as unknown as Character, []);
 
       expect(result).toEqual({
         id: 'char1',
@@ -651,11 +647,10 @@ describe('MapleStoryService', () => {
       id: `asset-${slot}`,
       type: 'inventory',
       attributes: {
-        characterId: 'char1',
         slot,
         templateId,
         quantity: 1,
       },
-    };
+    } as unknown as Asset;
   }
 });

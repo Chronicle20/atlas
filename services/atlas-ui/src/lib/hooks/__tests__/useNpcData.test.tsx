@@ -1,9 +1,9 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Unit tests for useNpcData hook
  */
 
-import React, { ReactNode } from 'react';
+import React, { type ReactNode } from 'react';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useNpcData, useNpcBatchData, useNpcDataCache } from '../useNpcData';
@@ -39,7 +39,7 @@ vi.mock('@/lib/utils/asset-url', () => ({
   ),
 }));
 
-const mockNpcsService = npcsService as MockedFunction<typeof npcsService>;
+const mockNpcsService = npcsService as Mocked<typeof npcsService>;
 
 describe('useNpcData', () => {
   let queryClient: QueryClient;

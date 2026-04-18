@@ -1,11 +1,11 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Tests for useConversations React Query hooks
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { 
   useConversations, 
   useConversation, 
@@ -23,14 +23,12 @@ import type { Tenant } from '@/types/models/tenant';
 
 // Mock the conversationsService
 vi.mock('@/services/api/conversations.service');
-const mockConversationsService = conversationsService as MockedFunction<typeof conversationsService>;
+const mockConversationsService = conversationsService as Mocked<typeof conversationsService>;
 
 // Mock data
 const mockTenant: Tenant = {
   id: 'tenant-1',
-  type: 'tenants',
   attributes: {
-    id: 'tenant-1',
     name: 'Test Tenant',
     region: 'GMS',
     majorVersion: 83,
@@ -46,6 +44,7 @@ const mockConversationAttributes: ConversationAttributes = {
       id: 'welcome',
       type: 'dialogue',
       dialogue: {
+        dialogueType: 'sendOk',
         text: 'Welcome to my shop!',
         choices: [
           {
@@ -76,6 +75,7 @@ const mockConversationAttributes: ConversationAttributes = {
       id: 'purchase',
       type: 'dialogue',
       dialogue: {
+        dialogueType: 'sendOk',
         text: 'Thank you for your purchase!',
         choices: [
           {
@@ -159,7 +159,7 @@ describe('useConversations hooks', () => {
     it('should not fetch when tenant is not provided', () => {
       mockConversationsService.getAll.mockResolvedValue(mockConversations);
 
-      const { result } = renderHook(() => useConversations(null as Tenant | null), {
+      const { result } = renderHook(() => useConversations(null as unknown as Tenant), {
         wrapper: createWrapper(),
       });
 

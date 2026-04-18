@@ -52,22 +52,36 @@ vi.mock('@/lib/breadcrumbs/routes', () => ({
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTenant } from '@/context/tenant-context';
 
-const mockUseNavigate = useNavigate as MockedFunction<typeof useNavigate>;
-const mockUseLocation = useLocation as MockedFunction<typeof useLocation>;
-const mockUseTenant = useTenant as MockedFunction<typeof useTenant>;
-const mockResolvers = resolvers as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
-const mockUtils = utils as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
-const mockRoutes = routes as unknown as Record<string, MockedFunction<(...args: unknown[]) => unknown>>;
+const mockUseNavigate = vi.mocked(useNavigate);
+const mockUseLocation = vi.mocked(useLocation);
+const mockUseTenant = vi.mocked(useTenant);
+const mockResolvers = resolvers as unknown as {
+  resolveEntityLabel: MockedFunction<(...args: unknown[]) => Promise<unknown>>;
+  preloadEntityLabels: MockedFunction<(...args: unknown[]) => Promise<void>>;
+  invalidateEntityLabels: MockedFunction<(...args: unknown[]) => void>;
+  getEntityTypeFromRoute: MockedFunction<(...args: unknown[]) => unknown>;
+  EntityType: typeof resolvers.EntityType;
+};
+const mockUtils = utils as unknown as {
+  parsePathname: MockedFunction<(...args: unknown[]) => unknown>;
+  buildBreadcrumbPath: MockedFunction<(...args: unknown[]) => unknown>;
+  filterVisibleBreadcrumbs: MockedFunction<(...args: unknown[]) => unknown>;
+  getParentBreadcrumb: MockedFunction<(...args: unknown[]) => unknown>;
+  getBreadcrumbKey: MockedFunction<(...args: unknown[]) => unknown>;
+};
+const mockRoutes = routes as unknown as {
+  findRouteConfig: MockedFunction<(...args: unknown[]) => unknown>;
+  getBreadcrumbsFromRoute: MockedFunction<(...args: unknown[]) => unknown>;
+};
 
 // Test data
 const mockTenant = {
   id: 'test-tenant-id',
-  name: 'Test Tenant',
   attributes: {
     name: 'Test Tenant',
     region: 'US',
-    majorVersion: '1',
-    minorVersion: '0',
+    majorVersion: 1,
+    minorVersion: 0,
   },
 };
 
@@ -110,7 +124,7 @@ describe('useBreadcrumbs', () => {
     vi.clearAllMocks();
 
     // Setup default mock implementations
-    mockUseLocation.mockReturnValue({ pathname: '/characters/char-123', search: '', hash: '', state: null, key: 'default' });
+    mockUseLocation.mockReturnValue({ pathname: '/characters/char-123', search: '', hash: '', state: null, key: 'default' } as ReturnType<typeof useLocation>);
     mockUseNavigate.mockReturnValue(vi.fn());
     mockUseTenant.mockReturnValue({
       activeTenant: mockTenant,
@@ -119,7 +133,7 @@ describe('useBreadcrumbs', () => {
       setActiveTenant: vi.fn(),
       refreshTenants: vi.fn(),
       fetchTenantConfiguration: vi.fn(),
-    });
+    } as unknown as ReturnType<typeof useTenant>);
 
     // Setup breadcrumb utility mocks
     mockUtils.parsePathname.mockReturnValue(mockBreadcrumbs);
@@ -233,7 +247,7 @@ describe('useBreadcrumbs', () => {
       const { result } = renderHook(() => useBreadcrumbs());
 
       act(() => {
-        result.current.navigation.navigateTo(mockBreadcrumbs[1]);
+        result.current.navigation.navigateTo(mockBreadcrumbs[1]!);
       });
 
       expect(mockPush).toHaveBeenCalledWith('/characters');
@@ -341,7 +355,7 @@ describe('useBreadcrumbs', () => {
         setActiveTenant: vi.fn(),
         refreshTenants: vi.fn(),
         fetchTenantConfiguration: vi.fn(),
-      });
+      } as unknown as ReturnType<typeof useTenant>);
 
       const { result } = renderHook(() => useBreadcrumbs({ autoResolve: true }));
 

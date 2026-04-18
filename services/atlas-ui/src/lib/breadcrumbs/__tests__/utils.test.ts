@@ -8,7 +8,7 @@ import {
   capitalizeFirst,
   getBreadcrumbKey,
   filterVisibleBreadcrumbs,
-  BreadcrumbSegment,
+  type BreadcrumbSegment,
 } from '../utils';
 
 describe('Breadcrumb Utils', () => {
@@ -28,7 +28,7 @@ describe('Breadcrumb Utils', () => {
     it('should parse simple static path correctly', () => {
       const result = parsePathname('/accounts');
       expect(result).toHaveLength(2);
-      expect(result[0].label).toBe('Home');
+      expect(result[0]!.label).toBe('Home');
       expect(result[1]).toEqual({
         segment: 'accounts',
         label: 'Accounts',
@@ -55,17 +55,17 @@ describe('Breadcrumb Utils', () => {
     it('should parse nested path correctly', () => {
       const result = parsePathname('/npcs/456/conversations');
       expect(result).toHaveLength(4);
-      expect(result[1].label).toBe('NPCs');
-      expect(result[2].dynamic).toBe(true);
-      expect(result[2].entityType).toBe('npc');
-      expect(result[3].label).toBe('Conversations');
+      expect(result[1]!.label).toBe('NPCs');
+      expect(result[2]!.dynamic).toBe(true);
+      expect(result[2]!.entityType).toBe('npc');
+      expect(result[3]!.label).toBe('Conversations');
     });
 
     it('should parse tenant path correctly', () => {
       const result = parsePathname('/tenants/uuid-123/handlers');
       expect(result).toHaveLength(4);
-      expect(result[2].entityType).toBe('tenant');
-      expect(result[3].label).toBe('Socket Handlers');
+      expect(result[2]!.entityType).toBe('tenant');
+      expect(result[3]!.label).toBe('Socket Handlers');
     });
   });
 
@@ -122,9 +122,9 @@ describe('Breadcrumb Utils', () => {
       const result = buildBreadcrumbPath(longPath, { maxItems: 3, showEllipsis: false });
       expect(result).toHaveLength(3);
       // Should show last 3 items: Tenant 1, Character, Templates
-      expect(result[0].label).toBe('Tenant 1');
-      expect(result[1].label).toBe('Character');
-      expect(result[2].label).toBe('Templates');
+      expect(result[0]!.label).toBe('Tenant 1');
+      expect(result[1]!.label).toBe('Character');
+      expect(result[2]!.label).toBe('Templates');
     });
 
     it('should add ellipsis when truncating', () => {
@@ -145,7 +145,7 @@ describe('Breadcrumb Utils', () => {
     });
 
     it('should return null for root or single item', () => {
-      expect(getParentBreadcrumb([breadcrumbs[0]])).toBe(null);
+      expect(getParentBreadcrumb([breadcrumbs[0]!])).toBe(null);
       expect(getParentBreadcrumb([])).toBe(null);
     });
   });

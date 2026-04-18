@@ -95,7 +95,7 @@ describe('MapleStory Utilities', () => {
   });
 
   describe('extractEquipmentFromInventory', () => {
-    const mockInventory: Asset[] = [
+    const mockInventory = [
       {
         id: '1',
         type: 'inventory',
@@ -139,7 +139,7 @@ describe('MapleStory Utilities', () => {
     ];
 
     it('should extract equipped items correctly', () => {
-      const result = extractEquipmentFromInventory(mockInventory);
+      const result = extractEquipmentFromInventory(mockInventory as unknown as Asset[]);
       
       expect(result.equipment).toEqual({
         '-1': 1001,
@@ -151,7 +151,7 @@ describe('MapleStory Utilities', () => {
     });
 
     it('should exclude cash equipment when option is set', () => {
-      const result = extractEquipmentFromInventory(mockInventory, {
+      const result = extractEquipmentFromInventory(mockInventory as unknown as Asset[], {
         includeCashEquipment: false,
       });
       
@@ -163,7 +163,7 @@ describe('MapleStory Utilities', () => {
     });
 
     it('should filter by slot range', () => {
-      const result = extractEquipmentFromInventory(mockInventory, {
+      const result = extractEquipmentFromInventory(mockInventory as unknown as Asset[], {
         filterBySlotRange: { min: -11, max: -1 },
       });
       
@@ -176,7 +176,7 @@ describe('MapleStory Utilities', () => {
   });
 
   describe('extractEquippedItems', () => {
-    const mockInventory: Asset[] = [
+    const mockInventory = [
       {
         id: '1',
         type: 'inventory',
@@ -200,7 +200,7 @@ describe('MapleStory Utilities', () => {
     ];
 
     it('should extract only equipped items', () => {
-      const equipment = extractEquippedItems(mockInventory);
+      const equipment = extractEquippedItems(mockInventory as unknown as Asset[]);
       expect(equipment).toEqual({ '-1': 1001 });
     });
   });
@@ -248,11 +248,11 @@ describe('MapleStory Utilities', () => {
   });
 
   describe('characterToMapleStoryData', () => {
-    const mockCharacter: Character = {
+    const mockCharacter = {
       id: 'char1',
       type: 'character',
       attributes: {
-        accountId: 'acc1',
+        accountId: 1,
         name: 'TestChar',
         level: 50,
         jobId: 100,
@@ -286,7 +286,7 @@ describe('MapleStory Utilities', () => {
       },
     };
 
-    const mockInventory: Asset[] = [
+    const mockInventory = [
       {
         id: '1',
         type: 'inventory',
@@ -300,7 +300,7 @@ describe('MapleStory Utilities', () => {
     ];
 
     it('should convert character data correctly', () => {
-      const result = characterToMapleStoryData(mockCharacter, mockInventory);
+      const result = characterToMapleStoryData(mockCharacter as unknown as Character, mockInventory as unknown as Asset[]);
       
       expect(result).toEqual({
         id: 'char1',

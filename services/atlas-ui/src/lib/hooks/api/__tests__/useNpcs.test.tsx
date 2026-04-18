@@ -1,11 +1,11 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Tests for useNpcs React Query hooks
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { 
   useNPCs, 
   useNPC, 
@@ -25,14 +25,12 @@ import type { Tenant } from '@/types/models/tenant';
 
 // Mock the npcsService
 vi.mock('@/services/api/npcs.service');
-const mockNpcsService = npcsService as MockedFunction<typeof npcsService>;
+const mockNpcsService = npcsService as Mocked<typeof npcsService>;
 
 // Mock data
 const mockTenant: Tenant = {
   id: 'tenant-1',
-  type: 'tenants',
   attributes: {
-    id: 'tenant-1',
     name: 'Test Tenant',
     region: 'GMS',
     majorVersion: 83,
@@ -83,7 +81,6 @@ const mockCommodity: Commodity = {
   id: 'commodity-1',
   type: 'commodities',
   attributes: {
-    id: 'commodity-1',
     templateId: 1000,
     mesoPrice: 100,
     discountRate: 0,
@@ -95,7 +92,6 @@ const mockCommodity: Commodity = {
 };
 
 const mockCommodityAttributes: CommodityAttributes = {
-  id: 'commodity-new',
   templateId: 2000,
   mesoPrice: 200,
   discountRate: 10,
@@ -156,7 +152,7 @@ describe('useNpcs hooks', () => {
     it('should not fetch when tenant is not provided', () => {
       mockNpcsService.getAllNPCs.mockResolvedValue(mockNPCs);
 
-      const { result } = renderHook(() => useNPCs(null as Tenant | null), {
+      const { result } = renderHook(() => useNPCs(null as unknown as Tenant), {
         wrapper: createWrapper(),
       });
 
@@ -182,7 +178,7 @@ describe('useNpcs hooks', () => {
 
   describe('useNPC', () => {
     it('should fetch specific NPC successfully', async () => {
-      mockNpcsService.getNPCById.mockResolvedValue(mockNPCs[0]);
+      mockNpcsService.getNPCById.mockResolvedValue(mockNPCs[0]!);
 
       const { result } = renderHook(() => useNPC(mockTenant, 1), {
         wrapper: createWrapper(),

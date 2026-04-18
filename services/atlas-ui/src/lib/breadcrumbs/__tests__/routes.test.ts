@@ -16,7 +16,7 @@ import {
   validateRouteConfig,
   ROUTE_PATTERNS,
   ROUTE_CONFIGS,
-  RouteConfig,
+  type RouteConfig,
 } from '../routes';
 
 describe('Route Configuration', () => {
@@ -86,7 +86,7 @@ describe('Route Configuration', () => {
     it('should return hierarchy for root route', () => {
       const hierarchy = getRouteHierarchy('/');
       expect(hierarchy).toHaveLength(1);
-      expect(hierarchy[0].pattern).toBe('/');
+      expect(hierarchy[0]!.pattern).toBe('/');
     });
 
     it('should return hierarchy for nested route', () => {
@@ -120,7 +120,7 @@ describe('Route Configuration', () => {
     it('should mark the last breadcrumb as current page', () => {
       const breadcrumbs = getBreadcrumbsFromRoute('/tenants/123/properties');
       const lastBreadcrumb = breadcrumbs[breadcrumbs.length - 1];
-      expect(lastBreadcrumb.isCurrentPage).toBe(true);
+      expect(lastBreadcrumb!.isCurrentPage).toBe(true);
     });
   });
 

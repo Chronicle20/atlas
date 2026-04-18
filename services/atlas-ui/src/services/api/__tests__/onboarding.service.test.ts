@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * @jest-environment jsdom
  */
@@ -28,8 +28,8 @@ vi.mock('../templates.service', () => ({
   },
 }));
 
-const mockTenantsService = tenantsService as MockedFunction<typeof tenantsService>;
-const mockTemplatesService = templatesService as MockedFunction<typeof templatesService>;
+const mockTenantsService = tenantsService as Mocked<typeof tenantsService>;
+const mockTemplatesService = templatesService as Mocked<typeof templatesService>;
 
 describe('OnboardingService', () => {
   beforeEach(() => {
@@ -128,7 +128,7 @@ describe('OnboardingService', () => {
 
       try {
         await onboardingService.onboardTenant('Test Tenant', mockTemplate);
-        fail('Expected ConfigurationCreationError to be thrown');
+        expect.fail('Expected ConfigurationCreationError to be thrown');
       } catch (error) {
         expect(error).toBeInstanceOf(ConfigurationCreationError);
         expect((error as ConfigurationCreationError).tenantId).toBe('tenant-456');

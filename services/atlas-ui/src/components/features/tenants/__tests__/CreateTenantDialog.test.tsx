@@ -1,9 +1,8 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * @jest-environment jsdom
  */
 
-import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { CreateTenantDialog } from '../CreateTenantDialog';
@@ -48,7 +47,7 @@ vi.mock('sonner', () => ({
   },
 }));
 
-const mockTemplatesService = templatesService as MockedFunction<typeof templatesService>;
+const mockTemplatesService = templatesService as Mocked<typeof templatesService>;
 // Note: onboardingService is mocked via vi.mock but we use integration tests for submission flow
 
 describe('CreateTenantDialog', () => {

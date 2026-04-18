@@ -391,10 +391,10 @@ describe('Entity Label Resolution', () => {
         mockTenant
       );
 
-      expect(results['123'].isFallback).toBe(false);
-      expect(results['123'].label).toBe('Character1');
-      expect(results['999'].isFallback).toBe(true);
-      expect(results['999'].label).toBe('Unknown');
+      expect(results['123']!.isFallback).toBe(false);
+      expect(results['123']!.label).toBe('Character1');
+      expect(results['999']!.isFallback).toBe(true);
+      expect(results['999']!.label).toBe('Unknown');
     });
   });
 
@@ -466,8 +466,8 @@ describe('Entity Label Resolution', () => {
 
       const stats = getResolverCacheStats();
       expect(stats).toHaveProperty('character');
-      expect(stats.character.size).toBe(1);
-      expect(stats.character.oldestEntry).toBeGreaterThan(0);
+      expect(stats.character!.size).toBe(1);
+      expect(stats.character!.oldestEntry).toBeGreaterThan(0);
     });
 
     it('should return empty stats for empty cache', () => {

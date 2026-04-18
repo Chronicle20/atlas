@@ -1,4 +1,4 @@
-import { vi, type MockedFunction } from 'vitest';
+import { vi, type Mocked } from 'vitest';
 /**
  * Unit tests for toast notification utilities
  */
@@ -44,8 +44,8 @@ vi.mock('@/lib/api/errors', () => ({
   createErrorConfig: vi.fn(),
 }));
 
-const mockToast = toast as MockedFunction<typeof toast>;
-const mockErrorUtils = errorUtils as MockedFunction<typeof errorUtils>;
+const mockToast = toast as Mocked<typeof toast>;
+const mockErrorUtils = errorUtils as Mocked<typeof errorUtils>;
 
 // Mock console.error to prevent noise in tests
 const originalConsoleError = console.error;
@@ -72,12 +72,13 @@ afterEach(() => {
 
 // Helper function to create validation errors for testing
 function createValidationError(message: string, fieldErrors?: Record<string, string[]>): ValidationError {
-  return {
+  const base: ValidationError = {
     message,
     statusCode: 400,
     code: 'VALIDATION_ERROR',
-    fieldErrors,
   };
+  if (fieldErrors) base.fieldErrors = fieldErrors;
+  return base;
 }
 
 describe('Toast Notification Utilities', () => {
@@ -319,7 +320,11 @@ describe('Toast Notification Utilities', () => {
       
       promise(successfulPromise, messages);
       
-      const callArgs = mockToast.promise.mock.calls[0]![1];
+      const callArgs = mockToast.promise.mock.calls[0]![1] as {
+        loading: string;
+        success: (data: unknown) => string;
+        error: (error: unknown) => string;
+      };
       const successMessage = callArgs.success({ id: 123 });
       expect(successMessage).toBe('Created item 123');
     });
@@ -334,7 +339,11 @@ describe('Toast Notification Utilities', () => {
       
       promise(failedPromise, messages);
       
-      const callArgs = mockToast.promise.mock.calls[0]![1];
+      const callArgs = mockToast.promise.mock.calls[0]![1] as {
+        loading: string;
+        success: (data: unknown) => string;
+        error: (error: unknown) => string;
+      };
       const errorMessage = callArgs.error(new Error('Test error'));
       expect(errorMessage).toBe('Custom error: Error: Test error');
     });
@@ -349,7 +358,11 @@ describe('Toast Notification Utilities', () => {
       
       promise(failedPromise, messages);
       
-      const callArgs = mockToast.promise.mock.calls[0]![1];
+      const callArgs = mockToast.promise.mock.calls[0]![1] as {
+        loading: string;
+        success: (data: unknown) => string;
+        error: (error: unknown) => string;
+      };
       const errorMessage = callArgs.error(new Error('Test error'));
       expect(errorMessage).toBe('Custom error message');
     });
@@ -365,7 +378,11 @@ describe('Toast Notification Utilities', () => {
       
       promise(failedPromise, messages, { context });
       
-      const callArgs = mockToast.promise.mock.calls[0]![1];
+      const callArgs = mockToast.promise.mock.calls[0]![1] as {
+        loading: string;
+        success: (data: unknown) => string;
+        error: (error: unknown) => string;
+      };
       
       // Simulate the error case where error message is not a function or string
       delete (messages as Record<string, unknown>).error;
@@ -388,7 +405,11 @@ describe('Toast Notification Utilities', () => {
       
       promise(failedPromise, messages, { context });
       
-      const callArgs = mockToast.promise.mock.calls[0]![1];
+      const callArgs = mockToast.promise.mock.calls[0]![1] as {
+        loading: string;
+        success: (data: unknown) => string;
+        error: (error: unknown) => string;
+      };
       callArgs.error(new Error('Test error'));
       
       expect(mockErrorUtils.logError).toHaveBeenCalledWith(

@@ -232,7 +232,7 @@ func handleAssetCreatedEvent(sc server.Model, wp writer.Producer) message.Handle
 			a := buildAssetFromCreatedBody(e)
 			a = enrichPetAsset(l, ctx, a)
 			err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(
-				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
+				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(true, a))).Encode)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 			}
@@ -449,7 +449,7 @@ func handleAssetAcceptedEvent(sc server.Model, wp writer.Producer) message.Handl
 				return errors.New("unable to identify inventory type")
 			}
 			err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(
-				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(false, a))).Encode)(s)
+				invcb.NewChangeBatch(false, invpkt.NewAddEntry(byte(inventoryType), e.Slot, model2.NewAsset(true, a))).Encode)(s)
 			if err != nil {
 				l.WithError(err).Errorf("Unable to add accepted asset [%d] to slot [%d] for character [%d].", e.TemplateId, e.Slot, s.CharacterId())
 				return err

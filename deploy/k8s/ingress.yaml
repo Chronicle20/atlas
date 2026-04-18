@@ -321,17 +321,8 @@ data:
       proxy_pass http://atlas-world:8080;
     }
 
-    location /_next/webpack-hmr {
-      proxy_pass http://atlas-ui:3000;
-      proxy_http_version 1.1;
-      proxy_set_header Upgrade $http_upgrade;
-      proxy_set_header Connection "upgrade";
-      proxy_read_timeout 3600;
-      proxy_send_timeout 3600;
-    }
-
     location / {
-      proxy_pass http://atlas-ui:3000;
+      proxy_pass http://atlas-ui:80;
     }
 ---
 apiVersion: apps/v1

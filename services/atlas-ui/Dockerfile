@@ -1,36 +1,18 @@
-# Stage 1: Build the application
 FROM node:24-alpine AS builder
 
-# Set the working directory inside the container
-WORKDIR /app
+WORKDIR /build
 
-# Copy package.json and package-lock.json (or yarn.lock) for dependency installation
-COPY services/atlas-ui/package*.json ./
+COPY services/atlas-ui/package.json services/atlas-ui/package-lock.json ./
+RUN npm ci
 
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the application code
 COPY services/atlas-ui/ .
-
-# Build the Next.js app
 RUN npm run build
 
-# Stage 2: Serve the application with a smaller, production-ready image
-FROM node:24-alpine
+FROM nginx:alpine
 
-# Set the working directory inside the container
-WORKDIR /app
+COPY --from=builder /build/dist /usr/share/nginx/html
+COPY services/atlas-ui/nginx.conf /etc/nginx/conf.d/default.conf
 
-# Copy only the necessary files from the builder stage
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/.next ./.next
+EXPOSE 80
 
-# Install only production dependencies
-RUN npm install --production
-
-# Expose the port the app will run on
-EXPOSE 3000
-
-# Start the Next.js app
-CMD ["npm", "start"]
+CMD ["nginx", "-g", "daemon off;"]

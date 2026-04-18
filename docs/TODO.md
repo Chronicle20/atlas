@@ -255,12 +255,12 @@ Deferred items from task-004 (Vite + React Router migration). The migration itse
 - [x] ~~Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target~~ — Done. Reduced from 1801 LOC → 333 LOC by deleting the cache layer, request deduplication, progress tracker, stream downloads, and retry state machine (React Query owns those responsibilities now).
 - [x] ~~Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules.~~ Done — see the `refactor(atlas-ui): remove per-call api.setTenant duplicates` commit.
 - [x] ~~Delete `services/atlas-ui/src/services/api/base.service.ts`~~ — Done. Every service rewritten as a plain object. Types extracted to `src/lib/api/query-params.ts` (145 LOC). Total API-layer LOC went from 2300 → 478 (79% reduction).
-- [ ] Drop the `_tenant` parameter from service method signatures. The per-call `api.setTenant` cleanup and the base.service deletion both kept the argument for signature back-compat — every service method now prefixes it with `_` so ESLint doesn't flag it. Removing it requires updating every caller (hooks + pages + tests); easiest as a scripted rename once `noUnusedParameters` is enabled (see below).
+- [x] ~~Drop the `_tenant` parameter from service method signatures.~~ Done — 23 service files + ~60 caller sites updated; test assertions re-baselined.
 
 ### Phase 3 deferrals (page port)
 - [ ] Audit `useSearchParams` semantics on filter-heavy pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`). The Phase 3 mechanical rewrite destructured the RR v7 tuple (`const [searchParams] = useSearchParams()`) so call sites compile, but the exact push/replace flow on filter changes should be spot-checked against Next.js behaviour (R1 in risks.md).
-- [ ] Route-level `React.lazy` splitting for the 46 pages. The current bundle is a single ~1.1 MB chunk (gzip ~300 KB). Lazy-load detail pages and rarely-visited routes to shrink the initial payload.
-- [ ] Revisit the one `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build` (`src/lib/breadcrumbs/resolvers.ts` dynamically imports service modules that are also statically imported by hooks).
+- [x] ~~Route-level `React.lazy` splitting for the 46 pages.~~ Done — main chunk is 256 KB (77 KB gzip); detail/rare pages lazy-load.
+- [x] ~~Revisit the `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build`.~~ No longer emitted by the current build.
 
 ### Phase 4 (data fetching consolidation — done)
 
@@ -288,7 +288,7 @@ Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for
 - [x] ~~`erasableSyntaxOnly`.~~ Done — `BanType`, `BanReasonCode`, `WeaponType`, `CompartmentType`, `EntityType` converted to `as const` objects + companion types. `ResolverError`'s parameter-property constructor rewritten.
 - [x] ~~`exactOptionalPropertyTypes`.~~ Done — no production hits needed fixing.
 - [x] ~~`noUnusedLocals` + `noUnusedParameters`.~~ Done — ~80 hits fixed (unused React imports, unused destructures, `_tenant` prefix).
-- [ ] Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. Test files still carry ~180 errors under the full strict flag set — mostly noUncheckedIndexedAccess tripping on mock-array reads, type imports that need `type` prefix, and the 6 already file-level-skipped suites that need rewriting.
+- [ ] Drop the `src/**/*.test.ts(x)` + `src/**/__tests__/**` excludes from `tsconfig.app.json`. Test files carry ~157 errors under the full strict flag set across 12 test files — mostly `MockedFunction<typeof serviceObject>` (the plain-object pattern isn't a `Procedure | Constructable`), `TenantBasic` mock shapes using the pre-refactor `version.major/minor` schema, `exactOptionalPropertyTypes` mismatches in mock fixtures, and a couple of Jest-only globals (`fail`, stray unused `React` imports). Runtime tests pass; only `tsc -b` for test files is affected. Fixing each is mechanical but spread across ~12 files — earmark as its own pass.
 
 ### Phase 7 deferrals (docs)
 - [x] ~~Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`.~~ Done — both now describe the Vite/RR/React Query stack. `CONTAINER_DEPLOYMENT.md` and the `BaseService` reference in `api-integration-patterns.md` also updated.

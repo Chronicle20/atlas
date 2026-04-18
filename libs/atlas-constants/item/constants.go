@@ -134,6 +134,14 @@ func IsBullet(itemId Id) bool {
 	return GetClassification(itemId) == ClassificationBullet
 }
 
+func IsArrow(itemId Id) bool {
+	return GetClassification(itemId) == ClassificationConsumableArrow
+}
+
+func IsRechargeable(itemId Id) bool {
+	return IsThrowingStar(itemId) || IsBullet(itemId)
+}
+
 func IsScrollCleanSlate(itemId Id) bool {
 	return Is(itemId, CleanSlateOnePercent, CleanSlateThreePercent, CleanSlateFivePercent, CleanSlateTwentyPercent)
 }

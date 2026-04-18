@@ -9,6 +9,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -21,6 +22,8 @@ type Processor interface {
 	Drop(f field.Model, characterId uint32, inventoryType inventory.Type, source int16, quantity int16, x int16, y int16) error
 	Merge(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
 	Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error
+	RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) error
+	Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error
 }
 
 type ProcessorImpl struct {
@@ -67,4 +70,12 @@ func (p *ProcessorImpl) Merge(characterId uint32, inventoryType inventory.Type, 
 func (p *ProcessorImpl) Sort(characterId uint32, inventoryType inventory.Type, updateTime uint32) error {
 	p.l.Debugf("Character [%d] attempting to sort compartment [%d]. updateTime [%d].", characterId, inventoryType, updateTime)
 	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(SortCommandProvider(characterId, inventoryType))
+}
+
+func (p *ProcessorImpl) RequestReserve(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, items []compartment.ItemBody) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestReserveCommandProvider(transactionId, characterId, inventoryType, items))
+}
+
+func (p *ProcessorImpl) Consume(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, slot int16) error {
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(ConsumeCommandProvider(transactionId, characterId, inventoryType, slot))
 }

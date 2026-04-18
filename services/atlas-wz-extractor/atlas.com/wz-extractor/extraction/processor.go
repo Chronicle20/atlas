@@ -36,10 +36,10 @@ func (p *processorImpl) Extract(l logrus.FieldLogger, ctx context.Context, xmlOn
 	inputPath := filepath.Join(p.inputDir, tenantPath)
 	xmlOutPath := filepath.Join(p.outputXmlDir, tenantPath)
 	imgOutPath := filepath.Join(p.outputImgDir, tenantPath)
-	return p.runExtraction(l, inputPath, xmlOutPath, imgOutPath, xmlOnly, imagesOnly)
+	return p.runExtraction(ctx, l, inputPath, xmlOutPath, imgOutPath, xmlOnly, imagesOnly)
 }
 
-func (p *processorImpl) runExtraction(l logrus.FieldLogger, inputPath, xmlOutPath, imgOutPath string, xmlOnly, imagesOnly bool) error {
+func (p *processorImpl) runExtraction(ctx context.Context, l logrus.FieldLogger, inputPath, xmlOutPath, imgOutPath string, xmlOnly, imagesOnly bool) error {
 	wzFiles, err := filepath.Glob(filepath.Join(inputPath, "*.wz"))
 	if err != nil {
 		return fmt.Errorf("unable to list WZ files: %w", err)
@@ -69,6 +69,12 @@ func (p *processorImpl) runExtraction(l logrus.FieldLogger, inputPath, xmlOutPat
 		if !xmlOnly {
 			if err := wzimage.ExtractIcons(l, f, imgOutPath); err != nil {
 				l.WithError(err).Errorf("Unable to extract icons from [%s].", wzName)
+			}
+			if err := wzimage.ExtractMinimaps(l, f, imgOutPath); err != nil {
+				l.WithError(err).Errorf("Unable to extract minimaps from [%s].", wzName)
+			}
+			if err := RenderMaps(ctx, l, f, imgOutPath); err != nil {
+				l.WithError(err).Errorf("Unable to render maps from [%s].", wzName)
 			}
 		}
 

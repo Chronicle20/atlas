@@ -1,128 +1,85 @@
 # Atlas UI
 
-Mushroom game Administrative Web UI built with Next.js, TypeScript, Tailwind CSS, and shadcn/ui.
+Administrative SPA for the Atlas MapleStory server. Built on Vite 8 + React 19 + `react-router-dom` v7 + TanStack React Query + shadcn/ui + Tailwind 4. Served in production by nginx.
 
-## Features
+## Stack
 
-- 🎯 **Type Safety First**: Full TypeScript strict mode with comprehensive type definitions
-- 🎨 **Modern UI**: Built with shadcn/ui components and Tailwind CSS
-- ⚡ **Performance**: Next.js App Router with optimized builds
-- 🔒 **Multi-tenant**: Support for multiple game tenants/regions
-- 🧭 **Smart Navigation**: Dynamic breadcrumb navigation with entity name resolution
-- 📊 **Admin Tools**: Character, guild, NPC, and game world management
+- **Build**: Vite 8 + `@vitejs/plugin-react` + `@tailwindcss/vite`
+- **Routing**: `react-router-dom` v7, one `<BrowserRouter>` wrapping a shared `AppShell`
+- **Data**: TanStack React Query 5
+- **Forms**: `react-hook-form` + `zod`
+- **Testing**: Vitest + `@testing-library/react` + `jsdom`
+- **Runtime**: nginx:alpine serving the `dist/` output with a SPA fallback
 
-## Development
+## Prerequisites
 
-### Prerequisites
+- Node.js 24 (matches the Docker builder)
+- npm 10+
 
-- Node.js 18+
-- npm or yarn
-
-### Getting Started
+## Commands
 
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build for production
-npm run build
-
-# Run linting
-npm run lint
+npm install          # Install dependencies
+npm run dev          # Vite dev server on http://localhost:5173
+npm run build        # tsc -b && vite build → dist/
+npm run preview      # Serve dist/ locally (smoke test the prod bundle)
+npm run lint         # ESLint flat config
+npm run test         # Vitest (run mode)
+npm run test:watch   # Vitest watch mode
+npm run test:coverage
 ```
 
-The application will be available at `http://localhost:3000`.
+Dev server proxies `/api` to `http://localhost:${VITE_INGRESS_PORT:-8080}` (the compose-local `atlas-ingress` nginx). Override `VITE_INGRESS_PORT` if you're pointed at a remote stack.
 
-### Type Safety
+## Docker
 
-This project uses TypeScript in strict mode with enhanced type checking:
+Two-stage build. The repository root is the build context (matches
+`deploy/compose/docker-compose.core.yml`):
 
-- **Strict Mode**: All TypeScript strict options enabled
-- **Type Definitions**: Centralized types in `types/` directory
-  - `types/api/` - API response and error types
-  - `types/models/` - Domain model types (Tenant, Character, Guild, etc.)
-  - `types/components/` - Component prop types
-- **Error Handling**: Typed error handling with proper unknown typing
-
-### Architecture
-
-The codebase follows the architectural patterns defined in `CLAUDE.md`:
-
-- **Component Structure**: Organized by scope (ui, common, features)
-- **Reusable Components**: Common UI patterns extracted into reusable components (see `docs/reusable-components.md`)
-- **Error Handling**: Comprehensive error handling system with user-friendly messages and recovery options (see `docs/error-handling.md`)
-- **State Management**: Local state → React Context → Global store
-- **Data Fetching**: React Query for server state management
-- **Styling**: Tailwind CSS with shadcn/ui component system
-
-### API Integration
-
-The UI integrates with Atlas microservices through a centralized service layer:
-
-**Service Layer (`/services/api/`)**
-- Centralized service classes for all domain operations
-- Consistent CRUD operations with BaseService architecture
-- Request cancellation, deduplication, and caching support
-- Automatic error transformation and retry logic
-
-**Available Services:**
-- `tenantsService` - Tenant management and configuration
-- `accountsService` - Account operations and queries
-- `charactersService` - Character management
-- `inventoryService` - Inventory and compartment operations
-- `mapsService` - Map data and management
-- `guildsService` - Guild operations
-- `npcsService` - NPC shop and commodity management
-- `conversationsService` - NPC conversation management
-- `templatesService` - Template management
-
-**Features:**
-- Type-safe responses with comprehensive TypeScript support
-- Centralized error handling with user-friendly messages
-- Multi-tenant headers (`TENANT_ID`, `REGION`, etc.) automatically injected
-- React Query integration for caching and state management
-- Request deduplication and progress tracking
-
-For detailed architectural guidelines, see `CLAUDE.md`.
-
-### Service Layer Usage
-
-```typescript
-// Import services from centralized location
-import { tenantsService, accountsService } from '@/services/api';
-
-// Basic CRUD operations
-const tenant = await tenantsService.getById('tenant-id');
-const accounts = await accountsService.getAll();
-const newAccount = await accountsService.create(accountData);
-
-// Advanced operations with options
-const charactersPage = await charactersService.getAll({
-  page: 1,
-  pageSize: 20,
-  filters: { accountId: 'account-123' }
-});
-
-// Batch operations
-const results = await accountsService.batchCreate([
-  { name: 'Account 1', /* ... */ },
-  { name: 'Account 2', /* ... */ }
-]);
-
-// With React Query integration
-const { data, isLoading, error } = useQuery({
-  queryKey: ['tenants'],
-  queryFn: () => tenantsService.getAll()
-});
+```bash
+# From the atlas repo root:
+docker build -f services/atlas-ui/Dockerfile -t atlas-ui:local .
+docker run --rm -p 3000:80 atlas-ui:local
 ```
 
-## Documentation
+Container listens on port 80; the compose mapping preserves host port 3000 for local-dev compatibility (`3000:80`).
 
-- [`CLAUDE.md`](./CLAUDE.md) - Complete architectural guidelines and conventions
-- [`docs/service-layer.md`](./docs/service-layer.md) - Centralized API service layer architecture guide
-- [`docs/reusable-components.md`](./docs/reusable-components.md) - Guide to reusable UI components
-- [`docs/error-handling.md`](./docs/error-handling.md) - Comprehensive error handling patterns and examples
-- [`docs/breadcrumb-navigation.md`](./docs/breadcrumb-navigation.md) - Breadcrumb navigation system implementation and usage guide
+## Environment variables
+
+All env vars use the `VITE_` prefix and are read via `import.meta.env.VITE_*`:
+
+| Variable | Purpose |
+|---|---|
+| `VITE_ROOT_API_URL` | Base URL for API requests (falls back to `window.location.origin`) |
+| `VITE_BUILD_VERSION` | Surfaced in error reports |
+| `VITE_ERROR_ENDPOINT` | Remote error logging endpoint |
+| `VITE_ERROR_API_KEY` | Auth key for remote error logging |
+| `VITE_ASSET_BASE_URL` | Override for `/api/assets` prefix |
+| `VITE_INGRESS_PORT` | Dev-only — port the Vite proxy targets |
+
+## Tenant contract
+
+Every API request injects four headers (SCREAMING_SNAKE_CASE, consumed verbatim by Go services):
+
+- `TENANT_ID`
+- `REGION`
+- `MAJOR_VERSION`
+- `MINOR_VERSION`
+
+Tenant selection lives in `src/context/tenant-context.tsx`. A `useEffect` there calls `api.setTenant(activeTenant)` and `queryClient.clear()` on every tenant change (skipped on the initial null mount).
+
+## Architecture
+
+See [`CLAUDE.md`](./CLAUDE.md) for the full architectural guide — directory layout, provider stack, data-fetching patterns, image policy, testing conventions, and deploy surface.
+
+Historical Next.js-era notes under `docs/service-layer.md` and `docs/error-handling.md` still reference `next/image`, `NEXT_PUBLIC_*`, and the App Router. They're scheduled for rewrite in `docs/TODO.md` → atlas-ui Frontend → Phase 7 deferrals.
+
+## Deferrals
+
+The Vite + React Router migration (task-004) merged with a focused feature-parity scope. A full list of held-back work lives in the repo root at `docs/TODO.md` under `### atlas-ui Frontend`:
+
+- Phase 2: shrink `lib/api/client.ts` below 700 LOC, delete `services/api/base.service.ts`, remove per-call `api.setTenant` duplicates.
+- Phase 3: route-level `React.lazy` splitting, `useSearchParams` semantics audit on filter-heavy pages.
+- Phase 4: replace remaining `useState` + `useEffect` + service-call patterns with React Query hooks.
+- Phase 5: migrate 61 Jest test files to Vitest; re-enable stricter tsconfig flags once tests compile.
+- Phase 7: rewrite `docs/service-layer.md` and `docs/error-handling.md`.

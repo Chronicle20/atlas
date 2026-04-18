@@ -7,7 +7,6 @@ import (
 	"atlas-data/map/reactor"
 	"atlas-data/point"
 	"atlas-data/rest"
-	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,7 +28,6 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 
 			r := router.PathPrefix("/data/maps").Subrouter()
 			r.HandleFunc("", registerGet("get_maps", handleGetMapsRequest(db))).Methods(http.MethodGet)
-			r.HandleFunc("/search-index/backfill", rest.RegisterHandler(l)(si)("backfill_map_search_index", handleBackfillSearchIndex(db))).Methods(http.MethodPost)
 			r.HandleFunc("/{mapId}", registerGet("get_map", handleGetMapRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals_by_name", handleGetMapPortalsByNameRequest(db))).Queries("name", "{name}").Methods(http.MethodGet)
 			r.HandleFunc("/{mapId}/portals", registerGet("get_map_portals", handleGetMapPortalsRequest(db))).Methods(http.MethodGet)
@@ -121,22 +119,6 @@ func handleSearchMaps(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
 			}
-		}
-	}
-}
-
-func handleBackfillSearchIndex(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return func(w http.ResponseWriter, r *http.Request) {
-			res, err := Backfill(d.Logger())(d.Context())(db)
-			if err != nil {
-				d.Logger().WithError(err).Errorf("Map search index backfill failed.")
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusOK)
-			_ = json.NewEncoder(w).Encode(res)
 		}
 	}
 }

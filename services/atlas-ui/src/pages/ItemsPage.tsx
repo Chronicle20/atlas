@@ -1,9 +1,8 @@
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Suspense, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { itemsService } from "@/services/api/items.service";
 import { type ItemSearchResult, getItemTypeBadgeVariant } from "@/types/models/item";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,9 +16,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Package, Search, Loader2 } from "lucide-react";
+import { Package, Loader2 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { useDebounce } from "@/lib/utils/debounce";
+
+const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 250;
 
 export function ItemsPage() {
   return (
@@ -34,40 +37,34 @@ function ItemsPageContent() {
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
   const [searchInput, setSearchInput] = useState(urlQuery);
+  const debounced = useDebounce(searchInput.trim(), DEBOUNCE_MS);
 
-  // The URL's `q` parameter is the source of truth for what's been searched.
+  useEffect(() => {
+    const next = debounced;
+    if (next.length >= MIN_QUERY_LENGTH) {
+      if (next !== urlQuery) {
+        setSearchParams({ q: next }, { replace: true });
+      }
+    } else if (urlQuery !== "") {
+      setSearchParams({}, { replace: true });
+    }
+  }, [debounced, urlQuery, setSearchParams]);
+
   const itemsQuery = useQuery<ItemSearchResult[], Error>({
     queryKey: ["items", "search", activeTenant?.id ?? "no-tenant", urlQuery],
     queryFn: () => itemsService.searchItems(urlQuery),
-    enabled: !!activeTenant && urlQuery.length > 0,
+    enabled: !!activeTenant && urlQuery.length >= MIN_QUERY_LENGTH,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   const items = itemsQuery.data ?? [];
-  const loading = itemsQuery.isFetching;
-  const hasSearched = urlQuery.length > 0;
-
-  const handleSearch = () => {
-    if (!activeTenant) {
-      toast.error("No tenant selected");
-      return;
-    }
-    if (!searchInput.trim()) {
-      toast.error("Please enter a search term");
-      return;
-    }
-    setSearchParams({ q: searchInput.trim() }, { replace: true });
-  };
+  const fetching = itemsQuery.isFetching;
+  const hasSearched = urlQuery.length >= MIN_QUERY_LENGTH;
 
   const handleClear = () => {
     setSearchInput("");
     setSearchParams({}, { replace: true });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
   };
 
   return (
@@ -86,23 +83,17 @@ function ItemsPageContent() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <Input
                 placeholder="Enter item ID or name..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
               />
-            </div>
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
+              {fetching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
-              Search
-            </Button>
-            <Button variant="outline" onClick={handleClear} disabled={loading}>
+            </div>
+            <Button variant="outline" onClick={handleClear}>
               Clear
             </Button>
           </div>
@@ -122,9 +113,7 @@ function ItemsPageContent() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex-1 min-h-0 flex flex-col">
-            {loading ? (
-              <div className="text-center py-8 text-muted-foreground">Searching...</div>
-            ) : items.length === 0 ? (
+            {items.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No items found matching your search criteria.
               </div>

@@ -1,8 +1,6 @@
 package reactor
 
 import (
-	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	"atlas-data/document"
 	"atlas-data/xml"
 	"context"
 	"fmt"
@@ -10,16 +8,13 @@ import (
 	"strconv"
 	"strings"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
-func NewStorage(l logrus.FieldLogger, db *gorm.DB) *document.Storage[string, RestModel] {
-	return document.NewStorage(l, db, GetModelRegistry(), "REACTOR")
-}
-
-func Register(s *document.Storage[string, RestModel]) func(ctx context.Context) func(r model.Provider[RestModel]) error {
+func Register(s *Storage) func(ctx context.Context) func(r model.Provider[RestModel]) error {
 	return func(ctx context.Context) func(r model.Provider[RestModel]) error {
 		return func(r model.Provider[RestModel]) error {
 			m, err := r()

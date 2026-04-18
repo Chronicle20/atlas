@@ -1,13 +1,15 @@
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { Suspense, useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { npcsService } from "@/services/api";
 import { type NpcSearchResult, type Commodity } from "@/types/models/npc";
 import { tenantHeaders } from "@/lib/headers";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   Table,
@@ -17,18 +19,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users, Search, Loader2, ShoppingBag, MessageCircle } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useSearchParams } from "react-router-dom";
+import { Users, Loader2, ShoppingBag, MessageCircle } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Toaster } from "@/components/ui/sonner";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { useDebounce } from "@/lib/utils/debounce";
 import { lazy } from "react";
 
 const NpcDialogs = lazy(() => import("@/components/features/npc/NpcDialogs").then(mod => ({ default: mod.NpcDialogs })));
-
 const AdvancedNpcActions = lazy(() => import("@/components/features/npc/AdvancedNpcActions").then(mod => ({ default: mod.AdvancedNpcActions })));
+
+const MIN_QUERY_LENGTH = 2;
+const DEBOUNCE_MS = 250;
 
 export function NpcsPage() {
   return (
@@ -42,13 +46,32 @@ function NpcsPageContent() {
   const { activeTenant } = useTenant();
   const [searchParams, setSearchParams] = useSearchParams();
   const urlQuery = searchParams.get("q") ?? "";
+  const urlStorebank = searchParams.get("storebank") === "true";
   const [searchInput, setSearchInput] = useState(urlQuery);
+  const [storebankOnly, setStorebankOnly] = useState(urlStorebank);
+  const debounced = useDebounce(searchInput.trim(), DEBOUNCE_MS);
+
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (debounced.length >= MIN_QUERY_LENGTH) params.q = debounced;
+    if (storebankOnly) params.storebank = "true";
+
+    const nextQ = params.q ?? "";
+    const nextSb = params.storebank === "true";
+    if (nextQ !== urlQuery || nextSb !== urlStorebank) {
+      setSearchParams(params, { replace: true });
+    }
+  }, [debounced, storebankOnly, urlQuery, urlStorebank, setSearchParams]);
+
+  const hasQuery = urlQuery.length >= MIN_QUERY_LENGTH;
+  const enabled = !!activeTenant && (hasQuery || urlStorebank);
 
   const searchQuery = useQuery<NpcSearchResult[], Error>({
-    queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery],
-    queryFn: () => npcsService.searchNpcs(urlQuery),
-    enabled: !!activeTenant && urlQuery.length > 0,
+    queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery, urlStorebank],
+    queryFn: () => npcsService.searchNpcs(hasQuery ? urlQuery : "", urlStorebank),
+    enabled,
     staleTime: 30 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   const statusQuery = useQuery<Map<number, { hasShop: boolean; hasConversation: boolean }>, Error>({
@@ -66,10 +89,10 @@ function NpcsPageContent() {
   });
 
   const results = searchQuery.data ?? [];
-  const loading = searchQuery.isFetching;
+  const fetching = searchQuery.isFetching;
   const statusLoading = statusQuery.isFetching;
   const npcStatus = statusQuery.data ?? new Map<number, { hasShop: boolean; hasConversation: boolean }>();
-  const hasSearched = urlQuery.length > 0;
+  const hasSearched = enabled;
 
   // Shop management state
   const [isCreateShopDialogOpen, setIsCreateShopDialogOpen] = useState(false);
@@ -79,53 +102,31 @@ function NpcsPageContent() {
   const [createShopJson, setCreateShopJson] = useState("");
   const [bulkUpdateShopJson, setBulkUpdateShopJson] = useState("");
 
-  const handleSearch = () => {
-    if (!activeTenant) {
-      toast.error("No tenant selected");
-      return;
-    }
-    if (!searchInput.trim()) {
-      toast.error("Please enter a search term");
-      return;
-    }
-    setSearchParams({ q: searchInput.trim() }, { replace: true });
-  };
-
   const handleClear = () => {
     setSearchInput("");
+    setStorebankOnly(false);
     setSearchParams({}, { replace: true });
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
   };
 
   const handleCreateShop = async () => {
     if (!activeTenant) return;
-
     try {
       const jsonData = JSON.parse(createShopJson);
-
       if (!jsonData.data || !jsonData.data.attributes || !jsonData.data.attributes.npcId) {
         toast.error("Invalid JSON format. Missing npcId in data.attributes");
         return;
       }
-
       const npcId = parseInt(jsonData.data.attributes.npcId);
       if (isNaN(npcId)) {
         toast.error("Please provide a valid NPC ID in the JSON");
         return;
       }
-
       const rootUrl = import.meta.env.VITE_ROOT_API_URL || window.location.origin;
       const response = await fetch(rootUrl + "/api/npcs/" + npcId + "/shop", {
         method: "POST",
         headers: tenantHeaders(activeTenant),
-        body: createShopJson
+        body: createShopJson,
       });
-
       if (!response.ok) {
         throw new Error("Failed to create shop.");
       }
@@ -140,7 +141,6 @@ function NpcsPageContent() {
 
   const handleDeleteAllShops = async () => {
     if (!activeTenant) return;
-
     try {
       await npcsService.deleteAllShops();
       toast.success("All shops deleted successfully");
@@ -152,19 +152,15 @@ function NpcsPageContent() {
 
   const handleBulkUpdateShop = async () => {
     if (!activeTenant || !selectedNpcId) return;
-
     try {
       const jsonData = JSON.parse(bulkUpdateShopJson);
-
       let commoditiesToUpdate: Commodity[] = [];
       if (jsonData.included && jsonData.included.length > 0) {
         commoditiesToUpdate = jsonData.included;
       } else if (jsonData.data.included && jsonData.data.included.length > 0) {
         commoditiesToUpdate = jsonData.data.included;
       }
-
       const rechargerValue = jsonData.data.attributes?.recharger;
-
       await npcsService.updateShop(selectedNpcId, commoditiesToUpdate, rechargerValue);
       setIsBulkUpdateShopDialogOpen(false);
       setBulkUpdateShopJson("");
@@ -196,23 +192,25 @@ function NpcsPageContent() {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4 items-end">
-            <div className="flex-1">
+            <div className="flex-1 relative">
               <Input
                 placeholder="Enter NPC ID or name..."
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={handleKeyDown}
               />
-            </div>
-            <Button onClick={handleSearch} disabled={loading}>
-              {loading ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <Search className="mr-2 h-4 w-4" />
+              {fetching && (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
               )}
-              Search
-            </Button>
-            <Button variant="outline" onClick={handleClear} disabled={loading}>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="npc-storebank-toggle"
+                checked={storebankOnly}
+                onCheckedChange={setStorebankOnly}
+              />
+              <Label htmlFor="npc-storebank-toggle">Storebank only</Label>
+            </div>
+            <Button variant="outline" onClick={handleClear}>
               Clear
             </Button>
           </div>

@@ -91,7 +91,7 @@ None.
 
 #### Condition Types
 
-The REST input validation layer accepts the following condition types. Additional types (buddyCapacity, petCount, mapCapacity, inventorySpace, transportAvailable, skillLevel, guildLeader, buff, excessSp, partyId, partyLeader, partySize, pqCustomData) are supported by the internal condition builder but are rejected by the REST input validator with "unsupported condition type."
+The REST input validation layer accepts the following condition types.
 
 | Type | Description | referenceId |
 |------|-------------|-------------|
@@ -108,6 +108,7 @@ The REST input validation layer accepts the following condition types. Additiona
 | gmLevel | GM privilege level | No |
 | guildId | Guild membership ID (value must be > 0) | No |
 | guildRank | Guild rank (value must be 0-5) | No |
+| guildLeader | Character is guild leader (1=yes, 0=no) | No |
 | questStatus | Quest state (0=not started, 1=started, 2=completed; value must be 0-3) | Quest ID (required) |
 | questProgress | Quest progress value | Quest ID (required); step also required |
 | hasUnclaimedMarriageGifts | Marriage gift availability (0=none, 1=has gifts; only "=" operator) | No |
@@ -117,6 +118,18 @@ The REST input validation layer accepts the following condition types. Additiona
 | luck | Luck stat | No |
 | hp | Current HP | No |
 | maxHp | Maximum HP | No |
+| buddyCapacity | Buddy list capacity | No |
+| petCount | Number of summoned pets | No |
+| mapCapacity | Players on target map (value is the threshold) | Map ID (required) |
+| inventorySpace | Whether the character can hold N of an item (value is quantity, must be >= 1) | Item template ID (required) |
+| transportAvailable | Transport route availability | Route ID (required) |
+| skillLevel | Skill level the character knows | Skill ID (required) |
+| buff | Buff active on character | Buff source ID (required) |
+| excessSp | Excess SP relative to base level | Base level (required) |
+| partyId | Party ID | No |
+| partyLeader | Character is party leader (1=yes, 0=no) | No |
+| partySize | Party member count | No |
+| pqCustomData | Party-quest custom data value | step (custom data key) required |
 
 #### Operators
 

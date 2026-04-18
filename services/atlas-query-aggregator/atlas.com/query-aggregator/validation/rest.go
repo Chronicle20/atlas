@@ -223,55 +223,81 @@ func validateConditionInput(input ConditionInput) error {
 	}
 
 	// Validate condition-specific requirements
-	switch input.Type {
-	case "item":
+	switch ConditionType(input.Type) {
+	case ItemCondition:
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for item conditions")
 		}
-	case "questStatus":
-		// Quest status conditions require referenceId
+	case QuestStatusCondition:
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for quest status conditions")
 		}
-		// Quest status values should be valid enum values (0-3)
 		if input.Value < 0 || input.Value > 3 {
 			return fmt.Errorf("quest status value must be between 0 and 3 (UNDEFINED=0, NOT_STARTED=1, STARTED=2, COMPLETED=3)")
 		}
-	case "questProgress":
-		// Quest progress conditions require referenceId and step
+	case QuestProgressCondition:
 		if input.ReferenceId == 0 {
 			return fmt.Errorf("referenceId is required for quest progress conditions")
 		}
 		if input.Step == "" {
 			return fmt.Errorf("step is required for quest progress conditions")
 		}
-	case "guildId":
-		// Guild ID conditions require a valid guild ID value
+	case GuildIdCondition:
 		if input.Value <= 0 {
 			return fmt.Errorf("guild ID value must be greater than 0")
 		}
-	case "guildRank":
-		// Guild rank conditions should have reasonable rank values
+	case GuildRankCondition:
 		if input.Value < 0 || input.Value > 5 {
 			return fmt.Errorf("guild rank value must be between 0 and 5")
 		}
-	case "hasUnclaimedMarriageGifts":
-		// Marriage gift conditions should be boolean (0 or 1)
+	case UnclaimedMarriageGiftsCondition:
 		if input.Value != 0 && input.Value != 1 {
 			return fmt.Errorf("marriage gift value must be 0 or 1")
 		}
-		// Only equals operator makes sense for boolean conditions
 		if input.Operator != "=" {
 			return fmt.Errorf("marriage gift conditions only support '=' operator")
 		}
-	case "level", "reborns", "dojoPoints", "vanquisherKills", "gmLevel", "hp", "maxHp":
-		// Numeric conditions should have non-negative values
+	case MapCapacityCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId is required for mapCapacity conditions")
+		}
+	case InventorySpaceCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId (itemId) is required for inventorySpace conditions")
+		}
+		if input.Value < 1 {
+			return fmt.Errorf("inventorySpace value (quantity) must be >= 1")
+		}
+	case TransportAvailableCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId is required for transportAvailable conditions")
+		}
+	case SkillLevelCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId is required for skillLevel conditions")
+		}
+	case BuffCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId is required for buff conditions")
+		}
+	case ExcessSPCondition:
+		if input.ReferenceId == 0 {
+			return fmt.Errorf("referenceId (base level) is required for excessSp conditions")
+		}
+	case PqCustomDataCondition:
+		if input.Step == "" {
+			return fmt.Errorf("step (custom data key) is required for pqCustomData conditions")
+		}
+	case LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition,
+		GmLevelCondition, HpCondition, MaxHpCondition:
 		if input.Value < 0 {
 			return fmt.Errorf("%s value must be non-negative", input.Type)
 		}
-	case "jobId", "meso", "mapId", "fame", "gender", "strength", "dexterity", "intelligence", "luck":
-		// Standard numeric conditions - basic validation
-		break
+	case JobCondition, MesoCondition, MapCondition, FameCondition, GenderCondition,
+		StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition,
+		GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition,
+		PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
+		// Standard conditions with no extra requirements.
 	default:
 		return fmt.Errorf("unsupported condition type: %s", input.Type)
 	}

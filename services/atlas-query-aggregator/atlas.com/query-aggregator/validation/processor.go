@@ -57,11 +57,12 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 		// Create a new validation result
 		result := NewValidationResult(characterId)
 
-		// Parse all conditions and check which data sources we need
+		// Parse all conditions and figure out which data sources we need
 		conditions := make([]Condition, 0, len(conditionInputs))
 		needsInventory := false
 		needsGuild := false
 		needsContext := false
+		var ctxReqs ContextRequirements
 
 		for _, input := range conditionInputs {
 			condition, err := NewConditionBuilder().FromInput(input).Build()
@@ -71,25 +72,21 @@ func (p *ProcessorImpl) ValidateStructured(resultDecorators ...model.Decorator[V
 
 			conditions = append(conditions, condition)
 
-			// Check if this condition requires inventory data
 			if condition.conditionType == ItemCondition {
 				needsInventory = true
 			}
-
-			// Check if this condition requires guild data
 			if condition.conditionType == GuildLeaderCondition {
 				needsGuild = true
 			}
-
-			// Check if this condition requires context-based evaluation
-			if condition.conditionType == QuestStatusCondition || condition.conditionType == QuestProgressCondition || condition.conditionType == BuffCondition || condition.conditionType == PartyIdCondition || condition.conditionType == PartyLeaderCondition || condition.conditionType == PartySizeCondition || condition.conditionType == PqCustomDataCondition {
+			if requiresContextPath(condition.conditionType) {
 				needsContext = true
 			}
+			ctxReqs = ctxReqs.union(requirementsFor(condition.conditionType))
 		}
 
 		// If we need context-based evaluation, use the context provider
 		if needsContext {
-			ctx, err := p.GetValidationContextProvider().GetValidationContext(characterId)()
+			ctx, err := p.GetValidationContextProvider().GetValidationContext(characterId, ctxReqs)()
 			if err != nil {
 				return result, fmt.Errorf("failed to get validation context: %w", err)
 			}
@@ -159,6 +156,54 @@ func (p *ProcessorImpl) ValidateWithContext(decorators ...model.Decorator[Valida
 		return model.Map(model.Decorate(decorators))(func() (ValidationResult, error) {
 			return result, nil
 		})()
+	}
+}
+
+// requiresContextPath reports whether a condition type can only be evaluated through the
+// ValidationContext path. The non-context Evaluate falls back to character-only evaluation,
+// so any condition reading quests, marriage, buddy/pet/party, lazy processors (map capacity,
+// inventory space, transports, skills, buffs), or PQ data must take the context route.
+func requiresContextPath(t ConditionType) bool {
+	switch t {
+	case QuestStatusCondition, QuestProgressCondition,
+		UnclaimedMarriageGiftsCondition,
+		BuddyCapacityCondition, PetCountCondition,
+		MapCapacityCondition, InventorySpaceCondition,
+		TransportAvailableCondition, SkillLevelCondition,
+		BuffCondition,
+		PartyIdCondition, PartyLeaderCondition, PartySizeCondition,
+		PqCustomDataCondition:
+		return true
+	}
+	return false
+}
+
+// requirementsFor returns the eager-fetch needs for a single condition. Lazy-processor
+// conditions return a zero ContextRequirements because their data is fetched on demand
+// inside EvaluateWithContext.
+func requirementsFor(t ConditionType) ContextRequirements {
+	switch t {
+	case QuestStatusCondition, QuestProgressCondition:
+		return ContextRequirements{Quests: true}
+	case UnclaimedMarriageGiftsCondition:
+		return ContextRequirements{Marriage: true}
+	case BuddyCapacityCondition:
+		return ContextRequirements{Buddy: true}
+	case PetCountCondition:
+		return ContextRequirements{Pets: true}
+	case PartyIdCondition, PartyLeaderCondition, PartySizeCondition:
+		return ContextRequirements{Party: true}
+	}
+	return ContextRequirements{}
+}
+
+func (r ContextRequirements) union(o ContextRequirements) ContextRequirements {
+	return ContextRequirements{
+		Quests:   r.Quests || o.Quests,
+		Marriage: r.Marriage || o.Marriage,
+		Buddy:    r.Buddy || o.Buddy,
+		Pets:     r.Pets || o.Pets,
+		Party:    r.Party || o.Party,
 	}
 }
 

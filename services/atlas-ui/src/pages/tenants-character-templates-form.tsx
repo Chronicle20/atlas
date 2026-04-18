@@ -1,102 +1,64 @@
 
-import {useEffect, useState} from "react";
-import {FieldValues, Path, PathValue, useFieldArray, useForm, UseFormReturn, useWatch} from "react-hook-form";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { type FieldValues, type Path, type PathValue, useFieldArray, useForm, type UseFormReturn, useWatch } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {useTenant} from "@/context/tenant-context";
-import {Plus, X} from "lucide-react"
-import {Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle} from "@/components/ui/dialog";
-import {tenantsService} from "@/services/api";
-import {CharacterTemplate} from "@/types/models/template";
-import {TenantConfig} from "@/types/models/tenant";
-import {toast} from "sonner";
+import { Plus, X } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTenantConfiguration, useUpdateTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import type { CharacterTemplate } from "@/types/models/template";
+import { toast } from "sonner";
 
 interface FormValues {
     templates: CharacterTemplate[];
 }
 
 export function TemplatesForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {fetchTenantConfiguration} = useTenant();
-    const [tenant, setTenant] = useState<TenantConfig | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { id } = useParams();
+    const tenantQuery = useTenantConfiguration(id ?? "");
+    const updateTenantConfig = useUpdateTenantConfiguration();
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            templates: []
-        }
-    });
+    const tenant = tenantQuery.data ?? null;
+    const loading = tenantQuery.isLoading;
 
-    const {fields, remove} = useFieldArray({
-        control: form.control,
-        name: "templates"
-    });
+    const form = useForm<FormValues>({ defaultValues: { templates: [] } });
+    const { fields, remove } = useFieldArray({ control: form.control, name: "templates" });
 
-    // Fetch the full tenant configuration
     useEffect(() => {
-        const fetchTenant = async () => {
-            try {
-                setLoading(true);
-                if (id) {
-                    const tenantConfig = await fetchTenantConfiguration(id as string);
-                    setTenant(tenantConfig);
-
-                    // Update form with tenant data
-                    form.reset({
-                        templates: tenantConfig.attributes.characters.templates.map(template => ({
-                            jobIndex: template.jobIndex || 0,
-                            subJobIndex: template.subJobIndex || 0,
-                            gender: template.gender || 0,
-                            mapId: template.mapId || 0,
-                            faces: template.faces || [],
-                            hairs: template.hairs || [],
-                            hairColors: template.hairColors || [],
-                            skinColors: template.skinColors || [],
-                            tops: template.tops || [],
-                            bottoms: template.bottoms || [],
-                            shoes: template.shoes || [],
-                            weapons: template.weapons || [],
-                            items: template.items || [],
-                            skills: template.skills || [],
-                        }))
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching tenant configuration:", error);
-                toast.error("Failed to load tenant configuration");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTenant();
-    }, [id, fetchTenantConfiguration, form]);
-
-    const onSubmit = async (data: FormValues) => {
-        if (!tenant) return;
-
-        try {
-            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
-                characters: {
-                    templates: data.templates,
-                },
+        if (tenant) {
+            form.reset({
+                templates: tenant.attributes.characters.templates.map(template => ({
+                    jobIndex: template.jobIndex || 0,
+                    subJobIndex: template.subJobIndex || 0,
+                    gender: template.gender || 0,
+                    mapId: template.mapId || 0,
+                    faces: template.faces || [],
+                    hairs: template.hairs || [],
+                    hairColors: template.hairColors || [],
+                    skinColors: template.skinColors || [],
+                    tops: template.tops || [],
+                    bottoms: template.bottoms || [],
+                    shoes: template.shoes || [],
+                    weapons: template.weapons || [],
+                    items: template.items || [],
+                    skills: template.skills || [],
+                })),
             });
-
-            if (updatedTenant) {
-                setTenant(updatedTenant);
-                toast.success("Successfully saved tenant configuration.");
-
-                form.reset({
-                    templates: updatedTenant.attributes.characters.templates,
-                });
-            }
-        } catch (error) {
-            console.error("Error updating tenant configuration:", error);
-            toast.error("Failed to update tenant configuration");
         }
-    }
+    }, [tenant, form]);
+
+    const onSubmit = (data: FormValues) => {
+        if (!tenant) return;
+        updateTenantConfig.mutate(
+            { tenant, updates: { characters: { templates: data.templates } } },
+            {
+                onSuccess: () => toast.success("Successfully saved tenant configuration."),
+                onError: () => toast.error("Failed to update tenant configuration"),
+            },
+        );
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;

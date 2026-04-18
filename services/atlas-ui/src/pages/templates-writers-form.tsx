@@ -1,13 +1,12 @@
 
-import {useEffect, useState} from "react";
+import {useEffect} from "react";
 import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
 import {Input} from "@/components/ui/input";
 import {Button} from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import {X} from "lucide-react";
-import {templatesService} from "@/services/api";
-import type {Template} from "@/types/models/template";
+import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
 import {OptionsField} from "@/components/unknown-options";
 import {toast} from "sonner";
 import { LoadingSpinner, ErrorDisplay } from "@/components/common";
@@ -21,65 +20,48 @@ interface FormValues {
 }
 
 export function WritersForm() {
-    const {id} = useParams(); // Get templates ID from URL
+    const { id } = useParams();
+    const templateQuery = useTemplate(String(id ?? ""));
+    const updateTemplate = useUpdateTemplate();
 
-    const [template, setTemplate] = useState<Template>();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const template = templateQuery.data ?? null;
+    const loading = templateQuery.isLoading;
+    const error = templateQuery.error?.message ?? null;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            writers: [],
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { writers: [] } });
 
     useEffect(() => {
-        if (!id) return; // Ensure id is available
+        if (template) {
+            form.reset({
+                writers: template.attributes.socket.writers.map(writer => ({
+                    opCode: writer.opCode,
+                    writer: writer.writer,
+                    options: writer.options,
+                })),
+            });
+        }
+    }, [template, form]);
 
-        setLoading(true); // Show loading while fetching
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "writers" });
 
-        templatesService.getById(String(id))
-            .then((template) => {
-                setTemplate(template);
-
-                if (template) {
-                    const formValues: FormValues = {
-                        writers: template.attributes.socket.writers.map(writer => ({
-                            opCode: writer.opCode,
-                            writer: writer.writer,
-                            options: writer.options,
-                        }))
-                    };
-                    form.reset(formValues);
-                }
-            })
-            .catch((err) => {
-                setError(err.message);
-            })
-            .finally(() => setLoading(false));
-    }, [id, form]);
-
-    const {fields, append, remove} = useFieldArray({
-        control: form.control,
-        name: "writers"
-    });
-
-    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = (data) => {
         if (!template) return;
-        
-        templatesService.update(template.id, {
-            socket: {
-                handlers: template.attributes.socket.handlers || [],
-                writers: data.writers,
+        updateTemplate.mutate(
+            {
+                id: template.id,
+                updates: {
+                    socket: {
+                        handlers: template.attributes.socket.handlers || [],
+                        writers: data.writers,
+                    },
+                },
             },
-        }).then((updatedTemplate) => {
-            setTemplate(updatedTemplate);
-            toast.success("Successfully saved template.");
-        });
-    }
+            { onSuccess: () => toast.success("Successfully saved template.") },
+        );
+    };
 
-    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />;
+    if (error) return <ErrorDisplay error={error} />;
 
     return (
         <Form {...form}>

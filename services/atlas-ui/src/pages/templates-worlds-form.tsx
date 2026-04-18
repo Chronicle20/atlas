@@ -1,13 +1,12 @@
 
-import {useEffect, useState} from "react";
-import {useFieldArray, useForm, SubmitHandler} from "react-hook-form";
-import {Form} from "@/components/ui/form";
-import {Button} from "@/components/ui/button";
+import { useEffect } from "react";
+import { useFieldArray, useForm, type SubmitHandler } from "react-hook-form";
+import { Form } from "@/components/ui/form";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {X} from "lucide-react";
-import {templatesService} from "@/services/api";
-import type {Template} from "@/types/models/template";
-import {toast} from "sonner";
+import { X } from "lucide-react";
+import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
+import { toast } from "sonner";
 import { LoadingSpinner, ErrorDisplay, FormField } from "@/components/common";
 
 interface FormValues {
@@ -21,64 +20,42 @@ interface FormValues {
 }
 
 export function WorldsForm() {
-    const {id} = useParams(); // Get templates ID from URL
+    const { id } = useParams();
+    const templateQuery = useTemplate(String(id ?? ""));
+    const updateTemplate = useUpdateTemplate();
 
-    const [template, setTemplate] = useState<Template>();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const template = templateQuery.data ?? null;
+    const loading = templateQuery.isLoading;
+    const error = templateQuery.error?.message ?? null;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            worlds: []
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { worlds: [] } });
 
     useEffect(() => {
-        if (!id) return; // Ensure id is available
+        if (template) {
+            form.reset({
+                worlds: template.attributes.worlds.map(world => ({
+                    name: world.name,
+                    flag: world.flag,
+                    eventMessage: world.eventMessage,
+                    serverMessage: world.serverMessage,
+                    whyAmIRecommended: world.whyAmIRecommended,
+                })),
+            });
+        }
+    }, [template, form]);
 
-        setLoading(true); // Show loading while fetching
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "worlds" });
 
-        templatesService.getById(String(id))
-            .then((template) => {
-                setTemplate(template);
-
-                if (template) {
-                    const formValues: FormValues = {
-                        worlds: template.attributes.worlds.map(world => ({
-                            name: world.name,
-                            flag: world.flag,
-                            eventMessage: world.eventMessage,
-                            serverMessage: world.serverMessage,
-                            whyAmIRecommended: world.whyAmIRecommended,
-                        }))
-                    };
-                    form.reset(formValues);
-                }
-            })
-            .catch((err) => {
-                setError(err.message);
-            })
-            .finally(() => setLoading(false));
-    }, [id, form]);
-
-    const {fields, append, remove} = useFieldArray({
-        control: form.control,
-        name: "worlds"
-    });
-
-    const onSubmit: SubmitHandler<FormValues> = async (data: FormValues) => {
+    const onSubmit: SubmitHandler<FormValues> = (data) => {
         if (!template) return;
-        
-        templatesService.update(template.id, {
-            worlds: data.worlds,
-        }).then((updatedTemplate) => {
-            setTemplate(updatedTemplate);
-            toast.success("Successfully saved template.");
-        });
-    }
+        updateTemplate.mutate(
+            { id: template.id, updates: { worlds: data.worlds } },
+            { onSuccess: () => toast.success("Successfully saved template.") },
+        );
+    };
 
-    if (loading) return <LoadingSpinner />; // Show loading message while fetching data
-    if (error) return <ErrorDisplay error={error} />; // Show error message if fetching failed
+    if (loading) return <LoadingSpinner />;
+    if (error) return <ErrorDisplay error={error} />;
 
     return (
         <Form {...form}>

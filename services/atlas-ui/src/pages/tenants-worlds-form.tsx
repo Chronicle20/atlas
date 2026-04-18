@@ -1,95 +1,60 @@
 
-import {useEffect, useState} from "react";
-import {useFieldArray, useForm} from "react-hook-form";
-import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Button} from "@/components/ui/button";
+import { useEffect } from "react";
+import { useFieldArray, useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
-import {useTenant} from "@/context/tenant-context";
-import {X} from "lucide-react";
-import {tenantsService} from "@/services/api";
-import {TenantConfig} from "@/types/models/tenant";
-import {toast} from "sonner";
+import { X } from "lucide-react";
+import { useTenantConfiguration, useUpdateTenantConfiguration } from "@/lib/hooks/api/useTenants";
+import { toast } from "sonner";
+
+interface FormValues {
+    worlds: {
+        name: string;
+        flag: string;
+        eventMessage: string;
+        serverMessage: string;
+        whyAmIRecommended: string;
+    }[];
+}
 
 export function WorldsForm() {
-    const {id} = useParams(); // Get tenants ID from URL
-    const {fetchTenantConfiguration} = useTenant();
-    const [tenant, setTenant] = useState<TenantConfig | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { id } = useParams();
+    const tenantQuery = useTenantConfiguration(id ?? "");
+    const updateTenantConfig = useUpdateTenantConfiguration();
 
-    interface FormValues {
-        worlds: {
-            name: string;
-            flag: string;
-            eventMessage: string;
-            serverMessage: string;
-            whyAmIRecommended: string;
-        }[];
-    }
+    const tenant = tenantQuery.data ?? null;
+    const loading = tenantQuery.isLoading;
 
-    const form = useForm<FormValues>({
-        defaultValues: {
-            worlds: []
-        }
-    });
+    const form = useForm<FormValues>({ defaultValues: { worlds: [] } });
 
-    const {fields, append, remove} = useFieldArray({
-        control: form.control,
-        name: "worlds"
-    });
+    const { fields, append, remove } = useFieldArray({ control: form.control, name: "worlds" });
 
-    // Fetch the full tenant configuration
     useEffect(() => {
-        const fetchTenant = async () => {
-            try {
-                setLoading(true);
-                if (id) {
-                    const tenantConfig = await fetchTenantConfiguration(id as string);
-                    setTenant(tenantConfig);
-
-                    // Update form with tenant data
-                    form.reset({
-                        worlds: tenantConfig.attributes.worlds.map(world => ({
-                            name: world.name || "",
-                            flag: world.flag || "",
-                            eventMessage: world.eventMessage || "",
-                            serverMessage: world.serverMessage || "",
-                            whyAmIRecommended: world.whyAmIRecommended || "",
-                        }))
-                    });
-                }
-            } catch (error) {
-                console.error("Error fetching tenant configuration:", error);
-                toast.error("Failed to load tenant configuration");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTenant();
-    }, [id, fetchTenantConfiguration, form]);
-
-    const onSubmit = async (data: FormValues) => {
-        if (!tenant) return;
-
-        try {
-            const updatedTenant = await tenantsService.updateTenantConfiguration(tenant, {
-                worlds: data.worlds,
+        if (tenant) {
+            form.reset({
+                worlds: tenant.attributes.worlds.map(world => ({
+                    name: world.name || "",
+                    flag: world.flag || "",
+                    eventMessage: world.eventMessage || "",
+                    serverMessage: world.serverMessage || "",
+                    whyAmIRecommended: world.whyAmIRecommended || "",
+                })),
             });
-
-            if (updatedTenant) {
-                setTenant(updatedTenant);
-                toast.success("Successfully saved tenant configuration.");
-
-                form.reset({
-                    worlds: updatedTenant.attributes.worlds,
-                });
-            }
-        } catch (error) {
-            console.error("Error updating tenant configuration:", error);
-            toast.error("Failed to update tenant configuration");
         }
-    }
+    }, [tenant, form]);
+
+    const onSubmit = (data: FormValues) => {
+        if (!tenant) return;
+        updateTenantConfig.mutate(
+            { tenant, updates: { worlds: data.worlds } },
+            {
+                onSuccess: () => toast.success("Successfully saved tenant configuration."),
+                onError: () => toast.error("Failed to update tenant configuration"),
+            },
+        );
+    };
 
     if (loading) {
         return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;

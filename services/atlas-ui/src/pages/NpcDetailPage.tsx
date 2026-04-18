@@ -1,8 +1,7 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { npcsService } from "@/services/api";
-import { NPC } from "@/types/models/npc";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,10 +17,6 @@ export function NpcDetailPage() {
     const params = useParams();
     const npcId = Number(params.id);
 
-    const [npc, setNpc] = useState<NPC | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-
     // Fetch NPC metadata (name, icon) from external API
     const {
         name: npcName,
@@ -31,34 +26,21 @@ export function NpcDetailPage() {
         enabled: npcId > 0,
     });
 
-    const fetchNpcData = useCallback(() => {
-        if (!activeTenant) return;
+    const npcQuery = useQuery({
+        queryKey: ["npcs", "detail", activeTenant?.id ?? "no-tenant", npcId],
+        queryFn: async () => {
+            const npcData = await npcsService.getNPCById(npcId, activeTenant!);
+            // If the NPC isn't in shops/conversations, synthesise a basic entry.
+            return npcData ?? { id: npcId, hasShop: false, hasConversation: false };
+        },
+        enabled: !!activeTenant && npcId > 0,
+        staleTime: 60 * 1000,
+    });
 
-        setLoading(true);
-        setError(null);
-
-        npcsService.getNPCById(npcId, activeTenant)
-            .then((npcData) => {
-                if (npcData) {
-                    setNpc(npcData);
-                } else {
-                    // NPC not found in shops/conversations - create a basic entry
-                    setNpc({
-                        id: npcId,
-                        hasShop: false,
-                        hasConversation: false
-                    });
-                }
-            })
-            .catch((err) => {
-                setError(err.message || "Failed to fetch NPC data");
-            })
-            .finally(() => setLoading(false));
-    }, [activeTenant, npcId]);
-
-    useEffect(() => {
-        fetchNpcData();
-    }, [fetchNpcData]);
+    const npc = npcQuery.data ?? null;
+    const loading = npcQuery.isLoading;
+    const error = npcQuery.error?.message ?? null;
+    const fetchNpcData = () => { npcQuery.refetch(); };
 
     if (loading) {
         return (

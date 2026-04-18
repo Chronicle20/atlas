@@ -1,10 +1,8 @@
 
 import { useTenant } from "@/context/tenant-context"
 import { useNavigate, useParams } from "react-router-dom";
-import { useCallback, useEffect, useState } from "react"
-import { questsService } from "@/services/api"
-import type { QuestDefinition } from "@/types/models/quest"
-import { createErrorFromUnknown } from "@/types/api/errors"
+import { useState } from "react"
+import { useQuest } from "@/lib/hooks/api/useQuests"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -55,34 +53,15 @@ export function QuestDetailPage() {
     const navigate = useNavigate()
     const questId = params.id as string
 
-    const [quest, setQuest] = useState<QuestDefinition | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+    const questQuery = useQuest(activeTenant, questId)
+    const quest = questQuery.data ?? null
+    const loading = questQuery.isLoading
+    const error = questQuery.error?.message ?? null
+
     const [startReqsOpen, setStartReqsOpen] = useState(true)
     const [endReqsOpen, setEndReqsOpen] = useState(true)
     const [startActionsOpen, setStartActionsOpen] = useState(false)
     const [endActionsOpen, setEndActionsOpen] = useState(true)
-
-    const fetchQuest = useCallback(async () => {
-        if (!activeTenant || !questId) return
-
-        setLoading(true)
-        setError(null)
-
-        try {
-            const questData = await questsService.getQuestById(activeTenant, questId)
-            setQuest(questData)
-        } catch (err: unknown) {
-            const errorInfo = createErrorFromUnknown(err, "Failed to fetch quest")
-            setError(errorInfo.message)
-        } finally {
-            setLoading(false)
-        }
-    }, [activeTenant, questId])
-
-    useEffect(() => {
-        fetchQuest()
-    }, [fetchQuest])
 
     if (loading) {
         return <QuestDetailSkeleton />
@@ -97,7 +76,7 @@ export function QuestDetailPage() {
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Go Back
                     </Button>
-                    <Button onClick={fetchQuest}>
+                    <Button onClick={() => questQuery.refetch()}>
                         <RefreshCw className="h-4 w-4 mr-2" />
                         Retry
                     </Button>

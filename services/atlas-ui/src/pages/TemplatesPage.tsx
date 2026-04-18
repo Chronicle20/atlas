@@ -1,9 +1,10 @@
 
-import {DataTableWrapper} from "@/components/common/DataTableWrapper";
-import {getColumns} from "@/pages/templates-columns";
-import {useEffect, useState} from "react";
-import {templatesService, onboardingService, ConfigurationCreationError} from "@/services/api";
-import type {Template} from "@/types/models/template";
+import { DataTableWrapper } from "@/components/common/DataTableWrapper";
+import { getColumns } from "@/pages/templates-columns";
+import { useState } from "react";
+import { useTemplates, useInvalidateTemplates, useCreateTemplate, useDeleteTemplate } from "@/lib/hooks/api/useTemplates";
+import { templatesService, onboardingService, ConfigurationCreationError } from "@/services/api";
+import type { Template } from "@/types/models/template";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -12,7 +13,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import {createErrorFromUnknown} from "@/types/api/errors";
 import {TemplatePageSkeleton} from "@/components/common/skeletons/TemplatePageSkeleton";
 
 // Form schema for clone template
@@ -44,17 +44,22 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export function TemplatesPage() {
-    const [templates, setTemplates] = useState<Template[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+    const templatesQuery = useTemplates();
+    const createTemplate = useCreateTemplate();
+    const deleteTemplate = useDeleteTemplate();
+    const { invalidateAll } = useInvalidateTemplates();
+
+    const templates = templatesQuery.data ?? [];
+    const loading = templatesQuery.isLoading;
+    const error = templatesQuery.error?.message ?? null;
+
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
 
     // Clone template state
     const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
     const [templateToClone, setTemplateToClone] = useState<Template | null>(null);
-    const [isCloning, setIsCloning] = useState(false);
+    // createTemplate.isPending tracks clone state
 
     // Create tenant from template state
     const [createTenantDialogOpen, setCreateTenantDialogOpen] = useState(false);
@@ -73,44 +78,24 @@ export function TemplatesPage() {
     });
 
 
-    const fetchDataAgain = () => {
-        setLoading(true)
-        templatesService.getAll()
-            .then((data) => setTemplates(data))
-            .catch((err: unknown) => {
-                const errorInfo = createErrorFromUnknown(err, "Failed to fetch templates");
-                setError(errorInfo.message);
-            })
-            .finally(() => setLoading(false))
-    }
+    const fetchDataAgain = () => invalidateAll();
 
-    useEffect(() => {
-        fetchDataAgain()
-    }, [])
-
-    // Function to open delete confirmation dialog
     const openDeleteDialog = (id: string) => {
         setTemplateToDelete(id);
         setDeleteDialogOpen(true);
     };
 
-    // Function to handle template deletion
-    const handleDeleteTemplate = async () => {
+    const handleDeleteTemplate = () => {
         if (!templateToDelete) return;
-
-        try {
-            setIsDeleting(true);
-            await templatesService.delete(templateToDelete);
-
-            // Refresh template data
-            fetchDataAgain();
-        } catch (err: unknown) {
-            console.error("Failed to delete template:", err);
-        } finally {
-            setIsDeleting(false);
-            setDeleteDialogOpen(false);
-            setTemplateToDelete(null);
-        }
+        deleteTemplate.mutate(
+            { id: templateToDelete },
+            {
+                onSettled: () => {
+                    setDeleteDialogOpen(false);
+                    setTemplateToDelete(null);
+                },
+            },
+        );
     };
 
     // Function to open clone dialog
@@ -129,42 +114,23 @@ export function TemplatesPage() {
         }
     };
 
-    // Function to handle template cloning
-    const handleCloneTemplate = async (data: CloneTemplateFormValues) => {
+    const handleCloneTemplate = (data: CloneTemplateFormValues) => {
         if (!templateToClone) return;
 
-        try {
-            setIsCloning(true);
+        const clonedAttributes = templatesService.cloneTemplate(templateToClone);
+        clonedAttributes.region = data.region;
+        clonedAttributes.majorVersion = data.majorVersion;
+        clonedAttributes.minorVersion = data.minorVersion;
 
-            // Clone the template and update with form values
-            const clonedAttributes = templatesService.cloneTemplate(templateToClone);
-            clonedAttributes.region = data.region;
-            clonedAttributes.majorVersion = data.majorVersion;
-            clonedAttributes.minorVersion = data.minorVersion;
-
-            // Create the new template
-            const newTemplate = await templatesService.create(clonedAttributes);
-
-            // Show success message
-            toast.success("Template cloned successfully");
-
-            // Close the dialog
-            setCloneDialogOpen(false);
-            setTemplateToClone(null);
-
-            // Navigate to the new template
-            console.log(`Navigating to: /templates/${newTemplate.id}/properties`);
-
-            // Use window.location.replace for a more forceful navigation
-            window.location.replace(`/templates/${newTemplate.id}/properties`);
-
-            // The code below this point may not execute due to the page navigation
-        } catch (err: unknown) {
-            console.error("Failed to clone template:", err);
-            toast.error("Failed to clone template");
-        } finally {
-            setIsCloning(false);
-        }
+        createTemplate.mutate(clonedAttributes, {
+            onSuccess: (newTemplate) => {
+                toast.success("Template cloned successfully");
+                setCloneDialogOpen(false);
+                setTemplateToClone(null);
+                window.location.replace(`/templates/${newTemplate.id}/properties`);
+            },
+            onError: () => toast.error("Failed to clone template"),
+        });
     };
 
     // Function to open create tenant dialog
@@ -252,12 +218,12 @@ export function TemplatesPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction 
+                        <AlertDialogAction
                             onClick={handleDeleteTemplate}
-                            disabled={isDeleting}
+                            disabled={deleteTemplate.isPending}
                             className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                         >
-                            {isDeleting ? "Deleting..." : "Delete"}
+                            {deleteTemplate.isPending ? "Deleting..." : "Delete"}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -343,9 +309,9 @@ export function TemplatesPage() {
                                 </Button>
                                 <Button 
                                     type="submit" 
-                                    disabled={isCloning}
+                                    disabled={createTemplate.isPending}
                                 >
-                                    {isCloning ? "Cloning..." : "Clone Template"}
+                                    {createTemplate.isPending ? "Cloning..." : "Clone Template"}
                                 </Button>
                             </DialogFooter>
                         </form>

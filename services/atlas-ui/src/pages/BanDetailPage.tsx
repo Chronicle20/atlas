@@ -1,9 +1,9 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { bansService } from "@/services/api/bans.service";
-import { Ban, BanTypeLabels, BanReasonCodeLabels, formatBanExpiration, isBanActive } from "@/types/models/ban";
+import { useBan, useInvalidateBans } from "@/lib/hooks/api/useBans";
+import { BanTypeLabels, BanReasonCodeLabels, formatBanExpiration, isBanActive } from "@/types/models/ban";
 import { BanTypeBadge } from "@/components/features/bans/BanTypeBadge";
 import { BanStatusBadge } from "@/components/features/bans/BanStatusBadge";
 import { DeleteBanDialog } from "@/components/features/bans/DeleteBanDialog";
@@ -47,38 +47,29 @@ export function BanDetailPage() {
     const navigate = useNavigate();
     const banId = params.banId as string;
 
-    const [ban, setBan] = useState<Ban | null>(null);
-    const [loading, setLoading] = useState(true);
+    const banQuery = useBan(activeTenant, banId);
+    const { invalidateAll } = useInvalidateBans();
+
+    const ban = banQuery.data ?? null;
+    const loading = banQuery.isLoading;
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [expireDialogOpen, setExpireDialogOpen] = useState(false);
 
-    const fetchBan = useCallback(async () => {
-        if (!activeTenant || !banId) return;
-
-        setLoading(true);
-
-        try {
-            const data = await bansService.getBanById(activeTenant, banId);
-            setBan(data);
-        } catch (err: unknown) {
-            const errorInfo = createErrorFromUnknown(err, "Failed to fetch ban");
+    // On load error, toast and bounce the user back to the list.
+    useEffect(() => {
+        if (banQuery.error) {
+            const errorInfo = createErrorFromUnknown(banQuery.error, "Failed to fetch ban");
             toast.error(errorInfo.message);
             navigate("/bans");
-        } finally {
-            setLoading(false);
         }
-    }, [activeTenant, banId, navigate]);
-
-    useEffect(() => {
-        fetchBan();
-    }, [fetchBan]);
+    }, [banQuery.error, navigate]);
 
     const handleDeleteSuccess = () => {
         navigate("/bans");
     };
 
     const handleExpireSuccess = () => {
-        fetchBan();
+        invalidateAll();
     };
 
     const canExpire = ban && !ban.attributes.permanent && isBanActive(ban);

@@ -1,6 +1,6 @@
 
 import { useTenant } from "@/context/tenant-context";
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { itemsService } from "@/services/api/items.service";
 import {
@@ -14,8 +14,6 @@ import {
   type EtcData,
   type CashItemData,
 } from "@/types/models/item";
-import { toast } from "sonner";
-import { createErrorFromUnknown } from "@/types/api/errors";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -38,39 +36,26 @@ export function ItemDetailPage() {
   const itemId = params.id as string;
   const itemType = getItemType(itemId);
 
-  const [itemName, setItemName] = useState<string | null>(null);
-  const [detail, setDetail] = useState<ItemDetailData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const nameQuery = useQuery({
+    queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", itemId],
+    queryFn: () => itemsService.getItemName(itemId, activeTenant!),
+    enabled: !!activeTenant && !!itemId,
+    staleTime: 10 * 60 * 1000,
+  });
+
+  const detailQuery = useQuery({
+    queryKey: ["items", "detail", activeTenant?.id ?? "no-tenant", itemId, itemType],
+    queryFn: () => itemsService.getItemDetail(itemId, activeTenant!),
+    enabled: !!activeTenant && !!itemId && itemType !== "Unknown",
+    staleTime: 10 * 60 * 1000,
+  });
+
   const { data: drops, isLoading: dropsLoading } = useItemDrops(itemId);
 
-  useEffect(() => {
-    if (!activeTenant || !itemId) return;
-
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const [name, detailData] = await Promise.all([
-          itemsService.getItemName(itemId, activeTenant),
-          itemType !== "Unknown"
-            ? itemsService.getItemDetail(itemId, activeTenant)
-            : Promise.resolve(null),
-        ]);
-        setItemName(name);
-        setDetail(detailData);
-      } catch (err: unknown) {
-        const errorInfo = createErrorFromUnknown(err, "Failed to load item details");
-        setError(errorInfo.message);
-        toast.error(errorInfo.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [activeTenant, itemId, itemType]);
+  const itemName = nameQuery.data ?? null;
+  const detail = detailQuery.data ?? null;
+  const loading = nameQuery.isLoading || detailQuery.isLoading;
+  const error = nameQuery.error?.message ?? detailQuery.error?.message ?? null;
 
   if (loading) {
     return <PageLoader />;

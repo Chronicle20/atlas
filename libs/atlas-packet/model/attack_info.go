@@ -150,6 +150,12 @@ func (m *AttackInfo) Decode(l logrus.FieldLogger, ctx context.Context) func(r *r
 			m.cashBulletPosition = r.ReadUint16()
 			m.nShootRange = r.ReadByte()
 
+			// TODO(task-007): the `javlin` flag is tied to a specific skill mechanic
+			// whose gameplay semantics are not yet fully understood (the original name
+			// is a poor translation). Projectile consumption in atlas-channel's
+			// character_attack_projectile.go intentionally bails out when javlin=true
+			// to avoid mis-consuming. Revisit the gate at both sites when the mechanic
+			// is characterized.
 			if m.javlin && !skill.IsShootSkillNotConsumingBullet(skill.Id(m.skillId)) {
 				m.bulletItemId = r.ReadUint32()
 			}
@@ -226,6 +232,10 @@ func (m *AttackInfo) ActionSpeed() byte {
 
 func (m *AttackInfo) BulletItemId() uint32 {
 	return m.bulletItemId
+}
+
+func (m *AttackInfo) Javlin() bool {
+	return m.javlin
 }
 
 func (m *AttackInfo) Keydown() uint32 {

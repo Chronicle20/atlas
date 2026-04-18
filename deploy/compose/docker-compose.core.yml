@@ -567,9 +567,9 @@ services:
       dockerfile: services/atlas-ui/Dockerfile
     image: atlas-ui:${ATLAS_IMAGE_TAG:-local}
     environment:
-      NEXT_PUBLIC_ROOT_API_URL: http://atlas-ingress:8080
+      VITE_ROOT_API_URL: http://atlas-ingress:8080
     ports:
-      - "3000:3000"
+      - "3000:80"
 
   atlas-world:
     <<: *atlas-defaults

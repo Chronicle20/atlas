@@ -1,0 +1,610 @@
+import { vi, type Mocked } from 'vitest';
+/**
+ * Comprehensive tests for CharacterRenderer component with various equipment combinations
+ */
+
+import React from 'react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { CharacterRenderer } from '../CharacterRenderer';
+import { mapleStoryService } from '@/services/api/maplestory.service';
+import type { Character } from '@/types/models/character';
+import type { Asset } from '@/services/api/inventory.service';
+
+// Mock the MapleStory service
+vi.mock('@/services/api/maplestory.service', () => ({
+  mapleStoryService: {
+    characterToMapleStoryData: vi.fn(),
+    generateCharacterImage: vi.fn(),
+  },
+}));
+
+// Mock the character image hook
+vi.mock('@/lib/hooks/useCharacterImage', () => ({
+  useCharacterImage: vi.fn(),
+  useCharacterImagePreloader: vi.fn(() => ({ preloadImages: vi.fn() })),
+}));
+import { useCharacterImage } from '@/lib/hooks/useCharacterImage';
+
+// Mock the intersection observer hook
+vi.mock('@/lib/hooks/useIntersectionObserver', () => ({
+  useLazyLoad: vi.fn(() => ({
+    shouldLoad: true,
+    ref: { current: null },
+  })),
+}));
+
+const mockMapleStoryService = mapleStoryService as Mocked<typeof mapleStoryService>;
+
+// Test wrapper with QueryClient
+function TestWrapper({ children }: { children: React.ReactNode }) {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      {children}
+    </QueryClientProvider>
+  );
+}
+
+describe('CharacterRenderer', () => {
+  const mockUseCharacterImage = vi.mocked(useCharacterImage);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Default successful mock for useCharacterImage
+    mockUseCharacterImage.mockReturnValue({
+      data: {
+        url: 'https://maplestory.io/api/character/test.png',
+        character: {} as never,
+        options: {} as never,
+        cached: false,
+      },
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      preload: vi.fn(),
+      prefetchVariants: vi.fn(),
+      imageUrl: 'https://maplestory.io/api/character/test.png',
+      cached: false,
+    } as unknown as ReturnType<typeof useCharacterImage>);
+
+    // Mock the service methods
+    mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
+      id: 'char1',
+      name: 'TestWarrior',
+      level: 85,
+      jobId: 110,
+      hair: 30000,
+      face: 20000,
+      skinColor: 2,
+      gender: 0,
+      equipment: {},
+    });
+  });
+
+  const mockCharacter = {
+    id: 'char1',
+    type: 'character',
+    attributes: {
+      accountId: 1,
+      name: 'TestWarrior',
+      level: 85,
+      jobId: 110,
+      hair: 30000,
+      face: 20000,
+      skinColor: 2,
+      gender: 0,
+      strength: 150,
+      dexterity: 50,
+      intelligence: 25,
+      luck: 25,
+      hp: 2500,
+      mp: 300,
+      ap: 0,
+      sp: '0,15,0',
+      experience: 1500000,
+      fame: 50,
+      gachaponExperience: 0,
+      mapId: 100000000,
+      spawnPoint: 0,
+      gm: 0,
+      partyId: null,
+      guildId: 'guild1',
+      guildRank: 3,
+      messengerGroupId: null,
+      messengerPosition: 0,
+      mounts: '0,0,0,0,0,0,0,0,0',
+      buddyCapacity: 30,
+      createdDate: '2024-01-01T00:00:00Z',
+      lastLoginDate: '2024-01-15T12:00:00Z',
+    },
+  };
+
+  const createMockAsset = (slot: number, templateId: number): Asset => ({
+    id: `asset-${slot}`,
+    type: 'inventory',
+    attributes: {
+      slot,
+      templateId,
+      quantity: 1,
+    },
+  } as unknown as Asset);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    
+    // Default mock implementations
+    mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
+      id: 'char1',
+      name: 'TestWarrior',
+      level: 85,
+      jobId: 110,
+      hair: 30000,
+      face: 20000,
+      skinColor: 2,
+      gender: 0,
+      equipment: {},
+    });
+    
+    mockMapleStoryService.generateCharacterImage.mockResolvedValue({
+      url: 'https://maplestory.io/api/GMS/214/character/center/2002/30000:0,20000:0/stand1/0?resize=2',
+      character: {
+        id: 'char1',
+        name: 'TestWarrior',
+        level: 85,
+        jobId: 110,
+        hair: 30000,
+        face: 20000,
+        skinColor: 2,
+        gender: 0,
+        equipment: {},
+      },
+      options: {
+        hair: 30000,
+        face: 20000,
+        skin: 2002,
+        equipment: {},
+        stance: 'stand1',
+        resize: 2,
+      },
+      cached: false,
+    });
+  });
+
+  describe('Basic rendering', () => {
+    it('should render character with no equipment', async () => {
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Verify the image is rendered with the URL from the hook
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+      expect(image).toHaveAttribute('alt', 'TestWarrior');
+    });
+
+    it('should render character with basic equipment', async () => {
+      const basicEquipment: Asset[] = [
+        createMockAsset(-1, 1001000),  // Hat
+        createMockAsset(-5, 1041000),  // Top
+        createMockAsset(-11, 1202000), // One-handed sword
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={basicEquipment} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Verify the image is rendered
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+    });
+  });
+
+  describe('Equipment combinations', () => {
+    it('should render character with full armor set', async () => {
+      const armorSet: Asset[] = [
+        createMockAsset(-1, 1001000),  // Hat
+        createMockAsset(-5, 1041000),  // Top
+        createMockAsset(-6, 1061000),  // Bottom
+        createMockAsset(-7, 1071000),  // Shoes
+        createMockAsset(-8, 1081000),  // Gloves
+        createMockAsset(-9, 1102000),  // Cape
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={armorSet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+    });
+
+    it('should render character with one-handed weapon and shield', async () => {
+      const weaponSet: Asset[] = [
+        createMockAsset(-10, 1092000), // Shield
+        createMockAsset(-11, 1302000), // One-handed sword
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={weaponSet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const image = screen.getByTestId('character-image');
+      expect(image).toBeInTheDocument();
+    });
+
+    it('should render character with accessories', async () => {
+      const accessorySet: Asset[] = [
+        createMockAsset(-12, 1112000), // Ring 1
+        createMockAsset(-13, 1112001), // Ring 2
+        createMockAsset(-16, 1122000), // Pendant
+        createMockAsset(-17, 1132000), // Belt
+        createMockAsset(-21, 1022000), // Eye accessory
+        createMockAsset(-22, 1012000), // Face accessory
+        createMockAsset(-23, 1032000), // Earrings
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={accessorySet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+    });
+
+    it('should render character with cash equipment', async () => {
+      const cashSet: Asset[] = [
+        createMockAsset(-101, 1001001), // Cash Hat
+        createMockAsset(-104, 1041001), // Cash Top
+        createMockAsset(-111, 1302001), // Cash Weapon
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={cashSet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+    });
+
+    it('should render character with mixed regular and cash equipment', async () => {
+      const mixedSet: Asset[] = [
+        createMockAsset(-1, 1001000),   // Regular Hat
+        createMockAsset(-5, 1041000),   // Regular Top
+        createMockAsset(-101, 1001001), // Cash Hat
+        createMockAsset(-111, 1302001), // Cash Weapon
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={mixedSet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+    });
+
+    it('should render character with full equipment loadout', async () => {
+      const fullSet: Asset[] = [
+        // Regular equipment
+        createMockAsset(-1, 1001000),  // Hat
+        createMockAsset(-5, 1041000),  // Top
+        createMockAsset(-6, 1061000),  // Bottom
+        createMockAsset(-7, 1071000),  // Shoes
+        createMockAsset(-8, 1081000),  // Gloves
+        createMockAsset(-9, 1102000),  // Cape
+        createMockAsset(-10, 1092000), // Shield
+        createMockAsset(-11, 1202000), // One-handed sword
+        createMockAsset(-12, 1112000), // Ring 1
+        createMockAsset(-13, 1112001), // Ring 2
+        createMockAsset(-16, 1122000), // Pendant
+        createMockAsset(-17, 1132000), // Belt
+        createMockAsset(-21, 1022000), // Eye accessory
+        createMockAsset(-22, 1012000), // Face accessory
+        createMockAsset(-23, 1032000), // Earrings
+        // Cash equipment
+        createMockAsset(-101, 1001001), // Cash Hat
+        createMockAsset(-111, 1302001), // Cash Weapon
+        // Regular inventory (should be ignored)
+        createMockAsset(1, 2000000),   // Potion
+        createMockAsset(2, 2001000),   // Equipment in inventory
+      ];
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} inventory={fullSet} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Component options', () => {
+    it('should render with different sizes', async () => {
+      // Test small size
+      const { unmount } = render(
+        <CharacterRenderer character={mockCharacter as unknown as Character} size="small" />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      let container = screen.getByTestId('character-image').parentElement;
+      expect(container).toHaveClass('w-32', 'h-32');
+
+      unmount();
+
+      // Test medium size (default)
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} size="medium" />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      container = screen.getByTestId('character-image').parentElement;
+      expect(container).toHaveClass('w-48', 'h-48');
+    });
+
+    it('should use custom scale factor', async () => {
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} scale={4} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Verify the hook was called (scale affects the hook call)
+      expect(mockUseCharacterImage).toHaveBeenCalled();
+    });
+
+    it('should handle custom className', async () => {
+      render(
+        <CharacterRenderer
+          character={mockCharacter as unknown as Character}
+          className="custom-class border-2"
+        />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const container = screen.getByTestId('character-image').parentElement;
+      expect(container).toHaveClass('custom-class', 'border-2');
+    });
+  });
+
+  describe('Loading states', () => {
+    it('should show loading skeleton by default', () => {
+      // Mock loading state
+      mockUseCharacterImage.mockReturnValue({
+        data: null,
+        isLoading: true,
+        error: null,
+        refetch: vi.fn(),
+        preload: vi.fn(),
+        prefetchVariants: vi.fn(),
+        imageUrl: null,
+        cached: false,
+      } as unknown as ReturnType<typeof useCharacterImage>);
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
+
+      // Should show skeleton loading
+      expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
+    });
+
+    it('should not show loading skeleton when showLoading is false', () => {
+      // Mock loading state
+      mockUseCharacterImage.mockReturnValue({
+        data: null,
+        isLoading: true,
+        error: null,
+        refetch: vi.fn(),
+        preload: vi.fn(),
+        prefetchVariants: vi.fn(),
+        imageUrl: null,
+        cached: false,
+      } as unknown as ReturnType<typeof useCharacterImage>);
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} showLoading={false} />, { wrapper: TestWrapper });
+
+      // Should not show loading indicator when showLoading is false
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Error handling', () => {
+    it('should handle API errors gracefully', async () => {
+      // Mock error state in the hook
+      mockUseCharacterImage.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('API service is temporarily unavailable'),
+        refetch: vi.fn(),
+        preload: vi.fn(),
+        prefetchVariants: vi.fn(),
+        imageUrl: '/default-character-avatar.svg',
+        cached: false,
+      } as unknown as ReturnType<typeof useCharacterImage>);
+
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Should show fallback image
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', '/default-character-avatar.svg');
+    });
+
+    it('should handle image load errors', async () => {
+      render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Simulate image load error
+      const image = screen.getByTestId('character-image');
+      fireEvent.error(image);
+
+      await waitFor(() => {
+        // Should still show the image (error handling is internal)
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+    });
+
+    it('should use custom fallback avatar on error', async () => {
+      // Mock error state with custom fallback
+      mockUseCharacterImage.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('Failed to generate character image'),
+        refetch: vi.fn(),
+        preload: vi.fn(),
+        prefetchVariants: vi.fn(),
+        imageUrl: '/custom-avatar.png',
+        cached: false,
+      } as unknown as ReturnType<typeof useCharacterImage>);
+
+      render(
+        <CharacterRenderer
+          character={mockCharacter as unknown as Character}
+          fallbackAvatar="/custom-avatar.png"
+        />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', '/custom-avatar.png');
+    });
+  });
+
+  describe('Callback functions', () => {
+    it('should call onImageLoad when image loads successfully', async () => {
+      const onImageLoad = vi.fn();
+
+      render(
+        <CharacterRenderer
+          character={mockCharacter as unknown as Character}
+          onImageLoad={onImageLoad}
+        />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Simulate successful image load
+      const image = screen.getByTestId('character-image');
+      fireEvent.load(image);
+
+      expect(onImageLoad).toHaveBeenCalled();
+    });
+
+    it('should render fallback when hook returns error', async () => {
+      // Mock error state
+      mockUseCharacterImage.mockReturnValue({
+        data: null,
+        isLoading: false,
+        error: new Error('Failed to load character image'),
+        refetch: vi.fn(),
+        preload: vi.fn(),
+        prefetchVariants: vi.fn(),
+        imageUrl: '/default-character-avatar.svg',
+        cached: false,
+      } as unknown as ReturnType<typeof useCharacterImage>);
+
+      render(
+        <CharacterRenderer character={mockCharacter as unknown as Character} />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      // Should show fallback image when there's an error
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('src', '/default-character-avatar.svg');
+    });
+  });
+
+  describe('Different character types', () => {
+    it('should render different job characters correctly', async () => {
+      const archerCharacter = {
+        ...mockCharacter,
+        attributes: {
+          ...mockCharacter.attributes,
+          name: 'TestArcher',
+          jobId: 300, // Archer
+          hair: 31000,
+          face: 21000,
+          skinColor: 1,
+        },
+      };
+
+      const archerEquipment: Asset[] = [
+        createMockAsset(-11, 1452000), // Bow
+        createMockAsset(-1, 1001001),  // Archer hat
+      ];
+
+      render(
+        <CharacterRenderer
+          character={archerCharacter as unknown as Character}
+          inventory={archerEquipment}
+        />,
+        { wrapper: TestWrapper }
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('alt', 'TestArcher');
+    });
+
+    it('should render female characters correctly', async () => {
+      const femaleCharacter = {
+        ...mockCharacter,
+        attributes: {
+          ...mockCharacter.attributes,
+          name: 'TestMage',
+          gender: 1, // Female
+          hair: 32000,
+          face: 22000,
+        },
+      };
+
+      render(<CharacterRenderer character={femaleCharacter as unknown as Character} />, { wrapper: TestWrapper });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('character-image')).toBeInTheDocument();
+      });
+
+      const image = screen.getByTestId('character-image');
+      expect(image).toHaveAttribute('alt', 'TestMage');
+    });
+  });
+});

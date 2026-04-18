@@ -1,0 +1,342 @@
+import { vi } from 'vitest';
+/**
+ * Tests for useTenants React Query hooks
+ */
+
+import { renderHook, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+
+import {
+  useTenants,
+  useTenant,
+  useCreateTenant,
+  useUpdateTenant,
+  useDeleteTenant,
+  useTenantConfigurations,
+  useTenantConfiguration,
+  useCreateTenantConfiguration,
+  useUpdateTenantConfiguration,
+  useCreateFromTemplate,
+  tenantKeys,
+  type TenantBasic,
+  type TenantBasicAttributes,
+  type TenantConfig,
+} from '../useTenants';
+
+// Mock the tenants service
+vi.mock('@/services/api/tenants.service', () => ({
+  tenantsService: {
+    getAllTenants: vi.fn(),
+    getTenantById: vi.fn(),
+    createTenant: vi.fn(),
+    updateTenant: vi.fn(),
+    deleteTenant: vi.fn(),
+    getAllTenantConfigurations: vi.fn(),
+    getTenantConfigurationById: vi.fn(),
+    createTenantConfiguration: vi.fn(),
+    updateTenantConfiguration: vi.fn(),
+    createTenantFromTemplate: vi.fn(),
+  },
+}));
+
+import { tenantsService } from '@/services/api/tenants.service';
+
+// Test data
+const mockTenant: TenantBasic = {
+  id: 'test-tenant-1',
+  attributes: {
+    name: 'Test Tenant',
+    region: 'GMS',
+    majorVersion: 83,
+    minorVersion: 1,
+  },
+};
+
+const mockTenantAttributes: TenantBasicAttributes = {
+  name: 'New Tenant',
+  region: 'EMS',
+  majorVersion: 84,
+  minorVersion: 0,
+};
+
+const mockTenantConfig: TenantConfig = {
+  id: 'test-config-1',
+  attributes: {
+    region: 'GMS',
+    majorVersion: 83,
+    minorVersion: 1,
+    usesPin: false,
+    characters: { templates: [] },
+    npcs: [],
+    socket: { handlers: [], writers: [] },
+    worlds: [],
+  },
+};
+
+// Test wrapper
+function createWrapper() {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  const Wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+  Wrapper.displayName = 'TestQueryClientWrapper';
+  return Wrapper;
+}
+
+describe('useTenants hooks', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('Query key factories', () => {
+    it('should generate correct query keys', () => {
+      expect(tenantKeys.all).toEqual(['tenants']);
+      expect(tenantKeys.basic()).toEqual(['tenants', 'basic']);
+      expect(tenantKeys.basicDetail('123')).toEqual(['tenants', 'basic', 'detail', '123']);
+      expect(tenantKeys.configs()).toEqual(['tenants', 'configs']);
+      expect(tenantKeys.configDetail('456')).toEqual(['tenants', 'configs', 'detail', '456']);
+    });
+  });
+
+  describe('Basic tenant hooks', () => {
+    describe('useTenants', () => {
+      it('should fetch all tenants successfully', async () => {
+        const mockTenants = [mockTenant];
+        (tenantsService.getAllTenants as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenants);
+
+        const { result } = renderHook(() => useTenants(), {
+          wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockTenants);
+        expect(tenantsService.getAllTenants).toHaveBeenCalledWith({ useCache: false });
+      });
+
+      it('should pass options to service', async () => {
+        const options = { signal: new AbortController().signal };
+        (tenantsService.getAllTenants as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+        renderHook(() => useTenants(options), {
+          wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+          expect(tenantsService.getAllTenants).toHaveBeenCalledWith({ ...options, useCache: false });
+        });
+      });
+    });
+
+    describe('useTenant', () => {
+      it('should fetch tenant by ID successfully', async () => {
+        (tenantsService.getTenantById as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenant);
+
+        const { result } = renderHook(() => useTenant('test-tenant-1'), {
+          wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockTenant);
+        expect(tenantsService.getTenantById).toHaveBeenCalledWith('test-tenant-1', { useCache: false });
+      });
+
+      it('should not run query when ID is empty', () => {
+        const { result } = renderHook(() => useTenant(''), {
+          wrapper: createWrapper(),
+        });
+
+        expect(result.current.isFetching).toBe(false);
+        expect(tenantsService.getTenantById).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('useCreateTenant', () => {
+      it('should create tenant successfully', async () => {
+        (tenantsService.createTenant as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenant);
+
+        const { result } = renderHook(() => useCreateTenant(), {
+          wrapper: createWrapper(),
+        });
+
+        result.current.mutate(mockTenantAttributes);
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockTenant);
+        expect(tenantsService.createTenant).toHaveBeenCalledWith(mockTenantAttributes);
+      });
+
+      it('should handle creation errors', async () => {
+        const error = new Error('Creation failed');
+        (tenantsService.createTenant as ReturnType<typeof vi.fn>).mockRejectedValue(error);
+        const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+        const { result } = renderHook(() => useCreateTenant(), {
+          wrapper: createWrapper(),
+        });
+
+        result.current.mutate(mockTenantAttributes);
+
+        await waitFor(() => {
+          expect(result.current.isError).toBe(true);
+        });
+
+        expect(result.current.error).toEqual(error);
+        expect(consoleSpy).toHaveBeenCalledWith('Failed to create tenant:', error);
+        
+        consoleSpy.mockRestore();
+      });
+    });
+
+    describe('useUpdateTenant', () => {
+      it('should update tenant successfully', async () => {
+        const updatedTenant = { ...mockTenant, attributes: { ...mockTenant.attributes, name: 'Updated' } };
+        (tenantsService.updateTenant as ReturnType<typeof vi.fn>).mockResolvedValue(updatedTenant);
+
+        const { result } = renderHook(() => useUpdateTenant(), {
+          wrapper: createWrapper(),
+        });
+
+        const updates = { name: 'Updated' };
+        result.current.mutate({ tenant: mockTenant, updates });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(updatedTenant);
+        expect(tenantsService.updateTenant).toHaveBeenCalledWith(mockTenant, updates);
+      });
+    });
+
+    describe('useDeleteTenant', () => {
+      it('should delete tenant successfully', async () => {
+        (tenantsService.deleteTenant as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+        const { result } = renderHook(() => useDeleteTenant(), {
+          wrapper: createWrapper(),
+        });
+
+        result.current.mutate({ id: 'test-tenant-1' });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(tenantsService.deleteTenant).toHaveBeenCalledWith('test-tenant-1');
+      });
+    });
+  });
+
+  describe('Tenant configuration hooks', () => {
+    describe('useTenantConfigurations', () => {
+      it('should fetch all configurations successfully', async () => {
+        const mockConfigs = [mockTenantConfig];
+        (tenantsService.getAllTenantConfigurations as ReturnType<typeof vi.fn>).mockResolvedValue(mockConfigs);
+
+        const { result } = renderHook(() => useTenantConfigurations(), {
+          wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockConfigs);
+        expect(tenantsService.getAllTenantConfigurations).toHaveBeenCalledWith({ useCache: false });
+      });
+    });
+
+    describe('useTenantConfiguration', () => {
+      it('should fetch configuration by ID successfully', async () => {
+        (tenantsService.getTenantConfigurationById as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenantConfig);
+
+        const { result } = renderHook(() => useTenantConfiguration('test-config-1'), {
+          wrapper: createWrapper(),
+        });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockTenantConfig);
+        expect(tenantsService.getTenantConfigurationById).toHaveBeenCalledWith('test-config-1', { useCache: false });
+      });
+    });
+
+    describe('useCreateTenantConfiguration', () => {
+      it('should create configuration successfully', async () => {
+        (tenantsService.createTenantConfiguration as ReturnType<typeof vi.fn>).mockResolvedValue(mockTenantConfig);
+
+        const { result } = renderHook(() => useCreateTenantConfiguration(), {
+          wrapper: createWrapper(),
+        });
+
+        result.current.mutate({ tenantId: mockTenantConfig.id, attributes: mockTenantConfig.attributes });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(mockTenantConfig);
+        expect(tenantsService.createTenantConfiguration).toHaveBeenCalledWith(
+          mockTenantConfig.id,
+          mockTenantConfig.attributes
+        );
+      });
+    });
+
+    describe('useUpdateTenantConfiguration', () => {
+      it('should update configuration successfully', async () => {
+        const updatedConfig = { ...mockTenantConfig, attributes: { ...mockTenantConfig.attributes, usesPin: true } };
+        (tenantsService.updateTenantConfiguration as ReturnType<typeof vi.fn>).mockResolvedValue(updatedConfig);
+
+        const { result } = renderHook(() => useUpdateTenantConfiguration(), {
+          wrapper: createWrapper(),
+        });
+
+        const updates = { usesPin: true };
+        result.current.mutate({ tenant: mockTenantConfig, updates });
+
+        await waitFor(() => {
+          expect(result.current.isSuccess).toBe(true);
+        });
+
+        expect(result.current.data).toEqual(updatedConfig);
+        expect(tenantsService.updateTenantConfiguration).toHaveBeenCalledWith(mockTenantConfig, updates);
+      });
+    });
+  });
+
+  describe('Utility hooks', () => {
+    describe('useCreateFromTemplate', () => {
+      it('should create from template', () => {
+        const templateAttributes = { ...mockTenantConfig.attributes };
+        (tenantsService.createTenantFromTemplate as ReturnType<typeof vi.fn>).mockReturnValue(templateAttributes);
+
+        const { result } = renderHook(() => useCreateFromTemplate());
+
+        const template = { attributes: mockTenantConfig.attributes };
+        const createdAttributes = result.current(template);
+
+        expect(createdAttributes).toEqual(templateAttributes);
+        expect(tenantsService.createTenantFromTemplate).toHaveBeenCalledWith(template);
+      });
+    });
+  });
+});

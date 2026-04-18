@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/test"
+	testlog "github.com/sirupsen/logrus/hooks/test"
 )
 
 func TestChangeBatchQuantityUpdateRoundTrip(t *testing.T) {
@@ -123,6 +124,44 @@ func TestChangeBatchAddStackableRoundTrip(t *testing.T) {
 				t.Errorf("templateId: got %v, want 2000000", ae.Asset().TemplateId())
 			}
 		})
+	}
+}
+
+// TestChangeBatchAddStackableZeroPositionContract pins the wire-format invariant
+// that an AddEntry's asset body is encoded with zeroPosition=true. The entry
+// header already emits WriteInt16(slot); a zeroPosition=false body would
+// double-encode the slot (extra 1 byte for stackable, extra 2 bytes for equip)
+// and misalign the client decoder. This was the regression introduced in
+// 6db749769 and manifested as a client crash on item gain.
+func TestChangeBatchAddStackableZeroPositionContract(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	goodAsset := model.NewAsset(true, 7, 2000000, time.Time{}).SetStackableInfo(5, 0, 0)
+	badAsset := model.NewAsset(false, 7, 2000000, time.Time{}).SetStackableInfo(5, 0, 0)
+
+	good := NewChangeBatch(false, inventory.NewAddEntry(2, 7, goodAsset)).Encode(l, ctx)(nil)
+	bad := NewChangeBatch(false, inventory.NewAddEntry(2, 7, badAsset)).Encode(l, ctx)(nil)
+
+	if diff := len(bad) - len(good); diff != 1 {
+		t.Fatalf("stackable zeroPosition=false should add exactly 1 slot byte, got diff of %d", diff)
+	}
+}
+
+func TestChangeBatchAddEquipmentZeroPositionContract(t *testing.T) {
+	l, _ := testlog.NewNullLogger()
+	ctx := test.CreateContext("GMS", 83, 1)
+	goodAsset := model.NewAsset(true, 1, 1302000, time.Time{}).
+		SetEquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).
+		SetEquipmentMeta(7, 0, 0, 0, 0, 0)
+	badAsset := model.NewAsset(false, 1, 1302000, time.Time{}).
+		SetEquipmentStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0).
+		SetEquipmentMeta(7, 0, 0, 0, 0, 0)
+
+	good := NewChangeBatch(false, inventory.NewAddEntry(1, 1, goodAsset)).Encode(l, ctx)(nil)
+	bad := NewChangeBatch(false, inventory.NewAddEntry(1, 1, badAsset)).Encode(l, ctx)(nil)
+
+	if diff := len(bad) - len(good); diff != 2 {
+		t.Fatalf("equip zeroPosition=false should add a 2-byte slot prefix on GMS v83, got diff of %d", diff)
 	}
 }
 

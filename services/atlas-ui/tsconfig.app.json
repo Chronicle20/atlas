@@ -17,6 +17,9 @@
     "esModuleInterop": true,
 
     "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "noUncheckedSideEffectImports": true,
     "noFallthroughCasesInSwitch": true,
     "types": ["vite/client", "vitest/globals", "node"],
     "paths": {

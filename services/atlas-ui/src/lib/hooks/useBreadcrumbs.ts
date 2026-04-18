@@ -337,7 +337,7 @@ export function useBreadcrumbs(options: UseBreadcrumbsOptions = {}): UseBreadcru
       }
     },
     getParent: () => getParentBreadcrumb(finalBreadcrumbs),
-  }), [finalBreadcrumbs, router]);
+  }), [finalBreadcrumbs, navigate]);
 
   // Label resolution utilities
   const resolution = useMemo(() => ({

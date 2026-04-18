@@ -7,7 +7,7 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ## Priority Summary
 
 ### Critical (Core Gameplay)
-- [ ] **Character Attack Effects** - 27 unimplemented combat mechanics in `character_attack_common.go`
+- [ ] **Character Attack Effects** - 26 unimplemented combat mechanics in `character_attack_common.go` (projectile consumption shipped in task-007)
 - [ ] **Character Damage Effects** - 10 defensive abilities not processed
 
 ### High Priority (Feature Incomplete)
@@ -57,8 +57,9 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Multiple services have different cash shop message implementations (`kafka/message/cashshop/kafka.go:72`)
 - [ ] Field migration bug not using instance (`kafka/consumer/character/consumer.go:79`)
 
-#### Character Attack System (27 unimplemented effects)
-Location: `socket/handler/character_attack_common.go:94-120`
+#### Character Attack System (26 unimplemented effects)
+Location: `socket/handler/character_attack_common.go`
+- [x] ~~Projectile consumption on ranged attacks~~ — shipped in task-007 (bow/crossbow/claw/gun; Shadow Partner doubling; Soul Arrow skip; rechargeable qty=0 preservation in atlas-inventory)
 - [ ] Apply cooldown
 - [ ] Cancel dark sight / wind walk
 - [ ] Apply combo orbs (add or consume)
@@ -86,6 +87,8 @@ Location: `socket/handler/character_attack_common.go:94-120`
 - [ ] Monster Weapon Atk Reflect
 - [ ] Monster Magic Atk Reflect
 - [ ] Apply MPEater
+- [ ] Passive no-consume for projectiles: Expert Marksmanship, Claw Mastery roll-to-preserve (planner stub in `socket/handler/character_attack_projectile.go`; Mortal Blow already listed above covers its passive-skip too)
+- [ ] Characterize `AttackInfo.javlin` flag semantics and revisit projectile-consumption bailout (TODO cross-refs at `libs/atlas-packet/model/attack_info.go:153` ↔ `socket/handler/character_attack_projectile.go` planner javlin gate)
 
 #### Character Damage System (10 unimplemented effects)
 Location: `socket/handler/character_damage.go:24-33`

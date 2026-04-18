@@ -598,7 +598,9 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 			wantError:        false,
 		},
 		{
-			name:        "Marriage Gifts validation - marriage service error",
+			// Marriage service errors are non-fatal: the character degrades to "no unclaimed
+			// gifts" so unrelated conditions keep working when marriage is undeployed/down.
+			name:        "Marriage Gifts validation - marriage service error degrades gracefully",
 			characterId: 123,
 			conditions: []ConditionInput{
 				{Type: "hasUnclaimedMarriageGifts", Operator: "=", Value: 1},
@@ -620,10 +622,9 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 					}
 				}
 			},
-			wantPassed:        false,
-			wantDetailsCount:  0,
-			wantError:         true,
-			wantErrorContains: "failed to get marriage data",
+			wantPassed:       false,
+			wantDetailsCount: 1,
+			wantError:        false,
 		},
 	}
 
@@ -724,8 +725,13 @@ func TestValidateWithContextMockingExternalServices(t *testing.T) {
 				context.Background(),
 			)
 
-			// Get validation context
-			validationContext, err := contextProvider.GetValidationContext(tt.characterId)()
+			// Get validation context — compute eager-fetch requirements from the test's
+			// conditions, mirroring what ProcessorImpl.ValidateStructured does.
+			var reqs ContextRequirements
+			for _, c := range tt.conditions {
+				reqs = reqs.union(requirementsFor(ConditionType(c.Type)))
+			}
+			validationContext, err := contextProvider.GetValidationContext(tt.characterId, reqs)()
 			if err != nil {
 				if tt.wantError {
 					if tt.wantErrorContains != "" && !strings.Contains(err.Error(), tt.wantErrorContains) {

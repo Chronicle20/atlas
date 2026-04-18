@@ -13,13 +13,11 @@ import (
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -494,10 +492,23 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 	}
 }
 
+// ContextRequirements selects which optional remote data sources should be eagerly
+// fetched when building a ValidationContext. Lazy processors (map/transport/skill/buff/
+// item/partyQuest) are wired regardless and only run on demand from EvaluateWithContext,
+// so they don't appear here.
+type ContextRequirements struct {
+	Quests   bool
+	Marriage bool
+	Buddy    bool
+	Pets     bool
+	Party    bool
+}
+
 // ValidationContextProvider defines the interface for providing validation contexts
 type ValidationContextProvider interface {
-	// GetValidationContext returns a provider that builds a validation context for the given character
-	GetValidationContext(characterId uint32) model.Provider[ValidationContext]
+	// GetValidationContext returns a provider that builds a validation context for the given character.
+	// Only data sources flagged in reqs are fetched; the rest fall back to empty defaults.
+	GetValidationContext(characterId uint32, reqs ContextRequirements) model.Provider[ValidationContext]
 }
 
 // ContextBuilderProvider provides a way to create validation contexts with data from multiple services
@@ -535,8 +546,11 @@ func NewContextBuilderProvider(
 	}
 }
 
-// GetValidationContext returns a provider that builds a validation context for the given character
-func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.Provider[ValidationContext] {
+// GetValidationContext returns a provider that builds a validation context for the given character.
+// Only the data sources flagged in reqs are fetched; everything else degrades to defaults so a
+// validation that doesn't reference a domain (e.g. marriage) isn't blocked when that domain's
+// upstream service is degraded or undeployed.
+func (p *ContextBuilderProvider) GetValidationContext(characterId uint32, reqs ContextRequirements) model.Provider[ValidationContext] {
 	return func() (ValidationContext, error) {
 		// Get character data
 		char, err := p.characterProvider(characterId)()
@@ -547,8 +561,9 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 		// Start building context with logger and context for map queries
 		builder := NewValidationContextBuilderWithLogger(char, p.l, p.ctx)
 
-		// Get quest data if available
-		if p.questProvider != nil {
+		// Quest data is fatal on error: when a caller asks for quest evaluation, returning
+		// an empty quest map would silently flip every questStatus check to "not started".
+		if reqs.Quests && p.questProvider != nil {
 			questsMap, err := p.questProvider(characterId)()
 			if err != nil {
 				return ValidationContext{}, fmt.Errorf("failed to get quest data: %w", err)
@@ -558,47 +573,38 @@ func (p *ContextBuilderProvider) GetValidationContext(characterId uint32) model.
 			}
 		}
 
-		// Get marriage data if available (not found is not an error - character may not be married)
-		if p.marriageProvider != nil {
+		// Remaining domains degrade gracefully — the condition simply evaluates against the
+		// default empty model when its upstream is unreachable.
+		if reqs.Marriage && p.marriageProvider != nil {
 			marriageModel, err := p.marriageProvider(characterId)()
-			if err != nil && !errors.Is(err, requests.ErrNotFound) {
-				return ValidationContext{}, fmt.Errorf("failed to get marriage data: %w", err)
-			}
-			if err == nil {
+			if err != nil {
+				p.l.WithError(err).Debugf("Failed to get marriage data for character %d, treating as not married", characterId)
+			} else {
 				builder.SetMarriage(marriageModel)
 			}
-			// If not found, builder already has default empty marriage model
 		}
 
-		// Get buddy list data if available (not found is not an error - character may have no buddies)
-		if p.buddyProvider != nil {
+		if reqs.Buddy && p.buddyProvider != nil {
 			buddyListModel, err := p.buddyProvider(characterId)()
-			if err != nil && !errors.Is(err, requests.ErrNotFound) {
-				return ValidationContext{}, fmt.Errorf("failed to get buddy list data: %w", err)
-			}
-			if err == nil {
+			if err != nil {
+				p.l.WithError(err).Debugf("Failed to get buddy list data for character %d, treating as no buddies", characterId)
+			} else {
 				builder.SetBuddyList(buddyListModel)
 			}
-			// If not found, builder already has default empty buddy model
 		}
 
-		// Get pet count data if available (not found is not an error - character may have no pets)
-		if p.petCountProvider != nil {
+		if reqs.Pets && p.petCountProvider != nil {
 			petCount, err := p.petCountProvider(characterId)()
-			if err != nil && !errors.Is(err, requests.ErrNotFound) {
-				return ValidationContext{}, fmt.Errorf("failed to get pet count data: %w", err)
-			}
-			if err == nil {
+			if err != nil {
+				p.l.WithError(err).Debugf("Failed to get pet count data for character %d, treating as no pets", characterId)
+			} else {
 				builder.SetPetCount(petCount)
 			}
-			// If not found, builder already has default pet count of 0
 		}
 
-		// Get party data if available (not found is not an error - character may have no party)
-		if p.partyProvider != nil {
+		if reqs.Party && p.partyProvider != nil {
 			partyModel, err := p.partyProvider(characterId)()
 			if err != nil {
-				// Party errors are non-fatal - character simply has no party
 				p.l.WithError(err).Debugf("Failed to get party data for character %d, treating as no party", characterId)
 			} else {
 				builder.SetParty(partyModel)

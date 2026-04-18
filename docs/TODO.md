@@ -243,3 +243,37 @@ that is not available on the wire:
   - `after_login.go:99` (login) - PIN termination implemented
   - Pre-compute HP/MP TODO (character) - removed from code
 - **Updated line numbers** across inventory, login, character, and set_field writer
+
+---
+
+## atlas-ui Frontend
+
+Deferred items from task-004 (Vite + React Router migration). The migration itself merged Phases 0, 1, 2, 3, 6, and 7; the items below were explicitly held back — in most cases because addressing them in the same PR would have multiplied the diff without changing feature parity, which was the migration's only correctness bar.
+
+### Phase 2 deferrals (API client shrink)
+- [ ] Shrink `services/atlas-ui/src/lib/api/client.ts` to the < 700 LOC soft target (currently ~1800). Pragmatic drops: unused cache primitives, progress-tracker bytes-per-second math, revalidation/dedupe layers that the new React Query-owned cache already provides.
+- [ ] Delete `services/atlas-ui/src/services/api/base.service.ts` (499 LOC) and inline `ServiceOptions`/`QueryOptions`/`BatchOptions`/`BatchResult`/`ValidationError` into `src/lib/api/query-params.ts` + `src/lib/api/json-api.ts`. Blocked on: every service module extends `BaseService` and ~15 hooks import the type exports. Restructure in a follow-up PR.
+- [ ] Remove the per-call `api.setTenant(tenant)` invocations across ~20 service modules. The `TenantProvider` effect now wires this centrally — the per-call invocations are redundant duplicates. Also drop the `tenant` parameter from service method signatures once the duplicates are gone.
+
+### Phase 3 deferrals (page port)
+- [ ] Audit `useSearchParams` semantics on filter-heavy pages (`ItemsPage`, `MapsPage`, `MerchantsPage`, `MonstersPage`, `NpcsPage`, `ReactorsPage`). The Phase 3 mechanical rewrite destructured the RR v7 tuple (`const [searchParams] = useSearchParams()`) so call sites compile, but the exact push/replace flow on filter changes should be spot-checked against Next.js behaviour (R1 in risks.md).
+- [ ] Route-level `React.lazy` splitting for the 46 pages. The current bundle is a single ~1.1 MB chunk (gzip ~300 KB). Lazy-load detail pages and rarely-visited routes to shrink the initial payload.
+- [ ] Revisit the one `INEFFECTIVE_DYNAMIC_IMPORT` warning from `vite build` (`src/lib/breadcrumbs/resolvers.ts` dynamically imports service modules that are also statically imported by hooks).
+
+### Phase 4 deferral (data fetching consolidation — whole phase)
+- [ ] Replace every remaining `useState` + `useEffect` + service-call pattern with a React Query hook. Create missing hooks under `src/lib/hooks/api/use-<resource>.ts`. Centralise query keys in `src/lib/hooks/api/query-keys.ts`. Wire `useMutation.onSuccess` → `queryClient.invalidateQueries` for every write hook. Delete the legacy `lib/hooks/` wrappers (`useNpcData`, `useItemData`, `useMobData`, `useSkillData`). Completion bar: `grep -rn "useEffect.*fetch\|useEffect.*\.service" services/atlas-ui/src/pages/` returns 0.
+
+### Phase 5 deferral (Jest → Vitest — whole phase)
+- [ ] Migrate the 61 Jest test files in `services/atlas-ui/src/**/__tests__/` to Vitest. Rename `jest.fn` → `vi.fn`, `jest.mock` → `vi.mock`, `jest.spyOn` → `vi.spyOn`, `jest.clearAllMocks` → `vi.clearAllMocks`. Replace `next/navigation` / `next/link` mocks with `react-router-dom` equivalents. Also update the two tests that toggle `process.env.NODE_ENV` at runtime (`src/lib/api/__tests__/errors.test.ts`, `src/lib/utils/__tests__/toast.test.ts`) — Vite resolves `import.meta.env.DEV`/`PROD` at build time, so those tests need a different strategy (stub the module with `vi.mock` or refactor the conditional into a injectable function). Until this lands, the Phase 3 tsconfig excludes `__tests__` and `tests/` from `tsc -b`.
+- [ ] Re-enable the homemade strict tsconfig flags (`verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noUnusedLocals`, `noUnusedParameters`, `erasableSyntaxOnly`, `noUncheckedSideEffectImports`) from home-hub's `tsconfig.app.json`. Loosened in Phase 3 to keep the build green — expect ~500 errors mostly in test files and `base.service.ts` generics.
+
+### Phase 7 deferrals (docs)
+- [ ] Rewrite `services/atlas-ui/docs/service-layer.md` and `services/atlas-ui/docs/error-handling.md`. Both still reference `NEXT_PUBLIC_API_URL`, `next/image`, and the App Router. Not blocking migration — they live under `services/atlas-ui/docs/` as historical architecture notes. Keep in sync or delete.
+- [ ] Verify no remaining `next-themes` wrapper edge cases (system preference, theme flicker on initial SSR-ish load). The simplified `ThemeProvider` drops the "system" option in favour of explicit light/dark — revisit if users miss it.
+
+### Tenant-switch invariant (correctness)
+- [ ] Manual smoke test: tenant switching invalidates the React Query cache (new invariant from Phase 2, see `docs/tasks/task-004-atlas-ui-vite-migration/risks.md` R6). The Vitest covers the effect firing; a real-tenant E2E check is still needed.
+- [ ] Manual smoke test: all four tenant headers (`TENANT_ID`, `REGION`, `MAJOR_VERSION`, `MINOR_VERSION`, SCREAMING_SNAKE_CASE) reach Go services unchanged — verify in devtools or server logs.
+
+### Playwright (not in task-004 scope)
+- [ ] No existing e2e suite. A smoke-test Playwright project covering the 46 routes + tenant switch would catch regressions that feature-parity refactors are prone to.

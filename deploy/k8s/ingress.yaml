@@ -182,7 +182,7 @@ data:
     }
 
     location ~ ^/api/assets(/.*)?$ {
-      proxy_pass http://atlas-assets:8080$1;
+      proxy_pass http://atlas-assets.atlas.svc.cluster.local:8080$1;
     }
 
     location ~ ^/api/accounts(/.*)?$ {

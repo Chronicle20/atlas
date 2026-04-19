@@ -56,7 +56,11 @@ type Processor interface {
 	// field is needed for meso/exp/fame rewards
 	// If skipValidation is true, end requirements are not checked
 	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated completes)
-	Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error)
+	// externalRewards, when non-empty, overrides the items reported on the
+	// COMPLETED event. Script-driven quests (atlas-npc-conversations) grant
+	// items through their own saga and forward the list here so downstream
+	// consumers can display them; pass nil to fall back to WZ-derived rewards.
+	Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool, externalRewards []questmessage.ItemReward) (uint32, error)
 	Forfeit(transactionId uuid.UUID, characterId uint32, questId uint32) error
 	SetProgress(transactionId uuid.UUID, characterId uint32, questId uint32, infoNumber uint32, progress string) error
 	DeleteByCharacterId(characterId uint32) error
@@ -391,7 +395,7 @@ func (p *ProcessorImpl) startChainedCore(characterId uint32, questId uint32, que
 	return m, nil
 }
 
-func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (uint32, error) {
+func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool, externalRewards []questmessage.ItemReward) (uint32, error) {
 	// Fetch quest definition for requirements and rewards
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -423,8 +427,16 @@ func (p *ProcessorImpl) Complete(transactionId uuid.UUID, characterId uint32, qu
 		// Don't fail the completion, just log the error
 	}
 
+	// Script-driven quests grant items through their own saga and forward
+	// the reward list via externalRewards. When supplied, report those on
+	// the COMPLETED event; otherwise fall back to the WZ-derived items.
+	reportedItems := awardedItems
+	if len(externalRewards) > 0 {
+		reportedItems = externalRewards
+	}
+
 	// Emit quest completed event with awarded items
-	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, awardedItems); err != nil {
+	if err := p.eventEmitter.EmitQuestCompleted(transactionId, characterId, f.WorldId(), questId, completedAt, reportedItems); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest completed event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -592,7 +604,7 @@ func (p *ProcessorImpl) CheckAutoComplete(characterId uint32, questId uint32, f 
 
 	// All requirements met, complete the quest (skip external validation as we've already checked locally)
 	// Use uuid.Nil since auto-complete is not initiated by a saga
-	nextQuestId, err := p.Complete(uuid.Nil, characterId, questId, f, true)
+	nextQuestId, err := p.Complete(uuid.Nil, characterId, questId, f, true, nil)
 	if err != nil {
 		return 0, false, err
 	}

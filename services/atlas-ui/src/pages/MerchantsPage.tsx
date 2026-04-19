@@ -63,7 +63,6 @@ function MerchantsPageContent() {
     queryKey: ["merchants", "shops", activeTenant?.id ?? "no-tenant"],
     queryFn: () => merchantsService.getAllShops(),
     enabled: !!activeTenant,
-    staleTime: 60 * 1000,
   });
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
@@ -72,7 +71,6 @@ function MerchantsPageContent() {
     queryKey: ["merchants", "search-listings", activeTenant?.id ?? "no-tenant", urlQuery],
     queryFn: () => searchListingsByQuery(urlQuery, activeTenant!),
     enabled: !!activeTenant && urlQuery.length > 0,
-    staleTime: 30 * 1000,
   });
 
   const shops = shopsQuery.data ?? [];

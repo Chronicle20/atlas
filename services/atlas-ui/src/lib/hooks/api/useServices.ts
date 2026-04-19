@@ -37,7 +37,6 @@ export function useServices(options?: QueryOptions): UseQueryResult<Service[], E
   return useQuery({
     queryKey: serviceKeys.list(options),
     queryFn: () => servicesService.getAllServices({ ...options, useCache: false }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
@@ -50,7 +49,6 @@ export function useService(id: string, options?: ServiceOptions): UseQueryResult
     queryKey: serviceKeys.detail(id),
     queryFn: () => servicesService.getServiceById(id, { ...options, useCache: false }),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -205,7 +203,6 @@ export function usePrefetchService() {
     queryClient.prefetchQuery({
       queryKey: serviceKeys.detail(id),
       queryFn: () => servicesService.getServiceById(id),
-      staleTime: 5 * 60 * 1000,
     });
   };
 }

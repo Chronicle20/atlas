@@ -360,7 +360,7 @@ func calcDropPos(s *Storage) func(ctx context.Context) func(mapId _map.Id, initi
 			if ok {
 				ret = bSearchDropPos(m.FootholdTree, initial, fallback)
 			}
-			if !m.MapArea.contains(ret) {
+			if m.MapArea != nil && !m.MapArea.contains(ret) {
 				return fallback, nil
 			}
 			return ret, nil

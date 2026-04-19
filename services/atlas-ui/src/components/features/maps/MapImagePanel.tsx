@@ -11,6 +11,15 @@ import {
 } from "@/components/ui/dialog";
 import { useTenant } from "@/context/tenant-context";
 import { getMapImageUrl } from "@/lib/utils/asset-url";
+import type { MapArea } from "@/services/api/maps.service";
+import type {
+  MapMonsterData,
+  MapNpcData,
+  MapPortalData,
+  MapReactorData,
+} from "@/services/api/map-entities.service";
+import { MapImageOverlay } from "./MapImageOverlay";
+import { useHoverHighlight } from "./HoverHighlightContext";
 
 type ImageState = "render" | "minimap" | "placeholder";
 
@@ -22,12 +31,27 @@ interface MapImagePanelProps {
    * falls back to `"minimap"` then `"placeholder"` on 404.
    */
   initialKind?: "render" | "minimap";
+  mapArea?: MapArea | null;
+  portals?: MapPortalData[] | undefined;
+  npcs?: MapNpcData[] | undefined;
+  monsters?: MapMonsterData[] | undefined;
+  reactors?: MapReactorData[] | undefined;
 }
 
 const PREVIEW_MAX_HEIGHT = "max-h-[320px]";
 
-export function MapImagePanel({ mapId, mapName, initialKind = "render" }: MapImagePanelProps) {
+export function MapImagePanel({
+  mapId,
+  mapName,
+  initialKind = "render",
+  mapArea = null,
+  portals,
+  npcs,
+  monsters,
+  reactors,
+}: MapImagePanelProps) {
   const { activeTenant } = useTenant();
+  const { setHovered } = useHoverHighlight();
   const [state, setState] = useState<ImageState>(initialKind);
   const [expanded, setExpanded] = useState(false);
 
@@ -78,6 +102,14 @@ export function MapImagePanel({ mapId, mapName, initialKind = "render" }: MapIma
   );
   const altText = `Map render for ${mapName}`;
   const downloadName = `${mapName || mapId}-${state}.png`;
+  const overlayEnabled = state === "render" && mapArea != null;
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setExpanded(open);
+    if (!open) {
+      setHovered(null);
+    }
+  };
 
   return (
     <>
@@ -89,14 +121,40 @@ export function MapImagePanel({ mapId, mapName, initialKind = "render" }: MapIma
             className="group relative block w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label={`Expand ${altText}`}
           >
-            <img
-              key={`${mapId}-${state}`}
-              src={url}
-              alt={altText}
-              loading="lazy"
-              className={`w-full ${PREVIEW_MAX_HEIGHT} object-contain bg-muted/20`}
-              onError={handleError}
-            />
+            {overlayEnabled && mapArea ? (
+              <div
+                className={`relative mx-auto max-w-full ${PREVIEW_MAX_HEIGHT} bg-muted/20`}
+                style={{
+                  aspectRatio: `${mapArea.width} / ${mapArea.height}`,
+                  width: "fit-content",
+                }}
+              >
+                <img
+                  key={`${mapId}-${state}`}
+                  src={url}
+                  alt={altText}
+                  loading="lazy"
+                  className="block w-full h-full object-cover"
+                  onError={handleError}
+                />
+                <MapImageOverlay
+                  bounds={mapArea}
+                  portals={portals}
+                  npcs={npcs}
+                  monsters={monsters}
+                  reactors={reactors}
+                />
+              </div>
+            ) : (
+              <img
+                key={`${mapId}-${state}`}
+                src={url}
+                alt={altText}
+                loading="lazy"
+                className={`w-full ${PREVIEW_MAX_HEIGHT} object-contain bg-muted/20`}
+                onError={handleError}
+              />
+            )}
             <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-md bg-background/80 px-2 py-1 text-xs font-medium text-foreground shadow-sm opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity">
               <Maximize2 className="w-3 h-3" />
               Expand
@@ -105,7 +163,7 @@ export function MapImagePanel({ mapId, mapName, initialKind = "render" }: MapIma
         </CardContent>
       </Card>
 
-      <Dialog open={expanded} onOpenChange={setExpanded}>
+      <Dialog open={expanded} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="max-w-[95vw] max-h-[95vh] w-auto p-4 sm:p-6 flex flex-col">
           <DialogHeader className="flex-row items-center justify-between gap-4 pr-8">
             <div className="min-w-0">
@@ -124,11 +182,27 @@ export function MapImagePanel({ mapId, mapName, initialKind = "render" }: MapIma
             </a>
           </DialogHeader>
           <div className="flex-1 overflow-auto rounded-md border bg-muted/20 min-h-0">
-            <img
-              src={url}
-              alt={altText}
-              className="max-w-none block"
-            />
+            {overlayEnabled && mapArea ? (
+              <div
+                className="relative"
+                style={{
+                  aspectRatio: `${mapArea.width} / ${mapArea.height}`,
+                  width: mapArea.width,
+                  maxWidth: "none",
+                }}
+              >
+                <img src={url} alt={altText} className="block w-full h-full" />
+                <MapImageOverlay
+                  bounds={mapArea}
+                  portals={portals}
+                  npcs={npcs}
+                  monsters={monsters}
+                  reactors={reactors}
+                />
+              </div>
+            ) : (
+              <img src={url} alt={altText} className="max-w-none block" />
+            )}
           </div>
           <DialogClose className="sr-only">Close</DialogClose>
         </DialogContent>

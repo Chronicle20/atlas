@@ -3,18 +3,35 @@ import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { NpcImage } from "@/components/features/npc/NpcImage";
+import { useHoverHighlight } from "@/components/features/maps/HoverHighlightContext";
 import { useMobData } from "@/lib/hooks/useMobData";
+import { cn } from "@/lib/utils";
 import type { MapMonsterData } from "@/services/api/map-entities.service";
 
 interface MonsterTableRowProps {
   monster: MapMonsterData;
+  spawnIndex?: number;
 }
 
-export function MonsterTableRow({ monster }: MonsterTableRowProps) {
+export function MonsterTableRow({ monster, spawnIndex }: MonsterTableRowProps) {
   const { name, iconUrl } = useMobData(monster.attributes.template);
+  const { setHovered, isHovered } = useHoverHighlight();
+  const template = monster.attributes.template;
+  const target =
+    spawnIndex !== undefined
+      ? ({ kind: "monster", template, spawnIndex } as const)
+      : ({ kind: "monster", template } as const);
+  const highlighted = isHovered(target);
 
   return (
-    <TableRow>
+    <TableRow
+      onPointerEnter={() => setHovered(target)}
+      onPointerLeave={() => setHovered(null)}
+      className={cn(
+        "border-l-2 border-transparent",
+        highlighted && "bg-muted/60 border-rose-500",
+      )}
+    >
       <TableCell>
         <NpcImage
           npcId={monster.attributes.template}

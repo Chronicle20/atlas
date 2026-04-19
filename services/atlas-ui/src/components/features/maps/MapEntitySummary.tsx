@@ -4,8 +4,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { NpcImage } from "@/components/features/npc/NpcImage";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { cn } from "@/lib/utils";
 import { useMobData } from "@/lib/hooks/useMobData";
 import type { MapMonsterData, MapNpcData } from "@/services/api/map-entities.service";
+import { useHoverHighlight } from "./HoverHighlightContext";
 
 interface MapEntitySummaryProps {
   npcs: MapNpcData[] | undefined;
@@ -73,22 +75,12 @@ function NpcsSection({ npcs, error }: { npcs: MapNpcData[] | undefined; error?: 
                 )
               : undefined;
             return (
-              <li key={n.attributes.template} className="flex items-center gap-2">
-                <NpcImage
-                  npcId={n.attributes.template}
-                  iconUrl={iconUrl}
-                  size={32}
-                  lazy
-                  showRetryButton={false}
-                  maxRetries={1}
-                />
-                <Link
-                  to={`/npcs/${n.attributes.template}`}
-                  className="text-sm text-primary hover:underline"
-                >
-                  {n.attributes.name}
-                </Link>
-              </li>
+              <NpcSummaryRow
+                key={n.attributes.template}
+                template={n.attributes.template}
+                name={n.attributes.name}
+                iconUrl={iconUrl}
+              />
             );
           })}
         </ul>
@@ -150,8 +142,17 @@ function MonstersSection({ monsters, error }: { monsters: MapMonsterData[] | und
 
 function MonsterRow({ template, count }: { template: number; count: number }) {
   const { name, iconUrl } = useMobData(template);
+  const { setHovered, isHovered } = useHoverHighlight();
+  const highlighted = isHovered({ kind: "monster", template });
   return (
-    <li className="flex items-center gap-2">
+    <li
+      onPointerEnter={() => setHovered({ kind: "monster", template })}
+      onPointerLeave={() => setHovered(null)}
+      className={cn(
+        "flex items-center gap-2 rounded-sm pl-2 border-l-2 border-transparent transition-colors",
+        highlighted && "bg-muted/60 border-rose-500",
+      )}
+    >
       <NpcImage
         npcId={template}
         iconUrl={iconUrl}
@@ -167,6 +168,44 @@ function MonsterRow({ template, count }: { template: number; count: number }) {
         {name ?? "\u2014"}
       </Link>
       <span className="text-xs text-muted-foreground">×{count}</span>
+    </li>
+  );
+}
+
+function NpcSummaryRow({
+  template,
+  name,
+  iconUrl,
+}: {
+  template: number;
+  name: string;
+  iconUrl: string | undefined;
+}) {
+  const { setHovered, isHovered } = useHoverHighlight();
+  const highlighted = isHovered({ kind: "npc", template });
+  return (
+    <li
+      onPointerEnter={() => setHovered({ kind: "npc", template })}
+      onPointerLeave={() => setHovered(null)}
+      className={cn(
+        "flex items-center gap-2 rounded-sm pl-2 border-l-2 border-transparent transition-colors",
+        highlighted && "bg-muted/60 border-sky-500",
+      )}
+    >
+      <NpcImage
+        npcId={template}
+        iconUrl={iconUrl}
+        size={32}
+        lazy
+        showRetryButton={false}
+        maxRetries={1}
+      />
+      <Link
+        to={`/npcs/${template}`}
+        className="text-sm text-primary hover:underline"
+      >
+        {name}
+      </Link>
     </li>
   );
 }

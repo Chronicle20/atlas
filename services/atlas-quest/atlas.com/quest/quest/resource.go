@@ -180,7 +180,7 @@ func handleCompleteQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Co
 			return func(w http.ResponseWriter, r *http.Request) {
 				f := field.NewBuilder(i.WorldId, i.ChannelId, i.MapId).Build()
 				// REST endpoints use uuid.Nil since they're not saga-initiated
-				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(uuid.Nil, characterId, questId, f, i.SkipValidation)
+				nextQuestId, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Complete(uuid.Nil, characterId, questId, f, i.SkipValidation, nil)
 				if errors.Is(err, gorm.ErrRecordNotFound) {
 					w.WriteHeader(http.StatusNotFound)
 					return

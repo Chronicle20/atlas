@@ -129,7 +129,7 @@ func TestHandleCompleteQuestCommand_CompletesQuest(t *testing.T) {
 	}
 
 	if cmd.Type == questmsg.CommandTypeComplete {
-		_, err := processor.Complete(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), cmd.Body.Force)
+		_, err := processor.Complete(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), cmd.Body.Force, cmd.Body.Rewards)
 		if err != nil {
 			t.Fatalf("processor.Complete() unexpected error: %v", err)
 		}
@@ -166,7 +166,7 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
 
 	// Complete and check for chain
-	nextId, err := processor.Complete(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	nextId, err := processor.Complete(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 	if err != nil {
 		t.Fatalf("processor.Complete() error: %v", err)
 	}

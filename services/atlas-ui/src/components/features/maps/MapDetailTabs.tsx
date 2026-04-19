@@ -45,7 +45,7 @@ export function MapDetailTabs({
   reactorsError,
 }: MapDetailTabsProps) {
   return (
-    <Tabs defaultValue="portals" className="flex-1 flex flex-col min-h-0">
+    <Tabs defaultValue="portals" className="flex flex-col">
       <TabsList>
         <TabsTrigger value="portals">
           Portals {portals && `(${portals.length})`}
@@ -58,9 +58,9 @@ export function MapDetailTabs({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="portals" className="flex-1 min-h-0 overflow-hidden">
-        <Card className="h-full flex flex-col">
-          <CardContent className="pt-6 flex-1 overflow-auto">
+      <TabsContent value="portals">
+        <Card>
+          <CardContent className="pt-6">
             {portalsError ? (
               <p className="text-sm text-destructive">Failed to load portals.</p>
             ) : portals === undefined ? (
@@ -89,9 +89,9 @@ export function MapDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="monsters" className="flex-1 min-h-0 overflow-hidden">
-        <Card className="h-full flex flex-col">
-          <CardContent className="pt-6 flex-1 overflow-auto">
+      <TabsContent value="monsters">
+        <Card>
+          <CardContent className="pt-6">
             {monstersError ? (
               <p className="text-sm text-destructive">Failed to load monsters.</p>
             ) : monsters === undefined ? (
@@ -124,9 +124,9 @@ export function MapDetailTabs({
         </Card>
       </TabsContent>
 
-      <TabsContent value="reactors" className="flex-1 min-h-0 overflow-hidden">
-        <Card className="h-full flex flex-col">
-          <CardContent className="pt-6 flex-1 overflow-auto">
+      <TabsContent value="reactors">
+        <Card>
+          <CardContent className="pt-6">
             {reactorsError ? (
               <p className="text-sm text-destructive">Failed to load reactors.</p>
             ) : reactors === undefined ? (

@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapCell } from "@/components/map-cell";
 import { useTenant } from "@/context/tenant-context";
@@ -19,10 +18,10 @@ export function ConnectedMapsRow({ mapId, portals }: ConnectedMapsRowProps) {
     return (
       <section>
         <h3 className="text-sm font-semibold mb-2">Connected maps</h3>
-        <div className="flex gap-3 overflow-x-auto">
-          <Skeleton className="w-48 h-20 rounded-lg flex-shrink-0" />
-          <Skeleton className="w-48 h-20 rounded-lg flex-shrink-0" />
-          <Skeleton className="w-48 h-20 rounded-lg flex-shrink-0" />
+        <div className="flex flex-wrap gap-1.5">
+          <Skeleton className="h-6 w-20 rounded-full" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+          <Skeleton className="h-6 w-20 rounded-full" />
         </div>
       </section>
     );
@@ -46,16 +45,14 @@ export function ConnectedMapsRow({ mapId, portals }: ConnectedMapsRowProps) {
   return (
     <section>
       <h3 className="text-sm font-semibold mb-2">Connected maps ({targets.length})</h3>
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex flex-wrap gap-1.5">
         {targets.map((target) => (
           <Link
             key={target}
             to={`/maps/${target}`}
-            className="flex-shrink-0"
+            className="hover:opacity-80 transition-opacity"
           >
-            <Card className="w-48 h-20 p-3 flex items-center justify-center hover:bg-muted/50 transition-colors">
-              <MapCell mapId={String(target)} tenant={activeTenant} />
-            </Card>
+            <MapCell mapId={String(target)} tenant={activeTenant} />
           </Link>
         ))}
       </div>

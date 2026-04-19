@@ -62,7 +62,7 @@ function NpcsSection({ npcs, error }: { npcs: MapNpcData[] | undefined; error?: 
       {deduped.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">No NPCs</p>
       ) : (
-        <ul className="max-h-[400px] overflow-y-auto space-y-1 pr-2">
+        <ul className="max-h-[400px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pr-2">
           {deduped.map((n) => {
             const iconUrl = activeTenant
               ? getAssetIconUrl(
@@ -130,7 +130,7 @@ function MonstersSection({ monsters, error }: { monsters: MapMonsterData[] | und
       {order.length === 0 ? (
         <p className="text-sm italic text-muted-foreground">No monsters</p>
       ) : (
-        <ul className="max-h-[400px] overflow-y-auto space-y-1 pr-2">
+        <ul className="max-h-[400px] overflow-y-auto grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 pr-2">
           {order.map((template) => (
             <MonsterRow key={template} template={template} count={counts.get(template) ?? 1} />
           ))}

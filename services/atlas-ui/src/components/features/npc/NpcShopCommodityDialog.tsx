@@ -71,23 +71,27 @@ export function NpcShopCommodityDialog({
           </DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          {FIELDS.map(({ key, label }) => (
-            <div key={key} className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor={`commodity-${key}`} className="text-right">
-                {label}
-              </Label>
-              <Input
-                id={`commodity-${key}`}
-                name={key}
-                type="number"
-                value={form[key]}
-                onChange={e =>
-                  setForm(prev => ({ ...prev, [key]: Number(e.target.value) }))
-                }
-                className="col-span-3"
-              />
-            </div>
-          ))}
+          {FIELDS.map(({ key, label }) => {
+            const disabled = mode === "edit" && key === "templateId";
+            return (
+              <div key={key} className="grid grid-cols-4 items-center gap-4">
+                <Label htmlFor={`commodity-${key}`} className="text-right">
+                  {label}
+                </Label>
+                <Input
+                  id={`commodity-${key}`}
+                  name={key}
+                  type="number"
+                  value={form[key]}
+                  disabled={disabled}
+                  onChange={e =>
+                    setForm(prev => ({ ...prev, [key]: Number(e.target.value) }))
+                  }
+                  className="col-span-3"
+                />
+              </div>
+            );
+          })}
         </div>
         <DialogFooter>
           <Button

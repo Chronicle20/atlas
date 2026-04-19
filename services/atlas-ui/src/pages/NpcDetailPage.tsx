@@ -90,41 +90,34 @@ export function NpcDetailPage() {
       <NpcHeader npcId={npcId} name={npcName} iconUrl={npcIconUrl} />
 
       <Card>
-        <Collapsible defaultOpen={spawnMaps.length > 0} className="flex flex-col gap-6">
-          <CardHeader>
-            <CollapsibleTrigger className="group flex items-center gap-2 cursor-pointer text-left">
-              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=closed]:-rotate-90" />
-              <CardTitle className="text-sm font-medium">
-                Spawn Locations{spawnMaps.length > 0 ? ` (${spawnMaps.length})` : ""}
-              </CardTitle>
-            </CollapsibleTrigger>
-          </CardHeader>
-          <CollapsibleContent>
-            <CardContent>
-              {spawnMapsQuery.isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading spawn locations...</p>
-              ) : spawnMapsQuery.error ? (
-                <ErrorDisplay
-                  error={spawnMapsQuery.error}
-                  retry={() => spawnMapsQuery.refetch()}
+        <CardHeader>
+          <CardTitle className="text-sm font-medium">
+            Spawn Locations{spawnMaps.length > 0 ? ` (${spawnMaps.length})` : ""}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {spawnMapsQuery.isLoading ? (
+            <p className="text-sm text-muted-foreground">Loading spawn locations...</p>
+          ) : spawnMapsQuery.error ? (
+            <ErrorDisplay
+              error={spawnMapsQuery.error}
+              retry={() => spawnMapsQuery.refetch()}
+            />
+          ) : spawnMaps.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {spawnMaps.map(entry => (
+                <NpcSpawnMapWidget
+                  key={`${npcId}-${entry.mapId}`}
+                  entry={entry}
                 />
-              ) : spawnMaps.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {spawnMaps.map(entry => (
-                    <NpcSpawnMapWidget
-                      key={`${npcId}-${entry.mapId}`}
-                      entry={entry}
-                    />
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  This NPC is not placed on any loaded map.
-                </p>
-              )}
-            </CardContent>
-          </CollapsibleContent>
-        </Collapsible>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              This NPC is not placed on any loaded map.
+            </p>
+          )}
+        </CardContent>
       </Card>
 
       <NpcShopCard npcId={npcId} hasShop={hasShop} />

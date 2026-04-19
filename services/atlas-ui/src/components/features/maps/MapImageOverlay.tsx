@@ -11,13 +11,32 @@ import type {
 } from "@/services/api/map-entities.service";
 import { useHoverHighlight, type HoverTarget } from "./HoverHighlightContext";
 
+export type MarkerSize = "default" | "large";
+
 interface MapImageOverlayProps {
   bounds: MapBounds;
   portals?: MapPortalData[] | undefined;
   npcs?: MapNpcData[] | undefined;
   monsters?: MapMonsterData[] | undefined;
   reactors?: MapReactorData[] | undefined;
+  size?: MarkerSize;
 }
+
+interface MarkerSizing {
+  primary: string;
+  monster: string;
+}
+
+const MARKER_SIZES: Record<MarkerSize, MarkerSizing> = {
+  default: {
+    primary: "h-[10px] w-[10px]",
+    monster: "h-[8px] w-[8px]",
+  },
+  large: {
+    primary: "h-[18px] w-[18px]",
+    monster: "h-[14px] w-[14px]",
+  },
+};
 
 interface ComputedMarker<T> {
   key: string;
@@ -46,7 +65,9 @@ export function MapImageOverlay({
   npcs,
   monsters,
   reactors,
+  size = "default",
 }: MapImageOverlayProps) {
+  const sizing = MARKER_SIZES[size];
   const monsterMarkers = useMemo(() => computeMarkers(monsters, bounds), [monsters, bounds]);
   const reactorMarkers = useMemo(() => computeMarkers(reactors, bounds), [reactors, bounds]);
   const npcMarkers = useMemo(() => computeMarkers(npcs, bounds), [npcs, bounds]);
@@ -73,16 +94,17 @@ export function MapImageOverlay({
             monster={m.entity}
             spawnIndex={i}
             pos={m.pos}
+            sizing={sizing}
           />
         ))}
         {reactorMarkers.map((m) => (
-          <ReactorMarker key={m.key} reactor={m.entity} pos={m.pos} />
+          <ReactorMarker key={m.key} reactor={m.entity} pos={m.pos} sizing={sizing} />
         ))}
         {npcMarkers.map((m, i) => (
-          <NpcMarker key={m.key} npc={m.entity} spawnIndex={i} pos={m.pos} />
+          <NpcMarker key={m.key} npc={m.entity} spawnIndex={i} pos={m.pos} sizing={sizing} />
         ))}
         {portalMarkers.map((m) => (
-          <PortalMarker key={m.key} portal={m.entity} pos={m.pos} />
+          <PortalMarker key={m.key} portal={m.entity} pos={m.pos} sizing={sizing} />
         ))}
       </div>
     </TooltipProvider>
@@ -136,9 +158,11 @@ function MarkerShell({
 function PortalMarker({
   portal,
   pos,
+  sizing,
 }: {
   portal: MapPortalData;
   pos: { left: string; top: string };
+  sizing: MarkerSizing;
 }) {
   return (
     <MarkerShell
@@ -146,7 +170,7 @@ function PortalMarker({
       target={{ kind: "portal", portalId: portal.id }}
       ariaLabel={`Portal: ${portal.attributes.name || portal.id}`}
       tooltip={portal.attributes.name || portal.id}
-      className="h-[10px] w-[10px] rotate-45 bg-emerald-500/70 border-2 border-white"
+      className={cn(sizing.primary, "rotate-45 bg-emerald-500/70 border-2 border-white")}
       highlightRingColor="ring-yellow-400"
     />
   );
@@ -156,10 +180,12 @@ function NpcMarker({
   npc,
   spawnIndex,
   pos,
+  sizing,
 }: {
   npc: MapNpcData;
   spawnIndex: number;
   pos: { left: string; top: string };
+  sizing: MarkerSizing;
 }) {
   return (
     <MarkerShell
@@ -167,7 +193,7 @@ function NpcMarker({
       target={{ kind: "npc", template: npc.attributes.template, spawnIndex }}
       ariaLabel={`NPC: ${npc.attributes.name}`}
       tooltip={npc.attributes.name}
-      className="h-[10px] w-[10px] rounded-full bg-sky-500/70 border-2 border-white"
+      className={cn(sizing.primary, "rounded-full bg-sky-500/70 border-2 border-white")}
       highlightRingColor="ring-yellow-400"
     />
   );
@@ -176,9 +202,11 @@ function NpcMarker({
 function ReactorMarker({
   reactor,
   pos,
+  sizing,
 }: {
   reactor: MapReactorData;
   pos: { left: string; top: string };
+  sizing: MarkerSizing;
 }) {
   return (
     <MarkerShell
@@ -186,7 +214,7 @@ function ReactorMarker({
       target={{ kind: "reactor", reactorId: reactor.id }}
       ariaLabel={`Reactor: ${reactor.attributes.name || reactor.attributes.classification}`}
       tooltip={reactor.attributes.name || String(reactor.attributes.classification)}
-      className="h-[10px] w-[10px] bg-amber-500/70 border-2 border-white"
+      className={cn(sizing.primary, "bg-amber-500/70 border-2 border-white")}
       highlightRingColor="ring-yellow-400"
     />
   );
@@ -196,10 +224,12 @@ function MonsterMarker({
   monster,
   spawnIndex,
   pos,
+  sizing,
 }: {
   monster: MapMonsterData;
   spawnIndex: number;
   pos: { left: string; top: string };
+  sizing: MarkerSizing;
 }) {
   const { name } = useMobData(monster.attributes.template);
   return (
@@ -208,7 +238,7 @@ function MonsterMarker({
       target={{ kind: "monster", template: monster.attributes.template, spawnIndex }}
       ariaLabel={`Monster: ${name ?? monster.attributes.template}`}
       tooltip={name ?? String(monster.attributes.template)}
-      className="h-[8px] w-[8px] rounded-full bg-rose-500/70 border border-white"
+      className={cn(sizing.monster, "rounded-full bg-rose-500/70 border border-white")}
       highlightRingColor="ring-yellow-400"
     />
   );

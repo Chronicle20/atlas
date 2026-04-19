@@ -77,11 +77,19 @@ export function TenantProvider({children}: { children: ReactNode }) {
             const data = await tenantsService.getAllTenants();
             setTenants(data);
 
-            // If active tenant was deleted, set a new one
-            if (activeTenant && !data.find(t => t.id === activeTenant.id)) {
-                const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
-                const storedTenant = data.find((t) => t.id === storedId);
-                setActiveTenantState(storedTenant ?? data[0] ?? null);
+            if (activeTenant) {
+                const refreshedActive = data.find(t => t.id === activeTenant.id);
+                if (refreshedActive) {
+                    // Rehydrate the active tenant so attribute changes (e.g. rename)
+                    // propagate without a reload. Same id → id-compare effect skips
+                    // the query-cache clear.
+                    setActiveTenantState(refreshedActive);
+                } else {
+                    // Active tenant was deleted; fall back to stored/first.
+                    const storedId = localStorage.getItem(LOCAL_STORAGE_KEY);
+                    const storedTenant = data.find((t) => t.id === storedId);
+                    setActiveTenantState(storedTenant ?? data[0] ?? null);
+                }
             }
         } catch (err: unknown) {
             const errorInfo = createErrorFromUnknown(err, "Failed to refresh tenants");

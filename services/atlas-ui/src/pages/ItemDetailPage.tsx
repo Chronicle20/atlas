@@ -187,7 +187,7 @@ function SoldByCard({
             )}
             {price > 0 && (
               <p className="text-xs text-muted-foreground">
-                Base price: {price.toLocaleString()} mesos
+                Sell Value: {price.toLocaleString()} mesos
               </p>
             )}
           </>

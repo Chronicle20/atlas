@@ -33,6 +33,7 @@ type (
 	ChangeSkinPayload            = sharedsaga.ChangeSkinPayload
 	SpawnMonsterPayload          = sharedsaga.SpawnMonsterPayload
 	CompleteQuestPayload         = sharedsaga.CompleteQuestPayload
+	QuestRewardItem              = sharedsaga.QuestRewardItem
 	StartQuestPayload            = sharedsaga.StartQuestPayload
 	SetQuestProgressPayload      = sharedsaga.SetQuestProgressPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload

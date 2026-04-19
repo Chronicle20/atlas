@@ -228,11 +228,20 @@ type ValidateCharacterStatePayload struct {
 
 // CompleteQuestPayload represents the payload required to complete a quest.
 type CompleteQuestPayload struct {
-	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
-	QuestId     uint32   `json:"questId"`     // QuestId to complete
-	NpcId       uint32   `json:"npcId"`       // NpcId that completed the quest
-	Force       bool     `json:"force"`       // If true, skip requirement checks and just mark complete
+	CharacterId uint32             `json:"characterId"`        // CharacterId associated with the action
+	WorldId     world.Id           `json:"worldId"`            // WorldId associated with the action
+	QuestId     uint32             `json:"questId"`            // QuestId to complete
+	NpcId       uint32             `json:"npcId"`              // NpcId that completed the quest
+	Force       bool               `json:"force"`              // If true, skip requirement checks and just mark complete
+	Rewards     []QuestRewardItem  `json:"rewards,omitempty"`  // Item rewards granted alongside completion (for downstream display)
+}
+
+// QuestRewardItem describes an item granted as part of a quest completion,
+// carried through the CompleteQuest saga step so downstream services can
+// surface the rewards without reloading quest data.
+type QuestRewardItem struct {
+	ItemId uint32 `json:"itemId"`
+	Amount int32  `json:"amount"`
 }
 
 // StartQuestPayload represents the payload required to start a quest.

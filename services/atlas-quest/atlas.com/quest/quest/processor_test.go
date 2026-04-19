@@ -238,7 +238,7 @@ func TestComplete_HappyPath(t *testing.T) {
 	}
 
 	// Complete the quest
-	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false)
+	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Complete() unexpected error: %v", err)
 	}
@@ -271,7 +271,7 @@ func TestComplete_WithChain(t *testing.T) {
 
 	// Start and complete
 	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false)
+	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	if err != nil {
 		t.Fatalf("Complete() unexpected error: %v", err)
@@ -290,7 +290,7 @@ func TestComplete_NotStarted(t *testing.T) {
 	characterId := uint32(12345)
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
-	_, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false)
+	_, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err == nil {
 		t.Error("Complete() expected error for non-started quest")
 	}
@@ -312,7 +312,7 @@ func TestComplete_ValidationFailed(t *testing.T) {
 	mockValidation.EndValidationResult = false
 	mockValidation.EndFailedConditions = []string{"missing_item"}
 
-	_, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false)
+	_, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if !errors.Is(err, quest.ErrEndRequirementsNotMet) {
 		t.Errorf("Complete() error = %v, want ErrEndRequirementsNotMet", err)
 	}
@@ -507,7 +507,7 @@ func TestGetByCharacterIdAndState_FiltersCorrectly(t *testing.T) {
 	_, _, _ = processor.Start(uuid.Nil, characterId, 6002, createTestField(), false)
 
 	// Complete one quest
-	_, _ = processor.Complete(uuid.Nil, characterId, 6002, createTestField(), true)
+	_, _ = processor.Complete(uuid.Nil, characterId, 6002, createTestField(), true, nil)
 
 	// Get started quests
 	started, err := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
@@ -690,7 +690,7 @@ func TestRepeatableQuest_RestartAfterInterval(t *testing.T) {
 
 	// Start and complete
 	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true)
+	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true, nil)
 
 	// Try to restart immediately - should fail (interval not elapsed)
 	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
@@ -712,7 +712,7 @@ func TestNonRepeatableQuest_CannotRestart(t *testing.T) {
 
 	// Start and complete
 	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
-	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true)
+	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true, nil)
 
 	// Try to restart - should fail
 	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)

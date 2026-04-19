@@ -79,7 +79,7 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		// When Force=true, skip requirement checks (forceCompleteQuest behavior)
 		// When Force=false, validate end requirements before completing
 		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
-		nextQuestId, err := processor.Complete(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
+		nextQuestId, err := processor.Complete(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force, c.Body.Rewards)
 		if err != nil {
 			l.WithError(err).Errorf("Error completing quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 			return

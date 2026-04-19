@@ -25,7 +25,7 @@ func StartQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, charac
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CompleteQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, npcId uint32, selection int32, force bool) model.Provider[[]kafka.Message] {
+func CompleteQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, npcId uint32, selection int32, force bool, rewards []quest.ItemReward) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.CompleteCommandBody]{
 		TransactionId: transactionId,
@@ -37,6 +37,7 @@ func CompleteQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, cha
 			NpcId:     npcId,
 			Selection: selection,
 			Force:     force,
+			Rewards:   rewards,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

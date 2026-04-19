@@ -14,6 +14,7 @@ import (
 	"atlas-saga-orchestrator/invite"
 	gachapon2 "atlas-saga-orchestrator/kafka/message/gachapon"
 	character2 "atlas-saga-orchestrator/kafka/message/character"
+	questmessage "atlas-saga-orchestrator/kafka/message/quest"
 	saga2 "atlas-saga-orchestrator/kafka/message/saga"
 	storage2 "atlas-saga-orchestrator/kafka/message/storage"
 	"atlas-saga-orchestrator/kafka/producer"
@@ -1509,8 +1510,13 @@ func (h *HandlerImpl) handleCompleteQuest(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
+	rewards := make([]questmessage.ItemReward, 0, len(payload.Rewards))
+	for _, r := range payload.Rewards {
+		rewards = append(rewards, questmessage.ItemReward{ItemId: r.ItemId, Amount: r.Amount})
+	}
+
 	// Selection is not currently used in NPC conversations, default to 0
-	err := h.questP.RequestCompleteQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force)
+	err := h.questP.RequestCompleteQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId, 0, payload.Force, rewards)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to complete quest.")
 		return err

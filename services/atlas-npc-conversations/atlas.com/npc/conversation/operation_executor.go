@@ -784,13 +784,54 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 		SetSagaType(saga.InventoryTransaction).
 		SetInitiatedBy("npc-conversation-batch")
 
-	// Add steps for each operation
+	// Build steps first so we can cross-reference AwardAsset items when a
+	// CompleteQuest step is present in the same batch.
+	type builtStep struct {
+		stepId  string
+		status  saga.Status
+		action  saga.Action
+		payload any
+	}
+	built := make([]builtStep, 0, len(operations))
 	for _, operation := range operations {
 		stepId, status, action, payload, err := e.createStepForOperation(field, characterId, operation)
 		if err != nil {
 			return saga.Saga{}, err
 		}
-		builder.AddStep(stepId, status, action, payload)
+		built = append(built, builtStep{stepId, status, action, payload})
+	}
+
+	// When a CompleteQuest step is emitted alongside AwardAsset steps, treat
+	// the awarded items as the quest's reported rewards so downstream
+	// services (atlas-quest → atlas-channel) can display them on completion.
+	var rewards []saga.QuestRewardItem
+	for _, st := range built {
+		if st.action != saga.AwardAsset {
+			continue
+		}
+		pl, ok := st.payload.(saga.AwardItemActionPayload)
+		if !ok || pl.Item.Quantity == 0 {
+			continue
+		}
+		rewards = append(rewards, saga.QuestRewardItem{
+			ItemId: pl.Item.TemplateId,
+			Amount: int32(pl.Item.Quantity),
+		})
+	}
+	if len(rewards) > 0 {
+		for i := range built {
+			if built[i].action != saga.CompleteQuest {
+				continue
+			}
+			if cqp, ok := built[i].payload.(saga.CompleteQuestPayload); ok {
+				cqp.Rewards = rewards
+				built[i].payload = cqp
+			}
+		}
+	}
+
+	for _, st := range built {
+		builder.AddStep(st.stepId, st.status, st.action, st.payload)
 	}
 
 	// Build the saga

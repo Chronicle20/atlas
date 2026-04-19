@@ -63,7 +63,6 @@ export function useConversations(
     queryKey: conversationKeys.list(tenant, options),
     queryFn: () => conversationsService.getAll({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 3 * 60 * 1000, // 3 minutes (conversations change less frequently)
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
@@ -80,7 +79,6 @@ export function useConversation(
     queryKey: conversationKeys.detail(tenant, id),
     queryFn: () => conversationsService.getById(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
-    staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -97,7 +95,6 @@ export function useConversationExists(
     queryKey: [...conversationKeys.detail(tenant, id), 'exists'],
     queryFn: () => conversationsService.exists(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
-    staleTime: 2 * 60 * 1000, // 2 minutes for existence checks
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -114,7 +111,6 @@ export function useConversationByNpc(
     queryKey: conversationKeys.npcConversation(tenant, npcId),
     queryFn: () => conversationsService.getByNpcId(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
-    staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -131,7 +127,6 @@ export function useConversationSearch(
     queryKey: conversationKeys.search(tenant, searchText),
     queryFn: () => conversationsService.searchByText(searchText, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!searchText && searchText.length > 2,
-    staleTime: 1 * 60 * 1000, // Search results can be more stale
     gcTime: 3 * 60 * 1000,
   });
 }
@@ -148,7 +143,6 @@ export function useConversationsByNpc(
     queryKey: [...conversationKeys.byNpc(), tenant?.id || 'no-tenant', npcId, 'all'],
     queryFn: () => conversationsService.getConversationsByNpc(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
-    staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -164,7 +158,6 @@ export function useConversationStateConsistency(
     queryKey: conversationKeys.stateConsistency(tenant, conversationId),
     queryFn: () => conversationsService.validateStateConsistency(conversationId),
     enabled: !!tenant?.id && !!conversationId,
-    staleTime: 5 * 60 * 1000, // 5 minutes (validation results don't change often)
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -181,7 +174,6 @@ export function useConversationExport(
     queryKey: conversationKeys.export(tenant, format),
     queryFn: () => conversationsService.export(format, options),
     enabled: !!tenant?.id,
-    staleTime: 10 * 60 * 1000, // 10 minutes (exports don't change often)
     gcTime: 15 * 60 * 1000,
   });
 }
@@ -574,8 +566,7 @@ export function usePrefetchConversations() {
       queryClient.prefetchQuery({
         queryKey: conversationKeys.list(tenant, options),
         queryFn: () => conversationsService.getAll(options),
-        staleTime: 3 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch specific conversation
@@ -584,8 +575,7 @@ export function usePrefetchConversations() {
       queryClient.prefetchQuery({
         queryKey: conversationKeys.detail(tenant, id),
         queryFn: () => conversationsService.getById(id, options),
-        staleTime: 3 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch conversation for specific NPC
@@ -594,8 +584,7 @@ export function usePrefetchConversations() {
       queryClient.prefetchQuery({
         queryKey: conversationKeys.npcConversation(tenant, npcId),
         queryFn: () => conversationsService.getByNpcId(npcId, options),
-        staleTime: 3 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch state consistency validation
@@ -604,7 +593,6 @@ export function usePrefetchConversations() {
       queryClient.prefetchQuery({
         queryKey: conversationKeys.stateConsistency(tenant, conversationId),
         queryFn: () => conversationsService.validateStateConsistency(conversationId),
-        staleTime: 5 * 60 * 1000,
       }),
   };
 }

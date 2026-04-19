@@ -44,7 +44,6 @@ export function useAccounts(
     queryKey: accountKeys.list(tenant, options),
     queryFn: () => accountsService.getAllAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes (accounts change more frequently than tenants)
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -61,7 +60,6 @@ export function useAccount(
     queryKey: accountKeys.detail(tenant, id),
     queryFn: () => accountsService.getAccountById( id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -78,7 +76,6 @@ export function useAccountExists(
     queryKey: [...accountKeys.detail(tenant, id), 'exists'],
     queryFn: () => accountsService.accountExists(id, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!id,
-    staleTime: 1 * 60 * 1000, // 1 minute for existence checks
     gcTime: 2 * 60 * 1000,
   });
 }
@@ -95,7 +92,6 @@ export function useAccountSearch(
     queryKey: accountKeys.search(tenant, namePattern),
     queryFn: () => accountsService.searchAccountsByName(namePattern, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!namePattern && namePattern.length > 0,
-    staleTime: 1 * 60 * 1000, // Search results can be more stale
     gcTime: 3 * 60 * 1000,
   });
 }
@@ -111,7 +107,6 @@ export function useLoggedInAccounts(
     queryKey: accountKeys.loggedIn(tenant),
     queryFn: () => accountsService.getLoggedInAccounts({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 30 * 1000, // 30 seconds (login status changes frequently)
     gcTime: 2 * 60 * 1000,
     refetchInterval: 60 * 1000, // Auto-refresh every minute
   });
@@ -133,7 +128,6 @@ export function useAccountStats(
     queryKey: accountKeys.stats(tenant),
     queryFn: () => accountsService.getAccountStats({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -328,8 +322,7 @@ export function usePrefetchAccounts() {
       queryClient.prefetchQuery({
         queryKey: accountKeys.list(tenant, options),
         queryFn: () => accountsService.getAllAccounts( options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch specific account
@@ -338,8 +331,7 @@ export function usePrefetchAccounts() {
       queryClient.prefetchQuery({
         queryKey: accountKeys.detail(tenant, id),
         queryFn: () => accountsService.getAccountById( id, options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch logged-in accounts
@@ -348,7 +340,6 @@ export function usePrefetchAccounts() {
       queryClient.prefetchQuery({
         queryKey: accountKeys.loggedIn(tenant),
         queryFn: () => accountsService.getLoggedInAccounts(options),
-        staleTime: 30 * 1000,
       }),
     
     /**
@@ -358,8 +349,7 @@ export function usePrefetchAccounts() {
       queryClient.prefetchQuery({
         queryKey: accountKeys.stats(tenant),
         queryFn: () => accountsService.getAccountStats(options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
   };
 }
 

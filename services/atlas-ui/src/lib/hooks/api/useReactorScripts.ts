@@ -13,7 +13,6 @@ export function useReactorScript(reactorId: string): UseQueryResult<ReactorScrip
     queryKey: reactorScriptKeys.byReactor(reactorId),
     queryFn: () => reactorScriptsService.getScriptsByReactor(reactorId),
     enabled: !!reactorId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

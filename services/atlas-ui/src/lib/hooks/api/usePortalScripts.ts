@@ -13,7 +13,6 @@ export function usePortalScript(portalId: string): UseQueryResult<PortalScriptDa
     queryKey: portalScriptKeys.byPortal(portalId),
     queryFn: () => portalScriptsService.getScriptsByPortal(portalId),
     enabled: !!portalId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

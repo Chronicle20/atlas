@@ -28,7 +28,7 @@ export function useQuests(
     queryKey: questKeys.list(tenant, options),
     queryFn: () => questsService.getAllQuests( options),
     enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -41,7 +41,7 @@ export function useQuestCategories(
     queryKey: questKeys.categories(tenant),
     queryFn: () => questsService.getCategories(options),
     enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -55,7 +55,7 @@ export function useQuest(
     queryKey: questKeys.detail(tenant, id),
     queryFn: () => questsService.getQuestById( id, options),
     enabled: !!tenant?.id && !!id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

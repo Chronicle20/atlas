@@ -32,14 +32,12 @@ export function MerchantDetailPage() {
     queryKey: ["merchants", "shop", activeTenant?.id ?? "no-tenant", shopId],
     queryFn: () => merchantsService.getShopById(shopId),
     enabled: !!activeTenant && !!shopId,
-    staleTime: 60 * 1000,
   });
 
   const listingsQuery = useQuery({
     queryKey: ["merchants", "listings", activeTenant?.id ?? "no-tenant", shopId],
     queryFn: () => merchantsService.getShopListings(shopId),
     enabled: !!activeTenant && !!shopId,
-    staleTime: 60 * 1000,
   });
 
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");

@@ -70,7 +70,6 @@ function NpcsPageContent() {
     queryKey: ["npcs", "search", activeTenant?.id ?? "no-tenant", urlQuery, urlStorebank],
     queryFn: () => npcsService.searchNpcs(hasQuery ? urlQuery : "", urlStorebank),
     enabled,
-    staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
   });
 
@@ -85,7 +84,6 @@ function NpcsPageContent() {
       return statusMap;
     },
     enabled: !!activeTenant && (searchQuery.data?.length ?? 0) > 0,
-    staleTime: 60 * 1000,
   });
 
   const results = searchQuery.data ?? [];

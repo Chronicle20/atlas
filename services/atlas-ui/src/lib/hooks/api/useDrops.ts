@@ -16,7 +16,6 @@ export function useMonsterDrops(monsterId: string): UseQueryResult<DropData[], E
     queryKey: dropKeys.monster(monsterId),
     queryFn: () => dropsService.getMonsterDrops(monsterId),
     enabled: !!monsterId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -27,7 +26,6 @@ export function useItemDrops(itemId: string): UseQueryResult<DropData[], Error> 
     queryKey: dropKeys.item(itemId),
     queryFn: () => dropsService.getItemDrops(itemId),
     enabled: !!itemId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -38,7 +36,6 @@ export function useReactorDrops(reactorId: string): UseQueryResult<ReactorDropDa
     queryKey: dropKeys.reactor(reactorId),
     queryFn: () => dropsService.getReactorDrops(reactorId),
     enabled: !!reactorId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

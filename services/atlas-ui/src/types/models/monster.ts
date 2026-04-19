@@ -44,3 +44,15 @@ export interface MonsterData {
   type: string;
   attributes: MonsterAttributes;
 }
+
+export interface MonsterSpawnMapAttributes {
+  name: string;
+  streetName: string;
+  spawnCount: number;
+}
+
+export interface MonsterSpawnMapData {
+  id: string;
+  type: string;
+  attributes: MonsterSpawnMapAttributes;
+}

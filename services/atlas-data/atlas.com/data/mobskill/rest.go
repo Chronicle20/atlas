@@ -8,6 +8,7 @@ import (
 type RestModel struct {
 	SkillId     uint16  `json:"-"`
 	Level       uint16  `json:"-"`
+	Name        string  `json:"name"`
 	MpCon       uint32  `json:"mp_con"`
 	Duration    uint32  `json:"duration"`
 	Hp          uint32  `json:"hp"`

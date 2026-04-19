@@ -25,6 +25,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			r.HandleFunc("", registerGet("get_monsters", handleGetMonstersRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{monsterId}", registerGet("get_monster", handleGetMonsterRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{monsterId}/loseItems", registerGet("get_monster_lose_items", handleGetMonsterLoseItemsRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{monsterId}/maps", registerGet("get_monster_maps", handleGetMonsterMapsRequest(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -146,6 +147,64 @@ func handleGetMonsterRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *res
 				query := r.URL.Query()
 				queryParams := jsonapi.ParseQueryFields(&query)
 				server.MarshalResponse[RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
+	}
+}
+
+type MonsterSpawnMapRestModel struct {
+	MapId      uint32 `json:"-"`
+	Name       string `json:"name"`
+	StreetName string `json:"streetName"`
+	SpawnCount uint32 `json:"spawnCount"`
+}
+
+func (r MonsterSpawnMapRestModel) GetName() string { return "monster-spawn-maps" }
+func (r MonsterSpawnMapRestModel) GetID() string   { return strconv.Itoa(int(r.MapId)) }
+
+func (r *MonsterSpawnMapRestModel) SetID(idStr string) error {
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		return err
+	}
+	r.MapId = uint32(id)
+	return nil
+}
+
+func handleGetMonsterMapsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseMonsterId(d.Logger(), func(monsterId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				t, terr := tenant.FromContext(d.Context())()
+				if terr != nil {
+					d.Logger().WithError(terr).Errorf("Unable to resolve tenant for monster-maps request.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				var rows []SpawnIndexEntity
+				if err := db.WithContext(d.Context()).
+					Where("tenant_id = ? AND monster_id = ?", t.Id(), monsterId).
+					Order("spawn_count DESC, name ASC").
+					Find(&rows).Error; err != nil {
+					d.Logger().WithError(err).Errorf("Unable to query monster spawn index for monster %d.", monsterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				rms := make([]MonsterSpawnMapRestModel, 0, len(rows))
+				for _, row := range rows {
+					rms = append(rms, MonsterSpawnMapRestModel{
+						MapId:      row.MapId,
+						Name:       row.Name,
+						StreetName: row.StreetName,
+						SpawnCount: row.SpawnCount,
+					})
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]MonsterSpawnMapRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
 			}
 		})
 	}

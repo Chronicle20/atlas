@@ -2,51 +2,64 @@ package mobskill
 
 import (
 	"atlas-data/xml"
+	"context"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-func Read(l logrus.FieldLogger) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-	return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
-		exml, err := np()
-		if err != nil {
-			return model.ErrorProvider[[]RestModel](err)
-		}
-
-		res := make([]RestModel, 0)
-		for _, skillNode := range exml.ChildNodes {
-			skillId, err := strconv.Atoi(skillNode.Name)
+func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+	return func(ctx context.Context) func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+		t, tErr := tenant.FromContext(ctx)()
+		return func(np model.Provider[xml.Node]) model.Provider[[]RestModel] {
+			exml, err := np()
 			if err != nil {
-				continue
+				return model.ErrorProvider[[]RestModel](err)
 			}
 
-			levelNode, err := skillNode.ChildByName("level")
-			if err != nil {
-				continue
-			}
-
-			for _, lvlNode := range levelNode.ChildNodes {
-				level, err := strconv.Atoi(lvlNode.Name)
+			res := make([]RestModel, 0)
+			for _, skillNode := range exml.ChildNodes {
+				skillId, err := strconv.Atoi(skillNode.Name)
 				if err != nil {
 					continue
 				}
 
-				m := readLevel(l, uint16(skillId), uint16(level), lvlNode)
-				res = append(res, m)
-			}
-		}
+				name := ""
+				if tErr == nil {
+					if ss, sErr := GetMobSkillStringRegistry().Get(t, strconv.Itoa(skillId)); sErr == nil {
+						name = ss.Name()
+					}
+				}
 
-		l.Debugf("Processed [%d] mob skills.", len(res))
-		return model.FixedProvider(res)
+				levelNode, err := skillNode.ChildByName("level")
+				if err != nil {
+					continue
+				}
+
+				for _, lvlNode := range levelNode.ChildNodes {
+					level, err := strconv.Atoi(lvlNode.Name)
+					if err != nil {
+						continue
+					}
+
+					m := readLevel(l, uint16(skillId), uint16(level), name, lvlNode)
+					res = append(res, m)
+				}
+			}
+
+			l.Debugf("Processed [%d] mob skills.", len(res))
+			return model.FixedProvider(res)
+		}
 	}
 }
 
-func readLevel(l logrus.FieldLogger, skillId uint16, level uint16, node xml.Node) RestModel {
+func readLevel(l logrus.FieldLogger, skillId uint16, level uint16, name string, node xml.Node) RestModel {
 	m := RestModel{
 		SkillId: skillId,
 		Level:   level,
+		Name:    name,
 	}
 	m.MpCon = uint32(node.GetIntegerWithDefault("mpCon", 0))
 	m.Duration = uint32(node.GetIntegerWithDefault("time", 0))

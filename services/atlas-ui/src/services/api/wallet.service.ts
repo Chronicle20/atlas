@@ -11,6 +11,7 @@ export const walletService = {
 
   async updateWallet(
     accountId: string,
+    walletId: string,
     credit: number,
     points: number,
     prepaid: number,
@@ -18,6 +19,7 @@ export const walletService = {
   ): Promise<Wallet> {
     const body = {
       data: {
+        id: walletId,
         type: "wallets",
         attributes: { credit, points, prepaid },
       },

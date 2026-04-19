@@ -270,6 +270,10 @@ data:
       proxy_pass http://atlas-npc-shops:8080;
     }
 
+    location ~ ^/api/commodities(/.*)?$ {
+      proxy_pass http://atlas-npc-shops:8080;
+    }
+
     location ~ ^/api/notes(/.*)?$ {
       proxy_pass http://atlas-notes:8080;
     }

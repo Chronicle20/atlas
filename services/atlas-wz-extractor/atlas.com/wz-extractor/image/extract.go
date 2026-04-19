@@ -140,6 +140,11 @@ func findImageById(images map[string]*wz.Image, id string) *wz.Image {
 // Items are organized in subdirectories by category (Cash, Consume, Etc, Install, Pet).
 // Some categories store one item per .img (e.g., Pet), while others store multiple items
 // per .img as sub-properties (e.g., Cash, Consume, Etc, Install).
+//
+// Many items store info/icon as a UOLProperty — a relative WZ path such as
+// "../../02040001/info/icon" pointing at another sibling item's canvas. These get
+// resolved against the enclosing multi-item image so the linked canvas is extracted
+// under the referencing item's id.
 func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	root := f.Root()
 	if root == nil {
@@ -154,9 +159,8 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 				continue
 			}
 
-			// Check if this image directly has info/icon (single-item images like Pet)
-			cp := findInfoIcon(props)
-			if cp != nil {
+			// Single-item image (e.g., Pet): info/icon at the root.
+			if cp := findInfoIcon(props); cp != nil {
 				if err := writeCanvasPng(l, f, cp, outputDir, "item", normalizeId(img.Name())); err != nil {
 					l.WithError(err).Warnf("Unable to extract icon for item [%s].", img.Name())
 				} else {
@@ -165,13 +169,18 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 				continue
 			}
 
-			// Multi-item image: each sub-property is an item with its own info/icon
+			// Multi-item image: index siblings once per .img so UOL references resolve in O(1).
+			siblings := indexItemSubs(props)
+
 			for _, p := range props {
 				sub, ok := p.(*property.SubProperty)
 				if !ok {
 					continue
 				}
-				cp = findInfoIcon(sub.Children())
+				cp := findInfoIcon(sub.Children())
+				if cp == nil {
+					cp = resolveItemIconUOL(l, siblings, sub.Name(), sub.Children())
+				}
 				if cp == nil {
 					continue
 				}
@@ -185,6 +194,90 @@ func extractItemIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error 
 	}
 	l.Infof("Extracted [%d] item icons.", count)
 	return nil
+}
+
+// indexItemSubs returns every top-level SubProperty in a multi-item image keyed by
+// its raw name (zero-padded form, as the WZ UOL paths use).
+func indexItemSubs(props []property.Property) map[string]*property.SubProperty {
+	out := make(map[string]*property.SubProperty, len(props))
+	for _, p := range props {
+		if sub, ok := p.(*property.SubProperty); ok {
+			out[sub.Name()] = sub
+		}
+	}
+	return out
+}
+
+// findInfoIconUOL returns the UOL raw value stored under info/icon, if the icon is a
+// UOL reference rather than a direct canvas.
+func findInfoIconUOL(props []property.Property) string {
+	info := findSub(props, "info")
+	if info == nil {
+		return ""
+	}
+	for _, c := range info.Children() {
+		if uol, ok := c.(*property.UOLProperty); ok && uol.Name() == "icon" {
+			return uol.Value()
+		}
+	}
+	return ""
+}
+
+// resolveItemIconUOL resolves info/icon UOL references of the shape
+// "../../<siblingId>/info/icon" against the enclosing multi-item image's top-level
+// sub-properties. Chains are followed up to 5 hops with cycle detection.
+func resolveItemIconUOL(l logrus.FieldLogger, siblings map[string]*property.SubProperty, fromName string, props []property.Property) *property.CanvasProperty {
+	visited := map[string]struct{}{fromName: {}}
+	for depth := 0; depth < 5; depth++ {
+		uolPath := findInfoIconUOL(props)
+		if uolPath == "" {
+			return nil
+		}
+		targetName, tail, ok := splitSiblingUOL(uolPath)
+		if !ok {
+			l.Debugf("Unsupported UOL path shape [%s] from item [%s].", uolPath, fromName)
+			return nil
+		}
+		if _, seen := visited[targetName]; seen {
+			return nil
+		}
+		visited[targetName] = struct{}{}
+
+		target, ok := siblings[targetName]
+		if !ok {
+			l.Debugf("UOL target [%s] not present among siblings (from item [%s]).", targetName, fromName)
+			return nil
+		}
+		if tail == "info/icon" {
+			if cp := findInfoIcon(target.Children()); cp != nil {
+				return cp
+			}
+			// Target is itself a UOL — follow the chain.
+			props = target.Children()
+			fromName = targetName
+			continue
+		}
+		l.Debugf("Unsupported UOL tail [%s] from item [%s].", tail, fromName)
+		return nil
+	}
+	return nil
+}
+
+// splitSiblingUOL parses a UOL path of the form "../../<name>/<tail...>" and returns
+// the sibling sub-property name and the remaining tail. Paths with a different leading
+// dot-count (crossing images) are reported as unsupported.
+func splitSiblingUOL(uol string) (string, string, bool) {
+	parts := strings.Split(uol, "/")
+	dots := 0
+	for dots < len(parts) && parts[dots] == ".." {
+		dots++
+	}
+	if dots != 2 || len(parts) < dots+2 {
+		return "", "", false
+	}
+	name := parts[dots]
+	tail := strings.Join(parts[dots+1:], "/")
+	return name, tail, true
 }
 
 // extractSkillIcons extracts skill icons from Skill.wz.

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -44,6 +45,41 @@ export function MapDetailTabs({
   reactors,
   reactorsError,
 }: MapDetailTabsProps) {
+  const sortedPortals = useMemo(() => {
+    if (!portals) return portals;
+    return [...portals].sort((a, b) => {
+      const an = a.attributes.name || "";
+      const bn = b.attributes.name || "";
+      if (an && bn) return an.localeCompare(bn);
+      if (an) return -1;
+      if (bn) return 1;
+      return a.id.localeCompare(b.id);
+    });
+  }, [portals]);
+
+  const sortedMonsters = useMemo(() => {
+    if (!monsters) return monsters;
+    return [...monsters].sort((a, b) => {
+      if (a.attributes.template !== b.attributes.template) {
+        return a.attributes.template - b.attributes.template;
+      }
+      if (a.attributes.x !== b.attributes.x) return a.attributes.x - b.attributes.x;
+      return a.attributes.y - b.attributes.y;
+    });
+  }, [monsters]);
+
+  const sortedReactors = useMemo(() => {
+    if (!reactors) return reactors;
+    return [...reactors].sort((a, b) => {
+      const an = a.attributes.name || "";
+      const bn = b.attributes.name || "";
+      if (an && bn && an !== bn) return an.localeCompare(bn);
+      if (an && !bn) return -1;
+      if (!an && bn) return 1;
+      return a.attributes.classification - b.attributes.classification;
+    });
+  }, [reactors]);
+
   return (
     <Tabs defaultValue="portals" className="flex flex-col">
       <TabsList>
@@ -63,9 +99,9 @@ export function MapDetailTabs({
           <CardContent className="pt-6">
             {portalsError ? (
               <p className="text-sm text-destructive">Failed to load portals.</p>
-            ) : portals === undefined ? (
+            ) : sortedPortals === undefined ? (
               <p className="text-sm text-muted-foreground">Loading portals...</p>
-            ) : portals.length > 0 ? (
+            ) : sortedPortals.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -77,7 +113,7 @@ export function MapDetailTabs({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {portals.map((portal) => (
+                  {sortedPortals.map((portal) => (
                     <PortalRow key={portal.id} mapId={mapId} portal={portal} />
                   ))}
                 </TableBody>
@@ -94,9 +130,9 @@ export function MapDetailTabs({
           <CardContent className="pt-6">
             {monstersError ? (
               <p className="text-sm text-destructive">Failed to load monsters.</p>
-            ) : monsters === undefined ? (
+            ) : sortedMonsters === undefined ? (
               <p className="text-sm text-muted-foreground">Loading monsters...</p>
-            ) : monsters.length > 0 ? (
+            ) : sortedMonsters.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -108,11 +144,10 @@ export function MapDetailTabs({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {monsters.map((monster, i) => (
+                  {sortedMonsters.map((monster) => (
                     <MonsterTableRow
                       key={monster.id}
                       monster={monster}
-                      spawnIndex={i}
                     />
                   ))}
                 </TableBody>
@@ -129,9 +164,9 @@ export function MapDetailTabs({
           <CardContent className="pt-6">
             {reactorsError ? (
               <p className="text-sm text-destructive">Failed to load reactors.</p>
-            ) : reactors === undefined ? (
+            ) : sortedReactors === undefined ? (
               <p className="text-sm text-muted-foreground">Loading reactors...</p>
-            ) : reactors.length > 0 ? (
+            ) : sortedReactors.length > 0 ? (
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -143,7 +178,7 @@ export function MapDetailTabs({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reactors.map((reactor) => (
+                  {sortedReactors.map((reactor) => (
                     <ReactorRow key={reactor.id} reactor={reactor} />
                   ))}
                 </TableBody>
@@ -167,8 +202,8 @@ function PortalRow({ mapId, portal }: { mapId: string; portal: MapPortalData }) 
       onPointerEnter={() => setHovered({ kind: "portal", portalId: portal.id })}
       onPointerLeave={() => setHovered(null)}
       className={cn(
-        "border-l-2 border-transparent",
-        highlighted && "bg-muted/60 border-emerald-500",
+        "!border-l-2 border-l-transparent",
+        highlighted && "bg-muted/60 !border-l-emerald-500",
       )}
     >
       <TableCell>
@@ -219,8 +254,8 @@ function ReactorRow({ reactor }: { reactor: MapReactorData }) {
       onPointerEnter={() => setHovered({ kind: "reactor", reactorId: reactor.id })}
       onPointerLeave={() => setHovered(null)}
       className={cn(
-        "border-l-2 border-transparent",
-        highlighted && "bg-muted/60 border-amber-500",
+        "!border-l-2 border-l-transparent",
+        highlighted && "bg-muted/60 !border-l-amber-500",
       )}
     >
       <TableCell>

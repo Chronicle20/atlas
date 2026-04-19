@@ -2,7 +2,10 @@ package image
 
 import (
 	"atlas-wz-extractor/wz/property"
+	"io"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestFindSubPresent(t *testing.T) {
@@ -227,5 +230,131 @@ func TestFindInfoIconNoIcon(t *testing.T) {
 	result := findInfoIcon(props)
 	if result != nil {
 		t.Errorf("findInfoIcon = %v, want nil", result)
+	}
+}
+
+func TestSplitSiblingUOL(t *testing.T) {
+	cases := []struct {
+		in     string
+		name   string
+		tail   string
+		ok     bool
+	}{
+		{"../../02040001/info/icon", "02040001", "info/icon", true},
+		{"../../02040019/info/iconRaw", "02040019", "info/iconRaw", true},
+		{"../02040001/info/icon", "", "", false},        // only 1 dot — different image level
+		{"../../../02040001/info/icon", "", "", false},   // 3 dots — crossing images, not supported yet
+		{"..", "", "", false},                             // truncated
+	}
+	for _, c := range cases {
+		name, tail, ok := splitSiblingUOL(c.in)
+		if ok != c.ok || name != c.name || tail != c.tail {
+			t.Errorf("splitSiblingUOL(%q) = (%q, %q, %t), want (%q, %q, %t)",
+				c.in, name, tail, ok, c.name, c.tail, c.ok)
+		}
+	}
+}
+
+func TestResolveItemIconUOLResolvesToCanvas(t *testing.T) {
+	// Mirrors the "Scroll for Cape" shape: 02041001.info.icon is a UOL targeting
+	// 02040001.info.icon (a direct canvas) in the same multi-item image.
+	target := property.NewCanvas("icon", 30, 30, 2, 0, 0, nil)
+	siblings := map[string]*property.SubProperty{
+		"02040001": property.NewSub("02040001", []property.Property{
+			property.NewSub("info", []property.Property{target}),
+		}),
+	}
+	from := []property.Property{
+		property.NewSub("info", []property.Property{
+			property.NewUOL("icon", "../../02040001/info/icon"),
+		}),
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	got := resolveItemIconUOL(l, siblings, "02041001", from)
+	if got == nil {
+		t.Fatal("resolveItemIconUOL returned nil, want the linked canvas")
+	}
+	if got.Width() != 30 {
+		t.Errorf("Width() = %d, want 30", got.Width())
+	}
+}
+
+func TestResolveItemIconUOLFollowsChain(t *testing.T) {
+	target := property.NewCanvas("icon", 16, 16, 1, 0, 0, nil)
+	siblings := map[string]*property.SubProperty{
+		"02040000": property.NewSub("02040000", []property.Property{
+			property.NewSub("info", []property.Property{target}),
+		}),
+		"02040001": property.NewSub("02040001", []property.Property{
+			property.NewSub("info", []property.Property{
+				property.NewUOL("icon", "../../02040000/info/icon"),
+			}),
+		}),
+	}
+	from := []property.Property{
+		property.NewSub("info", []property.Property{
+			property.NewUOL("icon", "../../02040001/info/icon"),
+		}),
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	got := resolveItemIconUOL(l, siblings, "02041001", from)
+	if got == nil {
+		t.Fatal("resolveItemIconUOL returned nil on 2-hop chain")
+	}
+}
+
+func TestResolveItemIconUOLStopsOnCycle(t *testing.T) {
+	siblings := map[string]*property.SubProperty{
+		"02040001": property.NewSub("02040001", []property.Property{
+			property.NewSub("info", []property.Property{
+				property.NewUOL("icon", "../../02041001/info/icon"),
+			}),
+		}),
+		"02041001": property.NewSub("02041001", []property.Property{
+			property.NewSub("info", []property.Property{
+				property.NewUOL("icon", "../../02040001/info/icon"),
+			}),
+		}),
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	got := resolveItemIconUOL(l, siblings, "02041001", siblings["02041001"].Children())
+	if got != nil {
+		t.Errorf("resolveItemIconUOL returned %v, want nil on cycle", got)
+	}
+}
+
+func TestResolveItemIconUOLMissingTarget(t *testing.T) {
+	from := []property.Property{
+		property.NewSub("info", []property.Property{
+			property.NewUOL("icon", "../../09999999/info/icon"),
+		}),
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	got := resolveItemIconUOL(l, map[string]*property.SubProperty{}, "02041001", from)
+	if got != nil {
+		t.Errorf("resolveItemIconUOL returned %v, want nil when target missing", got)
+	}
+}
+
+func TestResolveItemIconUOLNoUOL(t *testing.T) {
+	from := []property.Property{
+		property.NewSub("info", []property.Property{
+			property.NewInt("price", 100),
+		}),
+	}
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	got := resolveItemIconUOL(l, map[string]*property.SubProperty{}, "02041001", from)
+	if got != nil {
+		t.Errorf("resolveItemIconUOL returned %v, want nil when no UOL present", got)
 	}
 }

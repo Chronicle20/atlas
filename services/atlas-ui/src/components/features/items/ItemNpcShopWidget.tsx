@@ -8,7 +8,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useNpcData } from "@/lib/hooks/useNpcData";
-import { useNpcSpawnMap } from "@/lib/hooks/api/useNpcSpawnMap";
+import { useNpcSpawnMaps } from "@/lib/hooks/api/useNpcSpawnMaps";
 import type { ItemSellerCommodity } from "@/types/models/npc";
 
 interface ItemNpcShopWidgetProps {
@@ -18,13 +18,15 @@ interface ItemNpcShopWidgetProps {
 export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
   const { npcId, mesoPrice, tokenPrice, tokenTemplateId, discountRate, period, levelLimit, id } = commodity;
   const { name: npcName, iconUrl, isLoading: npcLoading } = useNpcData(npcId);
-  const { data: spawnMap } = useNpcSpawnMap(npcId);
+  const { data: spawnMaps } = useNpcSpawnMaps(npcId);
 
   const priceLine = formatPrice(mesoPrice, tokenPrice, tokenTemplateId);
-  const mapLabel = spawnMap
-    ? spawnMap.streetName
-      ? `${spawnMap.name} · ${spawnMap.streetName}`
-      : spawnMap.name
+  const primarySpawnMap = spawnMaps && spawnMaps.length > 0 ? spawnMaps[0] : null;
+  const extraMapCount = spawnMaps && spawnMaps.length > 1 ? spawnMaps.length - 1 : 0;
+  const mapLabel = primarySpawnMap
+    ? primarySpawnMap.streetName
+      ? `${primarySpawnMap.name} · ${primarySpawnMap.streetName}`
+      : primarySpawnMap.name
     : null;
 
   const widget = (
@@ -55,6 +57,11 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
       {mapLabel && (
         <Badge variant="secondary" className="hidden sm:inline-flex">
           {mapLabel}
+        </Badge>
+      )}
+      {extraMapCount > 0 && (
+        <Badge variant="outline" className="hidden sm:inline-flex">
+          +{extraMapCount}
         </Badge>
       )}
     </Link>

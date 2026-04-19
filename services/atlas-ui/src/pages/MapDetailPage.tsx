@@ -13,6 +13,7 @@ import { MapImagePanel } from "@/components/features/maps/MapImagePanel";
 import { MapEntitySummary } from "@/components/features/maps/MapEntitySummary";
 import { ConnectedMapsRow } from "@/components/features/maps/ConnectedMapsRow";
 import { MapDetailTabs } from "@/components/features/maps/MapDetailTabs";
+import { HoverHighlightProvider } from "@/components/features/maps/HoverHighlightContext";
 
 export function MapDetailPage() {
   const params = useParams();
@@ -48,27 +49,38 @@ export function MapDetailPage() {
         spawnCount={spawnCount}
       />
 
-      <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-        <MapImagePanel mapId={map.id} mapName={attrs.name} initialKind="render" />
-        <MapEntitySummary
-          npcs={npcs}
-          npcsError={npcsError}
+      <HoverHighlightProvider>
+        <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
+          <MapImagePanel
+            mapId={map.id}
+            mapName={attrs.name}
+            initialKind="render"
+            mapArea={attrs.mapArea ?? null}
+            portals={portals}
+            npcs={npcs}
+            monsters={monsters}
+            reactors={reactors}
+          />
+          <MapEntitySummary
+            npcs={npcs}
+            npcsError={npcsError}
+            monsters={monsters}
+            monstersError={monstersError}
+          />
+        </div>
+
+        <ConnectedMapsRow mapId={id} portals={portals} />
+
+        <MapDetailTabs
+          mapId={id}
+          portals={portals}
+          portalsError={portalsError}
           monsters={monsters}
           monstersError={monstersError}
+          reactors={reactors}
+          reactorsError={reactorsError}
         />
-      </div>
-
-      <ConnectedMapsRow mapId={id} portals={portals} />
-
-      <MapDetailTabs
-        mapId={id}
-        portals={portals}
-        portalsError={portalsError}
-        monsters={monsters}
-        monstersError={monstersError}
-        reactors={reactors}
-        reactorsError={reactorsError}
-      />
+      </HoverHighlightProvider>
     </div>
   );
 }

@@ -15,11 +15,13 @@ import { MonsterTableRow } from "@/components/features/monsters/MonsterTableRow"
 import { MapCell } from "@/components/map-cell";
 import { useTenant } from "@/context/tenant-context";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
+import { cn } from "@/lib/utils";
 import type {
   MapMonsterData,
   MapPortalData,
   MapReactorData,
 } from "@/services/api/map-entities.service";
+import { useHoverHighlight } from "./HoverHighlightContext";
 
 const NONE_MAP_ID = 999999999;
 
@@ -42,8 +44,6 @@ export function MapDetailTabs({
   reactors,
   reactorsError,
 }: MapDetailTabsProps) {
-  const { activeTenant } = useTenant();
-
   return (
     <Tabs defaultValue="portals" className="flex-1 flex flex-col min-h-0">
       <TabsList>
@@ -78,43 +78,7 @@ export function MapDetailTabs({
                 </TableHeader>
                 <TableBody>
                   {portals.map((portal) => (
-                    <TableRow key={portal.id}>
-                      <TableCell>
-                        <Link
-                          to={`/maps/${mapId}/portals/${portal.id}`}
-                          className="text-primary hover:underline"
-                        >
-                          {portal.attributes.name || portal.id}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{portal.attributes.type}</TableCell>
-                      <TableCell className="font-mono">
-                        ({portal.attributes.x}, {portal.attributes.y})
-                      </TableCell>
-                      <TableCell>
-                        {portal.attributes.targetMapId ? (
-                          Number(portal.attributes.targetMapId) === NONE_MAP_ID ? (
-                            <Badge variant="secondary">NONE</Badge>
-                          ) : (
-                            <Link to={`/maps/${portal.attributes.targetMapId}`}>
-                              <MapCell
-                                mapId={String(portal.attributes.targetMapId)}
-                                tenant={activeTenant}
-                              />
-                            </Link>
-                          )
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {portal.attributes.scriptName ? (
-                          <Badge variant="outline">{portal.attributes.scriptName}</Badge>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                    </TableRow>
+                    <PortalRow key={portal.id} mapId={mapId} portal={portal} />
                   ))}
                 </TableBody>
               </Table>
@@ -144,8 +108,12 @@ export function MapDetailTabs({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {monsters.map((monster) => (
-                    <MonsterTableRow key={monster.id} monster={monster} />
+                  {monsters.map((monster, i) => (
+                    <MonsterTableRow
+                      key={monster.id}
+                      monster={monster}
+                      spawnIndex={i}
+                    />
                   ))}
                 </TableBody>
               </Table>
@@ -176,42 +144,7 @@ export function MapDetailTabs({
                 </TableHeader>
                 <TableBody>
                   {reactors.map((reactor) => (
-                    <TableRow key={reactor.id}>
-                      <TableCell>
-                        <NpcImage
-                          npcId={reactor.attributes.classification}
-                          iconUrl={
-                            activeTenant
-                              ? getAssetIconUrl(
-                                  activeTenant.id,
-                                  activeTenant.attributes.region,
-                                  activeTenant.attributes.majorVersion,
-                                  activeTenant.attributes.minorVersion,
-                                  "reactor",
-                                  reactor.attributes.classification,
-                                )
-                              : undefined
-                          }
-                          size={32}
-                          lazy
-                          showRetryButton={false}
-                          maxRetries={1}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Link
-                          to={`/reactors/${reactor.attributes.classification}`}
-                          className="font-mono text-primary hover:underline"
-                        >
-                          {reactor.attributes.classification}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{reactor.attributes.name}</TableCell>
-                      <TableCell className="font-mono">
-                        ({reactor.attributes.x}, {reactor.attributes.y})
-                      </TableCell>
-                      <TableCell>{reactor.attributes.delay}</TableCell>
-                    </TableRow>
+                    <ReactorRow key={reactor.id} reactor={reactor} />
                   ))}
                 </TableBody>
               </Table>
@@ -222,5 +155,108 @@ export function MapDetailTabs({
         </Card>
       </TabsContent>
     </Tabs>
+  );
+}
+
+function PortalRow({ mapId, portal }: { mapId: string; portal: MapPortalData }) {
+  const { activeTenant } = useTenant();
+  const { setHovered, isHovered } = useHoverHighlight();
+  const highlighted = isHovered({ kind: "portal", portalId: portal.id });
+  return (
+    <TableRow
+      onPointerEnter={() => setHovered({ kind: "portal", portalId: portal.id })}
+      onPointerLeave={() => setHovered(null)}
+      className={cn(
+        "border-l-2 border-transparent",
+        highlighted && "bg-muted/60 border-emerald-500",
+      )}
+    >
+      <TableCell>
+        <Link
+          to={`/maps/${mapId}/portals/${portal.id}`}
+          className="text-primary hover:underline"
+        >
+          {portal.attributes.name || portal.id}
+        </Link>
+      </TableCell>
+      <TableCell>{portal.attributes.type}</TableCell>
+      <TableCell className="font-mono">
+        ({portal.attributes.x}, {portal.attributes.y})
+      </TableCell>
+      <TableCell>
+        {portal.attributes.targetMapId ? (
+          Number(portal.attributes.targetMapId) === NONE_MAP_ID ? (
+            <Badge variant="secondary">NONE</Badge>
+          ) : (
+            <Link to={`/maps/${portal.attributes.targetMapId}`}>
+              <MapCell
+                mapId={String(portal.attributes.targetMapId)}
+                tenant={activeTenant}
+              />
+            </Link>
+          )
+        ) : (
+          "-"
+        )}
+      </TableCell>
+      <TableCell>
+        {portal.attributes.scriptName ? (
+          <Badge variant="outline">{portal.attributes.scriptName}</Badge>
+        ) : (
+          "-"
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+
+function ReactorRow({ reactor }: { reactor: MapReactorData }) {
+  const { activeTenant } = useTenant();
+  const { setHovered, isHovered } = useHoverHighlight();
+  const highlighted = isHovered({ kind: "reactor", reactorId: reactor.id });
+  return (
+    <TableRow
+      onPointerEnter={() => setHovered({ kind: "reactor", reactorId: reactor.id })}
+      onPointerLeave={() => setHovered(null)}
+      className={cn(
+        "border-l-2 border-transparent",
+        highlighted && "bg-muted/60 border-amber-500",
+      )}
+    >
+      <TableCell>
+        <NpcImage
+          npcId={reactor.attributes.classification}
+          iconUrl={
+            activeTenant
+              ? getAssetIconUrl(
+                  activeTenant.id,
+                  activeTenant.attributes.region,
+                  activeTenant.attributes.majorVersion,
+                  activeTenant.attributes.minorVersion,
+                  "reactor",
+                  reactor.attributes.classification,
+                )
+              : undefined
+          }
+          size={32}
+          lazy
+          showRetryButton={false}
+          maxRetries={1}
+        />
+      </TableCell>
+      <TableCell>
+        <Link
+          to={`/reactors/${reactor.attributes.classification}`}
+          className="font-mono text-primary hover:underline"
+        >
+          {reactor.attributes.classification}
+        </Link>
+      </TableCell>
+      <TableCell>{reactor.attributes.name}</TableCell>
+      <TableCell className="font-mono">
+        ({reactor.attributes.x}, {reactor.attributes.y})
+      </TableCell>
+      <TableCell>{reactor.attributes.delay}</TableCell>
+    </TableRow>
   );
 }

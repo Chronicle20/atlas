@@ -1,8 +1,8 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
 import { conversationsService } from "./conversations.service";
-import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap } from "@/types/models/npc";
-import { isApiError } from "@/types/api/errors";
+import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap, NpcSpawnMapData } from "@/types/models/npc";
+import type { QuestDefinition } from "@/types/models/quest";
 
 const BASE_PATH = "/api/npcs";
 
@@ -263,23 +263,19 @@ export const npcsService = {
     return npc.attributes.name;
   },
 
-  async getSpawnMap(npcId: number): Promise<NpcSpawnMap | null> {
-    try {
-      const res = await api.getOne<{
-        id: string;
-        attributes: { mapId: number; name: string; streetName: string; spawnCount: number };
-      }>(`/api/data/npcs/${npcId}/map`);
-      return {
-        npcId,
-        mapId: res.attributes.mapId,
-        name: res.attributes.name,
-        streetName: res.attributes.streetName,
-        spawnCount: res.attributes.spawnCount,
-      };
-    } catch (err) {
-      if (isApiError(err) && err.statusCode === 404) return null;
-      throw err;
-    }
+  async getNpcSpawnMaps(npcId: number): Promise<NpcSpawnMap[]> {
+    const rows = await api.getList<NpcSpawnMapData>(`/api/data/npcs/${npcId}/maps`);
+    return rows.map(row => ({
+      npcId,
+      mapId: row.attributes.mapId,
+      name: row.attributes.name,
+      streetName: row.attributes.streetName,
+      spawnCount: row.attributes.spawnCount,
+    }));
+  },
+
+  async getNpcQuests(npcId: number): Promise<QuestDefinition[]> {
+    return api.getList<QuestDefinition>(`/api/data/npcs/${npcId}/quests`);
   },
 };
 

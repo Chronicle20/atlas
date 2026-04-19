@@ -70,6 +70,21 @@ export interface NpcSpawnMap {
     spawnCount: number;
 }
 
+export interface NpcSpawnMapAttributes {
+    mapId: number;
+    name: string;
+    streetName: string;
+    spawnCount: number;
+}
+
+export interface NpcSpawnMapData {
+    id: string;
+    type: string;
+    attributes: NpcSpawnMapAttributes;
+}
+
+export type NpcQuestRole = "initiator" | "completer" | "both";
+
 export interface ItemSellerCommodity {
     id: string;
     npcId: number;

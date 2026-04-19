@@ -38,8 +38,8 @@ export function useMaps(options?: QueryOptions): UseQueryResult<MapData[], Error
     queryKey: mapKeys.list(options),
     queryFn: () => mapsService.getAllMaps({ ...options, useCache: false }),
     enabled: !!activeTenant,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 
@@ -52,7 +52,7 @@ export function useMap(id: string, options?: ServiceOptions): UseQueryResult<Map
     queryKey: mapKeys.detail(id),
     queryFn: () => mapsService.getMapById(id, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -66,7 +66,7 @@ export function useMapsByName(name: string, options?: ServiceOptions): UseQueryR
     queryKey: mapKeys.searchByName(name),
     queryFn: () => mapsService.searchMapsByName(name, { ...options, useCache: false }),
     enabled: !!name && name.trim().length > 0 && !!activeTenant,
-    staleTime: 2 * 60 * 1000, // 2 minutes for search results
+    staleTime: 10 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -80,7 +80,7 @@ export function useMapsByStreetName(streetName: string, options?: ServiceOptions
     queryKey: mapKeys.searchByStreet(streetName),
     queryFn: () => mapsService.getMapsByStreetName(streetName, { ...options, useCache: false }),
     enabled: !!streetName && streetName.trim().length > 0 && !!activeTenant,
-    staleTime: 2 * 60 * 1000, // 2 minutes for search results
+    staleTime: 10 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }

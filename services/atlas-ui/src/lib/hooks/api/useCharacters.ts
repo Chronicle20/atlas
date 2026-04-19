@@ -36,7 +36,6 @@ export function useCharacters(tenant: Tenant, options?: ServiceOptions): UseQuer
     queryKey: characterKeys.list(tenant, options),
     queryFn: () => charactersService.getAll({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes (characters change more frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -53,7 +52,6 @@ export function useCharacter(
     queryKey: characterKeys.detail(tenant, characterId),
     queryFn: () => charactersService.getById( characterId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!characterId,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -147,8 +145,7 @@ export function usePrefetchCharacters() {
     queryClient.prefetchQuery({
       queryKey: characterKeys.list(tenant, options),
       queryFn: () => charactersService.getAll( options),
-      staleTime: 2 * 60 * 1000,
-    });
+      });
   };
 }
 
@@ -162,8 +159,7 @@ export function usePrefetchCharacter() {
     queryClient.prefetchQuery({
       queryKey: characterKeys.detail(tenant, characterId),
       queryFn: () => charactersService.getById( characterId, options),
-      staleTime: 2 * 60 * 1000,
-    });
+      });
   };
 }
 

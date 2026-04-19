@@ -26,7 +26,6 @@ export function useBans(
     queryKey: banKeys.list(tenant, options),
     queryFn: () => bansService.getAllBans( options),
     enabled: !!tenant?.id,
-    staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -40,7 +39,6 @@ export function useBan(
     queryKey: banKeys.detail(tenant, id),
     queryFn: () => bansService.getBanById( id, options),
     enabled: !!tenant?.id && !!id,
-    staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -54,7 +52,6 @@ export function useBansByType(
     queryKey: [...banKeys.lists(), tenant?.id ?? "no-tenant", "type", type],
     queryFn: () => bansService.getBansByType(type, options),
     enabled: !!tenant?.id,
-    staleTime: 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }

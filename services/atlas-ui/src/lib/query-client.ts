@@ -6,8 +6,10 @@ import { QueryClient } from '@tanstack/react-query';
 const queryClientConfig = {
   defaultOptions: {
     queries: {
-      // Time before data is considered stale (5 minutes)
-      staleTime: 5 * 60 * 1000,
+      // Data is stale immediately — explicit navigation and manual
+      // refresh should always revalidate. Static game-data hooks
+      // (outside src/lib/hooks/api) override this with longer windows.
+      staleTime: 0,
       // Time before inactive queries are garbage collected (10 minutes)
       gcTime: 10 * 60 * 1000,
       // Retry failed requests up to 3 times

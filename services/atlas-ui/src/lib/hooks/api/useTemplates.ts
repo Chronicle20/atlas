@@ -46,7 +46,6 @@ export function useTemplates(options?: QueryOptions): UseQueryResult<Template[],
   return useQuery({
     queryKey: templateKeys.list(options),
     queryFn: () => templatesService.getAll({ ...options, useCache: false }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
@@ -59,7 +58,6 @@ export function useTemplate(id: string, options?: ServiceOptions): UseQueryResul
     queryKey: templateKeys.detail(id),
     queryFn: () => templatesService.getById(id, { ...options, useCache: false }),
     enabled: !!id,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -72,7 +70,6 @@ export function useTemplateExists(id: string, options?: ServiceOptions): UseQuer
     queryKey: [...templateKeys.details(), id, 'exists'],
     queryFn: () => templatesService.exists(id, { ...options, useCache: false }),
     enabled: !!id,
-    staleTime: 2 * 60 * 1000, // 2 minutes (shorter for existence checks)
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -342,7 +339,6 @@ export function useTemplatesByRegion(region: string, options?: QueryOptions): Us
     queryKey: templateKeys.byRegion(region, options),
     queryFn: () => templatesService.getByRegion(region, { ...options, useCache: false }),
     enabled: !!region,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -359,7 +355,6 @@ export function useTemplatesByVersion(
     queryKey: templateKeys.byVersion(majorVersion, minorVersion, options),
     queryFn: () => templatesService.getByVersion(majorVersion, minorVersion, { ...options, useCache: false }),
     enabled: majorVersion >= 0,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -377,7 +372,6 @@ export function useTemplatesByRegionAndVersion(
     queryKey: templateKeys.byRegionAndVersion(region, majorVersion, minorVersion, options),
     queryFn: () => templatesService.getByRegionAndVersion(region, majorVersion, minorVersion, { ...options, useCache: false }),
     enabled: !!region && majorVersion >= 0,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -397,7 +391,6 @@ export function useValidateTemplate(templateId: string): UseQueryResult<
     queryKey: templateKeys.validation(templateId),
     queryFn: () => templatesService.validateTemplateConsistency(templateId),
     enabled: !!templateId,
-    staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -461,7 +454,6 @@ export function useTemplateCacheStats() {
   return useQuery({
     queryKey: [...templateKeys.all, 'cacheStats'],
     queryFn: () => ({ size: 0, entries: [] as Array<{ key: string }> }),
-    staleTime: 30 * 1000, // 30 seconds
     gcTime: 60 * 1000, // 1 minute
   });
 }

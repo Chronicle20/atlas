@@ -28,7 +28,6 @@ export function NpcShopPage() {
         queryKey: shopKey,
         queryFn: () => npcsService.getNPCShop(npcId),
         enabled: !!activeTenant && npcId > 0,
-        staleTime: 30 * 1000,
     });
 
     const commodities: Commodity[] = shopQuery.data?.included ?? [];

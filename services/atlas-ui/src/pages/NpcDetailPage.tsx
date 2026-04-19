@@ -34,7 +34,6 @@ export function NpcDetailPage() {
             return npcData ?? { id: npcId, hasShop: false, hasConversation: false };
         },
         enabled: !!activeTenant && npcId > 0,
-        staleTime: 60 * 1000,
     });
 
     const npc = npcQuery.data ?? null;

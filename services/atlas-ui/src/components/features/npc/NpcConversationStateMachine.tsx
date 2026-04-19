@@ -58,19 +58,22 @@ function getStateTransitions(state: ConversationState): StateTransition[] {
   switch (state.type) {
     case "dialogue":
       return (
-        state.dialogue?.choices.map((choice, i) => ({
+        state.dialogue?.choices?.map((choice, i) => ({
           label: choice.text ? truncate(choice.text, 32) : `Choice ${i + 1}`,
           target: choice.nextState,
         })) ?? []
       );
     case "genericAction":
       return (
-        state.genericAction?.outcomes.map((outcome, i) => ({
-          label: outcome.conditions.length
-            ? `if ${outcome.conditions.length} cond${outcome.conditions.length === 1 ? "" : "s"}`
-            : `outcome ${i + 1}`,
-          target: outcome.nextState,
-        })) ?? []
+        state.genericAction?.outcomes?.map((outcome, i) => {
+          const condCount = outcome.conditions?.length ?? 0;
+          return {
+            label: condCount
+              ? `if ${condCount} cond${condCount === 1 ? "" : "s"}`
+              : `outcome ${i + 1}`,
+            target: outcome.nextState,
+          };
+        }) ?? []
       );
     case "craftAction":
       if (!state.craftAction) return [];
@@ -81,7 +84,7 @@ function getStateTransitions(state: ConversationState): StateTransition[] {
       ];
     case "listSelection":
       return (
-        state.listSelection?.choices.map((choice, i) => ({
+        state.listSelection?.choices?.map((choice, i) => ({
           label: choice.text ? truncate(choice.text, 32) : `Choice ${i + 1}`,
           target: choice.nextState,
         })) ?? []
@@ -104,8 +107,8 @@ function describeState(state: ConversationState): string {
     case "dialogue":
       return state.dialogue?.text ? truncate(state.dialogue.text, 120) : "";
     case "genericAction": {
-      const opCount = state.genericAction?.operations.length ?? 0;
-      const outcomeCount = state.genericAction?.outcomes.length ?? 0;
+      const opCount = state.genericAction?.operations?.length ?? 0;
+      const outcomeCount = state.genericAction?.outcomes?.length ?? 0;
       return `${opCount} op${opCount === 1 ? "" : "s"} · ${outcomeCount} outcome${outcomeCount === 1 ? "" : "s"}`;
     }
     case "craftAction":

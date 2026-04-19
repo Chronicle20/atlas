@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { tenantNameSchema, type TenantNameFormData } from "@/lib/schemas/tenant.schema";
 import {TemplatePageSkeleton} from "@/components/common/skeletons/TemplatePageSkeleton";
 
 // Form schema for clone template
@@ -77,6 +78,13 @@ export function TemplatesPage() {
         mode: "onChange",
     });
 
+    // Create-tenant-from-template form
+    const tenantForm = useForm<TenantNameFormData>({
+        resolver: zodResolver(tenantNameSchema),
+        defaultValues: { name: "" },
+        mode: "onChange",
+    });
+
 
     const fetchDataAgain = () => invalidateAll();
 
@@ -138,12 +146,21 @@ export function TemplatesPage() {
         const template = templates.find(t => t.id === id);
         if (template) {
             setTemplateForTenant(template);
+            tenantForm.reset({ name: "" });
             setCreateTenantDialogOpen(true);
         }
     };
 
+    const handleCreateTenantDialogOpenChange = (open: boolean) => {
+        setCreateTenantDialogOpen(open);
+        if (!open) {
+            setTemplateForTenant(null);
+            tenantForm.reset({ name: "" });
+        }
+    };
+
     // Function to handle tenant creation from template
-    const handleCreateTenantFromTemplate = async () => {
+    const handleCreateTenantFromTemplate = async (data: TenantNameFormData) => {
         if (!templateForTenant) return;
 
         try {
@@ -151,15 +168,13 @@ export function TemplatesPage() {
 
             // Use onboarding service for complete tenant creation
             // This creates both the tenant in atlas-tenants AND the configuration in atlas-configurations
-            const tenantName = `Tenant from Template ${templateForTenant.id}`;
-            const result = await onboardingService.onboardTenant(tenantName, templateForTenant);
+            const result = await onboardingService.onboardTenant(data.name, templateForTenant);
 
             // Show success message
             toast.success("Tenant created successfully with full configuration");
 
             // Close the dialog
-            setCreateTenantDialogOpen(false);
-            setTemplateForTenant(null);
+            handleCreateTenantDialogOpenChange(false);
 
             // Navigate to the new tenant
             window.location.replace(`/tenants/${result.tenant.id}/properties`);
@@ -320,7 +335,7 @@ export function TemplatesPage() {
             </Dialog>
 
             {/* Create Tenant from Template Dialog */}
-            <Dialog open={createTenantDialogOpen} onOpenChange={setCreateTenantDialogOpen}>
+            <Dialog open={createTenantDialogOpen} onOpenChange={handleCreateTenantDialogOpenChange}>
                 <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Create Tenant from Template</DialogTitle>
@@ -328,21 +343,41 @@ export function TemplatesPage() {
                             Create a new tenant based on the selected template. All information from the template will be used.
                         </DialogDescription>
                     </DialogHeader>
-                    <DialogFooter>
-                        <Button 
-                            type="button" 
-                            variant="outline" 
-                            onClick={() => setCreateTenantDialogOpen(false)}
+                    <Form {...tenantForm}>
+                        <form
+                            onSubmit={tenantForm.handleSubmit(handleCreateTenantFromTemplate)}
+                            className="space-y-4"
                         >
-                            Cancel
-                        </Button>
-                        <Button 
-                            onClick={handleCreateTenantFromTemplate} 
-                            disabled={isCreatingTenant}
-                        >
-                            {isCreatingTenant ? "Creating..." : "Create Tenant"}
-                        </Button>
-                    </DialogFooter>
+                            <FormField
+                                control={tenantForm.control}
+                                name="name"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Name</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Enter tenant name" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <DialogFooter>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => handleCreateTenantDialogOpenChange(false)}
+                                >
+                                    Cancel
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isCreatingTenant || !tenantForm.formState.isValid}
+                                >
+                                    {isCreatingTenant ? "Creating..." : "Create Tenant"}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
                 </DialogContent>
             </Dialog>
         </div>

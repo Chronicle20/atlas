@@ -91,4 +91,79 @@ describe("TenantProvider tenant-switch invariants", () => {
     expect(setTenantMock).toHaveBeenLastCalledWith(tenantB);
     expect(clearSpy).toHaveBeenCalledTimes(2);
   });
+
+  it("rehydrates activeTenant on refresh when its attributes change; does not clear cache", async () => {
+    const tenantA = makeTenant("aaa");
+    const tenantARenamed: Tenant = {
+      ...tenantA,
+      attributes: { ...tenantA.attributes, name: "Renamed A" },
+    } as unknown as Tenant;
+
+    // Initial load returns [tenantA]; refresh returns [tenantARenamed].
+    getAllTenantsMock.mockResolvedValueOnce([tenantA]);
+    getAllTenantsMock.mockResolvedValueOnce([tenantARenamed]);
+
+    const queryClient = new QueryClient();
+    const clearSpy = vi.spyOn(queryClient, "clear");
+
+    let ctxRef: ReturnType<typeof useTenant> | undefined;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TenantProvider>
+          <Harness onReady={(c) => { ctxRef = c; }} />
+        </TenantProvider>
+      </QueryClientProvider>
+    );
+
+    // Wait for initial load to pick tenantA as active.
+    await waitFor(() => {
+      expect(ctxRef?.activeTenant?.id).toBe("aaa");
+    });
+    expect(ctxRef?.activeTenant?.attributes.name).toBe("Tenant aaa");
+
+    const clearCallsBefore = clearSpy.mock.calls.length;
+
+    // Refresh; tenantA is still present but with a new name.
+    await act(async () => {
+      await ctxRef!.refreshTenants();
+    });
+
+    await waitFor(() => {
+      expect(ctxRef?.activeTenant?.attributes.name).toBe("Renamed A");
+    });
+    // Same id → id-compare effect must not trigger another cache clear.
+    expect(clearSpy).toHaveBeenCalledTimes(clearCallsBefore);
+  });
+
+  it("reselects when active tenant was removed from the refreshed list", async () => {
+    const tenantA = makeTenant("aaa");
+    const tenantB = makeTenant("bbb");
+
+    // Initial load returns [A, B] so A is selected; refresh drops A.
+    getAllTenantsMock.mockResolvedValueOnce([tenantA, tenantB]);
+    getAllTenantsMock.mockResolvedValueOnce([tenantB]);
+
+    const queryClient = new QueryClient();
+
+    let ctxRef: ReturnType<typeof useTenant> | undefined;
+    render(
+      <QueryClientProvider client={queryClient}>
+        <TenantProvider>
+          <Harness onReady={(c) => { ctxRef = c; }} />
+        </TenantProvider>
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => {
+      expect(ctxRef?.activeTenant?.id).toBe("aaa");
+    });
+
+    await act(async () => {
+      await ctxRef!.refreshTenants();
+    });
+
+    await waitFor(() => {
+      expect(ctxRef?.activeTenant?.id).toBe("bbb");
+    });
+  });
 });

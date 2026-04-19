@@ -42,6 +42,18 @@ type testSearchIndexEntity struct {
 
 func (testSearchIndexEntity) TableName() string { return "map_search_index" }
 
+type testMonsterSpawnIndexEntity struct {
+	TenantId   uuid.UUID `gorm:"type:text;primaryKey"`
+	MonsterId  uint32    `gorm:"primaryKey"`
+	MapId      uint32    `gorm:"primaryKey"`
+	Name       string    `gorm:"not null"`
+	StreetName string    `gorm:"not null"`
+	SpawnCount uint32    `gorm:"not null"`
+	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testMonsterSpawnIndexEntity) TableName() string { return "monster_spawn_index" }
+
 func setupStorageTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared&_pragma=foreign_keys(1)"), &gorm.Config{
 		Logger: logger.New(
@@ -52,8 +64,8 @@ func setupStorageTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 
 	// start clean each test
-	db.Migrator().DropTable(&testDocumentEntity{}, &testSearchIndexEntity{})
-	require.NoError(t, db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{}))
+	db.Migrator().DropTable(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{})
+	require.NoError(t, db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{}))
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
 	return db

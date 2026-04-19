@@ -149,7 +149,7 @@ function MonsterRow({ template, count }: { template: number; count: number }) {
       onPointerEnter={() => setHovered({ kind: "monster", template })}
       onPointerLeave={() => setHovered(null)}
       className={cn(
-        "flex items-center gap-2 rounded-sm pl-2 border-l-2 border-transparent transition-colors",
+        "flex items-center gap-2 rounded-sm px-2 border-l-2 border-transparent transition-colors",
         highlighted && "bg-muted/60 border-rose-500",
       )}
     >
@@ -163,11 +163,11 @@ function MonsterRow({ template, count }: { template: number; count: number }) {
       />
       <Link
         to={`/monsters/${template}`}
-        className="text-sm text-primary hover:underline"
+        className="min-w-0 flex-1 text-sm text-primary hover:underline break-words"
       >
         {name ?? "\u2014"}
       </Link>
-      <span className="text-xs text-muted-foreground">×{count}</span>
+      <span className="shrink-0 text-xs text-muted-foreground">×{count}</span>
     </li>
   );
 }
@@ -188,7 +188,7 @@ function NpcSummaryRow({
       onPointerEnter={() => setHovered({ kind: "npc", template })}
       onPointerLeave={() => setHovered(null)}
       className={cn(
-        "flex items-center gap-2 rounded-sm pl-2 border-l-2 border-transparent transition-colors",
+        "flex items-center gap-2 rounded-sm px-2 border-l-2 border-transparent transition-colors",
         highlighted && "bg-muted/60 border-sky-500",
       )}
     >
@@ -202,7 +202,7 @@ function NpcSummaryRow({
       />
       <Link
         to={`/npcs/${template}`}
-        className="text-sm text-primary hover:underline"
+        className="min-w-0 flex-1 text-sm text-primary hover:underline break-words"
       >
         {name}
       </Link>

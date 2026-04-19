@@ -28,8 +28,8 @@ export function MonsterTableRow({ monster, spawnIndex }: MonsterTableRowProps) {
       onPointerEnter={() => setHovered(target)}
       onPointerLeave={() => setHovered(null)}
       className={cn(
-        "border-l-2 border-transparent",
-        highlighted && "bg-muted/60 border-rose-500",
+        "!border-l-2 border-l-transparent",
+        highlighted && "bg-muted/60 !border-l-rose-500",
       )}
     >
       <TableCell>

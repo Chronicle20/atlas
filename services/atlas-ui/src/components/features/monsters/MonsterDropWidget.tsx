@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Package } from "lucide-react";
 import {
@@ -16,6 +17,11 @@ interface MonsterDropWidgetProps {
 export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
   const itemId = drop.attributes.itemId;
   const { name, iconUrl } = useItemData(itemId);
+  const [imgFailed, setImgFailed] = useState(false);
+
+  useEffect(() => {
+    setImgFailed(false);
+  }, [iconUrl]);
 
   return (
     <TooltipProvider>
@@ -25,18 +31,21 @@ export function MonsterDropWidget({ drop }: MonsterDropWidgetProps) {
             to={`/items/${itemId}`}
             className="flex items-center gap-3 rounded-md border bg-card p-2 hover:bg-accent transition-colors"
           >
-            {iconUrl ? (
-              <img
-                src={iconUrl}
-                alt={name ?? String(itemId)}
-                width={32}
-                height={32}
-                loading="lazy"
-                className="object-contain shrink-0"
-              />
-            ) : (
-              <Package className="size-8 text-muted-foreground shrink-0" />
-            )}
+            <div className="flex size-8 shrink-0 items-center justify-center">
+              {iconUrl && !imgFailed ? (
+                <img
+                  src={iconUrl}
+                  alt={name ?? String(itemId)}
+                  width={32}
+                  height={32}
+                  loading="lazy"
+                  onError={() => setImgFailed(true)}
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <Package className="size-8 text-muted-foreground" />
+              )}
+            </div>
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium truncate">
                 {name ?? String(itemId)}

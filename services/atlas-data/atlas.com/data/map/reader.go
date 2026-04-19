@@ -106,9 +106,19 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(path string, id u
 			m.NPCs = npcs
 			//TODO player NPCS and CPQ support
 
-			lp := point.RestModel{X: m.MapArea.X, Y: m.MapArea.Y}
-			rp := point.RestModel{X: m.MapArea.X + m.MapArea.Width, Y: m.MapArea.Y}
-			fallback := point.RestModel{X: m.MapArea.X + int16(math.Floor(float64(m.MapArea.Width/2))), Y: m.MapArea.Y}
+			limitArea := m.MapArea
+			if limitArea == nil {
+				dist := 1 << 18
+				limitArea = &RectangleRestModel{
+					X:      int16(-dist / 2),
+					Y:      int16(-dist / 2),
+					Width:  int16(dist),
+					Height: int16(dist),
+				}
+			}
+			lp := point.RestModel{X: limitArea.X, Y: limitArea.Y}
+			rp := point.RestModel{X: limitArea.X + limitArea.Width, Y: limitArea.Y}
+			fallback := point.RestModel{X: limitArea.X + int16(math.Floor(float64(limitArea.Width/2))), Y: limitArea.Y}
 
 			lp = bSearchDropPos(m.FootholdTree, lp, fallback)
 			rp = bSearchDropPos(m.FootholdTree, rp, fallback)
@@ -176,7 +186,7 @@ func getTimeMob(i *xml.Node) *TimeMobRestModel {
 	}
 }
 
-func getMapArea(exml xml.Node, i *xml.Node) RectangleRestModel {
+func getMapArea(exml xml.Node, i *xml.Node) *RectangleRestModel {
 	bounds := make([]int16, 4)
 	bounds[0] = int16(i.GetIntegerWithDefault("VRTop", 0))
 	bounds[1] = int16(i.GetIntegerWithDefault("VRBottom", 0))
@@ -188,30 +198,22 @@ func getMapArea(exml xml.Node, i *xml.Node) RectangleRestModel {
 			bounds[1] = int16(mm.GetIntegerWithDefault("centerY", 0) * -1)
 			bounds[2] = int16(mm.GetIntegerWithDefault("height", 0))
 			bounds[3] = int16(mm.GetIntegerWithDefault("width", 0))
-			return RectangleRestModel{
+			return &RectangleRestModel{
 				X:      bounds[0],
 				Y:      bounds[1],
 				Width:  bounds[3],
 				Height: bounds[2],
 			}
-		} else {
-			dist := 1 << 18
-			return RectangleRestModel{
-				X:      int16(-dist / 2),
-				Y:      int16(-dist / 2),
-				Width:  int16(dist),
-				Height: int16(dist),
-			}
 		}
-	} else {
-		bounds[2] = int16(i.GetIntegerWithDefault("VRLeft", 0))
-		bounds[3] = int16(i.GetIntegerWithDefault("VRRight", 0))
-		return RectangleRestModel{
-			X:      bounds[2],
-			Y:      bounds[0],
-			Width:  bounds[3] - bounds[2],
-			Height: bounds[1] - bounds[0],
-		}
+		return nil
+	}
+	bounds[2] = int16(i.GetIntegerWithDefault("VRLeft", 0))
+	bounds[3] = int16(i.GetIntegerWithDefault("VRRight", 0))
+	return &RectangleRestModel{
+		X:      bounds[2],
+		Y:      bounds[0],
+		Width:  bounds[3] - bounds[2],
+		Height: bounds[1] - bounds[0],
 	}
 }
 

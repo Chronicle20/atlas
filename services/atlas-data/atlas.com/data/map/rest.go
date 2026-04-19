@@ -24,7 +24,7 @@ type RestModel struct {
 	MobInterval       uint32                    `json:"mobInterval"`
 	Portals           []portal.RestModel        `json:"-"`
 	TimeMob           *TimeMobRestModel         `json:"time_mob"`
-	MapArea           RectangleRestModel        `json:"mapArea"`
+	MapArea           *RectangleRestModel       `json:"mapArea"`
 	FootholdTree      FootholdTreeRestModel     `json:"footholdTree"`
 	Areas             []RectangleRestModel      `json:"areas"`
 	Seats             uint32                    `json:"seats"`

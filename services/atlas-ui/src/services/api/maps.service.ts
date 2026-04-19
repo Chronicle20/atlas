@@ -3,9 +3,17 @@ import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/
 
 const BASE_PATH = "/api/data/maps";
 
+export interface MapArea {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 export interface MapAttributes {
   name: string;
   streetName: string;
+  mapArea?: MapArea | null;
 }
 
 export interface MapData {

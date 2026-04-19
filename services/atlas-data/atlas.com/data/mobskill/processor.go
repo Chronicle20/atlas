@@ -38,7 +38,7 @@ func RegisterMobSkill(db *gorm.DB) func(l logrus.FieldLogger) func(ctx context.C
 		return func(ctx context.Context) func(path string) error {
 			return func(path string) error {
 				return database.ExecuteTransaction(db, func(tx *gorm.DB) error {
-					return Register(NewStorage(l, tx))(ctx)(Read(l)(xml.FromPathProvider(path)))
+					return Register(NewStorage(l, tx))(ctx)(Read(l)(ctx)(xml.FromPathProvider(path)))
 				})
 			}
 		}

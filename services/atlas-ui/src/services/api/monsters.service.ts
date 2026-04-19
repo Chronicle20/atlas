@@ -1,6 +1,6 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
-import type { MonsterData } from "@/types/models/monster";
+import type { MonsterData, MonsterSpawnMapData } from "@/types/models/monster";
 
 const BASE_PATH = "/api/data/monsters";
 
@@ -25,5 +25,9 @@ export const monstersService = {
 
   async searchMonsters(query: string, options?: QueryOptions): Promise<MonsterData[]> {
     return fetchAllSorted({ ...options, search: query });
+  },
+
+  async getMonsterMaps(monsterId: string): Promise<MonsterSpawnMapData[]> {
+    return api.getList<MonsterSpawnMapData>(`${BASE_PATH}/${monsterId}/maps`);
   },
 };

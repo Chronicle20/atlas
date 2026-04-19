@@ -72,7 +72,7 @@ describe('Breadcrumb Utils', () => {
   describe('isDynamicSegment', () => {
     it('should identify numeric IDs as dynamic', () => {
       expect(isDynamicSegment('123', '/characters/123')).toBe(true);
-      expect(isDynamicSegment('456', '/npcs/456/shop')).toBe(true);
+      expect(isDynamicSegment('456', '/npcs/456')).toBe(true);
     });
 
     it('should identify UUIDs as dynamic', () => {
@@ -155,7 +155,7 @@ describe('Breadcrumb Utils', () => {
       expect(isValidRoute('/')).toBe(true);
       expect(isValidRoute('/accounts')).toBe(true);
       expect(isValidRoute('/characters/123')).toBe(true);
-      expect(isValidRoute('/npcs/456/shop')).toBe(true);
+      expect(isValidRoute('/npcs/456')).toBe(true);
     });
 
     it('should reject unknown routes', () => {

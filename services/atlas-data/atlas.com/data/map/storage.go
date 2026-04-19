@@ -6,6 +6,7 @@ import (
 
 	"atlas-data/document"
 	"atlas-data/monster"
+	"atlas-data/npc"
 	"atlas-data/searchindex"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -97,6 +98,35 @@ func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[Rest
 					return err
 				}
 				s.l.Debugf("monster_spawn_index: tenant=%s map=%d rows=%d", t.Id().String(), m.Id, len(rows))
+			}
+
+			if err := tx.Where("tenant_id = ? AND map_id = ?", t.Id(), uint32(m.Id)).
+				Delete(&npc.SpawnIndexEntity{}).Error; err != nil {
+				return err
+			}
+
+			npcCounts := make(map[uint32]uint32)
+			for _, n := range m.NPCs {
+				npcCounts[n.Template]++
+			}
+			if len(npcCounts) > 0 {
+				npcRows := make([]npc.SpawnIndexEntity, 0, len(npcCounts))
+				now := time.Now()
+				for npcId, count := range npcCounts {
+					npcRows = append(npcRows, npc.SpawnIndexEntity{
+						TenantId:   t.Id(),
+						NpcId:      npcId,
+						MapId:      uint32(m.Id),
+						Name:       m.Name,
+						StreetName: m.StreetName,
+						SpawnCount: count,
+						UpdatedAt:  now,
+					})
+				}
+				if err := tx.Create(&npcRows).Error; err != nil {
+					return err
+				}
+				s.l.Debugf("npc_spawn_index: tenant=%s map=%d rows=%d", t.Id().String(), m.Id, len(npcRows))
 			}
 			return nil
 		})

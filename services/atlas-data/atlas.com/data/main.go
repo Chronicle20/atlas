@@ -72,6 +72,7 @@ func main() {
 		npc.Migration,
 		monster.Migration,
 		monster.SpawnIndexMigration,
+		npc.SpawnIndexMigration,
 		reactor.Migration,
 		item.StringMigration,
 	))

@@ -1,6 +1,7 @@
 package _map
 
 import (
+	"atlas-data/map/npc"
 	"context"
 	"encoding/json"
 	"errors"
@@ -54,6 +55,18 @@ type testMonsterSpawnIndexEntity struct {
 
 func (testMonsterSpawnIndexEntity) TableName() string { return "monster_spawn_index" }
 
+type testNpcSpawnIndexEntity struct {
+	TenantId   uuid.UUID `gorm:"type:text;primaryKey"`
+	NpcId      uint32    `gorm:"primaryKey"`
+	MapId      uint32    `gorm:"primaryKey"`
+	Name       string    `gorm:"not null"`
+	StreetName string    `gorm:"not null"`
+	SpawnCount uint32    `gorm:"not null"`
+	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testNpcSpawnIndexEntity) TableName() string { return "npc_spawn_index" }
+
 func setupStorageTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared&_pragma=foreign_keys(1)"), &gorm.Config{
 		Logger: logger.New(
@@ -64,8 +77,8 @@ func setupStorageTestDB(t *testing.T) *gorm.DB {
 	require.NoError(t, err)
 
 	// start clean each test
-	db.Migrator().DropTable(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{})
-	require.NoError(t, db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{}))
+	db.Migrator().DropTable(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{}, &testNpcSpawnIndexEntity{})
+	require.NoError(t, db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{}, &testMonsterSpawnIndexEntity{}, &testNpcSpawnIndexEntity{}))
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)
 	return db
@@ -150,6 +163,68 @@ func TestStorage_Clear_EmptiesBothTables(t *testing.T) {
 	require.NoError(t, db.WithContext(ctx).Model(&testSearchIndexEntity{}).Count(&idxCount).Error)
 	assert.Equal(t, int64(0), docCount)
 	assert.Equal(t, int64(0), idxCount)
+}
+
+func TestStorage_Add_PopulatesNpcSpawnIndex(t *testing.T) {
+	db := setupStorageTestDB(t)
+	l, _ := test.NewNullLogger()
+
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	s := NewStorage(l, db)
+	m := RestModel{
+		Id:         100000000,
+		Name:       "Henesys",
+		StreetName: "Victoria Road",
+		NPCs: []npc.RestModel{
+			{Id: 1, Template: 9200000},
+			{Id: 2, Template: 9200000},
+			{Id: 3, Template: 2040000},
+		},
+	}
+	_, err := s.Add(ctx)(m)()
+	require.NoError(t, err)
+
+	var rows []testNpcSpawnIndexEntity
+	require.NoError(t, db.WithContext(ctx).Where("map_id = ?", 100000000).Find(&rows).Error)
+	assert.Len(t, rows, 2)
+
+	counts := make(map[uint32]uint32)
+	for _, r := range rows {
+		counts[r.NpcId] = r.SpawnCount
+		assert.Equal(t, "Henesys", r.Name)
+		assert.Equal(t, "Victoria Road", r.StreetName)
+		assert.Equal(t, tn.Id(), r.TenantId)
+	}
+	assert.Equal(t, uint32(2), counts[9200000])
+	assert.Equal(t, uint32(1), counts[2040000])
+}
+
+func TestStorage_Add_ReplacesNpcSpawnIndexRows(t *testing.T) {
+	db := setupStorageTestDB(t)
+	l, _ := test.NewNullLogger()
+
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	s := NewStorage(l, db)
+	_, err := s.Add(ctx)(RestModel{
+		Id: 100000000, Name: "Henesys", StreetName: "Victoria Road",
+		NPCs: []npc.RestModel{{Id: 1, Template: 9200000}, {Id: 2, Template: 9200001}},
+	})()
+	require.NoError(t, err)
+
+	_, err = s.Add(ctx)(RestModel{
+		Id: 100000000, Name: "Henesys", StreetName: "Victoria Road",
+		NPCs: []npc.RestModel{{Id: 1, Template: 9200000}},
+	})()
+	require.NoError(t, err)
+
+	var rows []testNpcSpawnIndexEntity
+	require.NoError(t, db.WithContext(ctx).Where("map_id = ?", 100000000).Find(&rows).Error)
+	assert.Len(t, rows, 1)
+	assert.Equal(t, uint32(9200000), rows[0].NpcId)
 }
 
 func TestStorage_Clear_OtherDocTypeUntouched(t *testing.T) {

@@ -1,7 +1,8 @@
 import { api } from "@/lib/api/client";
 import { type ServiceOptions, type QueryOptions, type ValidationError } from "@/lib/api/query-params";
 import { conversationsService } from "./conversations.service";
-import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse } from "@/types/models/npc";
+import type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap } from "@/types/models/npc";
+import { isApiError } from "@/types/api/errors";
 
 const BASE_PATH = "/api/npcs";
 
@@ -261,6 +262,25 @@ export const npcsService = {
     const npc = await api.getOne<{ id: string; attributes: { name: string } }>(`/api/data/npcs/${npcId}`);
     return npc.attributes.name;
   },
+
+  async getSpawnMap(npcId: number): Promise<NpcSpawnMap | null> {
+    try {
+      const res = await api.getOne<{
+        id: string;
+        attributes: { mapId: number; name: string; streetName: string; spawnCount: number };
+      }>(`/api/data/npcs/${npcId}/map`);
+      return {
+        npcId,
+        mapId: res.attributes.mapId,
+        name: res.attributes.name,
+        streetName: res.attributes.streetName,
+        spawnCount: res.attributes.spawnCount,
+      };
+    } catch (err) {
+      if (isApiError(err) && err.statusCode === 404) return null;
+      throw err;
+    }
+  },
 };
 
-export type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse };
+export type { NPC, NpcSearchResult, Shop, Commodity, CommodityAttributes, ShopResponse, NpcSpawnMap };

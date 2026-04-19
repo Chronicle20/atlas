@@ -3,6 +3,7 @@ package npc
 import (
 	"atlas-data/rest"
 	"atlas-data/searchindex"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -24,6 +25,7 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			r := router.PathPrefix("/data/npcs").Subrouter()
 			r.HandleFunc("", registerGet("get_npcs", handleGetNpcsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{npcId}", registerGet("get_npc", handleGetNpcRequest(db))).Methods(http.MethodGet)
+			r.HandleFunc("/{npcId}/map", registerGet("get_npc_map", handleGetNpcMapRequest(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -144,6 +146,47 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 				server.MarshalResponse[[]SearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
 			}
 		}
+	}
+}
+
+func handleGetNpcMapRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseNPC(d.Logger(), func(npcId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				t, err := tenant.FromContext(d.Context())()
+				if err != nil {
+					w.WriteHeader(http.StatusBadRequest)
+					return
+				}
+
+				var row SpawnIndexEntity
+				qerr := db.WithContext(d.Context()).
+					Where("tenant_id = ? AND npc_id = ?", t.Id(), npcId).
+					Order("spawn_count DESC, map_id ASC").
+					First(&row).Error
+				if qerr != nil {
+					if errors.Is(qerr, gorm.ErrRecordNotFound) {
+						w.WriteHeader(http.StatusNotFound)
+						return
+					}
+					d.Logger().WithError(qerr).Errorf("Unable to retrieve NPC spawn map for npcId=%d.", npcId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				res := NpcMapRestModel{
+					NpcId:      row.NpcId,
+					MapId:      row.MapId,
+					Name:       row.Name,
+					StreetName: row.StreetName,
+					SpawnCount: row.SpawnCount,
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[NpcMapRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
+			}
+		})
 	}
 }
 

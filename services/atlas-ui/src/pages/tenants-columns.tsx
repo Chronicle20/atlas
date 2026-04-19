@@ -13,9 +13,10 @@ import type { Tenant } from "@/types/models/tenant";
 
 interface ColumnProps {
     onDelete?: (id: string) => void;
+    onRename?: (id: string) => void;
 }
 
-export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
+export const getColumns = ({ onDelete, onRename }: ColumnProps): ColumnDef<Tenant>[] => [
     {
         accessorKey: "id",
         header: "Id",
@@ -55,8 +56,15 @@ export const getColumns = ({ onDelete }: ColumnProps): ColumnDef<Tenant>[] => [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        {onRename && (
+                            <DropdownMenuItem
+                                onClick={() => onRename(id)}
+                            >
+                                Rename
+                            </DropdownMenuItem>
+                        )}
                         {onDelete && (
-                            <DropdownMenuItem 
+                            <DropdownMenuItem
                                 className="text-destructive focus:text-destructive"
                                 onClick={() => onDelete(id)}
                             >

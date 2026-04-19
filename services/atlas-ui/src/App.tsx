@@ -35,7 +35,6 @@ const MonstersPage = lazy(() => import("@/pages/MonstersPage").then(m => ({ defa
 const MonsterDetailPage = lazy(() => import("@/pages/MonsterDetailPage").then(m => ({ default: m.MonsterDetailPage })));
 const NpcsPage = lazy(() => import("@/pages/NpcsPage").then(m => ({ default: m.NpcsPage })));
 const NpcDetailPage = lazy(() => import("@/pages/NpcDetailPage").then(m => ({ default: m.NpcDetailPage })));
-const NpcShopPage = lazy(() => import("@/pages/NpcShopPage").then(m => ({ default: m.NpcShopPage })));
 const NpcConversationPage = lazy(() => import("@/pages/NpcConversationPage").then(m => ({ default: m.NpcConversationPage })));
 const QuestsPage = lazy(() => import("@/pages/QuestsPage").then(m => ({ default: m.QuestsPage })));
 const QuestDetailPage = lazy(() => import("@/pages/QuestDetailPage").then(m => ({ default: m.QuestDetailPage })));
@@ -94,7 +93,6 @@ export function App() {
                     <Route path="/npcs" element={<NpcsPage />} />
                     <Route path="/npcs/:id" element={<NpcDetailPage />} />
                     <Route path="/npcs/:id/conversations" element={<NpcConversationPage />} />
-                    <Route path="/npcs/:id/shop" element={<NpcShopPage />} />
                     <Route path="/quests" element={<QuestsPage />} />
                     <Route path="/quests/:id" element={<QuestDetailPage />} />
                     <Route path="/reactors" element={<ReactorsPage />} />

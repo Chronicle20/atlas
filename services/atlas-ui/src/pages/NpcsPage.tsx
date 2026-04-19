@@ -285,7 +285,7 @@ function NpcsPageContent() {
                             {statusLoading ? (
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             ) : status?.hasShop ? (
-                              <Link to={`/npcs/${npc.id}/shop`}>
+                              <Link to={`/npcs/${npc.id}`}>
                                 <Badge variant="default" className="cursor-pointer">
                                   <ShoppingBag className="h-3 w-3 mr-1" />
                                   Shop

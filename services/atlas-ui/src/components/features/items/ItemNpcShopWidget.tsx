@@ -31,7 +31,7 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
 
   const widget = (
     <Link
-      to={`/npcs/${npcId}/shop`}
+      to={`/npcs/${npcId}`}
       className="flex items-center gap-3 rounded-md border bg-card p-3 hover:bg-accent transition-colors"
     >
       <div className="flex h-8 w-8 shrink-0 items-center justify-center">

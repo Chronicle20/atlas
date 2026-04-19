@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"atlas-data/document"
+	"atlas-data/monster"
 	"atlas-data/searchindex"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -62,10 +63,42 @@ func (s *Storage) Add(ctx context.Context) func(m RestModel) model.Provider[Rest
 				StreetName: m.StreetName,
 				UpdatedAt:  time.Now(),
 			}
-			return searchindex.Upsert(tx, &ie,
+			if err := searchindex.Upsert(tx, &ie,
 				[]string{"tenant_id", "map_id"},
 				[]string{"name", "street_name", "updated_at"},
-			)
+			); err != nil {
+				return err
+			}
+
+			if err := tx.Where("tenant_id = ? AND map_id = ?", t.Id(), uint32(m.Id)).
+				Delete(&monster.SpawnIndexEntity{}).Error; err != nil {
+				return err
+			}
+
+			counts := make(map[uint32]uint32)
+			for _, mon := range m.Monsters {
+				counts[mon.Template]++
+			}
+			if len(counts) > 0 {
+				rows := make([]monster.SpawnIndexEntity, 0, len(counts))
+				now := time.Now()
+				for monsterId, count := range counts {
+					rows = append(rows, monster.SpawnIndexEntity{
+						TenantId:   t.Id(),
+						MonsterId:  monsterId,
+						MapId:      uint32(m.Id),
+						Name:       m.Name,
+						StreetName: m.StreetName,
+						SpawnCount: count,
+						UpdatedAt:  now,
+					})
+				}
+				if err := tx.Create(&rows).Error; err != nil {
+					return err
+				}
+				s.l.Debugf("monster_spawn_index: tenant=%s map=%d rows=%d", t.Id().String(), m.Id, len(rows))
+			}
+			return nil
 		})
 		if txErr != nil {
 			return model.ErrorProvider[RestModel](txErr)

@@ -1,6 +1,8 @@
 package npc
 
 import (
+	"atlas-data/document"
+	"atlas-data/quest"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -91,21 +93,38 @@ func TestNpcResourceIntegration(t *testing.T) {
 		testJSONAPICompliance(t, testServer, tenantId)
 	})
 
-	t.Run("GetNpcMap", func(t *testing.T) {
-		testGetNpcMap(t, testServer, db, tenantId)
+	t.Run("GetNpcMaps", func(t *testing.T) {
+		testGetNpcMaps(t, testServer, db, tenantId)
+	})
+
+	t.Run("SingularMapRetired", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9010000/map", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("GetNpcQuests", func(t *testing.T) {
+		testGetNpcQuests(t, testServer, db, tenantId)
 	})
 }
 
-func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenantId uuid.UUID) {
-	// seed spawn index rows: NPC 9010000 primary on map 100000000 (count=3), secondary on 200000000 (count=1)
+func testGetNpcMaps(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenantId uuid.UUID) {
+	// seed spawn index rows: NPC 9010000 on two maps; NPC 9010001 on one map.
 	rows := []testSpawnIndexEntity{
 		{TenantId: tenantId, NpcId: 9010000, MapId: 100000000, Name: "Henesys", StreetName: "Victoria Road", SpawnCount: 3},
 		{TenantId: tenantId, NpcId: 9010000, MapId: 200000000, Name: "Ellinia", StreetName: "Victoria Road", SpawnCount: 1},
+		{TenantId: tenantId, NpcId: 9010001, MapId: 100000000, Name: "Henesys", StreetName: "Victoria Road", SpawnCount: 2},
 	}
 	require.NoError(t, db.Create(&rows).Error)
 
-	t.Run("PrimaryRowReturned", func(t *testing.T) {
-		url := fmt.Sprintf("%s/data/npcs/9010000/map", testServer.URL)
+	t.Run("ReturnsAllRowsSorted", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9010000/maps", testServer.URL)
 		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
@@ -119,18 +138,25 @@ func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenan
 		err = json.NewDecoder(resp.Body).Decode(&response)
 		require.NoError(t, err)
 
-		data := response["data"].(map[string]interface{})
-		assert.Equal(t, "npc-maps", data["type"])
-		assert.Equal(t, "9010000", data["id"])
+		data := response["data"].([]interface{})
+		require.Len(t, data, 2)
 
-		attrs := data["attributes"].(map[string]interface{})
-		assert.Equal(t, float64(100000000), attrs["mapId"])
-		assert.Equal(t, "Henesys", attrs["name"])
-		assert.Equal(t, float64(3), attrs["spawnCount"])
+		first := data[0].(map[string]interface{})
+		assert.Equal(t, "npc-maps", first["type"])
+		assert.Equal(t, "100000000", first["id"])
+		firstAttrs := first["attributes"].(map[string]interface{})
+		assert.Equal(t, float64(100000000), firstAttrs["mapId"])
+		assert.Equal(t, "Henesys", firstAttrs["name"])
+		assert.Equal(t, float64(3), firstAttrs["spawnCount"])
+
+		second := data[1].(map[string]interface{})
+		assert.Equal(t, "200000000", second["id"])
+		secondAttrs := second["attributes"].(map[string]interface{})
+		assert.Equal(t, float64(1), secondAttrs["spawnCount"])
 	})
 
-	t.Run("NoIndexReturns404", func(t *testing.T) {
-		url := fmt.Sprintf("%s/data/npcs/9999999/map", testServer.URL)
+	t.Run("EmptyResultReturnsEmptyList", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9999999/maps", testServer.URL)
 		req := createRequestWithTenant("GET", url, tenantId)
 
 		client := &http.Client{}
@@ -138,12 +164,32 @@ func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenan
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 0)
 	})
 
 	t.Run("BadIdReturns400", func(t *testing.T) {
-		url := fmt.Sprintf("%s/data/npcs/notanumber/map", testServer.URL)
+		url := fmt.Sprintf("%s/data/npcs/notanumber/maps", testServer.URL)
 		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("MissingTenantReturns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9010000/maps", testServer.URL)
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Set("Content-Type", "application/json")
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -155,7 +201,7 @@ func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenan
 
 	t.Run("TenantIsolation", func(t *testing.T) {
 		otherTenantId := uuid.New()
-		url := fmt.Sprintf("%s/data/npcs/9010000/map", testServer.URL)
+		url := fmt.Sprintf("%s/data/npcs/9010000/maps", testServer.URL)
 		req := createRequestWithTenant("GET", url, otherTenantId)
 
 		client := &http.Client{}
@@ -163,7 +209,172 @@ func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenan
 		require.NoError(t, err)
 		defer resp.Body.Close()
 
-		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 0)
+	})
+}
+
+func testGetNpcQuests(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenantId uuid.UUID) {
+	// Seed quest documents for the tenant.
+	quests := []quest.RestModel{
+		{
+			Id:   2000,
+			Name: "Initiator Only Quest",
+			Area: 1,
+			StartRequirements: quest.RequirementsRestModel{NpcId: 1012100, LevelMin: 50},
+			EndActions:        quest.ActionsRestModel{Exp: 5000},
+		},
+		{
+			Id:   2001,
+			Name: "Completer Only Quest",
+			Area: 1,
+			StartRequirements: quest.RequirementsRestModel{LevelMin: 10},
+			EndActions:        quest.ActionsRestModel{NpcId: 1012100, Exp: 7500},
+		},
+		{
+			Id:   2002,
+			Name: "Both Quest",
+			Area: 1,
+			StartRequirements: quest.RequirementsRestModel{NpcId: 1012100},
+			EndActions:        quest.ActionsRestModel{NpcId: 1012100},
+		},
+		{
+			Id:   2003,
+			Name: "Unrelated Quest",
+			Area: 1,
+			StartRequirements: quest.RequirementsRestModel{NpcId: 9999999},
+			EndActions:        quest.ActionsRestModel{NpcId: 9999999},
+		},
+		{
+			Id:   2004,
+			Name: "EndRequirements Only",
+			Area: 1,
+			EndRequirements: quest.RequirementsRestModel{NpcId: 1012100},
+		},
+		{
+			Id:   2005,
+			Name: "StartActions Only",
+			Area: 1,
+			StartActions: quest.ActionsRestModel{NpcId: 1012100},
+		},
+	}
+
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+	tn, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	storage := document.NewStorage(l, db, quest.GetModelRegistry(), "QUEST")
+	for _, q := range quests {
+		_, err := storage.Add(ctx)(q)()
+		require.NoError(t, err)
+	}
+
+	t.Run("ReturnsMatchingQuestsSortedById", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/1012100/quests", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		require.Len(t, data, 5)
+
+		ids := make([]string, 0, len(data))
+		for _, item := range data {
+			resource := item.(map[string]interface{})
+			assert.Equal(t, "quests", resource["type"])
+			ids = append(ids, resource["id"].(string))
+		}
+		assert.Equal(t, []string{"2000", "2001", "2002", "2004", "2005"}, ids)
+
+		// Confirm that the "Both Quest" appears exactly once.
+		count := 0
+		for _, id := range ids {
+			if id == "2002" {
+				count++
+			}
+		}
+		assert.Equal(t, 1, count)
+	})
+
+	t.Run("UnrelatedNpcReturnsEmpty", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/1234567/quests", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 0)
+	})
+
+	t.Run("TenantWithNoQuestsReturnsEmpty", func(t *testing.T) {
+		otherTenant := uuid.New()
+		url := fmt.Sprintf("%s/data/npcs/1012100/quests", testServer.URL)
+		req := createRequestWithTenant("GET", url, otherTenant)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 0)
+	})
+
+	t.Run("BadIdReturns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/notanumber/quests", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("MissingTenantReturns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/1012100/quests", testServer.URL)
+		req, _ := http.NewRequest("GET", url, nil)
+		req.Header.Set("Content-Type", "application/json")
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
 	})
 }
 

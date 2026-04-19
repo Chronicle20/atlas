@@ -18,7 +18,7 @@ export function useReactors(options?: QueryOptions): UseQueryResult<ReactorData[
     queryKey: reactorKeys.list(options),
     queryFn: () => reactorsService.getAllReactors({ ...options, useCache: false }),
     enabled: !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -29,7 +29,7 @@ export function useReactor(id: string, options?: ServiceOptions): UseQueryResult
     queryKey: reactorKeys.detail(id),
     queryFn: () => reactorsService.getReactorById(id, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

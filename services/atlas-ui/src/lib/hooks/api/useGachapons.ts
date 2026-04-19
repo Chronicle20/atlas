@@ -21,7 +21,6 @@ export function useGachapons(options?: QueryOptions): UseQueryResult<GachaponDat
     queryKey: gachaponKeys.list(options),
     queryFn: () => gachaponsService.getAllGachapons({ ...options, useCache: false }),
     enabled: !!activeTenant,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -32,7 +31,6 @@ export function useGachapon(id: string): UseQueryResult<GachaponData, Error> {
     queryKey: gachaponKeys.detail(id),
     queryFn: () => gachaponsService.getGachaponById(id),
     enabled: !!activeTenant && !!id,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -43,7 +41,6 @@ export function useGachaponPrizePool(gachaponId: string): UseQueryResult<Gachapo
     queryKey: gachaponKeys.prizePool(gachaponId),
     queryFn: () => gachaponsService.getPrizePool(gachaponId),
     enabled: !!activeTenant && !!gachaponId,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

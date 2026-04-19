@@ -18,7 +18,6 @@ export function useWallet(
     queryKey: walletKeys.detail(tenant, accountId),
     queryFn: () => walletService.getWallet( accountId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!accountId,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }

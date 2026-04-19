@@ -19,7 +19,7 @@ export function useMonsters(options?: QueryOptions): UseQueryResult<MonsterData[
     queryKey: monsterKeys.list(options),
     queryFn: () => monstersService.getAllMonsters({ ...options, useCache: false }),
     enabled: !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -30,7 +30,7 @@ export function useMonster(id: string, options?: ServiceOptions): UseQueryResult
     queryKey: monsterKeys.detail(id),
     queryFn: () => monstersService.getMonsterById(id, { ...options, useCache: false }),
     enabled: !!id && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -41,7 +41,7 @@ export function useMonsterMaps(id: string): UseQueryResult<MonsterSpawnMapData[]
     queryKey: monsterKeys.maps(id),
     queryFn: () => monstersService.getMonsterMaps(id),
     enabled: !!id && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

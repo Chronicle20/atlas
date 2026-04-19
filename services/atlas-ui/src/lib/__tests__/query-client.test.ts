@@ -19,7 +19,7 @@ describe('Query Client Configuration', () => {
   it('should have correct query default options', () => {
     const defaultOptions = queryClient.getDefaultOptions();
     
-    expect(defaultOptions.queries?.staleTime).toBe(5 * 60 * 1000); // 5 minutes
+    expect(defaultOptions.queries?.staleTime).toBe(0);
     expect(defaultOptions.queries?.gcTime).toBe(10 * 60 * 1000); // 10 minutes
     expect(defaultOptions.queries?.retry).toBe(3);
     expect(defaultOptions.queries?.refetchOnWindowFocus).toBe(false);

@@ -21,7 +21,7 @@ export function useMapPortals(mapId: string): UseQueryResult<MapPortalData[], Er
     queryKey: mapEntityKeys.portals(mapId),
     queryFn: () => mapEntitiesService.getPortals(mapId),
     enabled: !!mapId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -32,7 +32,7 @@ export function useMapNpcs(mapId: string): UseQueryResult<MapNpcData[], Error> {
     queryKey: mapEntityKeys.npcs(mapId),
     queryFn: () => mapEntitiesService.getNpcs(mapId),
     enabled: !!mapId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -43,7 +43,7 @@ export function useMapReactors(mapId: string): UseQueryResult<MapReactorData[], 
     queryKey: mapEntityKeys.reactors(mapId),
     queryFn: () => mapEntitiesService.getReactors(mapId),
     enabled: !!mapId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -54,7 +54,7 @@ export function useMapMonsters(mapId: string): UseQueryResult<MapMonsterData[], 
     queryKey: mapEntityKeys.monsters(mapId),
     queryFn: () => mapEntitiesService.getMonsters(mapId),
     enabled: !!mapId && !!activeTenant,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }

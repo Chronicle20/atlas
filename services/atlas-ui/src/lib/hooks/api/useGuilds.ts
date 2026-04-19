@@ -43,7 +43,6 @@ export function useGuilds(tenant: Tenant | null, options?: QueryOptions): UseQue
     queryKey: guildKeys.list(tenant, options),
     queryFn: () => tenant ? guildsService.getAll({ ...options, useCache: false }) : Promise.reject(new Error('Tenant is required')),
     enabled: !!tenant?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 }
@@ -56,7 +55,6 @@ export function useGuild(tenant: Tenant, guildId: string, options?: ServiceOptio
     queryKey: guildKeys.detail(tenant, guildId),
     queryFn: () => guildsService.getById( guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -69,7 +67,6 @@ export function useGuildsByWorld(tenant: Tenant, worldId: number, options?: Serv
     queryKey: guildKeys.byWorld(tenant, worldId),
     queryFn: () => guildsService.getByWorld(worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id && worldId !== undefined,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -87,7 +84,6 @@ export function useGuildSearch(
     queryKey: guildKeys.search(tenant, searchTerm, worldId),
     queryFn: () => guildsService.search(searchTerm, worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!searchTerm,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -100,7 +96,6 @@ export function useGuildsWithSpace(tenant: Tenant, worldId?: number, options?: S
     queryKey: guildKeys.withSpace(tenant, worldId),
     queryFn: () => guildsService.getWithSpace(worldId, { ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 3 * 60 * 1000,
     gcTime: 8 * 60 * 1000,
   });
 }
@@ -118,7 +113,6 @@ export function useGuildRankings(
     queryKey: guildKeys.rankings(tenant, worldId, limit),
     queryFn: () => guildsService.getRankings(worldId, limit, { ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 10 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });
 }
@@ -131,7 +125,6 @@ export function useGuildExists(tenant: Tenant, guildId: string, options?: Servic
     queryKey: [...guildKeys.detail(tenant, guildId), 'exists'],
     queryFn: () => guildsService.exists(guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
-    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 }
@@ -144,7 +137,6 @@ export function useGuildMemberCount(tenant: Tenant, guildId: string, options?: S
     queryKey: [...guildKeys.detail(tenant, guildId), 'memberCount'],
     queryFn: () => guildsService.getMemberCount(guildId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!guildId,
-    staleTime: 3 * 60 * 1000,
     gcTime: 8 * 60 * 1000,
   });
 }

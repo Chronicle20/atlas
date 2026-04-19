@@ -47,7 +47,6 @@ export function useNPCs(
     queryKey: npcKeys.list(tenant, options),
     queryFn: () => npcsService.getAllNPCs({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes (NPC data changes less frequently)
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
 }
@@ -64,7 +63,6 @@ export function useNPC(
     queryKey: npcKeys.detail(tenant, npcId),
     queryFn: () => npcsService.getNPCById(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -80,7 +78,6 @@ export function useNPCsWithShops(
     queryKey: npcKeys.withShops(tenant),
     queryFn: () => npcsService.getNPCsWithShops({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -96,7 +93,6 @@ export function useNPCsWithConversations(
     queryKey: npcKeys.withConversations(tenant),
     queryFn: () => npcsService.getNPCsWithConversations({ ...options, useCache: false }),
     enabled: !!tenant?.id,
-    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 }
@@ -113,7 +109,6 @@ export function useNPCShop(
     queryKey: npcKeys.shop(tenant, npcId),
     queryFn: () => npcsService.getNPCShop(npcId, { ...options, useCache: false }),
     enabled: !!tenant?.id && !!npcId,
-    staleTime: 1 * 60 * 1000, // 1 minute (shop data changes more frequently)
     gcTime: 3 * 60 * 1000,
   });
 }
@@ -501,8 +496,7 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.list(tenant, options),
         queryFn: () => npcsService.getAllNPCs( options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch specific NPC
@@ -511,8 +505,7 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.detail(tenant, npcId),
         queryFn: () => npcsService.getNPCById(npcId, options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch NPC shop data
@@ -521,7 +514,6 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.shop(tenant, npcId),
         queryFn: () => npcsService.getNPCShop(npcId, options),
-        staleTime: 1 * 60 * 1000,
       }),
     
     /**
@@ -531,8 +523,7 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.withShops(tenant),
         queryFn: () => npcsService.getNPCsWithShops(options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
     
     /**
      * Prefetch NPCs with conversations
@@ -541,8 +532,7 @@ export function usePrefetchNPCs() {
       queryClient.prefetchQuery({
         queryKey: npcKeys.withConversations(tenant),
         queryFn: () => npcsService.getNPCsWithConversations(options),
-        staleTime: 2 * 60 * 1000,
-      }),
+          }),
   };
 }
 

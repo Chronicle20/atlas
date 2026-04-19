@@ -547,6 +547,30 @@ func TestReader(t *testing.T) {
 	if rm.Price != 500000 {
 		t.Fatal("price != 500000")
 	}
+	if rm.ReqLevel != 50 {
+		t.Fatal("reqLevel != 50")
+	}
+	if rm.ReqJob != 0 {
+		t.Fatal("reqJob != 0")
+	}
+	if rm.ReqStr != 0 {
+		t.Fatal("reqStr != 0")
+	}
+	if rm.ReqDex != 0 {
+		t.Fatal("reqDex != 0")
+	}
+	if rm.ReqInt != 0 {
+		t.Fatal("reqInt != 0")
+	}
+	if rm.ReqLuk != 0 {
+		t.Fatal("reqLuk != 0")
+	}
+	if rm.ReqPop != 0 {
+		t.Fatal("reqPop != 0")
+	}
+	if rm.ReqFame != 0 {
+		t.Fatal("reqFame != 0")
+	}
 	if len(rm.EquipSlots) != 1 {
 		t.Fatal("len(equip_slots) != 1")
 	}

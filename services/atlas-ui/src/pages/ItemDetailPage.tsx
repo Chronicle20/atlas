@@ -1,12 +1,9 @@
-
-import { useEffect, useState } from "react";
-import { useTenant } from "@/context/tenant-context";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
+import { useTenant } from "@/context/tenant-context";
 import { itemsService } from "@/services/api/items.service";
 import {
   getItemType,
-  getItemTypeBadgeVariant,
   type ItemType,
   type ItemDetailData,
   type EquipmentData,
@@ -16,30 +13,21 @@ import {
   type CashItemData,
 } from "@/types/models/item";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
-import { Package } from "lucide-react";
-import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useItemDrops } from "@/lib/hooks/api/useDrops";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { DroppedByTableRow } from "@/components/features/drops/DroppedByTableRow";
+import { useItemSellers } from "@/lib/hooks/api/useItemSellers";
+import { useItemCommodities } from "@/lib/hooks/api/useItemCommodities";
+import { ItemHeader } from "@/components/features/items/ItemHeader";
+import { EquipmentRequirementsCard } from "@/components/features/items/EquipmentRequirementsCard";
+import { ItemNpcShopWidget } from "@/components/features/items/ItemNpcShopWidget";
+import { ItemCashShopWidget } from "@/components/features/items/ItemCashShopWidget";
+import { DroppedByWidget } from "@/components/features/items/DroppedByWidget";
 
 export function ItemDetailPage() {
   const { activeTenant } = useTenant();
   const params = useParams();
   const itemId = params.id as string;
   const itemType = getItemType(itemId);
-  const [iconFailed, setIconFailed] = useState(false);
-
-  useEffect(() => {
-    setIconFailed(false);
-  }, [itemId, activeTenant?.id]);
 
   const nameQuery = useQuery({
     queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", itemId],
@@ -56,6 +44,8 @@ export function ItemDetailPage() {
   });
 
   const { data: drops, isLoading: dropsLoading } = useItemDrops(itemId);
+  const { data: sellers, isLoading: sellersLoading } = useItemSellers(itemId);
+  const { data: commodities, isLoading: commoditiesLoading } = useItemCommodities(itemId);
 
   const itemName = nameQuery.data ?? null;
   const detail = detailQuery.data ?? null;
@@ -74,52 +64,30 @@ export function ItemDetailPage() {
     );
   }
 
+  const price = detail ? getDetailPrice(itemType, detail) : 0;
+
+  const sortedDrops = drops
+    ? [...drops].sort((a, b) => {
+        if (b.attributes.chance !== a.attributes.chance) {
+          return b.attributes.chance - a.attributes.chance;
+        }
+        return a.attributes.monsterId - b.attributes.monsterId;
+      })
+    : [];
+
   return (
     <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
-          {activeTenant && !iconFailed ? (
-            <img
-              src={getAssetIconUrl(
-                activeTenant.id,
-                activeTenant.attributes.region,
-                activeTenant.attributes.majorVersion,
-                activeTenant.attributes.minorVersion,
-                'item',
-                parseInt(itemId),
-              )}
-              alt={itemName || itemId}
-              width={40}
-              height={40}
-              onError={() => setIconFailed(true)}
-              className="max-h-full max-w-full object-contain"
-            />
-          ) : (
-            <Package className="h-8 w-8 text-muted-foreground" />
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">{itemName || itemId}</h2>
-          <Badge variant="secondary" className={getItemTypeBadgeVariant(itemType)}>
-            {itemType}
-          </Badge>
-        </div>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>General</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <InfoField label="Template" value={itemId} mono />
-            <InfoField label="Name" value={itemName || "Unknown"} />
-            <InfoField label="Type" value={itemType} />
-          </div>
-        </CardContent>
-      </Card>
+      <ItemHeader itemId={itemId} itemName={itemName} itemType={itemType} />
 
       {detail && renderTypeSpecificSection(itemType, detail)}
+
+      <SoldByCard
+        sellers={sellers}
+        sellersLoading={sellersLoading}
+        commodities={commodities}
+        commoditiesLoading={commoditiesLoading}
+        price={price}
+      />
 
       <Card>
         <CardHeader>
@@ -130,30 +98,102 @@ export function ItemDetailPage() {
         <CardContent>
           {dropsLoading ? (
             <p className="text-sm text-muted-foreground">Loading drop sources...</p>
-          ) : drops && drops.length > 0 ? (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Monster ID</TableHead>
-                  <TableHead>Monster Name</TableHead>
-                  <TableHead>Chance</TableHead>
-                  <TableHead>Min Qty</TableHead>
-                  <TableHead>Max Qty</TableHead>
-                  <TableHead>Quest ID</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {drops.map((drop) => (
-                  <DroppedByTableRow key={drop.id} drop={drop} />
-                ))}
-              </TableBody>
-            </Table>
+          ) : sortedDrops.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {sortedDrops.map((drop) => (
+                <DroppedByWidget key={drop.id} drop={drop} />
+              ))}
+            </div>
           ) : (
             <p className="text-sm text-muted-foreground">No monsters drop this item.</p>
           )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function getDetailPrice(type: ItemType, detail: ItemDetailData): number {
+  switch (type) {
+    case "Consumable":
+      return (detail as ConsumableData).attributes.price ?? 0;
+    case "Setup":
+      return (detail as SetupData).attributes.price ?? 0;
+    case "Etc":
+      return (detail as EtcData).attributes.price ?? 0;
+    default:
+      return 0;
+  }
+}
+
+interface SoldByCardProps {
+  sellers: import("@/types/models/npc").ItemSellerCommodity[] | undefined;
+  sellersLoading: boolean;
+  commodities: import("@/types/models/npc").ItemCashShopCommodity[] | undefined;
+  commoditiesLoading: boolean;
+  price: number;
+}
+
+function SoldByCard({
+  sellers,
+  sellersLoading,
+  commodities,
+  commoditiesLoading,
+  price,
+}: SoldByCardProps) {
+  const hasSellers = sellers && sellers.length > 0;
+  const hasCommodities = commodities && commodities.length > 0;
+  const loading = sellersLoading || commoditiesLoading;
+
+  const title = hasSellers || hasCommodities
+    ? `Sold By (NPC: ${sellers?.length ?? 0}, Cash Shop: ${commodities?.length ?? 0})`
+    : "Sold By";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {loading ? (
+          <p className="text-sm text-muted-foreground">Loading shop data...</p>
+        ) : !hasSellers && !hasCommodities ? (
+          <p className="text-sm text-muted-foreground">No shops or commodities sell this item.</p>
+        ) : (
+          <>
+            {hasSellers && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  NPC Shops ({sellers!.length})
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {sellers!.map((commodity) => (
+                    <ItemNpcShopWidget key={commodity.id} commodity={commodity} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {hasCommodities && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
+                  Cash Shop ({commodities!.length})
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {commodities!.map((commodity) => (
+                    <ItemCashShopWidget key={commodity.id} commodity={commodity} />
+                  ))}
+                </div>
+              </div>
+            )}
+            {price > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Base price: {price.toLocaleString()} mesos
+              </p>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -194,39 +234,21 @@ function EquipmentSection({ data }: { data: EquipmentData }) {
             <InfoField label="LUK" value={a.luck} />
             <InfoField label="HP" value={a.hp} />
             <InfoField label="MP" value={a.mp} />
-            <InfoField label="Speed" value={a.speed} />
-            <InfoField label="Jump" value={a.jump} />
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Combat</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
             <InfoField label="Weapon Attack" value={a.weaponAttack} />
             <InfoField label="Magic Attack" value={a.magicAttack} />
             <InfoField label="Weapon Defense" value={a.weaponDefense} />
             <InfoField label="Magic Defense" value={a.magicDefense} />
             <InfoField label="Accuracy" value={a.accuracy} />
             <InfoField label="Avoidability" value={a.avoidability} />
-          </div>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Properties</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <InfoField label="Speed" value={a.speed} />
+            <InfoField label="Jump" value={a.jump} />
             <InfoField label="Upgrade Slots" value={a.slots} />
-            <InfoField label="Price" value={a.price} />
             <InfoField label="Cash" value={a.cash} />
             <InfoField label="Time Limited" value={a.timeLimited} />
           </div>
         </CardContent>
       </Card>
+      <EquipmentRequirementsCard attributes={a} />
     </>
   );
 }
@@ -241,10 +263,9 @@ function ConsumableSection({ data }: { data: ConsumableData }) {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-            <InfoField label="Price" value={a.price} />
-            <InfoField label="Unit Price" value={a.unitPrice} />
             <InfoField label="Slot Max" value={a.slotMax} />
             <InfoField label="Required Level" value={a.reqLevel} />
+            <InfoField label="Unit Price" value={a.unitPrice} />
             <InfoField label="Quest Item" value={a.quest} />
             <InfoField label="Trade Block" value={a.tradeBlock} />
             <InfoField label="Not For Sale" value={a.notSale} />
@@ -293,7 +314,6 @@ function SetupSection({ data }: { data: SetupData }) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <InfoField label="Price" value={a.price} />
           <InfoField label="Slot Max" value={a.slotMax} />
           <InfoField label="Recovery HP" value={a.recoveryHP} />
           <InfoField label="Required Level" value={a.reqLevel} />
@@ -315,9 +335,8 @@ function EtcSection({ data }: { data: EtcData }) {
       </CardHeader>
       <CardContent>
         <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-          <InfoField label="Price" value={a.price} />
-          <InfoField label="Unit Price" value={a.unitPrice} />
           <InfoField label="Slot Max" value={a.slotMax} />
+          <InfoField label="Unit Price" value={a.unitPrice} />
           <InfoField label="Time Limited" value={a.timeLimited} />
         </div>
       </CardContent>

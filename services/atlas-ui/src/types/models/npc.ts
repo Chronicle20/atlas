@@ -61,3 +61,34 @@ export interface ShopResponse {
     data: Shop;
     included?: Commodity[];
 }
+
+export interface NpcSpawnMap {
+    npcId: number;
+    mapId: number;
+    name: string;
+    streetName: string;
+    spawnCount: number;
+}
+
+export interface ItemSellerCommodity {
+    id: string;
+    npcId: number;
+    templateId: number;
+    mesoPrice: number;
+    discountRate: number;
+    tokenTemplateId: number;
+    tokenPrice: number;
+    period: number;
+    levelLimit: number;
+}
+
+export interface ItemCashShopCommodity {
+    id: string;
+    itemId: number;
+    count: number;
+    price: number;
+    period: number;
+    priority: number;
+    gender: number;
+    onSale: boolean;
+}

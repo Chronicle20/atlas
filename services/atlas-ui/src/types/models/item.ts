@@ -49,6 +49,14 @@ export interface EquipmentAttributes {
   speed: number;
   jump: number;
   slots: number;
+  reqLevel: number;
+  reqJob: number;
+  reqStr: number;
+  reqDex: number;
+  reqInt: number;
+  reqLuk: number;
+  reqPop: number;
+  reqFame: number;
   cash: boolean;
   price: number;
   timeLimited: boolean;

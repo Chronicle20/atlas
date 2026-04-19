@@ -20,6 +20,9 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 			r := router.PathPrefix("/data/commodity/items").Subrouter()
 			r.HandleFunc("", registerGet("get_commodity_items", handleGetCommodityItemsRequest(db))).Methods(http.MethodGet)
 			r.HandleFunc("/{itemId}", registerGet("get_commodity_item", handleGetCommodityItemRequest(db))).Methods(http.MethodGet)
+
+			byItem := router.PathPrefix("/data/commodity/by-item").Subrouter()
+			byItem.HandleFunc("/{itemId}", registerGet("get_commodities_by_item", handleGetCommoditiesByItemRequest(db))).Methods(http.MethodGet)
 		}
 	}
 }
@@ -39,6 +42,33 @@ func handleGetCommodityItemsRequest(db *gorm.DB) func(d *rest.HandlerDependency,
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
 		}
+	}
+}
+
+func handleGetCommoditiesByItemRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+		return rest.ParseItemId(d.Logger(), func(itemId uint32) http.HandlerFunc {
+			return func(w http.ResponseWriter, r *http.Request) {
+				s := NewStorage(d.Logger(), db)
+				all, err := s.GetAll(d.Context())
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Unable to retrieve commodities for itemId=%d.", itemId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				filtered := make([]RestModel, 0)
+				for _, cm := range all {
+					if cm.ItemId == itemId {
+						filtered = append(filtered, cm)
+					}
+				}
+
+				query := r.URL.Query()
+				queryParams := jsonapi.ParseQueryFields(&query)
+				server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(filtered)
+			}
+		})
 	}
 }
 

@@ -73,6 +73,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(shops.InitResource(GetServer())(db)).
+		AddRouteInitializer(commodities.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
 		Run()
 

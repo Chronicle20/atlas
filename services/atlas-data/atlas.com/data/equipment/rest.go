@@ -30,6 +30,14 @@ type RestModel struct {
 	Speed          uint16          `json:"speed"`
 	Jump           uint16          `json:"jump"`
 	Slots          uint16          `json:"slots"`
+	ReqLevel       uint16          `json:"reqLevel"`
+	ReqJob         uint16          `json:"reqJob"`
+	ReqStr         uint16          `json:"reqStr"`
+	ReqDex         uint16          `json:"reqDex"`
+	ReqInt         uint16          `json:"reqInt"`
+	ReqLuk         uint16          `json:"reqLuk"`
+	ReqPop         uint16          `json:"reqPop"`
+	ReqFame        uint16          `json:"reqFame"`
 	Cash           bool            `json:"cash"`
 	Price          uint32          `json:"price"`
 	TimeLimited    bool            `json:"timeLimited"`

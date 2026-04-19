@@ -65,6 +65,74 @@ func TestCommodityResourceIntegration(t *testing.T) {
 	t.Run("JSONAPICompliance", func(t *testing.T) {
 		testJSONAPICompliance(t, testServer, tenantId)
 	})
+
+	t.Run("GetCommoditiesByItem", func(t *testing.T) {
+		testGetCommoditiesByItem(t, testServer, db, tenantId)
+	})
+}
+
+func testGetCommoditiesByItem(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenantId uuid.UUID) {
+	// seed a second commodity pointing at 5000000 so by-item returns multiple rows
+	l := logrus.New()
+	l.SetLevel(logrus.ErrorLevel)
+	tn, err := tenant.Create(tenantId, "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), tn)
+	storage := document.NewStorage(l, db, GetModelRegistry(), "COMMODITY")
+	_, err = storage.Add(ctx)(RestModel{
+		Id: 4, ItemId: 5000000, Count: 10, Price: 3900, Period: 30, Priority: 100, OnSale: true,
+	})()
+	require.NoError(t, err)
+
+	t.Run("ReturnsMatches", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/commodity/by-item/5000000", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 2)
+	})
+
+	t.Run("EmptyArrayOnNoMatches", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/commodity/by-item/9999999", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].([]interface{})
+		assert.Len(t, data, 0)
+	})
+
+	t.Run("BadIdReturns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/commodity/by-item/bogus", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
 }
 
 func setupResourceTestDB(t *testing.T) *gorm.DB {

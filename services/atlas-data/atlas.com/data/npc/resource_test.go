@@ -31,6 +31,18 @@ type testSearchIndexEntity struct {
 
 func (testSearchIndexEntity) TableName() string { return "npc_search_index" }
 
+type testSpawnIndexEntity struct {
+	TenantId   uuid.UUID `gorm:"type:text;primaryKey"`
+	NpcId      uint32    `gorm:"primaryKey"`
+	MapId      uint32    `gorm:"primaryKey"`
+	Name       string    `gorm:"not null"`
+	StreetName string    `gorm:"not null"`
+	SpawnCount uint32    `gorm:"not null"`
+	UpdatedAt  time.Time `gorm:"autoUpdateTime"`
+}
+
+func (testSpawnIndexEntity) TableName() string { return "npc_spawn_index" }
+
 // testDocumentEntity is a test-compatible version of document.Entity without PostgreSQL-specific defaults
 type testDocumentEntity struct {
 	Id         uuid.UUID       `gorm:"primaryKey;type:text"`
@@ -78,6 +90,81 @@ func TestNpcResourceIntegration(t *testing.T) {
 	t.Run("JSONAPICompliance", func(t *testing.T) {
 		testJSONAPICompliance(t, testServer, tenantId)
 	})
+
+	t.Run("GetNpcMap", func(t *testing.T) {
+		testGetNpcMap(t, testServer, db, tenantId)
+	})
+}
+
+func testGetNpcMap(t *testing.T, testServer *httptest.Server, db *gorm.DB, tenantId uuid.UUID) {
+	// seed spawn index rows: NPC 9010000 primary on map 100000000 (count=3), secondary on 200000000 (count=1)
+	rows := []testSpawnIndexEntity{
+		{TenantId: tenantId, NpcId: 9010000, MapId: 100000000, Name: "Henesys", StreetName: "Victoria Road", SpawnCount: 3},
+		{TenantId: tenantId, NpcId: 9010000, MapId: 200000000, Name: "Ellinia", StreetName: "Victoria Road", SpawnCount: 1},
+	}
+	require.NoError(t, db.Create(&rows).Error)
+
+	t.Run("PrimaryRowReturned", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9010000/map", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		data := response["data"].(map[string]interface{})
+		assert.Equal(t, "npc-maps", data["type"])
+		assert.Equal(t, "9010000", data["id"])
+
+		attrs := data["attributes"].(map[string]interface{})
+		assert.Equal(t, float64(100000000), attrs["mapId"])
+		assert.Equal(t, "Henesys", attrs["name"])
+		assert.Equal(t, float64(3), attrs["spawnCount"])
+	})
+
+	t.Run("NoIndexReturns404", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/9999999/map", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
+
+	t.Run("BadIdReturns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/npcs/notanumber/map", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("TenantIsolation", func(t *testing.T) {
+		otherTenantId := uuid.New()
+		url := fmt.Sprintf("%s/data/npcs/9010000/map", testServer.URL)
+		req := createRequestWithTenant("GET", url, otherTenantId)
+
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusNotFound, resp.StatusCode)
+	})
 }
 
 func setupResourceTestDB(t *testing.T) *gorm.DB {
@@ -93,7 +180,7 @@ func setupResourceTestDB(t *testing.T) *gorm.DB {
 	})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{})
+	err = db.AutoMigrate(&testDocumentEntity{}, &testSearchIndexEntity{}, &testSpawnIndexEntity{})
 	require.NoError(t, err)
 
 	database.RegisterTenantCallbacks(logrus.StandardLogger(), db)

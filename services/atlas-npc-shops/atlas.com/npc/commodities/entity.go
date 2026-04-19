@@ -40,5 +40,8 @@ func Make(entity Entity) (Model, error) {
 }
 
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&Entity{})
+	if err := db.AutoMigrate(&Entity{}); err != nil {
+		return err
+	}
+	return db.Exec("CREATE INDEX IF NOT EXISTS idx_commodities_by_template ON commodities (tenant_id, template_id)").Error
 }

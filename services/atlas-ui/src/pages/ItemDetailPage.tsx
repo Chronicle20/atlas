@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { useTenant } from "@/context/tenant-context";
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
@@ -18,7 +19,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
 import { Package } from "lucide-react";
-import { Link } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useItemDrops } from "@/lib/hooks/api/useDrops";
 import {
@@ -35,6 +35,11 @@ export function ItemDetailPage() {
   const params = useParams();
   const itemId = params.id as string;
   const itemType = getItemType(itemId);
+  const [iconFailed, setIconFailed] = useState(false);
+
+  useEffect(() => {
+    setIconFailed(false);
+  }, [itemId, activeTenant?.id]);
 
   const nameQuery = useQuery({
     queryKey: ["items", "name", activeTenant?.id ?? "no-tenant", itemId],
@@ -63,45 +68,41 @@ export function ItemDetailPage() {
 
   if (error) {
     return (
-      <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
         <div className="text-center py-8 text-muted-foreground">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
-      <div className="flex items-center gap-2">
-        {activeTenant ? (
-          <img
-            src={getAssetIconUrl(
-              activeTenant.id,
-              activeTenant.attributes.region,
-              activeTenant.attributes.majorVersion,
-              activeTenant.attributes.minorVersion,
-              'item',
-              parseInt(itemId),
-            )}
-            alt={itemName || itemId}
-            width={40}
-            height={40}
-            className="object-contain"
-          />
-        ) : (
-          <Package className="h-6 w-6" />
-        )}
-        <div>
-          <div className="flex items-center gap-2">
-            <h2 className="text-2xl font-bold tracking-tight">{itemName || itemId}</h2>
-            <Badge variant="secondary" className={getItemTypeBadgeVariant(itemType)}>
-              {itemType}
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            <Link to="/items" className="hover:underline">Items</Link>
-            {" > "}
-            <span>{itemName || itemId}</span>
-          </p>
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center">
+          {activeTenant && !iconFailed ? (
+            <img
+              src={getAssetIconUrl(
+                activeTenant.id,
+                activeTenant.attributes.region,
+                activeTenant.attributes.majorVersion,
+                activeTenant.attributes.minorVersion,
+                'item',
+                parseInt(itemId),
+              )}
+              alt={itemName || itemId}
+              width={40}
+              height={40}
+              onError={() => setIconFailed(true)}
+              className="max-h-full max-w-full object-contain"
+            />
+          ) : (
+            <Package className="h-8 w-8 text-muted-foreground" />
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <h2 className="text-2xl font-bold tracking-tight">{itemName || itemId}</h2>
+          <Badge variant="secondary" className={getItemTypeBadgeVariant(itemType)}>
+            {itemType}
+          </Badge>
         </div>
       </div>
 

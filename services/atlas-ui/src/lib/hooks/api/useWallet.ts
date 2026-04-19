@@ -26,13 +26,13 @@ export function useWallet(
 export function useUpdateWallet(): UseMutationResult<
   Wallet,
   Error,
-  { tenant: Tenant; accountId: string; credit: number; points: number; prepaid: number }
+  { tenant: Tenant; accountId: string; walletId: string; credit: number; points: number; prepaid: number }
 > {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ accountId, credit, points, prepaid }) =>
-      walletService.updateWallet( accountId, credit, points, prepaid),
+    mutationFn: ({ accountId, walletId, credit, points, prepaid }) =>
+      walletService.updateWallet(accountId, walletId, credit, points, prepaid),
     onMutate: async ({ tenant, accountId, credit, points, prepaid }) => {
       await queryClient.cancelQueries({ queryKey: walletKeys.detail(tenant, accountId) });
 

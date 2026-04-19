@@ -575,12 +575,13 @@ func (p *ProcessorImpl) processGenericActionState(ctx ConversationContext, state
 		}
 	}()
 
-	// Execute operations with error recovery
-	for _, operation := range genericAction.Operations() {
-		err := p.executor.ExecuteOperation(ctx.Field(), ctx.CharacterId(), operation)
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to execute operation [%s] for character [%d]. Cleaning up conversation context.", operation.Type(), ctx.CharacterId())
-			// Clean up conversation context before returning error
+	// Batch all operations in the state into a single executor call so remote
+	// operations share one saga. This lets createSagaForOperations cross-reference
+	// steps (e.g. attach award_asset rewards to a complete_quest step) and keeps
+	// step ordering under the saga orchestrator's control.
+	if ops := genericAction.Operations(); len(ops) > 0 {
+		if err := p.executor.ExecuteOperations(ctx.Field(), ctx.CharacterId(), ops); err != nil {
+			p.l.WithError(err).Errorf("Failed to execute operations for character [%d]. Cleaning up conversation context.", ctx.CharacterId())
 			GetRegistry().ClearContext(p.ctx, ctx.CharacterId())
 			return "", err
 		}

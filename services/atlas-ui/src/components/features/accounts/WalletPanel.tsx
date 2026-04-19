@@ -61,6 +61,7 @@ export function WalletPanel({ wallet, accountId, tenant }: WalletPanelProps) {
             {
                 tenant,
                 accountId,
+                walletId: wallet.id,
                 credit: newBalances.credit,
                 points: newBalances.points,
                 prepaid: newBalances.prepaid,

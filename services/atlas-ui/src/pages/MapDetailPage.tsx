@@ -41,7 +41,7 @@ export function MapDetailPage() {
   const spawnCount = monstersError ? undefined : monsters?.length;
 
   return (
-    <div className="flex flex-col flex-1 min-h-0 space-y-6 p-10 pb-16">
+    <div className="flex flex-col flex-1 min-h-0 overflow-y-auto space-y-6 p-10 pb-16">
       <MapHeader
         mapId={map.id}
         name={attrs.name}

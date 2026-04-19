@@ -114,11 +114,11 @@ export function MapImagePanel({
   return (
     <>
       <Card className="w-full overflow-hidden">
-        <CardContent className="p-0">
+        <CardContent className="p-3">
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="group relative block w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="group relative block w-full cursor-zoom-in focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md overflow-hidden"
             aria-label={`Expand ${altText}`}
           >
             {overlayEnabled && mapArea ? (
@@ -198,6 +198,7 @@ export function MapImagePanel({
                   npcs={npcs}
                   monsters={monsters}
                   reactors={reactors}
+                  size="large"
                 />
               </div>
             ) : (

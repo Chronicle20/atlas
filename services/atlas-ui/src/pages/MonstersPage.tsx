@@ -1,8 +1,9 @@
 import { useTenant } from "@/context/tenant-context";
-import { Suspense, useEffect, useState } from "react";
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { keepPreviousData, useQueries, useQuery } from "@tanstack/react-query";
 import { monstersService } from "@/services/api/monsters.service";
 import type { MonsterData } from "@/types/models/monster";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +62,24 @@ function MonstersPageContent() {
   const monsters = monstersQuery.data ?? [];
   const fetching = monstersQuery.isFetching;
   const hasSearched = urlQuery.length >= MIN_QUERY_LENGTH;
+
+  const tenantId = activeTenant?.id ?? "no-tenant";
+  const detailQueries = useQueries({
+    queries: monsters.map((m) => ({
+      queryKey: ["monsters", "detail", tenantId, m.id],
+      queryFn: () => monstersService.getMonsterById(m.id),
+      enabled: !!activeTenant,
+      staleTime: 5 * 60 * 1000,
+    })),
+  });
+
+  const detailsById = useMemo(() => {
+    const out = new Map<string, MonsterData>();
+    for (const q of detailQueries) {
+      if (q.data) out.set(q.data.id, q.data);
+    }
+    return out;
+  }, [detailQueries]);
 
   const handleClear = () => {
     setSearchInput("");
@@ -140,6 +159,7 @@ function MonstersPageContent() {
                         'mob',
                         parseInt(monster.id),
                       ) : undefined;
+                      const detail = detailsById.get(monster.id)?.attributes;
                       return (
                         <TableRow key={monster.id}>
                           <TableCell>
@@ -167,15 +187,19 @@ function MonstersPageContent() {
                               </Tooltip>
                             </TooltipProvider>
                           </TableCell>
-                          <TableCell>{monster.attributes.level}</TableCell>
-                          <TableCell>{monster.attributes.hp?.toLocaleString() ?? ""}</TableCell>
-                          <TableCell>{monster.attributes.experience?.toLocaleString() ?? ""}</TableCell>
+                          <TableCell>{detail ? detail.level : <Skeleton className="h-4 w-8" />}</TableCell>
+                          <TableCell>{detail ? detail.hp.toLocaleString() : <Skeleton className="h-4 w-16" />}</TableCell>
+                          <TableCell>{detail ? detail.experience.toLocaleString() : <Skeleton className="h-4 w-16" />}</TableCell>
                           <TableCell>
-                            <div className="flex gap-1">
-                              {monster.attributes.boss && <Badge variant="destructive">Boss</Badge>}
-                              {monster.attributes.undead && <Badge variant="secondary">Undead</Badge>}
-                              {monster.attributes.friendly && <Badge variant="outline">Friendly</Badge>}
-                            </div>
+                            {detail ? (
+                              <div className="flex gap-1">
+                                {detail.boss && <Badge variant="destructive">Boss</Badge>}
+                                {detail.undead && <Badge variant="secondary">Undead</Badge>}
+                                {detail.friendly && <Badge variant="outline">Friendly</Badge>}
+                              </div>
+                            ) : (
+                              <Skeleton className="h-4 w-20" />
+                            )}
                           </TableCell>
                         </TableRow>
                       );

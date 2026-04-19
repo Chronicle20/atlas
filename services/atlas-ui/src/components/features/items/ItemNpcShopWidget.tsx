@@ -16,7 +16,7 @@ interface ItemNpcShopWidgetProps {
 }
 
 export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
-  const { npcId, mesoPrice, tokenPrice, tokenTemplateId, discountRate, period, levelLimit, id } = commodity;
+  const { npcId, mesoPrice, tokenPrice, tokenTemplateId, discountRate, period, levelLimit } = commodity;
   const { name: npcName, iconUrl, isLoading: npcLoading } = useNpcData(npcId);
   const { data: spawnMaps } = useNpcSpawnMaps(npcId);
 
@@ -67,10 +67,14 @@ export function ItemNpcShopWidget({ commodity }: ItemNpcShopWidgetProps) {
     </Link>
   );
 
-  const tooltipLines: string[] = [`Commodity ID: ${id}`];
+  const tooltipLines: string[] = [];
   if (discountRate > 0) tooltipLines.push(`Discount Rate: ${discountRate}%`);
   if (period > 0) tooltipLines.push(`Period: ${period}h`);
   if (levelLimit > 0) tooltipLines.push(`Level Limit: ${levelLimit}`);
+
+  if (tooltipLines.length === 0) {
+    return widget;
+  }
 
   return (
     <TooltipProvider>

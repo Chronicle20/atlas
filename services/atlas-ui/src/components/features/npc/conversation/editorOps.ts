@@ -1,8 +1,10 @@
 import type {
   Conversation,
   ConversationState,
+  ConversationStateType,
+  DialogueChoice,
 } from "@/types/models/conversation";
-import { getTransitions, buildStateIndex } from "./transitions";
+import { getTransitions, buildStateIndex, type Transition } from "./transitions";
 
 export function replaceState(
   conversation: Conversation,
@@ -238,4 +240,317 @@ export function idIsTaken(
   return conversation.attributes.states.some(
     s => s.id === id && s.id !== exceptId,
   );
+}
+
+export function deriveUniqueId(
+  existing: Set<string> | Conversation,
+  seed = "newState",
+): string {
+  const taken =
+    existing instanceof Set
+      ? existing
+      : new Set(existing.attributes.states.map(s => s.id));
+  if (!taken.has(seed)) return seed;
+  for (let i = 2; i < 10_000; i++) {
+    const candidate = `${seed}${i}`;
+    if (!taken.has(candidate)) return candidate;
+  }
+  return `${seed}${Date.now()}`;
+}
+
+export function emptyStateOfType(
+  type: ConversationStateType,
+  id: string,
+): ConversationState {
+  const base: ConversationState = { id, type };
+  switch (type) {
+    case "dialogue":
+      base.dialogue = { dialogueType: "sendOk", text: "", choices: [] };
+      break;
+    case "listSelection":
+      base.listSelection = { title: "", choices: [] };
+      break;
+    case "askSlideMenu":
+      base.askSlideMenu = { title: "", menuType: 0, choices: [] };
+      break;
+    case "askNumber":
+      base.askNumber = {
+        text: "",
+        defaultValue: 0,
+        minValue: 0,
+        maxValue: 0,
+        nextState: "",
+      };
+      break;
+    case "askStyle":
+      base.askStyle = { text: "", nextState: "" };
+      break;
+    case "craftAction":
+      base.craftAction = {
+        itemId: 0,
+        materials: [],
+        quantities: [],
+        mesoCost: 0,
+        successState: "",
+        failureState: "",
+        missingMaterialsState: "",
+      };
+      break;
+    case "transportAction":
+      base.transportAction = { routeName: "", failureState: "" };
+      break;
+    case "partyQuestAction":
+      base.partyQuestAction = { questId: "", failureState: "" };
+      break;
+    case "partyQuestBonusAction":
+      base.partyQuestBonusAction = { failureState: "" };
+      break;
+    case "gachaponAction":
+      base.gachaponAction = {
+        gachaponId: "",
+        ticketItemId: 0,
+        failureState: "",
+      };
+      break;
+    case "genericAction":
+      base.genericAction = { operations: [], outcomes: [] };
+      break;
+  }
+  return base;
+}
+
+export function switchStateType(
+  conversation: Conversation,
+  stateId: string,
+  nextType: ConversationStateType,
+): Conversation {
+  const state = conversation.attributes.states.find(s => s.id === stateId);
+  if (!state || state.type === nextType) return conversation;
+  const replacement = emptyStateOfType(nextType, state.id);
+  return replaceState(conversation, stateId, replacement);
+}
+
+export interface AddChildResult {
+  conversation: Conversation;
+  newStateId: string;
+}
+
+export function addChildState(
+  conversation: Conversation,
+  sourceId: string,
+): AddChildResult | null {
+  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  if (!source) return null;
+
+  const newId = deriveUniqueId(conversation);
+  const newState = emptyStateOfType("dialogue", newId);
+
+  let updatedSource: ConversationState | null = null;
+  const newChoice: DialogueChoice = { text: "", nextState: newId };
+
+  switch (source.type) {
+    case "dialogue":
+      if (!source.dialogue) return null;
+      updatedSource = {
+        ...source,
+        dialogue: {
+          ...source.dialogue,
+          choices: [...(source.dialogue.choices ?? []), newChoice],
+        },
+      };
+      break;
+    case "listSelection":
+      if (!source.listSelection) return null;
+      updatedSource = {
+        ...source,
+        listSelection: {
+          ...source.listSelection,
+          choices: [...(source.listSelection.choices ?? []), newChoice],
+        },
+      };
+      break;
+    case "askSlideMenu":
+      if (!source.askSlideMenu) return null;
+      updatedSource = {
+        ...source,
+        askSlideMenu: {
+          ...source.askSlideMenu,
+          choices: [...(source.askSlideMenu.choices ?? []), newChoice],
+        },
+      };
+      break;
+    default:
+      return null;
+  }
+
+  const states = conversation.attributes.states.map(s =>
+    s.id === sourceId ? updatedSource! : s,
+  );
+  states.push(newState);
+
+  return {
+    conversation: {
+      ...conversation,
+      attributes: { ...conversation.attributes, states },
+    },
+    newStateId: newId,
+  };
+}
+
+export function canAddChild(stateType: ConversationStateType): boolean {
+  return (
+    stateType === "dialogue" ||
+    stateType === "listSelection" ||
+    stateType === "askSlideMenu"
+  );
+}
+
+function setTransitionTarget(
+  state: ConversationState,
+  kind: Transition["kind"],
+  ordinal: number,
+  newTarget: string | null,
+): ConversationState {
+  const clone = JSON.parse(JSON.stringify(state)) as ConversationState;
+  const stringTarget = newTarget ?? "";
+  switch (kind) {
+    case "choice":
+      if (clone.dialogue?.choices?.[ordinal]) {
+        clone.dialogue.choices[ordinal].nextState = newTarget;
+      } else if (clone.listSelection?.choices?.[ordinal]) {
+        clone.listSelection.choices[ordinal].nextState = newTarget;
+      } else if (clone.askSlideMenu?.choices?.[ordinal]) {
+        clone.askSlideMenu.choices[ordinal].nextState = newTarget;
+      }
+      break;
+    case "outcome":
+      if (clone.genericAction?.outcomes?.[ordinal]) {
+        clone.genericAction.outcomes[ordinal].nextState = stringTarget;
+      }
+      break;
+    case "answer":
+      if (clone.askNumber) clone.askNumber.nextState = stringTarget;
+      break;
+    case "selection":
+      if (clone.askStyle) clone.askStyle.nextState = stringTarget;
+      break;
+    case "success":
+      if (clone.craftAction) clone.craftAction.successState = stringTarget;
+      break;
+    case "failure":
+      if (clone.craftAction) clone.craftAction.failureState = stringTarget;
+      else if (clone.transportAction) clone.transportAction.failureState = stringTarget;
+      else if (clone.partyQuestAction) clone.partyQuestAction.failureState = stringTarget;
+      else if (clone.partyQuestBonusAction) clone.partyQuestBonusAction.failureState = stringTarget;
+      else if (clone.gachaponAction) clone.gachaponAction.failureState = stringTarget;
+      break;
+    case "missing":
+      if (clone.craftAction) clone.craftAction.missingMaterialsState = stringTarget;
+      break;
+    case "capacityFull":
+      if (clone.transportAction) clone.transportAction.capacityFullState = stringTarget;
+      break;
+    case "alreadyInTransit":
+      if (clone.transportAction) clone.transportAction.alreadyInTransitState = stringTarget;
+      break;
+    case "routeNotFound":
+      if (clone.transportAction) clone.transportAction.routeNotFoundState = stringTarget;
+      break;
+    case "serviceError":
+      if (clone.transportAction) clone.transportAction.serviceErrorState = stringTarget;
+      break;
+    case "notInParty":
+      if (clone.partyQuestAction) clone.partyQuestAction.notInPartyState = stringTarget;
+      break;
+    case "notLeader":
+      if (clone.partyQuestAction) clone.partyQuestAction.notLeaderState = stringTarget;
+      break;
+  }
+  return clone;
+}
+
+export function insertBetween(
+  conversation: Conversation,
+  sourceId: string,
+  kind: Transition["kind"],
+  ordinal: number,
+): AddChildResult | null {
+  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  if (!source) return null;
+
+  const transitions = getTransitions(source);
+  const trans = transitions.find(
+    t => t.kind === kind && t.ordinal === ordinal,
+  );
+  if (!trans) return null;
+
+  const oldTarget = trans.target;
+  const newId = deriveUniqueId(conversation);
+
+  const newState: ConversationState = {
+    id: newId,
+    type: "dialogue",
+    dialogue: {
+      dialogueType: "sendOk",
+      text: "",
+      choices: [{ text: "", nextState: oldTarget }],
+    },
+  };
+
+  const updatedSource = setTransitionTarget(source, kind, ordinal, newId);
+
+  const states = conversation.attributes.states.map(s =>
+    s.id === sourceId ? updatedSource : s,
+  );
+  states.push(newState);
+
+  return {
+    conversation: {
+      ...conversation,
+      attributes: { ...conversation.attributes, states },
+    },
+    newStateId: newId,
+  };
+}
+
+export function insertBefore(
+  conversation: Conversation,
+  existingId: string,
+): AddChildResult | null {
+  const existing = conversation.attributes.states.find(s => s.id === existingId);
+  if (!existing) return null;
+
+  const newId = deriveUniqueId(conversation);
+  const newState: ConversationState = {
+    id: newId,
+    type: "dialogue",
+    dialogue: {
+      dialogueType: "sendOk",
+      text: "",
+      choices: [{ text: "", nextState: existingId }],
+    },
+  };
+
+  const rewire = (id: string | null | undefined) =>
+    id === existingId ? newId : (id ?? null);
+
+  const states = conversation.attributes.states.map(s =>
+    rewireStateRefs(s, rewire),
+  );
+  states.push(newState);
+
+  return {
+    conversation: {
+      ...conversation,
+      attributes: {
+        ...conversation.attributes,
+        states,
+        startState:
+          conversation.attributes.startState === existingId
+            ? newId
+            : conversation.attributes.startState,
+      },
+    },
+    newStateId: newId,
+  };
 }

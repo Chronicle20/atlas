@@ -47,3 +47,17 @@ export const createTenantDefaults: CreateTenantFormData = {
   majorVersion: 0,
   minorVersion: 0,
 };
+
+/**
+ * Schema for a tenant name field (used by rename and clone-from-template forms).
+ * Trims whitespace, then enforces min 1 / max 100.
+ */
+export const tenantNameSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, 'Tenant name is required')
+    .max(100, 'Tenant name must be 100 characters or less'),
+});
+
+export type TenantNameFormData = z.infer<typeof tenantNameSchema>;

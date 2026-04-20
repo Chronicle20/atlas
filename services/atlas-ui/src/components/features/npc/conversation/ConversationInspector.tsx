@@ -3,8 +3,10 @@ import {
   AlertTriangle,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   CornerDownRight,
   CornerUpLeft,
+  Eraser,
   GitBranch,
   Play,
   Plus,
@@ -48,7 +50,11 @@ import type {
 import { buildStateIndex, getTransitions, type Transition } from "./transitions";
 import { type GraphAnalysis } from "./graphAnalysis";
 import { STATE_TYPE_META } from "./stateMeta";
-import { canAddChild, idIsTaken as idIsTakenOp } from "./editorOps";
+import {
+  canAddChild,
+  idIsTaken as idIsTakenOp,
+  resizeChoicesForDialogueType,
+} from "./editorOps";
 
 interface ConversationInspectorProps {
   conversation: Conversation;
@@ -66,6 +72,11 @@ interface ConversationInspectorProps {
     ordinal: number,
   ) => void;
   onInsertBefore: (targetId: string) => void;
+  onClearTransition: (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => void;
   readOnly: boolean;
 }
 
@@ -81,6 +92,7 @@ export function ConversationInspector({
   onAddChild,
   onInsertBetween,
   onInsertBefore,
+  onClearTransition,
   readOnly,
 }: ConversationInspectorProps) {
   if (!selectedStateId) {
@@ -120,14 +132,16 @@ export function ConversationInspector({
             {meta.label}
           </span>
           {isStart && (
-            <Badge className="text-[10px] px-1.5 py-0 gap-1">
-              <Play className="h-2.5 w-2.5 fill-current" /> start
-            </Badge>
+            <Play
+              className="h-3 w-3 fill-emerald-500 text-emerald-500 shrink-0"
+              aria-label="start"
+            />
           )}
           {isTerminal && (
-            <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
-              <Square className="h-2.5 w-2.5 fill-current" /> terminal
-            </Badge>
+            <Square
+              className="h-3 w-3 fill-orange-500 text-orange-500 shrink-0"
+              aria-label="end"
+            />
           )}
           {inbound >= 3 && (
             <Badge variant="secondary" className="text-[10px] px-1.5 py-0 gap-1">
@@ -139,32 +153,45 @@ export function ConversationInspector({
               <AlertTriangle className="h-2.5 w-2.5" /> issues
             </Badge>
           )}
+          {!readOnly && (
+            <div className="ml-auto flex items-center gap-0.5">
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0"
+                onClick={() => onInsertBefore(state.id)}
+                title="Insert a new state before this one (rewires inbound refs)"
+                aria-label="Insert before"
+              >
+                <CornerDownRight className="h-3.5 w-3.5 -rotate-90" />
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-7 w-7 p-0 text-destructive hover:text-destructive"
+                onClick={() => onDelete(state.id)}
+                disabled={isStart}
+                title={
+                  isStart ? "Cannot delete the start state" : "Delete state"
+                }
+                aria-label="Delete state"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
         <IdRow
           conversation={conversation}
           stateId={state.id}
           onRename={onRename}
           readOnly={readOnly}
-          onDelete={() => onDelete(state.id)}
-          canDelete={!readOnly && !isStart}
         />
         <TypePicker
           currentType={state.type}
           onSwitch={next => onSwitchType(state.id, next)}
           disabled={readOnly}
         />
-        {!readOnly && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="self-start"
-            onClick={() => onInsertBefore(state.id)}
-            title="Create a new state before this one (rewires inbound refs)"
-          >
-            <CornerDownRight className="h-3.5 w-3.5 -rotate-90" />
-            Insert before
-          </Button>
-        )}
       </div>
 
       <div className="flex-1 overflow-y-auto divide-y">
@@ -173,6 +200,7 @@ export function ConversationInspector({
           onUpdateState={onUpdateState}
           readOnly={readOnly}
           conversation={conversation}
+          onClearTransition={onClearTransition}
         />
         <TransitionsSection
           transitions={transitions}
@@ -207,15 +235,11 @@ function IdRow({
   stateId,
   onRename,
   readOnly,
-  onDelete,
-  canDelete,
 }: {
   conversation: Conversation;
   stateId: string;
   onRename: (oldId: string, newId: string) => void;
   readOnly: boolean;
-  onDelete: () => void;
-  canDelete: boolean;
 }) {
   const [value, setValue] = useState(stateId);
   useEffect(() => setValue(stateId), [stateId]);
@@ -251,17 +275,6 @@ function IdRow({
           }
         >
           Rename
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-          disabled={!canDelete}
-          onClick={onDelete}
-          title={canDelete ? "Delete state" : "Cannot delete the start state"}
-          aria-label="Delete state"
-        >
-          <Trash2 className="h-3.5 w-3.5" />
         </Button>
       </div>
       {collides && (
@@ -355,11 +368,17 @@ function TypeFields({
   onUpdateState,
   readOnly,
   conversation,
+  onClearTransition,
 }: {
   state: ConversationState;
   onUpdateState: (id: string, next: ConversationState) => void;
   readOnly: boolean;
   conversation: Conversation;
+  onClearTransition: (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => void;
 }) {
   switch (state.type) {
     case "dialogue":
@@ -370,6 +389,7 @@ function TypeFields({
           state={state}
           conversation={conversation}
           onUpdateState={onUpdateState}
+          onClearTransition={onClearTransition}
         />
       );
     case "listSelection":
@@ -648,31 +668,75 @@ function DialogueReadOnly({ state }: { state: ConversationState }) {
   );
 }
 
+type ChoicesMode = "open" | "exitLocked" | "fixed";
+
 function ChoicesEditor({
   choices,
   onChange,
   otherIds,
   label = "Choices",
   itemLabel = "Choice",
+  mode = "open",
+  onClear,
 }: {
   choices: DialogueChoice[];
   onChange: (next: DialogueChoice[]) => void;
   otherIds: string[];
   label?: string;
   itemLabel?: string;
+  mode?: ChoicesMode;
+  onClear?: (index: number) => void;
 }) {
+  const total = choices.length;
   const updateChoice = (i: number, nextChoice: DialogueChoice) => {
     const next = [...choices];
     next[i] = nextChoice;
     onChange(next);
   };
-  const addChoice = () =>
+  const addChoice = () => {
+    if (mode === "fixed") return;
+    if (mode === "exitLocked") {
+      // Insert before the last (exit) row if one exists, else append.
+      if (total === 0) {
+        onChange([{ text: "Exit", nextState: null }]);
+        return;
+      }
+      const next = [...choices];
+      next.splice(total - 1, 0, { text: "", nextState: null });
+      onChange(next);
+      return;
+    }
     onChange([...choices, { text: "", nextState: null }]);
+  };
   const removeChoice = (i: number) => {
     const next = [...choices];
     next.splice(i, 1);
     onChange(next);
   };
+  const moveUp = (i: number) => {
+    if (i <= 0) return;
+    const next = [...choices];
+    const tmp = next[i - 1]!;
+    next[i - 1] = next[i]!;
+    next[i] = tmp;
+    onChange(next);
+  };
+  const moveDown = (i: number) => {
+    if (i >= total - 1) return;
+    const next = [...choices];
+    const tmp = next[i + 1]!;
+    next[i + 1] = next[i]!;
+    next[i] = tmp;
+    onChange(next);
+  };
+
+  const isExit = (i: number) => mode === "exitLocked" && i === total - 1;
+  const canReorder = mode !== "fixed";
+  const canDelete = (i: number) => mode === "open" || (mode === "exitLocked" && !isExit(i));
+  const canMoveUp = (i: number) =>
+    canReorder && i > 0 && !isExit(i) && !isExit(i - 1);
+  const canMoveDown = (i: number) =>
+    canReorder && i < total - 1 && !isExit(i) && !isExit(i + 1);
 
   return (
     <>
@@ -680,10 +744,12 @@ function ChoicesEditor({
         <Label className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
           {label} ({choices.length})
         </Label>
-        <Button size="sm" variant="outline" onClick={addChoice}>
-          <Plus className="h-3 w-3" />
-          Add
-        </Button>
+        {mode !== "fixed" && (
+          <Button size="sm" variant="outline" onClick={addChoice}>
+            <Plus className="h-3 w-3" />
+            Add
+          </Button>
+        )}
       </div>
       <div className="flex flex-col gap-2">
         {choices.map((choice, i) => (
@@ -693,8 +759,17 @@ function ChoicesEditor({
             itemLabel={itemLabel}
             choice={choice}
             otherIds={otherIds}
+            isExit={isExit(i)}
+            canDelete={canDelete(i)}
+            canMoveUp={canMoveUp(i)}
+            canMoveDown={canMoveDown(i)}
+            showReorder={canReorder}
+            clearMode={mode === "fixed"}
             onChange={next => updateChoice(i, next)}
             onRemove={() => removeChoice(i)}
+            onMoveUp={() => moveUp(i)}
+            onMoveDown={() => moveDown(i)}
+            {...(onClear && { onClear: () => onClear(i) })}
           />
         ))}
       </div>
@@ -707,15 +782,33 @@ function ChoiceRow({
   itemLabel,
   choice,
   otherIds,
+  isExit,
+  canDelete,
+  canMoveUp,
+  canMoveDown,
+  showReorder,
+  clearMode,
   onChange,
   onRemove,
+  onMoveUp,
+  onMoveDown,
+  onClear,
 }: {
   index: number;
   itemLabel: string;
   choice: DialogueChoice;
   otherIds: string[];
+  isExit: boolean;
+  canDelete: boolean;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
+  showReorder: boolean;
+  clearMode: boolean;
   onChange: (next: DialogueChoice) => void;
   onRemove: () => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onClear?: () => void;
 }) {
   const ctxKeys = choice.context ? Object.keys(choice.context) : [];
   const [expanded, setExpanded] = useState(false);
@@ -756,63 +849,121 @@ function ChoiceRow({
 
   return (
     <div className="flex flex-col gap-0.5">
-      <div className="grid grid-cols-[1fr_140px_auto_auto] gap-1.5 items-start">
-        <Input
-          value={choice.text}
-          onChange={e => onChange({ ...choice, text: e.target.value })}
-          placeholder={`${itemLabel} ${index + 1}`}
-          className="h-8 text-xs"
-        />
-        <Select
-          value={choice.nextState || "__end__"}
-          onValueChange={v =>
-            onChange({ ...choice, nextState: v === "__end__" ? null : v })
-          }
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="__end__">&lt;end&gt;</SelectItem>
-            {otherIds.map(id => (
-              <SelectItem key={id} value={id}>
-                {id}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8"
-          onClick={() =>
-            ctxKeys.length > 0 ? setExpanded(v => !v) : addKey()
-          }
-          title={
-            ctxKeys.length > 0
-              ? `${ctxKeys.length} context ${ctxKeys.length === 1 ? "key" : "keys"}`
-              : "Add context"
-          }
-          aria-label="Toggle context"
-        >
-          {expanded ? (
-            <ChevronDown className="h-3.5 w-3.5" />
+      <div className="flex items-start gap-1.5">
+        {showReorder && (
+          <div className="flex flex-col gap-0 pt-0.5">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-4 w-5 p-0"
+              onClick={onMoveUp}
+              disabled={!canMoveUp}
+              title="Move up"
+              aria-label="Move up"
+            >
+              <ChevronUp className="h-3 w-3" />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-4 w-5 p-0"
+              onClick={onMoveDown}
+              disabled={!canMoveDown}
+              title="Move down"
+              aria-label="Move down"
+            >
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
+        <div className="grid grid-cols-[1fr_140px_auto_auto] gap-1.5 items-start flex-1">
+          <div className="flex flex-col">
+            <Input
+              value={choice.text}
+              onChange={e => onChange({ ...choice, text: e.target.value })}
+              placeholder={`${itemLabel} ${index + 1}`}
+              className="h-8 text-xs"
+              readOnly={isExit}
+            />
+            {isExit && (
+              <span className="text-[10px] text-muted-foreground italic pl-0.5 pt-0.5">
+                exit slot
+              </span>
+            )}
+          </div>
+          <Select
+            value={choice.nextState || "__end__"}
+            onValueChange={v =>
+              onChange({ ...choice, nextState: v === "__end__" ? null : v })
+            }
+          >
+            <SelectTrigger className="h-8 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__end__">&lt;end&gt;</SelectItem>
+              {otherIds.map(id => (
+                <SelectItem key={id} value={id}>
+                  {id}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() =>
+              ctxKeys.length > 0 ? setExpanded(v => !v) : addKey()
+            }
+            title={
+              ctxKeys.length > 0
+                ? `${ctxKeys.length} context ${ctxKeys.length === 1 ? "key" : "keys"}`
+                : "Add context"
+            }
+            aria-label="Toggle context"
+          >
+            {expanded ? (
+              <ChevronDown className="h-3.5 w-3.5" />
+            ) : (
+              <ChevronRight className="h-3.5 w-3.5" />
+            )}
+          </Button>
+          {clearMode ? (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              onClick={onClear}
+              disabled={!onClear || (choice.nextState === null || choice.nextState === "")}
+              title="Clear — set target to <end> and remove any now-unreachable states"
+              aria-label="Clear choice"
+            >
+              <Eraser className="h-3.5 w-3.5" />
+            </Button>
           ) : (
-            <ChevronRight className="h-3.5 w-3.5" />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 text-destructive"
+              onClick={onRemove}
+              disabled={!canDelete}
+              title={
+                canDelete
+                  ? `Remove ${itemLabel}`
+                  : `Cannot remove exit slot`
+              }
+              aria-label={`Remove ${itemLabel}`}
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
           )}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-destructive"
-          onClick={onRemove}
-          title={`Remove ${itemLabel}`}
-          aria-label={`Remove ${itemLabel}`}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+        </div>
       </div>
       {ctxKeys.length > 0 && !expanded && (
         <span
@@ -882,10 +1033,16 @@ function DialogueForm({
   state,
   conversation,
   onUpdateState,
+  onClearTransition,
 }: {
   state: ConversationState;
   conversation: Conversation;
   onUpdateState: (id: string, next: ConversationState) => void;
+  onClearTransition: (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => void;
 }) {
   const d: DialogueState = state.dialogue ?? {
     dialogueType: "sendOk",
@@ -893,50 +1050,63 @@ function DialogueForm({
     choices: [],
   };
 
-  const update = (patch: Partial<DialogueState>) =>
-    onUpdateState(state.id, {
-      ...state,
-      dialogue: { ...d, ...patch },
-    });
-
   const otherIds = conversation.attributes.states
     .map(s => s.id)
     .filter(id => id !== state.id);
 
+  const switchDialogueType = (nextType: DialogueType) => {
+    const resized = resizeChoicesForDialogueType(
+      nextType,
+      d.choices ?? [],
+    );
+    onUpdateState(state.id, {
+      ...state,
+      dialogue: { ...d, dialogueType: nextType, choices: resized },
+    });
+  };
+
+  const setText = (text: string) =>
+    onUpdateState(state.id, {
+      ...state,
+      dialogue: { ...d, text },
+    });
+
+  const setChoices = (choices: DialogueChoice[]) =>
+    onUpdateState(state.id, {
+      ...state,
+      dialogue: { ...d, choices },
+    });
+
+  const dialogueTypeBadge = (
+    <Select value={d.dialogueType} onValueChange={v => switchDialogueType(v as DialogueType)}>
+      <SelectTrigger className="h-6 w-[140px] text-[11px] font-mono">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="sendOk">sendOk</SelectItem>
+        <SelectItem value="sendYesNo">sendYesNo</SelectItem>
+        <SelectItem value="sendNext">sendNext</SelectItem>
+        <SelectItem value="sendNextPrev">sendNextPrev</SelectItem>
+        <SelectItem value="sendPrev">sendPrev</SelectItem>
+        <SelectItem value="sendAcceptDecline">sendAcceptDecline</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
   return (
-    <Section title="Dialogue">
-      <div className="grid grid-cols-[90px_1fr] gap-2 items-center">
-        <Label className="text-xs text-muted-foreground">dialogueType</Label>
-        <Select
-          value={d.dialogueType}
-          onValueChange={v => update({ dialogueType: v as DialogueType })}
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="sendOk">sendOk</SelectItem>
-            <SelectItem value="sendYesNo">sendYesNo</SelectItem>
-            <SelectItem value="sendNext">sendNext</SelectItem>
-            <SelectItem value="sendNextPrev">sendNextPrev</SelectItem>
-            <SelectItem value="sendPrev">sendPrev</SelectItem>
-            <SelectItem value="sendAcceptDecline">sendAcceptDecline</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="grid grid-cols-[90px_1fr] gap-2">
-        <Label className="text-xs text-muted-foreground pt-1">text</Label>
-        <Textarea
-          value={d.text}
-          onChange={e => update({ text: e.target.value })}
-          className="min-h-[96px] text-xs"
-          placeholder="What the NPC says…"
-        />
-      </div>
+    <Section title="Dialogue" action={dialogueTypeBadge}>
+      <Textarea
+        value={d.text}
+        onChange={e => setText(e.target.value)}
+        className="min-h-[120px] text-xs"
+        placeholder="What the NPC says…"
+      />
       <ChoicesEditor
         choices={d.choices ?? []}
-        onChange={next => update({ choices: next })}
+        onChange={setChoices}
         otherIds={otherIds}
+        mode="fixed"
+        onClear={i => onClearTransition(state.id, "choice", i)}
       />
     </Section>
   );
@@ -977,6 +1147,7 @@ function ListSelectionForm({
         otherIds={otherIds}
         label="Items"
         itemLabel="Item"
+        mode="exitLocked"
       />
     </Section>
   );
@@ -1030,6 +1201,7 @@ function AskSlideMenuForm({
         otherIds={otherIds}
         label="Options"
         itemLabel="Option"
+        mode="exitLocked"
       />
     </Section>
   );

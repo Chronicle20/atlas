@@ -60,11 +60,8 @@ function truncate(text: string, max = 120): string {
 
 export function describeState(state: ConversationState): string {
   switch (state.type) {
-    case "dialogue": {
-      const text = state.dialogue?.text ?? "";
-      const kind = state.dialogue?.dialogueType ?? "";
-      return kind ? `${kind} · ${truncate(text, 110)}` : truncate(text, 120);
-    }
+    case "dialogue":
+      return truncate(state.dialogue?.text ?? "", 140);
     case "genericAction": {
       const ops = state.genericAction?.operations ?? [];
       const outcomes = state.genericAction?.outcomes ?? [];

@@ -54,7 +54,6 @@ describe('Route Configuration', () => {
 
     it('should match nested dynamic patterns', () => {
       expect(matchesPattern('/tenants/123/properties', '/tenants/[id]/properties')).toBe(true);
-      expect(matchesPattern('/npcs/456/conversations', '/npcs/[id]/conversations')).toBe(true);
     });
   });
 

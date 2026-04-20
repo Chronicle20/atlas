@@ -9,18 +9,10 @@ interface NpcQuestWidgetProps {
   role: NpcQuestRole;
 }
 
-type BadgeVariant = "default" | "outline" | "secondary";
-
 const ROLE_LABEL: Record<NpcQuestRole, string> = {
   initiator: "Initiator",
   completer: "Completer",
   both: "Initiator & Completer",
-};
-
-const ROLE_VARIANT: Record<NpcQuestRole, BadgeVariant> = {
-  initiator: "default",
-  completer: "outline",
-  both: "secondary",
 };
 
 export function NpcQuestWidget({ quest, role }: NpcQuestWidgetProps) {
@@ -38,7 +30,7 @@ export function NpcQuestWidget({ quest, role }: NpcQuestWidgetProps) {
       </div>
       <div className="flex items-center gap-2 flex-wrap">
         {parent && <Badge variant="secondary">{parent}</Badge>}
-        <Badge variant={ROLE_VARIANT[role]}>{ROLE_LABEL[role]}</Badge>
+        <Badge variant="secondary">{ROLE_LABEL[role]}</Badge>
       </div>
     </Link>
   );

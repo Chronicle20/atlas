@@ -349,6 +349,13 @@ export function addChildState(
   let updatedSource: ConversationState | null = null;
   const newChoice: DialogueChoice = { text: "", nextState: newId };
 
+  const insertBeforeExit = (existing: DialogueChoice[]): DialogueChoice[] => {
+    const next = [...existing];
+    const at = next.length > 0 ? next.length - 1 : 0;
+    next.splice(at, 0, newChoice);
+    return next;
+  };
+
   switch (source.type) {
     case "dialogue":
       if (!source.dialogue) return null;
@@ -366,7 +373,7 @@ export function addChildState(
         ...source,
         listSelection: {
           ...source.listSelection,
-          choices: [...(source.listSelection.choices ?? []), newChoice],
+          choices: insertBeforeExit(source.listSelection.choices ?? []),
         },
       };
       break;
@@ -376,7 +383,7 @@ export function addChildState(
         ...source,
         askSlideMenu: {
           ...source.askSlideMenu,
-          choices: [...(source.askSlideMenu.choices ?? []), newChoice],
+          choices: insertBeforeExit(source.askSlideMenu.choices ?? []),
         },
       };
       break;

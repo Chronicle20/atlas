@@ -1,7 +1,7 @@
 import { useMemo } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronDown, Pencil, Plus } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 
 import { useTenant } from "@/context/tenant-context";
 import { npcsService } from "@/services/api/npcs.service";
@@ -13,7 +13,6 @@ import type { NpcQuestRole } from "@/types/models/npc";
 
 import {
   Card,
-  CardAction,
   CardContent,
   CardHeader,
   CardTitle,
@@ -23,14 +22,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { NpcHeader } from "@/components/features/npc/NpcHeader";
 import { NpcSpawnMapWidget } from "@/components/features/npc/NpcSpawnMapWidget";
 import { NpcQuestWidget } from "@/components/features/npc/NpcQuestWidget";
 import { NpcShopCard } from "@/components/features/npc/NpcShopCard";
-import { NpcConversationStateMachine } from "@/components/features/npc/NpcConversationStateMachine";
+import { NpcConversationCard } from "@/components/features/npc/conversation/NpcConversationCard";
 
 const ROLE_PRIORITY: Record<NpcQuestRole, number> = {
   initiator: 0,
@@ -134,23 +132,6 @@ export function NpcDetailPage() {
                   : ""}
               </CardTitle>
             </CollapsibleTrigger>
-            <CardAction>
-              <Button
-                variant="ghost"
-                size="icon"
-                asChild
-                title={hasConversation ? "Edit Conversation" : "Create Conversation"}
-                aria-label={hasConversation ? "Edit Conversation" : "Create Conversation"}
-              >
-                <Link to={`/npcs/${npcId}/conversations`}>
-                  {hasConversation ? (
-                    <Pencil className="h-4 w-4" />
-                  ) : (
-                    <Plus className="h-4 w-4" />
-                  )}
-                </Link>
-              </Button>
-            </CardAction>
           </CardHeader>
           <CollapsibleContent>
             <CardContent>
@@ -167,7 +148,7 @@ export function NpcDetailPage() {
                     retry={() => conversationQuery.refetch()}
                   />
                 ) : conversation ? (
-                  <NpcConversationStateMachine conversation={conversation} />
+                  <NpcConversationCard conversation={conversation} />
                 ) : (
                   <p className="text-sm text-muted-foreground">
                     Conversation data unavailable.

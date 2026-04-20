@@ -52,15 +52,6 @@ describe('Breadcrumb Utils', () => {
       });
     });
 
-    it('should parse nested path correctly', () => {
-      const result = parsePathname('/npcs/456/conversations');
-      expect(result).toHaveLength(4);
-      expect(result[1]!.label).toBe('NPCs');
-      expect(result[2]!.dynamic).toBe(true);
-      expect(result[2]!.entityType).toBe('npc');
-      expect(result[3]!.label).toBe('Conversations');
-    });
-
     it('should parse tenant path correctly', () => {
       const result = parsePathname('/tenants/uuid-123/handlers');
       expect(result).toHaveLength(4);
@@ -82,7 +73,7 @@ describe('Breadcrumb Utils', () => {
 
     it('should not identify static segments as dynamic', () => {
       expect(isDynamicSegment('accounts', '/accounts')).toBe(false);
-      expect(isDynamicSegment('conversations', '/npcs/123/conversations')).toBe(false);
+      expect(isDynamicSegment('handlers', '/tenants/123/handlers')).toBe(false);
     });
 
     it('should not identify IDs in wrong contexts as dynamic', () => {

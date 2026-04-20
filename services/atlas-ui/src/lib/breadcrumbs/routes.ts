@@ -116,11 +116,6 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     parent: '/npcs',
     entityType: 'npc',
   },
-  {
-    pattern: '/npcs/[id]/conversations',
-    label: 'Conversations',
-    parent: '/npcs/[id]',
-  },
 
   // Monster routes
   {
@@ -436,7 +431,6 @@ export const ROUTE_PATTERNS = {
   GUILD_DETAIL: '/guilds/[id]',
   NPCS: '/npcs',
   NPC_DETAIL: '/npcs/[id]',
-  NPC_CONVERSATIONS: '/npcs/[id]/conversations',
   QUESTS: '/quests',
   QUEST_DETAIL: '/quests/[id]',
   SERVICES: '/services',

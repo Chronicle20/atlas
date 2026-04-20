@@ -68,7 +68,6 @@ describe('Entity Type Utilities', () => {
 
     it('should identify NPC routes', () => {
       expect(getEntityTypeFromRoute('/npcs/101112')).toBe(EntityType.NPC);
-      expect(getEntityTypeFromRoute('/npcs/101112/conversations')).toBe(EntityType.NPC);
     });
 
     it('should identify template routes', () => {

@@ -139,7 +139,7 @@ const NpcCardComponent = function NpcCard({
               asChild
               title="Conversation Available"
             >
-              <Link to={`/npcs/${npc.id}/conversations`}>
+              <Link to={`/npcs/${npc.id}`}>
                 <MessageCircle className="h-3 w-3" />
               </Link>
             </Button>

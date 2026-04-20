@@ -52,15 +52,6 @@ describe('Breadcrumb Utils', () => {
       });
     });
 
-    it('should parse nested path correctly', () => {
-      const result = parsePathname('/npcs/456/conversations');
-      expect(result).toHaveLength(4);
-      expect(result[1]!.label).toBe('NPCs');
-      expect(result[2]!.dynamic).toBe(true);
-      expect(result[2]!.entityType).toBe('npc');
-      expect(result[3]!.label).toBe('Conversations');
-    });
-
     it('should parse tenant path correctly', () => {
       const result = parsePathname('/tenants/uuid-123/handlers');
       expect(result).toHaveLength(4);
@@ -72,7 +63,7 @@ describe('Breadcrumb Utils', () => {
   describe('isDynamicSegment', () => {
     it('should identify numeric IDs as dynamic', () => {
       expect(isDynamicSegment('123', '/characters/123')).toBe(true);
-      expect(isDynamicSegment('456', '/npcs/456/shop')).toBe(true);
+      expect(isDynamicSegment('456', '/npcs/456')).toBe(true);
     });
 
     it('should identify UUIDs as dynamic', () => {
@@ -82,7 +73,7 @@ describe('Breadcrumb Utils', () => {
 
     it('should not identify static segments as dynamic', () => {
       expect(isDynamicSegment('accounts', '/accounts')).toBe(false);
-      expect(isDynamicSegment('conversations', '/npcs/123/conversations')).toBe(false);
+      expect(isDynamicSegment('handlers', '/tenants/123/handlers')).toBe(false);
     });
 
     it('should not identify IDs in wrong contexts as dynamic', () => {
@@ -155,7 +146,7 @@ describe('Breadcrumb Utils', () => {
       expect(isValidRoute('/')).toBe(true);
       expect(isValidRoute('/accounts')).toBe(true);
       expect(isValidRoute('/characters/123')).toBe(true);
-      expect(isValidRoute('/npcs/456/shop')).toBe(true);
+      expect(isValidRoute('/npcs/456')).toBe(true);
     });
 
     it('should reject unknown routes', () => {

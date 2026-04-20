@@ -5,6 +5,9 @@ import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 
 const ingressPort = process.env.VITE_INGRESS_PORT || "8080";
+const ingressHost = process.env.VITE_INGRESS_HOST || "localhost";
+const proxyTarget =
+  process.env.VITE_PROXY_TARGET || `http://${ingressHost}:${ingressPort}`;
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -16,7 +19,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: `http://localhost:${ingressPort}`,
+        target: proxyTarget,
         changeOrigin: true,
       },
     },

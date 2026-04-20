@@ -183,7 +183,7 @@ func handleAwardExperience(db *gorm.DB) func(l logrus.FieldLogger, ctx context.C
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		_ = character.NewProcessor(l, ctx, db).AwardExperienceAndEmit(c.TransactionId, c.CharacterId, cha, es)
+		_ = character.NewProcessor(l, ctx, db).AwardExperienceAndEmit(c.TransactionId, c.CharacterId, cha, es, c.Body.ShowEffect)
 	}
 }
 
@@ -204,7 +204,7 @@ func handleRequestChangeMeso(db *gorm.DB) message.Handler[character2.Command[cha
 			return
 		}
 
-		_ = character.NewProcessor(l, ctx, db).RequestChangeMeso(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType)
+		_ = character.NewProcessor(l, ctx, db).RequestChangeMeso(c.TransactionId, c.CharacterId, c.Body.Amount, c.Body.ActorId, c.Body.ActorType, c.Body.ShowEffect)
 	}
 }
 

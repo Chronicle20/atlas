@@ -554,7 +554,7 @@ func TestHandleAwardExperience(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+			charP.AwardExperienceAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
 				assert.Equal(t, tt.payload.WorldId, ch.WorldId())
@@ -640,7 +640,7 @@ func TestHandleAwardMesos(t *testing.T) {
 			_, ctx := setupContext()
 
 			// Configure mock
-			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 				// Verify parameters
 				assert.Equal(t, tt.payload.CharacterId, characterId)
 				assert.Equal(t, tt.payload.WorldId, ch.WorldId())

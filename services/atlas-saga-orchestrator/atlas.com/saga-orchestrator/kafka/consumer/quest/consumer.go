@@ -33,6 +33,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleQuestCompletedEvent))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleQuestForfeitedEvent))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -46,6 +49,13 @@ func handleQuestStartedEvent(l logrus.FieldLogger, ctx context.Context, e quest2
 
 func handleQuestCompletedEvent(l logrus.FieldLogger, ctx context.Context, e quest2.StatusEvent[quest2.QuestCompletedEventBody]) {
 	if e.Type != quest2.StatusEventTypeCompleted {
+		return
+	}
+	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+}
+
+func handleQuestForfeitedEvent(l logrus.FieldLogger, ctx context.Context, e quest2.StatusEvent[quest2.QuestForfeitedEventBody]) {
+	if e.Type != quest2.StatusEventTypeForfeited {
 		return
 	}
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)

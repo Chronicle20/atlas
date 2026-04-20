@@ -146,6 +146,84 @@ func (m *StatusMessageDropPickUpUnStackableItem) Decode(_ logrus.FieldLogger, _ 
 	}
 }
 
+// StatusMessageDropLossStackableItem - lost stackable item (negative quantity in chat)
+type StatusMessageDropLossStackableItem struct {
+	mode   byte
+	itemId uint32
+	amount uint32
+}
+
+func NewStatusMessageDropLossStackableItem(mode byte, itemId uint32, amount uint32) StatusMessageDropLossStackableItem {
+	return StatusMessageDropLossStackableItem{mode: mode, itemId: itemId, amount: amount}
+}
+
+func (m StatusMessageDropLossStackableItem) Operation() string {
+	return CharacterStatusMessageWriter
+}
+func (m StatusMessageDropLossStackableItem) String() string {
+	return fmt.Sprintf("drop loss stackable item [%d] amount [%d]", m.itemId, m.amount)
+}
+
+func (m StatusMessageDropLossStackableItem) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt8(0)
+		w.WriteInt(m.itemId)
+		w.WriteInt32(-int32(m.amount))
+		return w.Bytes()
+	}
+}
+
+func (m *StatusMessageDropLossStackableItem) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		_ = r.ReadInt8()
+		m.itemId = r.ReadUint32()
+		signed := r.ReadInt32()
+		if signed < 0 {
+			m.amount = uint32(-signed)
+		} else {
+			m.amount = uint32(signed)
+		}
+	}
+}
+
+// StatusMessageDropLossUnStackableItem - lost unstackable item (equipment)
+type StatusMessageDropLossUnStackableItem struct {
+	mode   byte
+	itemId uint32
+}
+
+func NewStatusMessageDropLossUnStackableItem(mode byte, itemId uint32) StatusMessageDropLossUnStackableItem {
+	return StatusMessageDropLossUnStackableItem{mode: mode, itemId: itemId}
+}
+
+func (m StatusMessageDropLossUnStackableItem) Operation() string {
+	return CharacterStatusMessageWriter
+}
+func (m StatusMessageDropLossUnStackableItem) String() string {
+	return fmt.Sprintf("drop loss unstackable item [%d]", m.itemId)
+}
+
+func (m StatusMessageDropLossUnStackableItem) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt8(2)
+		w.WriteInt(m.itemId)
+		return w.Bytes()
+	}
+}
+
+func (m *StatusMessageDropLossUnStackableItem) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		_ = r.ReadInt8()
+		m.itemId = r.ReadUint32()
+	}
+}
+
 // StatusMessageDropPickUpMeso - picked up meso
 type StatusMessageDropPickUpMeso struct {
 	mode              byte

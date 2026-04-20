@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	atlas_packet "github.com/Chronicle20/atlas/libs/atlas-packet"
 	"github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
@@ -37,6 +39,19 @@ func CharacterStatusMessageOperationDropPickUpUnStackableItemBody(itemId uint32)
 func CharacterStatusMessageOperationDropPickUpMesoBody(partial bool, amount uint32, internetCafeBonus uint16) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", "DROP_PICK_UP", func(mode byte) packet.Encoder {
 		return clientbound.NewStatusMessageDropPickUpMeso(mode, partial, amount, internetCafeBonus)
+	})
+}
+
+// CharacterStatusMessageOperationDropLossItemBody renders a client chat line for an item loss
+// of the form `-<qty> <item name>`. The encoder picks the stackable vs unstackable wire shape
+// from the itemId range so callers only supply (itemId, quantity).
+func CharacterStatusMessageOperationDropLossItemBody(itemId uint32, quantity uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", "DROP_PICK_UP", func(mode byte) packet.Encoder {
+		invType, _ := inventory.TypeFromItemId(item.Id(itemId))
+		if invType == inventory.TypeValueEquip {
+			return clientbound.NewStatusMessageDropLossUnStackableItem(mode, itemId)
+		}
+		return clientbound.NewStatusMessageDropLossStackableItem(mode, itemId, quantity)
 	})
 }
 

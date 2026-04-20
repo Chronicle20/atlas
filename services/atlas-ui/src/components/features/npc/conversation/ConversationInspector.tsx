@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   AlertTriangle,
   ChevronDown,
@@ -26,6 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type {
   AskNumberState,
   AskSlideMenuState,
@@ -206,10 +214,15 @@ export function ConversationInspector({
           transitions={transitions}
           analysis={analysis}
           onSelect={onSelect}
-          onAddChild={
-            !readOnly && canAddChild(state.type)
-              ? () => onAddChild(state.id)
-              : null
+          action={
+            readOnly
+              ? null
+              : renderAddChildAction({
+                  state,
+                  transitions,
+                  onAddChild,
+                  onInsertBetween,
+                })
           }
           onInsertBetween={
             readOnly
@@ -2264,27 +2277,93 @@ function deriveUniqueParamKey(params: Record<string, string>): string {
 }
 
 
+function renderAddChildAction({
+  state,
+  transitions,
+  onAddChild,
+  onInsertBetween,
+}: {
+  state: ConversationState;
+  transitions: Transition[];
+  onAddChild: (id: string) => void;
+  onInsertBetween: (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => void;
+}): ReactNode {
+  if (state.type === "dialogue") {
+    const eligible = transitions.filter(
+      t => t.kind === "choice" && (t.target === null || t.target === ""),
+    );
+    if (eligible.length === 0) {
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          disabled
+          title="All choices are already wired"
+        >
+          <Plus className="h-3 w-3" />
+          Add child
+        </Button>
+      );
+    }
+    return (
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="sm" variant="outline">
+            <Plus className="h-3 w-3" />
+            Add child
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel className="text-[10px] text-muted-foreground">
+            Wire a choice to a new state
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {eligible.map(t => (
+            <DropdownMenuItem
+              key={t.ordinal}
+              onSelect={() => onInsertBetween(state.id, t.kind, t.ordinal)}
+            >
+              <span className="text-xs">{t.label}</span>
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+  if (canAddChild(state.type)) {
+    return (
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={() => onAddChild(state.id)}
+      >
+        <Plus className="h-3 w-3" />
+        Add child
+      </Button>
+    );
+  }
+  return null;
+}
+
 function TransitionsSection({
   transitions,
   analysis,
   onSelect,
-  onAddChild,
+  action,
   onInsertBetween,
 }: {
   transitions: ReturnType<typeof getTransitions>;
   analysis: GraphAnalysis;
   onSelect: (stateId: string) => void;
-  onAddChild: (() => void) | null;
+  action: ReactNode | null;
   onInsertBetween:
     | ((kind: Transition["kind"], ordinal: number) => void)
     | null;
 }) {
-  const action = onAddChild ? (
-    <Button size="sm" variant="outline" onClick={onAddChild}>
-      <Plus className="h-3 w-3" />
-      Add child
-    </Button>
-  ) : undefined;
   if (transitions.length === 0) {
     return (
       <Section

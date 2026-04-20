@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"atlas-npc-conversations/saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	goredis "github.com/redis/go-redis/v9"
@@ -89,6 +90,105 @@ func TestEvaluateContextValueAsInt_EmbeddedNegation(t *testing.T) {
 
 			if result != tt.expected {
 				t.Errorf("Expected %d, got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestSuppressAwardAssetByCompleteQuest(t *testing.T) {
+	awardAsset := func(itemId, qty uint32, show bool) builtStep {
+		return builtStep{
+			stepId: "award",
+			status: saga.Pending,
+			action: saga.AwardAsset,
+			payload: saga.AwardItemActionPayload{
+				CharacterId: 1,
+				Item:        saga.ItemPayload{TemplateId: itemId, Quantity: qty},
+				ShowEffect:  show,
+			},
+		}
+	}
+	completeQuest := func(rewards ...saga.QuestRewardItem) builtStep {
+		return builtStep{
+			stepId: "complete",
+			status: saga.Pending,
+			action: saga.CompleteQuest,
+			payload: saga.CompleteQuestPayload{
+				CharacterId: 1,
+				QuestId:     1000,
+				Rewards:     rewards,
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		input    []builtStep
+		expected []bool // ShowEffect for each AwardAsset step in order
+	}{
+		{
+			name:     "no complete_quest leaves AwardAsset visible",
+			input:    []builtStep{awardAsset(2000000, 1, true), awardAsset(2000001, 1, true)},
+			expected: []bool{true, true},
+		},
+		{
+			name: "matching reward suppresses preceding AwardAsset",
+			input: []builtStep{
+				awardAsset(2000000, 1, true),
+				completeQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{false},
+		},
+		{
+			name: "partial-quantity mismatch leaves AwardAsset visible",
+			input: []builtStep{
+				awardAsset(2000000, 5, true),
+				completeQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{true},
+		},
+		{
+			name: "silent (ShowEffect=false) AwardAsset stays unchanged",
+			input: []builtStep{
+				awardAsset(2000000, 1, false),
+				completeQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{false},
+		},
+		{
+			name: "AwardAsset after CompleteQuest is not suppressed",
+			input: []builtStep{
+				completeQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+				awardAsset(2000000, 1, true),
+			},
+			expected: []bool{true},
+		},
+		{
+			name: "two AwardAssets sharing one reward only suppress the first",
+			input: []builtStep{
+				awardAsset(2000000, 1, true),
+				awardAsset(2000000, 1, true),
+				completeQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{false, true},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			steps := append([]builtStep(nil), tt.input...)
+			suppressAwardAssetByCompleteQuest(steps)
+
+			idx := 0
+			for _, st := range steps {
+				if st.action != saga.AwardAsset {
+					continue
+				}
+				pl := st.payload.(saga.AwardItemActionPayload)
+				if pl.ShowEffect != tt.expected[idx] {
+					t.Errorf("award step %d: expected ShowEffect=%v, got %v", idx, tt.expected[idx], pl.ShowEffect)
+				}
+				idx++
 			}
 		})
 	}

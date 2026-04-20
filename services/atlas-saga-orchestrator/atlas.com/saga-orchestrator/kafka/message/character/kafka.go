@@ -92,6 +92,7 @@ type ChangeSkinCommandBody struct {
 type AwardExperienceCommandBody struct {
 	ChannelId     channel.Id                `json:"channelId"`
 	Distributions []ExperienceDistributions `json:"distributions"`
+	ShowEffect    bool                      `json:"showEffect"`
 }
 
 type ExperienceDistributions struct {
@@ -106,9 +107,10 @@ type AwardLevelCommandBody struct {
 }
 
 type RequestChangeMesoBody struct {
-	ActorId   uint32 `json:"actorId"`
-	ActorType string `json:"actorType"`
-	Amount    int32  `json:"amount"`
+	ActorId    uint32 `json:"actorId"`
+	ActorType  string `json:"actorType"`
+	Amount     int32  `json:"amount"`
+	ShowEffect bool   `json:"showEffect"`
 }
 
 type RequestDropMesoCommandBody struct {

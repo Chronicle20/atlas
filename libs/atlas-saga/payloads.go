@@ -15,6 +15,7 @@ import (
 type AwardItemActionPayload struct {
 	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
 	Item        ItemPayload `json:"item"`        // Item to award
+	ShowEffect  bool        `json:"showEffect"`  // Render a client-visible item-gain effect/chat line when true
 }
 
 // ItemPayload represents an individual item in a transaction, such as in inventory manipulation.
@@ -48,6 +49,7 @@ type AwardExperiencePayload struct {
 	WorldId       world.Id                  `json:"worldId"`       // WorldId associated with the action
 	ChannelId     channel.Id                `json:"channelId"`     // ChannelId associated with the action
 	Distributions []ExperienceDistributions `json:"distributions"` // List of experience distributions to award
+	ShowEffect    bool                      `json:"showEffect"`    // Render a client-visible EXP chat line when true
 }
 
 // AwardLevelPayload represents the payload required to award levels to a character.
@@ -66,6 +68,7 @@ type AwardMesosPayload struct {
 	ActorId     uint32     `json:"actorId"`     // ActorId identifies who is giving/taking the mesos
 	ActorType   string     `json:"actorType"`   // ActorType identifies the type of actor (e.g., "SYSTEM", "NPC", "CHARACTER")
 	Amount      int32      `json:"amount"`      // Amount of mesos to award (can be negative for deduction)
+	ShowEffect  bool       `json:"showEffect"`  // Render the meso chat line on the client when true
 }
 
 // AwardCurrencyPayload represents the payload required to award cash shop currency to a character.
@@ -92,6 +95,7 @@ type DestroyAssetPayload struct {
 	TemplateId  uint32 `json:"templateId"`  // TemplateId of the item to destroy
 	Quantity    uint32 `json:"quantity"`    // Quantity of the item to destroy (ignored if RemoveAll is true)
 	RemoveAll   bool   `json:"removeAll"`   // If true, remove all instances of the item regardless of Quantity
+	ShowEffect  bool   `json:"showEffect"`  // Render the item-loss chat line on the client when true
 }
 
 // DestroyAssetFromSlotPayload represents the payload required to destroy an asset from a specific inventory slot.
@@ -100,6 +104,7 @@ type DestroyAssetFromSlotPayload struct {
 	InventoryType byte   `json:"inventoryType"` // Type of inventory (1=equip, 2=use, 3=setup, 4=etc, 5=cash)
 	Slot          int16  `json:"slot"`          // Slot to destroy from (negative for equipped slots, positive for inventory slots)
 	Quantity      uint32 `json:"quantity"`      // Quantity to destroy (0 or 1 for equipment)
+	ShowEffect    bool   `json:"showEffect"`    // Render the item-loss chat line on the client when true
 }
 
 // EquipAssetPayload represents the payload required to equip an asset from one inventory slot to an equipped slot.
@@ -259,6 +264,14 @@ type SetQuestProgressPayload struct {
 	QuestId     uint32   `json:"questId"`     // QuestId to update progress for
 	InfoNumber  uint32   `json:"infoNumber"`  // Progress info number/step to update
 	Progress    string   `json:"progress"`    // Progress value to set
+}
+
+// ForfeitQuestPayload represents the payload required to forfeit a quest for a character.
+type ForfeitQuestPayload struct {
+	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
+	QuestId     uint32   `json:"questId"`     // QuestId to forfeit
+	ShowEffect  bool     `json:"showEffect"`  // Render the forfeit effect on the client when true
 }
 
 // ApplyConsumableEffectPayload represents the payload required to apply consumable item effects to a character.

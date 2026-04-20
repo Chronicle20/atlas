@@ -73,15 +73,65 @@ export interface AskStyleState {
   nextState: string;
 }
 
+export interface AskSlideMenuState {
+  title: string;
+  menuType?: number;
+  choices: DialogueChoice[];
+}
+
+export interface TransportActionState {
+  routeName: string;
+  failureState: string;
+  capacityFullState?: string;
+  alreadyInTransitState?: string;
+  routeNotFoundState?: string;
+  serviceErrorState?: string;
+}
+
+export interface PartyQuestActionState {
+  questId: string;
+  failureState: string;
+  notInPartyState?: string;
+  notLeaderState?: string;
+}
+
+export interface PartyQuestBonusActionState {
+  failureState: string;
+}
+
+export interface GachaponActionState {
+  gachaponId: string;
+  ticketItemId: number;
+  failureState: string;
+}
+
+export type ConversationStateType =
+  | "dialogue"
+  | "genericAction"
+  | "craftAction"
+  | "listSelection"
+  | "askNumber"
+  | "askStyle"
+  | "askSlideMenu"
+  | "transportAction"
+  | "partyQuestAction"
+  | "partyQuestBonusAction"
+  | "gachaponAction";
+
 export interface ConversationState {
   id: string;
-  type: "dialogue" | "genericAction" | "craftAction" | "listSelection" | "askNumber" | "askStyle";
+  type: ConversationStateType;
   dialogue?: DialogueState;
   genericAction?: GenericActionState;
   craftAction?: CraftActionState;
   listSelection?: ListSelectionState;
   askNumber?: AskNumberState;
   askStyle?: AskStyleState;
+  askSlideMenu?: AskSlideMenuState;
+  transportAction?: TransportActionState;
+  partyQuestAction?: PartyQuestActionState;
+  partyQuestBonusAction?: PartyQuestBonusActionState;
+  gachaponAction?: GachaponActionState;
 }
 
 export interface ConversationAttributes {

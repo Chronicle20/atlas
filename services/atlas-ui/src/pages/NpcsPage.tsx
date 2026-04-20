@@ -299,7 +299,7 @@ function NpcsPageContent() {
                             {statusLoading ? (
                               <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                             ) : status?.hasConversation ? (
-                              <Link to={`/npcs/${npc.id}/conversations`}>
+                              <Link to={`/npcs/${npc.id}`}>
                                 <Badge variant="default" className="cursor-pointer">
                                   <MessageCircle className="h-3 w-3 mr-1" />
                                   Chat

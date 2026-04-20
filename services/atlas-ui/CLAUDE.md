@@ -55,7 +55,7 @@ services/atlas-ui/
     └── types/                      # models/, api/, components/
 ```
 
-Pages follow PascalCase: `DashboardPage.tsx`, `AccountDetailPage.tsx`, `NpcConversationPage.tsx`. Colocated columns/forms use kebab-case: `accounts-columns.tsx`, `tenants-handlers-form.tsx`.
+Pages follow PascalCase: `DashboardPage.tsx`, `AccountDetailPage.tsx`, `NpcDetailPage.tsx`. Colocated columns/forms use kebab-case: `accounts-columns.tsx`, `tenants-handlers-form.tsx`.
 
 ## Provider stack (App.tsx)
 

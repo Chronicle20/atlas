@@ -7,8 +7,16 @@ export interface DialogueChoice {
   context?: Record<string, string>;
 }
 
+export type DialogueType =
+  | "sendOk"
+  | "sendYesNo"
+  | "sendNext"
+  | "sendNextPrev"
+  | "sendPrev"
+  | "sendAcceptDecline";
+
 export interface DialogueState {
-  dialogueType: "sendOk" | "sendYesNo" | "sendNext";
+  dialogueType: DialogueType;
   text: string;
   choices: DialogueChoice[];
   exit?: boolean;

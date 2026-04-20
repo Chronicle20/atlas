@@ -15,7 +15,16 @@ export interface GraphAnalysis {
   terminals: Set<string>;
   inboundCount: Map<string, number>;
   outboundCount: Map<string, number>;
+  softWarnings: SoftWarnings;
 }
+
+export interface SoftWarnings {
+  deadEnds: string[];
+  highFanOut: string[];
+  duplicateChoiceLabels: Array<{ source: string; label: string; count: number }>;
+}
+
+const HIGH_FAN_OUT = 20;
 
 function edgeKey(sourceId: string, targetId: string): string {
   return `${sourceId}->${targetId}`;
@@ -112,6 +121,27 @@ export function analyze(conversation: Conversation): GraphAnalysis {
     if (!sourceHasNonNull.has(s.id)) terminals.add(s.id);
   }
 
+  const deadEnds = computeDeadEnds(conversation, reachable, terminals);
+  const highFanOut: string[] = [];
+  for (const [id, n] of outboundCount) {
+    if (n >= HIGH_FAN_OUT) highFanOut.push(id);
+  }
+  const duplicateChoiceLabels: SoftWarnings["duplicateChoiceLabels"] = [];
+  for (const state of conversation.attributes.states) {
+    const labelCounts = new Map<string, number>();
+    for (const t of getTransitions(state)) {
+      if (t.kind !== "choice") continue;
+      const key = t.label.trim().toLowerCase();
+      if (!key) continue;
+      labelCounts.set(key, (labelCounts.get(key) ?? 0) + 1);
+    }
+    for (const [label, count] of labelCounts) {
+      if (count >= 2) {
+        duplicateChoiceLabels.push({ source: state.id, label, count });
+      }
+    }
+  }
+
   return {
     backEdges,
     reachable,
@@ -121,7 +151,48 @@ export function analyze(conversation: Conversation): GraphAnalysis {
     terminals,
     inboundCount,
     outboundCount,
+    softWarnings: {
+      deadEnds,
+      highFanOut,
+      duplicateChoiceLabels,
+    },
   };
+}
+
+function computeDeadEnds(
+  conversation: Conversation,
+  reachable: Set<string>,
+  terminals: Set<string>,
+): string[] {
+  const byId = buildStateIndex(conversation);
+  const canReachTerminal = new Set<string>(terminals);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const state of conversation.attributes.states) {
+      if (canReachTerminal.has(state.id)) continue;
+      for (const t of getTransitions(state)) {
+        if (!t.target) {
+          canReachTerminal.add(state.id);
+          changed = true;
+          break;
+        }
+        if (!byId.has(t.target)) continue;
+        if (canReachTerminal.has(t.target)) {
+          canReachTerminal.add(state.id);
+          changed = true;
+          break;
+        }
+      }
+    }
+  }
+  const deadEnds: string[] = [];
+  for (const state of conversation.attributes.states) {
+    if (!reachable.has(state.id)) continue;
+    if (terminals.has(state.id)) continue;
+    if (!canReachTerminal.has(state.id)) deadEnds.push(state.id);
+  }
+  return deadEnds;
 }
 
 export function makeEdgeKey(t: Transition): string | null {

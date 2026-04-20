@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,13 @@ import type {
   ConversationState,
   ConversationStateType,
 } from "@/types/models/conversation";
+import {
+  addChildState,
+  insertBefore,
+  insertBetween,
+  switchStateType,
+} from "./editorOps";
+import type { Transition } from "./transitions";
 import { analyze } from "./graphAnalysis";
 import { ConversationCanvas } from "./ConversationCanvas";
 import { ConversationInspector } from "./ConversationInspector";
@@ -109,6 +117,54 @@ export function NpcConversationCard({
     const impact = previewDelete(draft, id);
     setCascadeDelete(false);
     setPendingDelete(impact);
+  };
+
+  const handleSwitchType = (id: string, nextType: ConversationStateType) => {
+    setDraft(current => switchStateType(current, id, nextType));
+    setIsDirty(true);
+  };
+
+  const handleAddChild = (sourceId: string) => {
+    setDraft(current => {
+      const result = addChildState(current, sourceId);
+      if (!result) {
+        toast.error("Cannot add a child to this state type.");
+        return current;
+      }
+      setSelectedStateId(result.newStateId);
+      return result.conversation;
+    });
+    setIsDirty(true);
+  };
+
+  const handleInsertBetween = (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => {
+    setDraft(current => {
+      const result = insertBetween(current, sourceId, kind, ordinal);
+      if (!result) {
+        toast.error("Cannot insert between on this transition.");
+        return current;
+      }
+      setSelectedStateId(result.newStateId);
+      return result.conversation;
+    });
+    setIsDirty(true);
+  };
+
+  const handleInsertBefore = (targetId: string) => {
+    setDraft(current => {
+      const result = insertBefore(current, targetId);
+      if (!result) {
+        toast.error("Cannot insert before this state.");
+        return current;
+      }
+      setSelectedStateId(result.newStateId);
+      return result.conversation;
+    });
+    setIsDirty(true);
   };
 
   const handleConfirmDelete = () => {
@@ -213,6 +269,10 @@ export function NpcConversationCard({
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
+        <StateSearch
+          states={draft.attributes.states.map(s => ({ id: s.id, type: s.type }))}
+          onSelect={setSelectedStateId}
+        />
         <div className="flex items-center gap-2">
           <Switch
             id="show-loop-edges"
@@ -257,15 +317,16 @@ export function NpcConversationCard({
           onSelect={setSelectedStateId}
         />
       )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_minmax(260px,0.85fr)] gap-3">
-        <ConversationCanvas
-          conversation={draft}
-          selectedStateId={selectedStateId}
+      {(analysis.softWarnings.deadEnds.length > 0 ||
+        analysis.softWarnings.highFanOut.length > 0 ||
+        analysis.softWarnings.duplicateChoiceLabels.length > 0) && (
+        <WarningsBanner
+          warnings={analysis.softWarnings}
           onSelect={setSelectedStateId}
-          showFullLoopEdges={showFullLoopEdges}
-          height={maxHeight}
         />
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(260px,0.85fr)_2fr] gap-3">
         <div
           className="rounded-md border bg-background"
           style={{ height: maxHeight }}
@@ -278,9 +339,20 @@ export function NpcConversationCard({
             onUpdateState={handleUpdateState}
             onRename={handleRename}
             onDelete={handleRequestDelete}
+            onSwitchType={handleSwitchType}
+            onAddChild={handleAddChild}
+            onInsertBetween={handleInsertBetween}
+            onInsertBefore={handleInsertBefore}
             readOnly={false}
           />
         </div>
+        <ConversationCanvas
+          conversation={draft}
+          selectedStateId={selectedStateId}
+          onSelect={setSelectedStateId}
+          showFullLoopEdges={showFullLoopEdges}
+          height={maxHeight}
+        />
       </div>
 
       <DeleteDialog
@@ -290,6 +362,75 @@ export function NpcConversationCard({
         onConfirm={handleConfirmDelete}
         onClose={() => setPendingDelete(null)}
       />
+    </div>
+  );
+}
+
+function StateSearch({
+  states,
+  onSelect,
+}: {
+  states: Array<{ id: string; type: ConversationStateType }>;
+  onSelect: (id: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const matches = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return states
+      .filter(s => s.id.toLowerCase().includes(q))
+      .slice(0, 12);
+  }, [query, states]);
+
+  const pick = (id: string) => {
+    onSelect(id);
+    setQuery("");
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative">
+      <Input
+        value={query}
+        onChange={e => {
+          setQuery(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          window.setTimeout(() => setOpen(false), 150);
+        }}
+        onKeyDown={e => {
+          if (e.key === "Enter" && matches.length > 0) {
+            pick(matches[0]!.id);
+          } else if (e.key === "Escape") {
+            setQuery("");
+            setOpen(false);
+          }
+        }}
+        placeholder="Search state id…"
+        className="h-8 w-56 text-xs font-mono"
+      />
+      {open && matches.length > 0 && (
+        <ul className="absolute z-20 top-full left-0 mt-1 w-full max-h-64 overflow-y-auto rounded-md border bg-popover shadow-md">
+          {matches.map(m => (
+            <li key={m.id}>
+              <button
+                type="button"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => pick(m.id)}
+                className="flex items-center gap-2 w-full text-left px-2 py-1 hover:bg-accent text-xs"
+              >
+                <span className="text-[10px] text-muted-foreground shrink-0 w-16 truncate">
+                  {STATE_TYPE_META[m.type].label}
+                </span>
+                <span className="font-mono truncate">{m.id}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -371,6 +512,81 @@ function IssuesBanner({
         <div>
           <span className="text-muted-foreground">Duplicate IDs: </span>
           <span className="font-mono text-[11px]">{duplicates.join(", ")}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WarningsBanner({
+  warnings,
+  onSelect,
+}: {
+  warnings: import("./graphAnalysis").SoftWarnings;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <div className="rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 flex flex-col gap-1.5 text-xs">
+      <div className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+        <AlertTriangle className="h-3 w-3" />
+        Warnings
+      </div>
+      {warnings.deadEnds.length > 0 && (
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="text-muted-foreground">
+            Dead-end (can't reach a terminal):
+          </span>
+          {warnings.deadEnds.slice(0, 6).map(id => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelect(id)}
+              className="font-mono text-[11px] text-primary hover:underline"
+            >
+              {id}
+            </button>
+          ))}
+          {warnings.deadEnds.length > 6 && (
+            <span className="text-muted-foreground">
+              +{warnings.deadEnds.length - 6} more
+            </span>
+          )}
+        </div>
+      )}
+      {warnings.highFanOut.length > 0 && (
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="text-muted-foreground">High fan-out (≥20):</span>
+          {warnings.highFanOut.map(id => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => onSelect(id)}
+              className="font-mono text-[11px] text-primary hover:underline"
+            >
+              {id}
+            </button>
+          ))}
+        </div>
+      )}
+      {warnings.duplicateChoiceLabels.length > 0 && (
+        <div className="flex flex-wrap gap-1 items-center">
+          <span className="text-muted-foreground">Duplicate choice labels:</span>
+          {warnings.duplicateChoiceLabels.slice(0, 6).map((w, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onSelect(w.source)}
+              className="font-mono text-[11px] text-primary hover:underline"
+              title={`${w.label} ×${w.count}`}
+            >
+              {w.source}
+            </button>
+          ))}
+          {warnings.duplicateChoiceLabels.length > 6 && (
+            <span className="text-muted-foreground">
+              +{warnings.duplicateChoiceLabels.length - 6} more
+            </span>
+          )}
         </div>
       )}
     </div>

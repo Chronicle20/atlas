@@ -80,6 +80,7 @@ func (b *Builder) AddAwardMesos(characterId uint32, ch channel.Model, amount int
 			ActorId:     actorId,
 			ActorType:   "quest",
 			Amount:      amount,
+			ShowEffect:  true,
 		},
 	})
 	return b
@@ -102,6 +103,7 @@ func (b *Builder) AddAwardExperience(characterId uint32, ch channel.Model, amoun
 					Amount:         uint32(amount),
 				},
 			},
+			ShowEffect: true,
 		},
 	})
 	return b

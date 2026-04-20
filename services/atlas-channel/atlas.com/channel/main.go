@@ -16,6 +16,7 @@ import (
 	"atlas-channel/kafka/consumer/character"
 	"atlas-channel/kafka/consumer/compartment"
 	"atlas-channel/kafka/consumer/consumable"
+	"atlas-channel/kafka/consumer/conversation_reward_notice"
 	"atlas-channel/kafka/consumer/drop"
 	"atlas-channel/kafka/consumer/expression"
 	"atlas-channel/kafka/consumer/fame"
@@ -174,6 +175,7 @@ func main() {
 	messenger.InitConsumers(l)(cmf)(consumerGroupId)
 	pet.InitConsumers(l)(cmf)(consumerGroupId)
 	consumable.InitConsumers(l)(cmf)(consumerGroupId)
+	conversation_reward_notice.InitConsumers(l)(cmf)(consumerGroupId)
 	system_message.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	cashshopCompartment.InitConsumers(l)(cmf)(consumerGroupId)
@@ -310,6 +312,9 @@ func main() {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 				if err = consumable.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = conversation_reward_notice.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 				if err = system_message.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {

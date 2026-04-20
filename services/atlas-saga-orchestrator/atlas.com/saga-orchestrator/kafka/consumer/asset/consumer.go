@@ -3,6 +3,7 @@ package asset
 import (
 	consumer2 "atlas-saga-orchestrator/kafka/consumer"
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
+	notice "atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/saga"
 	"context"
 	"fmt"
@@ -15,9 +16,55 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
+
+// emitRewardNoticeForCurrentStep inspects the saga's current pending step (the
+// one that's about to be marked Completed by the caller) and, if it's a
+// conversation-sourced reward step with ShowEffect=true, emits a
+// conversation_reward_notice for atlas-channel to render. Failures here are
+// non-fatal — the notice is purely cosmetic. Call BEFORE StepCompleted so the
+// pending step is still observable on the saga.
+func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, templateId uint32) {
+	s, err := saga.NewProcessor(l, ctx).GetById(transactionId)
+	if err != nil {
+		return
+	}
+	step, ok := s.GetCurrentStep()
+	if !ok {
+		return
+	}
+	switch step.Action() {
+	case saga.AwardAsset:
+		payload, ok := step.Payload().(saga.AwardItemActionPayload)
+		if !ok || !payload.ShowEffect {
+			return
+		}
+		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemGain, payload.Item.TemplateId, payload.Item.Quantity); err != nil {
+			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item gain.")
+		}
+	case saga.DestroyAsset:
+		payload, ok := step.Payload().(saga.DestroyAssetPayload)
+		if !ok || !payload.ShowEffect {
+			return
+		}
+		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemLoss, payload.TemplateId, payload.Quantity); err != nil {
+			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item loss.")
+		}
+	case saga.DestroyAssetFromSlot:
+		payload, ok := step.Payload().(saga.DestroyAssetFromSlotPayload)
+		if !ok || !payload.ShowEffect {
+			return
+		}
+		// Slot-based destroy doesn't carry the templateId on the payload — use
+		// the asset event's templateId, which is what was actually removed.
+		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemLoss, templateId, payload.Quantity); err != nil {
+			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item loss.")
+		}
+	}
+}
 
 func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -55,6 +102,8 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	sagaProcessor := saga.NewProcessor(l, ctx)
 
 	assetResult := map[string]any{"assetId": e.AssetId}
+
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
 
 	// Get the saga to check if this is a CreateAndEquipAsset step
 	s, err := sagaProcessor.GetById(e.TransactionId)
@@ -155,6 +204,7 @@ func handleAssetDeletedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	if e.Type != asset2.StatusEventTypeDeleted {
 		return
 	}
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
@@ -162,6 +212,7 @@ func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, 
 	if e.Type != asset2.StatusEventTypeQuantityChanged {
 		return
 	}
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
 	_ = saga.NewProcessor(l, ctx).StepCompletedWithResult(e.TransactionId, true, map[string]any{"assetId": e.AssetId})
 }
 

@@ -19,14 +19,14 @@ type ProcessorMock struct {
 	WarpRandomFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmitFunc     func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortalFunc            func(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
-	AwardExperienceAndEmitFunc  func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
-	AwardExperienceFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
+	AwardExperienceAndEmitFunc  func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
+	AwardExperienceFunc         func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	DeductExperienceAndEmitFunc func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
 	DeductExperienceFunc        func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
 	AwardLevelAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
 	AwardLevelFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
-	AwardMesosAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
-	AwardMesosFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
+	AwardMesosAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error
+	AwardMesosFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error
 	AwardFameAndEmitFunc        func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
 	AwardFameFunc               func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
 	ChangeJobAndEmitFunc        func(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error
@@ -82,19 +82,19 @@ func (m *ProcessorMock) WarpToPortal(mb *message.Buffer) func(transactionId uuid
 }
 
 // AwardExperienceAndEmit is a mock implementation of the character.Processor.AwardExperienceAndEmit method
-func (m *ProcessorMock) AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+func (m *ProcessorMock) AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 	if m.AwardExperienceAndEmitFunc != nil {
-		return m.AwardExperienceAndEmitFunc(transactionId, ch, characterId, distributions)
+		return m.AwardExperienceAndEmitFunc(transactionId, ch, characterId, distributions, showEffect)
 	}
 	return nil
 }
 
 // AwardExperience is a mock implementation of the character.Processor.AwardExperience method
-func (m *ProcessorMock) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+func (m *ProcessorMock) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 	if m.AwardExperienceFunc != nil {
 		return m.AwardExperienceFunc(mb)
 	}
-	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 		return nil
 	}
 }
@@ -136,19 +136,19 @@ func (m *ProcessorMock) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 }
 
 // AwardMesosAndEmit is a mock implementation of the character.Processor.AwardMesosAndEmit method
-func (m *ProcessorMock) AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+func (m *ProcessorMock) AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 	if m.AwardMesosAndEmitFunc != nil {
-		return m.AwardMesosAndEmitFunc(transactionId, ch, characterId, actorId, actorType, amount)
+		return m.AwardMesosAndEmitFunc(transactionId, ch, characterId, actorId, actorType, amount, showEffect)
 	}
 	return nil
 }
 
 // AwardMesos is a mock implementation of the character.Processor.AwardMesos method
-func (m *ProcessorMock) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+func (m *ProcessorMock) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 	if m.AwardMesosFunc != nil {
 		return m.AwardMesosFunc(mb)
 	}
-	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 		return nil
 	}
 }

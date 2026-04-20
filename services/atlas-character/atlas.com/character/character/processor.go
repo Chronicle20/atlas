@@ -77,14 +77,14 @@ type Processor interface {
 	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
 	ChangeSkinAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error
 	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId byte) error
-	AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
-	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error
+	AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error
+	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error
 	DeductExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
 	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, level byte) error
 	Move(characterId uint32, x int16, y int16, stance byte) error
-	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string) error
+	RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error
 	AttemptMesoPickUp(transactionId uuid.UUID, field field.Model, characterId uint32, dropId uint32, meso uint32) error
 	RequestDropMeso(transactionId uuid.UUID, field field.Model, characterId uint32, amount uint32) error
 	RequestChangeFame(transactionId uuid.UUID, characterId uint32, amount int8, actorId uint32, actorType string) error
@@ -571,14 +571,14 @@ func NewExperienceModel(experienceType string, amount uint32, attr1 uint32) Expe
 	return ExperienceModel{experienceType, amount, attr1}
 }
 
-func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
+func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.AwardExperience(buf)(transactionId, characterId, channel, experience)
+		return p.AwardExperience(buf)(transactionId, characterId, channel, experience, showEffect)
 	})
 }
 
-func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
-	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel) error {
+func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, experience []ExperienceModel, showEffect bool) error {
 		amount := uint32(0)
 		for _, e := range experience {
 			amount += e.amount
@@ -612,7 +612,19 @@ func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId u
 			return txErr
 		}
 
-		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, experience, current))
+		// When the saga step requested a visible effect, append White + Chat
+		// distributions so atlas-channel renders the chat line ("You have gained
+		// N exp. (+N)"). Non-conversation paths (showEffect=false) keep the
+		// existing distribution shape.
+		emittedExperience := experience
+		if showEffect && amount > 0 {
+			emittedExperience = append([]ExperienceModel(nil), experience...)
+			emittedExperience = append(emittedExperience,
+				NewExperienceModel(character2.ExperienceDistributionTypeWhite, amount, 0),
+				NewExperienceModel(character2.ExperienceDistributionTypeChat, amount, 0),
+			)
+		}
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, experienceChangedEventProvider(transactionId, characterId, channel, emittedExperience, current))
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeExperience}, nil))
 		if awardedLevels > 0 {
 			_ = mb.Put(character2.EnvCommandTopic, awardLevelCommandProvider(transactionId, characterId, channel, awardedLevels))
@@ -706,7 +718,7 @@ func (p *ProcessorImpl) Move(characterId uint32, x int16, y int16, stance byte) 
 	return nil
 }
 
-func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string) error {
+func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId uint32, amount int32, actorId uint32, actorType string, showEffect bool) error {
 	return database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		c, err := p.WithTransaction(tx).GetById()(characterId)
 		if err != nil {
@@ -723,7 +735,7 @@ func (p *ProcessorImpl) RequestChangeMeso(transactionId uuid.UUID, characterId u
 		}
 
 		err = dynamicUpdate(tx)(SetMeso(uint32(int64(c.Meso()) + int64(amount))))(c)
-		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(mesoChangedStatusEventProvider(transactionId, characterId, c.WorldId(), amount, actorId, actorType, showEffect))
 		return producer.ProviderImpl(p.l)(p.ctx)(character2.EnvEventTopicCharacterStatus)(statChangedProvider(transactionId, channel.NewModel(c.WorldId(), 0), characterId, []stat.Type{stat.TypeMeso}, nil))
 	})
 }

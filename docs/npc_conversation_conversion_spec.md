@@ -443,12 +443,13 @@ Verify in saga-orchestrator, but common operations:
 - `warp_to_random_portal` - Warp to random portal (params: `mapId`)
 - `warp_to_saved_location` - Warp to a saved location and delete it (params: `locationType`) - maps to `cm.getSavedLocation()` + `cm.warp()`
 - `save_location` - Save character's current location for later return (params: `locationType`, `mapId` optional, `portalId` optional)
-- `award_item` - Give item (params: `itemId`, `quantity`, `expiration` - optional, milliseconds from now)
-- `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`)
-- `award_exp` - Give experience (params: `amount`, `type`, `attr1`)
+- `award_item` - Give item (params: `itemId`, `quantity`, `expiration` - optional, milliseconds from now, `silent` - optional, default `false`). Conversation-sourced item gains render the v83 quest-style item-gain effect on the client unless `silent: true`. When the same saga also runs `complete_quest` with overlapping `(itemId, quantity)` rewards, the planner suppresses the preceding `award_item` notice automatically so the reward effect renders exactly once.
+- `award_mesos` - Give mesos (params: `amount`, `actorId`, `actorType`, `silent` - optional, default `false`). The standard meso chat line ("+N mesos") fires unless `silent: true`. Mesos still credit either way.
+- `award_exp` - Give experience (params: `amount`, `type`, `attr1`, `silent` - optional, default `false`). Conversation-sourced EXP gains render the chat line ("You have gained N exp.") unless `silent: true`.
 - `award_level` - Give levels (params: `amount`)
-- `destroy_item` - Remove item by template ID (params: `itemId`, `quantity`)
-- `destroy_item_from_slot` - Remove item from specific inventory slot (params: `inventoryType`, `slot`, `quantity`) - for equipped items use negative slot values (e.g., -11 for cape)
+- `destroy_item` - Remove item by template ID (params: `itemId`, `quantity`, `removeAll` - optional, default `false`, `silent` - optional, default `false`). Conversation-sourced losses render an item-loss chat line ("-N <item>") unless `silent: true`.
+- `destroy_item_from_slot` - Remove item from specific inventory slot (params: `inventoryType`, `slot`, `quantity`, `silent` - optional, default `false`) - for equipped items use negative slot values (e.g., -11 for cape). Loss chat line same as `destroy_item`.
+- `forfeit_quest` - Forfeit a quest (params: `questId`, `silent` - optional, default `false`). Removes the quest from the active journal and fires the existing forfeit packet on the client. Item cleanup on forfeit is out of scope for this operation.
 - `change_job` - Change job (params: `jobId`)
 - `change_hair` - Change hair style (params: `styleId`)
 - `change_face` - Change face style (params: `styleId`)

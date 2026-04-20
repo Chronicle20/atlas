@@ -1,6 +1,7 @@
 package saga
 
 import (
+	"atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/kafka/message/gachapon"
 	"atlas-saga-orchestrator/kafka/message/saga"
 	"atlas-saga-orchestrator/kafka/producer"
@@ -109,6 +110,30 @@ func EmitSagaFailed(l logrus.FieldLogger, ctx context.Context, s Saga, errorCode
 func EmitSagaFailedByIds(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, sagaType string, accountId, characterId uint32, errorCode, reason, failedStep string) error {
 	return producer.ProviderImpl(l)(ctx)(saga.EnvStatusEventTopic)(
 		FailedStatusEventProvider(transactionId, accountId, characterId, sagaType, errorCode, reason, failedStep),
+	)
+}
+
+// ConversationRewardNoticeProvider builds a one-message provider for the
+// conversation_reward_notice topic, used to render an item-gain effect or
+// item-loss chat line on the client when a conversation-sourced AwardAsset /
+// DestroyAsset / DestroyAssetFromSlot step completes with ShowEffect=true.
+func ConversationRewardNoticeProvider(characterId uint32, kind string, itemId uint32, quantity uint32) model.Provider[[]kafka.Message] {
+	key := kproducer.CreateKey(int(characterId))
+	value := &conversation_reward_notice.EventBody{
+		CharacterId: characterId,
+		Kind:        kind,
+		ItemId:      itemId,
+		Quantity:    quantity,
+	}
+	return kproducer.SingleMessageProvider(key, value)
+}
+
+// EmitConversationRewardNotice produces the message immediately on the
+// conversation_reward_notice topic. Called from the orchestrator when a
+// reward step completes with ShowEffect=true.
+func EmitConversationRewardNotice(l logrus.FieldLogger, ctx context.Context, characterId uint32, kind string, itemId uint32, quantity uint32) error {
+	return producer.ProviderImpl(l)(ctx)(conversation_reward_notice.EnvEventTopic)(
+		ConversationRewardNoticeProvider(characterId, kind, itemId, quantity),
 	)
 }
 

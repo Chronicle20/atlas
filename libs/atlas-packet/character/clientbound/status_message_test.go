@@ -47,6 +47,26 @@ func TestStatusMessageDropPickUpUnStackableItem(t *testing.T) {
 	}
 }
 
+func TestStatusMessageDropLossStackableItem(t *testing.T) {
+	input := NewStatusMessageDropLossStackableItem(0, 2000000, 5)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
+func TestStatusMessageDropLossUnStackableItem(t *testing.T) {
+	input := NewStatusMessageDropLossUnStackableItem(0, 1302000)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
 func TestStatusMessageDropPickUpMeso(t *testing.T) {
 	input := NewStatusMessageDropPickUpMeso(0, true, 1000, 0)
 	for _, v := range test.Variants {

@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
-  CornerUpLeft,
   Play,
   Save,
   Square,
@@ -10,7 +9,6 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -42,6 +40,7 @@ import type {
 } from "@/types/models/conversation";
 import {
   addChildState,
+  clearTransition,
   insertBefore,
   insertBetween,
   switchStateType,
@@ -88,14 +87,6 @@ export function NpcConversationCard({
   const [cascadeDelete, setCascadeDelete] = useState(false);
 
   const analysis = useMemo(() => analyze(draft), [draft]);
-
-  const typeBreakdown = useMemo(() => {
-    const counts = new Map<ConversationStateType, number>();
-    for (const s of draft.attributes.states) {
-      counts.set(s.type, (counts.get(s.type) ?? 0) + 1);
-    }
-    return Array.from(counts.entries()).sort(([, a], [, b]) => b - a);
-  }, [draft]);
 
   const issueCount =
     analysis.unreachable.length +
@@ -167,6 +158,27 @@ export function NpcConversationCard({
     setIsDirty(true);
   };
 
+  const handleClearTransition = (
+    sourceId: string,
+    kind: Transition["kind"],
+    ordinal: number,
+  ) => {
+    setDraft(current => {
+      const result = clearTransition(current, sourceId, kind, ordinal);
+      if (!result) {
+        toast.error("Cannot clear this transition.");
+        return current;
+      }
+      if (result.cascadedDeletedIds.length > 0) {
+        toast.success(
+          `Cleared; removed ${result.cascadedDeletedIds.length} newly unreachable state${result.cascadedDeletedIds.length === 1 ? "" : "s"}.`,
+        );
+      }
+      return result.conversation;
+    });
+    setIsDirty(true);
+  };
+
   const handleConfirmDelete = () => {
     if (!pendingDelete) return;
     if (pendingDelete.isStart) {
@@ -220,58 +232,22 @@ export function NpcConversationCard({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between gap-3 flex-wrap text-xs">
-        <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-muted-foreground">
-            {draft.attributes.states.length} states
-          </span>
-          {typeBreakdown.map(([type, n]) => (
-            <span key={type} className="text-muted-foreground">
-              {n} {STATE_TYPE_META[type].label.toLowerCase()}
-            </span>
-          ))}
-          {analysis.terminals.size > 0 && (
-            <span className="text-muted-foreground">
-              {analysis.terminals.size} terminal
-            </span>
-          )}
-          {analysis.backEdges.size > 0 && (
-            <span className="text-muted-foreground flex items-center gap-1">
-              <CornerUpLeft className="h-2.5 w-2.5" />
-              {analysis.backEdges.size} back-edge
-              {analysis.backEdges.size === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-3 flex-wrap">
-          <LegendItem
-            icon={
-              <Play className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" />
-            }
-            label="start"
-          />
-          <LegendItem
-            icon={
-              <Square className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />
-            }
-            label="end"
-          />
-          {issueCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="text-[10px] px-1.5 py-0 gap-1"
-            >
-              <AlertTriangle className="h-2.5 w-2.5" />
-              {issueCount} issue{issueCount === 1 ? "" : "s"}
-            </Badge>
-          )}
-        </div>
-      </div>
-
       <div className="flex items-center gap-3 flex-wrap">
         <StateSearch
           states={draft.attributes.states.map(s => ({ id: s.id, type: s.type }))}
           onSelect={setSelectedStateId}
+        />
+        <LegendItem
+          icon={
+            <Play className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500" />
+          }
+          label="start"
+        />
+        <LegendItem
+          icon={
+            <Square className="h-2.5 w-2.5 fill-orange-500 text-orange-500" />
+          }
+          label="end"
         />
         <div className="flex items-center gap-2">
           <Switch
@@ -343,6 +319,7 @@ export function NpcConversationCard({
             onAddChild={handleAddChild}
             onInsertBetween={handleInsertBetween}
             onInsertBefore={handleInsertBefore}
+            onClearTransition={handleClearTransition}
             readOnly={false}
           />
         </div>

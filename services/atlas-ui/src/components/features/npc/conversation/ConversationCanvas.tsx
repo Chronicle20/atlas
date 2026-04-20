@@ -39,9 +39,9 @@ interface ConversationCanvasProps {
   height: number;
 }
 
-const NODE_WIDTH = 256;
-const NODE_HEIGHT_BASE = 92;
-const NODE_HEIGHT_PER_JUMP = 18;
+const NODE_WIDTH = 260;
+const NODE_HEIGHT_BASE = 136;
+const NODE_HEIGHT_PER_JUMP = 20;
 const SHARED_TARGET_THRESHOLD = 3;
 const DENSE_GRAPH_THRESHOLD = 60;
 
@@ -88,6 +88,11 @@ function StateNode({ id, data }: NodeProps<NodeData>) {
         >
           {meta.label}
         </span>
+        {state.type === "dialogue" && state.dialogue?.dialogueType && (
+          <span className="text-[10px] px-1.5 py-[1px] rounded-sm border border-border/60 bg-muted/40 font-mono text-muted-foreground">
+            {state.dialogue.dialogueType}
+          </span>
+        )}
         {isStart && (
           <Play
             className="h-2.5 w-2.5 fill-emerald-500 text-emerald-500 shrink-0"
@@ -117,7 +122,7 @@ function StateNode({ id, data }: NodeProps<NodeData>) {
         </span>
       </div>
       {description && (
-        <p className="px-3 py-1.5 text-[11px] text-muted-foreground line-clamp-2">
+        <p className="px-3 py-1.5 text-[11px] text-muted-foreground line-clamp-4 whitespace-pre-wrap">
           {description}
         </p>
       )}

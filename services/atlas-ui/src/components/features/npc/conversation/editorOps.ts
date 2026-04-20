@@ -3,6 +3,7 @@ import type {
   ConversationState,
   ConversationStateType,
   DialogueChoice,
+  DialogueType,
 } from "@/types/models/conversation";
 import { getTransitions, buildStateIndex, type Transition } from "./transitions";
 
@@ -403,6 +404,125 @@ export function canAddChild(stateType: ConversationStateType): boolean {
     stateType === "listSelection" ||
     stateType === "askSlideMenu"
   );
+}
+
+const DIALOGUE_DEFAULT_LABELS: Record<DialogueType, string[]> = {
+  sendOk: ["Ok", "Exit"],
+  sendYesNo: ["Yes", "No", "Exit"],
+  sendNext: ["Next", "Exit"],
+  sendNextPrev: ["Previous", "Next", "Exit"],
+  sendPrev: ["Previous", "Ok", "Exit"],
+  sendAcceptDecline: ["Accept", "Decline", "Exit"],
+};
+
+export function defaultChoicesForDialogueType(
+  type: DialogueType,
+): DialogueChoice[] {
+  const labels = DIALOGUE_DEFAULT_LABELS[type] ?? ["Ok", "Exit"];
+  return labels.map((text, i) => ({
+    text,
+    nextState: i === labels.length - 1 ? null : null,
+  }));
+}
+
+export function resizeChoicesForDialogueType(
+  type: DialogueType,
+  existing: DialogueChoice[],
+): DialogueChoice[] {
+  const labels = DIALOGUE_DEFAULT_LABELS[type] ?? ["Ok", "Exit"];
+  return labels.map((label, i) => {
+    if (existing[i]) {
+      // Preserve existing text + nextState when in range.
+      return existing[i]!;
+    }
+    return { text: label, nextState: null };
+  });
+}
+
+export function dialogueChoiceCount(type: DialogueType): number {
+  return (DIALOGUE_DEFAULT_LABELS[type] ?? []).length;
+}
+
+export function clearTransition(
+  conversation: Conversation,
+  sourceId: string,
+  kind: Transition["kind"],
+  ordinal: number,
+): { conversation: Conversation; cascadedDeletedIds: string[] } | null {
+  const source = conversation.attributes.states.find(s => s.id === sourceId);
+  if (!source) return null;
+
+  const updatedSource = setTransitionTarget(source, kind, ordinal, null);
+  const intermediate: Conversation = {
+    ...conversation,
+    attributes: {
+      ...conversation.attributes,
+      states: conversation.attributes.states.map(s =>
+        s.id === sourceId ? updatedSource : s,
+      ),
+    },
+  };
+
+  const reachable = new Set<string>();
+  const byId = new Map<string, ConversationState>();
+  for (const s of intermediate.attributes.states) byId.set(s.id, s);
+  const start = intermediate.attributes.startState;
+  if (byId.has(start)) {
+    const queue = [start];
+    while (queue.length > 0) {
+      const id = queue.shift()!;
+      if (reachable.has(id)) continue;
+      reachable.add(id);
+      const s = byId.get(id);
+      if (!s) continue;
+      for (const t of getTransitions(s)) {
+        if (t.target && byId.has(t.target) && !reachable.has(t.target)) {
+          queue.push(t.target);
+        }
+      }
+    }
+  }
+
+  const toRemove = new Set<string>();
+  for (const state of intermediate.attributes.states) {
+    if (state.id === start) continue;
+    if (!reachable.has(state.id)) toRemove.add(state.id);
+  }
+  if (toRemove.size === 0) {
+    return { conversation: intermediate, cascadedDeletedIds: [] };
+  }
+
+  const rewireNull = (id: string | null | undefined): string | null =>
+    id && toRemove.has(id) ? null : (id ?? null);
+  const states = intermediate.attributes.states
+    .filter(s => !toRemove.has(s.id))
+    .map(s => rewireStateRefs(s, rewireNull));
+
+  return {
+    conversation: {
+      ...intermediate,
+      attributes: { ...intermediate.attributes, states },
+    },
+    cascadedDeletedIds: Array.from(toRemove),
+  };
+}
+
+export function moveChoiceUp<T>(arr: T[], i: number): T[] {
+  if (i <= 0 || i >= arr.length) return arr;
+  const next = arr.slice();
+  const tmp = next[i - 1]!;
+  next[i - 1] = next[i]!;
+  next[i] = tmp;
+  return next;
+}
+
+export function moveChoiceDown<T>(arr: T[], i: number): T[] {
+  if (i < 0 || i >= arr.length - 1) return arr;
+  const next = arr.slice();
+  const tmp = next[i + 1]!;
+  next[i + 1] = next[i]!;
+  next[i] = tmp;
+  return next;
 }
 
 function setTransitionTarget(

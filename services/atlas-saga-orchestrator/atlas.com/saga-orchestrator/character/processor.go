@@ -23,14 +23,14 @@ type Processor interface {
 	WarpRandom(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model) error
 	WarpToPortalAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
 	WarpToPortal(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, pp model.Provider[uint32]) error
-	AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
-	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error
+	AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
+	AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error
 	DeductExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
 	DeductExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint32) error
 	AwardLevelAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
 	AwardLevel(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount byte) error
-	AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
-	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error
+	AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error
+	AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error
 	AwardFameAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
 	AwardFame(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount int16) error
 	ChangeJobAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, jobId job.Id) error
@@ -95,15 +95,15 @@ func (p *ProcessorImpl) WarpToPortal(mb *message.Buffer) func(transactionId uuid
 	}
 }
 
-func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
+func (p *ProcessorImpl) AwardExperienceAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardExperience(mb)(transactionId, ch, characterId, distributions)
+		return p.AwardExperience(mb)(transactionId, ch, characterId, distributions, showEffect)
 	})
 }
 
-func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
-	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) error {
-		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, ch, characterId, distributions))
+func (p *ProcessorImpl) AwardExperience(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) error {
+		return mb.Put(character2.EnvCommandTopic, AwardExperienceProvider(transactionId, ch, characterId, distributions, showEffect))
 	}
 }
 
@@ -131,15 +131,15 @@ func (p *ProcessorImpl) AwardLevel(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+func (p *ProcessorImpl) AwardMesosAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return p.AwardMesos(mb)(transactionId, ch, characterId, actorId, actorType, amount)
+		return p.AwardMesos(mb)(transactionId, ch, characterId, actorId, actorType, amount, showEffect)
 	})
 }
 
-func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
-	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
-		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, ch, characterId, actorId, actorType, amount))
+func (p *ProcessorImpl) AwardMesos(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
+		return mb.Put(character2.EnvCommandTopic, AwardMesosProvider(transactionId, ch, characterId, actorId, actorType, amount, showEffect))
 	}
 }
 

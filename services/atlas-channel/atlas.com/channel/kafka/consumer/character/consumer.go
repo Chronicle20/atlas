@@ -371,6 +371,13 @@ func handleStatusEventMesoChanged(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
+		// Suppress the chat line when the source explicitly opted out
+		// (conversation `silent: true` on award_mesos). The orchestrator still
+		// observes the status event for saga-step completion.
+		if !e.Body.ShowEffect {
+			return
+		}
+
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, mesoChanged(l)(ctx)(wp)(e.Body.Amount))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to notify character [%d] they received meso [%d].", e.CharacterId, e.Body.Amount)

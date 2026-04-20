@@ -79,6 +79,7 @@ const (
 	CompleteQuest    Action = "complete_quest"
 	StartQuest       Action = "start_quest"
 	SetQuestProgress Action = "set_quest_progress"
+	ForfeitQuest     Action = "forfeit_quest"
 
 	// Consumable effect actions
 	ApplyConsumableEffect  Action = "apply_consumable_effect"

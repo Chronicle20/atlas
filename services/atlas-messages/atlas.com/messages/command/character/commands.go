@@ -299,6 +299,7 @@ func AwardMesoCommandProducer(l logrus.FieldLogger) func(ctx context.Context) fu
 								ActorId:     c.Id(),
 								ActorType:   "CHARACTER",
 								Amount:      amount,
+								ShowEffect:  true,
 							}).
 							Build()
 						if buildErr != nil {

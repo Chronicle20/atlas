@@ -80,5 +80,5 @@ Leave as no-op. `isMesoExplosion`, `isStrafe`, `hasKeydown` flags affect wire st
 
 ## Previous Work
 - Writer-packet-extraction (COMPLETE): 143/143 tasks, all 130+ packets extracted to atlas-packet
-- Dev docs: `dev/active/writer-packet-extraction/`
+- Dev docs: `docs/tasks/legacy-writer-packet-extraction/`
 - Branch: `merchant-service`

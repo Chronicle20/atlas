@@ -9,8 +9,8 @@
 ### Audit Files
 | File | Purpose |
 |------|---------|
-| `dev/audits/atlas-keys/audit.md` | Full audit report with findings |
-| `dev/audits/atlas-keys/audit.json` | Machine-readable audit data |
+| `docs/audits/atlas-keys/audit.md` | Full audit report with findings |
+| `docs/audits/atlas-keys/audit.json` | Machine-readable audit data |
 
 ### Service Files to Modify
 | File | Lines | Changes Needed |

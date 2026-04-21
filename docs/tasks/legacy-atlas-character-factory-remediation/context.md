@@ -33,8 +33,8 @@
 | File | Path | Purpose |
 |------|------|---------|
 | saga/processor.go | `services/atlas-character-factory/atlas.com/character-factory/saga/processor.go` | Example Processor interface pattern |
-| audit.md | `dev/audits/atlas-character-factory/audit.md` | Full audit findings |
-| audit.json | `dev/audits/atlas-character-factory/audit.json` | Structured audit data |
+| audit.md | `docs/audits/atlas-character-factory/audit.md` | Full audit findings |
+| audit.json | `docs/audits/atlas-character-factory/audit.json` | Structured audit data |
 
 ---
 

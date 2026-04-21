@@ -236,8 +236,8 @@ func testLogger() logrus.FieldLogger {
 
 ## Related Audits
 
-- `dev/audits/atlas-configurations/audit.md` - Source audit document
-- `dev/audits/atlas-configurations/audit.json` - Machine-readable audit data
+- `docs/audits/atlas-configurations/audit.md` - Source audit document
+- `docs/audits/atlas-configurations/audit.json` - Machine-readable audit data
 
 ---
 

@@ -52,7 +52,7 @@ Last Updated: 2026-04-20
 6. **`processStartActions` omits negative-count items from the returned list.** `Count < 0` entries are consumed start-requirement items, not rewards. Mirror `processEndActions`.
 7. **`Start()` already short-circuits on `StateStarted`.** No emission occurs on re-triggers; no change needed for idempotency (PRD §4.10).
 8. **Chain follow-ups render both effects.** Completing quest A then auto-starting quest B fires the completion effect for A and the start effect for B. Both are intentional.
-9. **Use `docs/tasks/task-NNN-slug/` location** — per project memory, this convention superseded `dev/active/<feature-name>/` on 2026-04-16.
+9. **Use `docs/tasks/task-NNN-slug/` location** — per project memory, this convention superseded the old `docs/tasks/legacy-<feature-name>/` pattern on 2026-04-16.
 
 ## Dependencies
 

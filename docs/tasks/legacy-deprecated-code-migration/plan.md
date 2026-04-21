@@ -8,7 +8,7 @@ The Atlas codebase contains 9 distinct categories of deprecated code across serv
 
 **Scope:** 13 discrete migration items across ~20 services, affecting ~80+ call sites total.
 
-**Out of Scope:** High-throughput Redis registry migration (atlas-monsters, atlas-maps, atlas-channel sessions, atlas-login sessions, atlas-party-quests instances) — these are tracked separately in `dev/active/redis-registry-migration/` and `docs/high-throughput-cache-problem.md`.
+**Out of Scope:** High-throughput Redis registry migration (atlas-monsters, atlas-maps, atlas-channel sessions, atlas-login sessions, atlas-party-quests instances) — these are tracked separately in `docs/tasks/legacy-redis-registry-migration/` and `docs/high-throughput-cache-problem.md`.
 
 ---
 

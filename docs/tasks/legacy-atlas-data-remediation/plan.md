@@ -1,7 +1,7 @@
 # Atlas-Data Service Remediation Plan
 
 **Service Path:** `services/atlas-data/atlas.com/data`
-**Audit Reference:** `dev/audits/atlas-data/audit.md`
+**Audit Reference:** `docs/audits/atlas-data/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

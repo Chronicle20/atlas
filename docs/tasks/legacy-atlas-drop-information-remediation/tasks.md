@@ -122,7 +122,7 @@
   - Command: `cd services/atlas-drop-information && go build ./...`
   - Build must succeed with no errors
 - [x] **5.4** Update audit status
-  - Update `dev/audits/atlas-drop-information/audit.json`
+  - Update `docs/audits/atlas-drop-information/audit.json`
   - Set `overallStatus` to `pass`
   - Update `nonBlockingIssues` to empty array
 

@@ -2,7 +2,7 @@
 
 **Service:** `atlas-drop-information`
 **Path:** `services/atlas-drop-information`
-**Audit Source:** `dev/audits/atlas-drop-information/audit.md`
+**Audit Source:** `docs/audits/atlas-drop-information/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

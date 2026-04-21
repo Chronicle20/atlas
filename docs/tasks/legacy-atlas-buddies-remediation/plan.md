@@ -2,7 +2,7 @@
 
 **Service:** `atlas-buddies`
 **Service Path:** `services/atlas-buddies/atlas.com/buddies`
-**Audit Reference:** `dev/audits/atlas-buddies/audit.md`
+**Audit Reference:** `docs/audits/atlas-buddies/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

@@ -6,8 +6,8 @@
 
 ## Audit Artifacts
 
-- `dev/audits/atlas-guilds/audit.md` - Detailed audit findings
-- `dev/audits/atlas-guilds/audit.json` - Machine-readable audit data
+- `docs/audits/atlas-guilds/audit.md` - Detailed audit findings
+- `docs/audits/atlas-guilds/audit.json` - Machine-readable audit data
 
 ---
 

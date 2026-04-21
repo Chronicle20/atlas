@@ -104,4 +104,4 @@ The saga optimistic lock retry (10ms fixed) and inventory distributed lock (50ms
 ## Related Documentation
 
 - `docs/architectural-improvements.md` — tracks cross-cutting improvements
-- `dev/active/redis-registry-migration/` — prior bulk migration across services (process reference)
+- `docs/tasks/legacy-redis-registry-migration/` — prior bulk migration across services (process reference)

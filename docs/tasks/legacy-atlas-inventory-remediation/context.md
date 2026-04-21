@@ -7,8 +7,8 @@
 ## 1. Key Files Reference
 
 ### Audit Documents
-- `dev/audits/atlas-inventory/audit.md` - Full audit report (updated 2026-01-13)
-- `dev/audits/atlas-inventory/audit.json` - Machine-readable findings
+- `docs/audits/atlas-inventory/audit.md` - Full audit report (updated 2026-01-13)
+- `docs/audits/atlas-inventory/audit.json` - Machine-readable findings
 
 ### Processor Files Needing Interfaces
 | Package | File | Current State |

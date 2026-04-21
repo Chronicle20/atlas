@@ -1,7 +1,7 @@
 # Atlas Inventory Service Remediation Plan
 
 **Service Path:** `services/atlas-inventory/atlas.com/inventory`
-**Source Audit:** `dev/audits/atlas-inventory/audit.md`
+**Source Audit:** `docs/audits/atlas-inventory/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

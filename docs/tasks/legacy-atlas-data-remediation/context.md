@@ -43,8 +43,8 @@
 
 | File | Purpose |
 |------|---------|
-| `dev/audits/atlas-data/audit.md` | Source audit document |
-| `dev/audits/atlas-data/audit.json` | Structured audit data |
+| `docs/audits/atlas-data/audit.md` | Source audit document |
+| `docs/audits/atlas-data/audit.json` | Structured audit data |
 | `services/atlas-data/atlas.com/data/rest/handler.go` | Shared handler utilities |
 | `services/atlas-data/atlas.com/data/document/storage.go` | Document storage pattern |
 | `services/atlas-marriages/atlas.com/marriages/marriage/resource_test.go` | Test pattern reference |
@@ -242,5 +242,5 @@ func TestGetResource_Success(t *testing.T) {
 ## Related Documentation
 
 - `.claude/skills/backend-dev-guidelines/` - Backend development standards
-- `dev/audits/atlas-data/audit.md` - Full audit report
-- `dev/audits/atlas-data/audit.json` - Structured audit findings
+- `docs/audits/atlas-data/audit.md` - Full audit report
+- `docs/audits/atlas-data/audit.json` - Structured audit findings

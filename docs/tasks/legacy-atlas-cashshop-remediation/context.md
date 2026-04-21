@@ -7,8 +7,8 @@
 ## Key Files
 
 ### Audit Source
-- `dev/audits/atlas-cashshop/audit.md` - Full audit report
-- `dev/audits/atlas-cashshop/audit.json` - Machine-readable audit data
+- `docs/audits/atlas-cashshop/audit.md` - Full audit report
+- `docs/audits/atlas-cashshop/audit.json` - Machine-readable audit data
 
 ### Service Root
 - `services/atlas-cashshop/atlas.com/cashshop/`

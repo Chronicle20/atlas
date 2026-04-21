@@ -1,7 +1,7 @@
 # Merchant Audit Remediation Plan
 
 - **Last Updated:** 2026-02-24
-- **Source:** `dev/audits/atlas-merchant/audit.md`
+- **Source:** `docs/audits/atlas-merchant/audit.md`
 - **Service:** `services/atlas-merchant/atlas.com/merchant`
 - **Branch:** `redis-registry-migration`
 - **Target:** Resolve all 13 non-passing audit checks (2 fail, 11 warn)

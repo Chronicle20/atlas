@@ -25,8 +25,8 @@
 |------|---------|
 | `services/atlas-account/atlas.com/account/account/processor_test.go` | Test patterns |
 | `services/atlas-account/atlas.com/account/account/rest_test.go` | REST test patterns |
-| `dev/audits/atlas-chairs/audit.md` | Full audit findings |
-| `dev/audits/atlas-chairs/audit.json` | Machine-readable audit data |
+| `docs/audits/atlas-chairs/audit.md` | Full audit findings |
+| `docs/audits/atlas-chairs/audit.json` | Machine-readable audit data |
 
 ---
 

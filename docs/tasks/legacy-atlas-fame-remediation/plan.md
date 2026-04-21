@@ -1,7 +1,7 @@
 # Atlas Fame Service Remediation Plan
 
 **Last Updated:** 2026-01-13
-**Source Audit:** `/dev/audits/atlas-fame/audit.md`
+**Source Audit:** `/docs/audits/atlas-fame/audit.md`
 **Service Path:** `services/atlas-fame`
 **Current Status:** `needs-work` (78% pass rate - 14/18 checks passing)
 

@@ -43,8 +43,8 @@ This document captures key context, decisions, and dependencies for the atlas-fa
 | `services/atlas-fame/atlas.com/fame/fame/entity.go` | Entity definition with Make() function |
 | `.claude/skills/backend-dev-guidelines/SKILL.md` | Architecture guidelines |
 | `services/atlas-buddies/atlas.com/buddies/buddy/builder.go` | Builder pattern reference |
-| `/dev/audits/atlas-fame/audit.md` | Full audit report |
-| `/dev/audits/atlas-fame/audit.json` | Machine-readable audit data |
+| `/docs/audits/atlas-fame/audit.md` | Full audit report |
+| `/docs/audits/atlas-fame/audit.json` | Machine-readable audit data |
 
 ---
 

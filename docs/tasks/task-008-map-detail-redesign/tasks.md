@@ -164,4 +164,4 @@ Two-phase redesign of `MapDetailPage` + introduction of a first-party map-image 
 - [ ] Phase 1 reviewed + merged.
 - [ ] Phase 2 reviewed + merged.
 - [ ] Follow-up tickets filed for 2E items.
-- [ ] This task moved from `dev/active/` to a `dev/completed/` equivalent (per repo convention, if established).
+- [ ] This task is tracked under `docs/tasks/` (the old dev-active convention was retired in task-016).

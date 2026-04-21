@@ -130,7 +130,7 @@ func (p *ProcessorImpl) SpawnForCharacterAndEmit(mb *ModelBuilder) (Model, error
 // Reserve reserves a drop for a character
 func (p *ProcessorImpl) Reserve(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
 	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
-		d, err := GetRegistry().ReserveDrop(dropId, characterId, partyId, petSlot)
+		d, err := GetRegistry().ReserveDrop(p.t, dropId, characterId, partyId, petSlot)
 		if err == nil {
 			p.l.Debugf("Reserving [%d] for [%d].", dropId, characterId)
 			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservedEventStatusProvider(transactionId, field, d, characterId))
@@ -157,11 +157,11 @@ func (p *ProcessorImpl) ReserveAndEmit(transactionId uuid.UUID, field field.Mode
 // CancelReservation cancels a drop reservation
 func (p *ProcessorImpl) CancelReservation(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error {
 	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) error {
-		_, err := GetRegistry().GetDrop(dropId)
+		_, err := GetRegistry().GetDrop(p.t, dropId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to cancel reservation for [%d].", dropId)
 		}
-		GetRegistry().CancelDropReservation(dropId, characterId)
+		GetRegistry().CancelDropReservation(p.t, dropId, characterId)
 		_ = msgBuf.Put(drop.EnvEventTopicDropStatus, reservationFailureEventStatusProvider(transactionId, field, dropId, characterId))
 		return nil
 	}
@@ -179,7 +179,7 @@ func (p *ProcessorImpl) CancelReservationAndEmit(transactionId uuid.UUID, field 
 // Gather gathers a drop
 func (p *ProcessorImpl) Gather(msgBuf *message.Buffer) func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) (Model, error) {
 	return func(transactionId uuid.UUID, field field.Model, dropId uint32, characterId uint32) (Model, error) {
-		d, err := GetRegistry().RemoveDrop(dropId)
+		d, err := GetRegistry().RemoveDrop(p.t, dropId)
 		if d.Id() == 0 || err == nil {
 			p.l.Debugf("Gathering [%d] for [%d].", dropId, characterId)
 			_ = msgBuf.Put(drop.EnvEventTopicDropStatus, pickedUpEventStatusProvider(transactionId, field, d, characterId))
@@ -203,7 +203,7 @@ func (p *ProcessorImpl) GatherAndEmit(transactionId uuid.UUID, field field.Model
 // Consume removes a drop consumed by a game mechanic
 func (p *ProcessorImpl) Consume(msgBuf *message.Buffer) func(field field.Model, dropId uint32) error {
 	return func(field field.Model, dropId uint32) error {
-		d, err := GetRegistry().RemoveDrop(dropId)
+		d, err := GetRegistry().RemoveDrop(p.t, dropId)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to consume drop [%d].", dropId)
 			return err
@@ -228,7 +228,7 @@ func (p *ProcessorImpl) ConsumeAndEmit(field field.Model, dropId uint32) error {
 // Expire expires a drop
 func (p *ProcessorImpl) Expire(msgBuf *message.Buffer) model.Operator[Model] {
 	return func(m Model) error {
-		_, err := GetRegistry().RemoveDrop(m.Id())
+		_, err := GetRegistry().RemoveDrop(m.Tenant(), m.Id())
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to remove drop [%d] from registry.", m.Id())
 			return err
@@ -260,7 +260,7 @@ func (p *ProcessorImpl) GetForMap(f field.Model) ([]Model, error) {
 // ByIdProvider provides a drop by ID
 func (p *ProcessorImpl) ByIdProvider(dropId uint32) model.Provider[Model] {
 	return func() (Model, error) {
-		return GetRegistry().GetDrop(dropId)
+		return GetRegistry().GetDrop(p.t, dropId)
 	}
 }
 

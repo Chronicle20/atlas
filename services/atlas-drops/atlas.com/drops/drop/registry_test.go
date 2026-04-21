@@ -1,7 +1,6 @@
 package drop
 
 import (
-	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -110,10 +109,8 @@ func TestCreateDrop_MultiTenantIsolation(t *testing.T) {
 	drop1 := mustCreateDrop(t, r, mb1)
 	drop2 := mustCreateDrop(t, r, mb2)
 
-	if drop1.Id() == drop2.Id() {
-		t.Fatal("Expected drops to have different IDs")
-	}
-
+	// Each tenant has its own id namespace; ids may match across tenants.
+	// Isolation is enforced by tenant-scoped storage keys, not by id uniqueness.
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 	drops1, _ := r.GetDropsForMap(ten1, f)
 	drops2, _ := r.GetDropsForMap(ten2, f)
@@ -124,8 +121,11 @@ func TestCreateDrop_MultiTenantIsolation(t *testing.T) {
 	if len(drops2) != 1 {
 		t.Fatalf("Expected 1 drop for tenant2, got %d", len(drops2))
 	}
-	if drops1[0].Id() == drops2[0].Id() {
-		t.Fatal("Expected tenant drops to be different")
+	if drops1[0].Id() != drop1.Id() {
+		t.Fatalf("Tenant 1 query returned wrong drop: got id %d want %d", drops1[0].Id(), drop1.Id())
+	}
+	if drops2[0].Id() != drop2.Id() {
+		t.Fatalf("Tenant 2 query returned wrong drop: got id %d want %d", drops2[0].Id(), drop2.Id())
 	}
 }
 
@@ -140,7 +140,7 @@ func TestReserveDrop_Success(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	reserved, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
+	reserved, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
@@ -160,12 +160,12 @@ func TestReserveDrop_AlreadyReservedBySameCharacter(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
+	_, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	reserved2, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
+	reserved2, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Should allow same character to re-reserve: %v", err)
 	}
@@ -186,12 +186,12 @@ func TestReserveDrop_AlreadyReservedByDifferentCharacter(t *testing.T) {
 	characterId2 := uint32(67890)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId1, 0, petSlot)
+	_, err := r.ReserveDrop(ten, drop.Id(), characterId1, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	_, err = r.ReserveDrop(drop.Id(), characterId2, 0, petSlot)
+	_, err = r.ReserveDrop(ten, drop.Id(), characterId2, 0, petSlot)
 	if err == nil {
 		t.Fatal("Expected error when reserving drop already reserved by another character")
 	}
@@ -200,8 +200,9 @@ func TestReserveDrop_AlreadyReservedByDifferentCharacter(t *testing.T) {
 func TestReserveDrop_NotFound(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
+	ten := createTestTenant(t)
 
-	_, err := r.ReserveDrop(999999, 12345, 0, -1)
+	_, err := r.ReserveDrop(ten, 999999, 12345, 0, -1)
 	if err == nil {
 		t.Fatal("Expected error when reserving non-existent drop")
 	}
@@ -218,14 +219,14 @@ func TestCancelDropReservation_ValidCancellation(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(2)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
+	_, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	r.CancelDropReservation(drop.Id(), characterId)
+	r.CancelDropReservation(ten, drop.Id(), characterId)
 
-	updated, err := r.GetDrop(drop.Id())
+	updated, err := r.GetDrop(ten, drop.Id())
 	if err != nil {
 		t.Fatalf("Failed to get drop: %v", err)
 	}
@@ -249,14 +250,14 @@ func TestCancelDropReservation_WrongCharacter(t *testing.T) {
 	characterId2 := uint32(67890)
 	petSlot := int8(-1)
 
-	_, err := r.ReserveDrop(drop.Id(), characterId1, 0, petSlot)
+	_, err := r.ReserveDrop(ten, drop.Id(), characterId1, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop: %v", err)
 	}
 
-	r.CancelDropReservation(drop.Id(), characterId2)
+	r.CancelDropReservation(ten, drop.Id(), characterId2)
 
-	updated, err := r.GetDrop(drop.Id())
+	updated, err := r.GetDrop(ten, drop.Id())
 	if err != nil {
 		t.Fatalf("Failed to get drop: %v", err)
 	}
@@ -273,7 +274,7 @@ func TestRemoveDrop_Success(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	drop := mustCreateDrop(t, r, mb)
 
-	removed, err := r.RemoveDrop(drop.Id())
+	removed, err := r.RemoveDrop(ten, drop.Id())
 	if err != nil {
 		t.Fatalf("Failed to remove drop: %v", err)
 	}
@@ -281,7 +282,7 @@ func TestRemoveDrop_Success(t *testing.T) {
 		t.Fatalf("Expected removed drop ID %d, got %d", drop.Id(), removed.Id())
 	}
 
-	_, err = r.GetDrop(drop.Id())
+	_, err = r.GetDrop(ten, drop.Id())
 	if err == nil {
 		t.Fatal("Expected error when getting removed drop")
 	}
@@ -296,8 +297,9 @@ func TestRemoveDrop_Success(t *testing.T) {
 func TestRemoveDrop_NotFound(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
+	ten := createTestTenant(t)
 
-	removed, err := r.RemoveDrop(999999)
+	removed, err := r.RemoveDrop(ten, 999999)
 	if err != nil {
 		t.Fatalf("RemoveDrop should not error for non-existent drop: %v", err)
 	}
@@ -314,7 +316,7 @@ func TestGetDrop_Existing(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	created := mustCreateDrop(t, r, mb)
 
-	found, err := r.GetDrop(created.Id())
+	found, err := r.GetDrop(ten, created.Id())
 	if err != nil {
 		t.Fatalf("Failed to get drop: %v", err)
 	}
@@ -329,8 +331,9 @@ func TestGetDrop_Existing(t *testing.T) {
 func TestGetDrop_NonExistent(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
+	ten := createTestTenant(t)
 
-	_, err := r.GetDrop(999999)
+	_, err := r.GetDrop(ten, 999999)
 	if err == nil {
 		t.Fatal("Expected error when getting non-existent drop")
 	}
@@ -440,7 +443,7 @@ func TestReserveDrop_WithPetSlot(t *testing.T) {
 	characterId := uint32(12345)
 	petSlot := int8(2)
 
-	reserved, err := r.ReserveDrop(drop.Id(), characterId, 0, petSlot)
+	reserved, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, petSlot)
 	if err != nil {
 		t.Fatalf("Failed to reserve drop with pet slot: %v", err)
 	}
@@ -517,7 +520,7 @@ func TestConcurrentReserveDrop(t *testing.T) {
 		wg.Add(1)
 		go func(characterId uint32) {
 			defer wg.Done()
-			_, err := r.ReserveDrop(drop.Id(), characterId, 0, -1)
+			_, err := r.ReserveDrop(ten, drop.Id(), characterId, 0, -1)
 			if err == nil {
 				atomic.AddInt32(&successCount, 1)
 			}
@@ -535,37 +538,6 @@ func TestConcurrentReserveDrop(t *testing.T) {
 	}
 }
 
-func TestGetNextUniqueId_Sequential(t *testing.T) {
-	setupTestRegistry(t)
-	r := GetRegistry()
-
-	id1 := r.getNextUniqueId()
-	id2 := r.getNextUniqueId()
-	id3 := r.getNextUniqueId()
-
-	if id2 != id1+1 || id3 != id2+1 {
-		t.Fatal("Expected sequential IDs")
-	}
-}
-
-func TestGetNextUniqueId_Wraparound(t *testing.T) {
-	setupTestRegistry(t)
-	r := GetRegistry()
-
-	// Set counter to just below wraparound threshold
-	r.client.Set(context.Background(), nextIdKey, maxId-1, 0)
-
-	id1 := r.getNextUniqueId()
-	if id1 != maxId {
-		t.Fatalf("Expected %d, got %d", maxId, id1)
-	}
-
-	id2 := r.getNextUniqueId()
-	if id2 != minId {
-		t.Fatalf("Expected wraparound to %d, got %d", minId, id2)
-	}
-}
-
 func TestCancelDropReservation_DropNotReserved(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
@@ -574,9 +546,9 @@ func TestCancelDropReservation_DropNotReserved(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	drop := mustCreateDrop(t, r, mb)
 
-	r.CancelDropReservation(drop.Id(), uint32(12345))
+	r.CancelDropReservation(ten, drop.Id(), uint32(12345))
 
-	found, _ := r.GetDrop(drop.Id())
+	found, _ := r.GetDrop(ten, drop.Id())
 	if found.Status() != StatusAvailable {
 		t.Fatal("Drop should still be available")
 	}
@@ -590,11 +562,11 @@ func TestCancelDropReservation_AlreadyAvailable(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000).SetStatus(StatusAvailable)
 	drop := mustCreateDrop(t, r, mb)
 
-	_, _ = r.ReserveDrop(drop.Id(), uint32(12345), 0, -1)
+	_, _ = r.ReserveDrop(ten, drop.Id(), uint32(12345), 0, -1)
 
-	r.CancelDropReservation(drop.Id(), uint32(12345))
+	r.CancelDropReservation(ten, drop.Id(), uint32(12345))
 
-	found, _ := r.GetDrop(drop.Id())
+	found, _ := r.GetDrop(ten, drop.Id())
 	if found.Status() != StatusAvailable {
 		t.Fatalf("Expected status %s, got %s", StatusAvailable, found.Status())
 	}
@@ -614,7 +586,7 @@ func TestRemoveDrop_CleansUpMapIndex(t *testing.T) {
 		t.Fatal("Expected 1 drop before removal")
 	}
 
-	_, _ = r.RemoveDrop(drop.Id())
+	_, _ = r.RemoveDrop(ten, drop.Id())
 
 	dropsAfter, _ := r.GetDropsForMap(ten, f)
 	if len(dropsAfter) != 0 {
@@ -650,9 +622,10 @@ func TestGetAllDrops_EmptyRegistry(t *testing.T) {
 func TestCancelDropReservation_NonExistentDrop(t *testing.T) {
 	setupTestRegistry(t)
 	r := GetRegistry()
+	ten := createTestTenant(t)
 
 	// Should not panic when canceling reservation for non-existent drop
-	r.CancelDropReservation(999999, uint32(12345))
+	r.CancelDropReservation(ten, 999999, uint32(12345))
 }
 
 func TestCancelDropReservation_NoReservation(t *testing.T) {
@@ -663,9 +636,9 @@ func TestCancelDropReservation_NoReservation(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	drop := mustCreateDrop(t, r, mb)
 
-	r.CancelDropReservation(drop.Id(), uint32(12345))
+	r.CancelDropReservation(ten, drop.Id(), uint32(12345))
 
-	found, _ := r.GetDrop(drop.Id())
+	found, _ := r.GetDrop(ten, drop.Id())
 	if found.Status() != StatusAvailable {
 		t.Fatal("Drop should still be available")
 	}
@@ -684,7 +657,7 @@ func TestRemoveDrop_FromMiddleOfList(t *testing.T) {
 	drop2 := mustCreateDrop(t, r, mb2)
 	drop3 := mustCreateDrop(t, r, mb3)
 
-	_, _ = r.RemoveDrop(drop2.Id())
+	_, _ = r.RemoveDrop(ten, drop2.Id())
 
 	f := field.NewBuilder(world.Id(1), channel.Id(1), _map.Id(100000000)).Build()
 	drops, _ := r.GetDropsForMap(ten, f)
@@ -713,7 +686,7 @@ func TestGetDrop_Internal(t *testing.T) {
 	mb := createTestBuilder(ten, 1, 1, 100000000)
 	created := mustCreateDrop(t, r, mb)
 
-	drop, ok := r.getDrop(created.Id())
+	drop, ok := r.getDrop(ten, created.Id())
 	if !ok {
 		t.Fatal("Expected to find drop")
 	}
@@ -721,7 +694,7 @@ func TestGetDrop_Internal(t *testing.T) {
 		t.Fatal("Expected correct drop ID")
 	}
 
-	_, ok = r.getDrop(999999)
+	_, ok = r.getDrop(ten, 999999)
 	if ok {
 		t.Fatal("Expected not to find non-existent drop")
 	}

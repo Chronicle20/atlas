@@ -115,6 +115,10 @@ func (b *ModelBuilder) Classification() uint32 {
 	return b.classification
 }
 
+func (b *ModelBuilder) Field() field.Model {
+	return field.NewBuilder(b.worldId, b.channelId, b.mapId).SetInstance(b.instance).Build()
+}
+
 func (b *ModelBuilder) SetData(data data.Model) *ModelBuilder {
 	b.data = data
 	return b

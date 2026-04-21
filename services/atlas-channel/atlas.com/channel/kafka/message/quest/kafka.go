@@ -92,8 +92,9 @@ type StatusEvent[E any] struct {
 }
 
 type QuestStartedEventBody struct {
-	QuestId  uint32 `json:"questId"`
-	Progress string `json:"progress"`
+	QuestId  uint32       `json:"questId"`
+	Progress string       `json:"progress"`
+	Items    []ItemReward `json:"items,omitempty"`
 }
 
 // ItemReward represents an item reward given during quest completion

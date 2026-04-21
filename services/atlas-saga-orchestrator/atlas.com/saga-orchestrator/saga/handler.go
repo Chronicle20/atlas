@@ -1535,7 +1535,12 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.questP.RequestStartQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId)
+	rewards := make([]questmessage.ItemReward, 0, len(payload.Rewards))
+	for _, r := range payload.Rewards {
+		rewards = append(rewards, questmessage.ItemReward{ItemId: r.ItemId, Amount: r.Amount})
+	}
+
+	err := h.questP.RequestStartQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId, rewards)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to start quest.")
 		return err

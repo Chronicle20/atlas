@@ -62,7 +62,7 @@ func handleStartQuestCommand(db *gorm.DB) message.Handler[quest2.Command[quest2.
 		// When Force=true, skip requirement checks
 		// When Force=false (default), validate start requirements before starting
 		f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).Build()
-		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force)
+		_, _, err := quest.NewProcessor(l, ctx, db).Start(c.TransactionId, c.CharacterId, c.Body.QuestId, f, c.Body.Force, c.Body.Rewards)
 		if err != nil {
 			l.WithError(err).Errorf("Error starting quest [%d] for character [%d].", c.Body.QuestId, c.CharacterId)
 		}
@@ -89,7 +89,7 @@ func handleCompleteQuestCommand(db *gorm.DB) message.Handler[quest2.Command[ques
 		if nextQuestId > 0 {
 			l.Infof("Quest chain detected: starting next quest [%d] for character [%d].", nextQuestId, c.CharacterId)
 			// Use the same transactionId for chained quests so the saga can track them
-			_, err = processor.StartChained(c.TransactionId, c.CharacterId, nextQuestId, f)
+			_, err = processor.StartChained(c.TransactionId, c.CharacterId, nextQuestId, f, nil)
 			if err != nil {
 				l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, c.CharacterId)
 			}

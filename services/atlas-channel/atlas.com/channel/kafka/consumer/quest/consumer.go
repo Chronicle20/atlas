@@ -64,18 +64,34 @@ func handleQuestStarted(sc server.Model, wp writer.Producer) message.Handler[que
 			return
 		}
 
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress))
+		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, announceQuestStarted(l)(ctx)(wp)(e.Body.QuestId, e.Body.Progress, e.Body.Items))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to announce quest [%d] started for character [%d].", e.Body.QuestId, e.CharacterId)
 		}
 	}
 }
 
-func announceQuestStarted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
-		return func(wp writer.Producer) func(questId uint32, progress string) model.Operator[session.Model] {
-			return func(questId uint32, progress string) model.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationUpdateQuestRecordBody(uint16(questId), progress))
+func announceQuestStarted(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string, items []quest.ItemReward) model.Operator[session.Model] {
+	return func(ctx context.Context) func(wp writer.Producer) func(questId uint32, progress string, items []quest.ItemReward) model.Operator[session.Model] {
+		return func(wp writer.Producer) func(questId uint32, progress string, items []quest.ItemReward) model.Operator[session.Model] {
+			return func(questId uint32, progress string, items []quest.ItemReward) model.Operator[session.Model] {
+				return func(s session.Model) error {
+					// Send status message to update quest record
+					_ = session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(charpkt.CharacterStatusMessageOperationUpdateQuestRecordBody(uint16(questId), progress))(s)
+
+					// Convert items to QuestReward model
+					rewards := make([]charcb.QuestReward, len(items))
+					for i, item := range items {
+						rewards[i] = charcb.QuestReward{ItemId: item.ItemId, Amount: item.Amount}
+					}
+
+					// Send quest effect to player showing rewards
+					if len(rewards) > 0 {
+						_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterQuestEffectBody("", rewards, 0))(s)
+					}
+
+					return nil
+				}
 			}
 		}
 	}

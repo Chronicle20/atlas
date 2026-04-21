@@ -11,7 +11,7 @@ description: |
 
   <example>
   Context: After landing a large feature, the user wants to know what TODO debt was left behind.
-  user: "What TODOs are left in recipe-service?"
+  user: "What TODOs are left in atlas-character?"
   assistant: "Let me dispatch todo-scanner to give you a current inventory."
   </example>
 model: inherit

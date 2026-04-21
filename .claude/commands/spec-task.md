@@ -111,7 +111,7 @@ Only create supporting files that add value beyond what's in the PRD. Don't crea
 After generating files, present:
 
 1. List of files created with brief description of each
-2. Suggested next step (e.g., "Run `/dev-docs task-NNN-slug` to create an implementation plan")
+2. Suggested next step: "Now run `/clear` to reset context, then `/design-task task-NNN-slug` to invoke the brainstorming/design phase"
 
 ## Quality Standards
 

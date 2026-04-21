@@ -833,6 +833,15 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 				built[i].payload = cqp
 			}
 		}
+		for i := range built {
+			if built[i].action != saga.StartQuest {
+				continue
+			}
+			if sqp, ok := built[i].payload.(saga.StartQuestPayload); ok {
+				sqp.Rewards = rewards
+				built[i].payload = sqp
+			}
+		}
 	}
 
 	// Suppress AwardAsset notices that are duplicated by a later CompleteQuest's
@@ -842,6 +851,7 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 	// the quest-completion effect once. AwardAsset steps that grant more than
 	// the quest covers, or appear after the CompleteQuest, are left alone.
 	suppressAwardAssetByCompleteQuest(built)
+	suppressAwardAssetByStartQuest(built)
 
 	for _, st := range built {
 		builder.AddStep(st.stepId, st.status, st.action, st.payload)
@@ -884,6 +894,46 @@ func suppressAwardAssetByCompleteQuest(steps []builtStep) {
 		// the same item don't both consume the same reward entry.
 		remaining := make(map[uint32]int32, len(cqp.Rewards))
 		for _, r := range cqp.Rewards {
+			remaining[r.ItemId] += r.Amount
+		}
+		for j := 0; j < i; j++ {
+			if steps[j].action != saga.AwardAsset {
+				continue
+			}
+			pl, ok := steps[j].payload.(saga.AwardItemActionPayload)
+			if !ok || !pl.ShowEffect {
+				continue
+			}
+			covered, exists := remaining[pl.Item.TemplateId]
+			if !exists || covered < int32(pl.Item.Quantity) {
+				continue
+			}
+			pl.ShowEffect = false
+			steps[j].payload = pl
+			remaining[pl.Item.TemplateId] = covered - int32(pl.Item.Quantity)
+		}
+	}
+}
+
+// suppressAwardAssetByStartQuest is the symmetric counterpart to
+// suppressAwardAssetByCompleteQuest for StartQuest steps. StartQuest
+// renders its own reward effect when Rewards is populated, so an AwardAsset
+// that precedes the StartQuest and is fully covered by the reward list
+// would double-render; this suppressor flips its ShowEffect to false.
+// The two helpers are independent — each looks only at its own action
+// type — so a batch containing both a StartQuest and a CompleteQuest is
+// processed once by each.
+func suppressAwardAssetByStartQuest(steps []builtStep) {
+	for i := 0; i < len(steps); i++ {
+		if steps[i].action != saga.StartQuest {
+			continue
+		}
+		sqp, ok := steps[i].payload.(saga.StartQuestPayload)
+		if !ok || len(sqp.Rewards) == 0 {
+			continue
+		}
+		remaining := make(map[uint32]int32, len(sqp.Rewards))
+		for _, r := range sqp.Rewards {
 			remaining[r.ItemId] += r.Amount
 		}
 		for j := 0; j < i; j++ {

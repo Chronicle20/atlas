@@ -85,7 +85,7 @@ func TestHandleAssetCreatedEvent_IncrementsItemProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Initialize progress manually (simulating what the handler needs to look for)
 	// Note: Item progress is created on-demand when SetProgress is called
@@ -160,7 +160,7 @@ func TestHandleAssetCreatedEvent_QuantityGreaterThanOne(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Initialize progress
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
@@ -221,7 +221,7 @@ func TestHandleAssetCreatedEvent_ZeroQuantityDefaultsToOne(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Initialize progress
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
@@ -283,7 +283,7 @@ func TestHandleAssetCreatedEvent_NoMatchingProgressEntry(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Initialize progress for tracked item only
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, trackedItemId, "0")
@@ -353,7 +353,7 @@ func TestHandleAssetCreatedEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Initialize progress for the item
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, itemId, "0")
@@ -418,8 +418,8 @@ func TestHandleAssetCreatedEvent_MultipleQuestsTrackingSameItem(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start both quests
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId1, test.CreateTestField(), true)
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId2, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId1, test.CreateTestField(), true, nil)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId2, test.CreateTestField(), true, nil)
 
 	// Initialize progress for both
 	_ = processor.SetProgress(uuid.Nil, characterId, questId1, itemId, "0")

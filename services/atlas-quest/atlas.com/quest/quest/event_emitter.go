@@ -15,7 +15,7 @@ import (
 
 // EventEmitter defines the interface for emitting quest-related events
 type EventEmitter interface {
-	EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) error
+	EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string, items []questmessage.ItemReward) error
 	EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error
 	EmitQuestForfeited(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32) error
 	EmitProgressUpdated(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, infoNumber uint32, progress string) error
@@ -33,8 +33,8 @@ func NewKafkaEventEmitter(l logrus.FieldLogger, ctx context.Context) EventEmitte
 	return &KafkaEventEmitter{l: l, ctx: ctx}
 }
 
-func (e *KafkaEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) error {
-	return questproducer.EmitQuestStarted(e.l, e.ctx, transactionId, characterId, worldId, questId, progress)
+func (e *KafkaEventEmitter) EmitQuestStarted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string, items []questmessage.ItemReward) error {
+	return questproducer.EmitQuestStarted(e.l, e.ctx, transactionId, characterId, worldId, questId, progress, items)
 }
 
 func (e *KafkaEventEmitter) EmitQuestCompleted(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, completedAt time.Time, items []questmessage.ItemReward) error {

@@ -86,7 +86,7 @@ func handleMonsterKilledEvent(db *gorm.DB) message.Handler[monster.StatusEvent[m
 							// Handle quest chain - auto-start next quest if present
 							if nextQuestId > 0 {
 								// Use uuid.Nil since this is not saga-initiated
-								_, err = processor.StartChained(uuid.Nil, entry.CharacterId, nextQuestId, f)
+								_, err = processor.StartChained(uuid.Nil, entry.CharacterId, nextQuestId, f, nil)
 								if err != nil {
 									l.WithError(err).Errorf("Error starting chained quest [%d] for character [%d].", nextQuestId, entry.CharacterId)
 								}

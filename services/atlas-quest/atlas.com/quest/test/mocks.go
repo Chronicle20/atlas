@@ -206,8 +206,8 @@ func NewMockEventEmitter() *MockEventEmitter {
 	}
 }
 
-func (m *MockEventEmitter) EmitQuestStarted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ string) error {
-	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId})
+func (m *MockEventEmitter) EmitQuestStarted(_ uuid.UUID, characterId uint32, worldId world.Id, questId uint32, _ string, items []questmessage.ItemReward) error {
+	m.StartedEvents = append(m.StartedEvents, QuestEvent{CharacterId: characterId, WorldId: worldId, QuestId: questId, Items: items})
 	return nil
 }
 

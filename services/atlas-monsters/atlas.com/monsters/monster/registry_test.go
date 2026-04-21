@@ -3,6 +3,7 @@ package monster
 import (
 	"context"
 	"os"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -865,5 +866,49 @@ func TestConcurrentCreateAndRemove(t *testing.T) {
 	monsters := r.GetMonstersInMap(ten, f)
 	if len(monsters) != 0 {
 		t.Fatalf("Expected 0 monsters after create/remove cycles, got %d", len(monsters))
+	}
+}
+
+// TestLoadMonsterWithCjsonEmptyObjectArrays reproduces the production corruption
+// where Redis' Lua cjson re-encodes empty arrays as "{}". The loader must tolerate
+// that shape for both statusEffects and damageEntries.
+func TestLoadMonsterWithCjsonEmptyObjectArrays(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	m := r.CreateMonster(ctx, ten, f, 9300018, 10, 20, 0, 5, 0, 100, 50)
+
+	corrupted := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
+		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
+		`,"tenantMajorVersion":83,"tenantMinorVersion":1` +
+		`,"worldId":0,"channelId":0,"mapId":40000` +
+		`,"instance":"00000000-0000-0000-0000-000000000000"` +
+		`,"maxHp":100,"hp":100,"maxMp":50,"mp":50` +
+		`,"monsterId":9300018,"controlCharacterId":0` +
+		`,"x":10,"y":20,"fh":0,"stance":5,"team":0` +
+		`,"damageEntries":{},"statusEffects":{}}`
+	testMiniRedis.Set(monsterKey(ten, m.UniqueId()), corrupted)
+
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster failed on cjson-corrupted record: %v", err)
+	}
+	if got.UniqueId() != m.UniqueId() || got.Hp() != 100 {
+		t.Fatalf("Unexpected monster state: id=%d hp=%d", got.UniqueId(), got.Hp())
+	}
+	if len(got.DamageEntries()) != 0 || len(got.StatusEffects()) != 0 {
+		t.Fatalf("Expected empty arrays, got %d damage / %d status",
+			len(got.DamageEntries()), len(got.StatusEffects()))
+	}
+
+	ds, err := r.ApplyDamage(ten, 1, 30, m.UniqueId())
+	if err != nil {
+		t.Fatalf("ApplyDamage failed after recovering from corruption: %v", err)
+	}
+	if ds.Monster.Hp() != 70 {
+		t.Fatalf("Expected HP=70 after 30 damage, got %d", ds.Monster.Hp())
 	}
 }

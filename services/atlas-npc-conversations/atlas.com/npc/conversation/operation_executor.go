@@ -786,12 +786,23 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 
 	// Build steps first so we can cross-reference AwardAsset items when a
 	// CompleteQuest step is present in the same batch.
+	//
+	// createStepForOperation derives stepId from "<type>-<characterId>", which
+	// collides when a batch has multiple ops of the same type (e.g., two
+	// award_item ops in a quest reward). The orchestrator validates step-id
+	// uniqueness within a saga and rejects duplicates, so suffix any repeats
+	// with their index here.
 	built := make([]builtStep, 0, len(operations))
-	for _, operation := range operations {
+	stepIdCounts := make(map[string]int, len(operations))
+	for i, operation := range operations {
 		stepId, status, action, payload, err := e.createStepForOperation(field, characterId, operation)
 		if err != nil {
 			return saga.Saga{}, err
 		}
+		if stepIdCounts[stepId] > 0 {
+			stepId = fmt.Sprintf("%s-%d", stepId, i)
+		}
+		stepIdCounts[stepId]++
 		built = append(built, builtStep{stepId, status, action, payload})
 	}
 

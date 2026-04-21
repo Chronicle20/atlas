@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -22,28 +23,54 @@ const maxRetries = 10
 
 // storedMonster is the JSON-serializable representation stored in Redis.
 type storedMonster struct {
-	UniqueId           uint32               `json:"uniqueId"`
-	TenantId           string               `json:"tenantId"`
-	TenantRegion       string               `json:"tenantRegion"`
-	TenantMajorVersion uint16               `json:"tenantMajorVersion"`
-	TenantMinorVersion uint16               `json:"tenantMinorVersion"`
-	WorldId            byte                 `json:"worldId"`
-	ChannelId          byte                 `json:"channelId"`
-	MapId              uint32               `json:"mapId"`
-	Instance           string               `json:"instance"`
-	MaxHp              uint32               `json:"maxHp"`
-	Hp                 uint32               `json:"hp"`
-	MaxMp              uint32               `json:"maxMp"`
-	Mp                 uint32               `json:"mp"`
-	MonsterId          uint32               `json:"monsterId"`
-	ControlCharacterId uint32               `json:"controlCharacterId"`
-	X                  int16                `json:"x"`
-	Y                  int16                `json:"y"`
-	Fh                 int16                `json:"fh"`
-	Stance             byte                 `json:"stance"`
-	Team               int8                 `json:"team"`
-	DamageEntries      []storedDamageEntry  `json:"damageEntries"`
-	StatusEffects      []storedStatusEffect `json:"statusEffects"`
+	UniqueId           uint32             `json:"uniqueId"`
+	TenantId           string             `json:"tenantId"`
+	TenantRegion       string             `json:"tenantRegion"`
+	TenantMajorVersion uint16             `json:"tenantMajorVersion"`
+	TenantMinorVersion uint16             `json:"tenantMinorVersion"`
+	WorldId            byte               `json:"worldId"`
+	ChannelId          byte               `json:"channelId"`
+	MapId              uint32             `json:"mapId"`
+	Instance           string             `json:"instance"`
+	MaxHp              uint32             `json:"maxHp"`
+	Hp                 uint32             `json:"hp"`
+	MaxMp              uint32             `json:"maxMp"`
+	Mp                 uint32             `json:"mp"`
+	MonsterId          uint32             `json:"monsterId"`
+	ControlCharacterId uint32             `json:"controlCharacterId"`
+	X                  int16              `json:"x"`
+	Y                  int16              `json:"y"`
+	Fh                 int16              `json:"fh"`
+	Stance             byte               `json:"stance"`
+	Team               int8               `json:"team"`
+	DamageEntries      damageEntryList    `json:"damageEntries"`
+	StatusEffects      statusEffectList   `json:"statusEffects"`
+}
+
+// damageEntryList and statusEffectList tolerate the empty-object form ("{}")
+// produced by Redis' Lua cjson when it re-encodes an empty Lua table. Without
+// this, the applyDamageScript corrupts a freshly-spawned monster on its first
+// hit: an empty statusEffects array round-trips to "{}", and subsequent Go
+// unmarshals fail with "cannot unmarshal object into ... []storedStatusEffect".
+type damageEntryList []storedDamageEntry
+
+func (l *damageEntryList) UnmarshalJSON(data []byte) error {
+	return unmarshalTolerantArray(data, (*[]storedDamageEntry)(l))
+}
+
+type statusEffectList []storedStatusEffect
+
+func (l *statusEffectList) UnmarshalJSON(data []byte) error {
+	return unmarshalTolerantArray(data, (*[]storedStatusEffect)(l))
+}
+
+func unmarshalTolerantArray[T any](data []byte, out *[]T) error {
+	trimmed := bytes.TrimSpace(data)
+	if len(trimmed) == 2 && trimmed[0] == '{' && trimmed[1] == '}' {
+		*out = nil
+		return nil
+	}
+	return json.Unmarshal(data, out)
 }
 
 type storedDamageEntry struct {

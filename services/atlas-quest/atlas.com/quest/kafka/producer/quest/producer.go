@@ -14,7 +14,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) model.Provider[[]kafka.Message] {
+func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string, items []quest2.ItemReward) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest2.StatusEvent[quest2.QuestStartedEventBody]{
 		TransactionId: transactionId,
@@ -24,6 +24,7 @@ func QuestStartedEventProvider(transactionId uuid.UUID, characterId uint32, worl
 		Body: quest2.QuestStartedEventBody{
 			QuestId:  questId,
 			Progress: progress,
+			Items:    items,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -97,8 +98,8 @@ func emitEvent(l logrus.FieldLogger, ctx context.Context, provider model.Provide
 }
 
 // EmitQuestStarted emits a quest started event
-func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string) error {
-	return emitEvent(l, ctx, QuestStartedEventProvider(transactionId, characterId, worldId, questId, progress))
+func EmitQuestStarted(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, characterId uint32, worldId world.Id, questId uint32, progress string, items []quest2.ItemReward) error {
+	return emitEvent(l, ctx, QuestStartedEventProvider(transactionId, characterId, worldId, questId, progress, items))
 }
 
 // EmitQuestCompleted emits a quest completed event

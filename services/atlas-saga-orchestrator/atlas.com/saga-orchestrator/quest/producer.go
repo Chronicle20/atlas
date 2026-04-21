@@ -10,7 +10,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func StartQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, npcId uint32) model.Provider[[]kafka.Message] {
+func StartQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, characterId uint32, questId uint32, npcId uint32, rewards []quest.ItemReward) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &quest.Command[quest.StartCommandBody]{
 		TransactionId: transactionId,
@@ -20,6 +20,7 @@ func StartQuestCommandProvider(transactionId uuid.UUID, worldId world.Id, charac
 		Body: quest.StartCommandBody{
 			QuestId: questId,
 			NpcId:   npcId,
+			Rewards: rewards,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

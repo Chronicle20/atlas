@@ -27,8 +27,9 @@ type Command[E any] struct {
 
 // StartCommandBody is the body for starting a quest
 type StartCommandBody struct {
-	QuestId uint32 `json:"questId"`
-	NpcId   uint32 `json:"npcId,omitempty"`
+	QuestId uint32       `json:"questId"`
+	NpcId   uint32       `json:"npcId,omitempty"`
+	Rewards []ItemReward `json:"rewards,omitempty"`
 }
 
 // CompleteCommandBody is the body for completing a quest

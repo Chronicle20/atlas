@@ -48,9 +48,13 @@ type Processor interface {
 	// field is needed for exp/meso start actions
 	// If skipValidation is true, start requirements are not checked
 	// transactionId is used for saga correlation (use uuid.Nil for non-saga initiated starts)
-	Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error)
+	// externalRewards, when non-empty, overrides the items reported on the
+	// STARTED event. Script-driven quests (atlas-npc-conversations) grant
+	// items through their own saga and forward the list here so downstream
+	// consumers can display them; pass nil to fall back to WZ-derived rewards.
+	Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool, externalRewards []questmessage.ItemReward) (Model, []string, error)
 	// StartChained starts a quest as part of a chain (skips interval check but still validates)
-	StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error)
+	StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, externalRewards []questmessage.ItemReward) (Model, error)
 	// Complete completes a quest with validation and processes rewards via saga
 	// Returns the next quest ID if this is part of a chain (0 if no chain)
 	// field is needed for meso/exp/fame rewards
@@ -153,7 +157,7 @@ func (p *ProcessorImpl) GetByCharacterIdAndState(characterId uint32, state State
 	return p.ByCharacterIdAndStateProvider(characterId, state)()
 }
 
-func (p *ProcessorImpl) Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) Start(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, skipValidation bool, externalRewards []questmessage.ItemReward) (Model, []string, error) {
 	// Fetch quest definition to check interval and time limit
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -161,12 +165,12 @@ func (p *ProcessorImpl) Start(transactionId uuid.UUID, characterId uint32, quest
 		return Model{}, nil, fmt.Errorf("unable to fetch quest definition: %w", err)
 	}
 
-	return p.startWithDefinition(transactionId, characterId, questId, questDef, f, skipValidation)
+	return p.startWithDefinition(transactionId, characterId, questId, questDef, f, skipValidation, externalRewards)
 }
 
 // startWithDefinition starts a quest using the provided quest definition
 // This is used internally when the quest definition is already available (e.g., from CheckAutoStart)
-func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool) (Model, []string, error) {
+func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model, skipValidation bool, externalRewards []questmessage.ItemReward) (Model, []string, error) {
 	// Validate start requirements (unless skipped)
 	if !skipValidation {
 		passed, failedConditions, err := p.validationProcessor.ValidateStartRequirements(characterId, questDef)
@@ -187,7 +191,8 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 	}
 
 	// Process start actions (items consumed, exp given on start, etc.)
-	if err := p.processStartActions(characterId, questId, questDef, f); err != nil {
+	awardedItems, err := p.processStartActions(characterId, questId, questDef, f)
+	if err != nil {
 		p.l.WithError(err).Warnf("Unable to process start actions for quest [%d] character [%d].", questId, characterId)
 		// Don't fail the quest start, just log the error
 	}
@@ -199,8 +204,16 @@ func (p *ProcessorImpl) startWithDefinition(transactionId uuid.UUID, characterId
 		updated = m
 	}
 
+	// Script-driven quests grant items through their own saga and forward
+	// the reward list via externalRewards. When supplied, report those on
+	// the STARTED event; otherwise fall back to the WZ-derived items.
+	reportedItems := awardedItems
+	if len(externalRewards) > 0 {
+		reportedItems = externalRewards
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString()); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -294,7 +307,7 @@ func (p *ProcessorImpl) startCore(characterId uint32, questId uint32, questDef d
 	return m, nil
 }
 
-func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model) (Model, error) {
+func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32, questId uint32, f field.Model, externalRewards []questmessage.ItemReward) (Model, error) {
 	// Chained quests skip interval checking but still validate and process start actions
 	questDef, err := p.dataProcessor.GetQuestDefinition(questId)
 	if err != nil {
@@ -324,7 +337,8 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 	}
 
 	// Process start actions
-	if err := p.processStartActions(characterId, questId, questDef, f); err != nil {
+	awardedItems, err := p.processStartActions(characterId, questId, questDef, f)
+	if err != nil {
 		p.l.WithError(err).Warnf("Unable to process start actions for chained quest [%d].", questId)
 	}
 
@@ -335,8 +349,16 @@ func (p *ProcessorImpl) StartChained(transactionId uuid.UUID, characterId uint32
 		updated = m
 	}
 
+	// Script-driven quests grant items through their own saga and forward
+	// the reward list via externalRewards. When supplied, report those on
+	// the STARTED event; otherwise fall back to the WZ-derived items.
+	reportedItems := awardedItems
+	if len(externalRewards) > 0 {
+		reportedItems = externalRewards
+	}
+
 	// Emit quest started event
-	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString()); err != nil {
+	if err := p.eventEmitter.EmitQuestStarted(transactionId, characterId, f.WorldId(), questId, updated.ProgressString(), reportedItems); err != nil {
 		p.l.WithError(err).Warnf("Unable to emit quest started event for chained quest [%d] character [%d].", questId, characterId)
 	}
 
@@ -715,7 +737,7 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 		// Start the quest (auto-start quests still validate requirements)
 		// Use startWithDefinition directly since we already have the quest definition
 		// Use uuid.Nil since auto-start is not initiated by a saga
-		_, _, err = p.startWithDefinition(uuid.Nil, characterId, questDef.Id, questDef, f, false)
+		_, _, err = p.startWithDefinition(uuid.Nil, characterId, questDef.Id, questDef, f, false, nil)
 		if err != nil {
 			if !errors.Is(err, ErrQuestAlreadyStarted) && !errors.Is(err, ErrQuestAlreadyCompleted) && !errors.Is(err, ErrStartRequirementsNotMet) && !errors.Is(err, ErrValidationFailed) {
 				p.l.WithError(err).Warnf("Unable to auto-start quest [%d] for character [%d].", questDef.Id, characterId)
@@ -730,8 +752,9 @@ func (p *ProcessorImpl) CheckAutoStart(characterId uint32, f field.Model) ([]uin
 	return startedQuests, nil
 }
 
-func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) error {
+func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {
 	actions := questDef.StartActions
+	var awardedItems []questmessage.ItemReward
 
 	// Build saga for start actions
 	builder := sagaproducer.NewBuilder(saga.QuestStart, fmt.Sprintf("quest_%d", questId))
@@ -762,6 +785,7 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 		selected := selectRandomItem(randomPool)
 		if selected != nil {
 			builder.AddAwardItem(characterId, selected.Id, uint32(selected.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: selected.Id, Amount: selected.Count})
 		}
 	}
 
@@ -769,6 +793,7 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 	for _, item := range unconditionalItems {
 		if item.Count > 0 {
 			builder.AddAwardItem(characterId, item.Id, uint32(item.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		} else if item.Count < 0 {
 			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
 		}
@@ -787,10 +812,10 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 	// Emit saga if there are steps
 	if builder.HasSteps() {
 		s := builder.Build()
-		return p.eventEmitter.EmitSaga(s)
+		return awardedItems, p.eventEmitter.EmitSaga(s)
 	}
 
-	return nil
+	return awardedItems, nil
 }
 
 func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, questDef dataquest.RestModel, f field.Model) ([]questmessage.ItemReward, error) {

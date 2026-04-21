@@ -208,6 +208,6 @@ import (
 
 ## External References
 
-- Audit document: `dev/audits/atlas-drop-information/audit.md`
-- Audit JSON: `dev/audits/atlas-drop-information/audit.json`
+- Audit document: `docs/audits/atlas-drop-information/audit.md`
+- Audit JSON: `docs/audits/atlas-drop-information/audit.json`
 - Backend guidelines: `.claude/skills/backend-dev-guidelines/`

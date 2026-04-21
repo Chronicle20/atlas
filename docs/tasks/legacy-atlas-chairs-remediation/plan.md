@@ -1,7 +1,7 @@
 # Atlas-Chairs Service Remediation Plan
 
 **Service Path:** `services/atlas-chairs/atlas.com/chairs`
-**Audit Reference:** `dev/audits/atlas-chairs/audit.md`
+**Audit Reference:** `docs/audits/atlas-chairs/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

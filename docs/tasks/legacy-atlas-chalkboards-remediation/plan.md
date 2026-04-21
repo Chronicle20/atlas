@@ -1,7 +1,7 @@
 # Atlas Chalkboards Service Remediation Plan
 
 **Last Updated:** 2026-01-13
-**Audit Source:** `/dev/audits/atlas-chalkboards/audit.md`
+**Audit Source:** `/docs/audits/atlas-chalkboards/audit.md`
 **Service Path:** `services/atlas-chalkboards/atlas.com/chalkboards`
 **Overall Status:** needs-work
 

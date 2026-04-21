@@ -1,7 +1,7 @@
 # Atlas-Expressions Service Remediation Plan
 
 **Service Path:** `services/atlas-expressions/atlas.com/expressions`
-**Audit Reference:** `dev/audits/atlas-expressions/audit.md`
+**Audit Reference:** `docs/audits/atlas-expressions/audit.md`
 **Last Updated:** 2026-01-13
 
 ---

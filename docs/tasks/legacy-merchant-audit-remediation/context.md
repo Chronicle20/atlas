@@ -6,8 +6,8 @@
 
 ## Audit Source
 
-- `dev/audits/atlas-merchant/audit.md` — Full audit findings
-- `dev/audits/atlas-merchant/audit.json` — Machine-readable audit data
+- `docs/audits/atlas-merchant/audit.md` — Full audit findings
+- `docs/audits/atlas-merchant/audit.json` — Machine-readable audit data
 
 ---
 

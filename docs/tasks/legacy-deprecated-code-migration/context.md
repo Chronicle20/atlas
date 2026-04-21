@@ -100,9 +100,9 @@ The relationship between `PetModelDecorator` (loads pet models) and `PetAssetEnr
 
 ### Related Dev Plans
 
-- `dev/active/redis-registry-migration/` — high-throughput registry migration (separate track)
-- `dev/active/atlas-fame-remediation/` — references "legacy functions deprecated/removed"
-- `dev/active/atlas-invites-remediation/` — references deprecated custom REST handlers
+- `docs/tasks/legacy-redis-registry-migration/` — high-throughput registry migration (separate track)
+- `docs/tasks/legacy-atlas-fame-remediation/` — references "legacy functions deprecated/removed"
+- `docs/tasks/legacy-atlas-invites-remediation/` — references deprecated custom REST handlers
 - `docs/architectural-improvements.md` — tracks overall architecture health
 
 ---

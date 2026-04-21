@@ -18,8 +18,8 @@
 |------|---------|----------------|
 | `services/atlas-character/atlas.com/character/character/model.go` | Domain model + accessors + modelBuilder | Source of accessor methods and builder pattern |
 | `services/atlas-character/atlas.com/character/character/rest_test.go` | REST tests | Verify tests pass |
-| `dev/audits/atlas-character/audit.md` | Audit findings | Original issue documentation |
-| `dev/audits/atlas-character/audit.json` | Machine-readable audit | Issue metadata |
+| `docs/audits/atlas-character/audit.md` | Audit findings | Original issue documentation |
+| `docs/audits/atlas-character/audit.json` | Machine-readable audit | Issue metadata |
 
 ### Example Compliant Files
 

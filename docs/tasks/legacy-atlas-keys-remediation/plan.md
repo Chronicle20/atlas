@@ -8,7 +8,7 @@
 
 The `atlas-keys` service audit identified 5 issues requiring remediation across testing infrastructure (2 blocking, high-impact) and architectural patterns (3 non-blocking, low-medium impact). This plan addresses all findings through 4 implementation phases, prioritizing the establishment of test infrastructure before architectural improvements.
 
-**Audit Reference:** `dev/audits/atlas-keys/audit.md`
+**Audit Reference:** `docs/audits/atlas-keys/audit.md`
 
 **Key Metrics:**
 - Issues to Resolve: 5 (2 FAIL/High, 1 FAIL/Medium, 1 FAIL/Medium, 1 WARN/Low)

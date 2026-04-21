@@ -29,8 +29,8 @@
 ### Audit Files
 | File | Purpose |
 |------|---------|
-| `dev/audits/atlas-equipables/audit.md` | Detailed audit findings |
-| `dev/audits/atlas-equipables/audit.json` | Machine-readable findings |
+| `docs/audits/atlas-equipables/audit.md` | Detailed audit findings |
+| `docs/audits/atlas-equipables/audit.json` | Machine-readable findings |
 
 ---
 

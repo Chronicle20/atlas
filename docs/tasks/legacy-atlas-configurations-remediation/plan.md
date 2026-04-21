@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-13
 **Service:** `services/atlas-configurations`
-**Audit Reference:** `dev/audits/atlas-configurations/audit.md`
+**Audit Reference:** `docs/audits/atlas-configurations/audit.md`
 **Overall Audit Status:** `needs-work` (62% pass rate)
 
 ---

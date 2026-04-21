@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-13
 **Service:** atlas-maps
-**Audit Reference:** `/dev/audits/atlas-maps/audit.md`
+**Audit Reference:** `/docs/audits/atlas-maps/audit.md`
 **Overall Audit Status:** `pass` (15/15 checks passing)
 
 ---

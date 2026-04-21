@@ -25,8 +25,8 @@
 
 | File | Purpose |
 |------|---------|
-| `dev/audits/atlas-buddies/audit.md` | Human-readable audit report |
-| `dev/audits/atlas-buddies/audit.json` | Machine-readable audit data |
+| `docs/audits/atlas-buddies/audit.md` | Human-readable audit report |
+| `docs/audits/atlas-buddies/audit.json` | Machine-readable audit data |
 
 ---
 

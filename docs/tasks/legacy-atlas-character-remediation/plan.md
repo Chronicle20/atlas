@@ -2,7 +2,7 @@
 
 **Service:** `atlas-character`
 **Service Path:** `services/atlas-character/atlas.com/character`
-**Audit Reference:** `dev/audits/atlas-character/audit.md`
+**Audit Reference:** `docs/audits/atlas-character/audit.md`
 **Last Updated:** 2026-01-13
 **Status:** Planned
 

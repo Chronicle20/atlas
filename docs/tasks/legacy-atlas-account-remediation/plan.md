@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-13
 **Status:** COMPLETE
-**Audit Reference:** `/dev/audits/atlas-account/audit.md`
+**Audit Reference:** `/docs/audits/atlas-account/audit.md`
 **Service Path:** `services/atlas-account`
 **Overall Audit Status:** `needs-work` (11 pass, 4 warn, 1 fail)
 

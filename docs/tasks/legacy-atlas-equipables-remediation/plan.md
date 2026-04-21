@@ -1,7 +1,7 @@
 # Remediation Plan - atlas-equipables Service
 
 **Last Updated:** 2026-01-13
-**Source Audit:** `dev/audits/atlas-equipables/audit.md`
+**Source Audit:** `docs/audits/atlas-equipables/audit.md`
 **Overall Status:** needs-work → compliant
 
 ---

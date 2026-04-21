@@ -315,7 +315,7 @@ func TestBuilderValidation(t *testing.T) {
 
 ## Audit Reference
 
-- **Audit File:** `dev/audits/atlas-invites/audit.md`
-- **Audit JSON:** `dev/audits/atlas-invites/audit.json`
+- **Audit File:** `docs/audits/atlas-invites/audit.md`
+- **Audit JSON:** `docs/audits/atlas-invites/audit.json`
 - **Overall Status:** needs-work
 - **Confidence:** high

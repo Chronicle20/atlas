@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-13
 **Service:** `services/atlas-buffs`
-**Audit Reference:** `dev/audits/atlas-buffs/audit.md`
+**Audit Reference:** `docs/audits/atlas-buffs/audit.md`
 **Overall Audit Status:** `needs-work` (56% pass rate)
 
 ---

@@ -1,7 +1,7 @@
 # Atlas-Guilds Service Remediation Plan
 
 **Service:** `services/atlas-guilds`
-**Audit Reference:** `/dev/audits/atlas-guilds/audit.md`
+**Audit Reference:** `/docs/audits/atlas-guilds/audit.md`
 **Last Updated:** 2026-01-13 (Revision 2)
 
 ---

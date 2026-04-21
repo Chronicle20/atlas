@@ -1,7 +1,7 @@
 # atlas-cashshop Service Remediation Plan
 
 **Last Updated:** 2026-01-13
-**Audit Source:** `dev/audits/atlas-cashshop/audit.md`
+**Audit Source:** `docs/audits/atlas-cashshop/audit.md`
 **Overall Status:** needs-work (76% pass rate)
 
 ---

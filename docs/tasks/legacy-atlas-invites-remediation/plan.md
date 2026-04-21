@@ -6,7 +6,7 @@
 
 ## 1. Executive Summary
 
-This plan addresses issues identified in the `atlas-invites` service audit (`dev/audits/atlas-invites/audit.md`). The service is an in-memory invite management system that handles buddy, party, and guild invitations via Kafka commands and REST queries. While functionally coherent, the audit identified several structural deviations from the standard DDD/persistence patterns.
+This plan addresses issues identified in the `atlas-invites` service audit (`docs/audits/atlas-invites/audit.md`). The service is an in-memory invite management system that handles buddy, party, and guild invitations via Kafka commands and REST queries. While functionally coherent, the audit identified several structural deviations from the standard DDD/persistence patterns.
 
 ### Key Issues Summary
 

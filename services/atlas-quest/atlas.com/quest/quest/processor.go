@@ -759,10 +759,13 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 	// Build saga for start actions
 	builder := sagaproducer.NewBuilder(saga.QuestStart, fmt.Sprintf("quest_%d", questId))
 
-	// Consume required items (negative count items in requirements)
+	// Consume required items (negative count items in requirements). The
+	// client's quest-effect packet renders negative ItemReward.Amount as an
+	// item-loss line, so report consumed requirements alongside awarded items.
 	for _, item := range questDef.StartRequirements.Items {
 		if item.Count < 0 {
 			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		}
 	}
 
@@ -796,6 +799,7 @@ func (p *ProcessorImpl) processStartActions(characterId uint32, questId uint32, 
 			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		} else if item.Count < 0 {
 			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		}
 	}
 
@@ -855,6 +859,7 @@ func (p *ProcessorImpl) processEndActions(characterId uint32, questId uint32, qu
 			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		} else if item.Count < 0 {
 			builder.AddConsumeItem(characterId, item.Id, uint32(-item.Count))
+			awardedItems = append(awardedItems, questmessage.ItemReward{ItemId: item.Id, Amount: item.Count})
 		}
 	}
 

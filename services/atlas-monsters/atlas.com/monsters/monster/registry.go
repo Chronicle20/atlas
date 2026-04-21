@@ -352,6 +352,7 @@ func (r *Registry) ClearControl(tenant tenant.Model, uniqueId uint32) (Model, er
 }
 
 var applyDamageScript = goredis.NewScript(`
+cjson.encode_empty_table_as_object(false)
 local key = KEYS[1]
 local charId = tonumber(ARGV[1])
 local damage = tonumber(ARGV[2])

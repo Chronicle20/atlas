@@ -84,7 +84,7 @@ func TestProcessor_SpawnForCharacter_CreatesDropAndBuffersMessage(t *testing.T) 
 		t.Fatal("Expected message to be buffered")
 	}
 
-	registryDrop, err := GetRegistry().GetDrop(m.Id())
+	registryDrop, err := GetRegistry().GetDrop(ten, m.Id())
 	if err != nil {
 		t.Fatalf("Failed to get drop from registry: %v", err)
 	}
@@ -188,7 +188,7 @@ func TestProcessor_CancelReservation_BuffersMessage(t *testing.T) {
 		t.Fatal("Expected cancellation message to be buffered")
 	}
 
-	updated, _ := GetRegistry().GetDrop(drop.Id())
+	updated, _ := GetRegistry().GetDrop(ten, drop.Id())
 	if updated.Status() != StatusAvailable {
 		t.Fatalf("Expected status %s after cancellation, got %s", StatusAvailable, updated.Status())
 	}
@@ -226,7 +226,7 @@ func TestProcessor_Gather_RemovesDropAndBuffersMessage(t *testing.T) {
 		t.Fatal("Expected gather message to be buffered")
 	}
 
-	_, err = GetRegistry().GetDrop(drop.Id())
+	_, err = GetRegistry().GetDrop(ten, drop.Id())
 	if err == nil {
 		t.Fatal("Expected drop to be removed from registry")
 	}
@@ -257,7 +257,7 @@ func TestProcessor_Expire_RemovesDropAndBuffersMessage(t *testing.T) {
 		t.Fatal("Expected expire message to be buffered")
 	}
 
-	_, err = GetRegistry().GetDrop(drop.Id())
+	_, err = GetRegistry().GetDrop(ten, drop.Id())
 	if err == nil {
 		t.Fatal("Expected drop to be removed from registry")
 	}

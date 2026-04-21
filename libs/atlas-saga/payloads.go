@@ -251,10 +251,11 @@ type QuestRewardItem struct {
 
 // StartQuestPayload represents the payload required to start a quest.
 type StartQuestPayload struct {
-	CharacterId uint32   `json:"characterId"` // CharacterId associated with the action
-	WorldId     world.Id `json:"worldId"`     // WorldId associated with the action
-	QuestId     uint32   `json:"questId"`     // QuestId to start
-	NpcId       uint32   `json:"npcId"`       // NpcId that started the quest
+	CharacterId uint32            `json:"characterId"`       // CharacterId associated with the action
+	WorldId     world.Id          `json:"worldId"`           // WorldId associated with the action
+	QuestId     uint32            `json:"questId"`           // QuestId to start
+	NpcId       uint32            `json:"npcId"`             // NpcId that started the quest
+	Rewards     []QuestRewardItem `json:"rewards,omitempty"` // Item rewards granted alongside start (for downstream display)
 }
 
 // SetQuestProgressPayload represents the payload required to update quest progress.

@@ -199,6 +199,189 @@ func TestSuppressAwardAssetByCompleteQuest(t *testing.T) {
 	}
 }
 
+func TestSuppressAwardAssetByStartQuest(t *testing.T) {
+	awardAsset := func(itemId, qty uint32, show bool) builtStep {
+		return builtStep{
+			stepId: "award",
+			status: saga.Pending,
+			action: saga.AwardAsset,
+			payload: saga.AwardItemActionPayload{
+				CharacterId: 1,
+				Item:        saga.ItemPayload{TemplateId: itemId, Quantity: qty},
+				ShowEffect:  show,
+			},
+		}
+	}
+	startQuest := func(rewards ...saga.QuestRewardItem) builtStep {
+		return builtStep{
+			stepId: "start",
+			status: saga.Pending,
+			action: saga.StartQuest,
+			payload: saga.StartQuestPayload{
+				CharacterId: 1,
+				QuestId:     1000,
+				Rewards:     rewards,
+			},
+		}
+	}
+	completeQuest := func(rewards ...saga.QuestRewardItem) builtStep {
+		return builtStep{
+			stepId: "complete",
+			status: saga.Pending,
+			action: saga.CompleteQuest,
+			payload: saga.CompleteQuestPayload{
+				CharacterId: 1,
+				QuestId:     2000,
+				Rewards:     rewards,
+			},
+		}
+	}
+
+	tests := []struct {
+		name     string
+		input    []builtStep
+		expected []bool // ShowEffect for each AwardAsset step in order
+	}{
+		{
+			name:     "no start_quest leaves AwardAsset visible",
+			input:    []builtStep{awardAsset(2000000, 1, true)},
+			expected: []bool{true},
+		},
+		{
+			name: "matching reward suppresses preceding AwardAsset",
+			input: []builtStep{
+				awardAsset(2000000, 1, true),
+				startQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{false},
+		},
+		{
+			name: "partial-quantity mismatch leaves AwardAsset visible",
+			input: []builtStep{
+				awardAsset(2000000, 5, true),
+				startQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+			},
+			expected: []bool{true},
+		},
+		{
+			name: "AwardAsset after StartQuest is not suppressed",
+			input: []builtStep{
+				startQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+				awardAsset(2000000, 1, true),
+			},
+			expected: []bool{true},
+		},
+		{
+			name: "batch with both StartQuest and CompleteQuest suppresses independently",
+			input: []builtStep{
+				awardAsset(2000000, 1, true),
+				awardAsset(2000001, 1, true),
+				startQuest(saga.QuestRewardItem{ItemId: 2000000, Amount: 1}),
+				completeQuest(saga.QuestRewardItem{ItemId: 2000001, Amount: 1}),
+			},
+			expected: []bool{false, false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			steps := append([]builtStep(nil), tt.input...)
+			// Apply both suppressors to mirror production behavior; the two
+			// helpers are independent and each only inspects its own action.
+			suppressAwardAssetByCompleteQuest(steps)
+			suppressAwardAssetByStartQuest(steps)
+
+			idx := 0
+			for _, st := range steps {
+				if st.action != saga.AwardAsset {
+					continue
+				}
+				pl := st.payload.(saga.AwardItemActionPayload)
+				if pl.ShowEffect != tt.expected[idx] {
+					t.Errorf("award step %d: expected ShowEffect=%v, got %v", idx, tt.expected[idx], pl.ShowEffect)
+				}
+				idx++
+			}
+		})
+	}
+}
+
+// TestCreateSagaForOperations_SiblingRewardsWriteIntoStartQuest asserts that
+// when a conversation batch contains both AwardAsset steps and a StartQuest
+// step, the sibling item rewards are propagated into the StartQuest payload's
+// Rewards field so downstream services can display them on quest start.
+func TestCreateSagaForOperations_SiblingRewardsWriteIntoStartQuest(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+
+	l, _ := test.NewNullLogger()
+	l.SetLevel(logrus.DebugLevel)
+
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+
+	characterId := uint32(22)
+
+	convCtx := NewConversationContextBuilder().
+		SetCharacterId(characterId).
+		Build()
+	GetRegistry().SetContext(tctx, characterId, convCtx)
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{
+		l:   l,
+		ctx: tctx,
+		t:   tm,
+	}
+
+	mustOp := func(t *testing.T, opType string, params map[string]string) OperationModel {
+		t.Helper()
+		b := NewOperationBuilder().SetType(opType)
+		for k, v := range params {
+			b.AddParamValue(k, v)
+		}
+		op, err := b.Build()
+		if err != nil {
+			t.Fatalf("failed to build op %s: %v", opType, err)
+		}
+		return op
+	}
+
+	ops := []OperationModel{
+		mustOp(t, "award_item", map[string]string{"itemId": "2000000", "quantity": "2"}),
+		mustOp(t, "start_quest", map[string]string{"questId": "1000", "npcId": "9001"}),
+	}
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+
+	s, err := executor.createSagaForOperations(f, characterId, ops)
+	if err != nil {
+		t.Fatalf("createSagaForOperations returned error: %v", err)
+	}
+
+	var sawStart bool
+	for _, step := range s.Steps {
+		if step.Action != saga.StartQuest {
+			continue
+		}
+		sawStart = true
+		sqp, ok := step.Payload.(saga.StartQuestPayload)
+		if !ok {
+			t.Fatalf("start_quest payload has unexpected type %T", step.Payload)
+		}
+		if len(sqp.Rewards) != 1 {
+			t.Fatalf("expected 1 reward on StartQuestPayload, got %d", len(sqp.Rewards))
+		}
+		if sqp.Rewards[0].ItemId != 2000000 || sqp.Rewards[0].Amount != 2 {
+			t.Errorf("unexpected reward: %+v", sqp.Rewards[0])
+		}
+	}
+	if !sawStart {
+		t.Fatalf("no start_quest step found in saga (steps=%+v)", stepIds(s.Steps))
+	}
+}
+
 // TestCreateSagaForOperations_DeduplicatesStepIds guards against a regression
 // where a quest-completion conversation that batches multiple ops of the same
 // type (e.g., two `award_item` ops alongside `complete_quest`) produced saga

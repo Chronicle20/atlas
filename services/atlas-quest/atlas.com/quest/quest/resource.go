@@ -135,7 +135,7 @@ func handleStartQuest(d *rest.HandlerDependency, c *rest.HandlerContext, i Start
 			return func(w http.ResponseWriter, r *http.Request) {
 				f := field.NewBuilder(i.WorldId, i.ChannelId, i.MapId).Build()
 				// REST endpoints use uuid.Nil since they're not saga-initiated
-				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(uuid.Nil, characterId, questId, f, i.SkipValidation)
+				q, failedConditions, err := NewProcessor(d.Logger(), d.Context(), d.DB()).Start(uuid.Nil, characterId, questId, f, i.SkipValidation, nil)
 				if errors.Is(err, ErrStartRequirementsNotMet) {
 					// Return 422 Unprocessable Entity with failed conditions
 					result := ValidationFailedRestModel{FailedConditions: failedConditions}

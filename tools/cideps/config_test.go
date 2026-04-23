@@ -46,6 +46,33 @@ func TestEnrich_GoServicesFiltersType(t *testing.T) {
 	}
 }
 
+// Non-Go services (type=node-service, type=static-service) must still land in
+// the docker-services matrix when they're in the affected set — their Docker
+// images are built by the same pipeline.
+func TestEnrichDockerServices_IncludesNonGoServices(t *testing.T) {
+	cfg := &Config{
+		Services: []ServiceEntry{
+			{Name: "atlas-ui", Type: "node-service", Path: "services/atlas-ui", DockerImage: "ghcr.io/x/ui", DockerContext: "."},
+			{Name: "atlas-assets", Type: "static-service", Path: "services/atlas-assets", DockerImage: "ghcr.io/x/assets"},
+			{Name: "atlas-account", Type: "go-service", Path: "services/atlas-account", ModulePath: "services/atlas-account/atlas.com/account", DockerImage: "ghcr.io/x/account"},
+		},
+	}
+	rows := cfg.EnrichDockerServices([]string{"atlas-ui", "atlas-assets", "atlas-account"})
+	got := make(map[string]string)
+	for _, r := range rows {
+		got[r.Name] = r.DockerImage
+	}
+	if got["atlas-ui"] == "" {
+		t.Errorf("atlas-ui missing from docker rows: %+v", rows)
+	}
+	if got["atlas-assets"] == "" {
+		t.Errorf("atlas-assets missing from docker rows: %+v", rows)
+	}
+	if got["atlas-account"] == "" {
+		t.Errorf("atlas-account missing from docker rows: %+v", rows)
+	}
+}
+
 func TestEnrich_GoLibraries_CoverageDefaultZero(t *testing.T) {
 	cfg, err := LoadConfig("testdata/transitive/services.json")
 	if err != nil {

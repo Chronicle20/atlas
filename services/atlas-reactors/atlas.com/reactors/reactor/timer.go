@@ -70,14 +70,17 @@ func scheduleStateTimeout(l logrus.FieldLogger, ctx context.Context, r Model) {
 		}
 
 		l.Debugf("Reactor [%d] timer-advanced from state [%d] to [%d].", reactorId, r.State(), nextState)
+
+		// Re-arm for the new state BEFORE downstream emits. If Kafka is slow or down,
+		// we must not block the chained timer sequence. The new state's timer must
+		// be armed promptly so subsequent timeouts are not delayed.
+		scheduleStateTimeout(l, ctx, updated)
+
 		Trigger(l)(ctx)(updated, 0)
 
 		if err := producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false)); err != nil {
 			l.WithError(err).Warnf("Failed to emit HIT status event for reactor [%d] after timer fire.", reactorId)
 		}
-
-		// Re-arm for the new state if it also has a timer configured.
-		scheduleStateTimeout(l, ctx, updated)
 	})
 }
 

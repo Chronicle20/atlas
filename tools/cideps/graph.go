@@ -70,6 +70,10 @@ func BuildGraph(root string) (*Graph, error) {
 		deps:     make(map[string]map[string]struct{}),
 	}
 
+	if info, err := os.Stat(root); err != nil || !info.IsDir() {
+		return nil, fmt.Errorf("root %q is not a directory", root)
+	}
+
 	libsDir := filepath.Join(root, "libs")
 	libEntries, err := os.ReadDir(libsDir)
 	if err != nil && !os.IsNotExist(err) {

@@ -206,6 +206,9 @@ that is not available on the wire:
 - [ ] Create saga action for environment object manipulation (`script/executor.go:250,260`)
 - [ ] Create saga action for mass monster killing (`script/executor.go:267,272`)
 
+### Reactors Service
+- [ ] Implement `activateByTouch` reactor activation. 9 GPQ reactors (`6109013`, `6109014`, `6109021`–`6109027`) set `activateByTouch=1` in their .wz data (exposed via atlas-data `reader.go:79`) but atlas-reactors has no code path to trigger them from a character walking into their bounding area. All 9 are also skill-gated (types 5/6/7), so they remain activatable via hit for now. Full implementation needs a character-position signal from atlas-channel to atlas-reactors and a bounds check against every `activateByTouch` reactor on the map. Deferred from the reactor-persist/timer fix.
+
 ---
 
 ## Libraries

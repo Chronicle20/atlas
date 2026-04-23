@@ -63,7 +63,16 @@ func (p *ProcessorImpl) Spawn(mb *message.Buffer) func(transactionId uuid.UUID, 
 
 		rp := reactor2.NewProcessor(p.l, p.ctx).InMapProvider(field.MapId())
 		np := model.FilteredProvider(rp, model.Filters[reactor2.Model](p.doesNotExist(existing)))
-		return model.ForEachSlice(np, p.issueCreate(mb)(transactionId, field), model.ParallelExecute())
+		// Helpful when diagnosing duplicate-spawn races: if two concurrent
+		// Spawn calls both observe the same "existing" slice, both will log
+		// the same non-zero issue count and send overlapping CREATE commands.
+		// The authoritative dedupe happens in atlas-reactors TryClaimSpot.
+		toIssue, perr := np()
+		if perr != nil {
+			return perr
+		}
+		p.l.Debugf("Spawn for map [%d] instance [%s]: existing=[%d], issuing=[%d] CREATE commands.", field.MapId(), field.Instance(), len(existing), len(toIssue))
+		return model.ForEachSlice(model.FixedProvider(toIssue), p.issueCreate(mb)(transactionId, field), model.ParallelExecute())
 	}
 }
 

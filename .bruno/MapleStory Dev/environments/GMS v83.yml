@@ -1,7 +1,7 @@
 name: GMS v83
 variables:
   - name: TENANT_ID
-    value: ed65dc23-167a-4d27-85be-5a1778838a69
+    value: ec876921-c363-4cc6-9c51-5bb8d57f9553
   - name: REGION
     value: GMS
   - name: MAJOR_VERSION

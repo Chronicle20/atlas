@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-asset-expiration"
@@ -43,6 +44,14 @@ func main() {
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
 	tdm.TeardownFunc(periodicTask.Stop)
+
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath("/api/").
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		Run()
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")

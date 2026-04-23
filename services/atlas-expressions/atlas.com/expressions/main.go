@@ -8,10 +8,12 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-expressions/tasks"
 	"atlas-expressions/tracing"
+	"os"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-expressions"
@@ -44,6 +46,14 @@ func main() {
 	go tasks.Register(l, tdm.Context())(expression.NewRevertTask(l, time.Millisecond*50))
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath("/api/").
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		Run()
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")

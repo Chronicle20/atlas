@@ -6,6 +6,10 @@ inputs:
     description: 'Base ref for comparison (default: origin/main for PRs)'
     required: false
     default: ''
+  force-all:
+    description: 'Force full rebuild (all services and libraries)'
+    required: false
+    default: 'false'
 
 outputs:
   services:
@@ -35,6 +39,18 @@ outputs:
   all-go-libraries:
     description: 'JSON array of all Go libraries (for full rebuilds)'
     value: ${{ steps.detect.outputs.all_go_libraries }}
+  go-services-matrix:
+    description: 'JSON array of Go services to test/build'
+    value: ${{ steps.affected.outputs.go-services }}
+  go-libraries-matrix:
+    description: 'JSON array of Go libraries to test'
+    value: ${{ steps.affected.outputs.go-libraries }}
+  docker-services-matrix:
+    description: 'JSON array of services to build Docker images for'
+    value: ${{ steps.affected.outputs.docker-services }}
+  selection-reason:
+    description: 'Human-readable reason for the selection'
+    value: ${{ steps.affected.outputs.reason }}
 
 runs:
   using: 'composite'
@@ -176,3 +192,66 @@ runs:
         echo "UI changes: $HAS_UI_CHANGES"
         echo "Go workspace changes: $HAS_GO_WORKSPACE_CHANGES"
         echo "Workflow changes: $HAS_WORKFLOW_CHANGES"
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.25.5'
+        cache: false
+
+    - name: Compute affected modules
+      id: affected
+      shell: bash
+      run: |
+        set -eo pipefail
+
+        CHANGED_LIBS=$(echo '${{ steps.detect.outputs.libraries }}' | jq -r '. // [] | join(",")')
+        CHANGED_SERVICES=$(echo '${{ steps.detect.outputs.services }}' | jq -r '. // [] | join(",")')
+
+        FORCE_FLAGS=""
+        if [ "${{ steps.detect.outputs.has_go_workspace_changes }}" = "true" ] \
+          || [ "${{ steps.detect.outputs.has_workflow_changes }}" = "true" ] \
+          || [ "${{ inputs.force-all }}" = "true" ]; then
+          FORCE_FLAGS="--force-all"
+          echo "force-all triggered by: go.work=${{ steps.detect.outputs.has_go_workspace_changes }} workflow=${{ steps.detect.outputs.has_workflow_changes }} input=${{ inputs.force-all }}"
+        fi
+
+        CONFIG=".github/config/services.json"
+
+        if OUT=$(go run ./tools/cideps \
+            --changed-libs="$CHANGED_LIBS" \
+            --changed-services="$CHANGED_SERVICES" \
+            --config="$CONFIG" \
+            $FORCE_FLAGS 2>cideps.err); then
+          echo "$OUT" > affected.json
+          echo "go-services=$(jq -c '."go-services"' affected.json)" >> $GITHUB_OUTPUT
+          echo "go-libraries=$(jq -c '."go-libraries"' affected.json)" >> $GITHUB_OUTPUT
+          echo "docker-services=$(jq -c '."docker-services"' affected.json)" >> $GITHUB_OUTPUT
+          REASON=$(jq -r '.reason' affected.json)
+          echo "reason=$REASON" >> $GITHUB_OUTPUT
+          if [ -s cideps.err ]; then
+            echo "::warning::cideps emitted warnings:"
+            cat cideps.err
+          fi
+          {
+            echo "### Affected modules";
+            echo "$REASON";
+            echo "";
+            echo "- **Services**: $(jq -r '."go-services" | length' affected.json)";
+            echo "- **Libraries**: $(jq -r '."go-libraries" | length' affected.json)";
+            echo "- **Docker builds**: $(jq -r '."docker-services" | length' affected.json)";
+          } >> "$GITHUB_STEP_SUMMARY"
+        else
+          echo "::warning::cideps failed with exit code $?, falling back to build-all"
+          echo "cideps stderr:"
+          cat cideps.err
+          # Fallback: emit full matrices directly from services.json.
+          echo "go-services=$(jq -c '[.services[] | select(.type == "go-service") | {name, path, module_path, docker_image}]' "$CONFIG")" >> $GITHUB_OUTPUT
+          echo "go-libraries=$(jq -c '[.libraries[] | {name, path, module_path, coverage_threshold: (.coverage_threshold // 0)}]' "$CONFIG")" >> $GITHUB_OUTPUT
+          echo "docker-services=$(jq -c '[.services[] | select(.docker_image != null) | {name, path, docker_context: (.docker_context // .path), docker_image}]' "$CONFIG")" >> $GITHUB_OUTPUT
+          echo "reason=cideps failed; fell back to build-all" >> $GITHUB_OUTPUT
+          {
+            echo "### Affected modules";
+            echo "cideps FAILED — fell back to full rebuild";
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi

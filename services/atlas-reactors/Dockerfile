@@ -17,6 +17,7 @@ COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-saga/go.mod libs/atlas-saga/
+COPY libs/atlas-object-id/go.mod libs/atlas-object-id/go.sum libs/atlas-object-id/
 # Copy service module definitions
 COPY services/atlas-reactors/atlas.com/reactors/go.mod services/atlas-reactors/atlas.com/reactors/go.sum services/atlas-reactors/atlas.com/reactors/
 
@@ -32,6 +33,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
+    echo '    ./libs/atlas-object-id' >> go.work && \
     echo '    ./services/atlas-reactors/atlas.com/reactors' >> go.work && \
     echo '    ./libs/atlas-saga' >> go.work && \
     echo ')' >> go.work
@@ -50,6 +52,7 @@ COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-saga libs/atlas-saga
+COPY libs/atlas-object-id libs/atlas-object-id
 # Copy service source code
 COPY services/atlas-reactors/atlas.com/reactors services/atlas-reactors/atlas.com/reactors
 
@@ -65,6 +68,7 @@ RUN cd services/atlas-reactors/atlas.com/reactors && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-saga=/app/libs/atlas-saga \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-object-id=/app/libs/atlas-object-id \
     && go mod tidy
 
 # Build

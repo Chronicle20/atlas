@@ -52,6 +52,7 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 				TimeoutInfo: map[int8]int32{
 					0: -1,
 				},
+				TimeoutNextStateInfo: map[int8]int8{},
 			}
 			return model.FixedProvider(m)
 		}
@@ -78,7 +79,13 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 
 		loadArea := info.GetIntegerWithDefault("activateByTouch", 0) != 0
 
-		m := RestModel{Id: reactorId, Name: name, StateInfo: map[int8][]ReactorStateRestModel{}, TimeoutInfo: map[int8]int32{}}
+		m := RestModel{
+			Id:                   reactorId,
+			Name:                 name,
+			StateInfo:            map[int8][]ReactorStateRestModel{},
+			TimeoutInfo:          map[int8]int32{},
+			TimeoutNextStateInfo: map[int8]int8{},
+		}
 		rid, err := exml.ChildByName("0")
 		i := int8(0)
 		for rid != nil {
@@ -86,7 +93,13 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 			sdl := make([]ReactorStateRestModel, 0)
 			ed, _ := rid.ChildByName("event")
 			if ed != nil {
-				timeout := ed.GetIntegerWithDefault("timeout", -1)
+				timeout := ed.GetIntegerWithDefault("timeOut", -1)
+				if timeout == -1 {
+					timeout = ed.GetIntegerWithDefault("timeout", -1)
+				}
+
+				var timeoutNextState int8 = -1
+				timeoutNextStateSet := false
 
 				for _, md := range ed.ChildNodes {
 					t := md.GetIntegerWithDefault("type", 0)
@@ -117,16 +130,17 @@ func Read(l logrus.FieldLogger) func(path string, id uint32, np xml.IdProvider) 
 						}
 					}
 					ns := int8(md.GetIntegerWithDefault("state", 0))
+					if t == 101 && !timeoutNextStateSet {
+						timeoutNextState = ns
+						timeoutNextStateSet = true
+					}
 					sdl = append(sdl, ReactorStateRestModel{Type: t, ReactorItem: ri, ActiveSkills: skillIds, NextState: ns})
 				}
 				m.StateInfo[i] = sdl
 				m.TimeoutInfo[i] = timeout
-			} else {
-				m.StateInfo[i] = []ReactorStateRestModel{{
-					Type:      999,
-					NextState: i + 1,
-				}}
-				m.TimeoutInfo[i] = -1
+				if timeoutNextStateSet {
+					m.TimeoutNextStateInfo[i] = timeoutNextState
+				}
 			}
 			i++
 			rid, _ = exml.ChildByName(strconv.Itoa(int(i)))

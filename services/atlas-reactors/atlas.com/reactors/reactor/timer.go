@@ -23,7 +23,9 @@ var (
 // On fire the callback re-fetches the reactor from the registry, verifies the
 // state has not changed (a hit or another transition would have cancelled the
 // timer, but this guards against races), transitions to the configured next
-// state, emits a TRIGGER, and re-arms if the new state also has a timer.
+// state, re-arms the timer for the new state if applicable, then emits a
+// TRIGGER and HIT-status event. Re-arm precedes emit so a slow or unreachable
+// Kafka cannot stall the chained timer sequence.
 func scheduleStateTimeout(l logrus.FieldLogger, ctx context.Context, r Model) {
 	d := r.Data()
 	timeoutMs := d.Timeout(r.State())

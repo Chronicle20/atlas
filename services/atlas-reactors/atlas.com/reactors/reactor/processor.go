@@ -170,9 +170,11 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			}
 
 			var nextState int8 = -1
+			var matchedEventType int32 = 0
 			for _, event := range stateEvents {
 				if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
 					nextState = event.NextState()
+					matchedEventType = event.Type()
 					break
 				}
 			}
@@ -184,7 +186,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			_, hasNextState := stateInfo[nextState]
 			if !hasNextState {
-				if persistsAtFinalState(stateInfo) {
+				if persistsAtEndState(matchedEventType) {
 					updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
 						b.SetState(nextState)
 					})
@@ -192,7 +194,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 						l.WithError(err).Errorf("Unable to update reactor [%d] state.", reactorId)
 						return err
 					}
-					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
 					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
@@ -210,8 +212,8 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			// Check if the new state is terminal (all its events lead to non-existent states)
 			if isTerminalState(stateInfo, nextState) {
-				if persistsAtFinalState(stateInfo) {
-					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+				if persistsAtEndState(matchedEventType) {
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
 					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
@@ -256,18 +258,22 @@ func containsSkill(skills []uint32, skillId uint32) bool {
 	return false
 }
 
-// persistsAtFinalState checks if a reactor should remain alive at its final
-// state rather than being destroyed. This applies to item-triggered (type 100)
-// and type 999 reactors.
-func persistsAtFinalState(stateInfo map[int8][]state.Model) bool {
-	for _, events := range stateInfo {
-		for _, event := range events {
-			if event.Type() == itemReactorStateType || event.Type() == 999 {
-				return true
-			}
-		}
+// persistsAtEndState returns true if a reactor that has just transitioned via
+// an event of the given type should remain alive rather than be destroyed.
+// Taxonomy (from the wz reactor survey):
+//
+//	100       item-drop reactors (moonflowers, etc.)
+//	101       timer-driven cyclic reactors (Balrog altars, PQ cycles)
+//	5, 6, 7   GPQ skill-gated reactors
+//
+// All other types (0, 1, 2) are breakable hit reactors and destroy on end.
+func persistsAtEndState(eventType int32) bool {
+	switch eventType {
+	case 100, 101, 5, 6, 7:
+		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // isTerminalState checks if a state is terminal, meaning all its events

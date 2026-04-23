@@ -2,6 +2,7 @@ package reactor
 
 import (
 	"atlas-reactors/reactor/data"
+	"atlas-reactors/reactor/data/state"
 	"context"
 	"testing"
 
@@ -377,6 +378,143 @@ func TestRegistry_TryClaimSpot(t *testing.T) {
 	// after destroy + cooldown expiry).
 	GetRegistry().ReleaseSpot(ten, mk, 2001, 231, 253)
 	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253))
+}
+
+// newTestData returns a data.Model populated from the given state/timeout maps.
+// Uses data.Extract so the model mirrors what production code consumes from
+// atlas-data, including state.Model conversion.
+func newTestData(t *testing.T, stateInfo map[int8][]state.RestModel, timeoutInfo map[int8]int32, timeoutNextStateInfo map[int8]int8) data.Model {
+	t.Helper()
+	if timeoutInfo == nil {
+		timeoutInfo = map[int8]int32{}
+	}
+	if timeoutNextStateInfo == nil {
+		timeoutNextStateInfo = map[int8]int8{}
+	}
+	m, err := data.Extract(data.RestModel{
+		Name:                 "test",
+		StateInfo:            stateInfo,
+		TimeoutInfo:          timeoutInfo,
+		TimeoutNextStateInfo: timeoutNextStateInfo,
+	})
+	if err != nil {
+		t.Fatalf("data.Extract failed: %v", err)
+	}
+	return m
+}
+
+// TestHit_BreakableReactorDestroysOnTerminal verifies the fix for reactor 2001:
+// a reactor with only type-0 events and no synthesized 999s must destroy and
+// record cooldown on the terminal transition.
+func TestHit_BreakableReactorDestroysOnTerminal(t *testing.T) {
+	setupTestRegistry(t)
+	l := setupTestLogger()
+	ten := setupTestTenant()
+	ctx := setupTestContext(ten)
+
+	// Shape mirrors what atlas-data now returns for reactor 2001:
+	// state 0 -> 1 via type-0 event; state 1 has no events (terminal).
+	d := newTestData(t,
+		map[int8][]state.RestModel{
+			0: {{Type: 0, NextState: 1, ActiveSkills: []uint32{}}},
+		},
+		nil, nil,
+	)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	builder := NewModelBuilder(ten, f, 2001, "reactor-2001").
+		SetState(0).SetPosition(231, 253).SetDelay(5000).SetDirection(0).SetData(d)
+	created, err := GetRegistry().Create(ten, builder)
+	if err != nil {
+		t.Fatalf("Create failed: %v", err)
+	}
+
+	// Hit may return a Kafka producer error in unit-test environments where
+	// no broker is reachable; the registry mutations under test happen
+	// before any producer call, so we tolerate that error here.
+	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+
+	// After the hit: reactor must be gone from the registry.
+	if _, err := GetRegistry().Get(ten, created.Id()); err == nil {
+		t.Fatal("reactor should have been destroyed on terminal-state transition, but still exists")
+	}
+
+	// Cooldown must be recorded at its (classification,x,y) for the map.
+	mk := NewMapKey(f)
+	if !GetRegistry().IsOnCooldown(ten, mk, 2001, 231, 253) {
+		t.Fatal("cooldown should have been recorded after destroy")
+	}
+}
+
+// TestHit_ItemReactorPersistsAtTerminal verifies that a reactor whose matched
+// hit event is type 100 is kept alive at the terminal state (moonflower-style).
+func TestHit_ItemReactorPersistsAtTerminal(t *testing.T) {
+	setupTestRegistry(t)
+	l := setupTestLogger()
+	ten := setupTestTenant()
+	ctx := setupTestContext(ten)
+
+	// State 0 -> 1 via a type-100 event. State 1 has no events (terminal).
+	d := newTestData(t,
+		map[int8][]state.RestModel{
+			0: {{Type: 100, NextState: 1, ActiveSkills: []uint32{}}},
+		},
+		nil, nil,
+	)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	builder := NewModelBuilder(ten, f, 9108000, "moonflower").
+		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
+	created, _ := GetRegistry().Create(ten, builder)
+
+	// Producer error from missing broker is tolerated; semantic check is on
+	// the registry state.
+	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+
+	// Reactor should still exist at state 1.
+	got, err := GetRegistry().Get(ten, created.Id())
+	if err != nil {
+		t.Fatalf("reactor should have been kept alive at terminal (type-100 event); got error: %v", err)
+	}
+	if got.State() != 1 {
+		t.Fatalf("state = %d, want 1", got.State())
+	}
+}
+
+// TestHit_SkillReactorPersistsAtTerminal verifies types 5/6/7 (GPQ skill-gated)
+// also persist at terminal.
+func TestHit_SkillReactorPersistsAtTerminal(t *testing.T) {
+	setupTestRegistry(t)
+	l := setupTestLogger()
+	ten := setupTestTenant()
+	ctx := setupTestContext(ten)
+
+	// State 0 -> 1 via a type-5 event (any skill matches since ActiveSkills
+	// is empty in our test; in production types 5/6/7 carry activeSkillID —
+	// we're only exercising the persist rule here).
+	d := newTestData(t,
+		map[int8][]state.RestModel{
+			0: {{Type: 5, NextState: 1, ActiveSkills: []uint32{}}},
+		},
+		nil, nil,
+	)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	builder := NewModelBuilder(ten, f, 6109013, "gpq-skill-reactor").
+		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
+	created, _ := GetRegistry().Create(ten, builder)
+
+	// Producer error from missing broker is tolerated; semantic check is on
+	// the registry state.
+	_ = Hit(l)(ctx)(created.Id(), 0, 0)
+
+	got, err := GetRegistry().Get(ten, created.Id())
+	if err != nil {
+		t.Fatalf("skill reactor should persist at terminal; got error: %v", err)
+	}
+	if got.State() != 1 {
+		t.Fatalf("state = %d, want 1", got.State())
+	}
 }
 
 // TestRegistry_ClearAllSpotsForMap verifies the bulk release used when

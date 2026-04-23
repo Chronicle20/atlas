@@ -80,6 +80,34 @@ func TestBuildGraph_Simple(t *testing.T) {
 	}
 }
 
+func TestClosure_Transitive(t *testing.T) {
+	g, err := BuildGraph("testdata/transitive")
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+	cases := []struct {
+		mod  string
+		want []string
+	}{
+		{"svc-a", []string{"lib-a", "lib-b"}},
+		{"svc-b", []string{"lib-c"}},
+		{"lib-b", []string{"lib-a"}},
+		{"lib-a", nil},
+		{"lib-c", nil},
+	}
+	for _, tc := range cases {
+		t.Run(tc.mod, func(t *testing.T) {
+			got := g.Closure(tc.mod)
+			if len(got) == 0 && len(tc.want) == 0 {
+				return
+			}
+			if !equalSet(got, tc.want) {
+				t.Errorf("closure(%s)=%v want=%v", tc.mod, got, tc.want)
+			}
+		})
+	}
+}
+
 // equalSet returns true if a and b contain the same elements (order-insensitive).
 func equalSet(a, b []string) bool {
 	if len(a) != len(b) {

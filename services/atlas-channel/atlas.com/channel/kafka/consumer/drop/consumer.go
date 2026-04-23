@@ -77,6 +77,8 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 			SetPlayerDrop(e.Body.PlayerDrop).
 			MustBuild()
 
+		l.Debugf("Announcing DropSpawn to map [%d] instance [%s]: drop=[%d] item=[%d] meso=[%d] pos=(%d,%d) owner=[%d] dropperOid=[%d] dropperPos=(%d,%d).", e.MapId, e.Instance, d.Id(), d.ItemId(), d.Meso(), d.X(), d.Y(), e.Body.OwnerId, d.DropperId(), d.DropperX(), d.DropperY())
+
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(droppkt.DropSpawnWriter)(droppkt.NewDropSpawn(
 			droppkt.DropEnterTypeFresh, d.Id(), d.Meso(), d.ItemId(),
 			d.Owner(), d.Type(), d.X(), d.Y(), d.DropperId(),

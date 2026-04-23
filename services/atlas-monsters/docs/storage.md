@@ -17,12 +17,18 @@ Updates to monster instances use optimistic locking via `WATCH`/`TxPipelined` wi
 
 ### ID Allocation
 
+Monster IDs are NOT minted by this service. They come from the shared `atlas-object-id` allocator (`libs/atlas-object-id/allocator.go`), which is also used by atlas-reactors and atlas-drops.
+
+Allocator-managed keys (per tenant, NOT per service):
+
 | Key Pattern | Redis Type | Description |
 |-------------|------------|-------------|
-| `atlas:monster-ids:{tenantId}:next` | String (counter) | Sequential ID counter (range 1000000000-2000000000) |
-| `atlas:monster-ids:{tenantId}:free` | List | LIFO pool of recycled IDs via LPUSH/LPOP |
+| `atlas:oid:{tenantId}:next` | String (counter) | Sequential ID counter; range `1000000` (`MinId`) to `2147483647` (`MaxId`, the v83 wire-format positive int32 ceiling) |
+| `atlas:oid:{tenantId}:free` | List | LIFO recycle pool; only consulted once the counter passes `RecycleThreshold = MaxId - 100M` |
 
-Allocation prefers recycled IDs from the free list. Sequential allocation uses a Lua script for atomic check-and-init with wrapping at MaxMonsterId.
+A single tenant-scoped namespace is shared across reactors, monsters, and drops because the v83 client keys map objects by oid alone — colliding IDs across entity types crash the client. Per-tenant rather than per-field: each service stores its entities under `<entity>:{tenantId}:{id}` with no field component in the key, so per-field allocation would collide in storage when the same id was minted in two different fields. See the package-level comment in `libs/atlas-object-id/allocator.go` for the full rationale.
+
+Below `RecycleThreshold` the script always INCRs the counter and `Release` is a no-op (the free list stays empty); only once the counter approaches exhaustion does the LIFO pool kick in as a safety valve.
 
 ### Skill Cooldowns
 

@@ -33,8 +33,8 @@ jobs:
     name: Detect Changes
     runs-on: ubuntu-latest
     outputs:
-      docker-services-matrix: ${{ steps.matrix.outputs.docker-services }}
-      has-changes: ${{ steps.matrix.outputs.has-changes }}
+      docker-services-matrix: ${{ steps.override.outputs.docker-services-matrix || steps.detect.outputs.docker-services-matrix }}
+      has-changes: ${{ steps.has-changes.outputs.value }}
 
     steps:
       - name: Checkout
@@ -45,56 +45,55 @@ jobs:
       - name: Detect changes
         id: detect
         uses: ./.github/actions/detect-changes
+        with:
+          force-all: ${{ github.event.inputs.force-all }}
 
-      - name: Build matrices
-        id: matrix
+      - name: Apply single-service override
+        id: override
+        if: ${{ github.event.inputs.service != '' }}
+        shell: bash
         run: |
-          FORCE_ALL="${{ github.event.inputs.force-all }}"
-          SPECIFIC_SERVICE="${{ github.event.inputs.service }}"
-          HAS_WORKSPACE_CHANGES="${{ steps.detect.outputs.has-go-workspace-changes }}"
-          HAS_WORKFLOW_CHANGES="${{ steps.detect.outputs.has-workflow-changes }}"
-          HAS_LIBRARY_CHANGES="${{ steps.detect.outputs.has-library-changes }}"
+          SPECIFIC="${{ github.event.inputs.service }}"
+          echo "Overriding matrix to only build: $SPECIFIC"
+          ROW=$(jq -c --arg name "$SPECIFIC" \
+            '[.services[] | select(.name == $name) | select(.docker_image != null) | {name, path, docker_context: (.docker_context // .path), docker_image}]' \
+            .github/config/services.json)
+          echo "docker-services-matrix=$ROW" >> $GITHUB_OUTPUT
 
-          CONFIG_FILE=".github/config/services.json"
-
-          # Handle specific service override
-          # Use docker_context if specified, otherwise fall back to path
-          if [ -n "$SPECIFIC_SERVICE" ]; then
-            echo "Building specific service: $SPECIFIC_SERVICE"
-            DOCKER_SERVICES=$(jq -c --arg name "$SPECIFIC_SERVICE" '[.services[] | select(.name == $name) | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
-          # Handle force all or global changes (library changes trigger all service rebuilds)
-          elif [ "$FORCE_ALL" == "true" ] || [ "$HAS_WORKSPACE_CHANGES" == "true" ] || [ "$HAS_WORKFLOW_CHANGES" == "true" ] || [ "$HAS_LIBRARY_CHANGES" == "true" ]; then
-            echo "Building all services"
-            DOCKER_SERVICES=$(jq -c '[.services[] | select(.docker_image != null) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
-          # Normal change detection
+      - name: Compute has-changes flag and summary
+        id: has-changes
+        shell: bash
+        env:
+          OVERRIDE_MATRIX: ${{ steps.override.outputs.docker-services-matrix }}
+          DETECT_MATRIX: ${{ steps.detect.outputs.docker-services-matrix }}
+          REASON: ${{ steps.detect.outputs.selection-reason }}
+        run: |
+          if [ -n "$OVERRIDE_MATRIX" ]; then
+            DOCKER="$OVERRIDE_MATRIX"
+            EFFECTIVE_REASON="single-service override"
           else
-            CHANGED='${{ steps.detect.outputs.services }}'
-            DOCKER_SERVICES=$(jq -c --argjson changed "$CHANGED" '[.services[] | select(.docker_image != null) | select(.name as $n | $changed | index($n)) | {name: .name, path: .path, docker_context: (.docker_context // .path), docker_image: .docker_image}]' "$CONFIG_FILE")
+            DOCKER="$DETECT_MATRIX"
+            EFFECTIVE_REASON="$REASON"
+          fi
+          COUNT=$(echo "$DOCKER" | jq length)
+          if [ "$COUNT" -gt 0 ]; then
+            echo "value=true" >> $GITHUB_OUTPUT
+          else
+            echo "value=false" >> $GITHUB_OUTPUT
           fi
 
-          echo "docker-services=$DOCKER_SERVICES" >> $GITHUB_OUTPUT
+          {
+            echo "### Publish Detection Summary";
+            echo "- **Reason**: $EFFECTIVE_REASON";
+            echo "- **Services to publish**: $COUNT";
+            echo "";
+          } >> "$GITHUB_STEP_SUMMARY"
 
-          # Check if there are any services to build
-          SERVICE_COUNT=$(echo "$DOCKER_SERVICES" | jq length)
-          if [ "$SERVICE_COUNT" -gt 0 ]; then
-            echo "has-changes=true" >> $GITHUB_OUTPUT
-          else
-            echo "has-changes=false" >> $GITHUB_OUTPUT
-          fi
-
-          # Summary
-          echo "### Publish Detection Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- **Force all**: $FORCE_ALL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Library changes**: $HAS_LIBRARY_CHANGES" >> $GITHUB_STEP_SUMMARY
-          echo "- **Specific service**: ${SPECIFIC_SERVICE:-none}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Services to publish**: $SERVICE_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ "$SERVICE_COUNT" -gt 0 ]; then
-            echo "**Services:**" >> $GITHUB_STEP_SUMMARY
-            echo "$DOCKER_SERVICES" | jq -r '.[].name' | while read name; do
-              echo "- $name" >> $GITHUB_STEP_SUMMARY
-            done
+          if [ "$COUNT" -gt 0 ]; then
+            {
+              echo "**Services:**";
+              echo "$DOCKER" | jq -r '.[].name' | sed 's/^/- /';
+            } >> "$GITHUB_STEP_SUMMARY"
           fi
 
   # ============================================

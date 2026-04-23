@@ -355,3 +355,45 @@ func TestRegistry_UniqueIds(t *testing.T) {
 		ids[r.Id()] = true
 	}
 }
+
+// TestRegistry_TryClaimSpot verifies the spatial slot guard that prevents
+// duplicate reactors at the same (classification, x, y) within a map instance.
+func TestRegistry_TryClaimSpot(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	mk := NewMapKey(f)
+
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253), "first claim should succeed")
+	assert.False(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253), "second claim on the same spot should be rejected")
+
+	// A different position in the same map is independent.
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 610, 254))
+
+	// A different classification at the same coords is also independent.
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2002, 231, 253))
+
+	// Releasing the original spot lets it be re-claimed (simulates respawn
+	// after destroy + cooldown expiry).
+	GetRegistry().ReleaseSpot(ten, mk, 2001, 231, 253)
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253))
+}
+
+// TestRegistry_ClearAllSpotsForMap verifies the bulk release used when
+// teardown wipes a map instance.
+func TestRegistry_ClearAllSpotsForMap(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant()
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	mk := NewMapKey(f)
+
+	GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253)
+	GetRegistry().TryClaimSpot(ten, mk, 2001, 610, 254)
+	GetRegistry().TryClaimSpot(ten, mk, 2001, 1529, 132)
+
+	GetRegistry().ClearAllSpotsForMap(ten, mk)
+
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 231, 253))
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 610, 254))
+	assert.True(t, GetRegistry().TryClaimSpot(ten, mk, 2001, 1529, 132))
+}

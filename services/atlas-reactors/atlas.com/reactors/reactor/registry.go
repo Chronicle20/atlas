@@ -74,6 +74,14 @@ func cooldownKey(t tenant.Model, mk MapKey, classification uint32, x int16, y in
 	return fmt.Sprintf("reactor:cd:%s:%d:%d:%d:%s:%d:%d:%d", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String(), classification, x, y)
 }
 
+func spotKey(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) string {
+	return fmt.Sprintf("reactor:spot:%s:%d:%d:%d:%s:%d:%d:%d", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String(), classification, x, y)
+}
+
+func spotPatternKey(t tenant.Model, mk MapKey) string {
+	return fmt.Sprintf("reactor:spot:%s:%d:%d:%d:%s:*", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String())
+}
+
 
 func (r *Registry) store(t tenant.Model, id uint32, m Model) error {
 	data, err := json.Marshal(m)
@@ -277,4 +285,40 @@ func (r *Registry) ClearAllCooldownsForMap(t tenant.Model, mk MapKey) {
 
 func (r *Registry) CleanupExpiredCooldowns() {
 	// No-op: Redis TTL handles expiration automatically
+}
+
+// TryClaimSpot atomically reserves a (classification, x, y) slot within a map
+// instance, so concurrent Create calls cannot produce two reactors stacked at
+// the same position. Returns true if this caller owns the slot, false if it was
+// already claimed. The caller is responsible for ReleaseSpot on failure or
+// destruction.
+func (r *Registry) TryClaimSpot(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) bool {
+	key := spotKey(t, mk, classification, x, y)
+	ok, err := r.client.SetNX(context.Background(), key, "1", 0).Result()
+	if err != nil {
+		return false
+	}
+	return ok
+}
+
+func (r *Registry) ReleaseSpot(t tenant.Model, mk MapKey, classification uint32, x int16, y int16) {
+	r.client.Del(context.Background(), spotKey(t, mk, classification, x, y))
+}
+
+func (r *Registry) ClearAllSpotsForMap(t tenant.Model, mk MapKey) {
+	pattern := spotPatternKey(t, mk)
+	var cursor uint64
+	for {
+		keys, next, err := r.client.Scan(context.Background(), cursor, pattern, 100).Result()
+		if err != nil {
+			return
+		}
+		if len(keys) > 0 {
+			r.client.Del(context.Background(), keys...)
+		}
+		cursor = next
+		if cursor == 0 {
+			break
+		}
+	}
 }

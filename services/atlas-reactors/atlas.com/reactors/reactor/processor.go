@@ -42,8 +42,17 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 				return nil
 			}
 
+			// Reserve the spatial slot before any expensive work. Prevents two
+			// concurrent CREATE commands (e.g. racing map-Enter spawns) from
+			// producing duplicate reactors stacked at the same position.
+			if !GetRegistry().TryClaimSpot(t, mk, b.classification, b.x, b.y) {
+				l.Debugf("Ignoring CREATE for reactor [%d] at (%d,%d) in map [%d] instance [%s] - spot already claimed.", b.classification, b.x, b.y, b.mapId, b.instance)
+				return nil
+			}
+
 			d, err := data.GetById(l)(ctx)(b.Classification())
 			if err != nil {
+				GetRegistry().ReleaseSpot(t, mk, b.classification, b.x, b.y)
 				l.WithError(err).Errorf("Unable to retrieve reactor [%d] game data.", b.Classification())
 				return err
 			}
@@ -53,6 +62,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 			}
 			r, err := GetRegistry().Create(t, b)
 			if err != nil {
+				GetRegistry().ReleaseSpot(t, mk, b.classification, b.x, b.y)
 				l.WithError(err).Errorf("Failed to create reactor.")
 				return err
 			}
@@ -68,13 +78,15 @@ func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field
 		t := tenant.MustFromContext(ctx)
 		return func(f field.Model) {
 			reactors := GetRegistry().GetInField(t, f)
+			mk := NewMapKey(f)
 			for _, r := range reactors {
 				CancelPendingActivation(r.Id())
 				GetRegistry().Remove(t, r.Id())
+				GetRegistry().ReleaseSpot(t, mk, r.Classification(), r.X(), r.Y())
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(r))
 			}
-			mk := NewMapKey(f)
 			GetRegistry().ClearAllCooldownsForMap(t, mk)
+			GetRegistry().ClearAllSpotsForMap(t, mk)
 			l.Debugf("Destroyed [%d] reactors and cleared cooldowns for map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
 		}
 	}
@@ -126,6 +138,7 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
 			l.Debugf("Recorded cooldown for reactor [%d] at (%d,%d) with delay [%d]ms.", m.Classification(), m.X(), m.Y(), m.Delay())
 			GetRegistry().Remove(t, m.Id())
+			GetRegistry().ReleaseSpot(t, mk, m.Classification(), m.X(), m.Y())
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(m))
 		}
 	}

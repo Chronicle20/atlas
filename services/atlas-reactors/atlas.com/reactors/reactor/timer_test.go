@@ -179,3 +179,49 @@ func TestDestroy_CancelsPendingStateTimer(t *testing.T) {
 		t.Fatal("reactor should be gone after Destroy")
 	}
 }
+
+// TestScheduleStateTimeout_ReArmsForNewState verifies that when a timer fires
+// and the new state also has a timeout+timeoutNextState configured, a fresh
+// timer is armed and the reactor continues to advance.
+func TestScheduleStateTimeout_ReArmsForNewState(t *testing.T) {
+	setupTestRegistry(t)
+	l := setupTestLogger()
+	ten := setupTestTenant()
+	ctx := setupTestContext(ten)
+
+	// State 0 -> 1 after 50ms; state 1 -> 2 after 50ms; state 2 is terminal.
+	m, err := data.Extract(data.RestModel{
+		Name: "chained-timer",
+		StateInfo: map[int8][]state.RestModel{
+			0: {{Type: 101, NextState: 1, ActiveSkills: []uint32{}}},
+			1: {{Type: 101, NextState: 2, ActiveSkills: []uint32{}}},
+		},
+		TimeoutInfo:          map[int8]int32{0: 50, 1: 50},
+		TimeoutNextStateInfo: map[int8]int8{0: 1, 1: 2},
+	})
+	if err != nil {
+		t.Fatalf("data.Extract: %v", err)
+	}
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(1000000)).Build()
+	builder := NewModelBuilder(ten, f, 9101000, "chained").
+		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(m)
+	created, _ := GetRegistry().Create(ten, builder)
+
+	scheduleStateTimeout(l, ctx, created)
+
+	// 50ms -> state 1; another 50ms -> state 2. Total 150ms window covers both.
+	time.Sleep(200 * time.Millisecond)
+
+	got, err := GetRegistry().Get(ten, created.Id())
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	// type-101 is a persist type; the final terminal transition keeps the
+	// reactor alive at state 2.
+	if got.State() != 2 {
+		t.Fatalf("state = %d, want 2 (timer re-armed and fired again)", got.State())
+	}
+
+	cancelAllStateTimeouts()
+}

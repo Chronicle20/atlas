@@ -128,3 +128,21 @@ func BuildGraph(root string) (*Graph, error) {
 
 	return g, nil
 }
+
+// Closure returns the set of atlas libs that mod transitively requires,
+// as a sorted slice. Does not include mod itself.
+func (g *Graph) Closure(mod string) []string {
+	visited := make(map[string]struct{})
+	var walk func(string)
+	walk = func(m string) {
+		for dep := range g.deps[m] {
+			if _, ok := visited[dep]; ok {
+				continue
+			}
+			visited[dep] = struct{}{}
+			walk(dep)
+		}
+	}
+	walk(mod)
+	return sortedKeys(visited)
+}

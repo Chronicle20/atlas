@@ -129,6 +129,7 @@ func TestHit_CancelsPendingStateTimer(t *testing.T) {
 	builder := NewModelBuilder(ten, f, 9999, "test").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(m)
 	created, _ := GetRegistry().Create(ten, builder)
+	scheduleStateTimeout(l, ctx, created) // Arm the timer manually since we created via the registry directly.
 
 	// Create has armed a 100ms timer. Hit immediately — should cancel it.
 	// Tolerate Kafka producer error (no broker reachable in unit tests);
@@ -163,6 +164,7 @@ func TestDestroy_CancelsPendingStateTimer(t *testing.T) {
 	builder := NewModelBuilder(ten, f, 9101000, "moon-bunny").
 		SetState(0).SetPosition(100, 100).SetDelay(0).SetData(d)
 	created, _ := GetRegistry().Create(ten, builder)
+	scheduleStateTimeout(l, ctx, created) // Arm the timer manually since we created via the registry directly.
 
 	// Create armed the timer. Destroy should cancel.
 	// Tolerate Kafka producer error (no broker reachable in unit tests);

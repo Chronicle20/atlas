@@ -1,0 +1,24 @@
+{
+  "services": [
+    {
+      "name": "svc-a",
+      "type": "go-service",
+      "path": "services/svc-a",
+      "module_path": "services/svc-a/atlas.com/svc-a",
+      "docker_image": "example/svc-a",
+      "docker_context": "."
+    },
+    {
+      "name": "svc-b",
+      "type": "go-service",
+      "path": "services/svc-b",
+      "module_path": "services/svc-b/atlas.com/svc-b",
+      "docker_image": "example/svc-b"
+    }
+  ],
+  "libraries": [
+    { "name": "lib-a", "path": "libs/lib-a", "module_path": "libs/lib-a" },
+    { "name": "lib-b", "path": "libs/lib-b", "module_path": "libs/lib-b" },
+    { "name": "lib-c", "path": "libs/lib-c", "module_path": "libs/lib-c", "coverage_threshold": 80 }
+  ]
+}

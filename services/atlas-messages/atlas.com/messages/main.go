@@ -16,8 +16,10 @@ import (
 	"atlas-messages/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-messages/tracing"
+	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-messages"
@@ -63,6 +65,14 @@ func main() {
 	}
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))
+
+	server.New(l).
+		WithContext(tdm.Context()).
+		WithWaitGroup(tdm.WaitGroup()).
+		SetBasePath("/api/").
+		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
+		Run()
 
 	tdm.Wait()
 	l.Infoln("Service shutdown.")

@@ -3,6 +3,7 @@ package consumer_test
 import (
 	"context"
 	"errors"
+	"io"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -420,6 +421,216 @@ func TestRegisterHandlerUnknownTopicReturnsError(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("Expected error when registering handler for unknown topic, got nil")
+	}
+}
+
+// scriptedReader returns a sequence of (message, err) entries in order.
+// Every call to FetchMessage consumes the next scripted entry. When entries
+// are exhausted, FetchMessage blocks on ctx.Done() so the test can cancel.
+// Close() counts invocations so tests can assert dead readers are closed.
+type scriptedReader struct {
+	mu        sync.Mutex
+	script    []scriptedFetch
+	closes    int
+	committed []kafka.Message
+}
+
+type scriptedFetch struct {
+	msg kafka.Message
+	err error
+}
+
+func (r *scriptedReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
+	r.mu.Lock()
+	if len(r.script) > 0 {
+		next := r.script[0]
+		// If this is the last entry and it's an error, leave it in place so
+		// a retry loop re-pulling the same broken reader keeps seeing the
+		// same error until the outer loop recreates the reader. If it's a
+		// successful message, consume it so we don't redeliver — subsequent
+		// calls will block on ctx like a normally-idle reader.
+		if len(r.script) > 1 || next.err == nil {
+			r.script = r.script[1:]
+		}
+		r.mu.Unlock()
+		return next.msg, next.err
+	}
+	r.mu.Unlock()
+	<-ctx.Done()
+	return kafka.Message{}, context.Canceled
+}
+
+func (r *scriptedReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.committed = append(r.committed, msgs...)
+	return nil
+}
+
+func (r *scriptedReader) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.closes++
+	return nil
+}
+
+func (r *scriptedReader) Closes() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.closes
+}
+
+func (r *scriptedReader) Committed() []kafka.Message {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]kafka.Message, len(r.committed))
+	copy(out, r.committed)
+	return out
+}
+
+// readerFactory returns a ReaderProducer that hands out readers from the
+// provided slice in order, one per call. Tests use this to observe reader
+// recreation — the outer Consumer loop should request a fresh reader after
+// each fetch-loop exit.
+func readerFactory(t *testing.T, readers ...consumer.KafkaReader) consumer.ReaderProducer {
+	t.Helper()
+	idx := 0
+	var mu sync.Mutex
+	return func(_ kafka.ReaderConfig) consumer.KafkaReader {
+		mu.Lock()
+		defer mu.Unlock()
+		if idx >= len(readers) {
+			t.Fatalf("factory asked for reader #%d but only %d were provided", idx+1, len(readers))
+		}
+		r := readers[idx]
+		idx++
+		return r
+	}
+}
+
+func TestRecreatesReaderOnEOF(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// First reader: returns EOF immediately. Second reader: delivers one message
+	// and then blocks on ctx.
+	r1 := &scriptedReader{script: []scriptedFetch{{err: io.EOF}}}
+	r2 := &scriptedReader{script: []scriptedFetch{{msg: kafka.Message{Value: []byte("after-recreate")}}}}
+
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1, r2))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "test-consumer", "eof-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	handlerDone := make(chan struct{})
+	_, _ = cm.RegisterHandler("eof-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		close(handlerDone)
+		return true, nil
+	})
+
+	select {
+	case <-handlerDone:
+	case <-time.After(5 * time.Second):
+		t.Fatal("handler was never invoked on recreated reader")
+	}
+
+	// r1 must have been closed once the outer loop noticed EOF.
+	if r1.Closes() != 1 {
+		t.Fatalf("expected r1 to be closed exactly once, got %d", r1.Closes())
+	}
+
+	// Observable state should reflect the recreate.
+	snaps := cm.Consumers()
+	if len(snaps) != 1 {
+		t.Fatalf("expected 1 consumer, got %d", len(snaps))
+	}
+	s := snaps[0].Snapshot()
+	if s.RecreateCount < 1 {
+		t.Fatalf("expected recreateCount >= 1 after EOF, got %d", s.RecreateCount)
+	}
+}
+
+func TestContextCancelDoesNotRecreate(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// One reader is provided. If the outer loop misbehaves and asks for a
+	// second reader after ctx-cancel, readerFactory will Fatal the test.
+	r1 := &scriptedReader{}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1))
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "test-consumer", "cancel-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	// Give the consumer a moment to enter its fetch loop.
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	wg.Wait()
+
+	if r1.Closes() != 1 {
+		t.Fatalf("expected reader closed exactly once on ctx-cancel, got %d", r1.Closes())
+	}
+}
+
+func TestRetryExhaustionRecreatesReader(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// r1: returns a transient error on every fetch. Inner retry (3 attempts)
+	// exhausts, outer loop closes r1 and requests r2.
+	transient := errors.New("transient broker failure")
+	r1 := &scriptedReader{script: []scriptedFetch{
+		{err: transient},
+		{err: transient},
+		{err: transient},
+	}}
+	r2 := &scriptedReader{script: []scriptedFetch{{msg: kafka.Message{Value: []byte("recovered")}}}}
+
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1, r2))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "test-consumer", "retry-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(c)
+
+	handlerDone := make(chan struct{})
+	_, _ = cm.RegisterHandler("retry-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		close(handlerDone)
+		return true, nil
+	})
+
+	select {
+	case <-handlerDone:
+	case <-time.After(10 * time.Second):
+		t.Fatal("handler was never invoked after retry exhaustion recreate")
+	}
+
+	if r1.Closes() != 1 {
+		t.Fatalf("expected r1 closed once after retry exhaustion, got %d", r1.Closes())
 	}
 }
 

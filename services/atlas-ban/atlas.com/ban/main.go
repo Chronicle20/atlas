@@ -70,6 +70,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(ban.InitResource(GetServer())(db)).
 		AddRouteInitializer(history.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	go tasks.Register(l, tdm.Context())(ban.NewExpiredBanCleanup(l, db, time.Minute*time.Duration(5)))

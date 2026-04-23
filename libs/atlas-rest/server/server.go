@@ -17,6 +17,15 @@ import (
 
 type RouteInitializer func(*mux.Router, logrus.FieldLogger)
 
+// MountHandler returns a RouteInitializer that mounts a raw http.Handler at
+// the given path, restricted to GET. Useful for tenant-agnostic diagnostic
+// routes (e.g., /debug/consumers) that don't need the full handler pipeline.
+func MountHandler(path string, h http.Handler) RouteInitializer {
+	return func(r *mux.Router, _ logrus.FieldLogger) {
+		r.Handle(path, h).Methods(http.MethodGet)
+	}
+}
+
 func CommonHeader(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("Content-Type", "application/json")

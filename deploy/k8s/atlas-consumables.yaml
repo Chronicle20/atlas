@@ -17,6 +17,8 @@ spec:
       containers:
       - name: atlas-consumables
         image: ghcr.io/chronicle20/atlas-consumables/atlas-consumables:latest
+        ports:
+        - containerPort: 8080
         envFrom:
         - configMapRef:
             name: atlas-env

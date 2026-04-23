@@ -31,19 +31,30 @@ const (
 	// Chosen to stay inside positive int32 range, which matches the v83 wire
 	// format for oids.
 	MaxId = uint32(2147483647)
+	// RecycleThreshold gates when released IDs become reusable. Below it,
+	// Allocate always INCRs and Release is a no-op, so a freshly destroyed
+	// reactor's oid is never handed to a newly spawned drop while the client
+	// still has the old object in its scene graph. Only once the counter
+	// approaches exhaustion does the free list kick in as a safety valve.
+	// The 100M-id gap is ~28 hours of continuous combat at 1000 allocs/sec --
+	// far beyond any client's object retention window.
+	RecycleThreshold = MaxId - uint32(100_000_000)
 )
 
 var ErrExhausted = errors.New("object id range exhausted for field")
 
 // Allocator mints and recycles per-tenant object IDs shared across entity types.
 type Allocator interface {
-	// Allocate returns a new or recycled ID for the given tenant. Recycled IDs
-	// are preferred (LIFO) so freshly killed monsters or picked-up drops reuse
-	// their oid quickly.
+	// Allocate returns a new or recycled ID for the given tenant. While the
+	// counter is below RecycleThreshold it always advances the counter; only
+	// once the counter approaches exhaustion does Allocate pull from the free
+	// list. This keeps a freshly released oid out of circulation long enough
+	// for the v83 client to process the Destroy packet for the old object.
 	Allocate(ctx context.Context, t tenant.Model) (uint32, error)
-	// Release returns an ID to the tenant's free list. Callers should release
-	// exactly once per Allocate; calling Release twice with the same ID will
-	// put it on the free list twice.
+	// Release marks an ID as reusable. Below RecycleThreshold this is a no-op
+	// (the free list stays empty and the id is simply abandoned); above the
+	// threshold the id is pushed onto the tenant's LIFO free list. Callers
+	// should release exactly once per Allocate.
 	Release(ctx context.Context, t tenant.Model, id uint32) error
 	// Clear removes both the counter and free list for the tenant. Use for
 	// tenant reset; callers normally should not touch this in steady state.
@@ -57,22 +68,27 @@ type redisAllocator struct {
 
 // NewRedisAllocator returns an Allocator backed by the given Redis client.
 func NewRedisAllocator(client *goredis.Client) Allocator {
-	// One atomic script: pop from free list if non-empty, else INCR the counter
-	// (seeding it on first use). KEYS[1]=free list, KEYS[2]=counter. ARGV[1]=min,
-	// ARGV[2]=max.
+	// One atomic script. KEYS[1]=free list, KEYS[2]=counter.
+	// ARGV[1]=min, ARGV[2]=max, ARGV[3]=recycle threshold.
+	// Below threshold: always INCR (seeding on first use). At or above threshold:
+	// prefer a recycled id from the free list so we don't exhaust the range.
 	script := goredis.NewScript(`
 		local freeKey = KEYS[1]
 		local counterKey = KEYS[2]
 		local minId = tonumber(ARGV[1])
 		local maxId = tonumber(ARGV[2])
-		local recycled = redis.call('LPOP', freeKey)
-		if recycled then
-			return tonumber(recycled)
-		end
+		local threshold = tonumber(ARGV[3])
 		local exists = redis.call('EXISTS', counterKey)
 		if exists == 0 then
 			redis.call('SET', counterKey, minId)
 			return minId
+		end
+		local current = tonumber(redis.call('GET', counterKey))
+		if current >= threshold then
+			local recycled = redis.call('LPOP', freeKey)
+			if recycled then
+				return tonumber(recycled)
+			end
 		end
 		local val = redis.call('INCR', counterKey)
 		if val > maxId then
@@ -96,6 +112,7 @@ func (a *redisAllocator) Allocate(ctx context.Context, t tenant.Model) (uint32, 
 		[]string{freeKey(t), counterKey(t)},
 		strconv.FormatUint(uint64(MinId), 10),
 		strconv.FormatUint(uint64(MaxId), 10),
+		strconv.FormatUint(uint64(RecycleThreshold), 10),
 	).Int64()
 	if err != nil {
 		return 0, fmt.Errorf("allocate object id: %w", err)
@@ -107,6 +124,16 @@ func (a *redisAllocator) Allocate(ctx context.Context, t tenant.Model) (uint32, 
 }
 
 func (a *redisAllocator) Release(ctx context.Context, t tenant.Model, id uint32) error {
+	current, err := a.client.Get(ctx, counterKey(t)).Uint64()
+	if err != nil {
+		if errors.Is(err, goredis.Nil) {
+			return nil
+		}
+		return err
+	}
+	if uint32(current) < RecycleThreshold {
+		return nil
+	}
 	return a.client.LPush(ctx, freeKey(t), strconv.FormatUint(uint64(id), 10)).Err()
 }
 

@@ -80,6 +80,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(skill.InitResource(GetServer())(db)).
 		AddRouteInitializer(macro.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

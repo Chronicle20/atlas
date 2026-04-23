@@ -79,6 +79,7 @@ func main() {
 		AddRouteInitializer(drop.InitResource(GetServer())).
 		AddRouteInitializer(_map.InitResource(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tt, err := config.FindTask(drop.ExpirationTaskName)

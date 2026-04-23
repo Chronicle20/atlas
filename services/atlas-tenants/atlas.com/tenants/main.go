@@ -59,6 +59,7 @@ func main() {
 		AddRouteInitializer(tenant.RegisterRoutes(db)(GetServer())).
 		AddRouteInitializer(configuration.RegisterRoutes(db)(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

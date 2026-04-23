@@ -24,6 +24,7 @@ spec:
         - containerPort: 9200
         - containerPort: 9500
         - containerPort: 18500
+        - containerPort: 8080
         envFrom:
         - configMapRef:
             name: atlas-env

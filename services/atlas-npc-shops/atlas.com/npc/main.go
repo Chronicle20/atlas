@@ -75,6 +75,7 @@ func main() {
 		AddRouteInitializer(shops.InitResource(GetServer())(db)).
 		AddRouteInitializer(commodities.InitResource(GetServer())(db)).
 		AddRouteInitializer(seed.InitResource(GetServer())(db)).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

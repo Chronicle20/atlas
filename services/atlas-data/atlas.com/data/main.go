@@ -107,6 +107,7 @@ func main() {
 		AddRouteInitializer(face.InitResource(db)(GetServer())).
 		AddRouteInitializer(hair.InitResource(db)(GetServer())).
 		AddRouteInitializer(mobskill.InitResource(db)(GetServer())).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

@@ -68,6 +68,7 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 			}
 			GetRegistry().ClearCooldown(t, mk, r.Classification(), r.X(), r.Y())
 			l.Debugf("Created reactor [%d] of [%d].", r.Id(), r.Classification())
+			scheduleStateTimeout(l, ctx, r)
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(r))
 		}
 	}
@@ -81,6 +82,7 @@ func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field
 			mk := NewMapKey(f)
 			for _, r := range reactors {
 				CancelPendingActivation(r.Id())
+				cancelStateTimeout(r.Id())
 				GetRegistry().Remove(t, r.Id())
 				GetRegistry().ReleaseSpot(t, mk, r.Classification(), r.X(), r.Y())
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(r))
@@ -95,6 +97,7 @@ func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field
 func Teardown(l logrus.FieldLogger) func() {
 	return func() {
 		CancelAllPendingActivations()
+		cancelAllStateTimeouts()
 
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-reactors").Start(context.Background(), "teardown")
 		defer span.End()
@@ -133,6 +136,7 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
 			CancelPendingActivation(m.Id())
+			cancelStateTimeout(m.Id())
 			t := tenant.MustFromContext(ctx)
 			mk := NewMapKey(m.Field())
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
@@ -153,6 +157,9 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 				l.WithError(err).Errorf("Unable to get reactor [%d] for hit.", reactorId)
 				return err
 			}
+
+			// A hit interrupts any pending state timer for this reactor.
+			cancelStateTimeout(reactorId)
 
 			// Emit HIT command to atlas-reactor-actions for script processing
 			isSkill := skillId != 0
@@ -196,6 +203,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 					}
 					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
 					Trigger(l)(ctx)(updated, characterId)
+					scheduleStateTimeout(l, ctx, updated)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
 				l.Debugf("Reactor [%d] next state [%d] not in state info. Triggering and destroying.", reactorId, nextState)
@@ -215,6 +223,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 				if persistsAtEndState(matchedEventType) {
 					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
 					Trigger(l)(ctx)(updated, characterId)
+					scheduleStateTimeout(l, ctx, updated)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
 				l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Triggering and destroying.", reactorId, r.State(), nextState)
@@ -222,6 +231,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			}
 
 			l.Debugf("Reactor [%d] hit. State changed from [%d] to [%d].", reactorId, r.State(), nextState)
+			scheduleStateTimeout(l, ctx, updated)
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 		}
 	}

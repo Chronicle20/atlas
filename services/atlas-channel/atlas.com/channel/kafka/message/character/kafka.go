@@ -138,5 +138,6 @@ type FameChangedStatusEventBody struct {
 }
 
 type MesoChangedStatusEventBody struct {
-	Amount int32 `json:"amount"`
+	Amount     int32 `json:"amount"`
+	ShowEffect bool  `json:"showEffect"`
 }

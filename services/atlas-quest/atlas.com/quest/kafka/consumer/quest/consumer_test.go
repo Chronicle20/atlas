@@ -80,7 +80,7 @@ func TestHandleStartQuestCommand_StartsQuest(t *testing.T) {
 
 	if cmd.Type == questmsg.CommandTypeStart {
 		// Kafka commands skip validation
-		_, _, err := processor.Start(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), true)
+		_, _, err := processor.Start(uuid.Nil, cmd.CharacterId, cmd.Body.QuestId, test.CreateTestField(), true, nil)
 		if err != nil {
 			t.Fatalf("processor.Start() unexpected error: %v", err)
 		}
@@ -114,7 +114,7 @@ func TestHandleCompleteQuestCommand_CompletesQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate COMPLETE command
 	cmd := questmsg.Command[questmsg.CompleteCommandBody]{
@@ -163,7 +163,7 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Complete and check for chain
 	nextId, err := processor.Complete(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
@@ -177,7 +177,7 @@ func TestHandleCompleteQuestCommand_StartsChainedQuest(t *testing.T) {
 
 	// Start the chained quest (as the handler would)
 	if nextId > 0 {
-		_, err = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestField())
+		_, err = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestField(), nil)
 		if err != nil {
 			t.Fatalf("processor.StartChained() error: %v", err)
 		}
@@ -211,7 +211,7 @@ func TestHandleForfeitQuestCommand_ForfeitsQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// First start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate FORFEIT command
 	cmd := questmsg.Command[questmsg.ForfeitCommandBody]{
@@ -258,7 +258,7 @@ func TestHandleUpdateProgressCommand_UpdatesProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate UPDATE_PROGRESS command
 	cmd := questmsg.Command[questmsg.UpdateProgressCommandBody]{

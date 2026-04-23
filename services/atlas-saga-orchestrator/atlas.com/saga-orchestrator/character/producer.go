@@ -31,7 +31,7 @@ func ChangeMapProvider(transactionId uuid.UUID, characterId uint32, field field.
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AwardExperienceProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions) model.Provider[[]kafka.Message] {
+func AwardExperienceProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, distributions []character2.ExperienceDistributions, showEffect bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.AwardExperienceCommandBody]{
 		TransactionId: transactionId,
@@ -41,6 +41,7 @@ func AwardExperienceProvider(transactionId uuid.UUID, ch channel.Model, characte
 		Body: character2.AwardExperienceCommandBody{
 			ChannelId:     ch.Id(),
 			Distributions: distributions,
+			ShowEffect:    showEffect,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -61,7 +62,7 @@ func AwardLevelProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
-func AwardMesosProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) model.Provider[[]kafka.Message] {
+func AwardMesosProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.Command[character2.RequestChangeMesoBody]{
 		TransactionId: transactionId,
@@ -69,9 +70,10 @@ func AwardMesosProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 		CharacterId:   characterId,
 		Type:          character2.CommandRequestChangeMeso,
 		Body: character2.RequestChangeMesoBody{
-			ActorId:   actorId,
-			ActorType: actorType,
-			Amount:    amount,
+			ActorId:    actorId,
+			ActorType:  actorType,
+			Amount:     amount,
+			ShowEffect: showEffect,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

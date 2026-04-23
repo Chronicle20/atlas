@@ -35,9 +35,10 @@ type Command[E any] struct {
 
 // StartCommandBody is the body for starting a quest
 type StartCommandBody struct {
-	QuestId uint32 `json:"questId"`
-	NpcId   uint32 `json:"npcId,omitempty"`
-	Force   bool   `json:"force,omitempty"` // If true, skip requirement checks
+	QuestId uint32       `json:"questId"`
+	NpcId   uint32       `json:"npcId,omitempty"`
+	Force   bool         `json:"force,omitempty"` // If true, skip requirement checks
+	Rewards []ItemReward `json:"rewards,omitempty"`
 }
 
 // CompleteCommandBody is the body for completing a quest
@@ -98,8 +99,9 @@ type StatusEvent[E any] struct {
 
 // QuestStartedEventBody is the body for quest started events
 type QuestStartedEventBody struct {
-	QuestId  uint32 `json:"questId"`
-	Progress string `json:"progress"`
+	QuestId  uint32       `json:"questId"`
+	Progress string       `json:"progress"`
+	Items    []ItemReward `json:"items,omitempty"`
 }
 
 // ItemReward represents an item reward given during quest completion

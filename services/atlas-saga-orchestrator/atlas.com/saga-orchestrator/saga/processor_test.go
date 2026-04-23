@@ -288,7 +288,7 @@ func TestCharacterCreationSagaCompensation(t *testing.T) {
 				return nil
 			}
 
-			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32) error {
+			charP.AwardMesosAndEmitFunc = func(transactionId uuid.UUID, ch channel.Model, characterId uint32, actorId uint32, actorType string, amount int32, showEffect bool) error {
 				if tt.failureAtStep == 2 {
 					return errors.New("mesos award failed")
 				}

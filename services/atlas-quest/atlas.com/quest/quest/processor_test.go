@@ -68,7 +68,7 @@ func TestStart_HappyPath(t *testing.T) {
 	characterId := uint32(12345)
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
-	model, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	model, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
@@ -98,7 +98,7 @@ func TestStart_WithMobRequirements(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
-	model, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	model, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestStart_WithMapRequirements(t *testing.T) {
 
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMapRequirement(questId, mapIds))
 
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -163,13 +163,13 @@ func TestStart_AlreadyStarted(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start the quest first time
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("First Start() unexpected error: %v", err)
 	}
 
 	// Try to start again
-	_, _, err = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if !errors.Is(err, quest.ErrQuestAlreadyStarted) {
 		t.Errorf("Second Start() error = %v, want ErrQuestAlreadyStarted", err)
 	}
@@ -188,7 +188,7 @@ func TestStart_ValidationFailed(t *testing.T) {
 	mockValidation.StartValidationResult = false
 	mockValidation.StartFailedConditions = []string{"level_too_low", "missing_item_123"}
 
-	_, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, failedConditions, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	if !errors.Is(err, quest.ErrStartRequirementsNotMet) {
 		t.Errorf("Start() error = %v, want ErrStartRequirementsNotMet", err)
@@ -212,7 +212,7 @@ func TestStart_SkipValidation(t *testing.T) {
 	mockValidation.StartFailedConditions = []string{"level_too_low"}
 
 	// Start with skipValidation = true
-	model, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), true)
+	model, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), true, nil)
 
 	if err != nil {
 		t.Fatalf("Start() with skipValidation=true unexpected error: %v", err)
@@ -232,7 +232,7 @@ func TestComplete_HappyPath(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start the quest first
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestComplete_WithChain(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithChain(questId, nextQuestIdExpected))
 
 	// Start and complete
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	nextQuestId, err := processor.Complete(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	if err != nil {
@@ -306,7 +306,7 @@ func TestComplete_ValidationFailed(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Set up end validation to fail
 	mockValidation.EndValidationResult = false
@@ -328,7 +328,7 @@ func TestForfeit_HappyPath(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start the quest
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Start() unexpected error: %v", err)
 	}
@@ -363,7 +363,7 @@ func TestForfeit_ClearsProgress(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
 	// Start the quest (progress initialized)
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Update progress
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, mobId, "005")
@@ -404,7 +404,7 @@ func TestSetProgress_UpdateExisting(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateQuestWithMobRequirement(questId, mobId, 10))
 
 	// Start the quest (progress initialized to "000")
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Update progress
 	err := processor.SetProgress(uuid.Nil, characterId, questId, mobId, "005")
@@ -434,7 +434,7 @@ func TestSetProgress_CreateNew(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start the quest (no initial progress)
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Create new progress entry
 	err := processor.SetProgress(uuid.Nil, characterId, questId, infoNumber, "1")
@@ -478,7 +478,7 @@ func TestGetByCharacterId_ReturnsAllQuests(t *testing.T) {
 
 	for _, qid := range questIds {
 		mockData.AddQuestDefinition(qid, test.CreateSimpleQuestDefinition(qid))
-		_, _, _ = processor.Start(uuid.Nil, characterId, qid, createTestField(), false)
+		_, _, _ = processor.Start(uuid.Nil, characterId, qid, createTestField(), false, nil)
 	}
 
 	quests, err := processor.GetByCharacterId(characterId)
@@ -502,9 +502,9 @@ func TestGetByCharacterIdAndState_FiltersCorrectly(t *testing.T) {
 	mockData.AddQuestDefinition(6001, test.CreateSimpleQuestDefinition(6001))
 	mockData.AddQuestDefinition(6002, test.CreateSimpleQuestDefinition(6002))
 
-	_, _, _ = processor.Start(uuid.Nil, characterId, 6000, createTestField(), false)
-	_, _, _ = processor.Start(uuid.Nil, characterId, 6001, createTestField(), false)
-	_, _, _ = processor.Start(uuid.Nil, characterId, 6002, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, 6000, createTestField(), false, nil)
+	_, _, _ = processor.Start(uuid.Nil, characterId, 6001, createTestField(), false, nil)
+	_, _, _ = processor.Start(uuid.Nil, characterId, 6002, createTestField(), false, nil)
 
 	// Complete one quest
 	_, _ = processor.Complete(uuid.Nil, characterId, 6002, createTestField(), true, nil)
@@ -546,7 +546,7 @@ func TestTenantIsolation(t *testing.T) {
 	tenant1Id := uuid.New()
 	ctx1 := test.CreateTestContextWithTenant(tenant1Id)
 	processor1 := quest.NewProcessorWithDependencies(logger, ctx1, db, mockData, mockValidation, mockEventEmitter)
-	_, _, _ = processor1.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor1.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Try to access from tenant 2
 	tenant2Id := uuid.New()
@@ -560,7 +560,7 @@ func TestTenantIsolation(t *testing.T) {
 	}
 
 	// Tenant 2 should be able to start their own quest
-	_, _, err = processor2.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err = processor2.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		t.Fatalf("Tenant 2 Start() unexpected error: %v", err)
 	}
@@ -580,7 +580,7 @@ func TestCheckAutoComplete_Completes(t *testing.T) {
 	mockData.AddQuestDefinition(questId, def)
 
 	// Start quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Set progress to meet requirements
 	_ = processor.SetProgress(uuid.Nil, characterId, questId, mobId, "005")
@@ -616,7 +616,7 @@ func TestCheckAutoComplete_NotAutoComplete(t *testing.T) {
 	def.AutoComplete = false
 	mockData.AddQuestDefinition(questId, def)
 
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	_, completed, err := processor.CheckAutoComplete(characterId, questId, createTestField())
 	if err != nil {
@@ -640,7 +640,7 @@ func TestCheckAutoComplete_RequirementsNotMet(t *testing.T) {
 	def.AutoComplete = true
 	mockData.AddQuestDefinition(questId, def)
 
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 
 	// Progress is still 0
 	_, completed, _ := processor.CheckAutoComplete(characterId, questId, createTestField())
@@ -659,7 +659,7 @@ func TestDeleteByCharacterId(t *testing.T) {
 
 	for _, qid := range questIds {
 		mockData.AddQuestDefinition(qid, test.CreateSimpleQuestDefinition(qid))
-		_, _, _ = processor.Start(uuid.Nil, characterId, qid, createTestField(), false)
+		_, _, _ = processor.Start(uuid.Nil, characterId, qid, createTestField(), false, nil)
 	}
 
 	err := processor.DeleteByCharacterId(characterId)
@@ -689,11 +689,11 @@ func TestRepeatableQuest_RestartAfterInterval(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateRepeatableQuest(questId, 60))
 
 	// Start and complete
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true, nil)
 
 	// Try to restart immediately - should fail (interval not elapsed)
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if !errors.Is(err, quest.ErrIntervalNotElapsed) {
 		t.Errorf("Start() error = %v, want ErrIntervalNotElapsed", err)
 	}
@@ -711,11 +711,11 @@ func TestNonRepeatableQuest_CannotRestart(t *testing.T) {
 	mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
 
 	// Start and complete
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	_, _ = processor.Complete(uuid.Nil, characterId, questId, createTestField(), true, nil)
 
 	// Try to restart - should fail
-	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := processor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if !errors.Is(err, quest.ErrQuestAlreadyCompleted) {
 		t.Errorf("Start() error = %v, want ErrQuestAlreadyCompleted", err)
 	}
@@ -749,7 +749,7 @@ func TestWithTransaction(t *testing.T) {
 	tx := db.Begin()
 	txProcessor := processor.WithTransaction(tx)
 
-	_, _, err := txProcessor.Start(uuid.Nil, characterId, questId, createTestField(), false)
+	_, _, err := txProcessor.Start(uuid.Nil, characterId, questId, createTestField(), false, nil)
 	if err != nil {
 		tx.Rollback()
 		t.Fatalf("Start() in transaction error: %v", err)
@@ -785,6 +785,6 @@ func BenchmarkStart(b *testing.B) {
 		questId := uint32(i + 100000)
 		characterId := uint32(i + 1)
 		mockData.AddQuestDefinition(questId, test.CreateSimpleQuestDefinition(questId))
-		_, _, _ = processor.Start(uuid.Nil, characterId, questId, f, true)
+		_, _, _ = processor.Start(uuid.Nil, characterId, questId, f, true, nil)
 	}
 }

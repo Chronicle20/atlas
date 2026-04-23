@@ -109,6 +109,7 @@ func handleRetrieveAsset(l logrus.FieldLogger, ctx context.Context, s session.Mo
 				ActorId:     s.StorageNpcId(),
 				ActorType:   "NPC",
 				Amount:      -withdrawFee, // Negative to deduct
+				ShowEffect:  true,
 			},
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -187,6 +188,7 @@ func handleStoreAsset(l logrus.FieldLogger, ctx context.Context, s session.Model
 				ActorId:     s.StorageNpcId(),
 				ActorType:   "NPC",
 				Amount:      -depositFee, // Negative to deduct
+				ShowEffect:  true,
 			},
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -262,6 +264,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, sp *
 				ActorId:     s.CharacterId(),
 				ActorType:   "STORAGE",
 				Amount:      amount, // Negative to deduct
+				ShowEffect:  true,
 			},
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -328,6 +331,7 @@ func handleMeso(l logrus.FieldLogger, ctx context.Context, s session.Model, sp *
 				ActorId:     s.CharacterId(),
 				ActorType:   "STORAGE",
 				Amount:      amount, // Positive to add
+				ShowEffect:  true,
 			},
 			CreatedAt: now,
 			UpdatedAt: now,

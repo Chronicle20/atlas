@@ -10,7 +10,7 @@ This document captures architectural issues identified during a principal-engine
 
 ### Status: LARGELY RESOLVED
 
-The `redis-registry-migration` branch implements a shared Redis-backed registry library (`libs/atlas-redis`) and migrates 40+ registries across 25 services. See [redis-registry-migration tasks](../dev/active/redis-registry-migration/redis-registry-migration-tasks.md) for the full checklist.
+The `redis-registry-migration` branch implements a shared Redis-backed registry library (`libs/atlas-redis`) and migrates 40+ registries across 25 services. See [redis-registry-migration tasks](../docs/tasks/legacy-redis-registry-migration/tasks.md) for the full checklist.
 
 **Completed:**
 - Shared library (`libs/atlas-redis`) — `TenantRegistry[K, V]`, `TTLRegistry[K, V]`, per-tenant auto-increment IDs, SET-based secondary indexes, distributed locks
@@ -197,7 +197,7 @@ All 48 Kafka consumers now use `FetchMessage()` + explicit `CommitMessages()` af
 - `libs/atlas-kafka/consumer/manager.go` — interface change + consumer loop rewrite
 - `libs/atlas-kafka/consumer/manager_test.go` — updated mocks + `TestCommitAfterHandlerCompletes`, `TestHandlerErrorPreventsCommit`, `TestHandlerPanicPreventsCommit`, `TestMultipleHandlersAllCompleteBeforeCommit`
 
-**Remaining:** Idempotency audit — review ~531 handler registrations across 48 services for duplicate-message safety under at-least-once delivery. See [kafka-at-least-once-delivery tasks](../dev/active/kafka-at-least-once-delivery/kafka-at-least-once-delivery-tasks.md).
+**Remaining:** Idempotency audit — review ~531 handler registrations across 48 services for duplicate-message safety under at-least-once delivery. See [kafka-at-least-once-delivery tasks](../docs/tasks/legacy-kafka-at-least-once-delivery/tasks.md).
 
 ### Original Problem
 
@@ -266,7 +266,7 @@ Add a GORM global callback that automatically injects the tenant filter from con
 
 ### Status: IN PROGRESS (Phase 1 complete)
 
-Phase 1 (resilience) is complete — nginx is no longer a single point of failure. Phase 2 (direct service-to-service communication) is planned but not yet started. See [nginx-ingress-spof plan](../dev/active/nginx-ingress-spof/nginx-ingress-spof-plan.md) for the full roadmap.
+Phase 1 (resilience) is complete — nginx is no longer a single point of failure. Phase 2 (direct service-to-service communication) is planned but not yet started. See [nginx-ingress-spof plan](../docs/tasks/legacy-nginx-ingress-spof/plan.md) for the full roadmap.
 
 **Phase 1 — Resilient Nginx (COMPLETE):**
 - 2 replicas with preferred pod anti-affinity across nodes
@@ -278,7 +278,7 @@ Phase 1 (resilience) is complete — nginx is no longer a single point of failur
 - The `_SERVICE_URL` override mechanism already exists in `libs/atlas-rest/requests/url.go` but is unused
 - Adding per-domain env vars (e.g., `CHARACTERS_SERVICE_URL`) to `atlas-env.yaml` will bypass nginx for internal calls
 - Incremental rollout: one service pair at a time, starting with low-traffic paths
-- See [nginx-ingress-spof tasks](../dev/active/nginx-ingress-spof/nginx-ingress-spof-tasks.md) for the full checklist
+- See [nginx-ingress-spof tasks](../docs/tasks/legacy-nginx-ingress-spof/tasks.md) for the full checklist
 
 **Phase 3 — Debug Tooling Update (PLANNED):**
 - `tools/debug-start.sh` currently rewrites the nginx ConfigMap — needs adaptation for direct calls

@@ -33,6 +33,50 @@
         "pathExclusions": [],
         "contentPatterns": []
       }
+    },
+    "frontend-dev-guidelines": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "description": "Frontend development patterns for React/TypeScript",
+      "promptTriggers": {
+        "keywords": [
+          "frontend",
+          "react",
+          "tsx",
+          "component",
+          "hook",
+          "form",
+          "tailwind",
+          "shadcn",
+          "react query",
+          "tanstack",
+          "zod"
+        ],
+        "intentPatterns": [
+          "(create|add|implement|build).*?(component|page|hook|form|dialog|table)",
+          "(fix|handle|debug).*?(render|hydration|state|hook)",
+          "(add|implement).*?(validation|schema|zod|form)",
+          "(organize|structure|refactor).*?(frontend|component|hook|page)",
+          "(how to|best practice).*?(frontend|component|hook|react|typescript)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "services/atlas-ui/**/*.ts",
+          "services/atlas-ui/**/*.tsx",
+          "**/components/**/*.tsx",
+          "**/pages/**/*.tsx",
+          "**/lib/hooks/**/*.ts",
+          "**/lib/schemas/**/*.ts",
+          "**/services/api/**/*.ts"
+        ],
+        "pathExclusions": [
+          "**/*.test.ts",
+          "**/*.test.tsx"
+        ],
+        "contentPatterns": []
+      }
     }
   },
   "notes": {

@@ -76,6 +76,7 @@ func main() {
 		SetBasePath(GetServer().GetPrefix()).
 		AddRouteInitializer(messenger.InitResource(GetServer())).
 		SetPort(os.Getenv("REST_PORT")).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

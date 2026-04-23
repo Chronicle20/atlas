@@ -17,6 +17,8 @@ spec:
       containers:
       - name: expressions
         image: ghcr.io/chronicle20/atlas-expressions/atlas-expressions:latest
+        ports:
+        - containerPort: 8080
         envFrom:
         - configMapRef:
             name: atlas-env

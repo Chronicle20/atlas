@@ -74,6 +74,7 @@ func main() {
 		AddRouteInitializer(channel.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
 		AddRouteInitializer(rate.InitResource(GetServer())).
+		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
 	l.Infof("Service started.")

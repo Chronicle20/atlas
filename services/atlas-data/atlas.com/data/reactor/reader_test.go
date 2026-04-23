@@ -366,8 +366,21 @@ func TestReader(t *testing.T) {
 	if rm.Name != "거대병아리" {
 		t.Fatalf("name != 거대병아리, got %s", rm.Name)
 	}
-	if len(rm.StateInfo) != 6 {
-		t.Fatal("len(rm.StateInfo) != 6")
+	if len(rm.StateInfo) != 1 {
+		t.Fatalf("len(rm.StateInfo) != 1 (only state 5 has an event subtree), got %d", len(rm.StateInfo))
+	}
+	if _, ok := rm.StateInfo[5]; !ok {
+		t.Fatal("StateInfo[5] missing")
+	}
+	if rm.TimeoutInfo[5] != 1000 {
+		t.Fatalf("TimeoutInfo[5] = %d, want 1000", rm.TimeoutInfo[5])
+	}
+	tns, ok := rm.TimeoutNextStateInfo[5]
+	if !ok {
+		t.Fatal("TimeoutNextStateInfo[5] missing")
+	}
+	if tns != 0 {
+		t.Fatalf("TimeoutNextStateInfo[5] = %d, want 0 (type-101 event's state field)", tns)
 	}
 }
 
@@ -384,8 +397,8 @@ func TestLinkedReader(t *testing.T) {
 	if rm.Name != "거대병아리" {
 		t.Fatalf("name != 거대병아리, got %s", rm.Name)
 	}
-	if len(rm.StateInfo) != 6 {
-		t.Fatal("len(rm.StateInfo) != 6")
+	if len(rm.StateInfo) != 1 {
+		t.Fatalf("len(rm.StateInfo) != 1, got %d", len(rm.StateInfo))
 	}
 }
 
@@ -404,5 +417,108 @@ func TestReaderInfoFallback(t *testing.T) {
 	}
 	if len(rm.StateInfo) != 2 {
 		t.Fatalf("len(rm.StateInfo) != 2, got %d", len(rm.StateInfo))
+	}
+}
+
+const terminalEmptyTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="0002001.img">
+  <imgdir name="info">
+    <string name="info" value="리엑터"/>
+  </imgdir>
+  <imgdir name="0">
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="1"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+  <imgdir name="1">
+  </imgdir>
+</imgdir>
+`
+
+var terminalEmptyNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
+	return xml.FromByteArrayProvider([]byte(terminalEmptyTestXML))
+}
+
+func TestReaderTerminalEmptyStateOmitted(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rm, err := Read(l)("", 0, terminalEmptyNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := rm.StateInfo[1]; ok {
+		t.Fatalf("state 1 should be absent from StateInfo (no event subtree); got entries: %+v", rm.StateInfo[1])
+	}
+	if _, ok := rm.TimeoutInfo[1]; ok {
+		t.Fatalf("state 1 should be absent from TimeoutInfo; got %+v", rm.TimeoutInfo[1])
+	}
+	if len(rm.StateInfo) != 1 {
+		t.Fatalf("expected exactly 1 state in StateInfo (state 0); got %d", len(rm.StateInfo))
+	}
+}
+
+const timeOutCasingTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="9101000.img">
+  <imgdir name="info">
+    <string name="info" value="MoonFlower"/>
+  </imgdir>
+  <imgdir name="0">
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="101"/>
+        <int name="state" value="1"/>
+      </imgdir>
+      <int name="timeOut" value="5000"/>
+    </imgdir>
+  </imgdir>
+  <imgdir name="1">
+    <imgdir name="event">
+      <imgdir name="0">
+        <int name="type" value="0"/>
+        <int name="state" value="2"/>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>
+`
+
+var timeOutCasingNodeProvider = func(path string, id uint32) model.Provider[xml.Node] {
+	return xml.FromByteArrayProvider([]byte(timeOutCasingTestXML))
+}
+
+func TestReaderHonorsTimeOutCasing(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rm, err := Read(l)("", 0, timeOutCasingNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := rm.TimeoutInfo[0]
+	if !ok {
+		t.Fatal("TimeoutInfo[0] missing")
+	}
+	if got != 5000 {
+		t.Fatalf("TimeoutInfo[0] = %d, want 5000", got)
+	}
+}
+
+func TestReaderExtractsTimeoutNextState(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	rm, err := Read(l)("", 0, timeOutCasingNodeProvider)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, ok := rm.TimeoutNextStateInfo[0]
+	if !ok {
+		t.Fatal("TimeoutNextStateInfo[0] missing")
+	}
+	if got != 1 {
+		t.Fatalf("TimeoutNextStateInfo[0] = %d, want 1 (from type-101 event's state field)", got)
+	}
+	if _, present := rm.TimeoutNextStateInfo[1]; present {
+		t.Fatalf("TimeoutNextStateInfo[1] should be absent (state 1 has no type-101 event); got %+v", rm.TimeoutNextStateInfo[1])
 	}
 }

@@ -42,8 +42,17 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 				return nil
 			}
 
+			// Reserve the spatial slot before any expensive work. Prevents two
+			// concurrent CREATE commands (e.g. racing map-Enter spawns) from
+			// producing duplicate reactors stacked at the same position.
+			if !GetRegistry().TryClaimSpot(t, mk, b.classification, b.x, b.y) {
+				l.Debugf("Ignoring CREATE for reactor [%d] at (%d,%d) in map [%d] instance [%s] - spot already claimed.", b.classification, b.x, b.y, b.mapId, b.instance)
+				return nil
+			}
+
 			d, err := data.GetById(l)(ctx)(b.Classification())
 			if err != nil {
+				GetRegistry().ReleaseSpot(t, mk, b.classification, b.x, b.y)
 				l.WithError(err).Errorf("Unable to retrieve reactor [%d] game data.", b.Classification())
 				return err
 			}
@@ -53,11 +62,13 @@ func Create(l logrus.FieldLogger) func(ctx context.Context) func(b *ModelBuilder
 			}
 			r, err := GetRegistry().Create(t, b)
 			if err != nil {
+				GetRegistry().ReleaseSpot(t, mk, b.classification, b.x, b.y)
 				l.WithError(err).Errorf("Failed to create reactor.")
 				return err
 			}
 			GetRegistry().ClearCooldown(t, mk, r.Classification(), r.X(), r.Y())
 			l.Debugf("Created reactor [%d] of [%d].", r.Id(), r.Classification())
+			scheduleStateTimeout(l, ctx, r)
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(createdStatusEventProvider(r))
 		}
 	}
@@ -68,13 +79,16 @@ func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field
 		t := tenant.MustFromContext(ctx)
 		return func(f field.Model) {
 			reactors := GetRegistry().GetInField(t, f)
+			mk := NewMapKey(f)
 			for _, r := range reactors {
 				CancelPendingActivation(r.Id())
+				cancelStateTimeout(r.Id())
 				GetRegistry().Remove(t, r.Id())
+				GetRegistry().ReleaseSpot(t, mk, r.Classification(), r.X(), r.Y())
 				_ = producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(r))
 			}
-			mk := NewMapKey(f)
 			GetRegistry().ClearAllCooldownsForMap(t, mk)
+			GetRegistry().ClearAllSpotsForMap(t, mk)
 			l.Debugf("Destroyed [%d] reactors and cleared cooldowns for map [%d] instance [%s].", len(reactors), f.MapId(), f.Instance())
 		}
 	}
@@ -83,6 +97,7 @@ func DestroyInField(l logrus.FieldLogger) func(ctx context.Context) func(f field
 func Teardown(l logrus.FieldLogger) func() {
 	return func() {
 		CancelAllPendingActivations()
+		cancelAllStateTimeouts()
 
 		ctx, span := otel.GetTracerProvider().Tracer("atlas-reactors").Start(context.Background(), "teardown")
 		defer span.End()
@@ -121,11 +136,13 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 	return func(ctx context.Context) model.Operator[Model] {
 		return func(m Model) error {
 			CancelPendingActivation(m.Id())
+			cancelStateTimeout(m.Id())
 			t := tenant.MustFromContext(ctx)
 			mk := NewMapKey(m.Field())
 			GetRegistry().RecordCooldown(t, mk, m.Classification(), m.X(), m.Y(), m.Delay())
 			l.Debugf("Recorded cooldown for reactor [%d] at (%d,%d) with delay [%d]ms.", m.Classification(), m.X(), m.Y(), m.Delay())
 			GetRegistry().Remove(t, m.Id())
+			GetRegistry().ReleaseSpot(t, mk, m.Classification(), m.X(), m.Y())
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(destroyedStatusEventProvider(m))
 		}
 	}
@@ -140,6 +157,9 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 				l.WithError(err).Errorf("Unable to get reactor [%d] for hit.", reactorId)
 				return err
 			}
+
+			// A hit interrupts any pending state timer for this reactor.
+			cancelStateTimeout(reactorId)
 
 			// Emit HIT command to atlas-reactor-actions for script processing
 			isSkill := skillId != 0
@@ -157,9 +177,11 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			}
 
 			var nextState int8 = -1
+			var matchedEventType int32 = 0
 			for _, event := range stateEvents {
 				if len(event.ActiveSkills()) == 0 || containsSkill(event.ActiveSkills(), skillId) {
 					nextState = event.NextState()
+					matchedEventType = event.Type()
 					break
 				}
 			}
@@ -171,7 +193,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			_, hasNextState := stateInfo[nextState]
 			if !hasNextState {
-				if persistsAtFinalState(stateInfo) {
+				if persistsAtEndState(matchedEventType) {
 					updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
 						b.SetState(nextState)
 					})
@@ -179,7 +201,9 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 						l.WithError(err).Errorf("Unable to update reactor [%d] state.", reactorId)
 						return err
 					}
-					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
+					// Arm the timer before triggering action emission; local state progression must not be gated on Kafka latency.
+					scheduleStateTimeout(l, ctx, updated)
 					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
@@ -197,8 +221,9 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 
 			// Check if the new state is terminal (all its events lead to non-existent states)
 			if isTerminalState(stateInfo, nextState) {
-				if persistsAtFinalState(stateInfo) {
-					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping item reactor alive.", reactorId, r.State(), nextState)
+				if persistsAtEndState(matchedEventType) {
+					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
+					scheduleStateTimeout(l, ctx, updated)
 					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
@@ -207,6 +232,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			}
 
 			l.Debugf("Reactor [%d] hit. State changed from [%d] to [%d].", reactorId, r.State(), nextState)
+			scheduleStateTimeout(l, ctx, updated)
 			return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 		}
 	}
@@ -243,18 +269,22 @@ func containsSkill(skills []uint32, skillId uint32) bool {
 	return false
 }
 
-// persistsAtFinalState checks if a reactor should remain alive at its final
-// state rather than being destroyed. This applies to item-triggered (type 100)
-// and type 999 reactors.
-func persistsAtFinalState(stateInfo map[int8][]state.Model) bool {
-	for _, events := range stateInfo {
-		for _, event := range events {
-			if event.Type() == itemReactorStateType || event.Type() == 999 {
-				return true
-			}
-		}
+// persistsAtEndState returns true if a reactor that has just transitioned via
+// an event of the given type should remain alive rather than be destroyed.
+// Taxonomy (from the wz reactor survey):
+//
+//	100       item-drop reactors (moonflowers, etc.)
+//	101       timer-driven cyclic reactors (Balrog altars, PQ cycles)
+//	5, 6, 7   GPQ skill-gated reactors
+//
+// All other types (0, 1, 2) are breakable hit reactors and destroy on end.
+func persistsAtEndState(eventType int32) bool {
+	switch eventType {
+	case 100, 101, 5, 6, 7:
+		return true
+	default:
+		return false
 	}
-	return false
 }
 
 // isTerminalState checks if a state is terminal, meaning all its events

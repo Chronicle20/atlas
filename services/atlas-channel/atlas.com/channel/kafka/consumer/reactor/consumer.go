@@ -71,6 +71,8 @@ func handleCreated(sc server.Model, wp writer.Producer) message.Handler[reactor2
 			SetDirection(e.Body.Direction).
 			MustBuild()
 
+		l.Debugf("Announcing ReactorSpawn to map [%d] instance [%s]: id=[%d] class=[%d] state=[%d] pos=(%d,%d) dir=[%d] name=[%s].", e.MapId, e.Instance, r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction(), r.Name())
+
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorSpawnWriter)(reactorpkt.NewReactorSpawn(r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction(), r.Name()).Encode))
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn reactor [%d] for characters in map [%d].", r.Id(), e.MapId)
@@ -87,6 +89,8 @@ func handleDestroyed(sc server.Model, wp writer.Producer) message.Handler[reacto
 		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
 			return
 		}
+
+		l.Debugf("Announcing ReactorDestroy to map [%d] instance [%s]: id=[%d] state=[%d] pos=(%d,%d).", e.MapId, e.Instance, e.ReactorId, e.Body.State, e.Body.X, e.Body.Y)
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorDestroyWriter)(reactorpkt.NewReactorDestroy(e.ReactorId, e.Body.State, e.Body.X, e.Body.Y).Encode))
 		if err != nil {
@@ -112,6 +116,8 @@ func handleHit(sc server.Model, wp writer.Producer) message.Handler[reactor2.Sta
 			SetPosition(e.Body.X, e.Body.Y).
 			SetDirection(e.Body.Direction).
 			MustBuild()
+
+		l.Debugf("Announcing ReactorHit to map [%d] instance [%s]: id=[%d] class=[%d] state=[%d] pos=(%d,%d) dir=[%d].", e.MapId, e.Instance, r.Id(), r.Classification(), r.State(), r.X(), r.Y(), r.Direction())
 
 		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance), session.Announce(l)(ctx)(wp)(reactorpkt.ReactorHitWriter)(reactorpkt.NewReactorHit(r.Id(), r.State(), r.X(), r.Y(), uint16(r.Direction())).Encode))
 		if err != nil {

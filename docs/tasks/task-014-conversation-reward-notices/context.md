@@ -59,7 +59,7 @@ Last Updated: 2026-04-19
 4. **Item-loss encoder derives stackable/unstackable from `itemId`** — caller passes only `(itemId, quantity)`; encoder mirrors the existing asset consumer's classification helper.
 5. **`forfeit_quest` only updates journal + fires the existing forfeit packet** — item cleanup is explicitly out of scope (PRD §9.3).
 6. **Suppression is `(itemId, quantity)` exact-tuple match preceding `complete_quest`** — quantity > coverage stays visible; post-`complete_quest` `award_item` is not suppressed (per current assumption).
-7. **Use `docs/tasks/task-NNN-slug/` location** — per project memory, this convention superseded `dev/active/<feature-name>/` on 2026-04-16.
+7. **Use `docs/tasks/task-NNN-slug/` location** — per project memory, this convention superseded the old `docs/tasks/legacy-<feature-name>/` pattern on 2026-04-16.
 
 ## Dependencies
 

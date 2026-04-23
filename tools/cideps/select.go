@@ -19,7 +19,10 @@ type Selection struct {
 //     its lib-closure intersects ChangedLibs.
 //   - Otherwise a library is affected when it is in ChangedLibs or when its
 //     lib-closure intersects ChangedLibs.
-//   - Unknown names in ChangedLibs/ChangedServices are ignored silently.
+//   - Non-Go services (atlas-ui, atlas-assets) aren't in the graph but are still
+//     returned when present in ChangedServices; the enrichment step filters by
+//     services.json type/docker_image.
+//   - Unknown names in ChangedLibs are ignored silently (graph filter).
 func Select(g *Graph, in SelectInput) Selection {
 	if in.ForceAll {
 		return Selection{Services: g.Services(), Libs: g.Libs()}
@@ -34,9 +37,7 @@ func Select(g *Graph, in SelectInput) Selection {
 
 	affectedSvcs := make(map[string]struct{})
 	for _, n := range in.ChangedServices {
-		if _, ok := g.services[n]; ok {
-			affectedSvcs[n] = struct{}{}
-		}
+		affectedSvcs[n] = struct{}{}
 	}
 	for _, svc := range g.Services() {
 		if _, done := affectedSvcs[svc]; done {

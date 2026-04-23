@@ -26,6 +26,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-object-id v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -82,3 +83,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-saga => ../../../../libs/atlas-s
 replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/atlas-script-core
 
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket
+
+replace github.com/Chronicle20/atlas/libs/atlas-object-id => ../../../../libs/atlas-object-id

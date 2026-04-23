@@ -12,27 +12,25 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 const (
-	nextIdKey      = "reactors:next_id"
 	allReactorsKey = "reactors:all"
-	minId          = uint32(1000000001)
-	maxId          = uint32(2000000000)
 )
 
 type Registry struct {
-	client *goredis.Client
+	client    *goredis.Client
+	allocator objectid.Allocator
 }
 
 var reg *Registry
 
 func InitRegistry(client *goredis.Client) {
-	reg = &Registry{client: client}
-	client.SetNX(context.Background(), nextIdKey, minId-1, 0)
+	reg = &Registry{client: client, allocator: objectid.NewRedisAllocator(client)}
 }
 
 func GetRegistry() *Registry {
@@ -55,12 +53,17 @@ func NewMapKey(f field.Model) MapKey {
 	}
 }
 
-func reactorKey(id uint32) string {
-	return fmt.Sprintf("reactor:%d", id)
+func reactorKey(t tenant.Model, id uint32) string {
+	return fmt.Sprintf("reactor:%s:%d", t.Id().String(), id)
 }
 
 func reactorIdStr(id uint32) string {
 	return fmt.Sprintf("%d", id)
+}
+
+// allSetMember encodes a tenant+id pair for the global reactors:all set.
+func allSetMember(t tenant.Model, id uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), id)
 }
 
 func mapSetKey(t tenant.Model, mk MapKey) string {
@@ -71,33 +74,17 @@ func cooldownKey(t tenant.Model, mk MapKey, classification uint32, x int16, y in
 	return fmt.Sprintf("reactor:cd:%s:%d:%d:%d:%s:%d:%d:%d", t.Id().String(), mk.worldId, mk.channelId, mk.mapId, mk.instance.String(), classification, x, y)
 }
 
-var incrScript = goredis.NewScript(`
-local id = redis.call('INCR', KEYS[1])
-if id > tonumber(ARGV[1]) then
-    redis.call('SET', KEYS[1], ARGV[2])
-    return tonumber(ARGV[2])
-end
-return id
-`)
 
-func (r *Registry) getNextId() uint32 {
-	result, err := incrScript.Run(context.Background(), r.client, []string{nextIdKey}, maxId, minId).Int64()
-	if err != nil {
-		return minId
-	}
-	return uint32(result)
-}
-
-func (r *Registry) store(id uint32, m Model) error {
+func (r *Registry) store(t tenant.Model, id uint32, m Model) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
 	}
-	return r.client.Set(context.Background(), reactorKey(id), data, 0).Err()
+	return r.client.Set(context.Background(), reactorKey(t, id), data, 0).Err()
 }
 
-func (r *Registry) load(id uint32) (Model, bool) {
-	data, err := r.client.Get(context.Background(), reactorKey(id)).Bytes()
+func (r *Registry) load(t tenant.Model, id uint32) (Model, bool) {
+	data, err := r.client.Get(context.Background(), reactorKey(t, id)).Bytes()
 	if err != nil {
 		return Model{}, false
 	}
@@ -108,8 +95,8 @@ func (r *Registry) load(id uint32) (Model, bool) {
 	return m, true
 }
 
-func (r *Registry) Get(id uint32) (Model, error) {
-	m, ok := r.load(id)
+func (r *Registry) Get(t tenant.Model, id uint32) (Model, error) {
+	m, ok := r.load(t, id)
 	if !ok {
 		return Model{}, errors.New("unable to locate reactor")
 	}
@@ -124,11 +111,32 @@ func (r *Registry) GetAll() map[tenant.Model][]Model {
 
 	res := make(map[tenant.Model][]Model)
 	for _, member := range members {
-		id, err := strconv.ParseUint(member, 10, 32)
+		// Members are stored as "{tenantId}:{id}". The legacy "{id}"-only form
+		// is skipped; a rolling restart drops those.
+		sep := -1
+		for i := len(member) - 1; i >= 0; i-- {
+			if member[i] == ':' {
+				sep = i
+				break
+			}
+		}
+		if sep < 0 {
+			continue
+		}
+		id, err := strconv.ParseUint(member[sep+1:], 10, 32)
 		if err != nil {
 			continue
 		}
-		if m, ok := r.load(uint32(id)); ok {
+		tenantId, err := uuid.Parse(member[:sep])
+		if err != nil {
+			continue
+		}
+		te, err := tenant.Create(tenantId, "", 0, 0)
+		if err != nil {
+			continue
+		}
+		if m, ok := r.load(te, uint32(id)); ok {
+			// Prefer the tenant stored on the model (it has region/version too).
 			res[m.Tenant()] = append(res[m.Tenant()], m)
 		}
 	}
@@ -150,7 +158,7 @@ func (r *Registry) GetInField(t tenant.Model, f field.Model) []Model {
 		if err != nil {
 			continue
 		}
-		if m, ok := r.load(uint32(id)); ok {
+		if m, ok := r.load(t, uint32(id)); ok {
 			result = append(result, m)
 		}
 	}
@@ -158,28 +166,34 @@ func (r *Registry) GetInField(t tenant.Model, f field.Model) []Model {
 }
 
 func (r *Registry) Create(t tenant.Model, b *ModelBuilder) (Model, error) {
-	id := r.getNextId()
+	ctx := context.Background()
+	id, err := r.allocator.Allocate(ctx, t)
+	if err != nil {
+		return Model{}, fmt.Errorf("allocate reactor oid: %w", err)
+	}
 	m, err := b.SetId(id).UpdateTime().Build()
 	if err != nil {
+		_ = r.allocator.Release(ctx, t, id)
 		return Model{}, err
 	}
 
-	if err := r.store(id, m); err != nil {
+	if err := r.store(t, id, m); err != nil {
+		_ = r.allocator.Release(ctx, t, id)
 		return Model{}, err
 	}
 
 	mk := NewMapKey(m.Field())
 	idStr := reactorIdStr(id)
 	pipe := r.client.Pipeline()
-	pipe.SAdd(context.Background(), allReactorsKey, idStr)
-	pipe.SAdd(context.Background(), mapSetKey(t, mk), idStr)
-	_, _ = pipe.Exec(context.Background())
+	pipe.SAdd(ctx, allReactorsKey, allSetMember(t, id))
+	pipe.SAdd(ctx, mapSetKey(t, mk), idStr)
+	_, _ = pipe.Exec(ctx)
 
 	return m, nil
 }
 
-func (r *Registry) Update(id uint32, modifier func(*ModelBuilder)) (Model, error) {
-	m, ok := r.load(id)
+func (r *Registry) Update(t tenant.Model, id uint32, modifier func(*ModelBuilder)) (Model, error) {
+	m, ok := r.load(t, id)
 	if !ok {
 		return Model{}, errors.New("unable to locate reactor")
 	}
@@ -192,26 +206,29 @@ func (r *Registry) Update(id uint32, modifier func(*ModelBuilder)) (Model, error
 		return Model{}, err
 	}
 
-	if err := r.store(id, updated); err != nil {
+	if err := r.store(t, id, updated); err != nil {
 		return Model{}, err
 	}
 	return updated, nil
 }
 
 func (r *Registry) Remove(t tenant.Model, id uint32) {
-	m, ok := r.load(id)
+	m, ok := r.load(t, id)
 	if !ok {
 		return
 	}
 
+	ctx := context.Background()
 	mk := NewMapKey(m.Field())
 	idStr := reactorIdStr(id)
 
 	pipe := r.client.Pipeline()
-	pipe.Del(context.Background(), reactorKey(id))
-	pipe.SRem(context.Background(), allReactorsKey, idStr)
-	pipe.SRem(context.Background(), mapSetKey(t, mk), idStr)
-	_, _ = pipe.Exec(context.Background())
+	pipe.Del(ctx, reactorKey(t, id))
+	pipe.SRem(ctx, allReactorsKey, allSetMember(t, id))
+	pipe.SRem(ctx, mapSetKey(t, mk), idStr)
+	_, _ = pipe.Exec(ctx)
+
+	_ = r.allocator.Release(ctx, t, id)
 }
 
 func (r *Registry) RecordCooldown(t tenant.Model, mk MapKey, classification uint32, x int16, y int16, delay uint32) {

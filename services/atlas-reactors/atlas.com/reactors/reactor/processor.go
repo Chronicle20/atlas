@@ -202,8 +202,9 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 						return err
 					}
 					l.Debugf("Reactor [%d] hit. State changed from [%d] to final state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
-					Trigger(l)(ctx)(updated, characterId)
+					// Arm the timer before triggering action emission; local state progression must not be gated on Kafka latency.
 					scheduleStateTimeout(l, ctx, updated)
+					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
 				l.Debugf("Reactor [%d] next state [%d] not in state info. Triggering and destroying.", reactorId, nextState)
@@ -222,8 +223,8 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			if isTerminalState(stateInfo, nextState) {
 				if persistsAtEndState(matchedEventType) {
 					l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Keeping reactor alive (event type %d).", reactorId, r.State(), nextState, matchedEventType)
-					Trigger(l)(ctx)(updated, characterId)
 					scheduleStateTimeout(l, ctx, updated)
+					Trigger(l)(ctx)(updated, characterId)
 					return producer.ProviderImpl(l)(ctx)(EnvEventStatusTopic)(hitStatusEventProvider(updated, false))
 				}
 				l.Debugf("Reactor [%d] hit. State changed from [%d] to terminal state [%d]. Triggering and destroying.", reactorId, r.State(), nextState)

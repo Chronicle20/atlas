@@ -9,6 +9,7 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 ### Critical (Core Gameplay)
 - [ ] **Character Attack Effects** - 26 unimplemented combat mechanics in `character_attack_common.go` (projectile consumption shipped in task-007)
 - [ ] **Character Damage Effects** - 10 defensive abilities not processed
+- [ ] **atlas-object-id silent-collision fallback** - On Redis allocator failure, monsters/reactors/drops fall back to returning `objectid.MinId` instead of failing the spawn, so every entity spawned during a Redis outage gets ID 1,000,000 and they all collide in storage
 
 ### High Priority (Feature Incomplete)
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
@@ -217,6 +218,9 @@ that is not available on the wire:
 - [ ] BladeRecruit job ID handling (`job/model.go:92`)
 - [ ] Translated name for FairytaleLandBeanstalkClimb2 (`map/constants.go:1641`)
 - [ ] Define HiddenStreet Nett's Pyramid battle room maps (926010100-926023500) (`map/model.go:434`)
+
+### atlas-object-id
+- [ ] **Silent ID-collision on Redis failure.** `IdAllocator.Allocate` in each consumer (`services/atlas-monsters/atlas.com/monsters/monster/id_allocator.go:38-41`, and the inline equivalents in atlas-reactors and atlas-drops registries) swallows the error from `objectid.Allocator.Allocate` and returns `objectid.MinId` (1,000,000) as a fallback. Effect: during a Redis outage every monster, reactor, or drop spawned across the deployment is assigned the same id (1,000,000) and they collide in the per-tenant `<entity>:{tenantId}:{id}` storage key — only one entity survives in storage even though many were created. The v83 client also crashes on duplicate oids in the same field. Fix: propagate the allocation error all the way up to the spawn caller (Create/CreateAndEmit/etc.) and fail the spawn loudly. Discovered while documenting the shared allocator in task-019.
 
 ---
 

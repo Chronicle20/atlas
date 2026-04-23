@@ -786,18 +786,23 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 
 	// Build steps first so we can cross-reference AwardAsset items when a
 	// CompleteQuest step is present in the same batch.
-	type builtStep struct {
-		stepId  string
-		status  saga.Status
-		action  saga.Action
-		payload any
-	}
+	//
+	// createStepForOperation derives stepId from "<type>-<characterId>", which
+	// collides when a batch has multiple ops of the same type (e.g., two
+	// award_item ops in a quest reward). The orchestrator validates step-id
+	// uniqueness within a saga and rejects duplicates, so suffix any repeats
+	// with their index here.
 	built := make([]builtStep, 0, len(operations))
-	for _, operation := range operations {
+	stepIdCounts := make(map[string]int, len(operations))
+	for i, operation := range operations {
 		stepId, status, action, payload, err := e.createStepForOperation(field, characterId, operation)
 		if err != nil {
 			return saga.Saga{}, err
 		}
+		if stepIdCounts[stepId] > 0 {
+			stepId = fmt.Sprintf("%s-%d", stepId, i)
+		}
+		stepIdCounts[stepId]++
 		built = append(built, builtStep{stepId, status, action, payload})
 	}
 
@@ -828,7 +833,25 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 				built[i].payload = cqp
 			}
 		}
+		for i := range built {
+			if built[i].action != saga.StartQuest {
+				continue
+			}
+			if sqp, ok := built[i].payload.(saga.StartQuestPayload); ok {
+				sqp.Rewards = rewards
+				built[i].payload = sqp
+			}
+		}
 	}
+
+	// Suppress AwardAsset notices that are duplicated by a later CompleteQuest's
+	// reward effect: for each AwardAsset step preceding a CompleteQuest, if the
+	// CompleteQuest's reward list contains an exact (itemId, quantity) match,
+	// flip the AwardAsset payload to ShowEffect=false so the client only sees
+	// the quest-completion effect once. AwardAsset steps that grant more than
+	// the quest covers, or appear after the CompleteQuest, are left alone.
+	suppressAwardAssetByCompleteQuest(built)
+	suppressAwardAssetByStartQuest(built)
 
 	for _, st := range built {
 		builder.AddStep(st.stepId, st.status, st.action, st.payload)
@@ -836,6 +859,115 @@ func (e *OperationExecutorImpl) createSagaForOperations(field field.Model, chara
 
 	// Build the saga
 	return builder.Build(), nil
+}
+
+// builtStep is the intermediate representation used by createSagaForOperations
+// while it cross-references steps (e.g., to flip ShowEffect on AwardAsset
+// payloads when a sibling CompleteQuest already covers the reward).
+type builtStep struct {
+	stepId  string
+	status  saga.Status
+	action  saga.Action
+	payload any
+}
+
+// suppressAwardAssetByCompleteQuest walks the planned steps and, for each
+// AwardAsset that appears before a CompleteQuest covering the same
+// (itemId, quantity) tuple, flips the AwardAsset payload's ShowEffect to false.
+// CompleteQuest renders the reward effect itself; suppressing the preceding
+// AwardAsset notice avoids a duplicate item-gain effect on the client.
+//
+// Tuple matching is exact: an AwardAsset that grants a quantity larger than
+// the quest reward (i.e., intentional extras) is left visible. AwardAsset
+// steps that appear after a CompleteQuest are also left visible — those are
+// treated as deliberate post-completion grants.
+func suppressAwardAssetByCompleteQuest(steps []builtStep) {
+	for i := 0; i < len(steps); i++ {
+		if steps[i].action != saga.CompleteQuest {
+			continue
+		}
+		cqp, ok := steps[i].payload.(saga.CompleteQuestPayload)
+		if !ok || len(cqp.Rewards) == 0 {
+			continue
+		}
+		// Track remaining coverage per reward item so two AwardAsset steps for
+		// the same item don't both consume the same reward entry.
+		remaining := make(map[uint32]int32, len(cqp.Rewards))
+		for _, r := range cqp.Rewards {
+			remaining[r.ItemId] += r.Amount
+		}
+		for j := 0; j < i; j++ {
+			if steps[j].action != saga.AwardAsset {
+				continue
+			}
+			pl, ok := steps[j].payload.(saga.AwardItemActionPayload)
+			if !ok || !pl.ShowEffect {
+				continue
+			}
+			covered, exists := remaining[pl.Item.TemplateId]
+			if !exists || covered < int32(pl.Item.Quantity) {
+				continue
+			}
+			pl.ShowEffect = false
+			steps[j].payload = pl
+			remaining[pl.Item.TemplateId] = covered - int32(pl.Item.Quantity)
+		}
+	}
+}
+
+// suppressAwardAssetByStartQuest is the symmetric counterpart to
+// suppressAwardAssetByCompleteQuest for StartQuest steps. StartQuest
+// renders its own reward effect when Rewards is populated, so an AwardAsset
+// that precedes the StartQuest and is fully covered by the reward list
+// would double-render; this suppressor flips its ShowEffect to false.
+// The two helpers are independent — each looks only at its own action
+// type — so a batch containing both a StartQuest and a CompleteQuest is
+// processed once by each.
+func suppressAwardAssetByStartQuest(steps []builtStep) {
+	for i := 0; i < len(steps); i++ {
+		if steps[i].action != saga.StartQuest {
+			continue
+		}
+		sqp, ok := steps[i].payload.(saga.StartQuestPayload)
+		if !ok || len(sqp.Rewards) == 0 {
+			continue
+		}
+		remaining := make(map[uint32]int32, len(sqp.Rewards))
+		for _, r := range sqp.Rewards {
+			remaining[r.ItemId] += r.Amount
+		}
+		for j := 0; j < i; j++ {
+			if steps[j].action != saga.AwardAsset {
+				continue
+			}
+			pl, ok := steps[j].payload.(saga.AwardItemActionPayload)
+			if !ok || !pl.ShowEffect {
+				continue
+			}
+			covered, exists := remaining[pl.Item.TemplateId]
+			if !exists || covered < int32(pl.Item.Quantity) {
+				continue
+			}
+			pl.ShowEffect = false
+			steps[j].payload = pl
+			remaining[pl.Item.TemplateId] = covered - int32(pl.Item.Quantity)
+		}
+	}
+}
+
+// resolveSilent reads the optional `silent` script param and returns whether the
+// resulting saga step should suppress its client-visible effect (true → silent).
+// Defaults to false when the param is absent or unparseable.
+func (e *OperationExecutorImpl) resolveSilent(characterId uint32, operation OperationModel) (bool, error) {
+	silentValue, exists := operation.Params()["silent"]
+	if !exists {
+		return false, nil
+	}
+	silentStr, err := e.evaluateContextValue(characterId, "silent", silentValue)
+	if err != nil {
+		return false, err
+	}
+	return silentStr == "true", nil
 }
 
 // createStepForOperation creates a saga step for an operation
@@ -882,6 +1014,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
 		payload := saga.AwardItemActionPayload{
 			CharacterId: characterId,
 			Item: saga.ItemPayload{
@@ -889,6 +1026,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 				Quantity:   uint32(quantityInt),
 				Expiration: expiration,
 			},
+			ShowEffect: !silent,
 		}
 
 		return stepId, saga.Pending, saga.AwardAsset, payload, nil
@@ -927,6 +1065,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
 		payload := saga.AwardMesosPayload{
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
@@ -934,6 +1077,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			ActorId:     uint32(actorIdInt),
 			ActorType:   actorType,
 			Amount:      int32(amountInt),
+			ShowEffect:  !silent,
 		}
 
 		return stepId, saga.Pending, saga.AwardMesos, payload, nil
@@ -972,6 +1116,11 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
 		payload := saga.AwardExperiencePayload{
 			CharacterId: characterId,
 			WorldId:     f.WorldId(),
@@ -983,6 +1132,7 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 					Attr1:          uint32(attr1Int),
 				},
 			},
+			ShowEffect: !silent,
 		}
 
 		return stepId, saga.Pending, saga.AwardExperience, payload, nil
@@ -1241,11 +1391,17 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			removeAll = removeAllStr == "true"
 		}
 
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
 		payload := saga.DestroyAssetPayload{
 			CharacterId: characterId,
 			TemplateId:  uint32(itemIdInt),
 			Quantity:    uint32(quantityInt),
 			RemoveAll:   removeAll,
+			ShowEffect:  !silent,
 		}
 
 		return stepId, saga.Pending, saga.DestroyAsset, payload, nil
@@ -1283,11 +1439,17 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 			}
 		}
 
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
 		payload := saga.DestroyAssetFromSlotPayload{
 			CharacterId:   characterId,
 			InventoryType: byte(inventoryTypeInt),
 			Slot:          int16(slotInt),
 			Quantity:      uint32(quantityInt),
+			ShowEffect:    !silent,
 		}
 
 		return stepId, saga.Pending, saga.DestroyAssetFromSlot, payload, nil
@@ -1599,6 +1761,35 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.StartQuest, payload, nil
+
+	case "forfeit_quest":
+		// Format: forfeit_quest
+		// Params: questId (uint32, required), silent (bool, optional, default false)
+		// Forfeits a quest for the character. Updates the quest journal and fires
+		// the existing forfeit packet on the client side.
+		questIdValue, exists := operation.Params()["questId"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing questId parameter for forfeit_quest operation")
+		}
+
+		questIdInt, err := e.evaluateContextValueAsInt(characterId, "questId", questIdValue)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		silent, err := e.resolveSilent(characterId, operation)
+		if err != nil {
+			return "", "", "", nil, err
+		}
+
+		payload := saga.ForfeitQuestPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			QuestId:     uint32(questIdInt),
+			ShowEffect:  !silent,
+		}
+
+		return stepId, saga.Pending, saga.ForfeitQuest, payload, nil
 
 	case "set_quest_progress":
 		// Format: set_quest_progress

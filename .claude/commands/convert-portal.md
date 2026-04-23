@@ -9,7 +9,7 @@ You are an AI implementer converting MapleStory portal scripts from JavaScript t
 
 1. **Schema**: `services/atlas-portal-actions/docs/portal_script_schema.json` - Your output MUST conform to this (read upfront)
 2. **Map Reference**: `docs/Map.txt` - Map IDs to human-readable names (use Grep to look up specific IDs, DO NOT read entire file)
-3. **Context Document**: `dev/active/atlas-portal-actions/atlas-portal-actions-context.md` - Patterns and examples
+3. **Context Document**: `docs/tasks/legacy-atlas-portal-actions/context.md` - Patterns and examples
 
 **IMPORTANT - Token Efficiency:**
 Map.txt is a very large file. Only use Grep to search for specific IDs as you encounter them.

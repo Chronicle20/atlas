@@ -188,20 +188,16 @@
         "menuType": 0,
         "choices": [
           {
-            "text": "Exit",
-            "nextState": ""
-          },
-          {
             "text": "Mu Lung Dojo",
             "nextState": "warpMuLung"
           },
           {
-            "text": "Exit",
-            "nextState": ""
-          },
-          {
             "text": "Monster Carnival 2",
             "nextState": "warpMC2"
+          },
+          {
+            "text": "Exit",
+            "nextState": ""
           }
         ]
       }

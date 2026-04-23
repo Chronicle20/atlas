@@ -94,7 +94,7 @@ func TestHandleMonsterKilledEvent_IncrementsMobProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Verify initial progress
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
@@ -169,7 +169,7 @@ func TestHandleMonsterKilledEvent_MultipleCharacters(t *testing.T) {
 
 	// Start quest for all characters
 	for _, charId := range characterIds {
-		_, _, _ = processor.Start(uuid.Nil, charId, questId, test.CreateTestField(), true)
+		_, _, _ = processor.Start(uuid.Nil, charId, questId, test.CreateTestField(), true, nil)
 	}
 
 	// Create damage entries for all characters
@@ -235,7 +235,7 @@ func TestHandleMonsterKilledEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate kill (increment progress to meet requirement)
 	event := monster.StatusEvent[monster.StatusEventKilledBody]{

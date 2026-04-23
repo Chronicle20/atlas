@@ -106,6 +106,7 @@ type Handler interface {
 	handleCompleteQuest(s Saga, st Step[any]) error
 	handleStartQuest(s Saga, st Step[any]) error
 	handleSetQuestProgress(s Saga, st Step[any]) error
+	handleForfeitQuest(s Saga, st Step[any]) error
 	handleApplyConsumableEffect(s Saga, st Step[any]) error
 	handleSendMessage(s Saga, st Step[any]) error
 	handleDepositToStorage(s Saga, st Step[any]) error
@@ -764,6 +765,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleStartQuest, true
 	case SetQuestProgress:
 		return h.handleSetQuestProgress, true
+	case ForfeitQuest:
+		return h.handleForfeitQuest, true
 	case ApplyConsumableEffect:
 		return h.handleApplyConsumableEffect, true
 	case SendMessage:
@@ -941,7 +944,7 @@ func (h *HandlerImpl) handleAwardExperience(s Saga, st Step[any]) error {
 	distributions := applyQuestExpRate(h.l, h.ctx, ch, payload.CharacterId, payload.Distributions)
 
 	eds := TransformExperienceDistributions(distributions)
-	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds)
+	err := h.charP.AwardExperienceAndEmit(s.TransactionId(), ch, payload.CharacterId, eds, payload.ShowEffect)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award experience.")
@@ -977,7 +980,7 @@ func (h *HandlerImpl) handleAwardMesos(s Saga, st Step[any]) error {
 	}
 
 	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
-	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount)
+	err := h.charP.AwardMesosAndEmit(s.TransactionId(), ch, payload.CharacterId, payload.ActorId, payload.ActorType, payload.Amount, payload.ShowEffect)
 
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to award mesos.")
@@ -1532,9 +1535,30 @@ func (h *HandlerImpl) handleStartQuest(s Saga, st Step[any]) error {
 		return errors.New("invalid payload")
 	}
 
-	err := h.questP.RequestStartQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId)
+	rewards := make([]questmessage.ItemReward, 0, len(payload.Rewards))
+	for _, r := range payload.Rewards {
+		rewards = append(rewards, questmessage.ItemReward{ItemId: r.ItemId, Amount: r.Amount})
+	}
+
+	err := h.questP.RequestStartQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId, payload.NpcId, rewards)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to start quest.")
+		return err
+	}
+
+	return nil
+}
+
+// handleForfeitQuest handles the ForfeitQuest action
+func (h *HandlerImpl) handleForfeitQuest(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(ForfeitQuestPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	err := h.questP.RequestForfeitQuest(s.TransactionId(), payload.WorldId, payload.CharacterId, payload.QuestId)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to forfeit quest.")
 		return err
 	}
 

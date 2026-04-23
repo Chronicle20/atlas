@@ -82,7 +82,7 @@ func TestHandleMapChangedEvent_UpdatesMapProgress(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Verify initial progress (0 = not visited)
 	fetched, _ := processor.GetByCharacterIdAndQuestId(characterId, questId)
@@ -149,7 +149,7 @@ func TestHandleMapChangedEvent_MultipleMapRequirements(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Visit only the first two maps
 	for _, mapId := range mapIds[:2] {
@@ -202,7 +202,7 @@ func TestHandleMapChangedEvent_AutoComplete(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate map change and auto-complete check
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
@@ -251,7 +251,7 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 	processor := quest.NewProcessorWithDependencies(logger, ctx, db, mockData, mockValidation, test.NewMockEventEmitter())
 
 	// Start the first quest
-	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true)
+	_, _, _ = processor.Start(uuid.Nil, characterId, questId, test.CreateTestField(), true, nil)
 
 	// Simulate map change with chain handling
 	quests, _ := processor.GetByCharacterIdAndState(characterId, quest.StateStarted)
@@ -262,7 +262,7 @@ func TestHandleMapChangedEvent_ChainedQuest(t *testing.T) {
 			nextId, completed, _ := processor.CheckAutoComplete(characterId, q.QuestId(), test.CreateTestFieldWithMap(mapId))
 			if completed && nextId > 0 {
 				// Start chained quest
-				_, _ = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestFieldWithMap(mapId))
+				_, _ = processor.StartChained(uuid.Nil, characterId, nextId, test.CreateTestFieldWithMap(mapId), nil)
 			}
 		}
 	}

@@ -35,6 +35,7 @@ type (
 	CompleteQuestPayload         = sharedsaga.CompleteQuestPayload
 	QuestRewardItem              = sharedsaga.QuestRewardItem
 	StartQuestPayload            = sharedsaga.StartQuestPayload
+	ForfeitQuestPayload          = sharedsaga.ForfeitQuestPayload
 	SetQuestProgressPayload      = sharedsaga.SetQuestProgressPayload
 	ApplyConsumableEffectPayload = sharedsaga.ApplyConsumableEffectPayload
 	SendMessagePayload           = sharedsaga.SendMessagePayload
@@ -105,6 +106,7 @@ const (
 	SpawnMonster           = sharedsaga.SpawnMonster
 	CompleteQuest          = sharedsaga.CompleteQuest
 	StartQuest             = sharedsaga.StartQuest
+	ForfeitQuest           = sharedsaga.ForfeitQuest
 	SetQuestProgress       = sharedsaga.SetQuestProgress
 	ApplyConsumableEffect  = sharedsaga.ApplyConsumableEffect
 	SendMessage            = sharedsaga.SendMessage

@@ -91,22 +91,51 @@ Composite key for map-scoped operations.
 - Cooldowns expire automatically via Redis TTL
 - Cooldowns are cleared when a reactor is successfully created at that location
 - Item reactor activation type is identified by state event type 100
-- Reactors with state event type 100 or type 999 persist at their final state rather than being destroyed
+- Reactors with state event type 100 persist at their final state rather than being destroyed
+- State event type 101 (timer-driven) reactors persist at their final state (including terminal states)
 
 ## State Transitions
 
-Reactors transition through states based on hits:
+Reactors advance through states via two mechanisms:
 
-1. **Initial State**: Reactor starts at configured initial state
-2. **Hit Processing**: When hit, the reactor checks its current state's events
-3. **Next State**: If a matching event exists (skill match or no skill requirement), transition to nextState
-4. **Terminal State**: If no valid next state exists, or the next state has no further transitions, the reactor triggers and is destroyed
+1. **Hit** — a player attack triggers an event on the current state. The matched event's `nextState` becomes the reactor's new state. A hit can deliver a skill id; if a state's event lists `activeSkills`, only a matching skill id (or an event with empty `activeSkills`) is eligible.
+2. **State timeout** — if a state has a `timeout` set and a paired `timeoutNextState`, an in-process `time.AfterFunc` timer advances the reactor automatically. Timers are cancelled on hit, destroy, or teardown.
 
-A state is considered terminal when:
-- No events defined for that state
-- All events lead to states not defined in stateInfo
+### Event-type taxonomy
 
-Reactors that contain state event type 100 (item reactor) or type 999 persist at their final state. When such a reactor reaches a terminal state, it triggers but is not destroyed.
+Each event carries a `type` field that determines what happens on a terminal transition:
+
+| type    | meaning                               | end-state behavior   |
+|---------|---------------------------------------|----------------------|
+| 0       | hit by any attack (default breakable) | destroy + cooldown   |
+| 1, 2    | directional hit                       | destroy + cooldown   |
+| 5, 6, 7 | GPQ skill-gated                       | **persist**          |
+| 100     | item-drop trigger                     | **persist**          |
+| 101     | timer-driven cyclic                   | **persist (cyclic)** |
+
+The persist-vs-destroy decision is **state-local**: it is based on the type of the event that led to the terminal transition, not on whether a persist-type event appears anywhere in the reactor's state machine.
+
+### Timer-driven reactors
+
+State-timeout timers are armed whenever a reactor enters a state with `timeout > 0` and a configured `timeoutNextState`. Arming happens in:
+
+- `Create` (for the reactor's initial state).
+- `Hit` (for the new state after a transition that keeps the reactor alive).
+- The timer callback itself (re-arming for the new state after a fire).
+
+Cancellation happens in:
+
+- `Hit` (on function entry — a hit interrupts the timer).
+- `Destroy` / `DestroyInField` (any code path removing the reactor).
+- `Teardown` (`cancelAllStateTimeouts` alongside `CancelAllPendingActivations`).
+
+When a timer fires, the callback re-reads the reactor from the registry, bails if it no longer exists or its state has changed since arming, transitions to the configured `nextState`, **re-arms the timer for the new state if applicable**, then emits a TRIGGER and a HIT-status event. Re-arm precedes emit so that a slow or unreachable Kafka cannot stall the chained timer sequence. Type-101 is always a persist type, so the reactor stays alive even at terminal states.
+
+### Notes & caveats
+
+- Timers are process-local. A replica that owns the timer at arming time owns the fire. Process crashes lose pending timers on that process; other replicas' timers proceed independently. This is not load-balanced, but it is simple and correct.
+- Reactors whose `.wz` defines states with no `event` subtree are represented with no entry for that state in `StateInfo` (atlas-data no longer synthesises placeholders). A hit on such a state flows through the "no state events" branch and destroys the reactor unless the matched event type is a persist type — which, in this branch, it cannot be, because there was no matched event.
+- Moon Bunny (`9101000`) currently has neither events nor a `timeOut` in its `.wz` snippet and so will remain at state 0 until teardown. A proper fix requires richer per-state data or an explicit script hook and is tracked separately.
 
 ## Processors
 
@@ -126,7 +155,8 @@ Creates a new reactor instance:
 3. Sets reactor name from game data if not provided
 4. Registers reactor in the registry
 5. Clears any cooldown for that location
-6. Emits CREATED status event
+6. Arms state-timeout timer for the initial state if applicable
+7. Emits CREATED status event
 
 ### Destroy
 
@@ -139,14 +169,15 @@ Destroys a reactor instance:
 ### Hit
 
 Processes a hit on a reactor:
-1. Retrieves reactor from registry
-2. Emits HIT command to atlas-reactor-actions
-3. Evaluates state transitions based on current state and skill
-4. If no state events exist or no matching transition, triggers and destroys
-5. If next state is not in state info or is terminal:
-   - If reactor persists at final state (type 100 or 999), updates state, triggers, and emits HIT status event without destroying
+1. Cancels any pending state-timeout timer
+2. Retrieves reactor from registry
+3. Emits HIT command to atlas-reactor-actions
+4. Evaluates state transitions based on current state and skill
+5. If no state events exist or no matching transition, destroys if event type is non-persist; otherwise updates state
+6. If next state is not in state info or is terminal:
+   - If the triggering event type is a persist type (100, 101, 5, 6, 7), updates state, triggers, and emits HIT status event without destroying
    - Otherwise, triggers and destroys
-6. If next state has further transitions, updates state and emits HIT status event
+7. If next state has further transitions, updates state, arms state-timeout timer if applicable, and emits HIT status event
 
 ### Trigger
 

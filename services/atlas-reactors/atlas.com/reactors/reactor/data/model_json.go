@@ -7,20 +7,22 @@ import (
 )
 
 type modelJSON struct {
-	Name        string                 `json:"name"`
-	Tl          point.Model            `json:"tl"`
-	Br          point.Model            `json:"br"`
-	StateInfo   map[int8][]state.Model `json:"stateInfo"`
-	TimeoutInfo map[int8]int32         `json:"timeoutInfo"`
+	Name                 string                 `json:"name"`
+	Tl                   point.Model            `json:"tl"`
+	Br                   point.Model            `json:"br"`
+	StateInfo            map[int8][]state.Model `json:"stateInfo"`
+	TimeoutInfo          map[int8]int32         `json:"timeoutInfo"`
+	TimeoutNextStateInfo map[int8]int8          `json:"timeoutNextStateInfo"`
 }
 
 func (m Model) MarshalJSON() ([]byte, error) {
 	return json.Marshal(modelJSON{
-		Name:        m.name,
-		Tl:          m.tl,
-		Br:          m.br,
-		StateInfo:   m.stateInfo,
-		TimeoutInfo: m.timeoutInfo,
+		Name:                 m.name,
+		Tl:                   m.tl,
+		Br:                   m.br,
+		StateInfo:            m.stateInfo,
+		TimeoutInfo:          m.timeoutInfo,
+		TimeoutNextStateInfo: m.timeoutNextStateInfo,
 	})
 }
 
@@ -34,5 +36,6 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.br = j.Br
 	m.stateInfo = j.StateInfo
 	m.timeoutInfo = j.TimeoutInfo
+	m.timeoutNextStateInfo = j.TimeoutNextStateInfo
 	return nil
 }

@@ -9,12 +9,13 @@ import (
 )
 
 type RestModel struct {
-	Id          uint32                     `json:"-"`
-	Name        string                     `json:"name"`
-	TL          point.RestModel            `json:"tl"`
-	BR          point.RestModel            `json:"br"`
-	StateInfo   map[int8][]state.RestModel `json:"stateInfo"`
-	TimeoutInfo map[int8]int32             `json:"timeoutInfo"`
+	Id                   uint32                     `json:"-"`
+	Name                 string                     `json:"name"`
+	TL                   point.RestModel            `json:"tl"`
+	BR                   point.RestModel            `json:"br"`
+	StateInfo            map[int8][]state.RestModel `json:"stateInfo"`
+	TimeoutInfo          map[int8]int32             `json:"timeoutInfo"`
+	TimeoutNextStateInfo map[int8]int8              `json:"timeoutNextStateInfo"`
 }
 
 func (r RestModel) GetName() string {
@@ -57,10 +58,11 @@ func Extract(rm RestModel) (Model, error) {
 	}
 
 	return Model{
-		name:        rm.Name,
-		tl:          tl,
-		br:          br,
-		stateInfo:   si,
-		timeoutInfo: rm.TimeoutInfo,
+		name:                 rm.Name,
+		tl:                   tl,
+		br:                   br,
+		stateInfo:            si,
+		timeoutInfo:          rm.TimeoutInfo,
+		timeoutNextStateInfo: rm.TimeoutNextStateInfo,
 	}, nil
 }

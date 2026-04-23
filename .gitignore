@@ -52,3 +52,4 @@ services/atlas-storage/.env
 /services/atlas-merchant/atlas.com/merchant/atlas-merchant
 deploy/compose/.env
 deploy/k8s/secrets.yaml
+/tools/cideps/cideps

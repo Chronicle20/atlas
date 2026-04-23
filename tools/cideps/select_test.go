@@ -75,16 +75,32 @@ func TestSelect_ForceAll(t *testing.T) {
 	}
 }
 
-func TestSelect_UnknownNameIgnored(t *testing.T) {
+func TestSelect_UnknownLibIgnored(t *testing.T) {
 	g, err := BuildGraph("testdata/transitive")
 	if err != nil {
 		t.Fatal(err)
 	}
 	sel := Select(g, SelectInput{
-		ChangedLibs:     []string{"no-such-lib"},
-		ChangedServices: []string{"no-such-svc"},
+		ChangedLibs: []string{"no-such-lib"},
 	})
-	if len(sel.Services) != 0 || len(sel.Libs) != 0 {
-		t.Errorf("unknown names should select nothing, got services=%v libs=%v", sel.Services, sel.Libs)
+	if len(sel.Libs) != 0 {
+		t.Errorf("unknown libs should not be selected, got %v", sel.Libs)
+	}
+}
+
+// Services not in the Go graph — atlas-ui (Next.js, no go.mod), atlas-assets
+// (static-service) — must still flow through to the affected set when in
+// ChangedServices, since they have docker images that need rebuilding. The
+// enrichment step is responsible for filtering by type/docker_image.
+func TestSelect_NonGoServicePassesThrough(t *testing.T) {
+	g, err := BuildGraph("testdata/transitive")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sel := Select(g, SelectInput{
+		ChangedServices: []string{"atlas-ui"},
+	})
+	if !equalSet(sel.Services, []string{"atlas-ui"}) {
+		t.Errorf("services=%v want [atlas-ui] — non-Go services must flow through", sel.Services)
 	}
 }

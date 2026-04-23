@@ -2,6 +2,7 @@ package objectid
 
 import (
 	"context"
+	"strconv"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setup(t *testing.T) (Allocator, tenant.Model, tenant.Model, func()) {
+func setup(t *testing.T) (Allocator, *goredis.Client, tenant.Model, tenant.Model, func()) {
 	t.Helper()
 	mr, err := miniredis.Run()
 	require.NoError(t, err)
@@ -23,14 +24,21 @@ func setup(t *testing.T) (Allocator, tenant.Model, tenant.Model, func()) {
 	require.NoError(t, err)
 
 	a := NewRedisAllocator(client)
-	return a, te1, te2, func() {
+	return a, client, te1, te2, func() {
 		_ = client.Close()
 		mr.Close()
 	}
 }
 
+// primeCounter writes the counter directly so tests can exercise behavior near
+// RecycleThreshold without looping 2B allocations.
+func primeCounter(t *testing.T, client *goredis.Client, te tenant.Model, value uint32) {
+	t.Helper()
+	require.NoError(t, client.Set(context.Background(), counterKey(te), strconv.FormatUint(uint64(value), 10), 0).Err())
+}
+
 func TestAllocate_sequentialFromMin(t *testing.T) {
-	a, te, _, cleanup := setup(t)
+	a, _, te, _, cleanup := setup(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -42,7 +50,7 @@ func TestAllocate_sequentialFromMin(t *testing.T) {
 }
 
 func TestAllocate_tenantsIsolated(t *testing.T) {
-	a, te1, te2, cleanup := setup(t)
+	a, _, te1, te2, cleanup := setup(t)
 	defer cleanup()
 	ctx := context.Background()
 
@@ -58,12 +66,14 @@ func TestAllocate_tenantsIsolated(t *testing.T) {
 	require.Equal(t, MinId, got)
 }
 
-func TestRelease_recycledLIFO(t *testing.T) {
-	a, te, _, cleanup := setup(t)
+func TestRelease_belowThresholdIsNoop(t *testing.T) {
+	// Guards the regression that caused the client crash: a just-destroyed
+	// reactor's oid must not be handed to the next-allocated drop while the
+	// client still has the old object on screen.
+	a, client, te, _, cleanup := setup(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	// Allocate 3.
 	var ids []uint32
 	for i := 0; i < 3; i++ {
 		got, err := a.Allocate(ctx, te)
@@ -71,11 +81,35 @@ func TestRelease_recycledLIFO(t *testing.T) {
 		ids = append(ids, got)
 	}
 
-	// Release middle, then last. Free list head is last (LIFO).
+	require.NoError(t, a.Release(ctx, te, ids[0]))
 	require.NoError(t, a.Release(ctx, te, ids[1]))
 	require.NoError(t, a.Release(ctx, te, ids[2]))
 
-	// Next two allocations should be [2], then [1].
+	// Free list should be empty -- release is a no-op below threshold.
+	n, err := client.LLen(ctx, freeKey(te)).Result()
+	require.NoError(t, err)
+	require.Zero(t, n, "free list must stay empty while counter is below RecycleThreshold")
+
+	// Next allocation continues counting up, never reusing a released id.
+	got, err := a.Allocate(ctx, te)
+	require.NoError(t, err)
+	require.Equal(t, MinId+3, got)
+}
+
+func TestRelease_aboveThresholdRecyclesLIFO(t *testing.T) {
+	a, client, te, _, cleanup := setup(t)
+	defer cleanup()
+	ctx := context.Background()
+
+	// Jump the counter to just past the threshold so Release starts pushing.
+	primeCounter(t, client, te, RecycleThreshold)
+
+	ids := []uint32{MinId + 100, MinId + 200, MinId + 300}
+	require.NoError(t, a.Release(ctx, te, ids[0]))
+	require.NoError(t, a.Release(ctx, te, ids[1]))
+	require.NoError(t, a.Release(ctx, te, ids[2]))
+
+	// LIFO: most recent release first.
 	got1, err := a.Allocate(ctx, te)
 	require.NoError(t, err)
 	require.Equal(t, ids[2], got1)
@@ -84,25 +118,27 @@ func TestRelease_recycledLIFO(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, ids[1], got2)
 
-	// Free list drained; next is counter+1.
 	got3, err := a.Allocate(ctx, te)
 	require.NoError(t, err)
-	require.Equal(t, MinId+3, got3)
+	require.Equal(t, ids[0], got3)
+
+	// Free list drained; next allocation falls through to INCR.
+	got4, err := a.Allocate(ctx, te)
+	require.NoError(t, err)
+	require.Equal(t, RecycleThreshold+1, got4)
 }
 
 func TestClear_resetsTenant(t *testing.T) {
-	a, te, _, cleanup := setup(t)
+	a, client, te, _, cleanup := setup(t)
 	defer cleanup()
 	ctx := context.Background()
 
-	for i := 0; i < 5; i++ {
-		_, err := a.Allocate(ctx, te)
-		require.NoError(t, err)
-	}
-	require.NoError(t, a.Release(ctx, te, 99))
+	// Force a state where Release actually populates the free list.
+	primeCounter(t, client, te, RecycleThreshold)
+	require.NoError(t, a.Release(ctx, te, RecycleThreshold-42))
 	require.NoError(t, a.Clear(ctx, te))
 
 	got, err := a.Allocate(ctx, te)
 	require.NoError(t, err)
-	require.Equal(t, MinId, got, "post-Clear allocation should restart at MinId, not return the released 99")
+	require.Equal(t, MinId, got, "post-Clear allocation should restart at MinId, not return the released id")
 }

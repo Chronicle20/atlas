@@ -2,6 +2,7 @@ package monster
 
 import (
 	"context"
+	"strconv"
 	"sync"
 	"testing"
 
@@ -41,7 +42,11 @@ func TestAllocator_SequentialAllocation(t *testing.T) {
 	}
 }
 
-func TestAllocator_RecycledIdsPreferred(t *testing.T) {
+func TestAllocator_ReleaseIsNoopBelowThreshold(t *testing.T) {
+	// Guards the client-crash regression: a recently released oid must not be
+	// handed back out while the counter is still in the "fresh" range, because
+	// the client may not yet have processed the Destroy packet for the old
+	// object when the new one spawns with the same oid.
 	testMiniRedis.FlushAll()
 	ten := freshTenant(t)
 	ctx := context.Background()
@@ -49,43 +54,51 @@ func TestAllocator_RecycledIdsPreferred(t *testing.T) {
 
 	id1 := a.Allocate(ctx, ten)
 	id2 := a.Allocate(ctx, ten)
-	_ = a.Allocate(ctx, ten) // id3
+	id3 := a.Allocate(ctx, ten)
 
 	a.Release(ctx, ten, id1)
 	a.Release(ctx, ten, id2)
+	a.Release(ctx, ten, id3)
 
-	// LIFO: id2 first, then id1.
-	recycled1 := a.Allocate(ctx, ten)
-	if recycled1 != id2 {
-		t.Fatalf("Expected recycled ID %d (LIFO), got %d", id2, recycled1)
-	}
-
-	recycled2 := a.Allocate(ctx, ten)
-	if recycled2 != id1 {
-		t.Fatalf("Expected recycled ID %d (LIFO), got %d", id1, recycled2)
+	// Next allocation should continue up, not revisit id1/id2/id3.
+	next := a.Allocate(ctx, ten)
+	if next != objectid.MinId+3 {
+		t.Fatalf("Expected counter to advance to %d, got %d (possibly recycled a released id)", objectid.MinId+3, next)
 	}
 }
 
-func TestAllocator_LIFOOrder(t *testing.T) {
+func TestAllocator_RecyclesLIFONearExhaustion(t *testing.T) {
+	// Safety valve: once the counter has climbed past RecycleThreshold, released
+	// oids should come back LIFO so the range doesn't get exhausted.
 	testMiniRedis.FlushAll()
 	ten := freshTenant(t)
 	ctx := context.Background()
 	a := GetIdAllocator()
 
-	ids := make([]uint32, 5)
-	for i := 0; i < 5; i++ {
-		ids[i] = a.Allocate(ctx, ten)
+	// Jump the counter to the threshold by writing directly to miniredis --
+	// looping 2B allocations would be absurd.
+	counterKeyName := "atlas:oid:" + ten.Id().String() + ":next"
+	if err := testMiniRedis.Set(counterKeyName, strconv.FormatUint(uint64(objectid.RecycleThreshold), 10)); err != nil {
+		t.Fatalf("prime counter: %v", err)
 	}
 
-	for i := 0; i < 5; i++ {
-		a.Release(ctx, ten, ids[i])
+	ids := []uint32{objectid.MinId + 10, objectid.MinId + 20, objectid.MinId + 30}
+	for _, id := range ids {
+		a.Release(ctx, ten, id)
 	}
 
-	for i := 4; i >= 0; i-- {
-		recycled := a.Allocate(ctx, ten)
-		if recycled != ids[i] {
-			t.Fatalf("Expected LIFO order ID %d, got %d", ids[i], recycled)
+	// LIFO: last-released comes back first.
+	for i := len(ids) - 1; i >= 0; i-- {
+		got := a.Allocate(ctx, ten)
+		if got != ids[i] {
+			t.Fatalf("Expected LIFO recycled %d, got %d", ids[i], got)
 		}
+	}
+
+	// Free list drained; fall through to INCR past the threshold.
+	got := a.Allocate(ctx, ten)
+	if got != objectid.RecycleThreshold+1 {
+		t.Fatalf("Expected post-recycle allocation %d, got %d", objectid.RecycleThreshold+1, got)
 	}
 }
 

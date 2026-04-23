@@ -318,21 +318,23 @@ func TestIdRecyclingAfterRemoval(t *testing.T) {
 		t.Fatalf("Expected second monster to have different ID from first")
 	}
 
-	// Remove first monster - ID should be released
+	// Remove first monster - counter must advance rather than recycle the oid
+	// while it's still in the fresh range, or the client can see a newly
+	// spawned monster with the same oid as one it just despawned.
 	_, err := r.RemoveMonster(ctx, ten, m1.UniqueId())
 	if err != nil {
 		t.Fatalf("Failed to remove monster: %v", err)
 	}
 
-	// Create third monster - should reuse recycled ID
+	// Create third monster - should NOT reuse firstId; counter must advance.
 	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if m3.UniqueId() != firstId {
-		t.Fatalf("Expected recycled monster ID to be %d, got %d", firstId, m3.UniqueId())
+	if m3.UniqueId() == firstId || m3.UniqueId() == m2.UniqueId() {
+		t.Fatalf("Expected fresh monster ID, got recycled %d (firstId=%d, m2=%d)", m3.UniqueId(), firstId, m2.UniqueId())
 	}
 
-	// Create fourth monster - should get next sequential
+	// Create fourth monster - should get another fresh ID.
 	m4 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if m4.UniqueId() == firstId || m4.UniqueId() == m2.UniqueId() {
+	if m4.UniqueId() == firstId || m4.UniqueId() == m2.UniqueId() || m4.UniqueId() == m3.UniqueId() {
 		t.Fatalf("Expected fourth monster to have a new unique ID")
 	}
 }
@@ -360,25 +362,24 @@ func TestIdRecyclingLIFOOrder(t *testing.T) {
 	m2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
 	m3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
 
-	// Remove in order: m1, m2, m3
+	// Remove in order: m1, m2, m3. While the counter is still fresh, released
+	// oids must stay out of circulation so the client never sees two objects
+	// with the same oid in quick succession.
 	r.RemoveMonster(ctx, ten, m1.UniqueId())
 	r.RemoveMonster(ctx, ten, m2.UniqueId())
 	r.RemoveMonster(ctx, ten, m3.UniqueId())
 
-	// Create new monsters - should get IDs back in LIFO order: m3, m2, m1
-	n1 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if n1.UniqueId() != m3.UniqueId() {
-		t.Fatalf("Expected LIFO recycled ID %d, got %d", m3.UniqueId(), n1.UniqueId())
+	removed := map[uint32]struct{}{
+		m1.UniqueId(): {},
+		m2.UniqueId(): {},
+		m3.UniqueId(): {},
 	}
 
-	n2 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if n2.UniqueId() != m2.UniqueId() {
-		t.Fatalf("Expected LIFO recycled ID %d, got %d", m2.UniqueId(), n2.UniqueId())
-	}
-
-	n3 := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
-	if n3.UniqueId() != m1.UniqueId() {
-		t.Fatalf("Expected LIFO recycled ID %d, got %d", m1.UniqueId(), n3.UniqueId())
+	for i := 0; i < 3; i++ {
+		n := r.CreateMonster(ctx, ten, f, monsterId, x, y, fh, stance, team, hp, mp)
+		if _, reused := removed[n.UniqueId()]; reused {
+			t.Fatalf("Expected fresh monster id, got recycled %d", n.UniqueId())
+		}
 	}
 }
 

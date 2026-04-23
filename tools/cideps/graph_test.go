@@ -57,3 +57,45 @@ func TestParseAtlasRequires_MalformedFails(t *testing.T) {
 		t.Fatal("expected error for malformed go.mod, got nil")
 	}
 }
+
+func TestBuildGraph_Simple(t *testing.T) {
+	g, err := BuildGraph("testdata/simple")
+	if err != nil {
+		t.Fatalf("BuildGraph: %v", err)
+	}
+	if got := g.Libs(); !equalSet(got, []string{"lib-a", "lib-b"}) {
+		t.Errorf("libs=%v want [lib-a lib-b]", got)
+	}
+	if got := g.Services(); !equalSet(got, []string{"svc-a"}) {
+		t.Errorf("services=%v want [svc-a]", got)
+	}
+	if got := g.DirectDeps("svc-a"); !equalSet(got, []string{"lib-b"}) {
+		t.Errorf("deps(svc-a)=%v want [lib-b]", got)
+	}
+	if got := g.DirectDeps("lib-b"); !equalSet(got, []string{"lib-a"}) {
+		t.Errorf("deps(lib-b)=%v want [lib-a]", got)
+	}
+	if got := g.DirectDeps("lib-a"); len(got) != 0 {
+		t.Errorf("deps(lib-a)=%v want empty", got)
+	}
+}
+
+// equalSet returns true if a and b contain the same elements (order-insensitive).
+func equalSet(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	m := make(map[string]int)
+	for _, s := range a {
+		m[s]++
+	}
+	for _, s := range b {
+		m[s]--
+	}
+	for _, v := range m {
+		if v != 0 {
+			return false
+		}
+	}
+	return true
+}

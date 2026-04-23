@@ -161,3 +161,30 @@ export interface ConversationResponse {
 export interface ConversationsResponse {
   data: Conversation[];
 }
+
+export interface StateMachine {
+  startState: string;
+  states: ConversationState[];
+}
+
+export interface QuestConversationAttributes {
+  questId: number;
+  npcId?: number;
+  questName?: string;
+  startStateMachine: StateMachine;
+  endStateMachine?: StateMachine;
+}
+
+export interface QuestConversation {
+  id: string;
+  type: string;
+  attributes: QuestConversationAttributes;
+}
+
+export interface QuestConversationResponse {
+  data: QuestConversation;
+}
+
+export interface QuestConversationsResponse {
+  data: QuestConversation[];
+}

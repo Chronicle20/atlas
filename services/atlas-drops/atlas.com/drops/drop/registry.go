@@ -6,18 +6,17 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 )
 
 const (
-	nextIdKey   = "drops:next_id"
 	allDropsKey = "drops:all"
-	minId       = uint32(1000000001)
-	maxId       = uint32(2000000000)
 )
 
 type dropEntry struct {
@@ -26,22 +25,22 @@ type dropEntry struct {
 }
 
 type DropRegistry struct {
-	client *goredis.Client
+	client    *goredis.Client
+	allocator objectid.Allocator
 }
 
 var registry *DropRegistry
 
 func InitRegistry(client *goredis.Client) {
-	registry = &DropRegistry{client: client}
-	client.SetNX(context.Background(), nextIdKey, minId-1, 0)
+	registry = &DropRegistry{client: client, allocator: objectid.NewRedisAllocator(client)}
 }
 
 func GetRegistry() *DropRegistry {
 	return registry
 }
 
-func dropKey(id uint32) string {
-	return fmt.Sprintf("drop:%d", id)
+func dropKey(t tenant.Model, id uint32) string {
+	return fmt.Sprintf("drop:%s:%d", t.Id().String(), id)
 }
 
 func dropIdStr(id uint32) string {
@@ -52,33 +51,21 @@ func mapSetKey(tenantId uuid.UUID, f field.Model) string {
 	return fmt.Sprintf("drops:map:%s:%d:%d:%d:%s", tenantId.String(), f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 
-var incrScript = goredis.NewScript(`
-local id = redis.call('INCR', KEYS[1])
-if id > tonumber(ARGV[1]) then
-    redis.call('SET', KEYS[1], ARGV[2])
-    return tonumber(ARGV[2])
-end
-return id
-`)
-
-func (d *DropRegistry) getNextUniqueId() uint32 {
-	result, err := incrScript.Run(context.Background(), d.client, []string{nextIdKey}, maxId, minId).Int64()
-	if err != nil {
-		return minId
-	}
-	return uint32(result)
+// allSetMember encodes a tenant+id pair for the global drops:all set.
+func allSetMember(t tenant.Model, id uint32) string {
+	return fmt.Sprintf("%s:%d", t.Id().String(), id)
 }
 
-func (d *DropRegistry) storeEntry(id uint32, entry dropEntry) error {
+func (d *DropRegistry) storeEntry(t tenant.Model, id uint32, entry dropEntry) error {
 	data, err := json.Marshal(entry)
 	if err != nil {
 		return err
 	}
-	return d.client.Set(context.Background(), dropKey(id), data, 0).Err()
+	return d.client.Set(context.Background(), dropKey(t, id), data, 0).Err()
 }
 
-func (d *DropRegistry) loadEntry(id uint32) (dropEntry, bool) {
-	data, err := d.client.Get(context.Background(), dropKey(id)).Bytes()
+func (d *DropRegistry) loadEntry(t tenant.Model, id uint32) (dropEntry, bool) {
+	data, err := d.client.Get(context.Background(), dropKey(t, id)).Bytes()
 	if err != nil {
 		return dropEntry{}, false
 	}
@@ -91,46 +78,53 @@ func (d *DropRegistry) loadEntry(id uint32) (dropEntry, bool) {
 
 func (d *DropRegistry) CreateDrop(mb *ModelBuilder) (Model, error) {
 	t := mb.Tenant()
-	currentUniqueId := d.getNextUniqueId()
+	ctx := context.Background()
 
-	drop, err := mb.SetId(currentUniqueId).SetStatus(StatusAvailable).Build()
+	id, err := d.allocator.Allocate(ctx, t)
 	if err != nil {
+		return Model{}, fmt.Errorf("allocate drop oid: %w", err)
+	}
+
+	drop, err := mb.SetId(id).SetStatus(StatusAvailable).Build()
+	if err != nil {
+		_ = d.allocator.Release(ctx, t, id)
 		return Model{}, err
 	}
 
 	entry := dropEntry{Drop: drop}
-	if err := d.storeEntry(drop.Id(), entry); err != nil {
+	if err := d.storeEntry(t, drop.Id(), entry); err != nil {
+		_ = d.allocator.Release(ctx, t, id)
 		return Model{}, err
 	}
 
 	mk := mapSetKey(t.Id(), mb.field)
 	idStr := dropIdStr(drop.Id())
 	pipe := d.client.Pipeline()
-	pipe.SAdd(context.Background(), allDropsKey, idStr)
-	pipe.SAdd(context.Background(), mk, idStr)
-	_, _ = pipe.Exec(context.Background())
+	pipe.SAdd(ctx, allDropsKey, allSetMember(t, drop.Id()))
+	pipe.SAdd(ctx, mk, idStr)
+	_, _ = pipe.Exec(ctx)
 
 	return drop, nil
 }
 
-func (d *DropRegistry) getDrop(dropId uint32) (Model, bool) {
-	entry, ok := d.loadEntry(dropId)
+func (d *DropRegistry) getDrop(t tenant.Model, dropId uint32) (Model, bool) {
+	entry, ok := d.loadEntry(t, dropId)
 	if !ok {
 		return Model{}, false
 	}
 	return entry.Drop, true
 }
 
-func (d *DropRegistry) GetDrop(dropId uint32) (Model, error) {
-	drop, ok := d.getDrop(dropId)
+func (d *DropRegistry) GetDrop(t tenant.Model, dropId uint32) (Model, error) {
+	drop, ok := d.getDrop(t, dropId)
 	if !ok {
 		return Model{}, errors.New("drop not found")
 	}
 	return drop, nil
 }
 
-func (d *DropRegistry) ReserveDrop(dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
-	entry, ok := d.loadEntry(dropId)
+func (d *DropRegistry) ReserveDrop(t tenant.Model, dropId uint32, characterId uint32, partyId uint32, petSlot int8) (Model, error) {
+	entry, ok := d.loadEntry(t, dropId)
 	if !ok {
 		return Model{}, errors.New("unable to locate drop")
 	}
@@ -142,7 +136,7 @@ func (d *DropRegistry) ReserveDrop(dropId uint32, characterId uint32, partyId ui
 	if entry.Drop.Status() == StatusAvailable {
 		entry.Drop = entry.Drop.Reserve(petSlot)
 		entry.ReservedBy = characterId
-		if err := d.storeEntry(dropId, entry); err != nil {
+		if err := d.storeEntry(t, dropId, entry); err != nil {
 			return Model{}, err
 		}
 		return entry.Drop, nil
@@ -154,8 +148,8 @@ func (d *DropRegistry) ReserveDrop(dropId uint32, characterId uint32, partyId ui
 	return Model{}, errors.New("reserved by another party")
 }
 
-func (d *DropRegistry) CancelDropReservation(dropId uint32, characterId uint32) {
-	entry, ok := d.loadEntry(dropId)
+func (d *DropRegistry) CancelDropReservation(t tenant.Model, dropId uint32, characterId uint32) {
+	entry, ok := d.loadEntry(t, dropId)
 	if !ok {
 		return
 	}
@@ -170,25 +164,27 @@ func (d *DropRegistry) CancelDropReservation(dropId uint32, characterId uint32) 
 
 	entry.Drop = entry.Drop.CancelReservation()
 	entry.ReservedBy = 0
-	_ = d.storeEntry(dropId, entry)
+	_ = d.storeEntry(t, dropId, entry)
 }
 
-func (d *DropRegistry) RemoveDrop(dropId uint32) (Model, error) {
-	entry, ok := d.loadEntry(dropId)
+func (d *DropRegistry) RemoveDrop(t tenant.Model, dropId uint32) (Model, error) {
+	entry, ok := d.loadEntry(t, dropId)
 	if !ok {
 		return Model{}, nil
 	}
 
 	drop := entry.Drop
-	t := drop.Tenant()
+	ctx := context.Background()
 	mk := mapSetKey(t.Id(), drop.Field())
 	idStr := dropIdStr(dropId)
 
 	pipe := d.client.Pipeline()
-	pipe.Del(context.Background(), dropKey(dropId))
-	pipe.SRem(context.Background(), allDropsKey, idStr)
-	pipe.SRem(context.Background(), mk, idStr)
-	_, _ = pipe.Exec(context.Background())
+	pipe.Del(ctx, dropKey(t, dropId))
+	pipe.SRem(ctx, allDropsKey, allSetMember(t, dropId))
+	pipe.SRem(ctx, mk, idStr)
+	_, _ = pipe.Exec(ctx)
+
+	_ = d.allocator.Release(ctx, t, dropId)
 
 	return drop, nil
 }
@@ -206,7 +202,7 @@ func (d *DropRegistry) GetDropsForMap(t tenant.Model, f field.Model) ([]Model, e
 		if err != nil {
 			continue
 		}
-		if drop, ok := d.getDrop(uint32(id)); ok {
+		if drop, ok := d.getDrop(t, uint32(id)); ok {
 			drops = append(drops, drop)
 		}
 	}
@@ -221,11 +217,24 @@ func (d *DropRegistry) GetAllDrops() []Model {
 
 	drops := make([]Model, 0, len(members))
 	for _, member := range members {
-		id, err := strconv.ParseUint(member, 10, 32)
+		// Members are stored as "{tenantId}:{id}". Skip legacy "{id}"-only rows.
+		sep := strings.LastIndex(member, ":")
+		if sep < 0 {
+			continue
+		}
+		id, err := strconv.ParseUint(member[sep+1:], 10, 32)
 		if err != nil {
 			continue
 		}
-		if drop, ok := d.getDrop(uint32(id)); ok {
+		tenantId, err := uuid.Parse(member[:sep])
+		if err != nil {
+			continue
+		}
+		te, err := tenant.Create(tenantId, "", 0, 0)
+		if err != nil {
+			continue
+		}
+		if drop, ok := d.getDrop(te, uint32(id)); ok {
 			drops = append(drops, drop)
 		}
 	}

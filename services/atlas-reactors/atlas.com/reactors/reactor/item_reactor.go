@@ -93,6 +93,7 @@ func isPositionInReactorArea(dropX int16, dropY int16, r Model) bool {
 }
 
 func scheduleItemReactorActivation(l logrus.FieldLogger, ctx context.Context) func(r Model, dropId uint32, characterId uint32, f field.Model) {
+	t := tenant.MustFromContext(ctx)
 	return func(r Model, dropId uint32, characterId uint32, f field.Model) {
 		pendingActivationsLock.Lock()
 		defer pendingActivationsLock.Unlock()
@@ -112,7 +113,7 @@ func scheduleItemReactorActivation(l logrus.FieldLogger, ctx context.Context) fu
 			delete(pendingActivations, reactorId)
 			pendingActivationsLock.Unlock()
 
-			_, err := GetRegistry().Get(reactorId)
+			_, err := GetRegistry().Get(t, reactorId)
 			if err != nil {
 				l.Debugf("Reactor [%d] no longer exists. Skipping item-reactor activation.", reactorId)
 				return

@@ -15,8 +15,9 @@ import (
 
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(id uint32) (Model, error) {
 	return func(ctx context.Context) func(id uint32) (Model, error) {
+		t := tenant.MustFromContext(ctx)
 		return func(id uint32) (Model, error) {
-			return GetRegistry().Get(id)
+			return GetRegistry().Get(t, id)
 		}
 	}
 }
@@ -132,6 +133,7 @@ func Destroy(l logrus.FieldLogger) func(ctx context.Context) model.Operator[Mode
 
 func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, characterId uint32, skillId uint32) error {
 	return func(ctx context.Context) func(reactorId uint32, characterId uint32, skillId uint32) error {
+		t := tenant.MustFromContext(ctx)
 		return func(reactorId uint32, characterId uint32, skillId uint32) error {
 			r, err := GetById(l)(ctx)(reactorId)
 			if err != nil {
@@ -170,7 +172,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 			_, hasNextState := stateInfo[nextState]
 			if !hasNextState {
 				if persistsAtFinalState(stateInfo) {
-					updated, err := GetRegistry().Update(reactorId, func(b *ModelBuilder) {
+					updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
 						b.SetState(nextState)
 					})
 					if err != nil {
@@ -185,7 +187,7 @@ func Hit(l logrus.FieldLogger) func(ctx context.Context) func(reactorId uint32, 
 				return TriggerAndDestroy(l)(ctx)(r, characterId)
 			}
 
-			updated, err := GetRegistry().Update(reactorId, func(b *ModelBuilder) {
+			updated, err := GetRegistry().Update(t, reactorId, func(b *ModelBuilder) {
 				b.SetState(nextState)
 			})
 			if err != nil {

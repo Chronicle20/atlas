@@ -248,7 +248,7 @@ func TestRegistry_Get(t *testing.T) {
 	created := createTestReactor(ten, 1, 1, 100000, 2000000, "test-reactor")
 
 	// Get it back
-	retrieved, err := GetRegistry().Get(created.Id())
+	retrieved, err := GetRegistry().Get(ten, created.Id())
 
 	assert.NoError(t, err)
 	assert.Equal(t, created.Id(), retrieved.Id())
@@ -258,7 +258,8 @@ func TestRegistry_Get(t *testing.T) {
 // TestRegistry_Get_NotFound tests registry get with non-existent ID
 func TestRegistry_Get_NotFound(t *testing.T) {
 	setupTestRegistry(t)
-	_, err := GetRegistry().Get(999999999)
+	ten := setupTestTenant()
+	_, err := GetRegistry().Get(ten, 999999999)
 
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "unable to locate reactor")
@@ -273,14 +274,14 @@ func TestRegistry_Remove(t *testing.T) {
 	created := createTestReactor(ten, 1, 1, 100000, 2000000, "test-reactor")
 
 	// Verify it exists
-	_, err := GetRegistry().Get(created.Id())
+	_, err := GetRegistry().Get(ten, created.Id())
 	assert.NoError(t, err)
 
 	// Remove it
 	GetRegistry().Remove(ten, created.Id())
 
 	// Verify it's gone
-	_, err = GetRegistry().Get(created.Id())
+	_, err = GetRegistry().Get(ten, created.Id())
 	assert.Error(t, err)
 }
 

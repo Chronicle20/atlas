@@ -102,7 +102,7 @@ var acceptanceTable = map[sharedsaga.Action][]EventKind{
 	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
 	sharedsaga.AwardLevel:             {EventKindCharacterLevelChanged},
 	sharedsaga.AwardMesos:             {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
-	sharedsaga.AwardCurrency:          {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
+	sharedsaga.AwardCurrency:          {EventKindCashShopWalletUpdated},
 	sharedsaga.AwardFame:              {EventKindCharacterStatChanged},
 	sharedsaga.ChangeJob:              {EventKindCharacterJobChanged},
 	sharedsaga.ChangeHair:             {EventKindCharacterStatChanged},

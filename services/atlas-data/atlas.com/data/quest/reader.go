@@ -37,6 +37,7 @@ func ReadQuestInfo(l logrus.FieldLogger) func(np model.Provider[xml.Node]) map[u
 				TimeLimit:       uint32(questNode.GetIntegerWithDefault("timeLimit", 0)),
 				TimeLimit2:      uint32(questNode.GetIntegerWithDefault("timeLimit2", 0)),
 				SelectedMob:     questNode.GetBool("selectedMob", false),
+				SelectedSkillId: uint32(questNode.GetIntegerWithDefault("selectedSkillID", 0)),
 				Summary:         questNode.GetString("summary", ""),
 				DemandSummary:   questNode.GetString("demandSummary", ""),
 				RewardSummary:   questNode.GetString("rewardSummary", ""),

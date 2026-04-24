@@ -50,43 +50,10 @@ func parseQuestDate(s string) (time.Time, error) {
 	return time.Parse("2006010215", s)
 }
 
-func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
+// buildStartConditions translates a quest definition's start requirements into
+// the wire-format conditions submitted to query-aggregator. Pure helper; no IO.
+func buildStartConditions(questDef dataquest.RestModel) []ConditionInput {
 	req := questDef.StartRequirements
-
-	// Date range requirements (checked locally, no external validation needed)
-	now := time.Now()
-	if req.Start != "" {
-		startTime, err := parseQuestDate(req.Start)
-		if err != nil {
-			p.l.WithError(err).Warnf("Unable to parse quest start date [%s] for quest [%d].", req.Start, questDef.Id)
-		} else if now.Before(startTime) {
-			return false, []string{fmt.Sprintf("quest_not_yet_available (starts %s)", req.Start)}, nil
-		}
-	}
-	if req.End != "" {
-		endTime, err := parseQuestDate(req.End)
-		if err != nil {
-			p.l.WithError(err).Warnf("Unable to parse quest end date [%s] for quest [%d].", req.End, questDef.Id)
-		} else if now.After(endTime) {
-			return false, []string{fmt.Sprintf("quest_expired (ended %s)", req.End)}, nil
-		}
-	}
-
-	// Day of week requirements
-	if len(req.DayOfWeek) > 0 {
-		today := now.Weekday()
-		allowed := false
-		for _, day := range req.DayOfWeek {
-			if wd, ok := wzDayToWeekday[strings.ToLower(day)]; ok && wd == today {
-				allowed = true
-				break
-			}
-		}
-		if !allowed {
-			return false, []string{fmt.Sprintf("wrong_day_of_week (allowed %v)", req.DayOfWeek)}, nil
-		}
-	}
-
 	var conditions []ConditionInput
 
 	// Level requirements
@@ -107,7 +74,6 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 
 	// Job requirements - check if character's job is in the allowed list
 	if len(req.Jobs) > 0 {
-		// Convert jobs to int slice for "in" operator
 		jobValues := make([]int, len(req.Jobs))
 		for i, job := range req.Jobs {
 			jobValues[i] = int(job)
@@ -165,6 +131,60 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 			ReferenceId: quest.Id,
 		})
 	}
+
+	// Selected skill requirement (from QuestInfo.img selectedSkillID). Gates
+	// tutorial quests where shared Check.img job lists would otherwise permit
+	// a character to start a tutorial for a skill they don't possess.
+	if questDef.SelectedSkillId > 0 {
+		conditions = append(conditions, ConditionInput{
+			Type:        SkillCondition,
+			Operator:    ">=",
+			Value:       1,
+			ReferenceId: questDef.SelectedSkillId,
+		})
+	}
+
+	return conditions
+}
+
+func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
+	req := questDef.StartRequirements
+
+	// Date range requirements (checked locally, no external validation needed)
+	now := time.Now()
+	if req.Start != "" {
+		startTime, err := parseQuestDate(req.Start)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to parse quest start date [%s] for quest [%d].", req.Start, questDef.Id)
+		} else if now.Before(startTime) {
+			return false, []string{fmt.Sprintf("quest_not_yet_available (starts %s)", req.Start)}, nil
+		}
+	}
+	if req.End != "" {
+		endTime, err := parseQuestDate(req.End)
+		if err != nil {
+			p.l.WithError(err).Warnf("Unable to parse quest end date [%s] for quest [%d].", req.End, questDef.Id)
+		} else if now.After(endTime) {
+			return false, []string{fmt.Sprintf("quest_expired (ended %s)", req.End)}, nil
+		}
+	}
+
+	// Day of week requirements
+	if len(req.DayOfWeek) > 0 {
+		today := now.Weekday()
+		allowed := false
+		for _, day := range req.DayOfWeek {
+			if wd, ok := wzDayToWeekday[strings.ToLower(day)]; ok && wd == today {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			return false, []string{fmt.Sprintf("wrong_day_of_week (allowed %v)", req.DayOfWeek)}, nil
+		}
+	}
+
+	conditions := buildStartConditions(questDef)
 
 	// If no conditions, validation passes
 	if len(conditions) == 0 {

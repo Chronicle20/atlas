@@ -20,6 +20,7 @@ const (
 	MesoCondition        = "meso"
 	ItemCondition        = "item"
 	QuestStatusCondition = "questStatus"
+	SkillCondition       = "skillLevel"
 )
 
 // Quest states for QuestStatusCondition

@@ -552,6 +552,18 @@ func (p *ProcessorImpl) SetProgress(transactionId uuid.UUID, characterId uint32,
 		return errors.New("quest not started")
 	}
 
+	// Skip the DB write and the progress-updated emit if this infoNumber's
+	// end-requirement is already satisfied. Further writes would either
+	// overflow the counter (mob kills past the required count) or be fully
+	// idempotent (re-entering a tracked map); in both cases they emit a
+	// duplicate quest-record-update packet to the client, which surfaces as
+	// a repeated "quest complete" notification — especially for quests with
+	// autoComplete=false that stay in StateStarted until an NPC turn-in.
+	if p.isInfoNumberRequirementMet(existing, questId, infoNumber) {
+		p.l.Debugf("Quest [%d] infoNumber [%d] requirement already met for character [%d], skipping progress update.", questId, infoNumber, characterId)
+		return nil
+	}
+
 	txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 		return setProgress(tx, p.t.Id(), existing.Id(), infoNumber, progressValue)
 	})
@@ -633,6 +645,41 @@ func (p *ProcessorImpl) CheckAutoComplete(characterId uint32, questId uint32, f 
 
 	p.l.Infof("Auto-completed quest [%d] for character [%d].", questId, characterId)
 	return nextQuestId, true, nil
+}
+
+// isInfoNumberRequirementMet reports whether the portion of the quest's end
+// requirements keyed by this infoNumber (a mob id for kill requirements, a
+// map id for field-enter requirements) is already satisfied. Returns false
+// if the infoNumber doesn't map to any end-requirement on this quest, or if
+// the quest definition can't be fetched — both cases fall through to the
+// normal write path.
+func (p *ProcessorImpl) isInfoNumberRequirementMet(q Model, questId uint32, infoNumber uint32) bool {
+	def, err := p.dataProcessor.GetQuestDefinition(questId)
+	if err != nil {
+		return false
+	}
+
+	for _, mob := range def.EndRequirements.Mobs {
+		if mob.Id == infoNumber {
+			prog, found := q.GetProgress(infoNumber)
+			if !found {
+				return false
+			}
+			return parseProgressValue(prog.Progress()) >= mob.Count
+		}
+	}
+
+	for _, mapId := range def.EndRequirements.FieldEnter {
+		if mapId == infoNumber {
+			prog, found := q.GetProgress(infoNumber)
+			if !found {
+				return false
+			}
+			return prog.Progress() == "1"
+		}
+	}
+
+	return false
 }
 
 func (p *ProcessorImpl) areEndRequirementsMet(q Model, questDef dataquest.RestModel) bool {

@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-npc-conversations/conversation/quest"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -35,6 +36,9 @@ type ProcessorMock struct {
 
 	// GetStateMachineForCharacterFunc is a function field for the GetStateMachineForCharacter method
 	GetStateMachineForCharacterFunc func(questId uint32, characterId uint32) (quest.StateMachine, error)
+
+	// CountFunc is a function field for the Count method
+	CountFunc func() (int64, *time.Time, error)
 }
 
 // Create is a mock implementation of the quest.Processor.Create method
@@ -113,4 +117,12 @@ func (m *ProcessorMock) GetStateMachineForCharacter(questId uint32, characterId 
 		return m.GetStateMachineForCharacterFunc(questId, characterId)
 	}
 	return quest.StateMachine{}, nil
+}
+
+// Count is a mock implementation of the quest.Processor.Count method
+func (m *ProcessorMock) Count() (int64, *time.Time, error) {
+	if m.CountFunc != nil {
+		return m.CountFunc()
+	}
+	return 0, nil, nil
 }

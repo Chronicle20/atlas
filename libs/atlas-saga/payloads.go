@@ -193,6 +193,33 @@ type ResetStatsPayload struct {
 	ChannelId   channel.Id `json:"channelId"`   // ChannelId associated with the action
 }
 
+// RebalanceStat identifies which primary stat a RebalanceAP target operates on.
+type RebalanceStat string
+
+const (
+	RebalanceStatStrength     RebalanceStat = "strength"
+	RebalanceStatDexterity    RebalanceStat = "dexterity"
+	RebalanceStatIntelligence RebalanceStat = "intelligence"
+	RebalanceStatLuck         RebalanceStat = "luck"
+)
+
+// RebalanceTarget pairs a primary stat with the floor value it should be raised to.
+type RebalanceTarget struct {
+	Stat  RebalanceStat `json:"stat"`
+	Floor uint16        `json:"floor"`
+}
+
+// RebalanceAPPayload represents the payload required to rebalance a character's
+// primary stats during first-job advancement. The algorithm resets STR/DEX/INT/LUK
+// to 4, raises each target stat to its floor, and returns the reclaimed surplus
+// to unallocated AP. HP/MP are not touched.
+type RebalanceAPPayload struct {
+	CharacterId uint32            `json:"characterId"` // CharacterId associated with the action
+	WorldId     world.Id          `json:"worldId"`     // WorldId associated with the action
+	ChannelId   channel.Id        `json:"channelId"`   // ChannelId associated with the action
+	Targets     []RebalanceTarget `json:"targets"`     // Target stats and floors to apply
+}
+
 // CreateSkillPayload represents the payload required to create a skill for a character.
 type CreateSkillPayload struct {
 	CharacterId uint32    `json:"characterId"` // CharacterId associated with the action

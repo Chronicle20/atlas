@@ -454,6 +454,8 @@ Verify in saga-orchestrator, but common operations:
 - `change_hair` - Change hair style (params: `styleId`)
 - `change_face` - Change face style (params: `styleId`)
 - `change_skin` - Change skin color (params: `styleId`)
+- `rebalance_ap` - Redistribute primary stats during first-job advancement (params: `targets` — JSON-encoded array of `{"stat":<name>,"floor":<int>}`). Zeroes STR/DEX/INT/LUK to 4, raises each target stat to its floor, returns the reclaimed surplus to unallocated AP. HP/MP untouched. Must precede `change_job` in the operation sequence so stat broadcasts land before the job-change broadcast. Valid `stat` values: `"strength"`, `"dexterity"`, `"intelligence"`, `"luck"`. Duplicate stats are rejected. Single target example: `{"operation": "rebalance_ap", "params": {"targets": "[{\"stat\":\"dexterity\",\"floor\":20}]"}}` (Explorer Pirate). Multi-target example: `"targets": "[{\"stat\":\"strength\",\"floor\":20},{\"stat\":\"dexterity\",\"floor\":20}]"` (Thunder Breaker).
+- `reset_stats` - Reset STR/DEX/INT/LUK to 4 and return the reclaimed surplus to unallocated AP (params: none). Retained for GM tools and non-advancement flows; **for first-job advancement scripts, use `rebalance_ap` instead**.
 - `increase_buddy_capacity` - Increase buddy capacity (params: `amount`)
 - `gain_closeness` - Increase pet closeness (params: `petId` or `petIndex`, `amount`)
 - `create_skill` - Create skill (params: `skillId`, `level`, `masterLevel`)
@@ -477,6 +479,20 @@ Verify in saga-orchestrator, but common operations:
 - `local:get_saved_location` - Fetch saved location into context (params: `locationType`, `defaultMapId`, `mapIdContextKey`, `portalIdContextKey`)
 - `local:log` - Log message (params: `message`)
 - `local:debug` - Debug log (params: `message`)
+
+#### First-Job Advancement Guidance
+
+First-job advancement (both NPC and quest scripts) must:
+
+1. Use `rebalance_ap` to set the class-floor stats and return reclaimed AP to the unallocated pool. Place it **before** `change_job` in the operations sequence.
+2. **Not** encode stat-minimum conditions (`strength >= X`, `dexterity >= Y`, `{"type":"stat","referenceId":"str"}`, etc.) as advancement gates. On a vanilla v83 client, beginner auto-allocation puts everything in STR and these gates are unsatisfiable. The server rebalances AP at advancement time; the gate is unnecessary.
+3. Retain the level check (level 10 for most classes; level 8 for Magician). That check is legitimate and unchanged.
+4. Not use `reset_stats` — `rebalance_ap` supersedes it for this flow.
+
+Reference scripts already updated to this pattern:
+
+- Explorer: `npc_1012100.json`, `npc_1022000.json`, `npc_1032001.json`, `npc_1052001.json`, `npc_1090000.json`
+- Cygnus: `quest_20101.json` through `quest_20105.json`
 
 #### Detailed: local:select_random_weighted
 

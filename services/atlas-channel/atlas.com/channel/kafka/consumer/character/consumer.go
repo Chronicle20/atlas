@@ -406,9 +406,11 @@ func handleStatusEventLevelChanged(sc server.Model, wp writer.Producer) message.
 		}
 
 		session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			_ = session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterLevelUpEffectBody())(s)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterLevelUpEffectForeignBody(s.CharacterId())))
-			return nil
+			// Self-animation is triggered client-side by the STAT_CHANGED packet
+			// that atlas-character emits alongside LEVEL_CHANGED and that carries
+			// stat.TypeLevel. Only the foreign effect needs an explicit push,
+			// since other players don't receive the stat packet.
+			return _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterLevelUpEffectForeignBody(s.CharacterId())))
 		})
 
 	}

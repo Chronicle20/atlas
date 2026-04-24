@@ -8,6 +8,7 @@ import (
 	savedlocation "atlas-npc-conversations/saved_location"
 	"atlas-npc-conversations/validation"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -194,6 +195,47 @@ func (e *OperationExecutorImpl) evaluateContextValueAsInt(characterId uint32, pa
 	}
 
 	return intValue, nil
+}
+
+// parseRebalanceTargets parses a JSON-encoded array of {stat, floor} entries into
+// typed RebalanceTarget slice. Accepts either integer or string-encoded floor values
+// to match the rest of the operation_executor's lenient param decoding.
+func parseRebalanceTargets(raw string) ([]saga.RebalanceTarget, error) {
+	var items []struct {
+		Stat  string      `json:"stat"`
+		Floor interface{} `json:"floor"`
+	}
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return nil, fmt.Errorf("invalid targets JSON: %w", err)
+	}
+	out := make([]saga.RebalanceTarget, 0, len(items))
+	for i, it := range items {
+		stat := saga.RebalanceStat(it.Stat)
+		switch stat {
+		case saga.RebalanceStatStrength, saga.RebalanceStatDexterity,
+			saga.RebalanceStatIntelligence, saga.RebalanceStatLuck:
+		default:
+			return nil, fmt.Errorf("target[%d]: invalid stat %q", i, it.Stat)
+		}
+		var floorInt int
+		switch v := it.Floor.(type) {
+		case float64:
+			floorInt = int(v)
+		case string:
+			parsed, err := strconv.Atoi(v)
+			if err != nil {
+				return nil, fmt.Errorf("target[%d]: invalid floor %q: %w", i, v, err)
+			}
+			floorInt = parsed
+		default:
+			return nil, fmt.Errorf("target[%d]: floor must be a number or numeric string", i)
+		}
+		if floorInt < 4 {
+			return nil, fmt.Errorf("target[%d]: floor must be >= 4, got %d", i, floorInt)
+		}
+		out = append(out, saga.RebalanceTarget{Stat: stat, Floor: uint16(floorInt)})
+	}
+	return out, nil
 }
 
 // ExecuteOperation executes a single operation for a character
@@ -2197,6 +2239,39 @@ func (e *OperationExecutorImpl) createStepForOperation(f field.Model, characterI
 		}
 
 		return stepId, saga.Pending, saga.ResetStats, payload, nil
+
+	case "rebalance_ap":
+		// Format: rebalance_ap
+		// Params: targets (JSON array of {stat:<name>, floor:<int>})
+		// Applied during first-job advancement: zeroes STR/DEX/INT/LUK, raises each
+		// target stat to its floor, returns reclaimed surplus to unallocated AP.
+		targetsRaw, exists := operation.Params()["targets"]
+		if !exists {
+			return "", "", "", nil, errors.New("missing targets parameter for rebalance_ap operation")
+		}
+		targets, err := parseRebalanceTargets(targetsRaw)
+		if err != nil {
+			return "", "", "", nil, fmt.Errorf("rebalance_ap: %w", err)
+		}
+		if len(targets) == 0 {
+			return "", "", "", nil, errors.New("rebalance_ap requires at least one target")
+		}
+		seen := make(map[saga.RebalanceStat]struct{}, len(targets))
+		for _, tt := range targets {
+			if _, dup := seen[tt.Stat]; dup {
+				return "", "", "", nil, fmt.Errorf("rebalance_ap: duplicate target stat %q", tt.Stat)
+			}
+			seen[tt.Stat] = struct{}{}
+		}
+
+		payload := saga.RebalanceAPPayload{
+			CharacterId: characterId,
+			WorldId:     f.WorldId(),
+			ChannelId:   f.ChannelId(),
+			Targets:     targets,
+		}
+
+		return stepId, saga.Pending, saga.RebalanceAP, payload, nil
 
 	case "start_instance_transport":
 		// Format: start_instance_transport

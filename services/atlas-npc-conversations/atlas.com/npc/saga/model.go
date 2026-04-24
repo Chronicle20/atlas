@@ -55,6 +55,7 @@ type (
 	ResetStatsPayload      = sharedsaga.ResetStatsPayload
 	RebalanceAPPayload     = sharedsaga.RebalanceAPPayload
 	RebalanceTarget        = sharedsaga.RebalanceTarget
+	RebalanceStat          = sharedsaga.RebalanceStat
 
 	// Saved location payload types
 	SaveLocationPayload        = sharedsaga.SaveLocationPayload

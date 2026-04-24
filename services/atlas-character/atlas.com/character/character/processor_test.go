@@ -6,6 +6,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -770,5 +771,76 @@ func TestDeleteForSagaCompensation_Missing(t *testing.T) {
 	err := cp.DeleteForSagaCompensation(buf)(txId, 99999 /* never created */)
 	if err != nil {
 		t.Fatalf("DeleteForSagaCompensation should be idempotent on missing row, got error: %v", err)
+	}
+}
+
+func TestRebalanceAP_PersistsAndEmits(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	proc := character.NewProcessor(testLogger(), tctx, db)
+
+	// Seed a level-10 beginner with vanilla v83 auto-allocated stats.
+	input := character.NewModelBuilder().
+		SetAccountId(1000).SetWorldId(0).SetName("PirateRef").
+		SetLevel(10).SetStrength(53).SetDexterity(9).SetIntelligence(4).SetLuck(4).SetAp(0).
+		Build()
+	c, err := proc.Create(message.NewBuffer())(uuid.New(), input)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	ch := channel.NewModel(0, 1)
+	buf := message.NewBuffer()
+	targets := []character.RebalanceTarget{{Stat: "dexterity", Floor: 20}}
+	if err := proc.RebalanceAP(buf)(uuid.New(), c.Id(), ch, targets); err != nil {
+		t.Fatalf("RebalanceAP: %v", err)
+	}
+
+	refreshed, err := proc.GetById()(c.Id())
+	if err != nil {
+		t.Fatalf("reread: %v", err)
+	}
+	if refreshed.Strength() != 4 || refreshed.Dexterity() != 20 || refreshed.Intelligence() != 4 || refreshed.Luck() != 4 {
+		t.Errorf("stats: STR=%d DEX=%d INT=%d LUK=%d; want 4/20/4/4",
+			refreshed.Strength(), refreshed.Dexterity(), refreshed.Intelligence(), refreshed.Luck())
+	}
+	if refreshed.AP() != 38 {
+		t.Errorf("AP: got %d, want 38", refreshed.AP())
+	}
+	if refreshed.Hp() != c.Hp() || refreshed.Mp() != c.Mp() {
+		t.Errorf("HP/MP changed: before HP=%d MP=%d, after HP=%d MP=%d", c.Hp(), c.Mp(), refreshed.Hp(), refreshed.Mp())
+	}
+	if refreshed.MaxHp() != c.MaxHp() || refreshed.MaxMp() != c.MaxMp() {
+		t.Errorf("MaxHP/MaxMP changed")
+	}
+}
+
+func TestRebalanceAP_ErrorDoesNotMutate(t *testing.T) {
+	tctx := tenant.WithContext(context.Background(), testTenant())
+	db := testDatabase(t)
+	proc := character.NewProcessor(testLogger(), tctx, db)
+
+	input := character.NewModelBuilder().
+		SetAccountId(1000).SetWorldId(0).SetName("LowAP").
+		SetLevel(1).SetStrength(4).SetDexterity(4).SetIntelligence(4).SetLuck(4).SetAp(0).
+		Build()
+	c, err := proc.Create(message.NewBuffer())(uuid.New(), input)
+	if err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	ch := channel.NewModel(0, 1)
+	buf := message.NewBuffer()
+	targets := []character.RebalanceTarget{{Stat: "dexterity", Floor: 20}}
+	if err := proc.RebalanceAP(buf)(uuid.New(), c.Id(), ch, targets); err == nil {
+		t.Fatal("expected error on insufficient AP, got nil")
+	}
+
+	refreshed, err := proc.GetById()(c.Id())
+	if err != nil {
+		t.Fatalf("reread: %v", err)
+	}
+	if refreshed.Strength() != 4 || refreshed.Dexterity() != 4 || refreshed.Intelligence() != 4 || refreshed.Luck() != 4 || refreshed.AP() != 0 {
+		t.Errorf("entity mutated on error path: %+v", refreshed)
 	}
 }

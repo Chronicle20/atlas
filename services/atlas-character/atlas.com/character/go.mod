@@ -90,8 +90,6 @@ replace github.com/Chronicle20/atlas/libs/atlas-packet => ../../../../libs/atlas
 
 replace github.com/Chronicle20/atlas/libs/atlas-retry => ../../../../libs/atlas-retry
 
-replace github.com/Chronicle20/atlas/libs/atlas-saga => ../../../../libs/atlas-saga
-
 replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/atlas-script-core
 
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket

@@ -29,6 +29,7 @@ const (
 	CommandSetHP               = "SET_HP"
 	CommandDeductExperience    = "DEDUCT_EXPERIENCE"
 	CommandResetStats          = "RESET_STATS"
+	CommandRebalanceAP         = "REBALANCE_AP"
 	CommandClampHP             = "CLAMP_HP"
 	CommandClampMP             = "CLAMP_MP"
 	CommandDeleteCharacter     = "DELETE_CHARACTER"
@@ -186,6 +187,18 @@ type DeductExperienceCommandBody struct {
 
 type ResetStatsCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
+}
+
+type RebalanceAPCommandBody struct {
+	ChannelId channel.Id          `json:"channelId"`
+	Targets   []RebalanceAPTarget `json:"targets"`
+}
+
+// RebalanceAPTarget mirrors sharedsaga.RebalanceTarget on the Kafka wire.
+// Kept local to avoid pulling sharedsaga into the kafka/message package.
+type RebalanceAPTarget struct {
+	Stat  string `json:"stat"`
+	Floor uint16 `json:"floor"`
 }
 
 // DeleteCharacterCommandBody is the saga-correlated delete-character command.

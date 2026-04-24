@@ -64,12 +64,6 @@
             },
             {
               "conditions": [
-                {"type": "stat", "operator": "<", "value": "25", "referenceId": "luk"}
-              ],
-              "nextState": "requirementsNotMet"
-            },
-            {
-              "conditions": [
                 {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1472061"}
               ],
               "nextState": "inventoryFull"
@@ -134,11 +128,11 @@
         "type": "genericAction",
         "genericAction": {
           "operations": [
+            {"type": "rebalance_ap", "params": {"targets": "[{\"stat\":\"luck\",\"floor\":25}]"}},
             {"type": "award_item", "params": {"itemId": "1472061", "quantity": "1"}},
             {"type": "award_item", "params": {"itemId": "2070000", "quantity": "800"}},
             {"type": "award_item", "params": {"itemId": "1142066", "quantity": "1"}},
             {"type": "change_job", "params": {"jobId": "1400"}},
-            {"type": "reset_stats", "params": {}},
             {"type": "complete_quest", "params": {}}
           ],
           "outcomes": [

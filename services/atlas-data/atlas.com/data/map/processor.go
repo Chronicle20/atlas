@@ -6,9 +6,11 @@ import (
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
+	monstertpl "atlas-data/monster"
 	"atlas-data/point"
 	"atlas-data/xml"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -124,6 +126,34 @@ func calcPointBelow(tree FootholdTreeRestModel, initial point.RestModel) (point.
 		}
 	}
 	return point.RestModel{X: initial.X, Y: dropY}, true
+}
+
+var errMissingTemplate = errors.New("monster template not found")
+
+type templateLookup func(uint32) (monstertpl.RestModel, error)
+
+func snapToGround(tree FootholdTreeRestModel, sp monster.RestModel, lookup templateLookup) monster.RestModel {
+	if sp.FH != 0 {
+		fh := tree.findById(uint32(sp.FH))
+		if fh == nil {
+			return sp
+		}
+		if y, ok := calcYOnFoothold(fh, sp.X); ok {
+			sp.Y = y
+		}
+		return sp
+	}
+	tpl, err := lookup(sp.Template)
+	if err != nil {
+		return sp
+	}
+	if tpl.Flying || tpl.Swimming {
+		return sp
+	}
+	if pt, ok := calcPointBelow(tree, point.RestModel{X: sp.X, Y: sp.Y - 1}); ok {
+		sp.Y = pt.Y - 1
+	}
+	return sp
 }
 
 type FootholdTreeConfigurator func(f *FootholdTreeRestModel)

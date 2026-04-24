@@ -41,6 +41,10 @@ func handleMesosUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e storag
 	if e.Type != storage.StatusEventTypeMesosUpdate {
 		return
 	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindStorageMesosUpdated); !ok {
+		return
+	}
 
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
@@ -50,11 +54,15 @@ func handleMesosUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e storag
 	}).Debug("Storage mesos updated successfully")
 
 	// Mark the saga step as completed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleStorageErrorEvent(l logrus.FieldLogger, ctx context.Context, e storage.StatusEvent[storage.ErrorEventBody]) {
 	if e.Type != storage.StatusEventTypeError {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindStorageError); !ok {
 		return
 	}
 
@@ -66,5 +74,5 @@ func handleStorageErrorEvent(l logrus.FieldLogger, ctx context.Context, e storag
 	}).Error("Storage operation failed")
 
 	// Mark the saga step as failed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }

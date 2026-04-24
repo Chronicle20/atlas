@@ -29,6 +29,58 @@ const (
 	EventKindAssetDeleted         EventKind = "asset.deleted"
 	EventKindAssetQuantityChanged EventKind = "asset.quantity_changed"
 	EventKindAssetMoved           EventKind = "asset.moved"
+
+	// Quest subsystem.
+	EventKindQuestStarted   EventKind = "quest.started"
+	EventKindQuestCompleted EventKind = "quest.completed"
+	EventKindQuestForfeited EventKind = "quest.forfeited"
+
+	// Skill subsystem.
+	EventKindSkillCreated EventKind = "skill.created"
+	EventKindSkillUpdated EventKind = "skill.updated"
+	EventKindSkillDeleted EventKind = "skill.deleted"
+
+	// Buddy list.
+	EventKindBuddyCapacityChanged EventKind = "buddy.capacity_changed"
+
+	// Consumable.
+	EventKindConsumableEffectApplied EventKind = "consumable.effect_applied"
+
+	// Pet.
+	EventKindPetClosenessChanged EventKind = "pet.closeness_changed"
+
+	// Cash shop.
+	EventKindCashShopWalletUpdated       EventKind = "cashshop.wallet_updated"
+	EventKindCashShopCompartmentAccepted EventKind = "cashshop.compartment_accepted"
+	EventKindCashShopCompartmentReleased EventKind = "cashshop.compartment_released"
+	EventKindCashShopCompartmentError    EventKind = "cashshop.compartment_error"
+
+	// Compartment (character inventory).
+	EventKindCompartmentCreated        EventKind = "compartment.created"
+	EventKindCompartmentCreationFailed EventKind = "compartment.creation_failed"
+	EventKindCompartmentDeleted        EventKind = "compartment.deleted"
+	EventKindCompartmentAccepted       EventKind = "compartment.accepted"
+	EventKindCompartmentReleased       EventKind = "compartment.released"
+	EventKindCompartmentError          EventKind = "compartment.error"
+
+	// Storage.
+	EventKindStorageMesosUpdated        EventKind = "storage.mesos_updated"
+	EventKindStorageError               EventKind = "storage.error"
+	EventKindStorageCompartmentAccepted EventKind = "storage.compartment_accepted"
+	EventKindStorageCompartmentReleased EventKind = "storage.compartment_released"
+	EventKindStorageCompartmentError    EventKind = "storage.compartment_error"
+
+	// Guild.
+	EventKindGuildRequestAgreement EventKind = "guild.request_agreement"
+	EventKindGuildCreated          EventKind = "guild.created"
+	EventKindGuildDisbanded        EventKind = "guild.disbanded"
+	EventKindGuildEmblemUpdated    EventKind = "guild.emblem_updated"
+	EventKindGuildCapacityUpdated  EventKind = "guild.capacity_updated"
+
+	// Invite.
+	EventKindInviteCreated  EventKind = "invite.created"
+	EventKindInviteAccepted EventKind = "invite.accepted"
+	EventKindInviteRejected EventKind = "invite.rejected"
 )
 
 // acceptanceTable maps each saga.Action to the set of EventKinds that can
@@ -37,12 +89,109 @@ const (
 // actions default-deny in StepAcceptsEvent, but the coverage test
 // (event_acceptance_test.go) catches missing entries before runtime.
 //
-// Task 1 only seeds the three actions from the §9.1 Thief scenario.
-// Task 2 fills the remaining entries.
 var acceptanceTable = map[sharedsaga.Action][]EventKind{
-	sharedsaga.RebalanceAP: {EventKindCharacterStatChanged},
-	sharedsaga.ChangeJob:   {EventKindCharacterJobChanged},
-	sharedsaga.AwardAsset:  {EventKindAssetCreated, EventKindAssetQuantityChanged},
+	// Asset actions.
+	sharedsaga.AwardAsset:           {EventKindAssetCreated, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAsset:         {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.DestroyAssetFromSlot: {EventKindAssetDeleted, EventKindAssetQuantityChanged},
+	sharedsaga.EquipAsset:           {EventKindAssetMoved},
+	sharedsaga.UnequipAsset:         {EventKindAssetMoved},
+	sharedsaga.CreateAndEquipAsset:  {EventKindAssetCreated},
+
+	// Character/stat actions.
+	sharedsaga.AwardExperience:        {EventKindCharacterExperienceChanged},
+	sharedsaga.AwardLevel:             {EventKindCharacterLevelChanged},
+	sharedsaga.AwardMesos:             {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
+	sharedsaga.AwardCurrency:          {EventKindCharacterMesoChanged, EventKindCharacterMesoError},
+	sharedsaga.AwardFame:              {EventKindCharacterStatChanged},
+	sharedsaga.ChangeJob:              {EventKindCharacterJobChanged},
+	sharedsaga.ChangeHair:             {EventKindCharacterStatChanged},
+	sharedsaga.ChangeFace:             {EventKindCharacterStatChanged},
+	sharedsaga.ChangeSkin:             {EventKindCharacterStatChanged},
+	sharedsaga.SetHP:                  {EventKindCharacterStatChanged},
+	sharedsaga.DeductExperience:       {EventKindCharacterExperienceChanged},
+	sharedsaga.CancelAllBuffs:         {EventKindCharacterStatChanged},
+	sharedsaga.ResetStats:             {EventKindCharacterStatChanged},
+	sharedsaga.RebalanceAP:            {EventKindCharacterStatChanged},
+	sharedsaga.ValidateCharacterState: {},
+	sharedsaga.IncreaseBuddyCapacity:  {EventKindBuddyCapacityChanged},
+	sharedsaga.GainCloseness:          {EventKindPetClosenessChanged},
+
+	// Skills.
+	sharedsaga.CreateSkill: {EventKindSkillCreated},
+	sharedsaga.UpdateSkill: {EventKindSkillUpdated},
+
+	// Quest.
+	sharedsaga.CompleteQuest:    {EventKindQuestCompleted},
+	sharedsaga.StartQuest:       {EventKindQuestStarted},
+	sharedsaga.SetQuestProgress: {EventKindQuestStarted},
+	sharedsaga.ForfeitQuest:     {EventKindQuestForfeited},
+
+	// Consumable.
+	sharedsaga.ApplyConsumableEffect:  {EventKindConsumableEffectApplied},
+	sharedsaga.CancelConsumableEffect: {},
+
+	// Storage.
+	sharedsaga.ShowStorage:          {},
+	sharedsaga.DepositToStorage:     {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.UpdateStorageMesos:   {EventKindStorageMesosUpdated, EventKindStorageError},
+	sharedsaga.TransferToStorage:    {}, // composite: expanded into sub-steps before dispatch
+	sharedsaga.WithdrawFromStorage:  {}, // composite
+	sharedsaga.AcceptToStorage:      {EventKindStorageCompartmentAccepted, EventKindStorageCompartmentError},
+	sharedsaga.ReleaseFromCharacter: {EventKindCompartmentReleased, EventKindCompartmentError},
+	sharedsaga.AcceptToCharacter:    {EventKindCompartmentAccepted, EventKindCompartmentError},
+	sharedsaga.ReleaseFromStorage:   {EventKindStorageCompartmentReleased, EventKindStorageCompartmentError},
+
+	// Cash shop.
+	sharedsaga.TransferToCashShop:   {}, // composite
+	sharedsaga.WithdrawFromCashShop: {}, // composite
+	sharedsaga.AcceptToCashShop:     {EventKindCashShopCompartmentAccepted, EventKindCashShopCompartmentError},
+	sharedsaga.ReleaseFromCashShop:  {EventKindCashShopCompartmentReleased, EventKindCashShopCompartmentError},
+
+	// Guild.
+	sharedsaga.RequestGuildName:             {EventKindGuildRequestAgreement, EventKindGuildCreated},
+	sharedsaga.RequestGuildEmblem:           {EventKindGuildEmblemUpdated},
+	sharedsaga.RequestGuildDisband:          {EventKindGuildDisbanded},
+	sharedsaga.RequestGuildCapacityIncrease: {EventKindGuildCapacityUpdated},
+
+	// Invite.
+	sharedsaga.CreateInvite: {EventKindInviteCreated, EventKindInviteAccepted, EventKindInviteRejected},
+
+	// Character lifecycle.
+	sharedsaga.CreateCharacter:       {EventKindCharacterCreated, EventKindCharacterCreationFailed},
+	sharedsaga.AwaitCharacterCreated: {EventKindCharacterCreated, EventKindCharacterCreationFailed},
+
+	// Fire-and-forget / self-completing actions (no Kafka event advances them).
+	sharedsaga.WarpToRandomPortal:         {},
+	sharedsaga.WarpToPortal:               {},
+	sharedsaga.WarpToSavedLocation:        {},
+	sharedsaga.SaveLocation:               {},
+	sharedsaga.SendMessage:                {},
+	sharedsaga.FieldEffect:                {},
+	sharedsaga.FieldEffectWeather:         {},
+	sharedsaga.UiLock:                     {},
+	sharedsaga.PlayPortalSound:            {},
+	sharedsaga.UpdateAreaInfo:             {},
+	sharedsaga.ShowInfo:                   {},
+	sharedsaga.ShowInfoText:               {},
+	sharedsaga.ShowIntro:                  {},
+	sharedsaga.ShowHint:                   {},
+	sharedsaga.ShowGuideHint:              {},
+	sharedsaga.BlockPortal:                {},
+	sharedsaga.UnblockPortal:              {},
+	sharedsaga.SpawnMonster:               {},
+	sharedsaga.SpawnReactorDrops:          {},
+	sharedsaga.HitReactor:                 {},
+	sharedsaga.BroadcastPqMessage:         {},
+	sharedsaga.RegisterPartyQuest:         {},
+	sharedsaga.WarpPartyQuestMembersToMap: {},
+	sharedsaga.LeavePartyQuest:            {},
+	sharedsaga.EnterPartyQuestBonus:       {},
+	sharedsaga.UpdatePqCustomData:         {},
+	sharedsaga.StageClearAttemptPq:        {},
+	sharedsaga.SelectGachaponReward:       {},
+	sharedsaga.EmitGachaponWin:            {},
+	sharedsaga.StartInstanceTransport:     {},
 }
 
 // StepAcceptsEvent reports whether a saga step's Action can be legitimately

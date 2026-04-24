@@ -75,6 +75,7 @@ const (
 	DeductExperience       = sharedsaga.DeductExperience
 	CancelAllBuffs         = sharedsaga.CancelAllBuffs
 	ResetStats             = sharedsaga.ResetStats
+	RebalanceAP            = sharedsaga.RebalanceAP
 	ValidateCharacterState = sharedsaga.ValidateCharacterState
 	IncreaseBuddyCapacity  = sharedsaga.IncreaseBuddyCapacity
 	GainCloseness          = sharedsaga.GainCloseness
@@ -161,6 +162,12 @@ const (
 
 	// Field effect actions
 	FieldEffectWeather = sharedsaga.FieldEffectWeather
+
+	// Rebalance AP stat-name constants
+	RebalanceStatStrength     = sharedsaga.RebalanceStatStrength
+	RebalanceStatDexterity    = sharedsaga.RebalanceStatDexterity
+	RebalanceStatIntelligence = sharedsaga.RebalanceStatIntelligence
+	RebalanceStatLuck         = sharedsaga.RebalanceStatLuck
 )
 
 // Re-exported payload types from shared library
@@ -187,6 +194,9 @@ type (
 	DeductExperiencePayload              = sharedsaga.DeductExperiencePayload
 	CancelAllBuffsPayload                = sharedsaga.CancelAllBuffsPayload
 	ResetStatsPayload                    = sharedsaga.ResetStatsPayload
+	RebalanceAPPayload                   = sharedsaga.RebalanceAPPayload
+	RebalanceTarget                      = sharedsaga.RebalanceTarget
+	RebalanceStat                        = sharedsaga.RebalanceStat
 	IncreaseBuddyCapacityPayload         = sharedsaga.IncreaseBuddyCapacityPayload
 	GainClosenessPayload                 = sharedsaga.GainClosenessPayload
 	CompleteQuestPayload                 = sharedsaga.CompleteQuestPayload
@@ -1109,6 +1119,12 @@ func (s *Step[T]) UnmarshalJSON(data []byte) error {
 		s.payload = any(payload).(T)
 	case ResetStats:
 		var payload ResetStatsPayload
+		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
+		}
+		s.payload = any(payload).(T)
+	case RebalanceAP:
+		var payload RebalanceAPPayload
 		if err := json.Unmarshal(actionOnly.Payload, &payload); err != nil {
 			return fmt.Errorf("failed to unmarshal payload for action %s: %w", s.action, err)
 		}

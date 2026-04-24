@@ -1318,77 +1318,45 @@ func TestReader(t *testing.T) {
 	}
 }
 
-func TestReaderFlyingFlag(t *testing.T) {
+func TestReaderMobilityFlags(t *testing.T) {
 	tt := testTenant()
 	l, _ := test.NewNullLogger()
 	ctx := tenant.WithContext(context.Background(), tt)
 
-	const flyXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<imgdir name="2230000.img">
+	tests := []struct {
+		name         string
+		monsterId    int
+		mobName      string
+		animationKey string
+		wantFlying   bool
+		wantSwimming bool
+	}{
+		{name: "fly_animation_marks_flying", monsterId: 2230000, mobName: "FakeBat", animationKey: "fly", wantFlying: true, wantSwimming: false},
+		{name: "hover_animation_marks_swimming", monsterId: 2230100, mobName: "FakeFish", animationKey: "hover", wantFlying: false, wantSwimming: true},
+		{name: "swim_animation_marks_swimming", monsterId: 2230200, mobName: "FakeJellyfish", animationKey: "swim", wantFlying: false, wantSwimming: true},
+		{name: "move_animation_is_ground", monsterId: 100100, mobName: "FakeSnail", animationKey: "move", wantFlying: false, wantSwimming: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(tc.monsterId), name: tc.mobName})
+
+			body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="` + strconv.Itoa(tc.monsterId) + `.img">
   <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
-  <imgdir name="fly"><canvas name="0"><int name="delay" value="120"/></canvas></imgdir>
+  <imgdir name="` + tc.animationKey + `"><canvas name="0"><int name="delay" value="120"/></canvas></imgdir>
 </imgdir>`
 
-	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(2230000), name: "FakeBat"})
-
-	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(flyXML)))()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !rm.Flying {
-		t.Fatalf("expected Flying=true, got false")
-	}
-	if rm.Swimming {
-		t.Fatalf("expected Swimming=false, got true")
-	}
-}
-
-func TestReaderSwimmingFlag(t *testing.T) {
-	tt := testTenant()
-	l, _ := test.NewNullLogger()
-	ctx := tenant.WithContext(context.Background(), tt)
-
-	const swimXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<imgdir name="2230100.img">
-  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
-  <imgdir name="hover"><canvas name="0"><int name="delay" value="120"/></canvas></imgdir>
-</imgdir>`
-
-	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(2230100), name: "FakeFish"})
-
-	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(swimXML)))()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !rm.Swimming {
-		t.Fatalf("expected Swimming=true, got false")
-	}
-	if rm.Flying {
-		t.Fatalf("expected Flying=false, got true")
-	}
-}
-
-func TestReaderGroundFlags(t *testing.T) {
-	tt := testTenant()
-	l, _ := test.NewNullLogger()
-	ctx := tenant.WithContext(context.Background(), tt)
-
-	const groundXML = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<imgdir name="100100.img">
-  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
-  <imgdir name="move"><canvas name="0"><int name="delay" value="120"/></canvas></imgdir>
-</imgdir>`
-
-	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(100100), name: "FakeSnail"})
-
-	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(groundXML)))()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if rm.Flying {
-		t.Fatalf("expected Flying=false (ground mob), got true")
-	}
-	if rm.Swimming {
-		t.Fatalf("expected Swimming=false (ground mob), got true")
+			rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.Flying != tc.wantFlying {
+				t.Fatalf("Flying=%t, want %t", rm.Flying, tc.wantFlying)
+			}
+			if rm.Swimming != tc.wantSwimming {
+				t.Fatalf("Swimming=%t, want %t", rm.Swimming, tc.wantSwimming)
+			}
+		})
 	}
 }

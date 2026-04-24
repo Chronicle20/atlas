@@ -1010,7 +1010,9 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			wantContains: "Quest 1002 Status = 2",
 		},
 		{
-			name: "Quest Status - quest not found",
+			// Absent quest record with a "must be STARTED" check correctly fails: treating
+			// absence as NotStarted (0) != STARTED (1) yields Passed=false.
+			name: "Quest Status - absent record, required STARTED, fails",
 			condition: Condition{
 				conditionType: QuestStatusCondition,
 				operator:      Equals,
@@ -1019,7 +1021,35 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			},
 			context:      contextWithData,
 			wantPassed:   false,
-			wantContains: "Quest 9999 not found",
+			wantContains: "Quest 9999 Status (no record) = 1",
+		},
+		{
+			// Regression: a WZ prerequisite like `{state: 0}` (NotStarted) against a quest the
+			// character has never touched must pass. Previously the validator short-circuited
+			// to Passed=false on absent record, blocking quests like "The Path of a Thief"
+			// (2079) that require four never-started prereqs.
+			name: "Quest Status - absent record, required NotStarted, passes",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.StateNotStarted),
+				referenceId:   9999,
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 9999 Status (no record) = 0",
+		},
+		{
+			name: "Quest Status - absent record, required COMPLETED, fails",
+			condition: Condition{
+				conditionType: QuestStatusCondition,
+				operator:      Equals,
+				value:         int(quest.COMPLETED),
+				referenceId:   9999,
+			},
+			context:      contextWithData,
+			wantPassed:   false,
+			wantContains: "Quest 9999 Status (no record) = 2",
 		},
 		// Quest Progress condition tests
 		{
@@ -1088,7 +1118,7 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			wantContains: "Quest 1001 Progress (step: nonexistent) = 0",
 		},
 		{
-			name: "Quest Progress - quest not found",
+			name: "Quest Progress - absent record, required > 0, fails",
 			condition: Condition{
 				conditionType: QuestProgressCondition,
 				operator:      Equals,
@@ -1098,7 +1128,22 @@ func TestCondition_EvaluateWithContext(t *testing.T) {
 			},
 			context:      contextWithData,
 			wantPassed:   false,
-			wantContains: "Quest 9999 not found",
+			wantContains: "Quest 9999 Progress (no record, step: step1) = 5",
+		},
+		{
+			// Symmetric to the questStatus regression: progress requirement of 0 against an
+			// absent quest must pass so untouched-prereq checks behave correctly.
+			name: "Quest Progress - absent record, required 0, passes",
+			condition: Condition{
+				conditionType: QuestProgressCondition,
+				operator:      Equals,
+				value:         0,
+				referenceId:   9999,
+				step:          "step1",
+			},
+			context:      contextWithData,
+			wantPassed:   true,
+			wantContains: "Quest 9999 Progress (no record, step: step1) = 0",
 		},
 		// Marriage gifts condition tests
 		{
@@ -1808,9 +1853,10 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 		wantContains string
 		wantError    bool
 	}{
-		// Test quest not found
+		// Empty-context quest-not-found cases: absence is treated as NotStarted (state 0,
+		// progress 0), which fails "must be STARTED" comparisons but no longer short-circuits.
 		{
-			name: "Quest Status - quest not found",
+			name: "Quest Status - empty context, required STARTED, fails via operator",
 			condition: Condition{
 				conditionType: QuestStatusCondition,
 				operator:      Equals,
@@ -1819,11 +1865,11 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 			},
 			context:      emptyContext,
 			wantPassed:   false,
-			wantContains: "Quest 9999 not found",
+			wantContains: "Quest 9999 Status (no record) = 1",
 			wantError:    true,
 		},
 		{
-			name: "Quest Progress - quest not found",
+			name: "Quest Progress - empty context, required 5, fails via operator",
 			condition: Condition{
 				conditionType: QuestProgressCondition,
 				operator:      Equals,
@@ -1833,7 +1879,7 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 			},
 			context:      emptyContext,
 			wantPassed:   false,
-			wantContains: "Quest 9999 not found",
+			wantContains: "Quest 9999 Progress (no record, step: step1) = 5",
 			wantError:    true,
 		},
 		// Test zero reference ID scenarios
@@ -1847,7 +1893,7 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 			},
 			context:      emptyContext,
 			wantPassed:   false,
-			wantContains: "Quest 0 not found",
+			wantContains: "Quest 0 Status (no record) = 1",
 			wantError:    true,
 		},
 		{
@@ -1875,7 +1921,7 @@ func TestConditionWithContext_ErrorHandling(t *testing.T) {
 			},
 			context:      emptyContext,
 			wantPassed:   false,
-			wantContains: "Quest 1001 not found",
+			wantContains: "Quest 1001 Progress (no record, step: ) = 5",
 			wantError:    true,
 		},
 	}

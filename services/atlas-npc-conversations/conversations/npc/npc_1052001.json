@@ -158,18 +158,7 @@
       "genericAction": {
         "operations": [],
         "outcomes": [
-          {"conditions": [{"type": "level", "operator": ">=", "value": "10"}], "nextState": "firstJobCheckDex"},
-          {"conditions": [], "nextState": "firstJobRequirementsNotMet"}
-        ]
-      }
-    },
-    {
-      "id": "firstJobCheckDex",
-      "type": "genericAction",
-      "genericAction": {
-        "operations": [],
-        "outcomes": [
-          {"conditions": [{"type": "dexterity", "operator": ">=", "value": "25"}], "nextState": "firstJobOffer"},
+          {"conditions": [{"type": "level", "operator": ">=", "value": "10"}], "nextState": "firstJobOffer"},
           {"conditions": [], "nextState": "firstJobRequirementsNotMet"}
         ]
       }
@@ -237,11 +226,11 @@
       "type": "genericAction",
       "genericAction": {
         "operations": [
+          {"type": "rebalance_ap", "params": {"targets": "[{\"stat\":\"dexterity\",\"floor\":25}]"}},
           {"type": "change_job", "params": {"jobId": "400"}},
           {"type": "award_item", "params": {"itemId": "2070015", "quantity": "500"}},
           {"type": "award_item", "params": {"itemId": "1472061", "quantity": "1"}},
-          {"type": "award_item", "params": {"itemId": "1332063", "quantity": "1"}},
-          {"type": "reset_stats", "params": {}}
+          {"type": "award_item", "params": {"itemId": "1332063", "quantity": "1"}}
         ],
         "outcomes": [
           {"conditions": [], "nextState": "firstJobComplete1"}

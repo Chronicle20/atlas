@@ -19,6 +19,7 @@ const testQuestInfoXML = `
     <int name="autoPreComplete" value="0"/>
     <int name="autoComplete" value="1"/>
     <int name="timeLimit" value="3600"/>
+    <int name="selectedSkillID" value="4001334"/>
   </imgdir>
   <imgdir name="10000">
     <string name="name" value="Suspicious Offer?!"/>
@@ -197,6 +198,9 @@ func TestReadQuestInfo(t *testing.T) {
 	if q2000.TimeLimit != 3600 {
 		t.Fatalf("expected timeLimit 3600, got %d", q2000.TimeLimit)
 	}
+	if q2000.SelectedSkillId != 4001334 {
+		t.Fatalf("expected selectedSkillId 4001334, got %d", q2000.SelectedSkillId)
+	}
 
 	// Test quest 10000
 	q10000, exists := quests[10000]
@@ -208,6 +212,11 @@ func TestReadQuestInfo(t *testing.T) {
 	}
 	if !q10000.AutoPreComplete {
 		t.Fatal("expected autoPreComplete true")
+	}
+
+	// Quest 10000 has no selectedSkillID attribute - field must default to 0
+	if q10000.SelectedSkillId != 0 {
+		t.Fatalf("expected q10000.SelectedSkillId default 0, got %d", q10000.SelectedSkillId)
 	}
 }
 

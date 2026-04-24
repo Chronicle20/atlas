@@ -2,6 +2,7 @@ package gachapon
 
 import (
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -14,6 +15,7 @@ type Processor interface {
 	Create(m Model) error
 	Update(id string, name string, commonWeight uint32, uncommonWeight uint32, rareWeight uint32) error
 	Delete(id string) error
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -48,4 +50,13 @@ func (p *ProcessorImpl) Update(id string, name string, commonWeight uint32, unco
 
 func (p *ProcessorImpl) Delete(id string) error {
 	return DeleteGachapon(p.db.WithContext(p.ctx), id)
+}
+
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	// gachapons has no updated_at column; updatedAt is always nil.
+	return count, nil, nil
 }

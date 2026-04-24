@@ -351,29 +351,29 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 	s, err := p.GetById(transactionId)
 	if err != nil {
 		// TODO(task-021 Task 17): warn-once on unmatched events
-		logSkip(p.l, logrus.Fields{
+		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"event_kind":     kind,
-		}, skipReasonSagaNotFound)
+		}, SkipReasonSagaNotFound)
 		return AcceptDecision{}, false
 	}
 	step, ok := s.GetCurrentStep()
 	if !ok {
 		// TODO(task-021 Task 17): warn-once on unmatched events
-		logSkip(p.l, logrus.Fields{
+		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"event_kind":     kind,
-		}, skipReasonNoPendingStep)
+		}, SkipReasonNoPendingStep)
 		return AcceptDecision{}, false
 	}
 	if !StepAcceptsEvent(step.Action(), kind) {
 		// TODO(task-021 Task 17): warn-once on unmatched events
-		logSkip(p.l, logrus.Fields{
+		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"step_id":        step.StepId(),
 			"step_action":    step.Action(),
 			"event_kind":     kind,
-		}, skipReasonActionMismatch)
+		}, SkipReasonActionMismatch)
 		return AcceptDecision{}, false
 	}
 	return AcceptDecision{Saga: s, Step: step}, true

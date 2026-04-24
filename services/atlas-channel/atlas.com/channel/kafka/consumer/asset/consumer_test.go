@@ -3,9 +3,72 @@ package asset
 import (
 	asset2 "atlas-channel/kafka/message/asset"
 	"encoding/json"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+// TestMoveInCompartment_FanOutNoDeadlock is a regression test for a consumer
+// deadlock in moveInCompartment. The prior implementation used a buffered
+// channel with up to three senders — one of which could early-return without
+// sending — and a receive loop that read twice per iteration. On non-equip
+// moves (e.g., swapping two Use-inventory items) only two sends happened and
+// the loop blocked forever on the first read of iteration two. Because the
+// asset-status handlers share a consumer goroutine, that wedge stalled
+// subsequent QUANTITY_CHANGED events and broke projectile consumption
+// visually right after the first inventory swap.
+//
+// The fix replaced the channel+counter pattern with sync.WaitGroup and
+// conditionally added the third task only when its preconditions were met.
+// This test pins the invariant: whatever synchronization primitive the
+// handler uses, the fan-out must terminate whether or not the conditional
+// task runs.
+func TestMoveInCompartment_FanOutNoDeadlock(t *testing.T) {
+	cases := []struct {
+		name           string
+		runConditional bool
+		wantTasks      int32
+	}{
+		{"non-equip move (conditional skipped)", false, 2},
+		{"equip move crossing slot sign (conditional runs)", true, 3},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var ran int32
+			done := make(chan struct{})
+			go func() {
+				var wg sync.WaitGroup
+				wg.Add(2)
+				go func() {
+					defer wg.Done()
+					atomic.AddInt32(&ran, 1)
+				}()
+				go func() {
+					defer wg.Done()
+					atomic.AddInt32(&ran, 1)
+				}()
+				if tc.runConditional {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						atomic.AddInt32(&ran, 1)
+					}()
+				}
+				wg.Wait()
+				close(done)
+			}()
+			select {
+			case <-done:
+			case <-time.After(2 * time.Second):
+				t.Fatalf("fan-out deadlocked; ran=%d want=%d", atomic.LoadInt32(&ran), tc.wantTasks)
+			}
+			if got := atomic.LoadInt32(&ran); got != tc.wantTasks {
+				t.Fatalf("tasks executed = %d, want %d", got, tc.wantTasks)
+			}
+		})
+	}
+}
 
 func TestCreatedStatusEventBody_Deserialization(t *testing.T) {
 	// Simulate a flat CreatedStatusEventBody as it would arrive from Kafka

@@ -486,3 +486,165 @@ func stepIds(steps []sharedsaga.Step[any]) []string {
 	}
 	return out
 }
+
+func TestCreateStepForOperation_RebalanceAP_SingleTarget(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(77)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, err := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[{"stat":"dexterity","floor":"20"}]`).
+		Build()
+	if err != nil {
+		t.Fatalf("build op: %v", err)
+	}
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	stepId, status, action, payload, err := executor.createStepForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createStepForOperation returned error: %v", err)
+	}
+	if action != saga.RebalanceAP {
+		t.Fatalf("expected action RebalanceAP, got %q", action)
+	}
+	if status != saga.Pending {
+		t.Fatalf("expected status Pending, got %q", status)
+	}
+	if stepId == "" {
+		t.Fatal("expected non-empty stepId")
+	}
+	p, ok := payload.(saga.RebalanceAPPayload)
+	if !ok {
+		t.Fatalf("expected RebalanceAPPayload, got %T", payload)
+	}
+	if p.CharacterId != characterId {
+		t.Errorf("characterId: expected %d, got %d", characterId, p.CharacterId)
+	}
+	if len(p.Targets) != 1 {
+		t.Fatalf("expected 1 target, got %d", len(p.Targets))
+	}
+	if p.Targets[0].Stat != sharedsaga.RebalanceStatDexterity || p.Targets[0].Floor != 20 {
+		t.Errorf("unexpected target: %+v", p.Targets[0])
+	}
+}
+
+func TestCreateStepForOperation_RebalanceAP_MultiTarget(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(78)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, err := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[{"stat":"strength","floor":"20"},{"stat":"dexterity","floor":"20"}]`).
+		Build()
+	if err != nil {
+		t.Fatalf("build op: %v", err)
+	}
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	_, _, action, payload, err := executor.createStepForOperation(f, characterId, op)
+	if err != nil {
+		t.Fatalf("createStepForOperation returned error: %v", err)
+	}
+	if action != saga.RebalanceAP {
+		t.Fatalf("expected RebalanceAP action")
+	}
+	p := payload.(saga.RebalanceAPPayload)
+	if len(p.Targets) != 2 {
+		t.Fatalf("expected 2 targets, got %d", len(p.Targets))
+	}
+	if p.Targets[0].Stat != sharedsaga.RebalanceStatStrength || p.Targets[0].Floor != 20 {
+		t.Errorf("target[0] unexpected: %+v", p.Targets[0])
+	}
+	if p.Targets[1].Stat != sharedsaga.RebalanceStatDexterity || p.Targets[1].Floor != 20 {
+		t.Errorf("target[1] unexpected: %+v", p.Targets[1])
+	}
+}
+
+func TestCreateStepForOperation_RebalanceAP_RejectsEmpty(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(79)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, _ := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[]`).
+		Build()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	if _, _, _, _, err := executor.createStepForOperation(f, characterId, op); err == nil {
+		t.Fatal("expected error on empty targets")
+	}
+}
+
+func TestCreateStepForOperation_RebalanceAP_RejectsDuplicateStat(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(80)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, _ := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[{"stat":"dexterity","floor":"20"},{"stat":"dexterity","floor":"25"}]`).
+		Build()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	if _, _, _, _, err := executor.createStepForOperation(f, characterId, op); err == nil {
+		t.Fatal("expected error on duplicate stat")
+	}
+}
+
+func TestCreateStepForOperation_RebalanceAP_RejectsInvalidStat(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(81)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, _ := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[{"stat":"banana","floor":"20"}]`).
+		Build()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	if _, _, _, _, err := executor.createStepForOperation(f, characterId, op); err == nil {
+		t.Fatal("expected error on invalid stat")
+	}
+}

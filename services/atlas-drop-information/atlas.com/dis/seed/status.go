@@ -5,7 +5,6 @@ import (
 	monsterdrop "atlas-drops-information/monster/drop"
 	reactordrop "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/rest"
-	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
@@ -92,9 +91,7 @@ func handleGetSeedStatus(d *rest.HandlerDependency, c *rest.HandlerContext) http
 
 		if err := g.Wait(); err != nil {
 			l.WithError(err).Errorf("Unable to read drops seed status.")
-			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusInternalServerError)
-			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
 

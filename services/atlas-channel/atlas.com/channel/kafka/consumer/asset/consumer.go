@@ -14,6 +14,7 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"sync"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -322,58 +323,49 @@ func moveInCompartment(l logrus.FieldLogger) func(ctx context.Context) func(wp w
 						return err
 					}
 
-					errChannels := make(chan error, 3)
+					var wg sync.WaitGroup
+					wg.Add(2)
 					go func() {
+						defer wg.Done()
 						inventoryType, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
 						if !ok {
 							l.Errorf("Unable to identify inventory type by item [%d].", e.TemplateId)
 							return
 						}
-
-						err := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s)
-						if err != nil {
-							l.WithError(err).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.TemplateId, e.Body.OldSlot, e.Slot, s.CharacterId())
+						if aerr := session.Announce(l)(ctx)(wp)(invcb.InventoryChangeWriter)(invcb.NewChangeBatch(false, invpkt.NewMoveEntry(byte(inventoryType), e.Body.OldSlot, e.Slot)).Encode)(s); aerr != nil {
+							l.WithError(aerr).Errorf("Unable to move [%d] in slot [%d] to [%d] for character [%d].", e.TemplateId, e.Body.OldSlot, e.Slot, s.CharacterId())
 						}
-						errChannels <- err
 					}()
 					go func() {
-						errChannels <- _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), updateAppearance(l)(ctx)(wp)(c))
-					}()
-					go func() {
-						it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId))
-						if !ok || it != inventory.TypeValueEquip {
-							return
+						defer wg.Done()
+						if aerr := _map.NewProcessor(l, ctx).ForSessionsInMap(s.Field(), updateAppearance(l)(ctx)(wp)(c)); aerr != nil {
+							l.WithError(aerr).Errorf("Unable to update appearance for character [%d] in map.", s.CharacterId())
 						}
-
-						if e.Slot > 0 && e.Body.OldSlot > 0 {
-							return
-						}
-
-						m, err := messenger.NewProcessor(l, ctx).GetByMemberId(e.CharacterId)
-						if err != nil {
-							return
-						}
-						um, err := m.FindMember(e.CharacterId)
-						if err != nil {
-							return
-						}
-
-						ava := model2.NewFromCharacter(c, true)
-						for _, mm := range m.Members() {
-							_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
-								return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
-							})
-						}
-						errChannels <- err
 					}()
 
-					for i := 0; i < 3; i++ {
-						select {
-						case <-errChannels:
-							err = <-errChannels
-						}
+					if it, ok := inventory.TypeFromItemId(item.Id(e.TemplateId)); ok && it == inventory.TypeValueEquip && (e.Slot <= 0 || e.Body.OldSlot <= 0) {
+						wg.Add(1)
+						go func() {
+							defer wg.Done()
+							m, merr := messenger.NewProcessor(l, ctx).GetByMemberId(e.CharacterId)
+							if merr != nil {
+								return
+							}
+							um, merr := m.FindMember(e.CharacterId)
+							if merr != nil {
+								return
+							}
+							ava := model2.NewFromCharacter(c, true)
+							for _, mm := range m.Members() {
+								_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(mm.Id(), func(os session.Model) error {
+									return session.Announce(l)(ctx)(wp)(messengercb.MessengerOperationWriter)(messengerpkt.MessengerOperationUpdateBody(um.Slot(), ava, c.Name(), byte(s.ChannelId())))(os)
+								})
+							}
+						}()
 					}
-					return err
+
+					wg.Wait()
+					return nil
 				}
 			}
 		}

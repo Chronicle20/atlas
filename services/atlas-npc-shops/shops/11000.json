@@ -3,16 +3,7 @@
   "recharger": false,
   "commodities": [
     {
-      "templateId": 1332005,
-      "mesoPrice": 500,
-      "discountRate": 0,
-      "tokenTemplateId": 0,
-      "tokenPrice": 0,
-      "period": 0,
-      "levelLimit": 0
-    },
-    {
-      "templateId": 1322005,
+      "templateId": 1302000,
       "mesoPrice": 50,
       "discountRate": 0,
       "tokenTemplateId": 0,
@@ -30,8 +21,17 @@
       "levelLimit": 0
     },
     {
-      "templateId": 1302000,
+      "templateId": 1322005,
       "mesoPrice": 50,
+      "discountRate": 0,
+      "tokenTemplateId": 0,
+      "tokenPrice": 0,
+      "period": 0,
+      "levelLimit": 0
+    },
+    {
+      "templateId": 1332005,
+      "mesoPrice": 500,
       "discountRate": 0,
       "tokenTemplateId": 0,
       "tokenPrice": 0,

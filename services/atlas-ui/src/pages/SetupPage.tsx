@@ -35,6 +35,7 @@ import {
   useExtractionStatus,
   useDataStatus,
 } from "@/lib/hooks/api/useSeed";
+import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
 
 interface SeedButtonProps {
   label: string;
@@ -76,45 +77,6 @@ function formatBytes(bytes: number): string {
     maximumFractionDigits: value >= 10 || unit === 0 ? 0 : 1,
   }).format(value);
   return `${formatted} ${units[unit]}`;
-}
-
-function formatCount(n: number): string {
-  return new Intl.NumberFormat().format(n);
-}
-
-function pluralize(n: number, singular: string, plural: string): string {
-  return n === 1 ? singular : plural;
-}
-
-interface GameDataRowProps {
-  icon: React.ReactNode;
-  label: string;
-  badge: React.ReactNode;
-  action: React.ReactNode;
-  warning?: React.ReactNode;
-}
-
-function GameDataRow({ icon, label, badge, action, warning }: GameDataRowProps) {
-  return (
-    <div className="flex flex-col gap-2 border-b last:border-0 py-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="text-muted-foreground">{icon}</div>
-          <div>
-            <p className="font-medium text-sm">{label}</p>
-            <p
-              className="text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              {badge}
-            </p>
-          </div>
-        </div>
-        {action}
-      </div>
-      {warning}
-    </div>
-  );
 }
 
 export function SetupPage() {
@@ -277,7 +239,7 @@ export function SetupPage() {
             aria-label="Upload WZ zip archive"
           />
 
-          <GameDataRow
+          <SetupRow
             icon={<FileArchive className="h-5 w-5" />}
             label="Upload WZ"
             badge={wzInputBadge}
@@ -302,7 +264,7 @@ export function SetupPage() {
             }
           />
 
-          <GameDataRow
+          <SetupRow
             icon={<FileCode className="h-5 w-5" />}
             label="Extract"
             badge={extractionBadge}
@@ -338,7 +300,7 @@ export function SetupPage() {
             </div>
           )}
 
-          <GameDataRow
+          <SetupRow
             icon={<FileText className="h-5 w-5" />}
             label="Ingest"
             badge={dataStatusBadge}

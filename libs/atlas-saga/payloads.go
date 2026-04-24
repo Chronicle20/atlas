@@ -204,6 +204,7 @@ const (
 )
 
 // RebalanceTarget pairs a primary stat with the floor value it should be raised to.
+// Floor is uint16 to match the character entity stat columns (str/dex/int/luk), which are uint16.
 type RebalanceTarget struct {
 	Stat  RebalanceStat `json:"stat"`
 	Floor uint16        `json:"floor"`

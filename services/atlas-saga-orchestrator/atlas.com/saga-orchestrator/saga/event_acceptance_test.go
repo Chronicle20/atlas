@@ -61,6 +61,7 @@ func TestStepAcceptsEvent_KnownSuccessKinds(t *testing.T) {
 		{sharedsaga.AwardExperience, EventKindCharacterExperienceChanged},
 		{sharedsaga.AwardLevel, EventKindCharacterLevelChanged},
 		{sharedsaga.AwardMesos, EventKindCharacterMesoChanged},
+		{sharedsaga.AwardCurrency, EventKindCashShopWalletUpdated},
 		{sharedsaga.ChangeHair, EventKindCharacterStatChanged},
 		{sharedsaga.ChangeFace, EventKindCharacterStatChanged},
 		{sharedsaga.ChangeSkin, EventKindCharacterStatChanged},

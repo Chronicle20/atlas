@@ -302,7 +302,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 		}
 	}
 
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, s.CharacterId, isBoss, s.Monster.DamageSummary()))
+	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, s.CharacterId, isBoss, DamageSourceCharacterAttack, s.Monster.DamageSummary()))
 	if err != nil {
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 	}
@@ -367,7 +367,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 		return
 	}
 
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, s.Monster.DamageSummary()))
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, observerUniqueId, attackerUniqueId, false, DamageSourceMonsterAttack, s.Monster.DamageSummary()))
 }
 
 // spawnRevives spawns the revive/next-phase monsters when a monster dies
@@ -589,7 +589,7 @@ func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Mode
 		healed := target.Heal(healAmount)
 		GetMonsterRegistry().UpdateMonster(p.t, targetId, healed)
 		// Emit a damaged event with 0 damage to trigger HP bar update
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, healed.DamageSummary()))
+		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(healed, observerId, m.UniqueId(), false, DamageSourceHeal, healed.DamageSummary()))
 	}
 
 	healMonster(m.UniqueId())

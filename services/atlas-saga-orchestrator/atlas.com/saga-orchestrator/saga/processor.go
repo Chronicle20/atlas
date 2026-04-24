@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -78,6 +79,10 @@ type ProcessorImpl struct {
 }
 
 const maxConflictRetries = 3
+
+// unmatchedEventWarnOnce dedupes "unmatched_event" warn logs by (transactionId, kind).
+// Package-level so dedup survives the per-request Processor instances.
+var unmatchedEventWarnOnce sync.Map // key = tx.String() + "|" + string(kind), value = struct{}{}
 
 // isVersionConflict checks if an error is a VersionConflictError
 func isVersionConflict(err error) bool {
@@ -350,7 +355,6 @@ func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success
 func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool) {
 	s, err := p.GetById(transactionId)
 	if err != nil {
-		// TODO(task-021 Task 17): warn-once on unmatched events
 		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"event_kind":     kind,
@@ -359,24 +363,49 @@ func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (Ac
 	}
 	step, ok := s.GetCurrentStep()
 	if !ok {
-		// TODO(task-021 Task 17): warn-once on unmatched events
 		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"event_kind":     kind,
 		}, SkipReasonNoPendingStep)
+		p.maybeWarnUnmatchedEvent(s, kind)
 		return AcceptDecision{}, false
 	}
 	if !StepAcceptsEvent(step.Action(), kind) {
-		// TODO(task-021 Task 17): warn-once on unmatched events
 		LogSkip(p.l, logrus.Fields{
 			"transaction_id": transactionId.String(),
 			"step_id":        step.StepId(),
 			"step_action":    step.Action(),
 			"event_kind":     kind,
 		}, SkipReasonActionMismatch)
+		p.maybeWarnUnmatchedEvent(s, kind)
 		return AcceptDecision{}, false
 	}
 	return AcceptDecision{Saga: s, Step: step}, true
+}
+
+// maybeWarnUnmatchedEvent emits a warn log (once per (transactionId, kind)) when
+// a saga-tagged event arrives but no pending step in the saga accepts the
+// event kind. If any pending step does accept the kind, the event is
+// considered merely out-of-order and no warn is emitted. See PRD §4 and
+// plan Task 17.
+func (p *ProcessorImpl) maybeWarnUnmatchedEvent(s Saga, kind EventKind) {
+	for _, st := range s.Steps() {
+		if st.Status() != Pending {
+			continue
+		}
+		if StepAcceptsEvent(st.Action(), kind) {
+			return
+		}
+	}
+	key := s.TransactionId().String() + "|" + string(kind)
+	if _, loaded := unmatchedEventWarnOnce.LoadOrStore(key, struct{}{}); loaded {
+		return
+	}
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"event_kind":     kind,
+		"reason":         SkipReasonUnmatchedEvent,
+	}).Warn("Saga event arrived but no pending step accepts it.")
 }
 
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {

@@ -58,8 +58,15 @@ func TestAcceptEvent_NoPendingStep(t *testing.T) {
 	_, ok := p.AcceptEvent(tx, EventKindAssetCreated)
 	assert.False(t, ok)
 
-	require.Len(t, hook.AllEntries(), 1)
-	assert.Equal(t, SkipReasonNoPendingStep, hook.LastEntry().Data["reason"])
+	var debugEntry *logrus.Entry
+	for i := range hook.AllEntries() {
+		e := hook.AllEntries()[i]
+		if e.Level == logrus.DebugLevel {
+			debugEntry = e
+		}
+	}
+	require.NotNil(t, debugEntry, "expected a debug-level skip log")
+	assert.Equal(t, SkipReasonNoPendingStep, debugEntry.Data["reason"])
 }
 
 func TestAcceptEvent_ActionMismatch(t *testing.T) {
@@ -81,13 +88,19 @@ func TestAcceptEvent_ActionMismatch(t *testing.T) {
 	_, ok := p.AcceptEvent(tx, EventKindCharacterStatChanged)
 	assert.False(t, ok, "STAT_CHANGED must not match AwardAsset (§9.1 bug)")
 
-	require.Len(t, hook.AllEntries(), 1)
-	entry := hook.LastEntry()
-	assert.Equal(t, SkipReasonActionMismatch, entry.Data["reason"])
-	assert.Equal(t, AwardAsset, entry.Data["step_action"])
-	assert.Equal(t, "s1", entry.Data["step_id"])
-	assert.Equal(t, EventKindCharacterStatChanged, entry.Data["event_kind"])
-	assert.Equal(t, tx.String(), entry.Data["transaction_id"])
+	var debugEntry *logrus.Entry
+	for i := range hook.AllEntries() {
+		e := hook.AllEntries()[i]
+		if e.Level == logrus.DebugLevel {
+			debugEntry = e
+		}
+	}
+	require.NotNil(t, debugEntry, "expected a debug-level skip log")
+	assert.Equal(t, SkipReasonActionMismatch, debugEntry.Data["reason"])
+	assert.Equal(t, AwardAsset, debugEntry.Data["step_action"])
+	assert.Equal(t, "s1", debugEntry.Data["step_id"])
+	assert.Equal(t, EventKindCharacterStatChanged, debugEntry.Data["event_kind"])
+	assert.Equal(t, tx.String(), debugEntry.Data["transaction_id"])
 }
 
 func TestAcceptEvent_Match(t *testing.T) {
@@ -110,4 +123,57 @@ func TestAcceptEvent_Match(t *testing.T) {
 	assert.Equal(t, "s1", decision.Step.StepId())
 	assert.Equal(t, AwardAsset, decision.Step.Action())
 	assert.Equal(t, tx, decision.Saga.TransactionId())
+}
+
+func TestAcceptEvent_WarnOnceForUnmatchedEvent(t *testing.T) {
+	logger, hook := logtest.NewNullLogger()
+	ctx := acceptEventTestCtx(t)
+	p := NewProcessor(logger, ctx)
+
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", Pending, RebalanceAP, RebalanceAPPayload{CharacterId: 1}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	for i := 0; i < 3; i++ {
+		_, _ = p.AcceptEvent(tx, EventKindAssetCreated)
+	}
+
+	warnCount := 0
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel && e.Data["reason"] == SkipReasonUnmatchedEvent {
+			warnCount++
+		}
+	}
+	assert.Equal(t, 1, warnCount, "warn log must fire exactly once per (tx, kind) even with repeated events")
+}
+
+func TestAcceptEvent_NoWarnWhenLaterStepAcceptsKind(t *testing.T) {
+	logger, hook := logtest.NewNullLogger()
+	ctx := acceptEventTestCtx(t)
+	p := NewProcessor(logger, ctx)
+
+	tx := uuid.New()
+	s, err := NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", Pending, ChangeJob, ChangeJobPayload{CharacterId: 1, JobId: 400}).
+		AddStep("s2", Pending, AwardAsset, AwardItemActionPayload{CharacterId: 1, Item: ItemPayload{TemplateId: 1, Quantity: 1}}).
+		Build()
+	require.NoError(t, err)
+	putAcceptEventSaga(t, ctx, s)
+
+	_, _ = p.AcceptEvent(tx, EventKindAssetCreated)
+
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel {
+			t.Fatalf("no warn expected — some later step accepts AssetCreated, got %+v", e)
+		}
+	}
 }

@@ -52,6 +52,11 @@ export function useSeedReactorScripts(): UseMutationResult<unknown, Error, void>
   return useMutation({ mutationFn: () => seedService.seedReactorScripts() });
 }
 
+export function useSeedMapActionScripts(): UseMutationResult<unknown, Error, void> {
+  // seed hooks no longer need the tenant argument.
+  return useMutation({ mutationFn: () => seedService.seedMapActionScripts() });
+}
+
 export function useUploadWzFiles(): UseMutationResult<void, Error, File> {
   const { activeTenant } = useTenant();
   const queryClient = useQueryClient();

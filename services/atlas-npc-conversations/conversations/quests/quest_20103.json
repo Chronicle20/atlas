@@ -64,12 +64,6 @@
             },
             {
               "conditions": [
-                {"type": "stat", "operator": "<", "value": "25", "referenceId": "dex"}
-              ],
-              "nextState": "requirementsNotMet"
-            },
-            {
-              "conditions": [
                 {"type": "inventorySpace", "operator": "<", "value": "1", "referenceId": "1452051"}
               ],
               "nextState": "inventoryFull"
@@ -134,11 +128,11 @@
         "type": "genericAction",
         "genericAction": {
           "operations": [
+            {"type": "rebalance_ap", "params": {"targets": "[{\"stat\":\"dexterity\",\"floor\":25}]"}},
             {"type": "award_item", "params": {"itemId": "2060000", "quantity": "2000"}},
             {"type": "award_item", "params": {"itemId": "1452051", "quantity": "1"}},
             {"type": "award_item", "params": {"itemId": "1142066", "quantity": "1"}},
             {"type": "change_job", "params": {"jobId": "1300"}},
-            {"type": "reset_stats", "params": {}},
             {"type": "complete_quest", "params": {}}
           ],
           "outcomes": [

@@ -11,7 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
@@ -491,5 +495,121 @@ func TestMergeAndCompactGood(t *testing.T) {
 		if a.TemplateId() == 2120000 && a.Slot() == 2 && a.Quantity() != 50 {
 			t.Fatalf("Asset 2120000 was not merged to slot 2 correctly")
 		}
+	}
+}
+
+func testFieldModel() field.Model {
+	return field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+}
+
+// TestDropRechargeableWithZeroQuantity is a regression guard for the "cannot drop
+// empty throwing-star stack" bug: when a rechargeable stack has been fully
+// consumed (quantity=0, row retained for NPC recharge), the client still sends
+// quantity=1 when the player drags it to the ground. The server must drop the
+// whole asset regardless of remaining charges.
+func TestDropRechargeableWithZeroQuantity(t *testing.T) {
+	cases := []struct {
+		name        string
+		characterId uint32
+		templateId  uint32
+	}{
+		{"throwing star", 201, 2070015},
+		{"bullet", 202, 2330000},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			l := testLogger()
+			te := testTenant()
+			ctx := tenant.WithContext(context.Background(), te)
+			db := testDatabase(t, l)
+
+			mb := message.NewBuffer()
+
+			dcpi := &dcp.ProcessorImpl{}
+			dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+				return consumable.Extract(consumable.RestModel{SlotMax: 100})
+			}
+
+			ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+			cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+			if _, err := cp.Create(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, 40); err != nil {
+				t.Fatalf("Failed to create compartment: %v", err)
+			}
+			slot := int16(1)
+			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0); err != nil {
+				t.Fatalf("Failed to create asset: %v", err)
+			}
+
+			consumeTx := uuid.New()
+			if err := cp.RequestReserve(mb)(consumeTx, tc.characterId, inventory.TypeValueUse, []compartment.ReservationRequest{{Slot: slot, ItemId: tc.templateId, Quantity: 1}}); err != nil {
+				t.Fatalf("Failed to reserve: %v", err)
+			}
+			if err := cp.ConsumeAsset(mb)(consumeTx, tc.characterId, inventory.TypeValueUse, slot); err != nil {
+				t.Fatalf("Failed to consume: %v", err)
+			}
+
+			c, err := cp.GetByCharacterAndType(tc.characterId)(inventory.TypeValueUse)
+			if err != nil {
+				t.Fatalf("Failed to get compartment: %v", err)
+			}
+			retainedAtZero := false
+			for _, a := range c.Assets() {
+				if a.Slot() == slot && a.Quantity() == 0 {
+					retainedAtZero = true
+				}
+			}
+			if !retainedAtZero {
+				t.Fatalf("precondition failed: rechargeable row must be retained at qty=0 before drop")
+			}
+
+			if err := cp.Drop(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, testFieldModel(), 100, 200, slot, 1); err != nil {
+				t.Fatalf("Drop failed for empty rechargeable stack: %v", err)
+			}
+
+			c, err = cp.GetByCharacterAndType(tc.characterId)(inventory.TypeValueUse)
+			if err != nil {
+				t.Fatalf("Failed to get compartment after drop: %v", err)
+			}
+			for _, a := range c.Assets() {
+				if a.Slot() == slot {
+					t.Fatalf("%s row should have been deleted after drop", tc.name)
+				}
+			}
+		})
+	}
+}
+
+// TestDropNonRechargeableInsufficientQuantity is a regression guard: the
+// "cannot drop more than what is owned" rule still applies for non-rechargeable
+// items — the rechargeable bypass must not leak into generic consumables.
+func TestDropNonRechargeableInsufficientQuantity(t *testing.T) {
+	characterId := uint32(203)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+		t.Fatalf("Failed to create asset: %v", err)
+	}
+
+	if err := cp.Drop(mb)(uuid.New(), characterId, inventory.TypeValueUse, testFieldModel(), 0, 0, int16(1), 5); err == nil {
+		t.Fatalf("expected drop to fail when quantity exceeds owned")
 	}
 }

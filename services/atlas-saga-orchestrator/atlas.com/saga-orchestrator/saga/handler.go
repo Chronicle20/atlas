@@ -134,6 +134,7 @@ type Handler interface {
 	handleCancelAllBuffs(s Saga, st Step[any]) error
 	handleCancelConsumableEffect(s Saga, st Step[any]) error
 	handleResetStats(s Saga, st Step[any]) error
+	handleRebalanceAP(s Saga, st Step[any]) error
 	handleStartInstanceTransport(s Saga, st Step[any]) error
 	handleSaveLocation(s Saga, st Step[any]) error
 	handleWarpToSavedLocation(s Saga, st Step[any]) error
@@ -823,6 +824,8 @@ func (h *HandlerImpl) GetHandler(action Action) (ActionHandler, bool) {
 		return h.handleCancelConsumableEffect, true
 	case ResetStats:
 		return h.handleResetStats, true
+	case RebalanceAP:
+		return h.handleRebalanceAP, true
 	case StartInstanceTransport:
 		return h.handleStartInstanceTransport, true
 	case SaveLocation:
@@ -2205,6 +2208,30 @@ func (h *HandlerImpl) handleResetStats(s Saga, st Step[any]) error {
 		return err
 	}
 
+	return nil
+}
+
+// handleRebalanceAP handles the RebalanceAP action.
+// Used during first-job advancement to redistribute primary stats to the class floor.
+func (h *HandlerImpl) handleRebalanceAP(s Saga, st Step[any]) error {
+	payload, ok := st.Payload().(RebalanceAPPayload)
+	if !ok {
+		return errors.New("invalid payload")
+	}
+
+	ch := channel.NewModel(payload.WorldId, payload.ChannelId)
+	kafkaTargets := make([]character2.RebalanceAPTarget, 0, len(payload.Targets))
+	for _, t := range payload.Targets {
+		kafkaTargets = append(kafkaTargets, character2.RebalanceAPTarget{
+			Stat:  string(t.Stat),
+			Floor: t.Floor,
+		})
+	}
+	err := h.charP.RebalanceAPAndEmit(s.TransactionId(), ch, payload.CharacterId, kafkaTargets)
+	if err != nil {
+		h.logActionError(s, st, err, "Unable to rebalance AP.")
+		return err
+	}
 	return nil
 }
 

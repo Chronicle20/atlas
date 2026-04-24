@@ -27,7 +27,12 @@ import (
 // conversation_reward_notice for atlas-channel to render. Failures here are
 // non-fatal — the notice is purely cosmetic. Call BEFORE StepCompleted so the
 // pending step is still observable on the saga.
-func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, templateId uint32) {
+//
+// templateId and quantity come from the asset event body so the notice reflects
+// what atlas-compartment actually applied, not what the payload requested (see
+// PRD §4.4). DestroyAssetFromSlot is the one exception — it uses the payload's
+// Quantity because slot-based deletes emit zero/unreliable quantity on the event.
+func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, transactionId uuid.UUID, templateId uint32, quantity uint32) {
 	s, err := saga.NewProcessor(l, ctx).GetById(transactionId)
 	if err != nil {
 		return
@@ -42,7 +47,7 @@ func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, t
 		if !ok || !payload.ShowEffect {
 			return
 		}
-		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemGain, payload.Item.TemplateId, payload.Item.Quantity); err != nil {
+		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemGain, templateId, quantity); err != nil {
 			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item gain.")
 		}
 	case saga.DestroyAsset:
@@ -50,7 +55,7 @@ func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, t
 		if !ok || !payload.ShowEffect {
 			return
 		}
-		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemLoss, payload.TemplateId, payload.Quantity); err != nil {
+		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemLoss, templateId, quantity); err != nil {
 			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item loss.")
 		}
 	case saga.DestroyAssetFromSlot:
@@ -59,7 +64,8 @@ func emitRewardNoticeForCurrentStep(l logrus.FieldLogger, ctx context.Context, t
 			return
 		}
 		// Slot-based destroy doesn't carry the templateId on the payload — use
-		// the asset event's templateId, which is what was actually removed.
+		// the asset event's templateId. Quantity comes from the payload because
+		// slot-delete events don't reliably report it.
 		if err := saga.EmitConversationRewardNotice(l, ctx, payload.CharacterId, notice.KindItemLoss, templateId, payload.Quantity); err != nil {
 			l.WithError(err).Debug("Unable to emit conversation_reward_notice for item loss.")
 		}
@@ -103,7 +109,7 @@ func handleAssetCreatedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 
 	assetResult := map[string]any{"assetId": e.AssetId}
 
-	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId, e.Body.Quantity)
 
 	// Get the saga to check if this is a CreateAndEquipAsset step
 	s, err := sagaProcessor.GetById(e.TransactionId)
@@ -204,7 +210,11 @@ func handleAssetDeletedEvent(l logrus.FieldLogger, ctx context.Context, e asset2
 	if e.Type != asset2.StatusEventTypeDeleted {
 		return
 	}
-	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
+	// DeletedStatusEventBody carries no quantity — pass 0. DestroyAssetFromSlot
+	// steps use their payload Quantity internally; DestroyAsset is driven by
+	// payload semantics (RemoveAll / Quantity) and the full-delete case is the
+	// common path here.
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId, 0)
 	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
 }
 
@@ -212,7 +222,7 @@ func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, 
 	if e.Type != asset2.StatusEventTypeQuantityChanged {
 		return
 	}
-	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId)
+	emitRewardNoticeForCurrentStep(l, ctx, e.TransactionId, e.TemplateId, e.Body.Quantity)
 	_ = saga.NewProcessor(l, ctx).StepCompletedWithResult(e.TransactionId, true, map[string]any{"assetId": e.AssetId})
 }
 

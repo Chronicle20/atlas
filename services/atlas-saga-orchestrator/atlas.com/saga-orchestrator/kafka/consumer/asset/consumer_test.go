@@ -2,8 +2,10 @@ package asset
 
 import (
 	asset2 "atlas-saga-orchestrator/kafka/message/asset"
+	notice "atlas-saga-orchestrator/kafka/message/conversation_reward_notice"
 	"atlas-saga-orchestrator/saga"
 	"context"
+	"sync"
 	"testing"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -11,7 +13,114 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+// noticeCall captures a single EmitConversationRewardNotice invocation.
+type noticeCall struct {
+	CharacterId uint32
+	Kind        string
+	TemplateId  uint32
+	Quantity    uint32
+}
+
+// installNoticeStub overrides saga's emit function via the
+// SetEmitConversationRewardNoticeForTest seam for the duration of the test.
+func installNoticeStub(t *testing.T) func() []noticeCall {
+	t.Helper()
+	var mu sync.Mutex
+	calls := []noticeCall{}
+
+	orig := saga.SetEmitConversationRewardNoticeForTest(
+		func(l logrus.FieldLogger, ctx context.Context, characterId uint32, kind string, itemId uint32, quantity uint32) error {
+			mu.Lock()
+			defer mu.Unlock()
+			calls = append(calls, noticeCall{
+				CharacterId: characterId, Kind: kind, TemplateId: itemId, Quantity: quantity,
+			})
+			return nil
+		},
+	)
+	t.Cleanup(func() { saga.SetEmitConversationRewardNoticeForTest(orig) })
+
+	return func() []noticeCall {
+		mu.Lock()
+		defer mu.Unlock()
+		out := make([]noticeCall, len(calls))
+		copy(out, calls)
+		return out
+	}
+}
+
+func mustTenantCtx(t *testing.T) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return tenant.WithContext(context.Background(), tm)
+}
+
+func putTestSaga(t *testing.T, ctx context.Context, s saga.Saga) {
+	t.Helper()
+	require.NoError(t, saga.GetCache().Put(ctx, s))
+}
+
+func TestEmitRewardNoticeForCurrentStep_UsesEventTemplateIdAndQuantity(t *testing.T) {
+	getCalls := installNoticeStub(t)
+	logger, _ := test.NewNullLogger()
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	s, err := saga.NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
+			CharacterId: 42,
+			Item:        saga.ItemPayload{TemplateId: 1111, Quantity: 99},
+			ShowEffect:  true,
+		}).
+		Build()
+	require.NoError(t, err)
+	putTestSaga(t, ctx, s)
+
+	// Call with event templateId=2222, quantity=3 — notice should reflect these.
+	emitRewardNoticeForCurrentStep(logger, ctx, tx, 2222, 3)
+
+	calls := getCalls()
+	require.Len(t, calls, 1)
+	assert.Equal(t, uint32(42), calls[0].CharacterId)
+	assert.Equal(t, notice.KindItemGain, calls[0].Kind)
+	assert.Equal(t, uint32(2222), calls[0].TemplateId, "templateId must come from the event")
+	assert.Equal(t, uint32(3), calls[0].Quantity, "quantity must come from the event")
+}
+
+func TestEmitRewardNoticeForCurrentStep_DestroyAssetFromSlotUsesPayloadQuantity(t *testing.T) {
+	getCalls := installNoticeStub(t)
+	logger, _ := test.NewNullLogger()
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	s, err := saga.NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", saga.Pending, saga.DestroyAssetFromSlot, saga.DestroyAssetFromSlotPayload{
+			CharacterId: 42,
+			Quantity:    7,
+			ShowEffect:  true,
+		}).
+		Build()
+	require.NoError(t, err)
+	putTestSaga(t, ctx, s)
+
+	// Pass bogus event quantity — should be ignored for DestroyAssetFromSlot.
+	emitRewardNoticeForCurrentStep(logger, ctx, tx, 9999, 999)
+
+	calls := getCalls()
+	require.Len(t, calls, 1)
+	assert.Equal(t, uint32(9999), calls[0].TemplateId, "templateId still comes from the event (payload has none)")
+	assert.Equal(t, uint32(7), calls[0].Quantity, "DestroyAssetFromSlot uses payload quantity")
+}
 
 func TestHandleAssetCreatedEvent_WrongType(t *testing.T) {
 	// Setup

@@ -145,6 +145,15 @@ func emitConversationRewardNoticeImpl(l logrus.FieldLogger, ctx context.Context,
 	)
 }
 
+// SetEmitConversationRewardNoticeForTest swaps the underlying emit function
+// and returns the previous one for restoration. Test-only — production code
+// must not call this.
+func SetEmitConversationRewardNoticeForTest(fn func(logrus.FieldLogger, context.Context, uint32, string, uint32, uint32) error) func(logrus.FieldLogger, context.Context, uint32, string, uint32, uint32) error {
+	prev := emitConversationRewardNoticeFn
+	emitConversationRewardNoticeFn = fn
+	return prev
+}
+
 func GachaponRewardWonEventProvider(payload EmitGachaponWinPayload, assetId uint32) model.Provider[[]kafka.Message] {
 	key := kproducer.CreateKey(int(payload.CharacterId))
 	value := &gachapon.RewardWonEvent{

@@ -43,6 +43,7 @@ type ProcessorMock struct {
 	SetHPFunc                   func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	ResetStatsAndEmitFunc       func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 	ResetStatsFunc              func(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
+	RebalanceAPAndEmitFunc      func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
 }
 
 // WarpRandomAndEmit is a mock implementation of the character.Processor.WarpRandomAndEmit method
@@ -292,5 +293,19 @@ func (m *ProcessorMock) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 	}
 	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 		return nil
+	}
+}
+
+// RebalanceAPAndEmit is a mock implementation of Processor.RebalanceAPAndEmit.
+func (m *ProcessorMock) RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+	if m.RebalanceAPAndEmitFunc != nil {
+		return m.RebalanceAPAndEmitFunc(transactionId, ch, characterId, targets)
+	}
+	return nil
+}
+
+func (m *ProcessorMock) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+		return m.RebalanceAPAndEmit(transactionId, ch, characterId, targets)
 	}
 }

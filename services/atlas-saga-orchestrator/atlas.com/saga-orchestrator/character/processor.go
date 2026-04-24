@@ -47,6 +47,8 @@ type Processor interface {
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	ResetStatsAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error
+	RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
+	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error
 }
 
 type ProcessorImpl struct {
@@ -238,5 +240,17 @@ func (p *ProcessorImpl) ResetStatsAndEmit(transactionId uuid.UUID, ch channel.Mo
 func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32) error {
 		return mb.Put(character2.EnvCommandTopic, ResetStatsProvider(transactionId, ch, characterId))
+	}
+}
+
+func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+	return message.Emit(p.p)(func(mb *message.Buffer) error {
+		return p.RebalanceAP(mb)(transactionId, ch, characterId, targets)
+	})
+}
+
+func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+	return func(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) error {
+		return mb.Put(character2.EnvCommandTopic, RebalanceAPProvider(transactionId, ch, characterId, targets))
 	}
 }

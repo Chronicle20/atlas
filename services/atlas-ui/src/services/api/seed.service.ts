@@ -74,6 +74,10 @@ class SeedService {
     return api.post<SeedResult>('/api/reactors/actions/seed', {});
   }
 
+  async seedMapActionScripts(): Promise<SeedResult> {
+    return api.post<SeedResult>('/api/maps/actions/seed', {});
+  }
+
   async uploadWzFiles(tenant: Tenant, file: File): Promise<void> {
     const formData = new FormData();
     formData.append('zip_file', file);

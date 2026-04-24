@@ -199,6 +199,21 @@ func ResetStatsProvider(transactionId uuid.UUID, ch channel.Model, characterId u
 	return producer.SingleMessageProvider(key, value)
 }
 
+func RebalanceAPProvider(transactionId uuid.UUID, ch channel.Model, characterId uint32, targets []character2.RebalanceAPTarget) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character2.Command[character2.RebalanceAPCommandBody]{
+		TransactionId: transactionId,
+		WorldId:       ch.WorldId(),
+		CharacterId:   characterId,
+		Type:          character2.CommandRebalanceAP,
+		Body: character2.RebalanceAPCommandBody{
+			ChannelId: ch.Id(),
+			Targets:   targets,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 // RequestDeleteCharacterProvider emits the saga-correlated DELETE_CHARACTER
 // command consumed by atlas-character (plan Phase 5 / Phase 6).
 func RequestDeleteCharacterProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id) model.Provider[[]kafka.Message] {

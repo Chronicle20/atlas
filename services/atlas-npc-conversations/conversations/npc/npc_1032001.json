@@ -285,6 +285,12 @@
       "genericAction": {
         "operations": [
           {
+            "type": "rebalance_ap",
+            "params": {
+              "targets": "[{\"stat\":\"intelligence\",\"floor\":20}]"
+            }
+          },
+          {
             "type": "change_job",
             "params": {
               "jobId": "200"
@@ -296,9 +302,6 @@
               "itemId": "1372043",
               "quantity": "1"
             }
-          },
-          {
-            "type": "reset_stats"
           }
         ],
         "outcomes": [

@@ -29,6 +29,7 @@ const (
 	CommandChangeMP            = "CHANGE_MP"
 	CommandSetHP               = "SET_HP"
 	CommandResetStats          = "RESET_STATS"
+	CommandRebalanceAP         = "REBALANCE_AP"
 	CommandDeleteCharacter     = "DELETE_CHARACTER"
 )
 
@@ -156,6 +157,16 @@ type SetHPBody struct {
 
 type ResetStatsCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
+}
+
+type RebalanceAPCommandBody struct {
+	ChannelId channel.Id          `json:"channelId"`
+	Targets   []RebalanceAPTarget `json:"targets"`
+}
+
+type RebalanceAPTarget struct {
+	Stat  string `json:"stat"`
+	Floor uint16 `json:"floor"`
 }
 
 type DeductExperienceCommandBody struct {

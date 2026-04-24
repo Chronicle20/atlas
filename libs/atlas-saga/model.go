@@ -67,6 +67,7 @@ const (
 	DeductExperience       Action = "deduct_experience"
 	CancelAllBuffs         Action = "cancel_all_buffs"
 	ResetStats             Action = "reset_stats"
+	RebalanceAP            Action = "rebalance_ap"
 	ValidateCharacterState Action = "validate_character_state"
 	IncreaseBuddyCapacity  Action = "increase_buddy_capacity"
 	GainCloseness          Action = "gain_closeness"

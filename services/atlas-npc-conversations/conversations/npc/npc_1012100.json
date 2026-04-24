@@ -139,7 +139,6 @@
         "operations": [],
         "outcomes": [
           {"conditions": [{"type": "level", "operator": "<", "value": "10"}], "nextState": "firstJobInsufficientLevel"},
-          {"conditions": [{"type": "dexterity", "operator": "<", "value": "25"}], "nextState": "firstJobInsufficientLevel"},
           {"conditions": [], "nextState": "firstJobConfirm"}
         ]
       }
@@ -208,10 +207,10 @@
       "type": "genericAction",
       "genericAction": {
         "operations": [
+          {"type": "rebalance_ap", "params": {"targets": "[{\"stat\":\"dexterity\",\"floor\":25}]"}},
           {"type": "change_job", "params": {"jobId": "300"}},
           {"type": "award_item", "params": {"itemId": "1452051", "quantity": "1"}},
-          {"type": "award_item", "params": {"itemId": "2060000", "quantity": "1000"}},
-          {"type": "reset_stats", "params": {}}
+          {"type": "award_item", "params": {"itemId": "2060000", "quantity": "1000"}}
         ],
         "outcomes": [
           {"conditions": [], "nextState": "firstJobSuccess1"}

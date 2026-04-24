@@ -433,26 +433,17 @@ func (p *ProcessorImpl) ProcessState(ctx ConversationContext) (bool, error) {
 			return false, nil
 		}
 
-		// Update the context with the next state
-		builder := NewConversationContextBuilder().
-			SetField(ctx.Field()).
-			SetCharacterId(ctx.CharacterId()).
-			SetNpcId(ctx.NpcId()).
-			SetCurrentState(nextStateId).
-			SetConversation(ctx.Conversation()).
-			SetConversationType(ctx.ConversationType()).
-			SetSourceId(ctx.SourceId())
-
-		// Preserve existing context
-		existingContext := ctx.Context()
-		for k, v := range existingContext {
-			builder.AddContextValue(k, v)
+		// Re-read from the registry: operations run in processState (e.g. local:fetch_map_player_counts)
+		// mutate the context via setContextValue, which writes through a freshly-fetched
+		// ConversationContext. Our in-memory ctx predates those mutations, so rebuilding
+		// from ctx.Context() and writing back would wipe the operation's keys.
+		persisted, err := GetRegistry().GetPreviousContext(p.ctx, ctx.CharacterId())
+		if err != nil {
+			persisted = ctx
 		}
 
-		ctx = builder.Build()
-
-		// Store the context
-		GetRegistry().SetContext(p.ctx, ctx.CharacterId(), ctx)
+		persisted = persisted.SetCurrentState(nextStateId)
+		GetRegistry().SetContext(p.ctx, persisted.CharacterId(), persisted)
 
 		return state.stateType == GenericActionType, nil
 	} else {

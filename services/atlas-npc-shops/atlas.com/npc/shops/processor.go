@@ -18,6 +18,7 @@ import (
 	"database/sql"
 	"errors"
 	"math"
+	"sort"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
@@ -615,22 +616,16 @@ func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
 		return p.RechargeableConsumablesDecoratorFn(m)
 	}
 
-	if !m.Recharger() {
-		return m
-	}
-
+	rechargeables := GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())
 	existing := m.Commodities()
+
+	// Always refresh stored rechargeables with the latest SlotMax/UnitPrice,
+	// even for non-recharger shops — the client still needs accurate values.
+	finalCommodities := make([]commodities.Model, 0, len(existing))
 	existingByTemplateId := make(map[uint32]commodities.Model, len(existing))
 	for _, ec := range existing {
 		existingByTemplateId[ec.TemplateId()] = ec
-	}
-
-	// Prepare the final list
-	finalCommodities := make([]commodities.Model, 0, len(existing))
-
-	// Update existing commodities if they match a rechargeable one
-	for _, ec := range existing {
-		if rc := findRechargeable(ec.TemplateId(), GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id())); rc != nil {
+		if rc := findRechargeable(ec.TemplateId(), rechargeables); rc != nil {
 			updated, err := commodities.Clone(ec).
 				SetSlotMax(rc.SlotMax()).
 				SetUnitPrice(rc.UnitPrice()).
@@ -642,27 +637,51 @@ func (p *ProcessorImpl) RechargeableConsumablesDecorator(m Model) Model {
 		finalCommodities = append(finalCommodities, ec)
 	}
 
-	// Add new rechargeable consumables that do not exist
-	for _, rc := range GetConsumableCache().GetConsumables(p.l, p.ctx, p.t.Id()) {
-		if _, found := existingByTemplateId[rc.Id()]; !found {
-			cm, err := commodities.NewBuilder().
-				SetId(uuid.New()).
-				SetNpcId(m.NpcId()).
-				SetTemplateId(rc.Id()).
-				SetSlotMax(rc.SlotMax()).
-				SetUnitPrice(rc.UnitPrice()).
-				Build()
-			if err == nil {
-				finalCommodities = append(finalCommodities, cm)
+	// Only recharger shops auto-expose the full rechargeable catalog.
+	if m.Recharger() {
+		for _, rc := range rechargeables {
+			if _, found := existingByTemplateId[rc.Id()]; !found {
+				cm, err := commodities.NewBuilder().
+					SetId(uuid.New()).
+					SetNpcId(m.NpcId()).
+					SetTemplateId(rc.Id()).
+					SetSlotMax(rc.SlotMax()).
+					SetUnitPrice(rc.UnitPrice()).
+					Build()
+				if err == nil {
+					finalCommodities = append(finalCommodities, cm)
+				}
 			}
 		}
 	}
+
+	// Partition rechargeables to the end. The client's CShopDlg::SetShopDlg
+	// reads an uninitialized quantity for a rechargeable in slot 0, so
+	// rechargeables must never occupy the first slot. Non-rechargeables keep
+	// their relative order; rechargeables are sorted by templateId.
+	finalCommodities = partitionRechargeablesLast(finalCommodities, rechargeables)
 
 	result, err := Clone(m).SetCommodities(finalCommodities).Build()
 	if err != nil {
 		return m
 	}
 	return result
+}
+
+func partitionRechargeablesLast(cms []commodities.Model, rechargeables []consumable.Model) []commodities.Model {
+	nonRecharge := make([]commodities.Model, 0, len(cms))
+	recharge := make([]commodities.Model, 0)
+	for _, cm := range cms {
+		if findRechargeable(cm.TemplateId(), rechargeables) != nil {
+			recharge = append(recharge, cm)
+		} else {
+			nonRecharge = append(nonRecharge, cm)
+		}
+	}
+	sort.SliceStable(recharge, func(i, j int) bool {
+		return recharge[i].TemplateId() < recharge[j].TemplateId()
+	})
+	return append(nonRecharge, recharge...)
 }
 
 func findRechargeable(templateId uint32, rechargeables []consumable.Model) *consumable.Model {

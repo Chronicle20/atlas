@@ -10,6 +10,7 @@ import {
   Store,
   DoorOpen,
   Zap,
+  Map,
   Package,
   HelpCircle,
   FileArchive,
@@ -26,6 +27,7 @@ import {
   useSeedNpcShops,
   useSeedPortalScripts,
   useSeedReactorScripts,
+  useSeedMapActionScripts,
   useUploadWzFiles,
   useRunWzExtraction,
   useRunDataProcessing,
@@ -125,6 +127,7 @@ export function SetupPage() {
   const seedNpcShops = useSeedNpcShops();
   const seedPortalScripts = useSeedPortalScripts();
   const seedReactorScripts = useSeedReactorScripts();
+  const seedMapActionScripts = useSeedMapActionScripts();
 
   const uploadWz = useUploadWzFiles();
   const runExtraction = useRunWzExtraction();
@@ -247,6 +250,7 @@ export function SetupPage() {
     { label: "NPC Shops", description: "Seed NPC shop inventories", icon: <Store className="h-5 w-5" />, mutation: seedNpcShops },
     { label: "Portal Scripts", description: "Seed portal action scripts", icon: <DoorOpen className="h-5 w-5" />, mutation: seedPortalScripts },
     { label: "Reactor Scripts", description: "Seed reactor action scripts", icon: <Zap className="h-5 w-5" />, mutation: seedReactorScripts },
+    { label: "Map Action Scripts", description: "Seed map onUserEnter / onFirstUserEnter scripts", icon: <Map className="h-5 w-5" />, mutation: seedMapActionScripts },
   ];
 
   return (

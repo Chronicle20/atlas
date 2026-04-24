@@ -46,6 +46,20 @@ type Processor interface {
 	AddStep(transactionId uuid.UUID, step Step[any]) error
 	AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error
 	Step(transactionId uuid.UUID) error
+
+	// AcceptEvent is the single gate at which a saga-tagged Kafka event is
+	// matched against the saga's pending step. Returns the decision (saga +
+	// step) for handler-specific post-processing on success. On any skip
+	// path it debug-logs and returns ok=false.
+	AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool)
+}
+
+// AcceptDecision is returned by Processor.AcceptEvent on the match path so
+// handlers can perform payload-specific work (templateId guard, reward-notice
+// pre-emit, CreateAndEquipAsset follow-up step) before calling StepCompleted.
+type AcceptDecision struct {
+	Saga Saga
+	Step Step[any]
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -329,6 +343,40 @@ func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success
 		time.Sleep(10 * time.Millisecond)
 	}
 	return fmt.Errorf("max retries exceeded for step completion on saga %s", transactionId.String())
+}
+
+// AcceptEvent is the single gate at which a saga-tagged Kafka event is
+// matched against the saga's pending step. See PRD §4 and plan Task 3.
+func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool) {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		// TODO(task-021 Task 17): warn-once on unmatched events
+		logSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"event_kind":     kind,
+		}, skipReasonSagaNotFound)
+		return AcceptDecision{}, false
+	}
+	step, ok := s.GetCurrentStep()
+	if !ok {
+		// TODO(task-021 Task 17): warn-once on unmatched events
+		logSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"event_kind":     kind,
+		}, skipReasonNoPendingStep)
+		return AcceptDecision{}, false
+	}
+	if !StepAcceptsEvent(step.Action(), kind) {
+		// TODO(task-021 Task 17): warn-once on unmatched events
+		logSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"step_id":        step.StepId(),
+			"step_action":    step.Action(),
+			"event_kind":     kind,
+		}, skipReasonActionMismatch)
+		return AcceptDecision{}, false
+	}
+	return AcceptDecision{Saga: s, Step: step}, true
 }
 
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {

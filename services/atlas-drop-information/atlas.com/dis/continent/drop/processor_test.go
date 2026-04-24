@@ -195,3 +195,73 @@ func TestProcessorImpl_GetAll_MultipleContinents(t *testing.T) {
 		t.Errorf("Expected drops from 3 different continents, got %d", len(continentIds))
 	}
 }
+
+func TestProcessorImpl_Count_Empty(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	p := drop.NewProcessor(l, ctx, db)
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 0 || updated != nil {
+		t.Errorf("Expected (0, nil), got (%d, %v)", count, updated)
+	}
+}
+
+func TestProcessorImpl_Count_Populated(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	for i, itemId := range []uint32{2000000, 2000001, 2000002} {
+		if err := db.Exec(
+			"INSERT INTO continent_drops (tenant_id, continent_id, item_id, minimum_quantity, maximum_quantity, quest_id, chance) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			te.Id(), int32(1), itemId, 1, 5, 0, 50000+uint32(i)*1000,
+		).Error; err != nil {
+			t.Fatalf("seed failed: %v", err)
+		}
+	}
+
+	p := drop.NewProcessor(l, ctx, db)
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 3 {
+		t.Errorf("Expected count 3, got %d", count)
+	}
+	if updated != nil {
+		t.Errorf("Expected nil updatedAt, got %v", updated)
+	}
+}
+
+func TestProcessorImpl_Count_TenantIsolation(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te1 := testTenant()
+	te2 := testTenant()
+	ctx1 := tenant.WithContext(context.Background(), te1)
+	db := testDatabase(t)
+
+	for _, tid := range []uuid.UUID{te1.Id(), te2.Id()} {
+		if err := db.Exec(
+			"INSERT INTO continent_drops (tenant_id, continent_id, item_id, minimum_quantity, maximum_quantity, quest_id, chance) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			tid, int32(1), uint32(2000000), 1, 1, 0, 50000,
+		).Error; err != nil {
+			t.Fatalf("seed failed: %v", err)
+		}
+	}
+
+	p := drop.NewProcessor(l, ctx1, db)
+	count, _, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("Expected count 1 for tenant 1, got %d", count)
+	}
+}

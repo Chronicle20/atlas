@@ -36,7 +36,7 @@ func stopControlStatusEventProvider(m Model, characterId uint32) model.Provider[
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStopControl, statusEventStopControlBody{ActorId: characterId})
 }
 
-func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSummary []entry) model.Provider[[]kafka.Message] {
+func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss bool, damageSource string, damageSummary []entry) model.Provider[[]kafka.Message] {
 	var damageEntries []damageEntry
 	for _, e := range damageSummary {
 		damageEntries = append(damageEntries, damageEntry{
@@ -51,6 +51,7 @@ func damagedStatusEventProvider(m Model, observerId uint32, actorId uint32, boss
 		ObserverId:    observerId,
 		ActorId:       actorId,
 		Boss:          boss,
+		DamageSource:  damageSource,
 		DamageEntries: damageEntries,
 	})
 }

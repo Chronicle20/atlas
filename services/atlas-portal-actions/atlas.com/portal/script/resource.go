@@ -29,6 +29,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/portals/scripts/{scriptId}", registerInputHandler("update_script", UpdateScriptHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/portals/scripts/{scriptId}", registerHandler("delete_script", DeleteScriptHandler)).Methods(http.MethodDelete)
 			router.HandleFunc("/portals/scripts/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/portals/scripts/seed/status", registerHandler("get_portal_scripts_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 		}
 	}
 }

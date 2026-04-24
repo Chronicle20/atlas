@@ -44,6 +44,10 @@ func handleAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e storageCom
 	if e.Type != storageCompartment.StatusEventTypeAccepted {
 		return
 	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindStorageCompartmentAccepted); !ok {
+		return
+	}
 
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.Body.TransactionId.String(),
@@ -53,11 +57,15 @@ func handleAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e storageCom
 	}).Debug("Storage accepted asset successfully")
 
 	// Mark the saga step as completed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
 func handleReleasedEvent(l logrus.FieldLogger, ctx context.Context, e storageCompartment.StatusEvent[storageCompartment.StatusEventReleasedBody]) {
 	if e.Type != storageCompartment.StatusEventTypeReleased {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindStorageCompartmentReleased); !ok {
 		return
 	}
 
@@ -68,11 +76,15 @@ func handleReleasedEvent(l logrus.FieldLogger, ctx context.Context, e storageCom
 	}).Debug("Storage released asset successfully")
 
 	// Mark the saga step as completed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
 func handleErrorEvent(l logrus.FieldLogger, ctx context.Context, e storageCompartment.StatusEvent[storageCompartment.StatusEventErrorBody]) {
 	if e.Type != storageCompartment.StatusEventTypeError {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindStorageCompartmentError); !ok {
 		return
 	}
 
@@ -84,5 +96,5 @@ func handleErrorEvent(l logrus.FieldLogger, ctx context.Context, e storageCompar
 	}).Error("Storage compartment operation failed")
 
 	// Mark the saga step as failed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, false)
+	_ = p.StepCompleted(e.Body.TransactionId, false)
 }

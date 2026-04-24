@@ -2,6 +2,7 @@ package drop
 
 import (
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -12,6 +13,7 @@ type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetForMonster(monsterId uint32) model.Provider[[]Model]
 	GetForItem(itemId uint32) model.Provider[[]Model]
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -38,4 +40,13 @@ func (p *ProcessorImpl) GetForMonster(monsterId uint32) model.Provider[[]Model] 
 
 func (p *ProcessorImpl) GetForItem(itemId uint32) model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getByItemId(itemId)(p.db.WithContext(p.ctx)))()
+}
+
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	// monster_drops has no updated_at column; updatedAt is always nil.
+	return count, nil, nil
 }

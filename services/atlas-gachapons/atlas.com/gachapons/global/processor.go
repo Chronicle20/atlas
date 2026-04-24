@@ -2,6 +2,7 @@ package global
 
 import (
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ type Processor interface {
 	GetByTier(tier string) model.Provider[[]Model]
 	Create(m Model) error
 	Delete(id uint32) error
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -39,4 +41,13 @@ func (p *ProcessorImpl) Create(m Model) error {
 
 func (p *ProcessorImpl) Delete(id uint32) error {
 	return DeleteItem(p.db.WithContext(p.ctx), id)
+}
+
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	// global_gachapon_items has no updated_at column; updatedAt is always nil.
+	return count, nil, nil
 }

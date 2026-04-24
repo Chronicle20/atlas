@@ -18,6 +18,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 		return func(router *mux.Router, l logrus.FieldLogger) {
 			registerHandler := rest.RegisterHandler(l)(db)(si)
 			router.HandleFunc("/gachapons/seed", registerHandler("seed_gachapons", handleSeed)).Methods(http.MethodPost)
+			router.HandleFunc("/gachapons/seed/status", registerHandler("get_gachapons_seed_status", handleGetSeedStatus)).Methods(http.MethodGet)
 		}
 	}
 }

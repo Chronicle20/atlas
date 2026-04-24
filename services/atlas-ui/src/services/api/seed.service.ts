@@ -26,6 +26,51 @@ export interface DataStatus {
   updatedAt: string | null;
 }
 
+export interface DropsSeedStatus {
+  monsterDropCount: number;
+  continentDropCount: number;
+  reactorDropCount: number;
+  updatedAt: string | null;
+}
+
+export interface GachaponsSeedStatus {
+  gachaponCount: number;
+  itemCount: number;
+  globalItemCount: number;
+  updatedAt: string | null;
+}
+
+export interface NpcConversationsSeedStatus {
+  conversationCount: number;
+  updatedAt: string | null;
+}
+
+export interface QuestConversationsSeedStatus {
+  conversationCount: number;
+  updatedAt: string | null;
+}
+
+export interface NpcShopsSeedStatus {
+  shopCount: number;
+  commodityCount: number;
+  updatedAt: string | null;
+}
+
+export interface PortalScriptsSeedStatus {
+  scriptCount: number;
+  updatedAt: string | null;
+}
+
+export interface ReactorScriptsSeedStatus {
+  scriptCount: number;
+  updatedAt: string | null;
+}
+
+export interface MapActionScriptsSeedStatus {
+  scriptCount: number;
+  updatedAt: string | null;
+}
+
 interface JsonApiEnvelope<A> {
   data: {
     type: string;
@@ -132,6 +177,38 @@ class SeedService {
 
   async getDataStatus(tenant: Tenant): Promise<DataStatus> {
     return fetchJsonApi<DataStatus>('/api/data/status', tenant);
+  }
+
+  async getDropsSeedStatus(tenant: Tenant): Promise<DropsSeedStatus> {
+    return fetchJsonApi<DropsSeedStatus>('/api/drops/seed/status', tenant);
+  }
+
+  async getGachaponsSeedStatus(tenant: Tenant): Promise<GachaponsSeedStatus> {
+    return fetchJsonApi<GachaponsSeedStatus>('/api/gachapons/seed/status', tenant);
+  }
+
+  async getNpcConversationsSeedStatus(tenant: Tenant): Promise<NpcConversationsSeedStatus> {
+    return fetchJsonApi<NpcConversationsSeedStatus>('/api/npcs/conversations/seed/status', tenant);
+  }
+
+  async getQuestConversationsSeedStatus(tenant: Tenant): Promise<QuestConversationsSeedStatus> {
+    return fetchJsonApi<QuestConversationsSeedStatus>('/api/quests/conversations/seed/status', tenant);
+  }
+
+  async getNpcShopsSeedStatus(tenant: Tenant): Promise<NpcShopsSeedStatus> {
+    return fetchJsonApi<NpcShopsSeedStatus>('/api/shops/seed/status', tenant);
+  }
+
+  async getPortalScriptsSeedStatus(tenant: Tenant): Promise<PortalScriptsSeedStatus> {
+    return fetchJsonApi<PortalScriptsSeedStatus>('/api/portals/scripts/seed/status', tenant);
+  }
+
+  async getReactorScriptsSeedStatus(tenant: Tenant): Promise<ReactorScriptsSeedStatus> {
+    return fetchJsonApi<ReactorScriptsSeedStatus>('/api/reactors/actions/seed/status', tenant);
+  }
+
+  async getMapActionScriptsSeedStatus(tenant: Tenant): Promise<MapActionScriptsSeedStatus> {
+    return fetchJsonApi<MapActionScriptsSeedStatus>('/api/maps/actions/seed/status', tenant);
   }
 }
 

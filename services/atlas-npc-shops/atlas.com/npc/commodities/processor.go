@@ -5,6 +5,8 @@ import (
 	"atlas-npc/data/etc"
 	"atlas-npc/data/setup"
 	"context"
+	"database/sql"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
@@ -30,6 +32,10 @@ type Processor interface {
 	ExistsByNpcId(npcId uint32) (bool, error)
 	GetDistinctNpcIds() ([]uint32, error)
 	DistinctNpcIdsProvider() model.Provider[[]uint32]
+
+	// Count returns the number of commodities for the current tenant and the max updated_at timestamp.
+	// Returns (0, nil, nil) when the tenant has no rows.
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -189,4 +195,46 @@ func (p *ProcessorImpl) GetDistinctNpcIds() ([]uint32, error) {
 
 func (p *ProcessorImpl) DistinctNpcIdsProvider() model.Provider[[]uint32] {
 	return getDistinctNpcIds()(p.db.WithContext(p.ctx))
+}
+
+// Count returns the number of commodities for the current tenant and the max updated_at timestamp.
+// The tenant filter is applied automatically via the registered tenant callbacks on the GORM context.
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&Entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	if count == 0 {
+		return 0, nil, nil
+	}
+	row := p.db.WithContext(p.ctx).Model(&Entity{}).Select("MAX(updated_at)").Row()
+	var raw sql.NullString
+	if err := row.Scan(&raw); err != nil {
+		return 0, nil, err
+	}
+	if !raw.Valid || raw.String == "" {
+		return count, nil, nil
+	}
+	t, err := parseDBTime(raw.String)
+	if err != nil || t.IsZero() {
+		return count, nil, nil
+	}
+	return count, &t, nil
+}
+
+func parseDBTime(s string) (time.Time, error) {
+	formats := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05.999999999-07:00",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, nil
 }

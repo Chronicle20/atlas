@@ -3,8 +3,13 @@ package commodities_test
 import (
 	"atlas-npc/commodities"
 	"atlas-npc/test"
+	"context"
 	"testing"
+	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
 
@@ -37,6 +42,106 @@ func TestCommoditiesProcessor(t *testing.T) {
 	t.Run("TestGetDistinctNpcIds", func(t *testing.T) {
 		testGetDistinctNpcIds(t, processor)
 	})
+}
+
+func newCountTenantContext(t *testing.T) context.Context {
+	t.Helper()
+	te, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("Failed to create tenant: %v", err)
+	}
+	return tenant.WithContext(context.Background(), te)
+}
+
+func setupCountProcessor(t *testing.T, ctx context.Context) (commodities.Processor, *gorm.DB, func()) {
+	t.Helper()
+	logger := logrus.New()
+	db := test.SetupTestDB(t, commodities.Migration)
+	p := commodities.NewProcessor(logger, ctx, db)
+	cleanup := func() {
+		test.CleanupTestDB(t, db)
+	}
+	return p, db, cleanup
+}
+
+func TestProcessorImpl_Count_Empty(t *testing.T) {
+	ctx := newCountTenantContext(t)
+	p, _, cleanup := setupCountProcessor(t, ctx)
+	defer cleanup()
+
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("Expected count 0, got %d", count)
+	}
+	if updated != nil {
+		t.Errorf("Expected nil updatedAt, got %v", updated)
+	}
+}
+
+func TestProcessorImpl_Count_Populated(t *testing.T) {
+	ctx := newCountTenantContext(t)
+	p, _, cleanup := setupCountProcessor(t, ctx)
+	defer cleanup()
+
+	if _, err := p.CreateCommodity(5001, 2001, 1000, 0, 0, 500, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 5001: %v", err)
+	}
+	if _, err := p.CreateCommodity(5002, 2002, 2000, 0, 0, 1000, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 5002: %v", err)
+	}
+
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("Expected count 2, got %d", count)
+	}
+	if updated == nil {
+		t.Fatalf("updatedAt is nil; expected non-nil")
+	}
+	if time.Since(*updated) > 5*time.Second {
+		t.Errorf("updatedAt too old: %v", *updated)
+	}
+}
+
+func TestProcessorImpl_Count_TenantIsolation(t *testing.T) {
+	ctx1 := newCountTenantContext(t)
+	ctx2 := newCountTenantContext(t)
+
+	logger := logrus.New()
+	db := test.SetupTestDB(t, commodities.Migration)
+	defer test.CleanupTestDB(t, db)
+
+	p1 := commodities.NewProcessor(logger, ctx1, db)
+	p2 := commodities.NewProcessor(logger, ctx2, db)
+
+	if _, err := p1.CreateCommodity(6001, 2001, 1000, 0, 0, 500, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 6001: %v", err)
+	}
+	if _, err := p1.CreateCommodity(6002, 2002, 2000, 0, 0, 1000, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 6002: %v", err)
+	}
+	if _, err := p2.CreateCommodity(7001, 2003, 3000, 0, 0, 1500, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 7001: %v", err)
+	}
+	if _, err := p2.CreateCommodity(7002, 2004, 4000, 0, 0, 2000, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 7002: %v", err)
+	}
+	if _, err := p2.CreateCommodity(7003, 2005, 5000, 0, 0, 2500, 0, 0); err != nil {
+		t.Fatalf("CreateCommodity 7003: %v", err)
+	}
+
+	count, _, err := p1.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("Expected count 2 for tenant 1, got %d", count)
+	}
 }
 
 func testCreateCommodity(t *testing.T, processor commodities.Processor, db *gorm.DB) {

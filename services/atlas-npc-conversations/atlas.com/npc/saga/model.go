@@ -53,6 +53,8 @@ type (
 	ShowIntroPayload       = sharedsaga.ShowIntroPayload
 	SetHPPayload           = sharedsaga.SetHPPayload
 	ResetStatsPayload      = sharedsaga.ResetStatsPayload
+	RebalanceAPPayload     = sharedsaga.RebalanceAPPayload
+	RebalanceTarget        = sharedsaga.RebalanceTarget
 
 	// Saved location payload types
 	SaveLocationPayload        = sharedsaga.SaveLocationPayload
@@ -125,6 +127,12 @@ const (
 	ShowIntro     = sharedsaga.ShowIntro
 	SetHP         = sharedsaga.SetHP
 	ResetStats    = sharedsaga.ResetStats
+	RebalanceAP   = sharedsaga.RebalanceAP
+
+	RebalanceStatStrength     = sharedsaga.RebalanceStatStrength
+	RebalanceStatDexterity    = sharedsaga.RebalanceStatDexterity
+	RebalanceStatIntelligence = sharedsaga.RebalanceStatIntelligence
+	RebalanceStatLuck         = sharedsaga.RebalanceStatLuck
 
 	// Transport actions
 	StartInstanceTransport = sharedsaga.StartInstanceTransport

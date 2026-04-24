@@ -243,3 +243,65 @@ func TestProcessorImpl_GetForMonster_VerifyFields(t *testing.T) {
 		t.Errorf("Expected Chance 75000, got %d", d.Chance())
 	}
 }
+
+func TestProcessorImpl_Count_Empty(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	p := drop.NewProcessor(l, ctx, db)
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 0 {
+		t.Errorf("Expected count 0, got %d", count)
+	}
+	if updated != nil {
+		t.Errorf("Expected nil updatedAt, got %v", updated)
+	}
+}
+
+func TestProcessorImpl_Count_Populated(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t)
+
+	seedTestData(t, db, te.Id(), 100100, []uint32{2000000, 2000001, 2000002})
+	seedTestData(t, db, te.Id(), 100101, []uint32{2000003, 2000004})
+
+	p := drop.NewProcessor(l, ctx, db)
+	count, updated, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 5 {
+		t.Errorf("Expected count 5, got %d", count)
+	}
+	// monster_drops has no updated_at column; updatedAt must be nil.
+	if updated != nil {
+		t.Errorf("Expected nil updatedAt for table without updated_at, got %v", updated)
+	}
+}
+
+func TestProcessorImpl_Count_TenantIsolation(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	te1 := testTenant()
+	te2 := testTenant()
+	ctx1 := tenant.WithContext(context.Background(), te1)
+	db := testDatabase(t)
+
+	seedTestData(t, db, te1.Id(), 100100, []uint32{2000000, 2000001})
+	seedTestData(t, db, te2.Id(), 100100, []uint32{2000002, 2000003, 2000004})
+
+	p := drop.NewProcessor(l, ctx1, db)
+	count, _, err := p.Count()
+	if err != nil {
+		t.Fatalf("Count() returned error: %v", err)
+	}
+	if count != 2 {
+		t.Errorf("Expected count 2 for tenant 1, got %d", count)
+	}
+}

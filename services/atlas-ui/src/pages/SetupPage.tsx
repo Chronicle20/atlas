@@ -34,34 +34,26 @@ import {
   useWzInputStatus,
   useExtractionStatus,
   useDataStatus,
+  useDropsSeedStatus,
+  useGachaponsSeedStatus,
+  useNpcConversationsSeedStatus,
+  useQuestConversationsSeedStatus,
+  useNpcShopsSeedStatus,
+  usePortalScriptsSeedStatus,
+  useReactorScriptsSeedStatus,
+  useMapActionScriptsSeedStatus,
 } from "@/lib/hooks/api/useSeed";
-
-interface SeedButtonProps {
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  isPending: boolean;
-  onClick: () => void;
-}
-
-function SeedButton({ label, description, icon, isPending, onClick }: SeedButtonProps) {
-  return (
-    <Card>
-      <CardContent className="flex items-center justify-between p-4">
-        <div className="flex items-center gap-3">
-          <div className="text-muted-foreground">{icon}</div>
-          <div>
-            <p className="font-medium text-sm">{label}</p>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </div>
-        </div>
-        <Button size="sm" variant="outline" onClick={onClick} disabled={isPending}>
-          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seed"}
-        </Button>
-      </CardContent>
-    </Card>
-  );
-}
+import type {
+  DropsSeedStatus,
+  GachaponsSeedStatus,
+  NpcConversationsSeedStatus,
+  QuestConversationsSeedStatus,
+  NpcShopsSeedStatus,
+  PortalScriptsSeedStatus,
+  ReactorScriptsSeedStatus,
+  MapActionScriptsSeedStatus,
+} from "@/services/api/seed.service";
+import { SetupRow, formatCount, pluralize } from "@/components/features/setup/SetupRow";
 
 function formatBytes(bytes: number): string {
   if (!bytes) return "0 B";
@@ -76,45 +68,6 @@ function formatBytes(bytes: number): string {
     maximumFractionDigits: value >= 10 || unit === 0 ? 0 : 1,
   }).format(value);
   return `${formatted} ${units[unit]}`;
-}
-
-function formatCount(n: number): string {
-  return new Intl.NumberFormat().format(n);
-}
-
-function pluralize(n: number, singular: string, plural: string): string {
-  return n === 1 ? singular : plural;
-}
-
-interface GameDataRowProps {
-  icon: React.ReactNode;
-  label: string;
-  badge: React.ReactNode;
-  action: React.ReactNode;
-  warning?: React.ReactNode;
-}
-
-function GameDataRow({ icon, label, badge, action, warning }: GameDataRowProps) {
-  return (
-    <div className="flex flex-col gap-2 border-b last:border-0 py-3">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="text-muted-foreground">{icon}</div>
-          <div>
-            <p className="font-medium text-sm">{label}</p>
-            <p
-              className="text-xs text-muted-foreground"
-              aria-live="polite"
-            >
-              {badge}
-            </p>
-          </div>
-        </div>
-        {action}
-      </div>
-      {warning}
-    </div>
-  );
 }
 
 export function SetupPage() {
@@ -136,6 +89,15 @@ export function SetupPage() {
   const wzInput = useWzInputStatus();
   const extraction = useExtractionStatus();
   const dataStatus = useDataStatus();
+
+  const dropsSeed = useDropsSeedStatus();
+  const gachaponsSeed = useGachaponsSeedStatus();
+  const npcConversationsSeed = useNpcConversationsSeedStatus();
+  const questConversationsSeed = useQuestConversationsSeedStatus();
+  const npcShopsSeed = useNpcShopsSeedStatus();
+  const portalScriptsSeed = usePortalScriptsSeedStatus();
+  const reactorScriptsSeed = useReactorScriptsSeedStatus();
+  const mapActionScriptsSeed = useMapActionScriptsSeedStatus();
 
   const wzInputData = wzInput.data;
   const extractionData = extraction.data;
@@ -242,15 +204,77 @@ export function SetupPage() {
     ? "—"
     : `${formatCount(dataStatusData.documentCount)} ${pluralize(dataStatusData.documentCount, "document loaded", "documents loaded")}`;
 
-  const seedActions = [
-    { label: "Monster & Reactor Drops", description: "Seed drop tables for monsters and reactors", icon: <Database className="h-5 w-5" />, mutation: seedDrops },
-    { label: "Gachapons", description: "Seed gachapon machine configurations", icon: <Package className="h-5 w-5" />, mutation: seedGachapons },
-    { label: "NPC Conversations", description: "Seed NPC conversation scripts", icon: <MessageSquare className="h-5 w-5" />, mutation: seedNpcConversations },
-    { label: "Quest Conversations", description: "Seed quest conversation scripts", icon: <HelpCircle className="h-5 w-5" />, mutation: seedQuestConversations },
-    { label: "NPC Shops", description: "Seed NPC shop inventories", icon: <Store className="h-5 w-5" />, mutation: seedNpcShops },
-    { label: "Portal Scripts", description: "Seed portal action scripts", icon: <DoorOpen className="h-5 w-5" />, mutation: seedPortalScripts },
-    { label: "Reactor Scripts", description: "Seed reactor action scripts", icon: <Zap className="h-5 w-5" />, mutation: seedReactorScripts },
-    { label: "Map Action Scripts", description: "Seed map onUserEnter / onFirstUserEnter scripts", icon: <Map className="h-5 w-5" />, mutation: seedMapActionScripts },
+  const seedRows = [
+    {
+      label: "Monster & Reactor Drops",
+      icon: <Database className="h-5 w-5" />,
+      mutation: seedDrops,
+      status: dropsSeed,
+      formatBadge: (d?: DropsSeedStatus) =>
+        !d
+          ? "—"
+          : `${formatCount(d.monsterDropCount)} ${pluralize(d.monsterDropCount, "monster drop", "monster drops")} / ${formatCount(d.continentDropCount)} ${pluralize(d.continentDropCount, "continent drop", "continent drops")} / ${formatCount(d.reactorDropCount)} ${pluralize(d.reactorDropCount, "reactor drop", "reactor drops")}`,
+    },
+    {
+      label: "Gachapons",
+      icon: <Package className="h-5 w-5" />,
+      mutation: seedGachapons,
+      status: gachaponsSeed,
+      formatBadge: (d?: GachaponsSeedStatus) =>
+        !d
+          ? "—"
+          : `${formatCount(d.gachaponCount)} ${pluralize(d.gachaponCount, "gachapon", "gachapons")} / ${formatCount(d.itemCount)} ${pluralize(d.itemCount, "item", "items")} / ${formatCount(d.globalItemCount)} ${pluralize(d.globalItemCount, "global item", "global items")}`,
+    },
+    {
+      label: "NPC Conversations",
+      icon: <MessageSquare className="h-5 w-5" />,
+      mutation: seedNpcConversations,
+      status: npcConversationsSeed,
+      formatBadge: (d?: NpcConversationsSeedStatus) =>
+        !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`,
+    },
+    {
+      label: "Quest Conversations",
+      icon: <HelpCircle className="h-5 w-5" />,
+      mutation: seedQuestConversations,
+      status: questConversationsSeed,
+      formatBadge: (d?: QuestConversationsSeedStatus) =>
+        !d ? "—" : `${formatCount(d.conversationCount)} ${pluralize(d.conversationCount, "conversation", "conversations")}`,
+    },
+    {
+      label: "NPC Shops",
+      icon: <Store className="h-5 w-5" />,
+      mutation: seedNpcShops,
+      status: npcShopsSeed,
+      formatBadge: (d?: NpcShopsSeedStatus) =>
+        !d
+          ? "—"
+          : `${formatCount(d.shopCount)} ${pluralize(d.shopCount, "shop", "shops")} / ${formatCount(d.commodityCount)} ${pluralize(d.commodityCount, "commodity", "commodities")}`,
+    },
+    {
+      label: "Portal Scripts",
+      icon: <DoorOpen className="h-5 w-5" />,
+      mutation: seedPortalScripts,
+      status: portalScriptsSeed,
+      formatBadge: (d?: PortalScriptsSeedStatus) =>
+        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+    },
+    {
+      label: "Reactor Scripts",
+      icon: <Zap className="h-5 w-5" />,
+      mutation: seedReactorScripts,
+      status: reactorScriptsSeed,
+      formatBadge: (d?: ReactorScriptsSeedStatus) =>
+        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+    },
+    {
+      label: "Map Action Scripts",
+      icon: <Map className="h-5 w-5" />,
+      mutation: seedMapActionScripts,
+      status: mapActionScriptsSeed,
+      formatBadge: (d?: MapActionScriptsSeedStatus) =>
+        !d ? "—" : `${formatCount(d.scriptCount)} ${pluralize(d.scriptCount, "script", "scripts")}`,
+    },
   ];
 
   return (
@@ -277,7 +301,7 @@ export function SetupPage() {
             aria-label="Upload WZ zip archive"
           />
 
-          <GameDataRow
+          <SetupRow
             icon={<FileArchive className="h-5 w-5" />}
             label="Upload WZ"
             badge={wzInputBadge}
@@ -302,7 +326,7 @@ export function SetupPage() {
             }
           />
 
-          <GameDataRow
+          <SetupRow
             icon={<FileCode className="h-5 w-5" />}
             label="Extract"
             badge={extractionBadge}
@@ -338,7 +362,7 @@ export function SetupPage() {
             </div>
           )}
 
-          <GameDataRow
+          <SetupRow
             icon={<FileText className="h-5 w-5" />}
             label="Ingest"
             badge={dataStatusBadge}
@@ -369,15 +393,23 @@ export function SetupPage() {
         <p className="text-sm text-muted-foreground mb-4">
           Populate individual service databases from their configured data sources.
         </p>
-        <div className="grid gap-3">
-          {seedActions.map((action) => (
-            <SeedButton
-              key={action.label}
-              label={action.label}
-              description={action.description}
-              icon={action.icon}
-              isPending={action.mutation.isPending}
-              onClick={() => handleSeed(action.mutation, action.label)}
+        <div className="grid gap-0">
+          {seedRows.map((row) => (
+            <SetupRow
+              key={row.label}
+              icon={row.icon}
+              label={row.label}
+              badge={row.formatBadge(row.status.data as never)}
+              action={
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleSeed(row.mutation, row.label)}
+                  disabled={row.mutation.isPending}
+                >
+                  {row.mutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Seed"}
+                </Button>
+              }
             />
           ))}
         </div>

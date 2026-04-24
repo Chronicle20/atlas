@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-npc-conversations/conversation/npc"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -35,6 +36,9 @@ type ProcessorMock struct {
 
 	// SeedFunc is a function field for the Seed method
 	SeedFunc func() (npc.SeedResult, error)
+
+	// CountFunc is a function field for the Count method
+	CountFunc func() (int64, *time.Time, error)
 }
 
 // Create is a mock implementation of the npc.Processor.Create method
@@ -115,4 +119,12 @@ func (m *ProcessorMock) Seed() (npc.SeedResult, error) {
 		return m.SeedFunc()
 	}
 	return npc.SeedResult{}, nil
+}
+
+// Count is a mock implementation of the npc.Processor.Count method
+func (m *ProcessorMock) Count() (int64, *time.Time, error) {
+	if m.CountFunc != nil {
+		return m.CountFunc()
+	}
+	return 0, nil, nil
 }

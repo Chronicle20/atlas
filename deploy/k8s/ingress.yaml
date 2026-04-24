@@ -165,7 +165,7 @@ data:
       proxy_pass http://atlas-chairs:8080;
     }
 
-    location ~ ^/api/drops/seed$ {
+    location ~ ^/api/drops/seed(/.*)?$ {
       proxy_pass http://atlas-drop-information:8080;
     }
 

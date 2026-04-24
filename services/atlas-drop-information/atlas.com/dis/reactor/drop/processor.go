@@ -2,6 +2,7 @@ package drop
 
 import (
 	"context"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/sirupsen/logrus"
@@ -11,6 +12,7 @@ import (
 type Processor interface {
 	GetAll() model.Provider[[]Model]
 	GetForReactor(reactorId uint32) model.Provider[[]Model]
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -33,4 +35,12 @@ func (p *ProcessorImpl) GetAll() model.Provider[[]Model] {
 
 func (p *ProcessorImpl) GetForReactor(reactorId uint32) model.Provider[[]Model] {
 	return model.SliceMap(modelFromEntity)(getByReactorId(reactorId)(p.db.WithContext(p.ctx)))()
+}
+
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	return count, nil, nil
 }

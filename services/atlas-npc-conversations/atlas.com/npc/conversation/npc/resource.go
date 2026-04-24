@@ -31,6 +31,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/npcs/conversations/{conversationId}", registerHandler("delete_conversation", DeleteConversationHandler)).Methods(http.MethodDelete)
 			router.HandleFunc("/npcs/conversations/validate", registerInputHandler("validate_conversation", ValidateConversationHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/npcs/conversations/seed", registerHandler("seed_conversations", SeedConversationsHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/npcs/conversations/seed/status", registerHandler("get_npc_conversations_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 		}
 	}
 }

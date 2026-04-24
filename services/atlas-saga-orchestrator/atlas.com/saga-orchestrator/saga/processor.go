@@ -90,9 +90,16 @@ func isVersionConflict(err error) bool {
 	return errors.As(err, &vce)
 }
 
-// NewProcessor creates a new saga processor
-func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+// newProcessorFn is the package-level factory for Processor instances.
+// Tests may override it via SetProcessorFactoryForTest to inject mocks.
+var newProcessorFn = newProcessorImpl
 
+// NewProcessor creates a new saga processor.
+func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+	return newProcessorFn(logger, ctx)
+}
+
+func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
@@ -106,6 +113,16 @@ func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
 		guildP:  guild.NewProcessor(logger, ctx),
 		inviteP: invite.NewProcessor(logger, ctx),
 	}
+}
+
+// SetProcessorFactoryForTest swaps the underlying Processor factory and returns
+// the previous factory for restoration. Test-only — production code must not
+// call this. Used by integration tests that need to inject mock character/
+// compartment processors to avoid real Kafka emissions.
+func SetProcessorFactoryForTest(fn func(logger logrus.FieldLogger, ctx context.Context) Processor) func(logger logrus.FieldLogger, ctx context.Context) Processor {
+	prev := newProcessorFn
+	newProcessorFn = fn
+	return prev
 }
 
 func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Processor {

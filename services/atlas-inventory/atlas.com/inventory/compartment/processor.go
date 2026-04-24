@@ -652,6 +652,7 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 		defer invLock.Unlock()
 
 		var a asset.Model
+		var rechargeableDrop bool
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			c, err := p.GetByCharacterAndType(characterId)(inventoryType)
 			if err != nil {
@@ -661,6 +662,15 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 			if err != nil {
 				return err
 			}
+
+			// Rechargeables (throwing stars, bullets) are dropped as a whole stack —
+			// the client sends quantity=1 meaning "drop this one stack" regardless of
+			// the actual charges remaining, which may legitimately be zero.
+			if item.IsRechargeable(item.Id(a.TemplateId())) {
+				rechargeableDrop = true
+				return p.assetProcessor.WithTransaction(tx).Drop(mb)(transactionId, characterId, c.Id())(a)
+			}
+
 			reservedQty := GetReservationRegistry().GetReservedQuantity(p.t, characterId, inventoryType, source)
 			initialQty := a.Quantity() - reservedQty
 
@@ -706,9 +716,12 @@ func (p *Processor) Drop(mb *message.Buffer) func(transactionId uuid.UUID, chara
 				Slots:         a.Slots(),
 			}
 			return p.dropProcessor.CreateForEquipment(mb)(f, a.TemplateId(), ed, 2, x, y, characterId)
-		} else {
-			return p.dropProcessor.CreateForItem(mb)(f, a.TemplateId(), uint32(math.Abs(float64(quantity))), 2, x, y, characterId)
 		}
+		dropQty := uint32(math.Abs(float64(quantity)))
+		if rechargeableDrop {
+			dropQty = a.Quantity()
+		}
+		return p.dropProcessor.CreateForItem(mb)(f, a.TemplateId(), dropQty, 2, x, y, characterId)
 	}
 }
 

@@ -132,6 +132,18 @@ func buildStartConditions(questDef dataquest.RestModel) []ConditionInput {
 		})
 	}
 
+	// Selected skill requirement (from QuestInfo.img selectedSkillID). Gates
+	// tutorial quests where shared Check.img job lists would otherwise permit
+	// a character to start a tutorial for a skill they don't possess.
+	if questDef.SelectedSkillId > 0 {
+		conditions = append(conditions, ConditionInput{
+			Type:        SkillCondition,
+			Operator:    ">=",
+			Value:       1,
+			ReferenceId: questDef.SelectedSkillId,
+		})
+	}
+
 	return conditions
 }
 

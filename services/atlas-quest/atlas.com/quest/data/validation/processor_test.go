@@ -86,3 +86,52 @@ func TestBuildStartConditions_QuestPrerequisites(t *testing.T) {
 		t.Fatalf("got %+v, want %+v", got, want)
 	}
 }
+
+func TestBuildStartConditions_SelectedSkillId_Emits(t *testing.T) {
+	def := dataquest.RestModel{
+		SelectedSkillId: 4001334,
+	}
+	got := buildStartConditions(def)
+	want := []ConditionInput{
+		{Type: SkillCondition, Operator: ">=", Value: 1, ReferenceId: 4001334},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}
+
+func TestBuildStartConditions_SelectedSkillId_Zero_DoesNotEmit(t *testing.T) {
+	def := dataquest.RestModel{
+		SelectedSkillId: 0,
+		StartRequirements: dataquest.RequirementsRestModel{
+			LevelMin: 10,
+		},
+	}
+	got := buildStartConditions(def)
+	for _, c := range got {
+		if c.Type == SkillCondition {
+			t.Fatalf("expected no SkillCondition when SelectedSkillId is 0, got %+v", got)
+		}
+	}
+}
+
+func TestBuildStartConditions_SelectedSkillId_CombinedWithOthers(t *testing.T) {
+	def := dataquest.RestModel{
+		SelectedSkillId: 4001344,
+		StartRequirements: dataquest.RequirementsRestModel{
+			Jobs: []uint16{410, 420},
+			Quests: []dataquest.QuestRequirement{
+				{Id: 2413, State: 2},
+			},
+		},
+	}
+	got := buildStartConditions(def)
+	want := []ConditionInput{
+		{Type: JobCondition, Operator: "in", Values: []int{410, 420}},
+		{Type: QuestStatusCondition, Operator: "=", Value: 2, ReferenceId: 2413},
+		{Type: SkillCondition, Operator: ">=", Value: 1, ReferenceId: 4001344},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %+v, want %+v", got, want)
+	}
+}

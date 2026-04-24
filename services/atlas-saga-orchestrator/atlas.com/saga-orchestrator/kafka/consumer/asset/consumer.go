@@ -273,13 +273,27 @@ func handleAssetQuantityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, 
 	var expectedTemplateId uint32
 	switch decision.Step.Action() {
 	case saga.AwardAsset:
-		if pl, ok := decision.Step.Payload().(saga.AwardItemActionPayload); ok {
-			expectedTemplateId = pl.Item.TemplateId
+		pl, cast := decision.Step.Payload().(saga.AwardItemActionPayload)
+		if !cast {
+			l.WithFields(logrus.Fields{
+				"transaction_id": e.TransactionId.String(),
+				"step_id":        decision.Step.StepId(),
+			}).Error("Invalid payload for AwardAsset step.")
+			_ = p.StepCompleted(e.TransactionId, false)
+			return
 		}
+		expectedTemplateId = pl.Item.TemplateId
 	case saga.DestroyAsset:
-		if pl, ok := decision.Step.Payload().(saga.DestroyAssetPayload); ok {
-			expectedTemplateId = pl.TemplateId
+		pl, cast := decision.Step.Payload().(saga.DestroyAssetPayload)
+		if !cast {
+			l.WithFields(logrus.Fields{
+				"transaction_id": e.TransactionId.String(),
+				"step_id":        decision.Step.StepId(),
+			}).Error("Invalid payload for DestroyAsset step.")
+			_ = p.StepCompleted(e.TransactionId, false)
+			return
 		}
+		expectedTemplateId = pl.TemplateId
 	case saga.DestroyAssetFromSlot:
 		// No templateId on payload.
 		expectedTemplateId = e.TemplateId

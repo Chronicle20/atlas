@@ -13,7 +13,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -401,10 +400,10 @@ func handleRebalanceAP(db *gorm.DB) message.Handler[character2.Command[character
 		}
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
-		targets := make([]sharedsaga.RebalanceTarget, 0, len(c.Body.Targets))
+		targets := make([]character.RebalanceTarget, 0, len(c.Body.Targets))
 		for _, t := range c.Body.Targets {
-			targets = append(targets, sharedsaga.RebalanceTarget{
-				Stat:  sharedsaga.RebalanceStat(t.Stat),
+			targets = append(targets, character.RebalanceTarget{
+				Stat:  t.Stat,
 				Floor: t.Floor,
 			})
 		}

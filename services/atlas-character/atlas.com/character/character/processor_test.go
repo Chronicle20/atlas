@@ -9,7 +9,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -792,7 +791,7 @@ func TestRebalanceAP_PersistsAndEmits(t *testing.T) {
 
 	ch := channel.NewModel(0, 1)
 	buf := message.NewBuffer()
-	targets := []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20}}
+	targets := []character.RebalanceTarget{{Stat: "dexterity", Floor: 20}}
 	if err := proc.RebalanceAP(buf)(uuid.New(), c.Id(), ch, targets); err != nil {
 		t.Fatalf("RebalanceAP: %v", err)
 	}
@@ -832,7 +831,7 @@ func TestRebalanceAP_ErrorDoesNotMutate(t *testing.T) {
 
 	ch := channel.NewModel(0, 1)
 	buf := message.NewBuffer()
-	targets := []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20}}
+	targets := []character.RebalanceTarget{{Stat: "dexterity", Floor: 20}}
 	if err := proc.RebalanceAP(buf)(uuid.New(), c.Id(), ch, targets); err == nil {
 		t.Fatal("expected error on insufficient AP, got nil")
 	}

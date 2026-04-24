@@ -25,7 +25,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -109,8 +108,8 @@ type Processor interface {
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
 	ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
-	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error
-	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error
+	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
+	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error
 }
 
 type ProcessorImpl struct {
@@ -1846,14 +1845,14 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
+func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		return p.RebalanceAP(buf)(transactionId, characterId, channel, targets)
 	})
 }
 
-func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
-	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
+func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []RebalanceTarget) error {
 		var beforeStr, beforeDex, beforeInt, beforeLuk, beforeAP uint16
 		var result rebalanceResult
 

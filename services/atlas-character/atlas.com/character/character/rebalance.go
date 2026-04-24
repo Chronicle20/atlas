@@ -2,8 +2,21 @@ package character
 
 import (
 	"fmt"
+)
 
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
+// RebalanceTarget is the character-domain input to RebalanceAP: a primary stat
+// name and the floor value it should be raised to. Callers (the kafka consumer)
+// translate wire-level types into this local type before invoking the processor.
+type RebalanceTarget struct {
+	Stat  string
+	Floor uint16
+}
+
+const (
+	statStrength     = "strength"
+	statDexterity    = "dexterity"
+	statIntelligence = "intelligence"
+	statLuck         = "luck"
 )
 
 // rebalanceResult is the output of computeRebalance: the new primary stat values
@@ -22,7 +35,7 @@ type rebalanceResult struct {
 //
 // Returns an error if newUnallocated would be negative. Callers must ensure targets
 // contain no duplicate stats — the helper trusts that invariant.
-func computeRebalance(str, dex, in_, luk, unallocated uint16, targets []sharedsaga.RebalanceTarget) (rebalanceResult, error) {
+func computeRebalance(str, dex, in_, luk, unallocated uint16, targets []RebalanceTarget) (rebalanceResult, error) {
 	const base uint16 = 4
 
 	reclaimed := uint32(0)
@@ -48,13 +61,13 @@ func computeRebalance(str, dex, in_, luk, unallocated uint16, targets []sharedsa
 		}
 		cost += uint32(t.Floor - base)
 		switch t.Stat {
-		case sharedsaga.RebalanceStatStrength:
+		case statStrength:
 			result.Str = t.Floor
-		case sharedsaga.RebalanceStatDexterity:
+		case statDexterity:
 			result.Dex = t.Floor
-		case sharedsaga.RebalanceStatIntelligence:
+		case statIntelligence:
 			result.Int = t.Floor
-		case sharedsaga.RebalanceStatLuck:
+		case statLuck:
 			result.Luk = t.Floor
 		default:
 			return rebalanceResult{}, fmt.Errorf("unknown rebalance stat %q", t.Stat)

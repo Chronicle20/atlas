@@ -2,15 +2,13 @@ package character
 
 import (
 	"testing"
-
-	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 )
 
 func TestComputeRebalance(t *testing.T) {
 	tests := []struct {
 		name                        string
 		str, dex, in_, luk, unalloc uint16
-		targets                     []sharedsaga.RebalanceTarget
+		targets                     []RebalanceTarget
 		wantStr                     uint16
 		wantDex                     uint16
 		wantInt                     uint16
@@ -21,52 +19,52 @@ func TestComputeRebalance(t *testing.T) {
 		{
 			name: "pirate reference video — DEX 20",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20}},
+			targets: []RebalanceTarget{{Stat: "dexterity", Floor: 20}},
 			wantStr: 4, wantDex: 20, wantInt: 4, wantLuk: 4, wantUnalloc: 38,
 		},
 		{
 			name: "bowman/thief/wind-archer — DEX 25",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 25}},
+			targets: []RebalanceTarget{{Stat: "dexterity", Floor: 25}},
 			wantStr: 4, wantDex: 25, wantInt: 4, wantLuk: 4, wantUnalloc: 33,
 		},
 		{
 			name: "warrior/dawn-warrior — STR 35 (surplus boundary)",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatStrength, Floor: 35}},
+			targets: []RebalanceTarget{{Stat: "strength", Floor: 35}},
 			wantStr: 35, wantDex: 4, wantInt: 4, wantLuk: 4, wantUnalloc: 23,
 		},
 		{
 			name: "magician/blaze-wizard — INT 20",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatIntelligence, Floor: 20}},
+			targets: []RebalanceTarget{{Stat: "intelligence", Floor: 20}},
 			wantStr: 4, wantDex: 4, wantInt: 20, wantLuk: 4, wantUnalloc: 38,
 		},
 		{
 			name: "night-walker — LUK 25",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatLuck, Floor: 25}},
+			targets: []RebalanceTarget{{Stat: "luck", Floor: 25}},
 			wantStr: 4, wantDex: 4, wantInt: 4, wantLuk: 25, wantUnalloc: 33,
 		},
 		{
 			name: "thunder-breaker — STR 20 + DEX 20 (multi-target)",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{
-				{Stat: sharedsaga.RebalanceStatStrength, Floor: 20},
-				{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20},
+			targets: []RebalanceTarget{
+				{Stat: "strength", Floor: 20},
+				{Stat: "dexterity", Floor: 20},
 			},
 			wantStr: 20, wantDex: 20, wantInt: 4, wantLuk: 4, wantUnalloc: 22,
 		},
 		{
 			name: "existing unallocated AP carries through",
 			str:  53, dex: 9, in_: 4, luk: 4, unalloc: 5,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20}},
+			targets: []RebalanceTarget{{Stat: "dexterity", Floor: 20}},
 			wantStr: 4, wantDex: 20, wantInt: 4, wantLuk: 4, wantUnalloc: 43,
 		},
 		{
 			name: "insufficient AP returns error",
 			str:  4, dex: 4, in_: 4, luk: 4, unalloc: 0,
-			targets: []sharedsaga.RebalanceTarget{{Stat: sharedsaga.RebalanceStatDexterity, Floor: 20}},
+			targets: []RebalanceTarget{{Stat: "dexterity", Floor: 20}},
 			wantErr: true,
 		},
 	}

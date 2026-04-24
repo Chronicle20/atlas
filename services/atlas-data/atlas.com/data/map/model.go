@@ -75,6 +75,45 @@ func (f *FootholdTreeRestModel) findBelow(initial point.RestModel) *FootholdRest
 	return nil
 }
 
+func (f *FootholdTreeRestModel) findById(id uint32) *FootholdRestModel {
+	for i := range f.Footholds {
+		if f.Footholds[i].Id == id {
+			return &f.Footholds[i]
+		}
+	}
+	for _, child := range []*FootholdTreeRestModel{f.NorthWest, f.NorthEast, f.SouthWest, f.SouthEast} {
+		if child == nil {
+			continue
+		}
+		if r := child.findById(id); r != nil {
+			return r
+		}
+	}
+	return nil
+}
+
+func calcYOnFoothold(fh *FootholdRestModel, x int16) (int16, bool) {
+	if fh == nil || fh.isWall() {
+		return 0, false
+	}
+	if x < fh.First.X || x > fh.Second.X {
+		return 0, false
+	}
+	if fh.First.Y == fh.Second.Y {
+		return fh.First.Y, true
+	}
+	s1 := math.Abs(float64(fh.Second.Y - fh.First.Y))
+	s2 := math.Abs(float64(fh.Second.X - fh.First.X))
+	s4 := math.Abs(float64(x - fh.First.X))
+	alpha := math.Atan(s2 / s1)
+	beta := math.Atan(s1 / s2)
+	s5 := math.Cos(alpha) * (s4 / math.Cos(beta))
+	if fh.Second.Y < fh.First.Y {
+		return fh.First.Y - int16(s5), true
+	}
+	return fh.First.Y + int16(s5), true
+}
+
 func (f *FootholdTreeRestModel) GetRelevant(point point.RestModel) []FootholdRestModel {
 	results := make([]FootholdRestModel, 0)
 	results = append(results, f.Footholds...)

@@ -648,3 +648,51 @@ func TestCreateStepForOperation_RebalanceAP_RejectsInvalidStat(t *testing.T) {
 		t.Fatal("expected error on invalid stat")
 	}
 }
+
+func TestCreateStepForOperation_RebalanceAP_RejectsFloorBelow4(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(82)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, _ := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[{"stat":"dexterity","floor":"3"}]`).
+		Build()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	if _, _, _, _, err := executor.createStepForOperation(f, characterId, op); err == nil {
+		t.Fatal("expected error on floor below 4")
+	}
+}
+
+func TestCreateStepForOperation_RebalanceAP_RejectsMalformedJSON(t *testing.T) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	InitRegistry(rc)
+	l, _ := test.NewNullLogger()
+	var tm tenant.Model
+	tctx := tenant.WithContext(context.Background(), tm)
+	characterId := uint32(83)
+	GetRegistry().SetContext(tctx, characterId, NewConversationContextBuilder().SetCharacterId(characterId).Build())
+	defer GetRegistry().ClearContext(tctx, characterId)
+
+	executor := &OperationExecutorImpl{l: l, ctx: tctx, t: tm}
+
+	op, _ := NewOperationBuilder().
+		SetType("rebalance_ap").
+		AddParamValue("targets", `[not json`).
+		Build()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(1), _map.Id(100000000)).Build()
+	if _, _, _, _, err := executor.createStepForOperation(f, characterId, op); err == nil {
+		t.Fatal("expected error on malformed JSON")
+	}
+}

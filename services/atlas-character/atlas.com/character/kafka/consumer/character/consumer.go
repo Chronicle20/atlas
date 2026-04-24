@@ -13,6 +13,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -84,6 +85,9 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleResetStats(db)))); err != nil {
+				return err
+			}
+			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleRebalanceAP(db)))); err != nil {
 				return err
 			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleClampHP(db)))); err != nil {
@@ -387,6 +391,26 @@ func handleResetStats(db *gorm.DB) message.Handler[character2.Command[character2
 
 		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
 		_ = character.NewProcessor(l, ctx, db).ResetStatsAndEmit(c.TransactionId, c.CharacterId, cha)
+	}
+}
+
+func handleRebalanceAP(db *gorm.DB) message.Handler[character2.Command[character2.RebalanceAPCommandBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.RebalanceAPCommandBody]) {
+		if c.Type != character2.CommandRebalanceAP {
+			return
+		}
+
+		cha := channel.NewModel(c.WorldId, c.Body.ChannelId)
+		targets := make([]sharedsaga.RebalanceTarget, 0, len(c.Body.Targets))
+		for _, t := range c.Body.Targets {
+			targets = append(targets, sharedsaga.RebalanceTarget{
+				Stat:  sharedsaga.RebalanceStat(t.Stat),
+				Floor: t.Floor,
+			})
+		}
+		if err := character.NewProcessor(l, ctx, db).RebalanceAPAndEmit(c.TransactionId, c.CharacterId, cha, targets); err != nil {
+			l.WithError(err).Errorf("Unable to rebalance AP for character [%d].", c.CharacterId)
+		}
 	}
 }
 

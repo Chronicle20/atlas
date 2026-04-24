@@ -341,7 +341,10 @@ Emitted when a character stops controlling a monster.
 
 #### DAMAGED
 
-Emitted when a monster takes damage but survives.
+Emitted when a monster takes damage but survives. `damageSource` identifies the
+origin of the damage so consumers can decide whether a redundant client-side
+echo is needed; one of `CHARACTER_ATTACK`, `MONSTER_ATTACK`, `DAMAGE_OVER_TIME`,
+or `HEAL` (0-damage HP-bar refresh after a monster heals itself).
 
 ```json
 {
@@ -358,6 +361,7 @@ Emitted when a monster takes damage but survives.
     "observerId": 0,
     "actorId": 0,
     "boss": false,
+    "damageSource": "CHARACTER_ATTACK",
     "damageEntries": [
       {
         "characterId": 0,

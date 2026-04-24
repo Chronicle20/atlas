@@ -70,6 +70,11 @@ const (
 	EventStatusEffectExpired   = "STATUS_EXPIRED"
 	EventStatusEffectCancelled = "STATUS_CANCELLED"
 	EventStatusDamageReflected = "DAMAGE_REFLECTED"
+
+	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
+	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
+	DamageSourceDamageOverTime  = "DAMAGE_OVER_TIME"
+	DamageSourceHeal            = "HEAL"
 )
 
 type StatusEvent[E any] struct {
@@ -110,6 +115,7 @@ type StatusEventDamagedBody struct {
 	ObserverId    uint32        `json:"observerId"`
 	ActorId       uint32        `json:"actorId"`
 	Boss          bool          `json:"boss"`
+	DamageSource  string        `json:"damageSource"`
 	DamageEntries []DamageEntry `json:"damageEntries"`
 }
 

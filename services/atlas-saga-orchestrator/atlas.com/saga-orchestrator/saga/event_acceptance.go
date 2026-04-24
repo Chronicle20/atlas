@@ -209,21 +209,21 @@ func StepAcceptsEvent(action sharedsaga.Action, kind EventKind) bool {
 	return false
 }
 
-// skipReason* constants are the `reason` field values on structured debug
+// SkipReason* constants are the `reason` field values on structured debug
 // logs emitted when AcceptEvent (or a handler-level guard) refuses to
 // complete a step. Centralised so per-consumer drift is impossible.
 const (
-	skipReasonSagaNotFound       = "saga_not_found"
-	skipReasonNoPendingStep      = "no_pending_step"
-	skipReasonActionMismatch     = "action_mismatch"
-	skipReasonTemplateIdMismatch = "template_id_mismatch"
-	skipReasonUnmatchedEvent     = "unmatched_event"
+	SkipReasonSagaNotFound       = "saga_not_found"
+	SkipReasonNoPendingStep      = "no_pending_step"
+	SkipReasonActionMismatch     = "action_mismatch"
+	SkipReasonTemplateIdMismatch = "template_id_mismatch"
+	SkipReasonUnmatchedEvent     = "unmatched_event"
 )
 
-// logSkip emits a debug-level structured log with a `reason` field.
+// LogSkip emits a debug-level structured log with a `reason` field.
 // Consumer packages may call this directly for handler-local skips
 // (e.g., template-id mismatch in the asset handler).
-func logSkip(l logrus.FieldLogger, fields logrus.Fields, reason string) {
+func LogSkip(l logrus.FieldLogger, fields logrus.Fields, reason string) {
 	if fields == nil {
 		fields = logrus.Fields{}
 	}

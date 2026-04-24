@@ -40,7 +40,7 @@ func TestAcceptEvent_SagaNotFound(t *testing.T) {
 	entries := hook.AllEntries()
 	require.Len(t, entries, 1)
 	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
-	assert.Equal(t, skipReasonSagaNotFound, entries[0].Data["reason"])
+	assert.Equal(t, SkipReasonSagaNotFound, entries[0].Data["reason"])
 }
 
 func TestAcceptEvent_NoPendingStep(t *testing.T) {
@@ -59,7 +59,7 @@ func TestAcceptEvent_NoPendingStep(t *testing.T) {
 	assert.False(t, ok)
 
 	require.Len(t, hook.AllEntries(), 1)
-	assert.Equal(t, skipReasonNoPendingStep, hook.LastEntry().Data["reason"])
+	assert.Equal(t, SkipReasonNoPendingStep, hook.LastEntry().Data["reason"])
 }
 
 func TestAcceptEvent_ActionMismatch(t *testing.T) {
@@ -83,7 +83,7 @@ func TestAcceptEvent_ActionMismatch(t *testing.T) {
 
 	require.Len(t, hook.AllEntries(), 1)
 	entry := hook.LastEntry()
-	assert.Equal(t, skipReasonActionMismatch, entry.Data["reason"])
+	assert.Equal(t, SkipReasonActionMismatch, entry.Data["reason"])
 	assert.Equal(t, AwardAsset, entry.Data["step_action"])
 	assert.Equal(t, "s1", entry.Data["step_id"])
 	assert.Equal(t, EventKindCharacterStatChanged, entry.Data["event_kind"])

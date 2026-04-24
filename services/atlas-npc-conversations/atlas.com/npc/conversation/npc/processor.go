@@ -3,7 +3,9 @@ package npc
 import (
 	"atlas-npc-conversations/conversation"
 	"context"
+	"database/sql"
 	"fmt"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -63,6 +65,10 @@ type Processor interface {
 
 	// Seed clears existing NPC conversations and loads them from the conversations directory
 	Seed() (SeedResult, error)
+
+	// Count returns the number of NPC conversations for the current tenant and the max updated_at timestamp.
+	// Returns (0, nil, nil) when the tenant has no rows.
+	Count() (int64, *time.Time, error)
 }
 
 type ProcessorImpl struct {
@@ -199,4 +205,46 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 		p.t.Id(), result.DeletedCount, result.CreatedCount, result.FailedCount)
 
 	return result, nil
+}
+
+// Count returns the number of NPC conversations for the current tenant and the max updated_at timestamp.
+// The tenant filter is applied automatically via the registered tenant callbacks on the GORM context.
+func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
+	var count int64
+	if err := p.db.WithContext(p.ctx).Model(&Entity{}).Count(&count).Error; err != nil {
+		return 0, nil, err
+	}
+	if count == 0 {
+		return 0, nil, nil
+	}
+	row := p.db.WithContext(p.ctx).Model(&Entity{}).Select("MAX(updated_at)").Row()
+	var raw sql.NullString
+	if err := row.Scan(&raw); err != nil {
+		return 0, nil, err
+	}
+	if !raw.Valid || raw.String == "" {
+		return count, nil, nil
+	}
+	t, err := parseDBTime(raw.String)
+	if err != nil || t.IsZero() {
+		return count, nil, nil
+	}
+	return count, &t, nil
+}
+
+func parseDBTime(s string) (time.Time, error) {
+	formats := []string{
+		time.RFC3339Nano,
+		time.RFC3339,
+		"2006-01-02 15:04:05.999999999 -0700 MST",
+		"2006-01-02 15:04:05.999999999-07:00",
+		"2006-01-02 15:04:05.999999999",
+		"2006-01-02 15:04:05",
+	}
+	for _, f := range formats {
+		if t, err := time.Parse(f, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, nil
 }

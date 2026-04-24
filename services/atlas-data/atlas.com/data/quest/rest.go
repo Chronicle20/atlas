@@ -19,6 +19,7 @@ type RestModel struct {
 	TimeLimit         uint32                `json:"timeLimit,omitempty"`
 	TimeLimit2        uint32                `json:"timeLimit2,omitempty"`
 	SelectedMob       bool                  `json:"selectedMob,omitempty"`
+	SelectedSkillId   uint32                `json:"selectedSkillId,omitempty"`
 	Summary           string                `json:"summary,omitempty"`
 	DemandSummary     string                `json:"demandSummary,omitempty"`
 	RewardSummary     string                `json:"rewardSummary,omitempty"`

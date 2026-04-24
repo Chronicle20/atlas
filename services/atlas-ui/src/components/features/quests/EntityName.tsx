@@ -8,6 +8,8 @@ import { useItemData } from "@/lib/hooks/useItemData"
 import { useMobData } from "@/lib/hooks/useMobData"
 import { useSkillData } from "@/lib/hooks/useSkillData"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useQuest } from "@/lib/hooks/api/useQuests"
+import { useTenant } from "@/context/tenant-context"
 
 interface EntityNameProps {
     id: number
@@ -202,6 +204,39 @@ export function JobName({ id, showId = false, className }: Omit<EntityNameProps,
 
     return (
         <span className={className}>
+            {name}
+            {showId && <span className="text-muted-foreground ml-1">(#{id})</span>}
+        </span>
+    )
+}
+
+/**
+ * Display Quest name with fallback to ID.
+ *
+ * Unlike the other *Name components, this pulls `activeTenant` from
+ * `useTenant()` and resolves via the React Query `useQuest` hook directly
+ * rather than a flattened data hook. Shared `questKeys.detail` cache entries
+ * mean repeated renders for the same id are deduplicated.
+ */
+export function QuestName({ id, showId = false, className }: EntityNameProps) {
+    const { activeTenant } = useTenant()
+    const { data, isLoading, isError } = useQuest(activeTenant, String(id))
+
+    if (isLoading) {
+        return <Skeleton className="h-4 w-16 inline-block" />
+    }
+
+    const name = data?.attributes.name
+    if (isError || !name) {
+        return (
+            <span className={className} title={`Quest #${id}`}>
+                Quest #{id}
+            </span>
+        )
+    }
+
+    return (
+        <span className={className} title={name}>
             {name}
             {showId && <span className="text-muted-foreground ml-1">(#{id})</span>}
         </span>

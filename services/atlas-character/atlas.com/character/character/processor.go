@@ -1067,6 +1067,24 @@ func enforceBounds(change int16, current uint16, upperBound uint16, lowerBound u
 	return uint16(math.Min(math.Max(float64(adjusted), float64(lowerBound)), float64(upperBound)))
 }
 
+// resolveEffectiveMax picks the max value to use for bounding HP/MP adjustments.
+// If the effective-stats fetch failed OR returned zero, we fall back to the
+// character's base max. Treating a zero response as authoritative clamps any
+// HP/MP adjustment to zero and, for HP, emits a bogus DIED event on what was
+// actually a routine regen tick. The zero-response path is logged at WARN so
+// the underlying stats-service regression stays visible.
+func resolveEffectiveMax(l logrus.FieldLogger, base uint16, effective uint32, fetchErr error, characterId uint32, statName string) uint16 {
+	if fetchErr != nil {
+		l.WithError(fetchErr).Debugf("Failed to fetch effective stats for character [%d], using base %s", characterId, statName)
+		return base
+	}
+	if effective == 0 {
+		l.Warnf("Effective stats for character [%d] reported %s=0; falling back to base %s=[%d] to avoid clamp-to-zero death", characterId, statName, statName, base)
+		return base
+	}
+	return uint16(effective)
+}
+
 func (p *ProcessorImpl) ChangeHPAndEmit(transactionId uuid.UUID, channel channel.Model, characterId uint32, amount int16) error {
 	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		return p.ChangeHP(buf)(transactionId, channel, characterId, amount)
@@ -1082,14 +1100,11 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 				return err
 			}
 
-			// Use effective MaxHP if available, fall back to base MaxHP
-			maxHP := c.MaxHp()
+			// Use effective MaxHP when the stats service reports a positive value;
+			// otherwise fall back to the character's base MaxHP to avoid clamping
+			// a positive regen tick to zero (which would emit a spurious DIED).
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
-			if err == nil {
-				maxHP = uint16(effectiveStats.MaxHp)
-			} else {
-				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxHP", c.Id())
-			}
+			maxHP := resolveEffectiveMax(p.l, c.MaxHp(), effectiveStats.MaxHp, err, c.Id(), "MaxHP")
 
 			adjusted = enforceBounds(amount, c.Hp(), maxHP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] health by [%d] to [%d].", characterId, amount, adjusted)
@@ -1126,14 +1141,11 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 				return err
 			}
 
-			// Use effective MaxHP if available, fall back to base MaxHP
-			maxHP := c.MaxHp()
+			// Use effective MaxHP when the stats service reports a positive value;
+			// otherwise fall back to the character's base MaxHP to avoid a
+			// SetHP(>=0) being clamped to zero and emitting a spurious DIED.
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
-			if err == nil {
-				maxHP = uint16(effectiveStats.MaxHp)
-			} else {
-				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxHP", c.Id())
-			}
+			maxHP := resolveEffectiveMax(p.l, c.MaxHp(), effectiveStats.MaxHp, err, c.Id(), "MaxHP")
 
 			// Clamp amount between 0 and effective MaxHP
 			clamped = amount
@@ -1173,14 +1185,11 @@ func (p *ProcessorImpl) ChangeMP(mb *message.Buffer) func(transactionId uuid.UUI
 				return err
 			}
 
-			// Use effective MaxMP if available, fall back to base MaxMP
-			maxMP := c.MaxMp()
+			// Use effective MaxMP when the stats service reports a positive value;
+			// otherwise fall back to the character's base MaxMP (same reasoning
+			// as ChangeHP — a zero cap would clamp routine MP regen to 0).
 			effectiveStats, err := effective_stats.RequestByCharacter(channel, c.Id())(p.l, p.ctx)
-			if err == nil {
-				maxMP = uint16(effectiveStats.MaxMp)
-			} else {
-				p.l.WithError(err).Debugf("Failed to fetch effective stats for character [%d], using base MaxMP", c.Id())
-			}
+			maxMP := resolveEffectiveMax(p.l, c.MaxMp(), effectiveStats.MaxMp, err, c.Id(), "MaxMP")
 
 			adjusted := enforceBounds(amount, c.Mp(), maxMP, 0)
 			p.l.Debugf("Attempting to adjust character [%d] mana by [%d] to [%d].", characterId, amount, adjusted)

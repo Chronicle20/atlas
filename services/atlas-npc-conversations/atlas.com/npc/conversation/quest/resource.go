@@ -29,6 +29,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/quests/conversations/{conversationId}", registerInputHandler("update_quest_conversation", UpdateConversationHandler)).Methods(http.MethodPatch)
 			router.HandleFunc("/quests/conversations/{conversationId}", registerHandler("delete_quest_conversation", DeleteConversationHandler)).Methods(http.MethodDelete)
 			router.HandleFunc("/quests/conversations/seed", registerHandler("seed_quest_conversations", SeedConversationsHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/quests/conversations/seed/status", registerHandler("get_quest_conversations_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 		}
 	}
 }

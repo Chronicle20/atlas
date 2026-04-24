@@ -352,22 +352,29 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.RestModel] {
 	}
 }
 
-func monsterProvider(s *Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
+func monsterProvider(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 		return func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
 			if err != nil {
 				return model.ErrorProvider[[]monster.RestModel](err)
 			}
-			return model.FixedProvider(m.Monsters)
+			lookup := func(template uint32) (monstertpl.RestModel, error) {
+				return ms.GetById(ctx)(strconv.Itoa(int(template)))
+			}
+			snapped := make([]monster.RestModel, 0, len(m.Monsters))
+			for _, sp := range m.Monsters {
+				snapped = append(snapped, snapToGround(m.FootholdTree, sp, lookup))
+			}
+			return model.FixedProvider(snapped)
 		}
 	}
 }
 
-func GetMonsters(s *Storage) func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
+func GetMonsters(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
 	return func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
 		return func(mapId _map.Id) ([]monster.RestModel, error) {
-			return monsterProvider(s)(ctx)(mapId)()
+			return monsterProvider(s, ms)(ctx)(mapId)()
 		}
 	}
 }

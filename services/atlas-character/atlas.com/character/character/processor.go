@@ -25,6 +25,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	sharedsaga "github.com/Chronicle20/atlas/libs/atlas-saga"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -108,6 +109,8 @@ type Processor interface {
 	Update(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, input RestModel) error
 	ResetStatsAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	ResetStats(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
+	RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error
+	RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error
 }
 
 type ProcessorImpl struct {
@@ -1838,6 +1841,57 @@ func (p *ProcessorImpl) ResetStats(mb *message.Buffer) func(transactionId uuid.U
 			"luck":         baseStat,
 		}
 
+		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeAvailableAP, stat.TypeStrength, stat.TypeDexterity, stat.TypeIntelligence, stat.TypeLuck}, values))
+		return nil
+	}
+}
+
+func (p *ProcessorImpl) RebalanceAPAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
+	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
+		return p.RebalanceAP(buf)(transactionId, characterId, channel, targets)
+	})
+}
+
+func (p *ProcessorImpl) RebalanceAP(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
+	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model, targets []sharedsaga.RebalanceTarget) error {
+		var beforeStr, beforeDex, beforeInt, beforeLuk, beforeAP uint16
+		var result rebalanceResult
+
+		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
+			c, err := p.WithTransaction(tx).GetById()(characterId)
+			if err != nil {
+				return err
+			}
+			beforeStr, beforeDex, beforeInt, beforeLuk, beforeAP = c.Strength(), c.Dexterity(), c.Intelligence(), c.Luck(), c.AP()
+			result, err = computeRebalance(beforeStr, beforeDex, beforeInt, beforeLuk, beforeAP, targets)
+			if err != nil {
+				return err
+			}
+			return dynamicUpdate(tx)(
+				SetStrength(result.Str),
+				SetDexterity(result.Dex),
+				SetIntelligence(result.Int),
+				SetLuck(result.Luk),
+				SetAP(result.Unallocated),
+			)(c)
+		})
+		if txErr != nil {
+			p.l.WithError(txErr).Errorf("Could not rebalance AP for character [%d].", characterId)
+			return txErr
+		}
+
+		p.l.Infof("Rebalanced character [%d] AP. Before STR=%d DEX=%d INT=%d LUK=%d AP=%d -> after STR=%d DEX=%d INT=%d LUK=%d AP=%d, targets=%+v",
+			characterId,
+			beforeStr, beforeDex, beforeInt, beforeLuk, beforeAP,
+			result.Str, result.Dex, result.Int, result.Luk, result.Unallocated,
+			targets)
+
+		values := map[string]interface{}{
+			"strength":     result.Str,
+			"dexterity":    result.Dex,
+			"intelligence": result.Int,
+			"luck":         result.Luk,
+		}
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeAvailableAP, stat.TypeStrength, stat.TypeDexterity, stat.TypeIntelligence, stat.TypeLuck}, values))
 		return nil
 	}

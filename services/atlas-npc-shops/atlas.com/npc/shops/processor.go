@@ -407,6 +407,42 @@ func (p *ProcessorImpl) Buy(mb *message.Buffer) func(characterId uint32) func(sl
 				return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
 			}
 
+			if item.IsRechargeable(item.Id(itemTemplateId)) {
+				tmpl, err := consumable.NewProcessor(p.l, p.ctx).GetById(itemTemplateId)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to get item template [%d].", itemTemplateId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				slotQuantity := tmpl.SlotMax()
+				var totalCost uint32
+				if cm.MesoPrice() > 0 {
+					totalCost = cm.MesoPrice()
+				} else {
+					totalCost = uint32(math.Ceil(tmpl.UnitPrice() * float64(slotQuantity)))
+				}
+				if totalCost == 0 {
+					p.l.Errorf("Character [%d] is attempting to buy rechargeable item [%d] from slot [%d] but no price is configured.", characterId, itemTemplateId, slot)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorGenericError))
+				}
+				if c.Meso() < totalCost {
+					p.l.Errorf("Character [%d] is attempting to buy item [%d] from slot [%d] but they do not have enough meso.", characterId, itemTemplateId, slot)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorNotEnoughMoney))
+				}
+				_, err = c.Inventory().CompartmentByType(inventory.TypeValueUse).NextFreeSlot()
+				if err != nil {
+					p.l.WithError(err).Errorf("Cannot locate free slot for character [%d].", characterId)
+					return mb.Put(shops.EnvStatusEventTopic, errorEventProvider(characterId, shops.ErrorInventoryFull))
+				}
+				if err = p.charP.RequestChangeMeso(mb)(c.WorldId(), c.Id(), c.Id(), "SHOP", -int32(totalCost)); err != nil {
+					return err
+				}
+				if err = p.compP.RequestCreateItem(mb)(c.Id(), itemTemplateId, slotQuantity); err != nil {
+					return err
+				}
+				p.l.Debugf("Character [%d] bought rechargeable item [%d] with quantity [%d].", characterId, itemTemplateId, slotQuantity)
+				return nil
+			}
+
 			if cm.MesoPrice() > 0 {
 				totalCost := cm.MesoPrice() * quantity
 

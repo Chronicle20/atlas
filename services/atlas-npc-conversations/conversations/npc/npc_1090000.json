@@ -283,7 +283,7 @@
       "genericAction": {
         "operations": [],
         "outcomes": [
-          {"conditions": [{"type": "level", "operator": ">=", "value": "10"}, {"type": "dexterity", "operator": ">=", "value": "20"}], "nextState": "firstJobOffer"},
+          {"conditions": [{"type": "level", "operator": ">=", "value": "10"}], "nextState": "firstJobOffer"},
           {"conditions": [], "nextState": "firstJobNotReady"}
         ]
       }
@@ -341,11 +341,11 @@
       "type": "genericAction",
       "genericAction": {
         "operations": [
+          {"type": "rebalance_ap", "params": {"targets": "[{\"stat\":\"dexterity\",\"floor\":20}]"}},
           {"type": "change_job", "params": {"jobId": "500"}},
           {"type": "award_item", "params": {"itemId": "1492000", "quantity": "1"}},
           {"type": "award_item", "params": {"itemId": "1482000", "quantity": "1"}},
-          {"type": "award_item", "params": {"itemId": "2330000", "quantity": "1000"}},
-          {"type": "reset_stats"}
+          {"type": "award_item", "params": {"itemId": "2330000", "quantity": "1000"}}
         ],
         "outcomes": [
           {"conditions": [], "nextState": "firstJobMsg1"}

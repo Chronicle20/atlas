@@ -110,9 +110,11 @@ describe.each([
     (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeTenant: fakeTenant,
     });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method].mockResolvedValue({
-      updatedAt: null,
-    });
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue(
+      {
+        updatedAt: null,
+      },
+    );
 
     const { wrapper, qc } = makeWrapper();
     const { result } = renderHook(() => hook(), { wrapper });
@@ -178,7 +180,7 @@ describe.each([
     (tenantContext.useTenant as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
       activeTenant: fakeTenant,
     });
-    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method].mockResolvedValue(
+    (seedService as unknown as Record<string, ReturnType<typeof vi.fn>>)[method]!.mockResolvedValue(
       undefined,
     );
 

@@ -1,6 +1,6 @@
 {
   "npcId": 9120019,
-  "recharger": false,
+  "recharger": true,
   "commodities": [
     {
       "templateId": 1051098,

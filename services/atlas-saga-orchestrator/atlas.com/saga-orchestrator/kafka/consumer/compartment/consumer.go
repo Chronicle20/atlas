@@ -54,12 +54,22 @@ func handleCompartmentCreatedEvent(l logrus.FieldLogger, ctx context.Context, e 
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCompartmentCreated); !ok {
+		return
+	}
+
 	// Complete the current step for regular compartment creation
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCompartmentCreationFailedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.CreationFailedStatusEventBody]) {
 	if e.Type != compartment.StatusEventTypeCreationFailed {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCompartmentCreationFailed); !ok {
 		return
 	}
 
@@ -71,19 +81,28 @@ func handleCompartmentCreationFailedEvent(l logrus.FieldLogger, ctx context.Cont
 	}).Error("Asset creation failed, marking saga step as failed")
 
 	// Mark the saga step as failed
-	sagaProcessor := saga.NewProcessor(l, ctx)
-	_ = sagaProcessor.StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }
 
 func handleCompartmentDeletedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.DeletedStatusEventBody]) {
 	if e.Type != compartment.StatusEventTypeDeleted {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCompartmentDeleted); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCompartmentAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.AcceptedEventBody]) {
 	if e.Type != compartment.StatusEventTypeAccepted {
+		return
+	}
+
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCompartmentAccepted); !ok {
 		return
 	}
 
@@ -94,7 +113,7 @@ func handleCompartmentAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e
 	}).Debug("Character inventory accepted asset successfully")
 
 	// Mark the saga step as completed
-	err := saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	err := p.StepCompleted(e.Body.TransactionId, true)
 	if err != nil {
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.Body.TransactionId.String(),
@@ -109,6 +128,11 @@ func handleCompartmentReleasedEvent(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCompartmentReleased); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"character_id":   e.CharacterId,
@@ -116,7 +140,7 @@ func handleCompartmentReleasedEvent(l logrus.FieldLogger, ctx context.Context, e
 	}).Debug("Character inventory released asset successfully")
 
 	// Mark the saga step as completed
-	err := saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	err := p.StepCompleted(e.Body.TransactionId, true)
 	if err != nil {
 		l.WithFields(logrus.Fields{
 			"transaction_id": e.Body.TransactionId.String(),
@@ -131,11 +155,16 @@ func handleCompartmentErrorEvent(l logrus.FieldLogger, ctx context.Context, e co
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCompartmentError); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"error_code":     e.Body.ErrorCode,
 		"character_id":   e.CharacterId,
 	}).Error("Compartment operation failed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }

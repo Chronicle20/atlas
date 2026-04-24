@@ -30,74 +30,40 @@ func TestFootholdFindById(t *testing.T) {
 	}
 }
 
-func TestCalcYOnFootholdFlat(t *testing.T) {
-	fh := &FootholdRestModel{
-		Id:     1,
-		First:  &point.RestModel{X: -100, Y: 100},
-		Second: &point.RestModel{X: 100, Y: 100},
-	}
-	y, ok := calcYOnFoothold(fh, 0)
-	if !ok {
-		t.Fatalf("calcYOnFoothold flat: ok=false, want true")
-	}
-	if y != 100 {
-		t.Fatalf("calcYOnFoothold flat: y=%d, want 100", y)
-	}
-}
+func TestCalcYOnFoothold(t *testing.T) {
+	flat := &FootholdRestModel{Id: 1, First: &point.RestModel{X: -100, Y: 100}, Second: &point.RestModel{X: 100, Y: 100}}
+	downSlope := &FootholdRestModel{Id: 2, First: &point.RestModel{X: 100, Y: 100}, Second: &point.RestModel{X: 300, Y: 200}}
+	upSlope := &FootholdRestModel{Id: 3, First: &point.RestModel{X: -300, Y: 200}, Second: &point.RestModel{X: -100, Y: 100}}
+	wall := &FootholdRestModel{Id: 4, First: &point.RestModel{X: 500, Y: 0}, Second: &point.RestModel{X: 500, Y: 200}}
 
-func TestCalcYOnFootholdDownSlope(t *testing.T) {
-	// 200px wide, descends 100px: at x=200 (midpoint), y should be ~150
-	fh := &FootholdRestModel{
-		Id:     2,
-		First:  &point.RestModel{X: 100, Y: 100},
-		Second: &point.RestModel{X: 300, Y: 200},
+	tests := []struct {
+		name     string
+		fh       *FootholdRestModel
+		x        int16
+		wantOK   bool
+		wantYMin int16
+		wantYMax int16
+	}{
+		{name: "flat_returns_y1", fh: flat, x: 0, wantOK: true, wantYMin: 100, wantYMax: 100},
+		{name: "down_slope_midpoint", fh: downSlope, x: 200, wantOK: true, wantYMin: 145, wantYMax: 155},
+		{name: "up_slope_midpoint", fh: upSlope, x: -200, wantOK: true, wantYMin: 145, wantYMax: 155},
+		{name: "wall_unwalkable", fh: wall, x: 500, wantOK: false},
+		{name: "out_of_span_right", fh: flat, x: 500, wantOK: false},
+		{name: "out_of_span_left", fh: flat, x: -500, wantOK: false},
 	}
-	y, ok := calcYOnFoothold(fh, 200)
-	if !ok {
-		t.Fatalf("calcYOnFoothold down-slope: ok=false, want true")
-	}
-	if y < 145 || y > 155 {
-		t.Fatalf("calcYOnFoothold down-slope mid: y=%d, want ~150", y)
-	}
-}
 
-func TestCalcYOnFootholdUpSlope(t *testing.T) {
-	// First.Y=200, Second.Y=100 — going right, y decreases
-	fh := &FootholdRestModel{
-		Id:     3,
-		First:  &point.RestModel{X: -300, Y: 200},
-		Second: &point.RestModel{X: -100, Y: 100},
-	}
-	y, ok := calcYOnFoothold(fh, -200)
-	if !ok {
-		t.Fatalf("calcYOnFoothold up-slope: ok=false, want true")
-	}
-	if y < 145 || y > 155 {
-		t.Fatalf("calcYOnFoothold up-slope mid: y=%d, want ~150", y)
-	}
-}
-
-func TestCalcYOnFootholdWall(t *testing.T) {
-	fh := &FootholdRestModel{
-		Id:     4,
-		First:  &point.RestModel{X: 500, Y: 0},
-		Second: &point.RestModel{X: 500, Y: 200},
-	}
-	if _, ok := calcYOnFoothold(fh, 500); ok {
-		t.Fatalf("calcYOnFoothold wall: ok=true, want false")
-	}
-}
-
-func TestCalcYOnFootholdOutOfSpan(t *testing.T) {
-	fh := &FootholdRestModel{
-		Id:     1,
-		First:  &point.RestModel{X: -100, Y: 100},
-		Second: &point.RestModel{X: 100, Y: 100},
-	}
-	if _, ok := calcYOnFoothold(fh, 500); ok {
-		t.Fatalf("calcYOnFoothold out-of-span (right): ok=true, want false")
-	}
-	if _, ok := calcYOnFoothold(fh, -500); ok {
-		t.Fatalf("calcYOnFoothold out-of-span (left): ok=true, want false")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			y, ok := calcYOnFoothold(tt.fh, tt.x)
+			if ok != tt.wantOK {
+				t.Fatalf("ok=%t, want %t", ok, tt.wantOK)
+			}
+			if !tt.wantOK {
+				return
+			}
+			if y < tt.wantYMin || y > tt.wantYMax {
+				t.Fatalf("y=%d, want in [%d, %d]", y, tt.wantYMin, tt.wantYMax)
+			}
+		})
 	}
 }

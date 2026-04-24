@@ -23,6 +23,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 
 			// Register handlers - specific routes before parameterized routes
 			router.HandleFunc("/maps/actions/seed", registerHandler("seed_scripts", SeedScriptsHandler)).Methods(http.MethodPost)
+			router.HandleFunc("/maps/actions/seed/status", registerHandler("get_map_action_scripts_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/maps/actions", registerHandler("get_all_scripts", GetAllScriptsHandler)).Methods(http.MethodGet)
 			router.HandleFunc("/maps/actions", registerInputHandler("create_script", CreateScriptHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/maps/actions/{scriptId}", registerHandler("get_script", GetScriptHandler)).Methods(http.MethodGet)

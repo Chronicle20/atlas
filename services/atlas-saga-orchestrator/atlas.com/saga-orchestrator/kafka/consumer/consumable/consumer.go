@@ -46,11 +46,16 @@ func handleEffectAppliedEvent(l logrus.FieldLogger, ctx context.Context, e consu
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindConsumableEffectApplied); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.Body.TransactionId.String(),
 		"character_id":   e.CharacterId,
 		"item_id":        e.Body.ItemId,
 	}).Debug("Consumable effect applied successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

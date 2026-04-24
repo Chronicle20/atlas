@@ -8,8 +8,13 @@ import (
 	"strings"
 )
 
-// ShopsPath is the default path to the shop seed data directory
+// ShopsPath is the default path to the shop seed data directory. Matches the
+// location the Dockerfiles copy seed JSONs to. Override locally by setting
+// SHOPS_DATA_PATH in the environment.
 var ShopsPath = "/shops"
+
+// shopsDataPathEnv names the optional env override for the seed data directory.
+const shopsDataPathEnv = "SHOPS_DATA_PATH"
 
 // LoadShopFiles reads all JSON files from the shops directory
 // and parses them into JSONModel structs. Returns the successfully parsed models
@@ -18,9 +23,14 @@ func LoadShopFiles() ([]JSONModel, []error) {
 	var models []JSONModel
 	var errors []error
 
-	entries, err := os.ReadDir(ShopsPath)
+	path := ShopsPath
+	if override := os.Getenv(shopsDataPathEnv); override != "" {
+		path = override
+	}
+
+	entries, err := os.ReadDir(path)
 	if err != nil {
-		return nil, []error{fmt.Errorf("failed to read shops directory: %w", err)}
+		return nil, []error{fmt.Errorf("failed to read shops directory %q: %w", path, err)}
 	}
 
 	for _, entry := range entries {
@@ -37,7 +47,7 @@ func LoadShopFiles() ([]JSONModel, []error) {
 			continue
 		}
 
-		filePath := filepath.Join(ShopsPath, entry.Name())
+		filePath := filepath.Join(path, entry.Name())
 		data, err := os.ReadFile(filePath)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("%s: failed to read file: %w", entry.Name(), err))

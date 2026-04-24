@@ -11,7 +11,9 @@ import (
 func getByNpcId(npcId uint32) database.EntityProvider[[]Entity] {
 	return func(db *gorm.DB) model.Provider[[]Entity] {
 		var results []Entity
-		err := db.Where("npc_id = ?", npcId).Find(&results).Error
+		err := db.Where("npc_id = ?", npcId).
+			Order("created_at ASC, id ASC").
+			Find(&results).Error
 		if err != nil {
 			return model.ErrorProvider[[]Entity](err)
 		}

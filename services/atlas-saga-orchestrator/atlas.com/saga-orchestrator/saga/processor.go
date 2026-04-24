@@ -115,16 +115,6 @@ func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor 
 	}
 }
 
-// SetProcessorFactoryForTest swaps the underlying Processor factory and returns
-// the previous factory for restoration. Test-only — production code must not
-// call this. Used by integration tests that need to inject mock character/
-// compartment processors to avoid real Kafka emissions.
-func SetProcessorFactoryForTest(fn func(logger logrus.FieldLogger, ctx context.Context) Processor) func(logger logrus.FieldLogger, ctx context.Context) Processor {
-	prev := newProcessorFn
-	newProcessorFn = fn
-	return prev
-}
-
 func (p *ProcessorImpl) WithCharacterProcessor(charP character.Processor) Processor {
 	return &ProcessorImpl{
 		l:       p.l,

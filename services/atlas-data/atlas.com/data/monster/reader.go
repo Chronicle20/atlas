@@ -86,6 +86,11 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				m.TagBackgroundColor = 0
 			}
 			m.AnimationTimes = getAnimationTimes(exml)
+			_, hasFly := m.AnimationTimes["fly"]
+			_, hasHover := m.AnimationTimes["hover"]
+			_, hasSwim := m.AnimationTimes["swim"]
+			m.Flying = hasFly
+			m.Swimming = hasHover || hasSwim
 			m.Revives = getRevives(node)
 			m.Resistances = getResistances(node)
 			m.Skills = getSkills(node)

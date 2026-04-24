@@ -656,34 +656,29 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 	// Handle context-specific conditions first
 	switch c.conditionType {
 	case QuestStatusCondition:
+		// Absence of a record means the character has never touched this quest, which is
+		// semantically state=NotStarted. Treat it that way and fall through to the normal
+		// operator comparison so requirements like "state=0" pass and "state=2" fail.
 		questModel, exists := ctx.Quest(c.referenceId)
 		if !exists {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Quest %d not found", c.referenceId),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: int(quest.StateNotStarted),
-			}
+			actualValue = int(quest.StateNotStarted)
+			description = fmt.Sprintf("Quest %d Status (no record) %s %d", c.referenceId, c.operator, c.value)
+		} else {
+			actualValue = int(questModel.State())
+			description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
 		}
-		actualValue = int(questModel.State())
-		description = fmt.Sprintf("Quest %d Status %s %d", c.referenceId, c.operator, c.value)
 
 	case QuestProgressCondition:
+		// Same reasoning as QuestStatusCondition: absence means no progress recorded yet,
+		// which is progress 0 for any step.
 		questModel, exists := ctx.Quest(c.referenceId)
 		if !exists {
-			return ConditionResult{
-				Passed:      false,
-				Description: fmt.Sprintf("Quest %d not found", c.referenceId),
-				Type:        c.conditionType,
-				Operator:    c.operator,
-				Value:       c.value,
-				ActualValue: 0,
-			}
+			actualValue = 0
+			description = fmt.Sprintf("Quest %d Progress (no record, step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
+		} else {
+			actualValue = questModel.GetProgressByKey(c.step)
+			description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
 		}
-		actualValue = questModel.GetProgressByKey(c.step)
-		description = fmt.Sprintf("Quest %d Progress (step: %s) %s %d", c.referenceId, c.step, c.operator, c.value)
 
 	case UnclaimedMarriageGiftsCondition:
 		marriageModel := ctx.Marriage()

@@ -65,6 +65,7 @@ func newSearchTenant(t *testing.T) tenant.Model {
 }
 
 func seedIdx(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string) {
+	t.Helper()
 	seedIdxFull(t, db, ctx, tenantId, id, name, 0, "", nil)
 }
 

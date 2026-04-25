@@ -170,8 +170,8 @@ describe("AssetTooltipContent", () => {
 
   it("always shows UPGRADES AVAILABLE and HAMMERS APPLIED for equipment", () => {
     renderTooltip(<AssetTooltipContent asset={baseAsset({ slots: 7, hammersApplied: 0 })} />);
-    expect(screen.getByText(/UPGRADES AVAILABLE:/)).toBeInTheDocument();
-    expect(screen.getByText(/HAMMERS APPLIED:/)).toBeInTheDocument();
+    expect(screen.getByText("UPGRADES AVAILABLE")).toBeInTheDocument();
+    expect(screen.getByText("HAMMERS APPLIED")).toBeInTheDocument();
   });
 
   it("does not render Asset ID, Slot, or Quantity for an equipment asset", () => {

@@ -17,11 +17,13 @@ import { PageLoader } from "@/components/common/PageLoader";
 import { useItemDrops } from "@/lib/hooks/api/useDrops";
 import { useItemSellers } from "@/lib/hooks/api/useItemSellers";
 import { useItemCommodities } from "@/lib/hooks/api/useItemCommodities";
+import { useItemRecipes } from "@/lib/hooks/api/useItemRecipes";
 import { ItemHeader } from "@/components/features/items/ItemHeader";
 import { EquipmentRequirementsCard } from "@/components/features/items/EquipmentRequirementsCard";
 import { ItemNpcShopWidget } from "@/components/features/items/ItemNpcShopWidget";
 import { ItemCashShopWidget } from "@/components/features/items/ItemCashShopWidget";
 import { DroppedByWidget } from "@/components/features/items/DroppedByWidget";
+import { RecipesByItemCard } from "@/components/features/items/RecipesByItemCard";
 
 export function ItemDetailPage() {
   const { activeTenant } = useTenant();
@@ -46,6 +48,7 @@ export function ItemDetailPage() {
   const { data: drops, isLoading: dropsLoading } = useItemDrops(itemId);
   const { data: sellers, isLoading: sellersLoading } = useItemSellers(itemId);
   const { data: commodities, isLoading: commoditiesLoading } = useItemCommodities(itemId);
+  const { data: recipes, isLoading: recipesLoading, error: recipesError } = useItemRecipes(itemId);
 
   const itemName = nameQuery.data ?? null;
   const detail = detailQuery.data ?? null;
@@ -88,6 +91,8 @@ export function ItemDetailPage() {
         commoditiesLoading={commoditiesLoading}
         price={price}
       />
+
+      <RecipesByItemCard recipes={recipes} isLoading={recipesLoading} error={recipesError} />
 
       <Card>
         <CardHeader>

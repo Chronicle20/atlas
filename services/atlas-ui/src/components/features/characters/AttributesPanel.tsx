@@ -12,6 +12,7 @@ import { Link } from "react-router-dom";
 import { MapCell } from "@/components/map-cell";
 import { HpMpBar } from "./HpMpBar";
 import { useCharacterGuild } from "@/lib/hooks/api/useCharacterGuild";
+import { useCharacterEffectiveStats } from "@/lib/hooks/api/useCharacterEffectiveStats";
 import type { Character } from "@/types/models/character";
 import type { Tenant, TenantConfig } from "@/services/api/tenants.service";
 
@@ -27,6 +28,15 @@ const mesoFmt = (n: number) => new Intl.NumberFormat().format(n);
 export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
   const a = character.attributes;
   const worldName = tenantConfig.attributes.worlds[a.worldId]?.name ?? "Unknown";
+
+  // atlas-effective-stats returns post-equip primary stats and HP/MP caps.
+  // While loading or on error we fall through to the raw character record so
+  // the panel stays populated.
+  const { data: effective } = useCharacterEffectiveStats(
+    tenant,
+    a.worldId,
+    character.id,
+  );
 
   return (
     <Card className="flex-1">
@@ -75,26 +85,28 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
           </div>
         </div>
 
-        {/* Group C — core stats */}
+        {/* Group C — core stats (base from character + bonus from effective) */}
         <div className="grid grid-cols-4 gap-2 text-sm">
-          <div>
-            <strong>STR:</strong> {a.strength}
-          </div>
-          <div>
-            <strong>DEX:</strong> {a.dexterity}
-          </div>
-          <div>
-            <strong>INT:</strong> {a.intelligence}
-          </div>
-          <div>
-            <strong>LUK:</strong> {a.luck}
-          </div>
+          <StatCell label="STR" base={a.strength} effective={effective?.strength} />
+          <StatCell label="DEX" base={a.dexterity} effective={effective?.dexterity} />
+          <StatCell label="INT" base={a.intelligence} effective={effective?.intelligence} />
+          <StatCell label="LUK" base={a.luck} effective={effective?.luck} />
         </div>
 
-        {/* Group D — vitals & resources */}
+        {/* Group D — vitals & resources (HP/MP cap from effective when available) */}
         <div className="grid grid-cols-4 gap-2 text-sm">
-          <HpMpBar label="HP" cur={a.hp} max={a.maxHp} colorClass="bg-red-500/70" />
-          <HpMpBar label="MP" cur={a.mp} max={a.maxMp} colorClass="bg-blue-500/70" />
+          <HpMpBar
+            label="HP"
+            cur={a.hp}
+            max={effective?.maxHP ?? a.maxHp}
+            colorClass="bg-red-500/70"
+          />
+          <HpMpBar
+            label="MP"
+            cur={a.mp}
+            max={effective?.maxMP ?? a.maxMp}
+            colorClass="bg-blue-500/70"
+          />
           <div>
             <strong>Mesos:</strong> {mesoFmt(a.meso)}
           </div>
@@ -141,6 +153,29 @@ function GuildRow({
   return (
     <div>
       <strong>Guild:</strong> {body}
+    </div>
+  );
+}
+
+// Renders `base +bonus` when atlas-effective-stats has resolved a higher
+// value than the character's raw stat (i.e. the diff is positive), or the
+// bare base while loading / when there's no diff.
+function StatCell({
+  label,
+  base,
+  effective,
+}: {
+  label: string;
+  base: number;
+  effective: number | undefined;
+}) {
+  const bonus = effective != null ? effective - base : 0;
+  return (
+    <div>
+      <strong>{label}:</strong> {base}
+      {bonus > 0 && (
+        <span className="text-emerald-600 dark:text-emerald-400"> +{bonus}</span>
+      )}
     </div>
   );
 }

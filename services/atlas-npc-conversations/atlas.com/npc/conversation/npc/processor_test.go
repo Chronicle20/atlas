@@ -285,3 +285,59 @@ func TestProcessor_Seed_AccumulatesSkippedRecipes(t *testing.T) {
 		t.Errorf("expected only the parseable recipe to land, got %+v", rows)
 	}
 }
+
+func TestReindexAllRecipes_RebuildsForAllConversations(t *testing.T) {
+	l, _ := logtest.NewNullLogger()
+	te := countTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), te)
+	db := test.SetupTestDB(t, MigrateTable, recipe.MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	p := NewProcessor(l, ctx, db).(*ProcessorImpl)
+	if _, err := p.Create(craftConversationModel(t, 1000, craftStateForNpc(t, "c0", "10"), craftStateForNpc(t, "c1", "11"))); err != nil {
+		t.Fatalf("seed conv1: %v", err)
+	}
+	if _, err := p.Create(craftConversationModel(t, 2000, craftStateForNpc(t, "c0", "20"))); err != nil {
+		t.Fatalf("seed conv2: %v", err)
+	}
+
+	if err := db.WithContext(ctx).Exec("DELETE FROM recipes").Error; err != nil {
+		t.Fatalf("wipe recipes: %v", err)
+	}
+
+	res, err := p.ReindexAllRecipes()
+	if err != nil {
+		t.Fatalf("reindex: %v", err)
+	}
+	if res.InsertedCount != 3 {
+		t.Errorf("InsertedCount = %d, want 3", res.InsertedCount)
+	}
+	if res.ConversationsScanned != 2 {
+		t.Errorf("ConversationsScanned = %d, want 2", res.ConversationsScanned)
+	}
+}
+
+func TestReindexAllRecipes_Idempotent(t *testing.T) {
+	l, _ := logtest.NewNullLogger()
+	te := countTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), te)
+	db := test.SetupTestDB(t, MigrateTable, recipe.MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	p := NewProcessor(l, ctx, db).(*ProcessorImpl)
+	if _, err := p.Create(craftConversationModel(t, 1000, craftStateForNpc(t, "c0", "10"))); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	first, err := p.ReindexAllRecipes()
+	if err != nil {
+		t.Fatalf("first reindex: %v", err)
+	}
+	second, err := p.ReindexAllRecipes()
+	if err != nil {
+		t.Fatalf("second reindex: %v", err)
+	}
+	if first.InsertedCount != second.InsertedCount {
+		t.Errorf("non-idempotent: first=%d second=%d", first.InsertedCount, second.InsertedCount)
+	}
+}

@@ -7,7 +7,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -25,7 +24,7 @@ func EmitSaga(l logrus.FieldLogger, ctx context.Context, s saga.Saga) error {
 	topicToken := saga.EnvCommandTopic
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.WriterProvider(topic.EnvProvider(l)(topicToken)))(sd, td)(SagaCommandProvider(s))
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(topicToken))(sd, td)(SagaCommandProvider(s))
 }
 
 // Builder helps construct sagas with multiple steps

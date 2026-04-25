@@ -7,7 +7,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -94,7 +93,7 @@ func ErrorStatusEventProvider(characterId uint32, worldId world.Id, questId uint
 func emitEvent(l logrus.FieldLogger, ctx context.Context, provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.WriterProvider(topic.EnvProvider(l)(quest2.EnvStatusEventTopic)))(sd, td)(provider)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(quest2.EnvStatusEventTopic))(sd, td)(provider)
 }
 
 // EmitQuestStarted emits a quest started event

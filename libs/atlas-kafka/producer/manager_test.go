@@ -98,3 +98,24 @@ func TestManager_ConcurrentFirstTouch(t *testing.T) {
 		}
 	}
 }
+
+func TestManager_IdempotentClose(t *testing.T) {
+	ResetInstance()
+	fw := &fakeWriter{topicName: "T"}
+	factory := func(topicName string) Writer { return fw }
+	m := GetManager(ConfigWriterFactory(factory))
+	l, _ := test.NewNullLogger()
+
+	if _, err := m.Writer(l, "ANY_TOPIC"); err != nil {
+		t.Fatalf("Writer: %v", err)
+	}
+	if err := m.Close(l); err != nil {
+		t.Fatalf("first Close: %v", err)
+	}
+	if err := m.Close(l); err != nil {
+		t.Fatalf("second Close: %v", err)
+	}
+	if got := atomic.LoadInt32(&fw.closes); got != 1 {
+		t.Fatalf("underlying Writer.Close should be called exactly once; got %d", got)
+	}
+}

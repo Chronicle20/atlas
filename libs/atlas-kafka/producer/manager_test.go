@@ -119,3 +119,29 @@ func TestManager_IdempotentClose(t *testing.T) {
 		t.Fatalf("underlying Writer.Close should be called exactly once; got %d", got)
 	}
 }
+
+func TestManager_CloseErrorsDoNotShortCircuit(t *testing.T) {
+	ResetInstance()
+	writers := map[string]*fakeWriter{
+		"A": {topicName: "A"},
+		"B": {topicName: "B", closeErr: errors.New("boom")},
+		"C": {topicName: "C"},
+	}
+	factory := func(topicName string) Writer { return writers[topicName] }
+	m := GetManager(ConfigWriterFactory(factory))
+	l, _ := test.NewNullLogger()
+
+	for _, k := range []string{"A", "B", "C"} {
+		if _, err := m.Writer(l, k); err != nil {
+			t.Fatalf("Writer(%s): %v", k, err)
+		}
+	}
+	if err := m.Close(l); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	for k, w := range writers {
+		if got := atomic.LoadInt32(&w.closes); got != 1 {
+			t.Fatalf("writer %s closed %d times; want 1", k, got)
+		}
+	}
+}

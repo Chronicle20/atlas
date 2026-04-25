@@ -37,7 +37,7 @@ type Processor interface {
 	StartControl(uniqueId uint32, controllerId uint32) (Model, error)
 	StopControl(m Model) error
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
-	Damage(id uint32, characterId uint32, damage uint32, attackType byte)
+	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
 	Move(id uint32, x int16, y int16, stance byte) error
 	Destroy(uniqueId uint32) error
@@ -226,8 +226,16 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 	return err
 }
 
-// Damage applies damage to a monster
-func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, attackType byte) {
+// Damage applies a sequence of damage lines from a single attack to a monster.
+// Lines are applied in order; if any line kills the monster, later lines are
+// dropped (overkill discarded). Always emits a `damaged` event reflecting the
+// final state, plus a `killed` event when the attack lands a kill, so the
+// channel writes the final HP-bar packet before the death animation.
+func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, attackType byte) {
+	if len(damages) == 0 {
+		return
+	}
+
 	m, err := GetMonsterRegistry().GetMonster(p.t, id)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster [%d].", id)
@@ -238,73 +246,77 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damage uint32, att
 		return
 	}
 
-	// Check for damage reflection
+	// Reflect runs once per attack, not once per line.
 	p.checkReflect(m, characterId, attackType)
 
 	// Fetch monster info for boss flag and revives
 	var isBoss bool
 	var revives []uint32
-	ma, infoErr := information.GetById(p.l)(p.ctx)(m.MonsterId())
-	if infoErr == nil {
+	if ma, infoErr := information.GetById(p.l)(p.ctx)(m.MonsterId()); infoErr == nil {
 		isBoss = ma.Boss()
 		revives = ma.Revives()
 	}
 
-	s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, damage, m.UniqueId())
-	if err != nil {
-		p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
-		return
+	var last DamageSummary
+	killed := false
+	for _, d := range damages {
+		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId())
+		if err != nil {
+			p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
+			return
+		}
+		last = s
+		if s.Killed {
+			killed = true
+			break // discard overkill
+		}
 	}
 
-	if s.Killed {
+	// Always emit damaged so the channel writes the final HP-bar packet,
+	// even when the attack lands a kill.
+	if err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
+		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
+	}
+
+	if killed {
 		// Clear cooldowns and drop timer on death
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
 		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
 
 		// Emit cancellation events for any active status effects before death
-		for _, se := range s.Monster.StatusEffects() {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(s.Monster, se))
+		for _, se := range last.Monster.StatusEffects() {
+			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(last.Monster, se))
 		}
 
-		err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(s.Monster, s.CharacterId, isBoss, s.Monster.DamageSummary()))
-		if err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", s.Monster.UniqueId())
+		if err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
+			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 		}
-		_, err = GetMonsterRegistry().RemoveMonster(p.ctx, p.t, s.Monster.UniqueId())
-		if err != nil {
-			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", s.Monster.UniqueId())
+		if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, last.Monster.UniqueId()); err != nil {
+			p.l.WithError(err).Errorf("Monster [%d] killed, but not removed from registry.", last.Monster.UniqueId())
 		}
 
 		// Boss revive: spawn next phase monsters
 		if len(revives) > 0 {
-			p.spawnRevives(s.Monster, revives)
+			p.spawnRevives(last.Monster, revives)
 		}
 		return
 	}
 
-	if characterId != s.Monster.ControlCharacterId() {
-		dl := s.Monster.DamageLeader() == characterId
-		p.l.Debugf("Character [%d] has become damage leader. They should now control the monster.", characterId)
-		if dl {
-			m, err := p.GetById(s.Monster.UniqueId())
+	// Damage-leader re-control runs once after the full attack.
+	if characterId != last.Monster.ControlCharacterId() {
+		if last.Monster.DamageLeader() == characterId {
+			p.l.Debugf("Character [%d] has become damage leader. They should now control the monster.", characterId)
+			m2, err := p.GetById(last.Monster.UniqueId())
 			if err != nil {
 				return
 			}
-
-			err = p.StopControl(m)
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", s.Monster.ControlCharacterId(), s.Monster.UniqueId())
+			if err := p.StopControl(m2); err != nil {
+				p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
 			}
-			_, err = p.StartControl(m.UniqueId(), characterId)
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, m.UniqueId())
+			if _, err := p.StartControl(m2.UniqueId(), characterId); err != nil {
+				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, m2.UniqueId())
 			}
 		}
-	}
-
-	err = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(s.Monster, s.CharacterId, s.CharacterId, isBoss, DamageSourceCharacterAttack, s.Monster.DamageSummary()))
-	if err != nil {
-		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", s.Monster.UniqueId())
 	}
 }
 

@@ -33,10 +33,13 @@ type testDocumentEntity struct {
 func (testDocumentEntity) TableName() string { return "documents" }
 
 type testSearchIndexEntity struct {
-	TenantId  uuid.UUID `gorm:"type:text;primaryKey"`
-	ItemId    uint32    `gorm:"primaryKey"`
-	Name      string    `gorm:"not null"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	TenantId    uuid.UUID `gorm:"type:text;primaryKey"`
+	ItemId      uint32    `gorm:"primaryKey"`
+	Name        string    `gorm:"not null"`
+	Compartment uint8     `gorm:"not null;default:0"`
+	Subcategory string    `gorm:"not null;default:''"`
+	JobMask     *uint8
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 func (testSearchIndexEntity) TableName() string { return "item_string_search_index" }
@@ -62,8 +65,20 @@ func newSearchTenant(t *testing.T) tenant.Model {
 }
 
 func seedIdx(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string) {
+	seedIdxFull(t, db, ctx, tenantId, id, name, 0, "", nil)
+}
+
+func seedIdxFull(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string, compartment uint8, subcategory string, jobMask *uint8) {
 	t.Helper()
-	row := testSearchIndexEntity{TenantId: tenantId, ItemId: id, Name: name, UpdatedAt: time.Now()}
+	row := testSearchIndexEntity{
+		TenantId:    tenantId,
+		ItemId:      id,
+		Name:        name,
+		Compartment: compartment,
+		Subcategory: subcategory,
+		JobMask:     jobMask,
+		UpdatedAt:   time.Now(),
+	}
 	require.NoError(t, db.WithContext(ctx).Create(&row).Error)
 }
 

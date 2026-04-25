@@ -72,8 +72,13 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
   const a = asset.attributes;
   const category = getCategory(templateId);
 
+  // Two-column key/value grid where labels in column 1 and column 3 each
+  // size to their widest content (`max-content`) — that's what makes the
+  // values line up vertically across rows like the in-game tooltip.
+  const colsStyle = { gridTemplateColumns: "max-content auto max-content auto" };
+
   return (
-    <div className="space-y-2 max-w-xs">
+    <div className="space-y-2 w-[400px]">
       {/* Header — icon + name (+ optional slot label) */}
       <div className="flex items-center gap-2">
         {itemDataQuery.iconUrl && (
@@ -91,7 +96,7 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
 
       {/* Equipment — required stats (always shown as a fixed list) */}
       {isEquipment && eq && (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+        <dl className="grid gap-x-3 gap-y-0.5 text-xs" style={colsStyle}>
           <ReqRow label="REQ LEV" value={eq.reqLevel} />
           <ReqRow label="REQ POP" value={eq.reqPop} />
           <ReqRow label="REQ STR" value={eq.reqStr} />
@@ -99,7 +104,7 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
           <ReqRow label="REQ INT" value={eq.reqInt} />
           <ReqRow label="REQ LUK" value={eq.reqLuk} />
           {eq.reqFame > 0 && <ReqRow label="REQ FAM" value={eq.reqFame} />}
-        </div>
+        </dl>
       )}
 
       {/* Equipment — class eligibility row */}
@@ -129,7 +134,7 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
 
       {/* Equipment — actual stats from the asset (only non-zero rendered) */}
       {isEquipment && (
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+        <dl className="grid gap-x-3 gap-y-0.5 text-xs" style={colsStyle}>
           <StatRow label="STR" value={a.strength} />
           <StatRow label="DEX" value={a.dexterity} />
           <StatRow label="INT" value={a.intelligence} />
@@ -146,21 +151,15 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
           <StatRow label="JUMP" value={a.jump} />
           {a.level > 0 && <StatRow label="ITEM LEV" value={a.level} />}
           {a.experience > 0 && <StatRow label="ITEM EXP" value={a.experience} />}
-        </div>
+        </dl>
       )}
 
       {/* Equipment — upgrade slots & hammers (always shown for equipment) */}
       {isEquipment && (
-        <div className="text-xs space-y-0.5">
-          <div>
-            <span className="text-muted-foreground">UPGRADES AVAILABLE: </span>
-            <span>{a.slots}</span>
-          </div>
-          <div>
-            <span className="text-muted-foreground">HAMMERS APPLIED: </span>
-            <span>{a.hammersApplied}</span>
-          </div>
-        </div>
+        <dl className="grid gap-x-3 gap-y-0.5 text-xs" style={colsStyle}>
+          <SimpleRow label="UPGRADES AVAILABLE" value={a.slots} />
+          <SimpleRow label="HAMMERS APPLIED" value={a.hammersApplied} />
+        </dl>
       )}
 
       {/* Non-equipment — quantity + expiration only */}
@@ -181,21 +180,33 @@ export function AssetTooltipContent({ asset, itemName, slotName }: Props) {
   );
 }
 
+// `<dt>` and `<dd>` participate in the parent grid's column layout so labels
+// across rows line up at a consistent width. The wrapping `<></>` keeps the
+// pair in DOM order without injecting an extra grid item.
 function ReqRow({ label, value }: { label: string; value: number }) {
   return (
-    <div className="flex justify-between gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span>{value}</span>
-    </div>
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd>{value}</dd>
+    </>
   );
 }
 
 function StatRow({ label, value }: { label: string; value: number }) {
   if (value === 0) return null;
   return (
-    <div className="flex justify-between gap-2">
-      <span className="text-muted-foreground">{label}</span>
-      <span>+{value}</span>
-    </div>
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd>+{value}</dd>
+    </>
+  );
+}
+
+function SimpleRow({ label, value }: { label: string; value: number }) {
+  return (
+    <>
+      <dt className="text-muted-foreground">{label}</dt>
+      <dd>{value}</dd>
+    </>
   );
 }

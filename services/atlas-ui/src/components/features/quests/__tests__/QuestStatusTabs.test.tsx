@@ -1,23 +1,20 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import type { CharacterQuestStatus } from "@/types/models/quest";
 import type { Tenant } from "@/types/models/tenant";
 
 const getStartedMock = vi.fn();
 const getCompletedMock = vi.fn();
-const useTenantMock = vi.fn();
 
 vi.mock("@/services/api/quest-status.service", () => ({
     questStatusService: {
         getStartedQuests: (...args: unknown[]) => getStartedMock(...args),
         getCompletedQuests: (...args: unknown[]) => getCompletedMock(...args),
     },
-}));
-
-vi.mock("@/context/tenant-context", () => ({
-    useTenant: () => useTenantMock(),
 }));
 
 vi.mock("@/components/features/quests/EntityName", () => ({
@@ -52,64 +49,69 @@ function makeStatus(
     };
 }
 
-function renderTabs() {
-    return render(
-        <MemoryRouter>
-            <QuestStatusTabs characterId="7" tenant={fakeTenant} />
-        </MemoryRouter>,
+function wrapper({ children }: { children: ReactNode }) {
+    const qc = new QueryClient({
+        defaultOptions: { queries: { retry: false } },
+    });
+    return (
+        <QueryClientProvider client={qc}>
+            <MemoryRouter>{children}</MemoryRouter>
+        </QueryClientProvider>
     );
 }
 
 describe("QuestStatusTabs (baseline)", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        useTenantMock.mockReturnValue({ activeTenant: fakeTenant });
         getStartedMock.mockResolvedValue([]);
         getCompletedMock.mockResolvedValue([]);
     });
 
     it("renders the empty-state copy when no quests are returned", async () => {
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
         expect(
             await screen.findByText(/No quests in progress/i),
         ).toBeInTheDocument();
     });
 
-    it("shows the count description line after fetching", async () => {
-        getStartedMock.mockResolvedValue([makeStatus("1001"), makeStatus("1002")]);
-        getCompletedMock.mockResolvedValue([makeStatus("2001")]);
-        renderTabs();
-        expect(
-            await screen.findByText(/2 in progress, 1 completed/i),
-        ).toBeInTheDocument();
+    it("does NOT render an outer Card wrapper", () => {
+        const { container } = render(
+            <QuestStatusTabs characterId="42" tenant={fakeTenant} />,
+            { wrapper },
+        );
+        // The component should render only Tabs at root, no Card.
+        expect(container.querySelector('[data-slot="card"]')).toBeNull();
     });
 
-    it("clicking Refresh re-runs both fetchers", async () => {
-        renderTabs();
-        await screen.findByText(/No quests in progress/i);
-        expect(getStartedMock).toHaveBeenCalledTimes(1);
-        expect(getCompletedMock).toHaveBeenCalledTimes(1);
+    it("does NOT render a Refresh button", () => {
+        render(<QuestStatusTabs characterId="42" tenant={fakeTenant} />, { wrapper });
+        expect(
+            screen.queryByRole("button", { name: /refresh/i }),
+        ).toBeNull();
+    });
 
-        const user = userEvent.setup();
-        await user.click(screen.getByRole("button", { name: "" }));
-        await waitFor(() => {
-            expect(getStartedMock).toHaveBeenCalledTimes(2);
-            expect(getCompletedMock).toHaveBeenCalledTimes(2);
-        });
+    it("preserves Started (N) and Completed (N) tab counts", async () => {
+        getStartedMock.mockResolvedValue([
+            makeStatus("1001"),
+            makeStatus("1002"),
+        ]);
+        getCompletedMock.mockResolvedValue([makeStatus("2001")]);
+        render(<QuestStatusTabs characterId="42" tenant={fakeTenant} />, { wrapper });
+        expect(await screen.findByText(/Started \(2\)/)).toBeInTheDocument();
+        expect(screen.getByText(/Completed \(1\)/)).toBeInTheDocument();
     });
 });
 
 describe("QuestStatusTabs (grid + widget behavior)", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        useTenantMock.mockReturnValue({ activeTenant: fakeTenant });
         getStartedMock.mockResolvedValue([]);
         getCompletedMock.mockResolvedValue([]);
     });
 
     it("renders the Started tab list in a responsive grid container", async () => {
         getStartedMock.mockResolvedValue([makeStatus("1001")]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         const name = await screen.findByTestId("quest-name-1001");
         const grid = name.closest('[data-testid="quest-grid"]');
@@ -123,7 +125,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
 
     it("wraps each widget in a single <a> link to /quests/:questId", async () => {
         getStartedMock.mockResolvedValue([makeStatus("1001")]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         const name = await screen.findByTestId("quest-name-1001");
         const link = name.closest("a");
@@ -141,7 +143,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
                 progress: [{ infoNumber: 5, progress: "10/30" }],
             }),
         ]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         await screen.findByTestId("quest-name-1001");
         expect(screen.queryByText(/#5:/)).toBeNull();
@@ -152,7 +154,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
         getStartedMock.mockResolvedValue([
             makeStatus("1001", { expirationTime: "2030-01-01T00:00:00Z" }),
         ]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         await screen.findByTestId("quest-name-1001");
         expect(screen.queryByText(/Expires:/i)).toBeNull();
@@ -160,7 +162,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
 
     it("does NOT render a separate ExternalLink icon button", async () => {
         getStartedMock.mockResolvedValue([makeStatus("1001")]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         await screen.findByTestId("quest-name-1001");
         // The old icon button used lucide's ExternalLink; the new widget has
@@ -176,7 +178,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
             makeStatus("1002", { completedCount: 1 }),
             makeStatus("1003", { completedCount: 4 }),
         ]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         await screen.findByTestId("quest-name-1003");
         expect(screen.queryByText("x0")).toBeNull();
@@ -194,7 +196,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
                 completedAt: "2026-04-02T00:00:00Z",
             }),
         ]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         // Started tab is default; completed-at from a started-tab row must not render.
         await screen.findByTestId("quest-name-1001");
@@ -211,7 +213,7 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
 
     it("renders the empty-completed message on the Completed tab when the list is empty", async () => {
         getCompletedMock.mockResolvedValue([]);
-        renderTabs();
+        render(<QuestStatusTabs characterId="7" tenant={fakeTenant} />, { wrapper });
 
         const user = userEvent.setup();
         await user.click(
@@ -220,23 +222,5 @@ describe("QuestStatusTabs (grid + widget behavior)", () => {
         expect(
             await screen.findByText(/No completed quests/i),
         ).toBeInTheDocument();
-    });
-
-    it("surfaces the error card with Retry when the fetch rejects", async () => {
-        getStartedMock.mockRejectedValueOnce(new Error("network down"));
-        renderTabs();
-
-        expect(await screen.findByText(/network down/i)).toBeInTheDocument();
-        const retry = screen.getByRole("button", { name: /Retry/i });
-
-        // Retry must call both fetchers again.
-        getStartedMock.mockResolvedValueOnce([]);
-        getCompletedMock.mockResolvedValueOnce([]);
-        const user = userEvent.setup();
-        await user.click(retry);
-
-        await waitFor(() => {
-            expect(getStartedMock.mock.calls.length).toBeGreaterThanOrEqual(2);
-        });
     });
 });

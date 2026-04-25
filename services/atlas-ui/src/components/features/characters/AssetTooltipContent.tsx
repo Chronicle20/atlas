@@ -2,8 +2,8 @@ import type { Asset } from "@/services/api/inventory.service";
 
 interface Props {
   asset: Asset;
-  itemName?: string;
-  slotName?: string;
+  itemName?: string | undefined;
+  slotName?: string | undefined;
 }
 
 type Field = {

@@ -34,7 +34,7 @@ export function useCharacterGuild(
     gcTime: 5 * 60 * 1000,
   });
 
-  const guild = query.data && query.data.length > 0 ? query.data[0] : null;
+  const guild = query.data?.[0] ?? null;
 
   return {
     guild: query.isError ? null : guild,

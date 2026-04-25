@@ -9,12 +9,12 @@ import { AssetTooltipContent } from "./AssetTooltipContent";
 interface Props {
   slotId: number;
   slotName: string;
-  asset?: Asset;
+  asset?: Asset | undefined;
   tenant: Tenant;
-  itemName?: string;
+  itemName?: string | undefined;
 }
 
-export function EquipmentCell({ slotId, slotName, asset, tenant, itemName }: Props) {
+export function EquipmentCell({ slotName, asset, tenant, itemName }: Props) {
   return (
     <div className="aspect-square border rounded">
       {asset ? (

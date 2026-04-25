@@ -9,8 +9,8 @@ import { cn } from "@/lib/utils";
 
 interface Props {
   skillId: number;
-  learnedLevel?: number;
-  learnedMasterLevel?: number;
+  learnedLevel?: number | undefined;
+  learnedMasterLevel?: number | undefined;
   tenant: Tenant;
 }
 

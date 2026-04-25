@@ -11,6 +11,7 @@ import (
 type SkillString struct {
 	id   string
 	name string
+	desc string
 }
 
 func (s SkillString) GetID() string {
@@ -19,6 +20,10 @@ func (s SkillString) GetID() string {
 
 func (s SkillString) Name() string {
 	return s.name
+}
+
+func (s SkillString) Desc() string {
+	return s.desc
 }
 
 var ssReg *document.Registry[string, SkillString]
@@ -49,6 +54,7 @@ func InitString(t tenant.Model, path string) error {
 		_, err = GetSkillStringRegistry().Add(t, SkillString{
 			id:   node.Name,
 			name: name,
+			desc: node.GetString("desc", ""),
 		})
 		if err != nil {
 			return err

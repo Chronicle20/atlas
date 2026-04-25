@@ -168,10 +168,10 @@ The existing parent table is unchanged. Recipes are derived data and live in the
 
 ### 7.2 atlas-ui
 
-- Add `services/api/craft-recipes.service.ts` exposing `getByItem(itemId)` and `getByNpc(npcId)`.
-- Add `lib/hooks/api/useItemCraftRecipes.ts` and `lib/hooks/api/useNpcCraftRecipes.ts`.
-- Add `components/features/items/ItemCraftRecipeWidget.tsx` and `components/features/items/CraftableAtCard.tsx`.
-- Add `components/features/npc/NpcCraftsCard.tsx` and any item-row sub-component.
+- Add `services/api/recipes.service.ts` exposing `getByItem(itemId)` and `getByNpc(npcId)`.
+- Add `lib/hooks/api/useItemRecipes.ts` and `lib/hooks/api/useNpcRecipes.ts`.
+- Add `components/features/items/RecipeWidget.tsx` and `components/features/items/RecipesByItemCard.tsx`.
+- Add `components/features/npc/RecipesByNpcCard.tsx` and any item-row sub-component.
 - Update `pages/ItemDetailPage.tsx` to include the new card between `Sold By` and `Dropped By`.
 - Update `pages/NpcDetailPage.tsx` to include the new card after existing content.
 - Material/item names must come through the existing `itemsService.getItemName` cache.

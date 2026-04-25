@@ -12,8 +12,15 @@ import (
 // equipment row in the search index. The caller-supplied tx is the same
 // transaction equipment.Register uses, so this UPDATE participates in any
 // rollback.
+//
+// Precondition: the StringStorage.Add pass already wrote the search-index row
+// for this item; if it didn't, GORM's Updates is a silent no-op (RowsAffected=0)
+// rather than an error.
 func UpdateEquipmentClassification(tx *gorm.DB, ctx context.Context, itemId uint32, slotWZ string, reqJob uint16) error {
 	t := tenant.MustFromContext(ctx)
+	// Bits 0..4 = Warrior/Magician/Bowman/Thief/Pirate per PRD §4.3.
+	// Verify against seed-tenant rows during Task 9 ingest verification —
+	// some wz forks shift the layout by one bit.
 	mask := uint8(reqJob & 0x1F)
 
 	updates := map[string]interface{}{

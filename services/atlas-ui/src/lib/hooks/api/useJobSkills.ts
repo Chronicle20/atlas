@@ -15,7 +15,7 @@ export function useJobSkills(
   return useQuery({
     queryKey: jobSkillsKeys.detail(tenant?.id, jobId),
     queryFn: () => jobsService.getSkillsByJobId(jobId),
-    enabled: !!tenant?.id && jobId > 0,
+    enabled: !!tenant?.id && jobId >= 0,
     staleTime: 30 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
   });

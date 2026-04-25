@@ -23,6 +23,13 @@ vi.mock("@/lib/hooks/useIntersectionObserver", () => ({
   useLazyLoad: () => ({ shouldLoad: true, ref: { current: null } }),
 }));
 
+// AssetTooltipContent now uses useEquipmentData. The grid test doesn't
+// open tooltips in jsdom, but Radix may still mount the content subtree
+// during interaction; stub the hook so it never reaches React Query.
+vi.mock("@/lib/hooks/api/useEquipmentData", () => ({
+  useEquipmentData: () => ({ data: undefined, isLoading: false, isError: false }),
+}));
+
 import { InventoryGrid } from "../InventoryGrid";
 
 const makeCompartment = (capacity: number): Compartment => ({

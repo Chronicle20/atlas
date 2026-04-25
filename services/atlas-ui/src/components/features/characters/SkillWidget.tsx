@@ -19,10 +19,15 @@ export function SkillWidget({ skillId, learnedLevel, learnedMasterLevel, tenant 
   if (isLoading) return <Skeleton className="h-24 w-full" />;
   if (!data) return null;
 
-  const masterLevel = learnedMasterLevel ?? data.effects.length;
+  // The skill's true max level is effects.length (each effect entry = one
+  // master-level row). atlas-skills's per-character `masterLevel` is a soft
+  // cap that may be 0 for unlearned skills, so fall back to the definition.
+  const masterLevel = learnedMasterLevel && learnedMasterLevel > 0
+    ? learnedMasterLevel
+    : data.effects.length;
   const learned = learnedLevel != null && learnedLevel > 0;
   const displayLevel = learnedLevel ?? 0;
-  const levelLine = masterLevel > 0 ? `${displayLevel} / ${masterLevel}` : `${displayLevel}`;
+  const levelLine = `${displayLevel} / ${masterLevel}`;
 
   return (
     <TooltipProvider>

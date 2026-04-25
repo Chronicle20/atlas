@@ -131,7 +131,15 @@ func ConversationRewardNoticeProvider(characterId uint32, kind string, itemId ui
 // EmitConversationRewardNotice produces the message immediately on the
 // conversation_reward_notice topic. Called from the orchestrator when a
 // reward step completes with ShowEffect=true.
+//
+// Tests may override emitConversationRewardNoticeFn to capture or stub calls.
+var emitConversationRewardNoticeFn = emitConversationRewardNoticeImpl
+
 func EmitConversationRewardNotice(l logrus.FieldLogger, ctx context.Context, characterId uint32, kind string, itemId uint32, quantity uint32) error {
+	return emitConversationRewardNoticeFn(l, ctx, characterId, kind, itemId, quantity)
+}
+
+func emitConversationRewardNoticeImpl(l logrus.FieldLogger, ctx context.Context, characterId uint32, kind string, itemId uint32, quantity uint32) error {
 	return producer.ProviderImpl(l)(ctx)(conversation_reward_notice.EnvEventTopic)(
 		ConversationRewardNoticeProvider(characterId, kind, itemId, quantity),
 	)

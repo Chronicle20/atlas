@@ -65,39 +65,63 @@ func handleCharacterMapChangedEvent(l logrus.FieldLogger, ctx context.Context, e
 	if e.Type != character2.StatusEventTypeMapChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMapChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCharacterExperienceChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.ExperienceChangedStatusEventBody]) {
 	if e.Type != character2.StatusEventTypeExperienceChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterExperienceChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCharacterLevelChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.LevelChangedStatusEventBody]) {
 	if e.Type != character2.StatusEventTypeLevelChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterLevelChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCharacterMesoChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.MesoChangedStatusEventBody]) {
 	if e.Type != character2.StatusEventTypeMesoChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMesoChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCharacterJobChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.JobChangedStatusEventBody]) {
 	if e.Type != character2.StatusEventTypeJobChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterJobChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleCharacterCreatedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventCreatedBody]) {
 	if e.Type != character2.StatusEventTypeCreated {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterCreated); !ok {
 		return
 	}
 
@@ -108,11 +132,15 @@ func handleCharacterCreatedEvent(l logrus.FieldLogger, ctx context.Context, e ch
 		"world_id":       e.WorldId,
 	}).Debug("Character created successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompletedWithResult(e.TransactionId, true, map[string]any{"characterId": e.CharacterId})
+	_ = p.StepCompletedWithResult(e.TransactionId, true, map[string]any{"characterId": e.CharacterId})
 }
 
 func handleCharacterCreationFailedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventCreationFailedBody]) {
 	if e.Type != character2.StatusEventTypeCreationFailed {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterCreationFailed); !ok {
 		return
 	}
 
@@ -123,11 +151,15 @@ func handleCharacterCreationFailedEvent(l logrus.FieldLogger, ctx context.Contex
 		"world_id":       e.WorldId,
 	}).Error("Character creation failed, marking saga step as failed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }
 
 func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventMesoErrorBody]) {
 	if e.Type != character2.StatusEventTypeError {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterMesoError); !ok {
 		return
 	}
 
@@ -139,14 +171,18 @@ func handleCharacterMesoErrorEvent(l logrus.FieldLogger, ctx context.Context, e 
 		"world_id":       e.WorldId,
 	}).Error("Character meso operation error occurred, marking saga step as failed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }
 
 func handleCharacterStatChangedEvent(l logrus.FieldLogger, ctx context.Context, e character2.StatusEvent[character2.StatusEventStatChangedBody]) {
 	if e.Type != character2.StatusEventTypeStatChanged {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterStatChanged); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 // handleCharacterDeletedEvent drives StepCompleted(true) when atlas-character
@@ -156,9 +192,13 @@ func handleCharacterDeletedEvent(l logrus.FieldLogger, ctx context.Context, e ch
 	if e.Type != character2.StatusEventTypeDeleted {
 		return
 	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindCharacterDeleted); !ok {
+		return
+	}
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
 		"character_id":   e.CharacterId,
 	}).Debug("Character deleted, marking saga compensation step completed.")
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = p.StepCompleted(e.TransactionId, true)
 }

@@ -46,11 +46,16 @@ func handleBuddyCapacityChangedEvent(l logrus.FieldLogger, ctx context.Context, 
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindBuddyCapacityChanged); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.Body.TransactionId.String(),
 		"character_id":   e.CharacterId,
 		"new_capacity":   e.Body.Capacity,
 	}).Debug("Buddy capacity changed successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

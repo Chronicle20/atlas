@@ -44,19 +44,31 @@ func handleQuestStartedEvent(l logrus.FieldLogger, ctx context.Context, e quest2
 	if e.Type != quest2.StatusEventTypeStarted {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindQuestStarted); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleQuestCompletedEvent(l logrus.FieldLogger, ctx context.Context, e quest2.StatusEvent[quest2.QuestCompletedEventBody]) {
 	if e.Type != quest2.StatusEventTypeCompleted {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindQuestCompleted); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleQuestForfeitedEvent(l logrus.FieldLogger, ctx context.Context, e quest2.StatusEvent[quest2.QuestForfeitedEventBody]) {
 	if e.Type != quest2.StatusEventTypeForfeited {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindQuestForfeited); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }

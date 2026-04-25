@@ -45,6 +45,10 @@ func handleCreatedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invit
 	if e.Type != invite.StatusTypeCreated {
 		return
 	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindInviteCreated); !ok {
+		return
+	}
 
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.TransactionId.String(),
@@ -54,11 +58,15 @@ func handleCreatedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invit
 		"target_id":      e.Body.TargetId,
 	}).Debug("Received invite created event.")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.AcceptedEventBody]) {
 	if e.Type != invite.StatusTypeAccepted {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindInviteAccepted); !ok {
 		return
 	}
 
@@ -70,11 +78,15 @@ func handleAcceptedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invi
 		"target_id":      e.Body.TargetId,
 	}).Debug("Received invite accepted event.")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleRejectedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invite2.StatusEvent[invite2.RejectedEventBody]) {
 	if e.Type != invite.StatusTypeRejected {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindInviteRejected); !ok {
 		return
 	}
 
@@ -86,5 +98,5 @@ func handleRejectedStatusEvent(l logrus.FieldLogger, ctx context.Context, e invi
 		"target_id":      e.Body.TargetId,
 	}).Debug("Received invite rejected event.")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, false)
+	_ = p.StepCompleted(e.TransactionId, false)
 }

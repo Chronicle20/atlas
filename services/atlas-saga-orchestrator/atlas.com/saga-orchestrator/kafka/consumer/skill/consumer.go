@@ -44,14 +44,22 @@ func handleSkillCreatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2
 	if e.Type != skill2.StatusEventTypeCreated {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindSkillCreated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleSkillUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e skill2.StatusEvent[skill2.StatusEventUpdatedBody]) {
 	if e.Type != skill2.StatusEventTypeUpdated {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindSkillUpdated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 // handleSkillDeletedEvent drives StepCompleted(true) when atlas-skills responds
@@ -60,5 +68,9 @@ func handleSkillDeletedEvent(l logrus.FieldLogger, ctx context.Context, e skill2
 	if e.Type != skill2.StatusEventTypeDeleted {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindSkillDeleted); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }

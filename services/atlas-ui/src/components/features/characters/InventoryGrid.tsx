@@ -1,5 +1,12 @@
 import { useEffect, useMemo } from 'react';
 import { InventoryCard, InventoryCardSkeleton } from './InventoryCard';
+import { AssetTooltipContent } from './AssetTooltipContent';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useItemDataCache } from '@/lib/hooks/useItemData';
 import type { Asset, Compartment } from '@/services/api/inventory.service';
@@ -190,22 +197,10 @@ export function InventoryGrid({
     }
   }, [itemIds, warmCache, isLoading]);
 
-  // Calculate grid columns based on capacity
-  const getGridColumns = (capacity: number): string => {
-    // For common inventory sizes, use optimized layouts
-    if (capacity <= 8) return 'grid-cols-4';
-    if (capacity <= 16) return 'grid-cols-4';
-    if (capacity <= 24) return 'grid-cols-6';
-    if (capacity <= 32) return 'grid-cols-8';
-    if (capacity <= 48) return 'grid-cols-8';
-    if (capacity <= 64) return 'grid-cols-8';
-    if (capacity <= 96) return 'grid-cols-12';
-    
-    // For larger inventories, use 12 columns
-    return 'grid-cols-12';
-  };
-
-  const gridColumns = getGridColumns(compartment.attributes.capacity);
+  // Fixed responsive grid: 4 cols on mobile, 8 on small screens, 12 on large.
+  // Replaces the previous capacity-based getGridColumns adaptive logic so every
+  // compartment renders with the same column counts regardless of capacity.
+  const gridColumns = 'grid-cols-4 sm:grid-cols-8 lg:grid-cols-12';
 
   const handleSlotClick = (slotIndex: number) => {
     if (onSlotClick && !isLoading) {
@@ -224,32 +219,55 @@ export function InventoryGrid({
   }
 
   return (
-    <div className={cn("grid gap-3", gridColumns, className)}>
-      {gridSlots.map(({ slotIndex, asset }) => (
-        <div
-          key={slotIndex}
-          className={cn(
+    <TooltipProvider>
+      <div className={cn("grid gap-3", gridColumns, className)}>
+        {gridSlots.map(({ slotIndex, asset }) => {
+          const cellClassName = cn(
             "flex items-center justify-center",
             isDragEnabled && "cursor-pointer",
             !asset && onSlotClick && "hover:bg-muted/30 rounded-lg"
-          )}
-          onClick={() => handleSlotClick(slotIndex)}
-          data-slot={slotIndex}
-          data-testid={`inventory-slot-${slotIndex}`}
-        >
-          {asset ? (
-            <InventoryCard
-              asset={asset}
-              {...(onDeleteAsset && { onDelete: () => onDeleteAsset(asset.id) })}
-              isDeleting={deletingAssetId === asset.id}
-              shouldPreload={slotIndex < 12}
-            />
-          ) : (
-            <EmptySlot slotIndex={slotIndex} />
-          )}
-        </div>
-      ))}
-    </div>
+          );
+
+          if (!asset) {
+            return (
+              <div
+                key={slotIndex}
+                className={cellClassName}
+                onClick={() => handleSlotClick(slotIndex)}
+                data-slot={slotIndex}
+                data-testid={`inventory-slot-${slotIndex}`}
+              >
+                <EmptySlot slotIndex={slotIndex} />
+              </div>
+            );
+          }
+
+          return (
+            <Tooltip key={slotIndex}>
+              <TooltipTrigger asChild>
+                <div
+                  tabIndex={0}
+                  className={cellClassName}
+                  onClick={() => handleSlotClick(slotIndex)}
+                  data-slot={slotIndex}
+                  data-testid={`inventory-slot-${slotIndex}`}
+                >
+                  <InventoryCard
+                    asset={asset}
+                    {...(onDeleteAsset && { onDelete: () => onDeleteAsset(asset.id) })}
+                    isDeleting={deletingAssetId === asset.id}
+                    shouldPreload={slotIndex < 12}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
+                <AssetTooltipContent asset={asset} />
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 }
 
@@ -273,48 +291,6 @@ function EmptySlot({ slotIndex }: { slotIndex: number }) {
       </div>
     </div>
   );
-}
-
-/**
- * Calculates the optimal grid layout for different compartment types and capacities.
- * 
- * This function provides compartment-specific grid layouts optimized for different
- * types of inventory items. Equipment items use denser layouts, while bulk items
- * like ETC and Cash use wider layouts for better visibility.
- * 
- * ## Compartment Type Mappings
- * - **Type 1 (EQUIPABLES)**: Equipment items - focused, dense layout
- * - **Type 2 (CONSUMABLES)**: Potions, consumables - medium density
- * - **Type 3 (SETUP)**: Setup items - medium density
- * - **Type 4 (ETC)**: Miscellaneous items - wide layout for bulk
- * - **Type 5 (CASH)**: Cash shop items - wide layout for variety
- * 
- * @param compartmentType - The type of inventory compartment (1-5)
- * @param capacity - The maximum number of items the compartment can hold
- * @returns Tailwind CSS grid class string (e.g., 'grid-cols-4', 'grid-cols-8')
- * 
- * @example
- * ```typescript
- * // Equipment compartment with 24 slots
- * const layout = getOptimalGridLayout(1, 24); // Returns 'grid-cols-6'
- * 
- * // ETC compartment with 96 slots  
- * const layout = getOptimalGridLayout(4, 96); // Returns 'grid-cols-12'
- * ```
- */
-export function getOptimalGridLayout(compartmentType: number, capacity: number) {
-  switch (compartmentType) {
-    case 1: // EQUIPABLES - typically smaller, more focused layout
-      return capacity <= 16 ? 'grid-cols-4' : 'grid-cols-6';
-    case 2: // CONSUMABLES - medium layout
-    case 3: // SETUP - medium layout
-      return capacity <= 24 ? 'grid-cols-6' : 'grid-cols-8';
-    case 4: // ETC - larger layout for bulk items
-    case 5: // CASH - larger layout for various items
-      return capacity <= 32 ? 'grid-cols-8' : 'grid-cols-12';
-    default:
-      return capacity <= 24 ? 'grid-cols-6' : 'grid-cols-8';
-  }
 }
 
 /**

@@ -69,8 +69,9 @@ func (b *Builder) SetStimulatorFailChance(c float64) *Builder { b.m.stimulatorFa
 // Build returns a copy of the assembled Model. If id is unset, it is computed
 // deterministically from (tenantId, conversationId, stateId).
 func (b *Builder) Build() (Model, error) {
-	if b.m.id == uuid.Nil {
-		b.m.id = ComputeRecipeId(b.m.tenantId, b.m.conversationId, b.m.stateId)
+	m := b.m
+	if m.id == uuid.Nil {
+		m.id = ComputeRecipeId(m.tenantId, m.conversationId, m.stateId)
 	}
-	return b.m, nil
+	return m, nil
 }

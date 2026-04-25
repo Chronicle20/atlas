@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -221,4 +222,79 @@ func TestItemStringStorage_Add_RefreshesCompartmentOnReingest(t *testing.T) {
 	assert.Equal(t, "Clean Slate Scroll 1% (renamed)", row.Name)
 	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
 	assert.Equal(t, "scroll", row.Subcategory)
+}
+
+func TestParseFilters_Compartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	require.NotNil(t, spec.Compartment)
+	assert.Equal(t, CompartmentEquipment, *spec.Compartment)
+}
+
+func TestParseFilters_RejectsUnknownCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=foo")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_SubcategoryWithoutCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[subcategory]=bow")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.Equal(t, "bow", spec.Subcategory)
+}
+
+func TestParseFilters_RejectsUnknownSubcategory(t *testing.T) {
+	q := mustParseQuery(t, "filter[subcategory]=zzz-not-real")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsSubcategoryFromOtherCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=use&filter[subcategory]=bow")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_ClassAny(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=any")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.True(t, spec.ClassIsAny)
+	assert.Equal(t, "any", spec.Class)
+	assert.Equal(t, uint8(0), spec.JobMaskBits)
+}
+
+func TestParseFilters_ClassIntersection(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=warrior,bowman")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.False(t, spec.ClassIsAny)
+	assert.Equal(t, uint8(1|4), spec.JobMaskBits)
+}
+
+func TestParseFilters_RejectsClassWithoutEquipment(t *testing.T) {
+	q := mustParseQuery(t, "filter[class]=warrior")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsClassWithWrongCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=cash&filter[class]=warrior")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsUnknownClass(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=warrior,fighter")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func mustParseQuery(t *testing.T, raw string) url.Values {
+	t.Helper()
+	q, err := url.ParseQuery(raw)
+	require.NoError(t, err)
+	return q
 }

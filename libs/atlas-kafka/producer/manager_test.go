@@ -54,10 +54,6 @@ func TestManager_LazyCreate(t *testing.T) {
 	}
 }
 
-// Suppress unused-import warning until later tests reference these.
-var _ = sync.Once{}
-var _ = errors.New
-
 func TestManager_ConcurrentFirstTouch(t *testing.T) {
 	ResetInstance()
 	var built int32
@@ -143,5 +139,26 @@ func TestManager_CloseErrorsDoNotShortCircuit(t *testing.T) {
 		if got := atomic.LoadInt32(&w.closes); got != 1 {
 			t.Fatalf("writer %s closed %d times; want 1", k, got)
 		}
+	}
+}
+
+func TestManager_WriterAfterClose(t *testing.T) {
+	ResetInstance()
+	factory := func(topicName string) Writer { return &fakeWriter{topicName: topicName} }
+	m := GetManager(ConfigWriterFactory(factory))
+	l, _ := test.NewNullLogger()
+
+	if _, err := m.Writer(l, "PRE"); err != nil {
+		t.Fatalf("pre-close Writer: %v", err)
+	}
+	if err := m.Close(l); err != nil {
+		t.Fatalf("Close: %v", err)
+	}
+	if _, err := m.Writer(l, "POST"); !errors.Is(err, ErrManagerClosed) {
+		t.Fatalf("expected ErrManagerClosed; got %v", err)
+	}
+	// Topics already registered before close also reject lookups now.
+	if _, err := m.Writer(l, "PRE"); !errors.Is(err, ErrManagerClosed) {
+		t.Fatalf("expected ErrManagerClosed for already-registered topic; got %v", err)
 	}
 }

@@ -5,6 +5,7 @@ import (
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
+	monstertpl "atlas-data/monster"
 	"atlas-data/point"
 	"atlas-data/rest"
 	"net/http"
@@ -303,7 +304,8 @@ func handleGetMapMonstersRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 		return rest.ParseMapId(d.Logger(), func(mapId _map.Id) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
 				s := NewStorage(d.Logger(), db)
-				res, err := GetMonsters(s)(d.Context())(mapId)
+				ms := monstertpl.NewStorage(d.Logger(), db)
+				res, err := GetMonsters(s, ms)(d.Context())(mapId)
 				if err != nil {
 					d.Logger().WithError(err).Debugf("Unable to locate map %d.", mapId)
 					w.WriteHeader(http.StatusNotFound)

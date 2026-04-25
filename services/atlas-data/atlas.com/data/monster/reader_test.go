@@ -1310,4 +1310,53 @@ func TestReader(t *testing.T) {
 	if rm.TagBackgroundColor != 5 {
 		t.Errorf("TagBackgroundColor mismatch: got %d, expected 5", rm.TagBackgroundColor)
 	}
+	if rm.Flying {
+		t.Errorf("Flying mismatch for Pianus: got true, expected false")
+	}
+	if rm.Swimming {
+		t.Errorf("Swimming mismatch for Pianus: got true, expected false")
+	}
+}
+
+func TestReaderMobilityFlags(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	tests := []struct {
+		name         string
+		monsterId    int
+		mobName      string
+		animationKey string
+		wantFlying   bool
+		wantSwimming bool
+	}{
+		{name: "fly_animation_marks_flying", monsterId: 2230000, mobName: "FakeBat", animationKey: "fly", wantFlying: true, wantSwimming: false},
+		{name: "hover_animation_marks_swimming", monsterId: 2230100, mobName: "FakeFish", animationKey: "hover", wantFlying: false, wantSwimming: true},
+		{name: "swim_animation_marks_swimming", monsterId: 2230200, mobName: "FakeJellyfish", animationKey: "swim", wantFlying: false, wantSwimming: true},
+		{name: "move_animation_is_ground", monsterId: 100100, mobName: "FakeSnail", animationKey: "move", wantFlying: false, wantSwimming: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(tc.monsterId), name: tc.mobName})
+
+			body := `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="` + strconv.Itoa(tc.monsterId) + `.img">
+  <imgdir name="info"><int name="maxHP" value="100"/></imgdir>
+  <imgdir name="` + tc.animationKey + `"><canvas name="0"><int name="delay" value="120"/></canvas></imgdir>
+</imgdir>`
+
+			rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(body)))()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rm.Flying != tc.wantFlying {
+				t.Fatalf("Flying=%t, want %t", rm.Flying, tc.wantFlying)
+			}
+			if rm.Swimming != tc.wantSwimming {
+				t.Fatalf("Swimming=%t, want %t", rm.Swimming, tc.wantSwimming)
+			}
+		})
+	}
 }

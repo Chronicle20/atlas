@@ -53,6 +53,26 @@ func TestNewBuilder_BuildsExpectedModel(t *testing.T) {
 	}
 }
 
+func TestBuild_DoesNotMutateBuilderId(t *testing.T) {
+	b := NewBuilder().
+		SetTenantId(uuid.New()).
+		SetConversationId(uuid.New()).
+		SetStateId("craftWarrior0")
+	if _, err := b.Build(); err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+	// Change stateId; re-Build should produce a different id, not the cached one.
+	b.SetStateId("craftWarrior1")
+	m2, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build returned error: %v", err)
+	}
+	expected := ComputeRecipeId(b.m.tenantId, b.m.conversationId, "craftWarrior1")
+	if m2.Id() != expected {
+		t.Errorf("Build did not recompute id after stateId change: got %s, want %s", m2.Id(), expected)
+	}
+}
+
 func TestComputeRecipeId_Deterministic(t *testing.T) {
 	tenantId := uuid.New()
 	convId := uuid.New()

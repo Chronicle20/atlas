@@ -10,6 +10,7 @@
 import { useCallback, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTenant } from '@/context/tenant-context';
+import { getAssetIconUrl } from '@/lib/utils/asset-url';
 import { useSkillDefinition, skillDefinitionKeys } from './api/useSkillDefinition';
 
 export interface UseSkillDataOptions {
@@ -42,11 +43,22 @@ export function useSkillData(
     });
   }, [queryClient, activeTenant?.id, skillId]);
 
+  const deterministicIconUrl = activeTenant && skillId > 0
+    ? getAssetIconUrl(
+        activeTenant.id,
+        activeTenant.attributes.region,
+        activeTenant.attributes.majorVersion,
+        activeTenant.attributes.minorVersion,
+        'skill',
+        skillId,
+      )
+    : undefined;
+
   const skillData = query.data
     ? {
         id: query.data.id,
         name: query.data.name,
-        iconUrl: query.data.iconUrl,
+        iconUrl: query.data.iconUrl ?? deterministicIconUrl ?? '',
         cached: false,
       }
     : undefined;
@@ -55,7 +67,7 @@ export function useSkillData(
     ...query,
     skillData,
     name: query.data?.name,
-    iconUrl: query.data?.iconUrl,
+    iconUrl: query.data?.iconUrl ?? deterministicIconUrl,
     hasError: query.isError,
     errorMessage: query.error?.message,
     cached: false,

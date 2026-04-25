@@ -37,5 +37,10 @@ export function useSkillDefinition(
     enabled: !!tenant?.id && skillId > 0,
     staleTime: 30 * 60 * 1000,
     gcTime: 24 * 60 * 60 * 1000,
+    retry: (failureCount, error) => {
+      const msg = error?.message?.toLowerCase() ?? "";
+      if (msg.includes("404") || msg.includes("not found")) return false;
+      return failureCount < 3;
+    },
   });
 }

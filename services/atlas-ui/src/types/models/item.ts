@@ -1,3 +1,5 @@
+import type { Compartment } from "@/lib/items/taxonomy";
+
 export type ItemType = "Equipment" | "Consumable" | "Setup" | "Etc" | "Cash" | "Pet" | "Unknown";
 
 export function getItemType(itemId: string): ItemType {
@@ -26,10 +28,23 @@ export function getItemTypeBadgeVariant(type: ItemType): string {
   }
 }
 
+export function getCompartmentBadgeVariant(compartment: Compartment): string {
+  switch (compartment) {
+    case "equipment": return "bg-blue-100 text-blue-800";
+    case "use": return "bg-green-100 text-green-800";
+    case "setup": return "bg-purple-100 text-purple-800";
+    case "etc": return "bg-gray-100 text-gray-800";
+    case "cash": return "bg-yellow-100 text-yellow-800";
+    default: return "bg-gray-100 text-gray-800";
+  }
+}
+
 export interface ItemSearchResult {
   id: string;
   name: string;
   type: ItemType;
+  compartment: Compartment;
+  subcategory: string;
 }
 
 // Equipment detail attributes

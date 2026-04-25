@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"testing"
 	"time"
 
@@ -33,10 +34,13 @@ type testDocumentEntity struct {
 func (testDocumentEntity) TableName() string { return "documents" }
 
 type testSearchIndexEntity struct {
-	TenantId  uuid.UUID `gorm:"type:text;primaryKey"`
-	ItemId    uint32    `gorm:"primaryKey"`
-	Name      string    `gorm:"not null"`
-	UpdatedAt time.Time `gorm:"autoUpdateTime"`
+	TenantId    uuid.UUID `gorm:"type:text;primaryKey"`
+	ItemId      uint32    `gorm:"primaryKey"`
+	Name        string    `gorm:"not null"`
+	Compartment uint8     `gorm:"not null;default:0"`
+	Subcategory string    `gorm:"not null;default:''"`
+	JobMask     *uint8
+	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }
 
 func (testSearchIndexEntity) TableName() string { return "item_string_search_index" }
@@ -63,7 +67,20 @@ func newSearchTenant(t *testing.T) tenant.Model {
 
 func seedIdx(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string) {
 	t.Helper()
-	row := testSearchIndexEntity{TenantId: tenantId, ItemId: id, Name: name, UpdatedAt: time.Now()}
+	seedIdxFull(t, db, ctx, tenantId, id, name, 0, "", nil)
+}
+
+func seedIdxFull(t *testing.T, db *gorm.DB, ctx context.Context, tenantId uuid.UUID, id uint32, name string, compartment uint8, subcategory string, jobMask *uint8) {
+	t.Helper()
+	row := testSearchIndexEntity{
+		TenantId:    tenantId,
+		ItemId:      id,
+		Name:        name,
+		Compartment: compartment,
+		Subcategory: subcategory,
+		JobMask:     jobMask,
+		UpdatedAt:   time.Now(),
+	}
 	require.NoError(t, db.WithContext(ctx).Create(&row).Error)
 }
 
@@ -169,4 +186,206 @@ func TestItemStringStorage_Clear_CascadesToSearchIndex(t *testing.T) {
 	require.NoError(t, db.WithContext(ctx).Model(&testSearchIndexEntity{}).Count(&idxCount).Error)
 	assert.Equal(t, int64(0), docCount)
 	assert.Equal(t, int64(0), idxCount)
+}
+
+func TestItemStringStorage_Add_WritesCompartmentAndSubcategory(t *testing.T) {
+	db := setupSearchTestDB(t)
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	s := NewStringStorage(l, db)
+	_, err := s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1%"})()
+	require.NoError(t, err)
+
+	var row testSearchIndexEntity
+	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
+	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, "scroll", row.Subcategory)
+	assert.Nil(t, row.JobMask)
+}
+
+func TestItemStringStorage_Add_RefreshesCompartmentOnReingest(t *testing.T) {
+	db := setupSearchTestDB(t)
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	s := NewStringStorage(l, db)
+	_, err := s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1%"})()
+	require.NoError(t, err)
+	_, err = s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1% (renamed)"})()
+	require.NoError(t, err)
+
+	var row testSearchIndexEntity
+	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
+	assert.Equal(t, "Clean Slate Scroll 1% (renamed)", row.Name)
+	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, "scroll", row.Subcategory)
+}
+
+func TestParseFilters_Compartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	require.NotNil(t, spec.Compartment)
+	assert.Equal(t, CompartmentEquipment, *spec.Compartment)
+}
+
+func TestParseFilters_RejectsUnknownCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=foo")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_SubcategoryWithoutCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[subcategory]=bow")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.Equal(t, "bow", spec.Subcategory)
+}
+
+func TestParseFilters_RejectsUnknownSubcategory(t *testing.T) {
+	q := mustParseQuery(t, "filter[subcategory]=zzz-not-real")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsSubcategoryFromOtherCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=use&filter[subcategory]=bow")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_ClassAny(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=any")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.True(t, spec.ClassIsAny)
+	assert.Equal(t, "any", spec.Class)
+	assert.Equal(t, uint8(0), spec.JobMaskBits)
+}
+
+func TestParseFilters_ClassIntersection(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=warrior,bowman")
+	spec, errCode := parseFilters(q)
+	require.Equal(t, 0, errCode)
+	assert.False(t, spec.ClassIsAny)
+	assert.Equal(t, uint8(1|4), spec.JobMaskBits)
+}
+
+func TestParseFilters_RejectsClassWithoutEquipment(t *testing.T) {
+	q := mustParseQuery(t, "filter[class]=warrior")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsClassWithWrongCompartment(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=cash&filter[class]=warrior")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func TestParseFilters_RejectsUnknownClass(t *testing.T) {
+	q := mustParseQuery(t, "filter[compartment]=equipment&filter[class]=warrior,fighter")
+	_, errCode := parseFilters(q)
+	assert.Equal(t, 400, errCode)
+}
+
+func mustParseQuery(t *testing.T, raw string) url.Values {
+	t.Helper()
+	q, err := url.ParseQuery(raw)
+	require.NoError(t, err)
+	return q
+}
+
+func TestSearchIndex_DefaultBrowse_ExcludesStaleAndOrders(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Stale Item", 0, "", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Banana", uint8(CompartmentUse), "potion", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 3, "Apple", uint8(CompartmentUse), "potion", nil)
+
+	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
+		EntityIdColumn: "item_id",
+		NameColumns:    []string{"name"},
+		Order:          "name ASC, item_id ASC",
+		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
+		ExtraPredicate: "compartment != 0",
+	}
+	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+	assert.Equal(t, "Apple", rows[0].Name)
+	assert.Equal(t, "Banana", rows[1].Name)
+}
+
+func TestSearchIndex_FilterCompartmentOnly(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Hat", uint8(CompartmentEquipment), "hat", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Potion", uint8(CompartmentUse), "potion", nil)
+
+	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
+		EntityIdColumn: "item_id",
+		NameColumns:    []string{"name"},
+		Order:          "name ASC, item_id ASC",
+		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
+		ExtraPredicate: "compartment = ?",
+		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
+	}
+	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "Hat", rows[0].Name)
+}
+
+func TestSearchIndex_FilterClassIntersection(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	mask := func(v uint8) *uint8 { return &v }
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(CompartmentEquipment), "bow", mask(4))
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Sword", uint8(CompartmentEquipment), "one-handed-sword", mask(1))
+	seedIdxFull(t, db, ctx, tn.Id(), 3, "Hat", uint8(CompartmentEquipment), "hat", mask(0))
+
+	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
+		EntityIdColumn: "item_id",
+		NameColumns:    []string{"name"},
+		Order:          "name ASC, item_id ASC",
+		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
+		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND (job_mask = 0 OR (job_mask & ?) = ?))",
+		ExtraArgs:      []interface{}{int(CompartmentEquipment), uint8(1), uint8(1)},
+	}
+	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 2)
+}
+
+func TestSearchIndex_FilterClassAny(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	mask := func(v uint8) *uint8 { return &v }
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(CompartmentEquipment), "bow", mask(4))
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Hat", uint8(CompartmentEquipment), "hat", mask(0))
+
+	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
+		EntityIdColumn: "item_id",
+		NameColumns:    []string{"name"},
+		Order:          "name ASC, item_id ASC",
+		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
+		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND job_mask = 0)",
+		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
+	}
+	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "Hat", rows[0].Name)
 }

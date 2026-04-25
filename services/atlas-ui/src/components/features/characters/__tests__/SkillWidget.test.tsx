@@ -32,10 +32,9 @@ describe("SkillWidget", () => {
     expect(container.querySelector(".opacity-50")).toBeTruthy();
   });
 
-  it("renders only level when masterLevel is 0", () => {
+  it("falls back to effects.length as master when learnedMasterLevel is 0 and still renders x/y", () => {
     useSkillDefinitionMock.mockReturnValue({ data: { id: 1101000, name: "Iron Body", description: "", effects: [{}], iconUrl: "x.png" }, isSuccess: true });
     renderW(<SkillWidget skillId={1101000} learnedLevel={1} learnedMasterLevel={0} tenant={fakeTenant} />);
-    expect(screen.getByText("1")).toBeInTheDocument();
-    expect(screen.queryByText(/^0 \/ 0$/)).toBeNull();
+    expect(screen.getByText("1 / 1")).toBeInTheDocument();
   });
 });

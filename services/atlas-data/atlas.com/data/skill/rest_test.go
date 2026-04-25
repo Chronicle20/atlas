@@ -3,6 +3,7 @@ package skill
 import (
 	"atlas-data/xml"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -14,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus/hooks/test"
+	"github.com/stretchr/testify/require"
 )
 
 type Server struct {
@@ -82,4 +84,11 @@ func TestRest(t *testing.T) {
 
 func compare(m1 RestModel, m2 RestModel) bool {
 	return reflect.DeepEqual(m1, m2)
+}
+
+func TestRestModel_DescriptionInJSON(t *testing.T) {
+	m := RestModel{Id: 1001, Name: "X", Description: "desc"}
+	b, err := json.Marshal(m)
+	require.NoError(t, err)
+	require.Contains(t, string(b), `"description":"desc"`)
 }

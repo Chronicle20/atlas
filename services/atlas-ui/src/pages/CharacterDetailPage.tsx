@@ -1,21 +1,22 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { useTenant } from "@/context/tenant-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { useCharacter, useInvalidateCharacters } from "@/lib/hooks/api/useCharacters";
 import { useInventory, useDeleteAsset, useInvalidateInventory } from "@/lib/hooks/api/useInventory";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { inventoryService, type Compartment, type Asset } from "@/services/api/inventory.service";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { MapPin, Shield } from "lucide-react";
-import { MapCell } from "@/components/map-cell";
+import { ChevronRight } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { ChangeGmDialog } from "@/components/features/characters/ChangeGmDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
+import { CharacterPageHeader } from "@/components/features/characters/CharacterPageHeader";
+import { AttributesPanel } from "@/components/features/characters/AttributesPanel";
+import { EquipmentPanel } from "@/components/features/characters/EquipmentPanel";
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
+import { SkillsSection } from "@/components/features/characters/SkillsSection";
 import { QuestStatusTabs } from "@/components/features/quests";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
@@ -80,14 +81,14 @@ export function CharacterDetailPage() {
   };
 
   if (loading) return <CharacterDetailSkeleton />;
-  if (error || !character || !tenantConfig) {
+  if (error || !character || !tenantConfig || !activeTenant) {
     return <ErrorDisplay error={error || "Character or tenant configuration not found"} className="p-4" />;
   }
 
   const compartments = inventory?.included?.filter(
     (item): item is Compartment => item.type === "compartments",
   ) || [];
-  const equippedItems = inventory?.included?.filter(
+  const equippedAssets = inventory?.included?.filter(
     (item): item is Asset =>
       item.type === "assets" && "slot" in item.attributes && item.attributes.slot < 0,
   ) || [];
@@ -95,86 +96,44 @@ export function CharacterDetailPage() {
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen overflow-auto">
-      <div className="items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">{character.attributes.name}</h2>
-        </div>
-      </div>
+      <CharacterPageHeader
+        character={character}
+        onChangeGm={() => setChangeGmDialogOpen(true)}
+        onChangeMap={() => setChangeMapDialogOpen(true)}
+      />
+
       <div className="flex flex-row gap-6">
         <Card className="w-auto flex-shrink-0">
           <CardContent className="flex justify-center pt-4 pb-4">
             <CharacterRenderer
               character={character}
-              inventory={equippedItems}
+              inventory={equippedAssets}
               size="large"
               scale={2}
-              {...(activeTenant?.attributes.region && { region: activeTenant.attributes.region })}
-              {...(activeTenant?.attributes.majorVersion && { majorVersion: activeTenant.attributes.majorVersion })}
+              {...(activeTenant.attributes.region && { region: activeTenant.attributes.region })}
+              {...(activeTenant.attributes.majorVersion && { majorVersion: activeTenant.attributes.majorVersion })}
               className="character-renderer"
             />
           </CardContent>
         </Card>
-
-        <Card className="flex-1">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Attributes</CardTitle>
-              <div className="flex items-center gap-2">
-                {character.attributes.gm > 0 && (
-                  <Badge variant="destructive">GM {character.attributes.gm}</Badge>
-                )}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChangeGmDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Shield className="h-4 w-4" />
-                  {character.attributes.gm > 0 ? "Change GM" : "Promote to GM"}
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setChangeMapDialogOpen(true)}
-                  className="flex items-center gap-2"
-                >
-                  <MapPin className="h-4 w-4" />
-                  Change Map
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="grid grid-cols-4 gap-2 text-sm text-muted-foreground">
-            <div>
-              <strong>World:</strong> {tenantConfig.attributes.worlds[character.attributes.worldId]?.name || "Unknown"}
-            </div>
-            <div><strong>Gender:</strong> {character.attributes.gender}</div>
-            <div><strong>Level:</strong> {character.attributes.level}</div>
-            <div><strong>Experience:</strong> {character.attributes.experience}</div>
-            <div className="flex items-center gap-1">
-              <strong>Map:</strong>
-              <Link to={"/maps/" + character.attributes.mapId}>
-                <MapCell mapId={String(character.attributes.mapId)} tenant={activeTenant} />
-              </Link>
-            </div>
-            <div><strong>Strength:</strong> {character.attributes.strength}</div>
-            <div><strong>Dexterity:</strong> {character.attributes.dexterity}</div>
-            <div><strong>Intelligence:</strong> {character.attributes.intelligence}</div>
-            <div><strong>Luck:</strong> {character.attributes.luck}</div>
-          </CardContent>
-        </Card>
+        <AttributesPanel character={character} tenantConfig={tenantConfig} tenant={activeTenant} />
       </div>
 
-      {activeTenant && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold tracking-tight">Quest Status</h3>
+      <EquipmentPanel equipped={equippedAssets} tenant={activeTenant} />
+
+      <Collapsible defaultOpen={false}>
+        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left text-sm font-medium px-3 py-2 rounded border hover:bg-muted">
+          <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
+          Quest Status
+        </CollapsibleTrigger>
+        <CollapsibleContent className="pt-2">
           <QuestStatusTabs characterId={String(id)} tenant={activeTenant} />
-        </div>
-      )}
+        </CollapsibleContent>
+      </Collapsible>
 
       {inventory && (
-        <div className="space-y-4">
-          <h3 className="text-xl font-bold tracking-tight">Inventory</h3>
+        <section className="space-y-2">
+          <h3 className="text-lg font-semibold">Inventory</h3>
           <div className="grid grid-cols-1 gap-4">
             {sortedCompartments.map((compartment) => {
               try {
@@ -217,8 +176,13 @@ export function CharacterDetailPage() {
               }
             })}
           </div>
-        </div>
+        </section>
       )}
+
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold">Skills</h3>
+        <SkillsSection character={character} tenant={activeTenant} />
+      </section>
 
       <Toaster richColors />
 

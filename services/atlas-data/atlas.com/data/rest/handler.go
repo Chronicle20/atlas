@@ -52,6 +52,10 @@ func ParseSkillId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http
 	return server.ParseIntId[uint32](l, "skillId", next)
 }
 
+func ParseJobId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
+	return server.ParseIntId[uint32](l, "jobId", next)
+}
+
 func ParseItemId(l logrus.FieldLogger, next func(uint32) http.HandlerFunc) http.HandlerFunc {
 	return server.ParseIntId[uint32](l, "itemId", next)
 }

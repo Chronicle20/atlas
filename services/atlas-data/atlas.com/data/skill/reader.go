@@ -100,15 +100,17 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		es = getEffects(skillId, buff, level.ChildNodes)
 	}
 
-	name := ""
+	name, desc := "", ""
 	ss, err := GetSkillStringRegistry().Get(t, strconv.Itoa(int(skillId)))
 	if err == nil {
 		name = ss.Name()
+		desc = ss.Desc()
 	}
 
 	m := RestModel{
 		Id:            uint32(skillId),
 		Name:          name,
+		Description:   desc,
 		Action:        action,
 		Element:       element,
 		AnimationTime: 0,

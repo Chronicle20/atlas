@@ -67,6 +67,12 @@ type Processor interface {
 	// Seed clears existing NPC conversations and loads them from the conversations directory
 	Seed() (SeedResult, error)
 
+	// ReindexAllRecipes clears every recipe row for the active tenant, then
+	// walks every NPC conversation and re-derives recipe rows from each one.
+	// Runs in a single transaction so a mid-rebuild failure rolls back to the
+	// prior index state.
+	ReindexAllRecipes() (recipe.ReindexResult, error)
+
 	// Count returns the number of NPC conversations for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
 	Count() (int64, *time.Time, error)
@@ -292,6 +298,53 @@ func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
 		return count, nil, nil
 	}
 	return count, &t, nil
+}
+
+// ReindexAllRecipes clears every recipe row for the active tenant, then walks
+// every NPC conversation in the tenant and re-derives recipe rows from the
+// craftAction states. Inside a single db.Transaction so a mid-rebuild failure
+// leaves the prior index intact.
+func (p *ProcessorImpl) ReindexAllRecipes() (recipe.ReindexResult, error) {
+	p.l.Infof("Reindexing recipes for tenant [%s]", p.t.Id())
+
+	var result recipe.ReindexResult
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		rp := recipe.NewProcessor(p.l, p.ctx, p.db)
+
+		deleted, err := rp.ClearForTenant(tx)
+		if err != nil {
+			return err
+		}
+		result.DeletedCount = deleted
+
+		var entities []Entity
+		if err := tx.WithContext(p.ctx).Find(&entities).Error; err != nil {
+			return err
+		}
+
+		for _, entity := range entities {
+			m, err := Make(entity)
+			if err != nil {
+				return err
+			}
+			rebuild, err := rp.RebuildForConversation(tx)(m.NpcId(), m.Id(), m.States())
+			if err != nil {
+				return err
+			}
+			result.InsertedCount += rebuild.Inserted
+			result.SkippedCount += rebuild.Skipped
+			result.SkippedDetails = append(result.SkippedDetails, rebuild.SkippedDetails...)
+			result.ConversationsScanned++
+		}
+		return nil
+	})
+	if err != nil {
+		p.l.WithError(err).Errorf("Reindex failed for tenant [%s]", p.t.Id())
+		return recipe.ReindexResult{}, err
+	}
+	p.l.Infof("Reindex complete for tenant [%s]: deleted=%d inserted=%d skipped=%d scanned=%d",
+		p.t.Id(), result.DeletedCount, result.InsertedCount, result.SkippedCount, result.ConversationsScanned)
+	return result, nil
 }
 
 func parseDBTime(s string) (time.Time, error) {

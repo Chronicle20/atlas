@@ -67,9 +67,13 @@ func handleDamageCommand(l logrus.FieldLogger, ctx context.Context, c command[da
 	if c.Type != CommandTypeDamage {
 		return
 	}
+	if len(c.Body.Damages) == 0 {
+		l.Debugf("DAMAGE command for monster [%d] has no damage lines; ignoring.", c.MonsterId)
+		return
+	}
 
 	p := monster.NewProcessor(l, ctx)
-	p.Damage(c.MonsterId, c.Body.CharacterId, c.Body.Damage, c.Body.AttackType)
+	p.Damage(c.MonsterId, c.Body.CharacterId, c.Body.Damages, c.Body.AttackType)
 }
 
 func handleDamageFriendlyCommand(l logrus.FieldLogger, ctx context.Context, c command[damageFriendlyCommandBody]) {

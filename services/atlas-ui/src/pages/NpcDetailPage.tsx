@@ -29,6 +29,7 @@ import { NpcSpawnMapWidget } from "@/components/features/npc/NpcSpawnMapWidget";
 import { NpcQuestWidget } from "@/components/features/npc/NpcQuestWidget";
 import { NpcShopCard } from "@/components/features/npc/NpcShopCard";
 import { NpcConversationCard } from "@/components/features/npc/conversation/NpcConversationCard";
+import { RecipesByNpcCard } from "@/components/features/npc/RecipesByNpcCard";
 
 const ROLE_PRIORITY: Record<NpcQuestRole, number> = {
   initiator: 0,
@@ -202,6 +203,8 @@ export function NpcDetailPage() {
           </CollapsibleContent>
         </Collapsible>
       </Card>
+
+      <RecipesByNpcCard npcId={npcId} />
     </div>
   );
 }

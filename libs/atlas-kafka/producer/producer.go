@@ -3,10 +3,8 @@ package producer
 import (
 	"context"
 	"encoding/binary"
-	"os"
 	"time"
 
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/segmentio/kafka-go"
@@ -43,26 +41,6 @@ func (i WriterImpl) Close() error {
 }
 
 //goland:noinspection GoUnusedExportedFunction
-func WriterProvider(provider topic.Provider) model.Provider[Writer] {
-	t, err := provider()
-	if err != nil {
-		return model.ErrorProvider[Writer](err)
-	}
-	return func() (Writer, error) {
-		w := WriterImpl{
-			w: &kafka.Writer{
-				Addr:                   kafka.TCP(os.Getenv("BOOTSTRAP_SERVERS")),
-				Topic:                  t,
-				Balancer:               &kafka.LeastBytes{},
-				BatchTimeout:           50 * time.Millisecond,
-				AllowAutoTopicCreation: true,
-			},
-		}
-		return w, nil
-	}
-}
-
-//goland:noinspection GoUnusedExportedFunction
 func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(decorators ...HeaderDecorator) MessageProducer {
 	return func(provider model.Provider[Writer]) func(decorators ...HeaderDecorator) MessageProducer {
 		return func(decorators ...HeaderDecorator) MessageProducer {
@@ -85,11 +63,6 @@ func Produce(l logrus.FieldLogger) func(provider model.Provider[Writer]) func(de
 						l.WithError(err).Errorf("Unable to emit event on topic [%s].", w.Topic())
 						return err
 					}
-				}
-
-				err = w.Close()
-				if err != nil {
-					return err
 				}
 
 				return nil

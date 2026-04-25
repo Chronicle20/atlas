@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/sirupsen/logrus"
 )
 
@@ -12,8 +11,10 @@ type Provider func(token string) producer.MessageProducer
 
 func ProviderImpl(l logrus.FieldLogger) func(ctx context.Context) func(token string) producer.MessageProducer {
 	return func(ctx context.Context) func(token string) producer.MessageProducer {
+		sd := producer.SpanHeaderDecorator(ctx)
+		td := producer.TenantHeaderDecorator(ctx)
 		return func(token string) producer.MessageProducer {
-			return producer.Produce(l)(producer.WriterProvider(topic.EnvProvider(l)(token)))(producer.SpanHeaderDecorator(ctx), producer.TenantHeaderDecorator(ctx))
+			return producer.Produce(l)(producer.ManagerWriterProvider(l)(token))(sd, td)
 		}
 	}
 }

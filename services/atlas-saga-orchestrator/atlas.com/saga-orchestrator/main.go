@@ -26,6 +26,7 @@ import (
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/sirupsen/logrus"
 )
@@ -139,6 +140,8 @@ func main() {
 	if err := storageCompartment.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Recover active sagas from database
 	recoverSagas(l, store, tdm)

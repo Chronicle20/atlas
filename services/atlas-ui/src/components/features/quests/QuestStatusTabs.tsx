@@ -5,12 +5,13 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { RefreshCw, Clock, CheckCircle, Play, ExternalLink } from "lucide-react"
+import { RefreshCw, Clock, CheckCircle, Play } from "lucide-react"
 import { questStatusService } from "@/services/api/quest-status.service"
 import type { CharacterQuestStatus } from "@/types/models/quest"
 import type { Tenant } from "@/types/models/tenant"
 import { createErrorFromUnknown } from "@/types/api/errors"
 import { Link } from "react-router-dom";
+import { QuestName } from "./EntityName"
 
 interface QuestStatusTabsProps {
     characterId: string
@@ -106,13 +107,12 @@ export function QuestStatusTabs({ characterId, tenant }: QuestStatusTabsProps) {
                                     No quests in progress
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div
+                                    data-testid="quest-grid"
+                                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                                >
                                     {startedQuests.map((quest) => (
-                                        <QuestStatusCard
-                                            key={quest.id}
-                                            quest={quest}
-                                            showProgress
-                                        />
+                                        <QuestStatusWidget key={quest.id} quest={quest} />
                                     ))}
                                 </div>
                             )}
@@ -126,9 +126,12 @@ export function QuestStatusTabs({ characterId, tenant }: QuestStatusTabsProps) {
                                     No completed quests
                                 </div>
                             ) : (
-                                <div className="space-y-3">
+                                <div
+                                    data-testid="quest-grid"
+                                    className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                                >
                                     {completedQuests.map((quest) => (
-                                        <QuestStatusCard
+                                        <QuestStatusWidget
                                             key={quest.id}
                                             quest={quest}
                                             showCompletionTime
@@ -144,63 +147,40 @@ export function QuestStatusTabs({ characterId, tenant }: QuestStatusTabsProps) {
     )
 }
 
-interface QuestStatusCardProps {
+interface QuestStatusWidgetProps {
     quest: CharacterQuestStatus
-    showProgress?: boolean
     showCompletionTime?: boolean
 }
 
-function QuestStatusCard({ quest, showProgress, showCompletionTime }: QuestStatusCardProps) {
+function QuestStatusWidget({ quest, showCompletionTime }: QuestStatusWidgetProps) {
     const attrs = quest.attributes
 
     return (
-        <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                    <Link
-                        to={`/quests/${attrs.questId}`}
-                        className="font-medium hover:underline truncate"
-                    >
-                        Quest #{attrs.questId}
-                    </Link>
-                    {attrs.completedCount > 1 && (
-                        <Badge variant="outline" className="text-xs">
-                            x{attrs.completedCount}
-                        </Badge>
-                    )}
-                </div>
-
-                {showProgress && attrs.progress && attrs.progress.length > 0 && (
-                    <div className="mt-1 text-sm text-muted-foreground">
-                        {attrs.progress.map((p, idx) => (
-                            <span key={idx} className="mr-2">
-                                #{p.infoNumber}: {p.progress}
-                            </span>
-                        ))}
-                    </div>
-                )}
-
-                {showCompletionTime && attrs.completedAt && (
-                    <div className="mt-1 text-sm text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {formatDate(attrs.completedAt)}
-                    </div>
-                )}
-
-                {attrs.expirationTime && (
-                    <div className="mt-1 text-sm text-yellow-600 flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Expires: {formatDate(attrs.expirationTime)}
-                    </div>
+        <Link
+            to={`/quests/${attrs.questId}`}
+            className="block border rounded-lg p-3 overflow-hidden hover:bg-muted/50 transition-colors"
+        >
+            <div className="flex items-center justify-between gap-2 min-w-0">
+                <QuestName
+                    id={attrs.questId}
+                    className="font-medium truncate"
+                />
+                {attrs.completedCount > 1 && (
+                    <Badge variant="outline" className="text-xs shrink-0">
+                        x{attrs.completedCount}
+                    </Badge>
                 )}
             </div>
-
-            <Link to={`/quests/${attrs.questId}`}>
-                <Button variant="ghost" size="icon">
-                    <ExternalLink className="h-4 w-4" />
-                </Button>
-            </Link>
-        </div>
+            {showCompletionTime && attrs.completedAt && (
+                <div
+                    data-testid="completion-time"
+                    className="mt-1 text-sm text-muted-foreground flex items-center gap-1"
+                >
+                    <Clock className="h-3 w-3" />
+                    {formatDate(attrs.completedAt)}
+                </div>
+            )}
+        </Link>
     )
 }
 

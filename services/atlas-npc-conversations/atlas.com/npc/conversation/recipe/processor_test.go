@@ -179,6 +179,39 @@ func TestRebuildForConversation_ClearsExistingRowsForConversation(t *testing.T) 
 	}
 }
 
+func TestTransform_RoundtripsRecipe(t *testing.T) {
+	tenantId := uuid.New()
+	convId := uuid.New()
+	m, _ := NewBuilder().
+		SetTenantId(tenantId).
+		SetConversationId(convId).
+		SetNpcId(2040020).
+		SetStateId("craftWarrior0").
+		SetItemId(1082007).
+		SetMaterials([]Material{{ItemId: 4011000, Quantity: 3}, {ItemId: 4011001, Quantity: 2}}).
+		SetMesoCost(18000).
+		SetStimulatorId(4020009).
+		SetStimulatorFailChance(0.1).
+		Build()
+
+	rm := Transform(m)
+	if rm.GetID() != m.Id().String() {
+		t.Errorf("id roundtrip: %q vs %q", rm.GetID(), m.Id().String())
+	}
+	if rm.NpcId != 2040020 || rm.ItemId != 1082007 {
+		t.Errorf("attribute mismatch: %+v", rm)
+	}
+	if len(rm.Materials) != 2 || rm.Materials[1].Quantity != 2 {
+		t.Errorf("materials: %+v", rm.Materials)
+	}
+	if rm.StimulatorId != 4020009 || rm.StimulatorFailChance != 0.1 {
+		t.Errorf("stimulator fields wrong: %+v", rm)
+	}
+	if rm.GetName() != Resource {
+		t.Errorf("resource name: %q want %q", rm.GetName(), Resource)
+	}
+}
+
 func TestClearForTenant_RemovesOnlyActiveTenant(t *testing.T) {
 	l, _ := logtest.NewNullLogger()
 	tenantA := uuid.New()

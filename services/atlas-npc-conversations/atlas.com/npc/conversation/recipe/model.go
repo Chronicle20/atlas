@@ -1,6 +1,8 @@
 package recipe
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 )
 
@@ -74,4 +76,51 @@ func (b *Builder) Build() (Model, error) {
 		m.id = ComputeRecipeId(m.tenantId, m.conversationId, m.stateId)
 	}
 	return m, nil
+}
+
+// Make converts an Entity to a Model.
+func Make(e Entity) (Model, error) {
+	var materials []Material
+	if err := json.Unmarshal([]byte(e.Materials), &materials); err != nil {
+		return Model{}, err
+	}
+	if materials == nil {
+		materials = []Material{}
+	}
+	return NewBuilder().
+		SetId(e.ID).
+		SetTenantId(e.TenantID).
+		SetConversationId(e.ConversationID).
+		SetNpcId(e.NpcID).
+		SetStateId(e.StateID).
+		SetItemId(e.ItemID).
+		SetMaterials(materials).
+		SetMesoCost(e.MesoCost).
+		SetStimulatorId(e.StimulatorID).
+		SetStimulatorFailChance(e.StimulatorFailChance).
+		Build()
+}
+
+// ToEntity converts a Model to an Entity ready for insert.
+func ToEntity(m Model, tenantId uuid.UUID) (Entity, error) {
+	mats := m.Materials()
+	if mats == nil {
+		mats = []Material{}
+	}
+	jsonBytes, err := json.Marshal(mats)
+	if err != nil {
+		return Entity{}, err
+	}
+	return Entity{
+		ID:                   m.Id(),
+		TenantID:             tenantId,
+		ConversationID:       m.ConversationId(),
+		NpcID:                m.NpcId(),
+		StateID:              m.StateId(),
+		ItemID:               m.ItemId(),
+		Materials:            string(jsonBytes),
+		MesoCost:             m.MesoCost(),
+		StimulatorID:         m.StimulatorId(),
+		StimulatorFailChance: m.StimulatorFailChance(),
+	}, nil
 }

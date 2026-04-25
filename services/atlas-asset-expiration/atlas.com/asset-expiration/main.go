@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -36,6 +37,8 @@ func main() {
 	if err := session2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	// Start periodic expiration check task
 	interval := getExpirationInterval()

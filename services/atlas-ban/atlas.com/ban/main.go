@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
@@ -62,6 +63,8 @@ func main() {
 	if err := account2.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	server.New(l).
 		WithContext(tdm.Context()).

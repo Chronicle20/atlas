@@ -16,6 +16,7 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"gorm.io/gorm"
@@ -87,6 +88,9 @@ func main() {
 		if err := character.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
 	}
 
 	server.New(l).

@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -86,6 +87,8 @@ func main() {
 	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	tenants, err := tenant2.NewProcessor(l, tdm.Context()).GetAll()
 	if err != nil {

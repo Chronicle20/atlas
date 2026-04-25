@@ -28,6 +28,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	socket2 "github.com/Chronicle20/atlas/libs/atlas-socket"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
@@ -110,6 +111,8 @@ func main() {
 		if err := seed.InitHandlers(fl)(t)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 			l.WithError(err).Fatal("Unable to register kafka handlers.")
 		}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 		socket.CreateSocketService(fl, tctx, tdm.WaitGroup())(hp, rw, wp, ten.Port)
 	}

@@ -57,3 +57,44 @@ func TestManager_LazyCreate(t *testing.T) {
 // Suppress unused-import warning until later tests reference these.
 var _ = sync.Once{}
 var _ = errors.New
+
+func TestManager_ConcurrentFirstTouch(t *testing.T) {
+	ResetInstance()
+	var built int32
+	factory := func(topicName string) Writer {
+		atomic.AddInt32(&built, 1)
+		return &fakeWriter{topicName: topicName}
+	}
+	m := GetManager(ConfigWriterFactory(factory))
+	l, _ := test.NewNullLogger()
+
+	const goroutines = 64
+	results := make([]Writer, goroutines)
+	var wg sync.WaitGroup
+	wg.Add(goroutines)
+	start := make(chan struct{})
+	for i := 0; i < goroutines; i++ {
+		i := i
+		go func() {
+			defer wg.Done()
+			<-start
+			w, err := m.Writer(l, "RACE_TOPIC")
+			if err != nil {
+				t.Errorf("goroutine %d: %v", i, err)
+				return
+			}
+			results[i] = w
+		}()
+	}
+	close(start)
+	wg.Wait()
+
+	if got := atomic.LoadInt32(&built); got != 1 {
+		t.Fatalf("factory should be called exactly once across %d racers; got %d", goroutines, got)
+	}
+	for i := 1; i < goroutines; i++ {
+		if results[i] != results[0] {
+			t.Fatalf("goroutine %d returned a different Writer than goroutine 0", i)
+		}
+	}
+}

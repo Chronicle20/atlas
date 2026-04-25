@@ -6,9 +6,11 @@ import (
 	"atlas-data/map/npc"
 	"atlas-data/map/portal"
 	"atlas-data/map/reactor"
+	monstertpl "atlas-data/monster"
 	"atlas-data/point"
 	"atlas-data/xml"
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"path/filepath"
@@ -124,6 +126,34 @@ func calcPointBelow(tree FootholdTreeRestModel, initial point.RestModel) (point.
 		}
 	}
 	return point.RestModel{X: initial.X, Y: dropY}, true
+}
+
+var errMissingTemplate = errors.New("monster template not found")
+
+type templateLookup func(uint32) (monstertpl.RestModel, error)
+
+func snapToGround(tree FootholdTreeRestModel, sp monster.RestModel, lookup templateLookup) monster.RestModel {
+	if sp.FH != 0 {
+		fh := tree.findById(uint32(sp.FH))
+		if fh == nil {
+			return sp
+		}
+		if y, ok := calcYOnFoothold(fh, sp.X); ok {
+			sp.Y = y
+		}
+		return sp
+	}
+	tpl, err := lookup(sp.Template)
+	if err != nil {
+		return sp
+	}
+	if tpl.Flying || tpl.Swimming {
+		return sp
+	}
+	if pt, ok := calcPointBelow(tree, point.RestModel{X: sp.X, Y: sp.Y - 1}); ok {
+		sp.Y = pt.Y - 1
+	}
+	return sp
 }
 
 type FootholdTreeConfigurator func(f *FootholdTreeRestModel)
@@ -322,22 +352,29 @@ func NPCObjectIdFilter(id uint32) model.Filter[npc.RestModel] {
 	}
 }
 
-func monsterProvider(s *Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
+func monsterProvider(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 	return func(ctx context.Context) func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 		return func(mapId _map.Id) model.Provider[[]monster.RestModel] {
 			m, err := s.ByIdProvider(ctx)(strconv.Itoa(int(mapId)))()
 			if err != nil {
 				return model.ErrorProvider[[]monster.RestModel](err)
 			}
-			return model.FixedProvider(m.Monsters)
+			lookup := func(template uint32) (monstertpl.RestModel, error) {
+				return ms.GetById(ctx)(strconv.Itoa(int(template)))
+			}
+			snapped := make([]monster.RestModel, 0, len(m.Monsters))
+			for _, sp := range m.Monsters {
+				snapped = append(snapped, snapToGround(m.FootholdTree, sp, lookup))
+			}
+			return model.FixedProvider(snapped)
 		}
 	}
 }
 
-func GetMonsters(s *Storage) func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
+func GetMonsters(s *Storage, ms *monstertpl.Storage) func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
 	return func(ctx context.Context) func(mapId _map.Id) ([]monster.RestModel, error) {
 		return func(mapId _map.Id) ([]monster.RestModel, error) {
-			return monsterProvider(s)(ctx)(mapId)()
+			return monsterProvider(s, ms)(ctx)(mapId)()
 		}
 	}
 }

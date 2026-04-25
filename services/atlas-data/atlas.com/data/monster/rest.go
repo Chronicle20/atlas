@@ -24,6 +24,8 @@ type RestModel struct {
 	RemoveOnMiss       bool              `json:"remove_on_miss"`
 	Changeable         bool              `json:"changeable"`
 	AnimationTimes     map[string]uint32 `json:"animation_times"`
+	Flying             bool              `json:"flying"`
+	Swimming           bool              `json:"swimming"`
 	Resistances        map[string]string `json:"resistances"`
 	LoseItems          []loseItem        `json:"lose_items"`
 	Skills             []skill           `json:"skills"`

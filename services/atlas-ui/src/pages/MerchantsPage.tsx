@@ -41,7 +41,7 @@ async function searchListingsByQuery(query: string, _activeTenant: NonNullable<R
   if (!isNaN(itemId) && String(itemId) === query) {
     return merchantsService.searchListings(itemId);
   }
-  const items = await itemsService.searchItems(query);
+  const items = await itemsService.searchItems({ q: query });
   if (items.length === 0) return [];
   const itemsToSearch = items.slice(0, 10);
   const allResults: ListingSearchResult[] = [];

@@ -1,8 +1,6 @@
-
-import { useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useGachapon, useGachaponPrizePool } from "@/lib/hooks/api/useGachapons";
-import { useItemStrings } from "@/lib/hooks/api/useItemStrings";
+import { useItemName } from "@/lib/hooks/api/useItemStrings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -29,22 +27,39 @@ function tierBadgeVariant(tier: string) {
   }
 }
 
+function PrizeRow({ itemId, quantity, tier }: { itemId: number; quantity: number; tier: string }) {
+  const idStr = String(itemId);
+  const { data: name } = useItemName(idStr);
+  return (
+    <TableRow>
+      <TableCell>
+        <Link to={`/items/${idStr}`} className="hover:underline">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary">{name ?? idStr}</Badge>
+              </TooltipTrigger>
+              <TooltipContent copyable>
+                <p>{idStr}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </Link>
+      </TableCell>
+      <TableCell>{quantity}</TableCell>
+      <TableCell>
+        <Badge variant={tierBadgeVariant(tier)}>{tier}</Badge>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export function GachaponDetailPage() {
   const params = useParams();
   const id = params.id as string;
 
   const { data: gachapon, isLoading, error, refetch } = useGachapon(id);
   const { data: prizePool, isLoading: poolLoading } = useGachaponPrizePool(id);
-  const { data: itemStrings } = useItemStrings();
-
-  const itemNameMap = useMemo(() => {
-    if (!itemStrings) return new Map<string, string>();
-    const map = new Map<string, string>();
-    for (const item of itemStrings) {
-      map.set(item.id, item.attributes.name);
-    }
-    return map;
-  }, [itemStrings]);
 
   if (isLoading) {
     return <PageLoader />;
@@ -122,30 +137,12 @@ export function GachaponDetailPage() {
               </TableHeader>
               <TableBody>
                 {prizePool.map((reward) => (
-                  <TableRow key={`${reward.attributes.itemId}-${reward.attributes.tier}`}>
-                    <TableCell>
-                      <Link to={`/items/${reward.attributes.itemId}`} className="hover:underline">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Badge variant="secondary">
-                                {itemNameMap.get(String(reward.attributes.itemId)) ?? String(reward.attributes.itemId)}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent copyable>
-                              <p>{String(reward.attributes.itemId)}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </Link>
-                    </TableCell>
-                    <TableCell>{reward.attributes.quantity}</TableCell>
-                    <TableCell>
-                      <Badge variant={tierBadgeVariant(reward.attributes.tier)}>
-                        {reward.attributes.tier}
-                      </Badge>
-                    </TableCell>
-                  </TableRow>
+                  <PrizeRow
+                    key={`${reward.attributes.itemId}-${reward.attributes.tier}`}
+                    itemId={reward.attributes.itemId}
+                    quantity={reward.attributes.quantity}
+                    tier={reward.attributes.tier}
+                  />
                 ))}
               </TableBody>
             </Table>

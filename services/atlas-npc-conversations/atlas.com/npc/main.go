@@ -4,6 +4,7 @@ import (
 	"atlas-npc-conversations/conversation"
 	npcConversation "atlas-npc-conversations/conversation/npc"
 	"atlas-npc-conversations/conversation/quest"
+	"atlas-npc-conversations/conversation/recipe"
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"atlas-npc-conversations/kafka/consumer/character"
 	"atlas-npc-conversations/kafka/consumer/npc"
@@ -57,7 +58,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(npcConversation.MigrateTable, quest.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(npcConversation.MigrateTable, quest.MigrateTable, recipe.MigrateTable))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)
@@ -87,6 +88,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(npcConversation.InitResource(GetServer())(db)).
 		AddRouteInitializer(quest.InitResource(GetServer())(db)).
+		AddRouteInitializer(recipe.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

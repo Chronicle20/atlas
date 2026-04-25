@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -169,7 +169,11 @@ export function InventoryCard({
     console.warn(`Failed to load item icon for item ${asset.attributes.templateId}`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = (e: MouseEvent<HTMLButtonElement>) => {
+    // Stop the click from bubbling up to the surrounding cell, which is the
+    // tooltip trigger in InventoryGrid — without this the click would also
+    // toggle the tooltip and produce a flicker.
+    e.stopPropagation();
     if (onDelete && !isDeleting) {
       onDelete(asset.id);
     }
@@ -180,16 +184,21 @@ export function InventoryCard({
   const hasName = itemData?.name;
   const displayError = hasError || errorMessage || (!isLoading && !hasIcon && !hasName);
 
+  // Stable label text used for the delete button's accessible name. Falls back
+  // to the templateId when the resolved item name is unavailable.
+  const itemLabel = hasName && itemData?.name ? itemData.name : `item ${asset.attributes.templateId}`;
+
   return (
     <Card ref={lazyRef} className={cn("overflow-hidden relative py-0 w-[100px] h-[120px]", className)}>
       {/* Delete Button */}
       {onDelete && (
         <Button
-          variant="ghost" 
-          size="icon" 
+          variant="ghost"
+          size="icon"
           className="absolute top-0 right-0 z-10 h-6 w-6 hover:bg-red-100 hover:text-red-600"
           onClick={handleDelete}
           disabled={isDeleting}
+          aria-label={`Delete ${itemLabel}`}
         >
           <X className="h-3 w-3" />
         </Button>

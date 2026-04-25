@@ -17,6 +17,7 @@ import (
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -69,6 +70,9 @@ func main() {
 	if err := character.InitHandlers(l)(db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register character status handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
 	compartment2.InitHandlers(l)(consumer.GetManager().RegisterHandler)
 
 	// Start background tasks.

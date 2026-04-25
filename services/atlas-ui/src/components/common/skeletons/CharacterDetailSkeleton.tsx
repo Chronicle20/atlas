@@ -67,6 +67,13 @@ export function CharacterDetailSkeleton() {
         </Card>
       </div>
 
+      {/* Equipment paper-doll skeleton */}
+      <div className="grid gap-2" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+        {Array.from({ length: 21 }).map((_, i) => (
+          <Skeleton key={i} className="aspect-square" />
+        ))}
+      </div>
+
       {/* Inventory Section */}
       <div className="space-y-4">
         <Skeleton className="h-6 w-20" /> {/* "Inventory" title */}
@@ -103,6 +110,20 @@ export function CharacterDetailSkeleton() {
                 </div>
               </div>
             </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Skills section skeleton */}
+      <div className="space-y-2">
+        <div className="flex gap-2">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-8 w-24" />
+          ))}
+        </div>
+        <div className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-7 gap-2">
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} className="h-24" />
           ))}
         </div>
       </div>

@@ -15,6 +15,7 @@ func TestClassify(t *testing.T) {
 		{1002000, CompartmentEquipment, "hat"},
 		{1040002, CompartmentEquipment, "top"},
 		{1041002, CompartmentEquipment, "top"},
+		{1042000, CompartmentEquipment, "earring"},
 		{1050000, CompartmentEquipment, "top"},
 		{1060000, CompartmentEquipment, "bottom"},
 		{1070000, CompartmentEquipment, "shoes"},

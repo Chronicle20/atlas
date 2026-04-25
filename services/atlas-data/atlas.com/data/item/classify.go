@@ -32,6 +32,10 @@ func (c Compartment) String() string {
 	}
 }
 
+// Classify derives (compartment, subcategory) from an item id alone.
+// Subcategory is best-effort: classifications that genuinely require equipment
+// metadata (slot disambiguation) return a placeholder that
+// UpdateEquipmentClassification overrides later.
 func Classify(itemId uint32) (Compartment, string) {
 	compartment := compartmentOf(itemId)
 	if compartment == CompartmentUnknown {

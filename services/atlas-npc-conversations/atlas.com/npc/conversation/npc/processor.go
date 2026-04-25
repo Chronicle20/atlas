@@ -158,11 +158,17 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	return result, nil
 }
 
-// Delete deletes an NPC conversation
+// Delete deletes an NPC conversation and the recipe rows derived from it,
+// inside the same transaction.
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting NPC conversation [%s]", id)
 
-	err := deleteNpcConversation(p.db.WithContext(p.ctx))(id)
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(0, id, nil); err != nil {
+			return err
+		}
+		return deleteNpcConversation(tx)(id)
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversation [%s]", id)
 		return err
@@ -170,11 +176,23 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	return nil
 }
 
-// DeleteAllForTenant deletes all NPC conversations for the current tenant using hard delete
+// DeleteAllForTenant deletes every NPC conversation for the active tenant and
+// every derived recipe row, inside the same transaction.
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all NPC conversations for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllNpcConversations(p.db.WithContext(p.ctx))
+	var count int64
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).ClearForTenant(tx); err != nil {
+			return err
+		}
+		c, err := deleteAllNpcConversations(tx)
+		if err != nil {
+			return err
+		}
+		count = c
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversations for tenant [%s]", p.t.Id())
 		return 0, err

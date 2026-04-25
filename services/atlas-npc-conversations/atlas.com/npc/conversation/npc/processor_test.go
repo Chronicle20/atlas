@@ -193,3 +193,63 @@ func TestProcessor_Update_RewritesRecipeIndex(t *testing.T) {
 		t.Errorf("after update, expected one row stateId=new itemId=2, got %+v", rows)
 	}
 }
+
+func TestProcessor_Delete_RemovesRecipeRows(t *testing.T) {
+	l, _ := logtest.NewNullLogger()
+	te := countTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), te)
+	db := test.SetupTestDB(t, MigrateTable, recipe.MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	p := NewProcessor(l, ctx, db)
+	created, err := p.Create(craftConversationModel(t, 2040020, craftStateForNpc(t, "craft0", "1082007")))
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+
+	if err := p.Delete(created.Id()); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	rp := recipe.NewProcessor(l, ctx, db)
+	rows, _ := rp.ByNpcIdProvider(2040020)()
+	if len(rows) != 0 {
+		t.Errorf("expected 0 recipes after delete, got %d", len(rows))
+	}
+}
+
+func TestProcessor_DeleteAllForTenant_RemovesRecipeRowsForTenantOnly(t *testing.T) {
+	l, _ := logtest.NewNullLogger()
+	teA := countTestTenant(t)
+	teB := countTestTenant(t)
+	ctxA := tenant.WithContext(context.Background(), teA)
+	ctxB := tenant.WithContext(context.Background(), teB)
+	db := test.SetupTestDB(t, MigrateTable, recipe.MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	pA := NewProcessor(l, ctxA, db)
+	pB := NewProcessor(l, ctxB, db)
+
+	if _, err := pA.Create(craftConversationModel(t, 1000, craftStateForNpc(t, "x", "10"))); err != nil {
+		t.Fatalf("seed A: %v", err)
+	}
+	if _, err := pB.Create(craftConversationModel(t, 2000, craftStateForNpc(t, "y", "20"))); err != nil {
+		t.Fatalf("seed B: %v", err)
+	}
+
+	if _, err := pA.DeleteAllForTenant(); err != nil {
+		t.Fatalf("delete A: %v", err)
+	}
+
+	rpA := recipe.NewProcessor(l, ctxA, db)
+	rpB := recipe.NewProcessor(l, ctxB, db)
+	rowsA, _ := rpA.ByNpcIdProvider(1000)()
+	rowsB, _ := rpB.ByNpcIdProvider(2000)()
+
+	if len(rowsA) != 0 {
+		t.Errorf("tenant A recipes not cleared: %d remaining", len(rowsA))
+	}
+	if len(rowsB) != 1 {
+		t.Errorf("tenant B recipes wrongly affected: %d remaining (want 1)", len(rowsB))
+	}
+}

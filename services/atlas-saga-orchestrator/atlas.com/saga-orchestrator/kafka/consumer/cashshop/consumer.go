@@ -46,6 +46,11 @@ func handleWalletUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e cashs
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCashShopWalletUpdated); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.Body.TransactionId.String(),
 		"account_id":     e.AccountId,
@@ -54,5 +59,5 @@ func handleWalletUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e cashs
 		"prepaid":        e.Body.Prepaid,
 	}).Debug("Wallet updated successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

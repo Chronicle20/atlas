@@ -44,6 +44,10 @@ func handleAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCo
 	if e.Type != cashshopCompartment.StatusEventTypeAccepted {
 		return
 	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCashShopCompartmentAccepted); !ok {
+		return
+	}
 
 	l.WithFields(logrus.Fields{
 		"transaction_id":   e.Body.TransactionId.String(),
@@ -52,11 +56,15 @@ func handleAcceptedEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCo
 	}).Debug("Cash shop accepted asset successfully")
 
 	// Mark the saga step as completed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
 func handleReleasedEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCompartment.StatusEvent[cashshopCompartment.StatusEventReleasedBody]) {
 	if e.Type != cashshopCompartment.StatusEventTypeReleased {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCashShopCompartmentReleased); !ok {
 		return
 	}
 
@@ -67,11 +75,15 @@ func handleReleasedEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCo
 	}).Debug("Cash shop released asset successfully")
 
 	// Mark the saga step as completed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }
 
 func handleErrorEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCompartment.StatusEvent[cashshopCompartment.StatusEventErrorBody]) {
 	if e.Type != cashshopCompartment.StatusEventTypeError {
+		return
+	}
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindCashShopCompartmentError); !ok {
 		return
 	}
 
@@ -83,5 +95,5 @@ func handleErrorEvent(l logrus.FieldLogger, ctx context.Context, e cashshopCompa
 	}).Error("Cash shop compartment operation failed")
 
 	// Mark the saga step as failed
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, false)
+	_ = p.StepCompleted(e.Body.TransactionId, false)
 }

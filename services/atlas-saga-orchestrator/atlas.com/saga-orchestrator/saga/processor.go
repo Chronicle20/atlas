@@ -15,6 +15,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -46,6 +47,20 @@ type Processor interface {
 	AddStep(transactionId uuid.UUID, step Step[any]) error
 	AddStepAfterCurrent(transactionId uuid.UUID, step Step[any]) error
 	Step(transactionId uuid.UUID) error
+
+	// AcceptEvent is the single gate at which a saga-tagged Kafka event is
+	// matched against the saga's pending step. Returns the decision (saga +
+	// step) for handler-specific post-processing on success. On any skip
+	// path it debug-logs and returns ok=false.
+	AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool)
+}
+
+// AcceptDecision is returned by Processor.AcceptEvent on the match path so
+// handlers can perform payload-specific work (templateId guard, reward-notice
+// pre-emit, CreateAndEquipAsset follow-up step) before calling StepCompleted.
+type AcceptDecision struct {
+	Saga Saga
+	Step Step[any]
 }
 
 // ProcessorImpl is the implementation of the Processor interface
@@ -65,15 +80,26 @@ type ProcessorImpl struct {
 
 const maxConflictRetries = 3
 
+// unmatchedEventWarnOnce dedupes "unmatched_event" warn logs by (transactionId, kind).
+// Package-level so dedup survives the per-request Processor instances.
+var unmatchedEventWarnOnce sync.Map // key = tx.String() + "|" + string(kind), value = struct{}{}
+
 // isVersionConflict checks if an error is a VersionConflictError
 func isVersionConflict(err error) bool {
 	var vce *VersionConflictError
 	return errors.As(err, &vce)
 }
 
-// NewProcessor creates a new saga processor
-func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+// newProcessorFn is the package-level factory for Processor instances.
+// Tests may override it via SetProcessorFactoryForTest to inject mocks.
+var newProcessorFn = newProcessorImpl
 
+// NewProcessor creates a new saga processor.
+func NewProcessor(logger logrus.FieldLogger, ctx context.Context) Processor {
+	return newProcessorFn(logger, ctx)
+}
+
+func newProcessorImpl(logger logrus.FieldLogger, ctx context.Context) Processor {
 	return &ProcessorImpl{
 		l:       logger,
 		ctx:     ctx,
@@ -329,6 +355,64 @@ func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success
 		time.Sleep(10 * time.Millisecond)
 	}
 	return fmt.Errorf("max retries exceeded for step completion on saga %s", transactionId.String())
+}
+
+// AcceptEvent is the single gate at which a saga-tagged Kafka event is
+// matched against the saga's pending step. See PRD §4 and plan Task 3.
+func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool) {
+	s, err := p.GetById(transactionId)
+	if err != nil {
+		LogSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"event_kind":     kind,
+		}, SkipReasonSagaNotFound)
+		return AcceptDecision{}, false
+	}
+	step, ok := s.GetCurrentStep()
+	if !ok {
+		LogSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"event_kind":     kind,
+		}, SkipReasonNoPendingStep)
+		p.maybeWarnUnmatchedEvent(s, kind)
+		return AcceptDecision{}, false
+	}
+	if !StepAcceptsEvent(step.Action(), kind) {
+		LogSkip(p.l, logrus.Fields{
+			"transaction_id": transactionId.String(),
+			"step_id":        step.StepId(),
+			"step_action":    step.Action(),
+			"event_kind":     kind,
+		}, SkipReasonActionMismatch)
+		p.maybeWarnUnmatchedEvent(s, kind)
+		return AcceptDecision{}, false
+	}
+	return AcceptDecision{Saga: s, Step: step}, true
+}
+
+// maybeWarnUnmatchedEvent emits a warn log (once per (transactionId, kind)) when
+// a saga-tagged event arrives but no pending step in the saga accepts the
+// event kind. If any pending step does accept the kind, the event is
+// considered merely out-of-order and no warn is emitted. See PRD §4 and
+// plan Task 17.
+func (p *ProcessorImpl) maybeWarnUnmatchedEvent(s Saga, kind EventKind) {
+	for _, st := range s.Steps() {
+		if st.Status() != Pending {
+			continue
+		}
+		if StepAcceptsEvent(st.Action(), kind) {
+			return
+		}
+	}
+	key := s.TransactionId().String() + "|" + string(kind)
+	if _, loaded := unmatchedEventWarnOnce.LoadOrStore(key, struct{}{}); loaded {
+		return
+	}
+	p.l.WithFields(logrus.Fields{
+		"transaction_id": s.TransactionId().String(),
+		"event_kind":     kind,
+		"reason":         SkipReasonUnmatchedEvent,
+	}).Warn("Saga event arrived but no pending step accepts it.")
 }
 
 func (p *ProcessorImpl) stepCompletedWithResultOnce(transactionId uuid.UUID, success bool, result map[string]any) error {

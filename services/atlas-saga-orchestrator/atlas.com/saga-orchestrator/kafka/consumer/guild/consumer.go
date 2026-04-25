@@ -50,33 +50,53 @@ func handleGuildRequestAgreementEvent(l logrus.FieldLogger, ctx context.Context,
 	if e.Type != guild2.StatusEventTypeRequestAgreement {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildRequestAgreement); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleGuildCreatedEvent(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventCreatedBody]) {
 	if e.Type != guild2.StatusEventTypeCreated {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildCreated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleGuildDisbandedEvent(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventDisbandedBody]) {
 	if e.Type != guild2.StatusEventTypeDisbanded {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildDisbanded); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleGuildEmblemUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventEmblemUpdatedBody]) {
 	if e.Type != guild2.StatusEventTypeEmblemUpdated {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildEmblemUpdated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }
 
 func handleGuildCapacityUpdatedEvent(l logrus.FieldLogger, ctx context.Context, e guild2.StatusEvent[guild2.StatusEventCapacityUpdatedBody]) {
 	if e.Type != guild2.StatusEventTypeCapacityUpdated {
 		return
 	}
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.TransactionId, true)
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.TransactionId, saga.EventKindGuildCapacityUpdated); !ok {
+		return
+	}
+	_ = p.StepCompleted(e.TransactionId, true)
 }

@@ -46,6 +46,11 @@ func handleClosenessChangedEvent(l logrus.FieldLogger, ctx context.Context, e pe
 		return
 	}
 
+	p := saga.NewProcessor(l, ctx)
+	if _, ok := p.AcceptEvent(e.Body.TransactionId, saga.EventKindPetClosenessChanged); !ok {
+		return
+	}
+
 	l.WithFields(logrus.Fields{
 		"transaction_id": e.Body.TransactionId.String(),
 		"pet_id":         e.PetId,
@@ -54,5 +59,5 @@ func handleClosenessChangedEvent(l logrus.FieldLogger, ctx context.Context, e pe
 		"amount":         e.Body.Amount,
 	}).Debug("Pet closeness changed successfully, marking saga step as completed")
 
-	_ = saga.NewProcessor(l, ctx).StepCompleted(e.Body.TransactionId, true)
+	_ = p.StepCompleted(e.Body.TransactionId, true)
 }

@@ -11,7 +11,20 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+func mustTenantCtx(t *testing.T) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	return tenant.WithContext(context.Background(), tm)
+}
+
+func putTestSaga(t *testing.T, ctx context.Context, s saga.Saga) {
+	t.Helper()
+	require.NoError(t, saga.GetCache().Put(ctx, s))
+}
 
 func TestHandleAssetCreatedEvent_WrongType(t *testing.T) {
 	// Setup
@@ -54,12 +67,14 @@ func TestHandleAssetCreatedEvent_SagaNotFound(t *testing.T) {
 	// Execute
 	handleAssetCreatedEvent(logger, tctx, event)
 
-	// Verify debug log for saga not found
+	// Verify debug log for saga not found emitted by AcceptEvent
 	var foundDebugLog bool
 	for _, entry := range hook.Entries {
-		if entry.Level == logrus.DebugLevel && entry.Message == "Unable to locate saga for asset created event." {
-			foundDebugLog = true
-			break
+		if entry.Level == logrus.DebugLevel {
+			if r, ok := entry.Data["reason"]; ok && r == saga.SkipReasonSagaNotFound {
+				foundDebugLog = true
+				break
+			}
 		}
 	}
 	assert.True(t, foundDebugLog, "Should have debug log for saga not found")
@@ -261,6 +276,50 @@ func TestHandleAssetQuantityUpdatedEvent(t *testing.T) {
 			handleAssetQuantityUpdatedEvent(logger, tctx, event)
 		})
 	}
+}
+
+// TestHandleAssetCreatedEvent_ActionMismatch proves that an ASSET_CREATED
+// event does NOT advance a step whose action is not AwardAsset or
+// CreateAndEquipAsset (the §9.1 bug class on the asset topic).
+func TestHandleAssetCreatedEvent_ActionMismatch(t *testing.T) {
+	logger, hook := test.NewNullLogger()
+	logger.SetLevel(logrus.DebugLevel)
+	ctx := mustTenantCtx(t)
+
+	tx := uuid.New()
+	s, err := saga.NewBuilder().
+		SetTransactionId(tx).
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("test").
+		AddStep("s1", saga.Pending, saga.ChangeJob, saga.ChangeJobPayload{CharacterId: 1, JobId: 400}).
+		Build()
+	require.NoError(t, err)
+	putTestSaga(t, ctx, s)
+
+	handleAssetCreatedEvent(logger, ctx, asset2.StatusEvent[asset2.CreatedStatusEventBody]{
+		Type:          asset2.StatusEventTypeCreated,
+		TransactionId: tx,
+		CharacterId:   1,
+		TemplateId:    2070015,
+	})
+
+	got, err := saga.NewProcessor(logger, ctx).GetById(tx)
+	require.NoError(t, err)
+	assert.Equal(t, saga.Pending, got.Steps()[0].Status(), "ChangeJob step must not be completed by ASSET_CREATED")
+
+	assertDebugReason(t, hook, saga.SkipReasonActionMismatch)
+}
+
+// assertDebugReason asserts at least one debug entry in the hook has the
+// given `reason` field. Avoids brittle index coupling.
+func assertDebugReason(t *testing.T, hook *test.Hook, want string) {
+	t.Helper()
+	for _, e := range hook.AllEntries() {
+		if r, ok := e.Data["reason"]; ok && r == want {
+			return
+		}
+	}
+	t.Fatalf("expected a debug log with reason=%q; got: %+v", want, hook.AllEntries())
 }
 
 func TestHandleAssetMovedEvent(t *testing.T) {

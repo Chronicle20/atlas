@@ -29,8 +29,10 @@ func InitStringResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.R
 }
 
 type StringSearchResultRestModel struct {
-	Id   string `json:"-"`
-	Name string `json:"name"`
+	Id          string `json:"-"`
+	Name        string `json:"name"`
+	Compartment string `json:"compartment"`
+	Subcategory string `json:"subcategory"`
 }
 
 func (r StringSearchResultRestModel) GetName() string { return "item-strings" }

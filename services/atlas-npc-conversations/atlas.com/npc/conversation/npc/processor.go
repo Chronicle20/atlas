@@ -110,6 +110,28 @@ func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
 	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
+// createWithSkipTracking is the seed-time variant of Create: it runs the same
+// txn (conversation insert + recipe rebuild) but returns the rebuild's skip
+// information so the seed loop can accumulate skips across conversations.
+func (p *ProcessorImpl) createWithSkipTracking(m Model, result *SeedResult) (Model, error) {
+	var saved Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		created, err := createNpcConversation(tx)(p.t.Id())(m)
+		if err != nil {
+			return err
+		}
+		rebuild, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(created.NpcId(), created.Id(), created.States())
+		if err != nil {
+			return err
+		}
+		result.SkippedRecipes += rebuild.Skipped
+		result.SkippedRecipeDetails = append(result.SkippedRecipeDetails, rebuild.SkippedDetails...)
+		saved = created
+		return nil
+	})
+	return saved, err
+}
+
 // Create creates a new NPC conversation and rebuilds its derived recipe rows
 // inside the same transaction.
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
@@ -225,7 +247,6 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 
 	// Create each conversation
 	for _, rm := range models {
-		// Extract domain model from REST model
 		m, err := Extract(rm)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to extract model: %v", rm.NpcId, err))
@@ -233,9 +254,7 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 			continue
 		}
 
-		// Create the conversation
-		_, err = p.Create(m)
-		if err != nil {
+		if _, err := p.createWithSkipTracking(m, &result); err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to create: %v", rm.NpcId, err))
 			result.FailedCount++
 			continue

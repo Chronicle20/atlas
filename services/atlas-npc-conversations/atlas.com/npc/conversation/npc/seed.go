@@ -1,6 +1,7 @@
 package npc
 
 import (
+	"atlas-npc-conversations/conversation/recipe"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,10 +23,12 @@ func getConversationsPath() string {
 
 // SeedResult represents the result of a seed operation
 type SeedResult struct {
-	DeletedCount int      `json:"deletedCount"`
-	CreatedCount int      `json:"createdCount"`
-	FailedCount  int      `json:"failedCount"`
-	Errors       []string `json:"errors,omitempty"`
+	DeletedCount         int                    `json:"deletedCount"`
+	CreatedCount         int                    `json:"createdCount"`
+	FailedCount          int                    `json:"failedCount"`
+	SkippedRecipes       int                    `json:"skippedRecipes"`
+	SkippedRecipeDetails []recipe.SkippedRecipe `json:"skippedRecipeDetails,omitempty"`
+	Errors               []string               `json:"errors,omitempty"`
 }
 
 // LoadConversationFiles reads all JSON files from the conversations directory

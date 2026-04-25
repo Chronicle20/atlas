@@ -1,6 +1,9 @@
 package skill
 
-import "time"
+import (
+	"strconv"
+	"time"
+)
 
 // Model represents a character skill
 type Model struct {
@@ -57,6 +60,19 @@ type RestModel struct {
 // GetName returns the resource name for JSON:API
 func (r RestModel) GetName() string {
 	return "skills"
+}
+
+func (r RestModel) GetID() string {
+	return strconv.FormatUint(uint64(r.Id), 10)
+}
+
+func (r *RestModel) SetID(strId string) error {
+	id, err := strconv.ParseUint(strId, 10, 32)
+	if err != nil {
+		return err
+	}
+	r.Id = uint32(id)
+	return nil
 }
 
 // Extract transforms a RestModel into a domain Model

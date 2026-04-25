@@ -2,6 +2,7 @@ package npc
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/conversation/recipe"
 	"context"
 	"database/sql"
 	"fmt"
@@ -109,11 +110,23 @@ func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
 	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-// Create creates a new NPC conversation
+// Create creates a new NPC conversation and rebuilds its derived recipe rows
+// inside the same transaction.
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating NPC conversation for NPC [%d]", m.NpcId())
 
-	result, err := createNpcConversation(p.db.WithContext(p.ctx))(p.t.Id())(m)
+	var result Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		created, err := createNpcConversation(tx)(p.t.Id())(m)
+		if err != nil {
+			return err
+		}
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(created.NpcId(), created.Id(), created.States()); err != nil {
+			return err
+		}
+		result = created
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create NPC conversation for NPC [%d]", m.NpcId())
 		return Model{}, err
@@ -121,11 +134,23 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	return result, nil
 }
 
-// Update updates an existing NPC conversation
+// Update updates an existing NPC conversation and rebuilds its derived recipe
+// rows inside the same transaction.
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating NPC conversation [%s]", id)
 
-	result, err := updateNpcConversation(p.db.WithContext(p.ctx))(id)(m)
+	var result Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		updated, err := updateNpcConversation(tx)(id)(m)
+		if err != nil {
+			return err
+		}
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(updated.NpcId(), updated.Id(), updated.States()); err != nil {
+			return err
+		}
+		result = updated
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update NPC conversation [%s]", id)
 		return Model{}, err

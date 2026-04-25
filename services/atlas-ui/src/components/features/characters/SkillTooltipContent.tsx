@@ -3,7 +3,7 @@ import { formatStatup } from "@/lib/utils/skill-effect-format";
 
 interface Props {
   definition: SkillDefinitionWithIcon;
-  learnedLevel?: number;
+  learnedLevel?: number | undefined;
 }
 
 export function SkillTooltipContent({ definition, learnedLevel }: Props) {

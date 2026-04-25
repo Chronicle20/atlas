@@ -39,6 +39,6 @@ describe("useCharacterSkills", () => {
       wrapper,
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.[0].level).toBe(5);
+    expect(result.current.data?.[0]?.level).toBe(5);
   });
 });

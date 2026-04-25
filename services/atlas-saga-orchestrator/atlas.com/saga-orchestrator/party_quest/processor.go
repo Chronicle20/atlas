@@ -10,7 +10,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/google/uuid"
-	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/segmentio/kafka-go"
@@ -170,7 +169,7 @@ func (p *ProcessorImpl) produceRegisterCommand(characterId uint32, worldId world
 func produceToCommandTopic(l logrus.FieldLogger, ctx context.Context) func(provider model.Provider[[]kafka.Message]) error {
 	sd := producer.SpanHeaderDecorator(ctx)
 	td := producer.TenantHeaderDecorator(ctx)
-	return producer.Produce(l)(producer.WriterProvider(topic.EnvProvider(l)(EnvCommandTopic)))(sd, td)
+	return producer.Produce(l)(producer.ManagerWriterProvider(l)(EnvCommandTopic))(sd, td)
 }
 
 // getDefinition fetches the party quest definition by questId from atlas-party-quests

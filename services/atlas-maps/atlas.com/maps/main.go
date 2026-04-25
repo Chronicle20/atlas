@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
@@ -78,6 +79,8 @@ func main() {
 	if err := mapConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+
+	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 	go tasks.Register(tasks.NewWeather(l, time.Second))

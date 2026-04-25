@@ -8,7 +8,6 @@ import { useInventory, useDeleteAsset, useInvalidateInventory } from "@/lib/hook
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { inventoryService, type Compartment, type Asset } from "@/services/api/inventory.service";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronRight } from "lucide-react";
 import { ChangeMapDialog } from "@/components/features/characters/ChangeMapDialog";
 import { ChangeGmDialog } from "@/components/features/characters/ChangeGmDialog";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
@@ -121,13 +120,16 @@ export function CharacterDetailPage() {
 
       <EquipmentPanel equipped={equippedAssets} tenant={activeTenant} />
 
-      <Collapsible defaultOpen={false}>
-        <CollapsibleTrigger className="flex items-center gap-2 w-full text-left text-sm font-medium px-3 py-2 rounded border hover:bg-muted">
-          <ChevronRight className="h-4 w-4 transition-transform data-[state=open]:rotate-90" />
-          Quest Status
+      <Collapsible defaultOpen={false} className="border rounded-md">
+        <CollapsibleTrigger className="flex justify-between items-center w-full p-4 hover:bg-muted/50">
+          <div className="flex items-center gap-2">
+            <h4 className="text-lg font-semibold">Quest Status</h4>
+          </div>
         </CollapsibleTrigger>
-        <CollapsibleContent className="pt-2">
-          <QuestStatusTabs characterId={String(id)} tenant={activeTenant} />
+        <CollapsibleContent className="p-4 pt-0">
+          <div className="pt-4">
+            <QuestStatusTabs characterId={String(id)} tenant={activeTenant} />
+          </div>
         </CollapsibleContent>
       </Collapsible>
 

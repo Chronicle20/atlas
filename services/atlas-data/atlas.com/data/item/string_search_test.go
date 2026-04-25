@@ -186,3 +186,39 @@ func TestItemStringStorage_Clear_CascadesToSearchIndex(t *testing.T) {
 	assert.Equal(t, int64(0), docCount)
 	assert.Equal(t, int64(0), idxCount)
 }
+
+func TestItemStringStorage_Add_WritesCompartmentAndSubcategory(t *testing.T) {
+	db := setupSearchTestDB(t)
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	s := NewStringStorage(l, db)
+	_, err := s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1%"})()
+	require.NoError(t, err)
+
+	var row testSearchIndexEntity
+	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
+	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, "scroll", row.Subcategory)
+	assert.Nil(t, row.JobMask)
+}
+
+func TestItemStringStorage_Add_RefreshesCompartmentOnReingest(t *testing.T) {
+	db := setupSearchTestDB(t)
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	s := NewStringStorage(l, db)
+	_, err := s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1%"})()
+	require.NoError(t, err)
+	_, err = s.Add(ctx)(StringRestModel{Id: "2049000", Name: "Clean Slate Scroll 1% (renamed)"})()
+	require.NoError(t, err)
+
+	var row testSearchIndexEntity
+	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
+	assert.Equal(t, "Clean Slate Scroll 1% (renamed)", row.Name)
+	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, "scroll", row.Subcategory)
+}

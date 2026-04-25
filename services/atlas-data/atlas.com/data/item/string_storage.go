@@ -58,15 +58,18 @@ func (s *StringStorage) Add(ctx context.Context) func(m StringRestModel) model.P
 			if err != nil {
 				return err
 			}
+			compartment, subcategory := Classify(uint32(itemId))
 			ie := StringSearchIndexEntity{
-				TenantId:  t.Id(),
-				ItemId:    uint32(itemId),
-				Name:      m.Name,
-				UpdatedAt: time.Now(),
+				TenantId:    t.Id(),
+				ItemId:      uint32(itemId),
+				Name:        m.Name,
+				Compartment: uint8(compartment),
+				Subcategory: subcategory,
+				UpdatedAt:   time.Now(),
 			}
 			return searchindex.Upsert(tx, &ie,
 				[]string{"tenant_id", "item_id"},
-				[]string{"name", "updated_at"},
+				[]string{"name", "compartment", "subcategory", "updated_at"},
 			)
 		})
 		if txErr != nil {

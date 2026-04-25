@@ -294,48 +294,6 @@ function EmptySlot({ slotIndex }: { slotIndex: number }) {
 }
 
 /**
- * Calculates the optimal grid layout for different compartment types and capacities.
- * 
- * This function provides compartment-specific grid layouts optimized for different
- * types of inventory items. Equipment items use denser layouts, while bulk items
- * like ETC and Cash use wider layouts for better visibility.
- * 
- * ## Compartment Type Mappings
- * - **Type 1 (EQUIPABLES)**: Equipment items - focused, dense layout
- * - **Type 2 (CONSUMABLES)**: Potions, consumables - medium density
- * - **Type 3 (SETUP)**: Setup items - medium density
- * - **Type 4 (ETC)**: Miscellaneous items - wide layout for bulk
- * - **Type 5 (CASH)**: Cash shop items - wide layout for variety
- * 
- * @param compartmentType - The type of inventory compartment (1-5)
- * @param capacity - The maximum number of items the compartment can hold
- * @returns Tailwind CSS grid class string (e.g., 'grid-cols-4', 'grid-cols-8')
- * 
- * @example
- * ```typescript
- * // Equipment compartment with 24 slots
- * const layout = getOptimalGridLayout(1, 24); // Returns 'grid-cols-6'
- * 
- * // ETC compartment with 96 slots  
- * const layout = getOptimalGridLayout(4, 96); // Returns 'grid-cols-12'
- * ```
- */
-export function getOptimalGridLayout(compartmentType: number, capacity: number) {
-  switch (compartmentType) {
-    case 1: // EQUIPABLES - typically smaller, more focused layout
-      return capacity <= 16 ? 'grid-cols-4' : 'grid-cols-6';
-    case 2: // CONSUMABLES - medium layout
-    case 3: // SETUP - medium layout
-      return capacity <= 24 ? 'grid-cols-6' : 'grid-cols-8';
-    case 4: // ETC - larger layout for bulk items
-    case 5: // CASH - larger layout for various items
-      return capacity <= 32 ? 'grid-cols-8' : 'grid-cols-12';
-    default:
-      return capacity <= 24 ? 'grid-cols-6' : 'grid-cols-8';
-  }
-}
-
-/**
  * Export the GridSlot type for external usage in other components or utilities.
  * 
  * @example

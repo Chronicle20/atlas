@@ -40,6 +40,15 @@ class GuildsService {
     return guilds.filter(guild => guild.attributes.worldId === worldId);
   }
 
+  /**
+   * Fetch guilds containing a specific member, using the backend's
+   * `filter[members.id]` query string. Returns an array (possibly empty).
+   */
+  async getByMemberId(memberId: string, options?: ServiceOptions): Promise<Guild[]> {
+    const qs = new URLSearchParams({ "filter[members.id]": memberId }).toString();
+    return api.getList<Guild>(`${this.basePath}?${qs}`, options);
+  }
+
   async search(searchTerm: string, worldId?: number, options?: ServiceOptions): Promise<Guild[]> {
     const guilds = await this.getAll(options);
     let filtered = guilds.filter(guild =>

@@ -358,13 +358,24 @@ func TestDamageAggroChangedSuppressedOnSwitch(t *testing.T) {
 	}
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	// Character 2 hits first AND becomes leader.
+	// Character 2 hits first AND becomes leader (char 1 has no seed damage, so
+	// char 2's 500 damage immediately takes the DPS lead → controller switch).
 	p.Damage(uniqueId, 2, []uint32{500}, 0)
 
+	var types []string
 	for _, e := range *events {
-		if e.Type == EventMonsterStatusAggroChanged {
-			t.Fatalf("AGGRO_CHANGED must be suppressed when controller switch carries the flag")
-		}
+		types = append(types, e.Type)
+	}
+	// Expected order: DAMAGED, NEXT_SKILL_DECIDED (damage trigger), STOP_CONTROL,
+	// START_CONTROL, NEXT_SKILL_DECIDED (controller-change trigger).
+	// AGGRO_CHANGED must NOT appear because the switch carries the aggro flag.
+	if len(types) != 5 ||
+		types[0] != EventMonsterStatusDamaged ||
+		types[1] != EventMonsterStatusNextSkillDecided ||
+		types[2] != EventMonsterStatusStopControl ||
+		types[3] != EventMonsterStatusStartControl ||
+		types[4] != EventMonsterStatusNextSkillDecided {
+		t.Fatalf("unexpected event sequence (AGGRO_CHANGED must be suppressed on switch): %v", types)
 	}
 }
 
@@ -523,8 +534,8 @@ func TestDamage_TriggersRepick(t *testing.T) {
 
 	p.Damage(uniqueId, 1, []uint32{999}, 0)
 
-	if countByType[EventMonsterStatusNextSkillDecided] < 1 {
-		t.Errorf("expected at least 1 NEXT_SKILL_DECIDED event from damage trigger; got %d (all events: %v)",
+	if countByType[EventMonsterStatusNextSkillDecided] != 1 {
+		t.Errorf("expected exactly 1 NEXT_SKILL_DECIDED event from damage trigger; got %d (all events: %v)",
 			countByType[EventMonsterStatusNextSkillDecided], countByType)
 	}
 }

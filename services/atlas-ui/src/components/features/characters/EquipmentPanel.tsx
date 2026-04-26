@@ -15,39 +15,40 @@ interface SlotLayoutEntry {
   name: string;
 }
 
-// Layout mirrors the v83 in-game Equipment Inventory window:
-// Medal sits top-left, the body silhouette runs down the center, the left
-// column carries Pendant / Pendant2 / Pet Equip, and the right column is
-// the ring/medal stack. Cash equipment (slots <=-100, except -111/-112) is
-// out of scope for v1.
+// Slot positions match the layout the user pinned from the v83 in-game
+// Equipment Inventory window. Mount / Saddle / Pet Equip / Pendant 2 are
+// intentionally omitted for now — they'll be added in a follow-up.
+//
+// Ring 4 has no standard v83 slot id (the 4-ring system was added in a
+// later client version); the cell renders as a placeholder so the grid
+// stays symmetric, and we'll wire it up if/when the backend supports it.
+const RING4_PLACEHOLDER_SLOT_ID = -9999;
+
 const SLOT_LAYOUT: SlotLayoutEntry[] = [
-  // Row 1 — head + medal
-  { slotId: -49, row: 1, col: 1, name: "Medal" },
-  { slotId: -1, row: 1, col: 3, name: "Hat" },
-  // Row 2 — face/eye/earrings
-  { slotId: -2, row: 2, col: 3, name: "Face Acc" },
-  { slotId: -3, row: 2, col: 4, name: "Eye Acc" },
-  { slotId: -4, row: 2, col: 5, name: "Earrings" },
-  // Row 3 — torso (pendant left of weapon, then body / cape / shield)
-  { slotId: -13, row: 3, col: 1, name: "Pendant" },
-  { slotId: -10, row: 3, col: 2, name: "Weapon" },
-  { slotId: -5, row: 3, col: 3, name: "Top" },
-  { slotId: -16, row: 3, col: 4, name: "Cape" },
-  { slotId: -17, row: 3, col: 5, name: "Shield" },
-  // Row 4 — waist (second pendant under the first, gloves / bottom / belt / ring1)
-  { slotId: -111, row: 4, col: 1, name: "Pendant 2" },
-  { slotId: -8, row: 4, col: 2, name: "Gloves" },
-  { slotId: -6, row: 4, col: 3, name: "Bottom" },
-  { slotId: -112, row: 4, col: 4, name: "Belt" },
-  { slotId: -11, row: 4, col: 5, name: "Ring 1" },
-  // Row 5 — feet (mount / shoes / saddle / ring2)
-  { slotId: -21, row: 5, col: 2, name: "Mount" },
-  { slotId: -7, row: 5, col: 3, name: "Shoes" },
-  { slotId: -22, row: 5, col: 4, name: "Saddle" },
-  { slotId: -12, row: 5, col: 5, name: "Ring 2" },
-  // Row 6 — pet equip + spare ring
-  { slotId: -25, row: 6, col: 1, name: "Pet Equip" },
-  { slotId: -15, row: 6, col: 5, name: "Ring 3/4" },
+  // Row 1
+  { slotId: -1, row: 1, col: 2, name: "Hat" },
+  // Row 2
+  { slotId: -49, row: 2, col: 1, name: "Medal" },
+  { slotId: -2, row: 2, col: 2, name: "Forehead" },
+  { slotId: -11, row: 2, col: 4, name: "Ring 1" },
+  { slotId: -12, row: 2, col: 5, name: "Ring 2" },
+  // Row 3
+  { slotId: -3, row: 3, col: 3, name: "Eye" },
+  { slotId: -4, row: 3, col: 4, name: "Earring" },
+  // Row 4 — body row
+  { slotId: -16, row: 4, col: 1, name: "Cape" },
+  { slotId: -5, row: 4, col: 2, name: "Top" },
+  { slotId: -13, row: 4, col: 3, name: "Pendant" },
+  { slotId: -10, row: 4, col: 4, name: "Weapon" },
+  { slotId: -17, row: 4, col: 5, name: "Shield" },
+  // Row 5
+  { slotId: -8, row: 5, col: 1, name: "Gloves" },
+  { slotId: -6, row: 5, col: 2, name: "Pants" },
+  { slotId: -112, row: 5, col: 3, name: "Belt" },
+  { slotId: -15, row: 5, col: 4, name: "Ring 3" },
+  { slotId: RING4_PLACEHOLDER_SLOT_ID, row: 5, col: 5, name: "Ring 4" },
+  // Row 6
+  { slotId: -7, row: 6, col: 3, name: "Shoes" },
 ];
 
 export function EquipmentPanel({ equipped, tenant }: Props) {

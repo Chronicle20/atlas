@@ -332,6 +332,8 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	// partition ordering preserves causality and the channel re-applies
 	// idempotently for re-control to the same character.
 	controllerSwitched := false
+	// Controller-switch on DPS lead applies to bosses too. Only the decay sweep
+	// (MonsterAggroDecayTask) treats bosses specially.
 	if characterId != last.Monster.ControlCharacterId() && last.Monster.DamageLeader() == characterId {
 		inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
 		if ferr != nil || !inField {

@@ -238,7 +238,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetFH(e.Body.FH).
 			SetTeam(e.Body.Team).
 			MustBuild()
-		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, false))
+		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)

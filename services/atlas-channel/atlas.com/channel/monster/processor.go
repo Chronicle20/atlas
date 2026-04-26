@@ -40,9 +40,9 @@ func (p *Processor) GetInMap(f field.Model) ([]Model, error) {
 	return p.InMapModelProvider(f)()
 }
 
-func (p *Processor) Damage(f field.Model, monsterId uint32, characterId uint32, damage uint32, attackType byte) error {
-	p.l.Debugf("Applying damage to monster [%d]. Character [%d]. Damage [%d].", monsterId, characterId, damage)
-	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(f, monsterId, characterId, damage, attackType))
+func (p *Processor) Damage(f field.Model, monsterId uint32, characterId uint32, damages []uint32, attackType byte) error {
+	p.l.Debugf("Applying damage to monster [%d]. Character [%d]. Lines [%d].", monsterId, characterId, len(damages))
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(f, monsterId, characterId, damages, attackType))
 }
 
 func (p *Processor) UseSkill(f field.Model, monsterId uint32, characterId uint32, skillId uint16, skillLevel uint16) error {

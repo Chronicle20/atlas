@@ -81,7 +81,7 @@ func DamageFriendlyCommandProvider(f field.Model, attackedUniqueId uint32, obser
 	return producer.SingleMessageProvider(key, value)
 }
 
-func DamageCommandProvider(f field.Model, monsterId uint32, characterId uint32, damage uint32, attackType byte) model.Provider[[]kafka.Message] {
+func DamageCommandProvider(f field.Model, monsterId uint32, characterId uint32, damages []uint32, attackType byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.DamageCommandBody]{
 		WorldId:   f.WorldId(),
@@ -92,7 +92,7 @@ func DamageCommandProvider(f field.Model, monsterId uint32, characterId uint32, 
 		Type:      monster2.CommandTypeDamage,
 		Body: monster2.DamageCommandBody{
 			CharacterId: characterId,
-			Damage:      damage,
+			Damages:     damages,
 			AttackType:  attackType,
 		},
 	}

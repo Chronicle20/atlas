@@ -36,9 +36,9 @@ type damageFriendlyCommandBody struct {
 }
 
 type damageCommandBody struct {
-	CharacterId uint32 `json:"characterId"`
-	Damage      uint32 `json:"damage"`
-	AttackType  byte   `json:"attackType"`
+	CharacterId uint32   `json:"characterId"`
+	Damages     []uint32 `json:"damages"`
+	AttackType  byte     `json:"attackType"`
 }
 
 type applyStatusCommandBody struct {

@@ -28,7 +28,7 @@ func GetCooldownRegistry() *cooldownRegistry {
 	return cooldownReg
 }
 
-func cooldownKey(t tenant.Model, monsterId uint32, skillId uint16) string {
+func cooldownKey(t tenant.Model, monsterId uint32, skillId byte) string {
 	return fmt.Sprintf("atlas:monster-cooldown:%s:%s:%s",
 		t.Id().String(),
 		strconv.FormatUint(uint64(monsterId), 10),
@@ -43,7 +43,7 @@ func cooldownScanPattern(t tenant.Model, monsterId uint32) string {
 	)
 }
 
-func (r *cooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId uint16) bool {
+func (r *cooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte) bool {
 	key := cooldownKey(t, monsterId, skillId)
 	result, err := r.client.Exists(ctx, key).Result()
 	if err != nil {
@@ -52,7 +52,7 @@ func (r *cooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, mon
 	return result > 0
 }
 
-func (r *cooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId uint16, duration time.Duration) {
+func (r *cooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte, duration time.Duration) {
 	key := cooldownKey(t, monsterId, skillId)
 	r.client.Set(ctx, key, "1", duration)
 }

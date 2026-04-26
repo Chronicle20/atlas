@@ -15,38 +15,37 @@ interface SlotLayoutEntry {
   name: string;
 }
 
-// Slot positions match the layout the user pinned from the v83 in-game
-// Equipment Inventory window. Mount / Saddle / Pet Equip / Pendant 2 are
-// intentionally omitted for now — they'll be added in a follow-up.
+// Slot ids come from libs/atlas-constants/inventory/slot/constants.go (the
+// Atlas-canonical equipment slot table — these differ from standard v83
+// MapleStory conventions, e.g. cape=-9, weapon=-11, shield=-10, pendant=-17,
+// belt=-50, ring4=-16). Coordinates match the layout pinned from the v83
+// in-game Equipment Inventory window.
 //
-// Ring 4 has no standard v83 slot id (the 4-ring system was added in a
-// later client version); the cell renders as a placeholder so the grid
-// stays symmetric, and we'll wire it up if/when the backend supports it.
-const RING4_PLACEHOLDER_SLOT_ID = -9999;
-
+// Mount / Saddle / Pet Equip / Pendant 2 are intentionally omitted for now
+// per "start there, there may be additions later".
 const SLOT_LAYOUT: SlotLayoutEntry[] = [
   // Row 1
   { slotId: -1, row: 1, col: 2, name: "Hat" },
   // Row 2
   { slotId: -49, row: 2, col: 1, name: "Medal" },
   { slotId: -2, row: 2, col: 2, name: "Forehead" },
-  { slotId: -11, row: 2, col: 4, name: "Ring 1" },
-  { slotId: -12, row: 2, col: 5, name: "Ring 2" },
+  { slotId: -12, row: 2, col: 4, name: "Ring 1" },
+  { slotId: -13, row: 2, col: 5, name: "Ring 2" },
   // Row 3
   { slotId: -3, row: 3, col: 3, name: "Eye" },
   { slotId: -4, row: 3, col: 4, name: "Earring" },
   // Row 4 — body row
-  { slotId: -16, row: 4, col: 1, name: "Cape" },
+  { slotId: -9, row: 4, col: 1, name: "Cape" },
   { slotId: -5, row: 4, col: 2, name: "Top" },
-  { slotId: -13, row: 4, col: 3, name: "Pendant" },
-  { slotId: -10, row: 4, col: 4, name: "Weapon" },
-  { slotId: -17, row: 4, col: 5, name: "Shield" },
+  { slotId: -17, row: 4, col: 3, name: "Pendant" },
+  { slotId: -11, row: 4, col: 4, name: "Weapon" },
+  { slotId: -10, row: 4, col: 5, name: "Shield" },
   // Row 5
   { slotId: -8, row: 5, col: 1, name: "Gloves" },
   { slotId: -6, row: 5, col: 2, name: "Pants" },
-  { slotId: -112, row: 5, col: 3, name: "Belt" },
+  { slotId: -50, row: 5, col: 3, name: "Belt" },
   { slotId: -15, row: 5, col: 4, name: "Ring 3" },
-  { slotId: RING4_PLACEHOLDER_SLOT_ID, row: 5, col: 5, name: "Ring 4" },
+  { slotId: -16, row: 5, col: 5, name: "Ring 4" },
   // Row 6
   { slotId: -7, row: 6, col: 3, name: "Shoes" },
 ];

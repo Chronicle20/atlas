@@ -3,6 +3,8 @@ package inventory
 import (
 	"strconv"
 	"time"
+
+	"github.com/jtumidanski/api2go/jsonapi"
 )
 
 // CompartmentRestModel represents a compartment from atlas-inventory service
@@ -35,6 +37,77 @@ func (r *CompartmentRestModel) SetToManyReferenceIDs(name string, IDs []string) 
 			}
 			r.Assets = append(r.Assets, AssetRestModel{Id: uint32(id)})
 		}
+	}
+	return nil
+}
+
+// GetReferences declares the to-many relationship list so api2go can wire
+// `included` resources back to this compartment.
+func (r CompartmentRestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{
+		{
+			Type: "assets",
+			Name: "assets",
+		},
+	}
+}
+
+// GetReferencedIDs lists the IDs api2go should expect in `included` for the
+// declared references. Required by the api2go fork interface even though this
+// service only consumes (not produces) compartment documents.
+func (r CompartmentRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	var result []jsonapi.ReferenceID
+	for _, v := range r.Assets {
+		result = append(result, jsonapi.ReferenceID{
+			ID:   v.GetID(),
+			Type: v.GetName(),
+			Name: v.GetName(),
+		})
+	}
+	return result
+}
+
+// GetReferencedStructs returns the embedded asset structs for outbound
+// marshalling. Implemented to mirror the in-repo template
+// (atlas-npc-shops/.../compartment/rest.go) and avoid surprises if this type
+// ever needs to round-trip.
+func (r CompartmentRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	var result []jsonapi.MarshalIdentifier
+	for key := range r.Assets {
+		result = append(result, r.Assets[key])
+	}
+	return result
+}
+
+// SetToOneReferenceID is a no-op satisfier — CompartmentRestModel has no
+// to-one relationships, but the api2go fork interface requires the method.
+func (r *CompartmentRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetReferencedStructs walks the stub assets that SetToManyReferenceIDs
+// populated and replaces each with a fully-hydrated copy from `included`,
+// using jsonapi.ProcessIncludeData to populate flat attribute fields
+// (slot, hp, mp, strength, …) from the included resource's attributes object.
+//
+// Without this method, every AssetRestModel in r.Assets retains its zero-value
+// Slot/Hp/Mp, causing the downstream IsEquipped() (Slot < 0) gate in
+// character/initializer.go::fetchEquipmentBonuses to skip every equipped
+// asset and silently drop all equipment bonuses.
+func (r *CompartmentRestModel) SetReferencedStructs(references map[string]map[string]jsonapi.Data) error {
+	if refMap, ok := references["assets"]; ok {
+		assets := make([]AssetRestModel, 0)
+		for _, ri := range r.Assets {
+			if ref, ok := refMap[ri.GetID()]; ok {
+				wip := ri
+				err := jsonapi.ProcessIncludeData(&wip, ref, references)
+				if err != nil {
+					return err
+				}
+				assets = append(assets, wip)
+			}
+		}
+		r.Assets = assets
 	}
 	return nil
 }

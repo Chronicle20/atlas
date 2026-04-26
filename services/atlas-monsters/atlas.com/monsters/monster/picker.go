@@ -246,28 +246,24 @@ func (p *ProcessorImpl) repickAndEmit(uniqueId uint32, reason RepickReason) erro
 		}
 	}
 
-	updated, err := GetMonsterRegistry().SetNextSkillDecision(p.t, uniqueId, nextSkillDecision{
+	nd := nextSkillDecision{
 		skillId:                d.SkillId,
 		skillLevel:             d.SkillLevel,
 		decidedAtMs:            d.DecidedAtMs,
 		nextEligibleRepickAtMs: d.NextEligibleRepickAtMs,
-	})
+	}
+	updated, err := GetMonsterRegistry().SetNextSkillDecision(p.t, uniqueId, nd)
 	if err != nil {
 		p.l.WithError(err).Errorf("Picker: failed to store decision for monster [%d].", uniqueId)
 		// Continue and emit anyway: the consumer is the source of truth for
 		// atlas-channel's inbox, and a stale local store will repair on the
 		// next picker run.
 	}
-	_ = updated
+	_ = updated // decision is in-memory only; not persisted (see SetNextSkillDecision doc)
 
 	// Always emit, even on sentinel/unchanged decisions, to keep atlas-channel
 	// inbox coherent.
-	if err := p.emit(EnvEventTopicMonsterStatus, nextSkillDecidedStatusEventProvider(m, nextSkillDecision{
-		skillId:                d.SkillId,
-		skillLevel:             d.SkillLevel,
-		decidedAtMs:            d.DecidedAtMs,
-		nextEligibleRepickAtMs: d.NextEligibleRepickAtMs,
-	})); err != nil {
+	if err := p.emit(EnvEventTopicMonsterStatus, nextSkillDecidedStatusEventProvider(m, nd)); err != nil {
 		p.l.WithError(err).Errorf("Picker: failed to emit NEXT_SKILL_DECIDED for monster [%d].", uniqueId)
 		return err
 	}

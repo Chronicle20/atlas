@@ -23,28 +23,29 @@ const maxRetries = 10
 
 // storedMonster is the JSON-serializable representation stored in Redis.
 type storedMonster struct {
-	UniqueId           uint32             `json:"uniqueId"`
-	TenantId           string             `json:"tenantId"`
-	TenantRegion       string             `json:"tenantRegion"`
-	TenantMajorVersion uint16             `json:"tenantMajorVersion"`
-	TenantMinorVersion uint16             `json:"tenantMinorVersion"`
-	WorldId            byte               `json:"worldId"`
-	ChannelId          byte               `json:"channelId"`
-	MapId              uint32             `json:"mapId"`
-	Instance           string             `json:"instance"`
-	MaxHp              uint32             `json:"maxHp"`
-	Hp                 uint32             `json:"hp"`
-	MaxMp              uint32             `json:"maxMp"`
-	Mp                 uint32             `json:"mp"`
-	MonsterId          uint32             `json:"monsterId"`
-	ControlCharacterId uint32             `json:"controlCharacterId"`
-	X                  int16              `json:"x"`
-	Y                  int16              `json:"y"`
-	Fh                 int16              `json:"fh"`
-	Stance             byte               `json:"stance"`
-	Team               int8               `json:"team"`
-	DamageEntries      damageEntryList    `json:"damageEntries"`
-	StatusEffects      statusEffectList   `json:"statusEffects"`
+	UniqueId             uint32           `json:"uniqueId"`
+	TenantId             string           `json:"tenantId"`
+	TenantRegion         string           `json:"tenantRegion"`
+	TenantMajorVersion   uint16           `json:"tenantMajorVersion"`
+	TenantMinorVersion   uint16           `json:"tenantMinorVersion"`
+	WorldId              byte             `json:"worldId"`
+	ChannelId            byte             `json:"channelId"`
+	MapId                uint32           `json:"mapId"`
+	Instance             string           `json:"instance"`
+	MaxHp                uint32           `json:"maxHp"`
+	Hp                   uint32           `json:"hp"`
+	MaxMp                uint32           `json:"maxMp"`
+	Mp                   uint32           `json:"mp"`
+	MonsterId            uint32           `json:"monsterId"`
+	ControlCharacterId   uint32           `json:"controlCharacterId"`
+	ControllerHasAggro   bool             `json:"controllerHasAggro"`
+	X                    int16            `json:"x"`
+	Y                    int16            `json:"y"`
+	Fh                   int16            `json:"fh"`
+	Stance               byte             `json:"stance"`
+	Team                 int8             `json:"team"`
+	DamageEntries        damageEntryList  `json:"damageEntries"`
+	StatusEffects        statusEffectList `json:"statusEffects"`
 }
 
 // damageEntryList and statusEffectList tolerate the empty-object form ("{}")
@@ -76,6 +77,7 @@ func unmarshalTolerantArray[T any](data []byte, out *[]T) error {
 type storedDamageEntry struct {
 	CharacterId uint32 `json:"characterId"`
 	Damage      uint32 `json:"damage"`
+	LastHitMs   int64  `json:"lastHitMs"`
 }
 
 type storedStatusEffect struct {
@@ -95,7 +97,11 @@ type storedStatusEffect struct {
 func toStored(t tenant.Model, m Model) storedMonster {
 	des := make([]storedDamageEntry, 0, len(m.damageEntries))
 	for _, e := range m.damageEntries {
-		des = append(des, storedDamageEntry{CharacterId: e.CharacterId, Damage: e.Damage})
+		des = append(des, storedDamageEntry{
+			CharacterId: e.CharacterId,
+			Damage:      e.Damage,
+			LastHitMs:   e.LastHitMs,
+		})
 	}
 	ses := make([]storedStatusEffect, 0, len(m.statusEffects))
 	for _, se := range m.statusEffects {
@@ -129,6 +135,7 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		Mp:                 m.mp,
 		MonsterId:          m.monsterId,
 		ControlCharacterId: m.controlCharacterId,
+		ControllerHasAggro: m.controllerHasAggro,
 		X:                  m.x,
 		Y:                  m.y,
 		Fh:                 m.fh,
@@ -153,9 +160,27 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		return tenant.Model{}, Model{}, err
 	}
 
-	des := make([]entry, 0, len(sm.DamageEntries))
+	agg := make(map[uint32]*entry)
+	order := make([]uint32, 0, len(sm.DamageEntries))
 	for _, de := range sm.DamageEntries {
-		des = append(des, entry{CharacterId: de.CharacterId, Damage: de.Damage})
+		if existing, ok := agg[de.CharacterId]; ok {
+			existing.Damage += de.Damage
+			// Take the latest non-zero lastHitMs; legacy rows have 0.
+			if de.LastHitMs > existing.LastHitMs {
+				existing.LastHitMs = de.LastHitMs
+			}
+			continue
+		}
+		agg[de.CharacterId] = &entry{
+			CharacterId: de.CharacterId,
+			Damage:      de.Damage,
+			LastHitMs:   de.LastHitMs,
+		}
+		order = append(order, de.CharacterId)
+	}
+	des := make([]entry, 0, len(order))
+	for _, cid := range order {
+		des = append(des, *agg[cid])
 	}
 	ses := make([]StatusEffect, 0, len(sm.StatusEffects))
 	for _, sse := range sm.StatusEffects {
@@ -190,6 +215,7 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		mp:                 sm.Mp,
 		monsterId:          sm.MonsterId,
 		controlCharacterId: sm.ControlCharacterId,
+		controllerHasAggro: sm.ControllerHasAggro,
 		x:                  sm.X,
 		y:                  sm.Y,
 		fh:                 sm.Fh,
@@ -382,6 +408,7 @@ var applyDamageScript = goredis.NewScript(`
 local key = KEYS[1]
 local charId = tonumber(ARGV[1])
 local damage = tonumber(ARGV[2])
+local nowMs = tonumber(ARGV[3])
 local j = redis.call('GET', key)
 if not j then
     return redis.error_reply("monster not found")
@@ -390,19 +417,49 @@ local m = cjson.decode(j)
 local hp = m.hp
 local actual = hp - math.max(hp - damage, 0)
 m.hp = hp - actual
-table.insert(m.damageEntries, {characterId = charId, damage = actual})
-local encoded = cjson.encode(m)
-redis.call('SET', key, encoded)
-return encoded
+
+local entries = m.damageEntries
+if type(entries) ~= 'table' then
+    entries = {}
+end
+
+local found = false
+for _, e in ipairs(entries) do
+    if e.characterId == charId then
+        e.damage = e.damage + actual
+        e.lastHitMs = nowMs
+        found = true
+        break
+    end
+end
+if not found then
+    table.insert(entries, {
+        characterId = charId,
+        damage = actual,
+        lastHitMs = nowMs
+    })
+end
+m.damageEntries = entries
+
+local hadAggro = m.controllerHasAggro
+local wasFirstHit = false
+if m.controlCharacterId ~= 0 and not hadAggro then
+    m.controllerHasAggro = true
+    wasFirstHit = true
+end
+
+redis.call('SET', key, cjson.encode(m))
+return cjson.encode({wasFirstHit = wasFirstHit, monster = m})
 `)
 
-func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32, uniqueId uint32) (DamageSummary, error) {
+func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32, uniqueId uint32, nowMs int64) (DamageSummary, error) {
 	ctx := context.Background()
 	key := monsterKey(t, uniqueId)
 
 	result, err := applyDamageScript.Run(ctx, r.client, []string{key},
 		strconv.FormatUint(uint64(characterId), 10),
 		strconv.FormatUint(uint64(damage), 10),
+		strconv.FormatInt(nowMs, 10),
 	).Result()
 	if err != nil {
 		return DamageSummary{}, errors.New("monster not found")
@@ -413,11 +470,14 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		return DamageSummary{}, errors.New("unexpected response type")
 	}
 
-	var sm storedMonster
-	if err := json.Unmarshal([]byte(resultStr), &sm); err != nil {
+	var env struct {
+		WasFirstHit bool          `json:"wasFirstHit"`
+		Monster     storedMonster `json:"monster"`
+	}
+	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
 		return DamageSummary{}, err
 	}
-	_, m, err := fromStored(sm)
+	_, m, err := fromStored(env.Monster)
 	if err != nil {
 		return DamageSummary{}, err
 	}
@@ -426,8 +486,8 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		CharacterId:   characterId,
 		Monster:       m,
 		VisibleDamage: damage,
-		ActualDamage:  int64(m.Hp() - m.Hp()),
 		Killed:        m.Hp() == 0,
+		WasFirstHit:   env.WasFirstHit,
 	}, nil
 }
 
@@ -571,5 +631,95 @@ func (r *Registry) scanAndDelete(ctx context.Context, pattern string) {
 			break
 		}
 	}
+}
+
+// DecaySummary is returned by DecayDamageEntries.
+type DecaySummary struct {
+	Monster           Model
+	PrevControllerId  uint32
+	ControllerCleared bool
+}
+
+var decayDamageEntriesScript = goredis.NewScript(`
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local idleMs = tonumber(ARGV[2])
+local mult = tonumber(ARGV[3])
+local floorVal = tonumber(ARGV[4])
+local j = redis.call('GET', key)
+if not j then
+    return redis.error_reply("monster not found")
+end
+local m = cjson.decode(j)
+
+local entries = m.damageEntries
+if type(entries) ~= 'table' then
+    entries = {}
+end
+
+local kept = {}
+for _, e in ipairs(entries) do
+    if (now - e.lastHitMs) > idleMs then
+        e.damage = math.floor(e.damage * mult)
+    end
+    if e.damage >= floorVal then
+        table.insert(kept, e)
+    end
+end
+m.damageEntries = kept
+
+local prevControllerId = m.controlCharacterId
+local controllerCleared = false
+if #kept == 0 then
+    if m.controlCharacterId ~= 0 then
+        m.controlCharacterId = 0
+        controllerCleared = true
+    end
+    m.controllerHasAggro = false
+end
+
+redis.call('SET', key, cjson.encode(m))
+return cjson.encode({
+    controllerCleared = controllerCleared,
+    prevControllerId = prevControllerId,
+    monster = m,
+})
+`)
+
+func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int64) (DecaySummary, error) {
+	ctx := context.Background()
+	key := monsterKey(t, uniqueId)
+
+	result, err := decayDamageEntriesScript.Run(ctx, r.client, []string{key},
+		strconv.FormatInt(nowMs, 10),
+		strconv.FormatInt(AggroIdleThresholdMs, 10),
+		strconv.FormatFloat(AggroDecayMultiplier, 'f', -1, 64),
+		strconv.FormatUint(uint64(AggroDecayFloor), 10),
+	).Result()
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	resultStr, ok := result.(string)
+	if !ok {
+		return DecaySummary{}, errors.New("unexpected response type")
+	}
+
+	var env struct {
+		ControllerCleared bool          `json:"controllerCleared"`
+		PrevControllerId  uint32        `json:"prevControllerId"`
+		Monster           storedMonster `json:"monster"`
+	}
+	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
+		return DecaySummary{}, err
+	}
+	_, m, err := fromStored(env.Monster)
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	return DecaySummary{
+		Monster:           m,
+		PrevControllerId:  env.PrevControllerId,
+		ControllerCleared: env.ControllerCleared,
+	}, nil
 }
 

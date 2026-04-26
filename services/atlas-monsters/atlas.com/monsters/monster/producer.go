@@ -23,12 +23,20 @@ func statusEventProvider[E any](f field.Model, uniqueId uint32, monsterId uint32
 
 func startControlStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusStartControl, statusEventStartControlBody{
-		ActorId: m.ControlCharacterId(),
-		X:       m.X(),
-		Y:       m.Y(),
-		Stance:  m.Stance(),
-		FH:      m.Fh(),
-		Team:    m.Team(),
+		ActorId:            m.ControlCharacterId(),
+		X:                  m.X(),
+		Y:                  m.Y(),
+		Stance:             m.Stance(),
+		FH:                 m.Fh(),
+		Team:               m.Team(),
+		ControllerHasAggro: m.ControllerHasAggro(),
+	})
+}
+
+func aggroChangedStatusEventProvider(m Model, controllerCharacterId uint32, hasAggro bool) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusAggroChanged, statusEventAggroChangedBody{
+		ControllerCharacterId: controllerCharacterId,
+		ControllerHasAggro:    hasAggro,
 	})
 }
 

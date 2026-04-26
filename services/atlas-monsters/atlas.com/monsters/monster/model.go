@@ -16,32 +16,35 @@ type DamageSummary struct {
 	VisibleDamage uint32
 	ActualDamage  int64
 	Killed        bool
+	WasFirstHit   bool
 }
 
 type Model struct {
-	uniqueId           uint32
-	worldId            world.Id
-	channelId          channel.Id
-	mapId              _map.Id
-	instance           uuid.UUID
-	maxHp              uint32
-	hp                 uint32
-	maxMp              uint32
-	mp                 uint32
-	monsterId          uint32
-	controlCharacterId uint32
-	x                  int16
-	y                  int16
-	fh                 int16
-	stance             byte
-	team               int8
-	damageEntries      []entry
-	statusEffects      []StatusEffect
+	uniqueId             uint32
+	worldId              world.Id
+	channelId            channel.Id
+	mapId                _map.Id
+	instance             uuid.UUID
+	maxHp                uint32
+	hp                   uint32
+	maxMp                uint32
+	mp                   uint32
+	monsterId            uint32
+	controlCharacterId   uint32
+	controllerHasAggro   bool
+	x                    int16
+	y                    int16
+	fh                   int16
+	stance               byte
+	team                 int8
+	damageEntries        []entry
+	statusEffects        []StatusEffect
 }
 
 type entry struct {
 	CharacterId uint32
 	Damage      uint32
+	LastHitMs   int64
 }
 
 func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {
@@ -103,6 +106,10 @@ func (m Model) ControlCharacterId() uint32 {
 	return m.controlCharacterId
 }
 
+func (m Model) ControllerHasAggro() bool {
+	return m.controllerHasAggro
+}
+
 func (m Model) Fh() int16 {
 	return m.fh
 }
@@ -127,24 +134,11 @@ func (m Model) DamageEntries() []entry {
 	return m.damageEntries
 }
 
+// DamageSummary returns the per-character damage entries. Entries are now
+// pre-aggregated by characterId at write time (Task 1+4), so this is a
+// straight passthrough of m.damageEntries.
 func (m Model) DamageSummary() []entry {
-	var damageSummary = make(map[uint32]uint32)
-	for _, x := range m.damageEntries {
-		if _, ok := damageSummary[x.CharacterId]; ok {
-			damageSummary[x.CharacterId] += x.Damage
-		} else {
-			damageSummary[x.CharacterId] = x.Damage
-		}
-	}
-
-	var results []entry
-	for id, dmg := range damageSummary {
-		results = append(results, entry{
-			CharacterId: id,
-			Damage:      dmg,
-		})
-	}
-	return results
+	return m.damageEntries
 }
 
 func (m Model) Move(x int16, y int16, stance byte) Model {

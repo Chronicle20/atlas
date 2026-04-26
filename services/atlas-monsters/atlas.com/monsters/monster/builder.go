@@ -24,6 +24,7 @@ func Clone(m Model) *ModelBuilder {
 		mp:                 m.mp,
 		monsterId:          m.monsterId,
 		controlCharacterId: m.controlCharacterId,
+		controllerHasAggro: m.controllerHasAggro,
 		x:                  m.x,
 		y:                  m.y,
 		fh:                 m.fh,
@@ -47,6 +48,7 @@ type ModelBuilder struct {
 	mp                 uint32
 	monsterId          uint32
 	controlCharacterId uint32
+	controllerHasAggro bool
 	x                  int16
 	y                  int16
 	fh                 int16
@@ -83,6 +85,12 @@ func (b *ModelBuilder) SetHp(hp uint32) *ModelBuilder {
 // SetControlCharacterId sets the controlling character ID.
 func (b *ModelBuilder) SetControlCharacterId(id uint32) *ModelBuilder {
 	b.controlCharacterId = id
+	return b
+}
+
+// SetControllerHasAggro sets whether the controlling character has aggro.
+func (b *ModelBuilder) SetControllerHasAggro(v bool) *ModelBuilder {
+	b.controllerHasAggro = v
 	return b
 }
 
@@ -172,6 +180,7 @@ func (b *ModelBuilder) Build() Model {
 		mp:                 b.mp,
 		monsterId:          b.monsterId,
 		controlCharacterId: b.controlCharacterId,
+		controllerHasAggro: b.controllerHasAggro,
 		x:                  b.x,
 		y:                  b.y,
 		fh:                 b.fh,

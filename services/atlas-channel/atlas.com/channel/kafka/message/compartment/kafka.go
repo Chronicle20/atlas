@@ -117,6 +117,11 @@ const (
 	StatusEventTypeMergeComplete        = "MERGE_COMPLETE"
 	StatusEventTypeSortComplete         = "SORT_COMPLETE"
 	StatusEventTypeCompleted            = "COMPLETED"
+	StatusEventTypeCreationFailed       = "CREATION_FAILED"
+
+	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetInventoryFull    = "CREATE_ASSET_INVENTORY_FULL"
+	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 
 type StatusEvent[E any] struct {
@@ -157,4 +162,9 @@ type MergeCompleteEventBody struct {
 
 type SortCompleteEventBody struct {
 	Type byte `json:"type"`
+}
+
+type CreationFailedStatusEventBody struct {
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
 }

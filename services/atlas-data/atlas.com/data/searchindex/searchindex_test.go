@@ -249,3 +249,63 @@ func TestResolveTenantId_EmptyTable(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, uuid.Nil, got)
 }
+
+func TestCount_FilterOnly(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	for i := 0; i < 30; i++ {
+		seed(t, db, ctx, tn.Id(), uint32(1+i), "Apple", "", false)
+	}
+	got, err := CountWithFilter[testEntity](db, ctx, tn.Id(), QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, 30, got)
+}
+
+func TestCount_SubstringMatch(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	seed(t, db, ctx, tn.Id(), 1, "Red Cap", "", false)
+	seed(t, db, ctx, tn.Id(), 2, "Blue Helm", "", false)
+	seed(t, db, ctx, tn.Id(), 3, "Green Cap", "", false)
+
+	spec := QuerySpec[testEntity]{
+		EntityIdColumn: "widget_id",
+		NameColumns:    []string{"name"},
+	}
+	got, err := Count[testEntity](db, ctx, tn.Id(), "cap", spec)
+	require.NoError(t, err)
+	assert.Equal(t, 2, got)
+}
+
+func TestCount_NumericQueryUnionedOnce(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	// id 1452000 — name contains "1452000" so substring + exact-id both match
+	seed(t, db, ctx, tn.Id(), 1452000, "Bow 1452000", "", false)
+	// id 1452001 — substring-only match
+	seed(t, db, ctx, tn.Id(), 1452001, "Bow Reference 1452000", "", false)
+	// id 1452002 — exact-id only (name does not contain digits)
+	seed(t, db, ctx, tn.Id(), 1452002, "Wooden Bow", "", false)
+
+	spec := QuerySpec[testEntity]{
+		EntityIdColumn: "widget_id",
+		NameColumns:    []string{"name"},
+	}
+	// q="1452000": substring matches rows 1+2; exact-id matches row 1.
+	// Single OR -> row 1 counted once. Total = 2.
+	got, err := Count[testEntity](db, ctx, tn.Id(), "1452000", spec)
+	require.NoError(t, err)
+	assert.Equal(t, 2, got)
+
+	// q="1452002": substring matches no rows; exact-id matches row 3.
+	// Total = 1.
+	got, err = Count[testEntity](db, ctx, tn.Id(), "1452002", spec)
+	require.NoError(t, err)
+	assert.Equal(t, 1, got)
+}

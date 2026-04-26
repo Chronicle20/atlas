@@ -85,7 +85,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 				EntityIdColumn: "item_id",
 				NameColumns:    []string{"name"},
-				Order:          "name ASC, item_id ASC",
+				Order:          "item_id ASC",
 				IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 			}
 

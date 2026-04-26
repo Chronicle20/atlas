@@ -9,6 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
+// ErrNoFreeSlots is returned by Model.NextFreeSlot when the compartment is at
+// capacity. Callers use errors.Is to surface inventory-full as a distinct
+// failure mode (e.g. CREATE_ASSET_INVENTORY_FULL on the status event).
+var ErrNoFreeSlots = errors.New("no free slots")
+
 type Model struct {
 	id            uuid.UUID
 	characterId   uint32
@@ -50,7 +55,7 @@ func (m Model) NextFreeSlot() (int16, error) {
 
 	for {
 		if slot > int16(m.Capacity()) {
-			return 0, errors.New("no free slots")
+			return 0, ErrNoFreeSlots
 		} else if i >= len(m.Assets()) {
 			return slot, nil
 		} else if slot < m.Assets()[i].Slot() {

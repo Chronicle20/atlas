@@ -182,6 +182,7 @@ const (
 	ReleaseCommandFailed = "RELEASE_COMMAND_FAILED"
 
 	CreateAssetTemplateNotFound = "CREATE_ASSET_TEMPLATE_NOT_FOUND"
+	CreateAssetInventoryFull    = "CREATE_ASSET_INVENTORY_FULL"
 	CreateAssetUnknownError     = "CREATE_ASSET_UNKNOWN_ERROR"
 )
 

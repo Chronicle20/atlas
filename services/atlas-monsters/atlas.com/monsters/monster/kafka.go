@@ -22,6 +22,7 @@ const (
 	EventMonsterStatusEffectCancelled = "STATUS_CANCELLED"
 	EventMonsterStatusDamageReflected = "DAMAGE_REFLECTED"
 	EventMonsterStatusFriendlyDrop    = "FRIENDLY_DROP"
+	EventMonsterStatusAggroChanged    = "AGGRO_CHANGED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -62,12 +63,18 @@ type statusEventDestroyedBody struct {
 }
 
 type statusEventStartControlBody struct {
-	ActorId uint32 `json:"actorId"`
-	X       int16  `json:"x"`
-	Y       int16  `json:"y"`
-	Stance  byte   `json:"stance"`
-	FH      int16  `json:"fh"`
-	Team    int8   `json:"team"`
+	ActorId            uint32 `json:"actorId"`
+	X                  int16  `json:"x"`
+	Y                  int16  `json:"y"`
+	Stance             byte   `json:"stance"`
+	FH                 int16  `json:"fh"`
+	Team               int8   `json:"team"`
+	ControllerHasAggro bool   `json:"controllerHasAggro"`
+}
+
+type statusEventAggroChangedBody struct {
+	ControllerCharacterId uint32 `json:"controllerCharacterId"`
+	ControllerHasAggro    bool   `json:"controllerHasAggro"`
 }
 
 type statusEventStopControlBody struct {

@@ -2,6 +2,7 @@ package npc
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/conversation/recipe"
 	"context"
 	"database/sql"
 	"fmt"
@@ -66,6 +67,12 @@ type Processor interface {
 	// Seed clears existing NPC conversations and loads them from the conversations directory
 	Seed() (SeedResult, error)
 
+	// ReindexAllRecipes clears every recipe row for the active tenant, then
+	// walks every NPC conversation and re-derives recipe rows from each one.
+	// Runs in a single transaction so a mid-rebuild failure rolls back to the
+	// prior index state.
+	ReindexAllRecipes() (recipe.ReindexResult, error)
+
 	// Count returns the number of NPC conversations for the current tenant and the max updated_at timestamp.
 	// Returns (0, nil, nil) when the tenant has no rows.
 	Count() (int64, *time.Time, error)
@@ -109,11 +116,45 @@ func (p *ProcessorImpl) AllByNpcIdProvider(npcId uint32) model.Provider[[]Model]
 	return model.SliceMap[Entity, Model](Make)(getAllByNpcIdProvider(npcId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 }
 
-// Create creates a new NPC conversation
+// createWithSkipTracking is the seed-time variant of Create: it runs the same
+// txn (conversation insert + recipe rebuild) but returns the rebuild's skip
+// information so the seed loop can accumulate skips across conversations.
+func (p *ProcessorImpl) createWithSkipTracking(m Model, result *SeedResult) (Model, error) {
+	var saved Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		created, err := createNpcConversation(tx)(p.t.Id())(m)
+		if err != nil {
+			return err
+		}
+		rebuild, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(created.NpcId(), created.Id(), created.States())
+		if err != nil {
+			return err
+		}
+		result.SkippedRecipes += rebuild.Skipped
+		result.SkippedRecipeDetails = append(result.SkippedRecipeDetails, rebuild.SkippedDetails...)
+		saved = created
+		return nil
+	})
+	return saved, err
+}
+
+// Create creates a new NPC conversation and rebuilds its derived recipe rows
+// inside the same transaction.
 func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	p.l.Debugf("Creating NPC conversation for NPC [%d]", m.NpcId())
 
-	result, err := createNpcConversation(p.db.WithContext(p.ctx))(p.t.Id())(m)
+	var result Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		created, err := createNpcConversation(tx)(p.t.Id())(m)
+		if err != nil {
+			return err
+		}
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(created.NpcId(), created.Id(), created.States()); err != nil {
+			return err
+		}
+		result = created
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to create NPC conversation for NPC [%d]", m.NpcId())
 		return Model{}, err
@@ -121,11 +162,23 @@ func (p *ProcessorImpl) Create(m Model) (Model, error) {
 	return result, nil
 }
 
-// Update updates an existing NPC conversation
+// Update updates an existing NPC conversation and rebuilds its derived recipe
+// rows inside the same transaction.
 func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	p.l.Debugf("Updating NPC conversation [%s]", id)
 
-	result, err := updateNpcConversation(p.db.WithContext(p.ctx))(id)(m)
+	var result Model
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		updated, err := updateNpcConversation(tx)(id)(m)
+		if err != nil {
+			return err
+		}
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(updated.NpcId(), updated.Id(), updated.States()); err != nil {
+			return err
+		}
+		result = updated
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to update NPC conversation [%s]", id)
 		return Model{}, err
@@ -133,11 +186,17 @@ func (p *ProcessorImpl) Update(id uuid.UUID, m Model) (Model, error) {
 	return result, nil
 }
 
-// Delete deletes an NPC conversation
+// Delete deletes an NPC conversation and the recipe rows derived from it,
+// inside the same transaction.
 func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	p.l.Debugf("Deleting NPC conversation [%s]", id)
 
-	err := deleteNpcConversation(p.db.WithContext(p.ctx))(id)
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).RebuildForConversation(tx)(0, id, nil); err != nil {
+			return err
+		}
+		return deleteNpcConversation(tx)(id)
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversation [%s]", id)
 		return err
@@ -145,11 +204,23 @@ func (p *ProcessorImpl) Delete(id uuid.UUID) error {
 	return nil
 }
 
-// DeleteAllForTenant deletes all NPC conversations for the current tenant using hard delete
+// DeleteAllForTenant deletes every NPC conversation for the active tenant and
+// every derived recipe row, inside the same transaction.
 func (p *ProcessorImpl) DeleteAllForTenant() (int64, error) {
 	p.l.Debugf("Deleting all NPC conversations for tenant [%s]", p.t.Id())
 
-	count, err := deleteAllNpcConversations(p.db.WithContext(p.ctx))
+	var count int64
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		if _, err := recipe.NewProcessor(p.l, p.ctx, p.db).ClearForTenant(tx); err != nil {
+			return err
+		}
+		c, err := deleteAllNpcConversations(tx)
+		if err != nil {
+			return err
+		}
+		count = c
+		return nil
+	})
 	if err != nil {
 		p.l.WithError(err).Errorf("Failed to delete NPC conversations for tenant [%s]", p.t.Id())
 		return 0, err
@@ -182,7 +253,6 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 
 	// Create each conversation
 	for _, rm := range models {
-		// Extract domain model from REST model
 		m, err := Extract(rm)
 		if err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to extract model: %v", rm.NpcId, err))
@@ -190,9 +260,7 @@ func (p *ProcessorImpl) Seed() (SeedResult, error) {
 			continue
 		}
 
-		// Create the conversation
-		_, err = p.Create(m)
-		if err != nil {
+		if _, err := p.createWithSkipTracking(m, &result); err != nil {
 			result.Errors = append(result.Errors, fmt.Sprintf("npc_%d: failed to create: %v", rm.NpcId, err))
 			result.FailedCount++
 			continue
@@ -230,6 +298,53 @@ func (p *ProcessorImpl) Count() (int64, *time.Time, error) {
 		return count, nil, nil
 	}
 	return count, &t, nil
+}
+
+// ReindexAllRecipes clears every recipe row for the active tenant, then walks
+// every NPC conversation in the tenant and re-derives recipe rows from the
+// craftAction states. Inside a single db.Transaction so a mid-rebuild failure
+// leaves the prior index intact.
+func (p *ProcessorImpl) ReindexAllRecipes() (recipe.ReindexResult, error) {
+	p.l.Infof("Reindexing recipes for tenant [%s]", p.t.Id())
+
+	var result recipe.ReindexResult
+	err := p.db.WithContext(p.ctx).Transaction(func(tx *gorm.DB) error {
+		rp := recipe.NewProcessor(p.l, p.ctx, p.db)
+
+		deleted, err := rp.ClearForTenant(tx)
+		if err != nil {
+			return err
+		}
+		result.DeletedCount = deleted
+
+		var entities []Entity
+		if err := tx.WithContext(p.ctx).Find(&entities).Error; err != nil {
+			return err
+		}
+
+		for _, entity := range entities {
+			m, err := Make(entity)
+			if err != nil {
+				return err
+			}
+			rebuild, err := rp.RebuildForConversation(tx)(m.NpcId(), m.Id(), m.States())
+			if err != nil {
+				return err
+			}
+			result.InsertedCount += rebuild.Inserted
+			result.SkippedCount += rebuild.Skipped
+			result.SkippedDetails = append(result.SkippedDetails, rebuild.SkippedDetails...)
+			result.ConversationsScanned++
+		}
+		return nil
+	})
+	if err != nil {
+		p.l.WithError(err).Errorf("Reindex failed for tenant [%s]", p.t.Id())
+		return recipe.ReindexResult{}, err
+	}
+	p.l.Infof("Reindex complete for tenant [%s]: deleted=%d inserted=%d skipped=%d scanned=%d",
+		p.t.Id(), result.DeletedCount, result.InsertedCount, result.SkippedCount, result.ConversationsScanned)
+	return result, nil
 }
 
 func parseDBTime(s string) (time.Time, error) {

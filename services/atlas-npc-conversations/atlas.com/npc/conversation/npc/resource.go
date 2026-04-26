@@ -2,6 +2,7 @@ package npc
 
 import (
 	"atlas-npc-conversations/conversation"
+	"atlas-npc-conversations/conversation/recipe"
 	"atlas-npc-conversations/rest"
 	"encoding/json"
 	"errors"
@@ -9,6 +10,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -32,6 +34,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			router.HandleFunc("/npcs/conversations/validate", registerInputHandler("validate_conversation", ValidateConversationHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/npcs/conversations/seed", registerHandler("seed_conversations", SeedConversationsHandler)).Methods(http.MethodPost)
 			router.HandleFunc("/npcs/conversations/seed/status", registerHandler("get_npc_conversations_seed_status", SeedStatusHandler)).Methods(http.MethodGet)
+			router.HandleFunc("/npcs/conversations/reindex-recipes", registerHandler("reindex_recipes", ReindexRecipesHandler)).Methods(http.MethodPost)
 		}
 	}
 }
@@ -264,5 +267,32 @@ func SeedConversationsHandler(d *rest.HandlerDependency, _ *rest.HandlerContext)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		json.NewEncoder(w).Encode(result)
+	}
+}
+
+// ReindexRecipesHandler handles POST /npcs/conversations/reindex-recipes —
+// rebuilds the recipe index for the active tenant.
+func ReindexRecipesHandler(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := tenant.MustFromContext(d.Context())
+		processor := NewProcessor(d.Logger(), d.Context(), d.DB())
+		impl, ok := processor.(*ProcessorImpl)
+		if !ok {
+			d.Logger().Errorf("Processor is not *ProcessorImpl, cannot reindex.")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		res, err := impl.ReindexAllRecipes()
+		if err != nil {
+			d.Logger().WithError(err).Errorf("Reindexing recipes.")
+			w.WriteHeader(http.StatusInternalServerError)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+
+		restModel := recipe.MakeRestReindexResult(t.Id(), res)
+		query := r.URL.Query()
+		queryParams := jsonapi.ParseQueryFields(&query)
+		server.MarshalResponse[recipe.RestReindexResult](d.Logger())(w)(c.ServerInformation())(queryParams)(restModel)
 	}
 }

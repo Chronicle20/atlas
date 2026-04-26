@@ -1226,6 +1226,24 @@ func (b *CraftActionBuilder) Build() (*CraftActionModel, error) {
 	}, nil
 }
 
+// NewCraftActionModelDirect constructs a CraftActionModel without any
+// validation. Intended exclusively for testing scenarios that need to exercise
+// processor-level defensive checks (e.g. materials/quantities mismatch) that
+// cannot be produced through the validated CraftActionBuilder.
+func NewCraftActionModelDirect(itemId string, materials, quantities []uint32, mesoCost uint32, stimulatorId uint32, stimulatorFailChance float64, successState, failureState, missingMaterialsState string) *CraftActionModel {
+	return &CraftActionModel{
+		itemId:                itemId,
+		materials:             materials,
+		quantities:            quantities,
+		mesoCost:              mesoCost,
+		stimulatorId:          stimulatorId,
+		stimulatorFailChance:  stimulatorFailChance,
+		successState:          successState,
+		failureState:          failureState,
+		missingMaterialsState: missingMaterialsState,
+	}
+}
+
 // TransportActionModel represents a transport action state
 // Used for instance-based transports that go through saga-orchestrator
 type TransportActionModel struct {

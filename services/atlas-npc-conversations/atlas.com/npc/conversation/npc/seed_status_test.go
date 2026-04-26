@@ -1,6 +1,7 @@
 package npc
 
 import (
+	"atlas-npc-conversations/conversation/recipe"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -46,6 +47,9 @@ func newSeedStatusTestDB(t *testing.T) *gorm.DB {
 
 	if err := MigrateTable(db); err != nil {
 		t.Fatalf("Failed to migrate npc conversations: %v", err)
+	}
+	if err := recipe.MigrateTable(db); err != nil {
+		t.Fatalf("Failed to migrate recipes: %v", err)
 	}
 
 	return db

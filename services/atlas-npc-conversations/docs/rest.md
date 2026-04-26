@@ -184,3 +184,42 @@ Clears all quest conversations for the current tenant and loads from JSON files 
   - `errors` ([]string)
 - Error conditions:
   - 500: Internal error
+
+### GET /items/{itemId}/recipes
+
+List recipes whose output is `itemId`. See `recipes.md`.
+
+- Parameters:
+  - `itemId` (path, uint32) — Output item template ID
+- Request model: None
+- Response model: `[]recipe.RestModel` (JSON:API, resource type `"recipes"`)
+- Error conditions:
+  - 400: `itemId` not parseable as a positive integer
+  - 500: Internal error
+
+### GET /npcs/{npcId}/recipes
+
+List recipes owned by `npcId`. See `recipes.md`.
+
+- Parameters:
+  - `npcId` (path, uint32) — NPC template ID
+- Request model: None
+- Response model: `[]recipe.RestModel` (JSON:API, resource type `"recipes"`)
+- Error conditions:
+  - 400: `npcId` not parseable as a positive integer
+  - 500: Internal error
+
+### POST /npcs/conversations/reindex-recipes
+
+Admin reindex. Clears the active tenant's recipe rows and rebuilds them from every NPC conversation. See `recipes.md`.
+
+- Parameters: None
+- Request model: None
+- Response model: `RecipeReindexResult` (JSON:API, resource type `"recipeReindexResults"`)
+  - `deletedCount` (int)
+  - `insertedCount` (int)
+  - `skippedCount` (int)
+  - `skippedDetails` ([]string)
+  - `conversationsScanned` (int)
+- Error conditions:
+  - 500: Internal error

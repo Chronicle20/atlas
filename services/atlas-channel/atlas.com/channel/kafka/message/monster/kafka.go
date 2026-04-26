@@ -70,6 +70,7 @@ const (
 	EventStatusEffectExpired   = "STATUS_EXPIRED"
 	EventStatusEffectCancelled = "STATUS_CANCELLED"
 	EventStatusDamageReflected = "DAMAGE_REFLECTED"
+	EventStatusAggroChanged    = "AGGRO_CHANGED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -97,12 +98,13 @@ type StatusEventDestroyedBody struct {
 }
 
 type StatusEventStartControlBody struct {
-	ActorId uint32 `json:"actorId"`
-	X       int16  `json:"x"`
-	Y       int16  `json:"y"`
-	Stance  byte   `json:"stance"`
-	FH      int16  `json:"fh"`
-	Team    int8   `json:"team"`
+	ActorId            uint32 `json:"actorId"`
+	X                  int16  `json:"x"`
+	Y                  int16  `json:"y"`
+	Stance             byte   `json:"stance"`
+	FH                 int16  `json:"fh"`
+	Team               int8   `json:"team"`
+	ControllerHasAggro bool   `json:"controllerHasAggro"`
 }
 
 type StatusEventStopControlBody struct {
@@ -156,4 +158,9 @@ type StatusEventDamageReflectedBody struct {
 	CharacterId   uint32 `json:"characterId"`
 	ReflectDamage uint32 `json:"reflectDamage"`
 	ReflectType   string `json:"reflectType"`
+}
+
+type StatusEventAggroChangedBody struct {
+	ControllerCharacterId uint32 `json:"controllerCharacterId"`
+	ControllerHasAggro    bool   `json:"controllerHasAggro"`
 }

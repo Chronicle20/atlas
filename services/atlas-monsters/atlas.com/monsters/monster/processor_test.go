@@ -3,7 +3,9 @@ package monster
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -47,6 +49,9 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 			}
 			return nil
 		},
+	}
+	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+		return nil, nil
 	}
 	return p, &events
 }
@@ -199,7 +204,7 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1, 50)
 	uniqueId := m.UniqueId()
 	// Apply a killing hit directly via the registry (no emit).
-	r.ApplyDamage(ten, 1, 999, uniqueId)
+	r.ApplyDamage(ten, 1, 999, uniqueId, time.Now().UnixMilli())
 	// Do NOT remove the monster — just leave it at HP=0 in the registry so
 	// Processor.Damage hits the !m.Alive() early-return path.
 
@@ -208,5 +213,266 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events for already-dead monster, got %d: %v", len(*events), *events)
+	}
+}
+
+// helpers used by the new tests
+type emittedBody struct {
+	Topic string
+	Type  string
+	Body  json.RawMessage
+}
+
+func newRecordingProcessorWithBodies(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]emittedBody) {
+	t.Helper()
+	var events []emittedBody
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: context.Background(),
+		t:   ten,
+		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+			msgs, err := provider()
+			if err != nil {
+				t.Fatalf("provider error: %v", err)
+			}
+			for _, m := range msgs {
+				var env struct {
+					Type string          `json:"type"`
+					Body json.RawMessage `json:"body"`
+				}
+				if err := json.Unmarshal(m.Value, &env); err != nil {
+					t.Fatalf("decode emitted: %v", err)
+				}
+				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
+			}
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) {
+			return []uint32{1, 2, 3, 4, 7}, nil
+		},
+	}
+	return p, &events
+}
+
+// TestDamageControllerSwitchOnDpsLead — character 2 takes lead from character 1
+// (the current controller). Expect STOP_CONTROL (for 1) then START_CONTROL
+// (for 2) with controllerHasAggro=true. AGGRO_CHANGED suppressed because the
+// switch carries the flag.
+func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Pre-populate: character 1 controls and leads damage.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	var types []string
+	for _, e := range *events {
+		types = append(types, e.Type)
+	}
+	// Expected order: DAMAGED, STOP_CONTROL, START_CONTROL.
+	if len(types) != 3 ||
+		types[0] != EventMonsterStatusDamaged ||
+		types[1] != EventMonsterStatusStopControl ||
+		types[2] != EventMonsterStatusStartControl {
+		t.Fatalf("unexpected event order: %v", types)
+	}
+	// START_CONTROL body must carry controllerHasAggro=true.
+	var body statusEventStartControlBody
+	if err := json.Unmarshal((*events)[2].Body, &body); err != nil {
+		t.Fatalf("decode start control: %v", err)
+	}
+	if !body.ControllerHasAggro {
+		t.Errorf("START_CONTROL body controllerHasAggro=true expected, got false")
+	}
+	if body.ActorId != 2 {
+		t.Errorf("START_CONTROL ActorId=2 expected, got %d", body.ActorId)
+	}
+}
+
+// TestDamageNoSwitchWhenLeaderUnchanged — current controller takes more damage
+// and stays leader. No STOP/START, but AGGRO_CHANGED should fire (first hit
+// flips the flag).
+func TestDamageNoSwitchWhenLeaderUnchanged(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Controller is set; controllerHasAggro starts false.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.Damage(uniqueId, 1, []uint32{30}, 0)
+
+	var types []string
+	for _, e := range *events {
+		types = append(types, e.Type)
+	}
+	if len(types) != 2 ||
+		types[0] != EventMonsterStatusDamaged ||
+		types[1] != EventMonsterStatusAggroChanged {
+		t.Fatalf("expected DAMAGED + AGGRO_CHANGED, got %v", types)
+	}
+	var body statusEventAggroChangedBody
+	if err := json.Unmarshal((*events)[1].Body, &body); err != nil {
+		t.Fatalf("decode aggro changed: %v", err)
+	}
+	if body.ControllerCharacterId != 1 || !body.ControllerHasAggro {
+		t.Errorf("AGGRO_CHANGED body unexpected: %+v", body)
+	}
+}
+
+// TestDamageAggroChangedSuppressedOnSwitch — when first hit also triggers a
+// controller switch, AGGRO_CHANGED is NOT emitted.
+func TestDamageAggroChangedSuppressedOnSwitch(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	// Character 2 hits first AND becomes leader.
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusAggroChanged {
+			t.Fatalf("AGGRO_CHANGED must be suppressed when controller switch carries the flag")
+		}
+	}
+}
+
+// TestDamageFR9NoStopWhenControllerZero — controller is 0; first attacker
+// becomes controller via a single START_CONTROL with no preceding STOP_CONTROL.
+func TestDamageFR9NoStopWhenControllerZero(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.Damage(uniqueId, 7, []uint32{30}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStopControl {
+			t.Fatalf("STOP_CONTROL must NOT precede START_CONTROL when controller was 0")
+		}
+	}
+	// We expect DAMAGED + START_CONTROL (first hit on monster with no controller
+	// keeps WasFirstHit=false, so no AGGRO_CHANGED at this stage).
+	var saw bool
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStartControl {
+			saw = true
+		}
+	}
+	if !saw {
+		t.Errorf("expected START_CONTROL, got %v", *events)
+	}
+}
+
+// TestDamageFR10OutOfFieldSkipsSwitch — attacker not in field: damage applies,
+// controller is NOT switched.
+func TestDamageFR10OutOfFieldSkipsSwitch(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	// Seed the existing controller as leader.
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed: %v", err)
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	// Override inFieldFn so character 2 is NOT in field.
+	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+		return []uint32{1}, nil
+	}
+	p.Damage(uniqueId, 2, []uint32{500}, 0)
+
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusStopControl || e.Type == EventMonsterStatusStartControl {
+			t.Fatalf("FR-10: out-of-field attacker should not switch controller, got %s", e.Type)
+		}
+	}
+	// Damage still applied (1000 initial - 50 seed - 500 = 450).
+	got, _ := r.GetMonster(ten, uniqueId)
+	if got.Hp() != 450 {
+		t.Errorf("expected HP=450 after seed+500 damage, got %d", got.Hp())
+	}
+}
+
+// TestAttackerInField verifies the FR-10 helper:
+//   - returns true when the attacker's id is in the field's character id list
+//   - returns false when not
+//   - returns false (fail-closed) on provider error
+func TestAttackerInField(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	tests := []struct {
+		name   string
+		ids    []uint32
+		err    error
+		wantIn bool
+	}{
+		{"in field", []uint32{1, 7, 9}, nil, true},
+		{"not in field", []uint32{1, 9}, nil, false},
+		{"empty field", []uint32{}, nil, false},
+		{"provider error fails closed", nil, errors.New("boom"), false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &ProcessorImpl{
+				l:   logrus.New(),
+				ctx: ctx,
+				t:   ten,
+				inFieldFn: func(_ field.Model) ([]uint32, error) {
+					return tc.ids, tc.err
+				},
+			}
+			got, err := p.attackerInField(f, 7)
+			if tc.err != nil {
+				if err == nil {
+					t.Errorf("expected error from helper, got nil")
+				}
+			}
+			if got != tc.wantIn {
+				t.Errorf("attackerInField=%v want %v", got, tc.wantIn)
+			}
+		})
 	}
 }

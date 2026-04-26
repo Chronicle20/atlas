@@ -57,15 +57,16 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l    logrus.FieldLogger
-	ctx  context.Context
-	t    tenant.Model
-	emit emitter
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	emit      emitter
+	inFieldFn func(f field.Model) ([]uint32, error)
 }
 
 // NewProcessor creates a new Processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
@@ -73,6 +74,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 			return producer.ProviderImpl(l)(ctx)(topic)(provider)
 		},
 	}
+	p.inFieldFn = func(f field.Model) ([]uint32, error) {
+		return _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f)()
+	}
+	return p
 }
 
 // ByIdProvider returns a provider for a monster by ID
@@ -214,14 +219,9 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 		}
 	}
 
-	m, err = p.GetById(uniqueId)
-	if err != nil {
-		return Model{}, err
-	}
-
-	m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), controllerId)
+	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	if err == nil {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(startControlStatusEventProvider(m))
+		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
 	}
 	return m, err
 }
@@ -231,7 +231,7 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 	oldControllerId := m.ControlCharacterId()
 	m, err := GetMonsterRegistry().ClearControl(p.t, m.UniqueId())
 	if err == nil {
-		_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(stopControlStatusEventProvider(m, oldControllerId))
+		_ = p.emit(EnvEventTopicMonsterStatus, stopControlStatusEventProvider(m, oldControllerId))
 	}
 	return err
 }
@@ -270,14 +270,19 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	var last DamageSummary
 	hasLast := false
 	killed := false
+	firstHitObserved := false
+	nowMs := time.Now().UnixMilli()
 	for _, d := range damages {
-		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId())
+		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId(), nowMs)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
 			break
 		}
 		last = s
 		hasLast = true
+		if s.WasFirstHit {
+			firstHitObserved = true
+		}
 		if s.Killed {
 			killed = true
 			break // discard overkill
@@ -318,20 +323,46 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 		return
 	}
 
-	// Damage-leader re-control runs once after the full attack.
-	if characterId != last.Monster.ControlCharacterId() {
-		if last.Monster.DamageLeader() == characterId {
-			p.l.Debugf("Character [%d] has become damage leader. They should now control the monster.", characterId)
-			m2, err := p.GetById(last.Monster.UniqueId())
-			if err != nil {
-				return
+	// Controller-switch and aggro-flag emission.
+	//
+	// Decision 4 (PRD §8.4): keep the two-step StopControl + StartControl
+	// rather than collapsing into a single Lua. Two concurrent damage events
+	// for the same monster could interleave and produce redundant
+	// STOP_CONTROL/START_CONTROL pairs; this is acceptable because Kafka
+	// partition ordering preserves causality and the channel re-applies
+	// idempotently for re-control to the same character.
+	controllerSwitched := false
+	// Controller-switch on DPS lead applies to bosses too. Only the decay sweep
+	// (MonsterAggroDecayTask) treats bosses specially.
+	if characterId != last.Monster.ControlCharacterId() && last.Monster.DamageLeader() == characterId {
+		inField, ferr := p.attackerInField(last.Monster.Field(), characterId)
+		if ferr != nil || !inField {
+			p.l.Debugf("FR-10: skipping controller switch for char [%d] not in field of monster [%d].", characterId, last.Monster.UniqueId())
+		} else {
+			p.l.Debugf("Character [%d] has become damage leader for monster [%d].", characterId, last.Monster.UniqueId())
+			// FR-9: only emit STOP_CONTROL when there's actually a previous controller.
+			if last.Monster.ControlCharacterId() != 0 {
+				if err := p.StopControl(last.Monster); err != nil {
+					p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
+				}
 			}
-			if err := p.StopControl(m2); err != nil {
-				p.l.WithError(err).Errorf("Unable to stop [%d] from controlling monster [%d].", last.Monster.ControlCharacterId(), last.Monster.UniqueId())
+			if _, err := p.StartControl(last.Monster.UniqueId(), characterId); err != nil {
+				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, last.Monster.UniqueId())
+			} else {
+				controllerSwitched = true
 			}
-			if _, err := p.StartControl(m2.UniqueId(), characterId); err != nil {
-				p.l.WithError(err).Errorf("Unable to start [%d] controlling monster [%d].", characterId, m2.UniqueId())
-			}
+		}
+	}
+
+	if firstHitObserved && !controllerSwitched {
+		// AGGRO_CHANGED is suppressed when a switch happened because START_CONTROL
+		// already carries controllerHasAggro: true (FR-22).
+		latest, err := GetMonsterRegistry().GetMonster(p.t, last.Monster.UniqueId())
+		if err != nil {
+			p.l.WithError(err).Errorf("Unable to re-load monster [%d] for AGGRO_CHANGED emit.", last.Monster.UniqueId())
+		} else {
+			_ = p.emit(EnvEventTopicMonsterStatus, aggroChangedStatusEventProvider(latest, latest.ControlCharacterId(), latest.ControllerHasAggro()))
+			p.l.Debugf("Monster [%d] aggro changed for controller [%d].", latest.UniqueId(), latest.ControlCharacterId())
 		}
 	}
 }
@@ -370,7 +401,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 	now := time.Now()
 	GetDropTimerRegistry().RecordHit(p.ctx, p.t, uniqueId, now)
 
-	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId)
+	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId, time.Now().UnixMilli())
 	if err != nil {
 		p.l.WithError(err).Errorf("Error applying friendly damage to monster [%d].", uniqueId)
 		return
@@ -905,6 +936,22 @@ func (p *ProcessorImpl) checkReflect(m Model, characterId uint32, attackType byt
 			}
 		}
 	}
+}
+
+// attackerInField reports whether characterId is currently in the monster's
+// field. Returns (false, err) on provider error so callers can fail closed
+// (FR-10): we don't grant control to an attacker we cannot verify.
+func (p *ProcessorImpl) attackerInField(f field.Model, characterId uint32) (bool, error) {
+	ids, err := p.inFieldFn(f)
+	if err != nil {
+		return false, err
+	}
+	for _, id := range ids {
+		if id == characterId {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Helper functions

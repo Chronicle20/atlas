@@ -15,6 +15,7 @@ import (
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 )
@@ -49,11 +50,17 @@ type Processor interface {
 	CancelAllStatusEffects(uniqueId uint32) error
 }
 
+// emitter publishes a kafka message provider to a topic. ProcessorImpl uses
+// this indirection so tests can intercept event emissions without spinning up
+// kafka. Production wiring uses producer.ProviderImpl.
+type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
+
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	t   tenant.Model
+	l    logrus.FieldLogger
+	ctx  context.Context
+	t    tenant.Model
+	emit emitter
 }
 
 // NewProcessor creates a new Processor
@@ -62,6 +69,9 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
+		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+			return producer.ProviderImpl(l)(ctx)(topic)(provider)
+		},
 	}
 }
 
@@ -258,23 +268,29 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	}
 
 	var last DamageSummary
+	hasLast := false
 	killed := false
 	for _, d := range damages {
 		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId())
 		if err != nil {
 			p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
-			return
+			break
 		}
 		last = s
+		hasLast = true
 		if s.Killed {
 			killed = true
 			break // discard overkill
 		}
 	}
 
+	if !hasLast {
+		return
+	}
+
 	// Always emit damaged so the channel writes the final HP-bar packet,
 	// even when the attack lands a kill.
-	if err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
+	if err := p.emit(EnvEventTopicMonsterStatus, damagedStatusEventProvider(last.Monster, last.CharacterId, last.CharacterId, isBoss, DamageSourceCharacterAttack, last.Monster.DamageSummary())); err != nil {
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 	}
 
@@ -285,10 +301,10 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 
 		// Emit cancellation events for any active status effects before death
 		for _, se := range last.Monster.StatusEffects() {
-			_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectCancelledEventProvider(last.Monster, se))
+			_ = p.emit(EnvEventTopicMonsterStatus, statusEffectCancelledEventProvider(last.Monster, se))
 		}
 
-		if err := producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
+		if err := p.emit(EnvEventTopicMonsterStatus, killedStatusEventProvider(last.Monster, last.CharacterId, isBoss, last.Monster.DamageSummary())); err != nil {
 			p.l.WithError(err).Errorf("Monster [%d] killed, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 		}
 		if _, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, last.Monster.UniqueId()); err != nil {

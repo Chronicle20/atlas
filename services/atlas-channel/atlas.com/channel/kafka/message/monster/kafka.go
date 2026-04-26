@@ -32,9 +32,9 @@ type Command[E any] struct {
 }
 
 type DamageCommandBody struct {
-	CharacterId uint32 `json:"characterId"`
-	Damage      uint32 `json:"damage"`
-	AttackType  byte   `json:"attackType"`
+	CharacterId uint32   `json:"characterId"`
+	Damages     []uint32 `json:"damages"`
+	AttackType  byte     `json:"attackType"`
 }
 
 type ApplyStatusCommandBody struct {

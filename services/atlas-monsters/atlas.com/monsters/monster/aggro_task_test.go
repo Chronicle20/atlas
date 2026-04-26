@@ -18,9 +18,10 @@ import (
 )
 
 type recordedEmit struct {
-	Topic   string
-	Type    string
-	ActorId uint32
+	Topic                 string
+	Type                  string
+	ControllerCharacterId uint32
+	ControllerHasAggro    bool
 }
 
 func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAggroDecayTask, *[]recordedEmit, *int) {
@@ -44,13 +45,19 @@ func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAg
 				var env struct {
 					Type string `json:"type"`
 					Body struct {
-						ActorId uint32 `json:"actorId"`
+						ControllerCharacterId uint32 `json:"controllerCharacterId"`
+						ControllerHasAggro    bool   `json:"controllerHasAggro"`
 					} `json:"body"`
 				}
 				if err := json.Unmarshal(m.Value, &env); err != nil {
 					t.Fatalf("decode: %v", err)
 				}
-				events = append(events, recordedEmit{Topic: topic, Type: env.Type, ActorId: env.Body.ActorId})
+				events = append(events, recordedEmit{
+					Topic:                 topic,
+					Type:                  env.Type,
+					ControllerCharacterId: env.Body.ControllerCharacterId,
+					ControllerHasAggro:    env.Body.ControllerHasAggro,
+				})
 			}
 			return nil
 		},
@@ -58,11 +65,12 @@ func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAg
 	return tk, &events, &bossCalls
 }
 
-// TestAggroDecayTaskFullClearEmitsStopControl seeds a non-boss monster with a
-// tiny entry and a controller, fast-forwards the wall-clock past the idle
-// threshold, runs Run(), and asserts STOP_CONTROL is emitted with the previous
-// controller id.
-func TestAggroDecayTaskFullClearEmitsStopControl(t *testing.T) {
+// TestAggroDecayTaskFullClearEmitsAggroChanged seeds a non-boss monster with a
+// controller and active aggro, fast-forwards the wall-clock past the idle
+// threshold, runs Run(), and asserts AGGRO_CHANGED is emitted with the
+// existing controller id and controllerHasAggro=false. The controller itself
+// is NOT cleared — losing aggro is not the same as losing control.
+func TestAggroDecayTaskFullClearEmitsAggroChanged(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := context.Background()
@@ -72,6 +80,7 @@ func TestAggroDecayTaskFullClearEmitsStopControl(t *testing.T) {
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
+	// First-hit on a controlled monster flips controllerHasAggro true.
 	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
 	}
@@ -84,11 +93,47 @@ func TestAggroDecayTaskFullClearEmitsStopControl(t *testing.T) {
 	if len(*events) != 1 {
 		t.Fatalf("expected 1 event, got %d (%+v)", len(*events), *events)
 	}
-	if (*events)[0].Type != EventMonsterStatusStopControl {
-		t.Errorf("type=%s, want STOP_CONTROL", (*events)[0].Type)
+	if (*events)[0].Type != EventMonsterStatusAggroChanged {
+		t.Errorf("type=%s, want AGGRO_CHANGED", (*events)[0].Type)
 	}
-	if (*events)[0].ActorId != 42 {
-		t.Errorf("ActorId=%d, want 42", (*events)[0].ActorId)
+	if (*events)[0].ControllerCharacterId != 42 {
+		t.Errorf("ControllerCharacterId=%d, want 42", (*events)[0].ControllerCharacterId)
+	}
+	if (*events)[0].ControllerHasAggro {
+		t.Errorf("ControllerHasAggro=%v, want false", (*events)[0].ControllerHasAggro)
+	}
+
+	// And confirm Redis state still has the controller intact.
+	got, _ := r.GetMonster(ten, m.UniqueId())
+	if got.ControlCharacterId() != 42 {
+		t.Errorf("controller cleared by decay (want 42, got %d)", got.ControlCharacterId())
+	}
+	if got.ControllerHasAggro() {
+		t.Error("controllerHasAggro should be false after decay")
+	}
+}
+
+// TestAggroDecayTaskNoEmitWhenNoAggroToFlip verifies that a non-boss monster
+// without active aggro (no controller, or already passive) does NOT emit any
+// event when its entries decay to zero — there's no state change to broadcast.
+func TestAggroDecayTaskNoEmitWhenNoAggroToFlip(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	// No controller -> ApplyDamage cannot flip aggro on.
+	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	tk, events, _ := newAggroTaskWithRecorder(t, nil)
+	tk.nowFn = func() int64 { return AggroIdleThresholdMs + 1_000 }
+	tk.Run()
+
+	if len(*events) != 0 {
+		t.Fatalf("expected no events, got %d (%+v)", len(*events), *events)
 	}
 }
 

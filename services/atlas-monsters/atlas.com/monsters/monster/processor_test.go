@@ -281,16 +281,19 @@ func TestDamageControllerSwitchOnDpsLead(t *testing.T) {
 	for _, e := range *events {
 		types = append(types, e.Type)
 	}
-	// Expected order: DAMAGED, STOP_CONTROL, START_CONTROL.
-	if len(types) != 3 ||
+	// Expected order: DAMAGED, NEXT_SKILL_DECIDED (damage trigger), STOP_CONTROL,
+	// START_CONTROL, NEXT_SKILL_DECIDED (controller-change trigger).
+	if len(types) != 5 ||
 		types[0] != EventMonsterStatusDamaged ||
-		types[1] != EventMonsterStatusStopControl ||
-		types[2] != EventMonsterStatusStartControl {
+		types[1] != EventMonsterStatusNextSkillDecided ||
+		types[2] != EventMonsterStatusStopControl ||
+		types[3] != EventMonsterStatusStartControl ||
+		types[4] != EventMonsterStatusNextSkillDecided {
 		t.Fatalf("unexpected event order: %v", types)
 	}
 	// START_CONTROL body must carry controllerHasAggro=true.
 	var body statusEventStartControlBody
-	if err := json.Unmarshal((*events)[2].Body, &body); err != nil {
+	if err := json.Unmarshal((*events)[3].Body, &body); err != nil {
 		t.Fatalf("decode start control: %v", err)
 	}
 	if !body.ControllerHasAggro {
@@ -324,13 +327,15 @@ func TestDamageNoSwitchWhenLeaderUnchanged(t *testing.T) {
 	for _, e := range *events {
 		types = append(types, e.Type)
 	}
-	if len(types) != 2 ||
+	// Expected order: DAMAGED, NEXT_SKILL_DECIDED (damage trigger), AGGRO_CHANGED.
+	if len(types) != 3 ||
 		types[0] != EventMonsterStatusDamaged ||
-		types[1] != EventMonsterStatusAggroChanged {
-		t.Fatalf("expected DAMAGED + AGGRO_CHANGED, got %v", types)
+		types[1] != EventMonsterStatusNextSkillDecided ||
+		types[2] != EventMonsterStatusAggroChanged {
+		t.Fatalf("expected DAMAGED + NEXT_SKILL_DECIDED + AGGRO_CHANGED, got %v", types)
 	}
 	var body statusEventAggroChangedBody
-	if err := json.Unmarshal((*events)[1].Body, &body); err != nil {
+	if err := json.Unmarshal((*events)[2].Body, &body); err != nil {
 		t.Fatalf("decode aggro changed: %v", err)
 	}
 	if body.ControllerCharacterId != 1 || !body.ControllerHasAggro {
@@ -474,5 +479,52 @@ func TestAttackerInField(t *testing.T) {
 				t.Errorf("attackerInField=%v want %v", got, tc.wantIn)
 			}
 		})
+	}
+}
+
+// TestDamage_TriggersRepick verifies that a non-killing damage call that changes
+// the monster's HP percentage emits at least one NEXT_SKILL_DECIDED event on
+// the monster-status topic, confirming the damage repick trigger fires.
+func TestDamage_TriggersRepick(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+
+	countByType := make(map[string]int)
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: context.Background(),
+		t:   ten,
+		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
+			msgs, err := provider()
+			if err != nil {
+				t.Fatalf("provider error: %v", err)
+			}
+			for _, msg := range msgs {
+				var env struct {
+					Type string `json:"type"`
+				}
+				if err := json.Unmarshal(msg.Value, &env); err != nil {
+					t.Fatalf("decode emitted message: %v", err)
+				}
+				countByType[env.Type]++
+			}
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) {
+			return nil, nil
+		},
+	}
+
+	p.Damage(uniqueId, 1, []uint32{999}, 0)
+
+	if countByType[EventMonsterStatusNextSkillDecided] < 1 {
+		t.Errorf("expected at least 1 NEXT_SKILL_DECIDED event from damage trigger; got %d (all events: %v)",
+			countByType[EventMonsterStatusNextSkillDecided], countByType)
 	}
 }

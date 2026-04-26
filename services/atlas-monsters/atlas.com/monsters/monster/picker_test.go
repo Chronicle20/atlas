@@ -9,7 +9,9 @@ import (
 	"time"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
 
@@ -282,5 +284,38 @@ func TestPicker_SecondSkillWinsAfterFirstPropFails(t *testing.T) {
 		&fakeCooldown{}, &fakeRand{values: []int{95, 0}}, 1000)
 	if d.SkillId != 101 {
 		t.Fatalf("expected skill 101 to win; got %d", d.SkillId)
+	}
+}
+
+func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	GetMonsterRegistry().CreateMonster(ctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	mons := GetMonsterRegistry().GetMonstersInMap(tm, testField())
+	if len(mons) != 1 {
+		t.Fatalf("expected 1 monster; got %d", len(mons))
+	}
+	uniqueId := mons[0].UniqueId()
+
+	emitted := 0
+	p := &ProcessorImpl{
+		l:   newPickerLogger(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(topic string, _ model.Provider[[]kafka.Message]) error {
+			if topic == EnvEventTopicMonsterStatus {
+				emitted++
+			}
+			return nil
+		},
+	}
+	if err := p.repickAndEmit(uniqueId, RepickReasonSpawn); err != nil {
+		t.Fatalf("repickAndEmit: %v", err)
+	}
+	if emitted != 1 {
+		t.Fatalf("expected 1 emission (always-emit); got %d", emitted)
 	}
 }

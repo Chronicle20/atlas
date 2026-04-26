@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -74,7 +75,6 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				w.WriteHeader(errCode)
 				return
 			}
-			_ = pageNumber // Wired in Task 7 (offset = (pageNumber-1) * pageSize).
 
 			hasFilter := fspec.Compartment != nil || fspec.Subcategory != "" || fspec.Class != ""
 
@@ -92,17 +92,26 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 
 			tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
 			if err != nil {
-				d.Logger().WithError(err).Errorf("Tenant resolve failed.")
+				d.Logger().WithError(err).Errorf("Item-string tenant resolve failed.")
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 
+			offset := (pageNumber - 1) * pageSize
+
 			start := time.Now()
 			var rows []StringSearchIndexEntity
+			var total int
 			if hasSearch {
-				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, 0, pageSize, spec)
+				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, offset, pageSize, spec)
+				if err == nil {
+					total, err = searchindex.Count(db, d.Context(), tenantId, searchQuery, spec)
+				}
 			} else {
-				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, pageSize, spec)
+				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, offset, pageSize, spec)
+				if err == nil {
+					total, err = searchindex.CountWithFilter(db, d.Context(), tenantId, spec)
+				}
 			}
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {
@@ -120,6 +129,9 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					"compartment":  compartmentLogValue(fspec.Compartment),
 					"subcategory":  stringOrAny(fspec.Subcategory),
 					"class_filter": fspec.Class,
+					"page_number":  pageNumber,
+					"page_size":    pageSize,
+					"total":        total,
 				}).Debugf("Item-string search served.")
 			}
 
@@ -133,8 +145,9 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				})
 			}
 
+			env := paginate.Envelope{Total: total, PageNumber: pageNumber, PageSize: pageSize}
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			server.MarshalPaginatedResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 		}
 	}
 }

@@ -1036,8 +1036,11 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Character [%d] unable to create asset in inventory [%d].", characterId, inventoryType)
 			errorCode := compartment.CreateAssetUnknownError
-			if errors.Is(txErr, requests.ErrNotFound) {
+			switch {
+			case errors.Is(txErr, requests.ErrNotFound):
 				errorCode = compartment.CreateAssetTemplateNotFound
+			case errors.Is(txErr, ErrNoFreeSlots):
+				errorCode = compartment.CreateAssetInventoryFull
 			}
 			_ = mb.Put(compartment.EnvEventTopicStatus, CreationFailedEventStatusProvider(transactionId, compartmentId, characterId, errorCode, txErr.Error()))
 			return txErr
@@ -1113,7 +1116,6 @@ func (p *Processor) AttemptEquipmentPickUp(mb *message.Buffer) func(transactionI
 			return nil
 		})
 		if txErr != nil {
-			mb = message.NewBuffer()
 			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)
@@ -1212,7 +1214,6 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 		})
 
 		if txErr != nil {
-			mb = message.NewBuffer()
 			return p.dropProcessor.CancelReservation(mb)(f, dropId, characterId)
 		}
 		return p.dropProcessor.RequestPickUp(mb)(f, dropId, characterId)

@@ -13,6 +13,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character"
+	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	invpkt "github.com/Chronicle20/atlas/libs/atlas-packet/inventory/clientbound"
 	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -41,6 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return err
 				}
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentSortCompleteEvent(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCompartmentCreationFailedEvent(sc, wp)))); err != nil {
 					return err
 				}
 				return nil
@@ -119,5 +124,46 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		return func(wp writer.Producer) func(s session.Model) error {
 			return session.Announce(l)(ctx)(wp)(statpkt.StatChangedWriter)(statpkt.NewStatChanged(make([]statpkt.Update, 0), true).Encode)
 		}
+	}
+}
+
+// handleCompartmentCreationFailedEvent surfaces inventory pickup failures back to
+// the player. atlas-inventory emits CREATION_FAILED whenever CreateAsset's
+// transaction rolls back; the most common cause during a drop pickup is an
+// inventory-full condition (CREATE_ASSET_INVENTORY_FULL), which the client
+// expects rendered via the "you can't carry any more items" status message.
+// Any failure also re-enables actions so the client doesn't stay locked.
+func handleCompartmentCreationFailedEvent(sc server.Model, wp writer.Producer) message.Handler[compartment.StatusEvent[compartment.CreationFailedStatusEventBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e compartment.StatusEvent[compartment.CreationFailedStatusEventBody]) {
+		if e.Type != compartment.StatusEventTypeCreationFailed {
+			return
+		}
+
+		t := sc.Tenant()
+		if !t.Is(tenant.MustFromContext(ctx)) {
+			return
+		}
+
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+			if err := enableActions(l)(ctx)(wp)(s); err != nil {
+				return err
+			}
+			body, ok := statusMessageBodyFor(e.Body.ErrorCode)
+			if !ok {
+				return nil
+			}
+			return session.Announce(l)(ctx)(wp)(charcb.CharacterStatusMessageWriter)(body)(s)
+		})
+	}
+}
+
+func statusMessageBodyFor(errorCode string) (func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte, bool) {
+	switch errorCode {
+	case compartment.CreateAssetInventoryFull:
+		return charpkt.CharacterStatusMessageDropPickUpInventoryFullBody(), true
+	case compartment.CreateAssetTemplateNotFound:
+		return charpkt.CharacterStatusMessageDropPickUpItemUnavailableBody(), true
+	default:
+		return nil, false
 	}
 }

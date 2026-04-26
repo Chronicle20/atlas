@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// CWvsContext::OnMessage
 const CharacterStatusMessageWriter = "CharacterStatusMessage"
 
 // StatusMessageDropPickUpItemUnavailable - item unavailable (-2)
@@ -22,7 +23,9 @@ func NewStatusMessageDropPickUpItemUnavailable(mode byte) StatusMessageDropPickU
 	return StatusMessageDropPickUpItemUnavailable{mode: mode}
 }
 
-func (m StatusMessageDropPickUpItemUnavailable) Operation() string { return CharacterStatusMessageWriter }
+func (m StatusMessageDropPickUpItemUnavailable) Operation() string {
+	return CharacterStatusMessageWriter
+}
 func (m StatusMessageDropPickUpItemUnavailable) String() string {
 	return fmt.Sprintf("drop pick up item unavailable, mode [%d]", m.mode)
 }
@@ -43,7 +46,11 @@ func (m *StatusMessageDropPickUpItemUnavailable) Decode(_ logrus.FieldLogger, _ 
 	}
 }
 
-// StatusMessageDropPickUpInventoryFull - inventory full (-3)
+// StatusMessageDropPickUpInventoryFull - inventory full.
+// CWvsContext::OnDropPickUpMessage routes -2 to "Item Unavailable" (string 2983)
+// and -3 to "the game file has been damaged…" (string 5317). The generic
+// "you cannot pick up any more items" string (295) is rendered by the switch's
+// default branch, so we send -1 to fall through to it.
 type StatusMessageDropPickUpInventoryFull struct {
 	mode byte
 }
@@ -61,12 +68,49 @@ func (m StatusMessageDropPickUpInventoryFull) Encode(l logrus.FieldLogger, _ con
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt8(-3)
+		w.WriteInt8(-1)
 		return w.Bytes()
 	}
 }
 
 func (m *StatusMessageDropPickUpInventoryFull) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		_ = r.ReadInt8()
+	}
+}
+
+// StatusMessageDropPickUpGameFileDamaged - "the game file has been damaged" (-3).
+// CWvsContext::OnDropPickUpMessage case -3 renders StringPool 5317 as a screen
+// message and StringPool 5311 as a chat log entry. No follow-up bytes are read
+// by the client. Currently unused — kept here so future error paths that want
+// the apologetic "reinstall the game" string can wire it up without
+// rediscovering the byte mapping.
+type StatusMessageDropPickUpGameFileDamaged struct {
+	mode byte
+}
+
+func NewStatusMessageDropPickUpGameFileDamaged(mode byte) StatusMessageDropPickUpGameFileDamaged {
+	return StatusMessageDropPickUpGameFileDamaged{mode: mode}
+}
+
+func (m StatusMessageDropPickUpGameFileDamaged) Operation() string {
+	return CharacterStatusMessageWriter
+}
+func (m StatusMessageDropPickUpGameFileDamaged) String() string {
+	return fmt.Sprintf("drop pick up game file damaged, mode [%d]", m.mode)
+}
+
+func (m StatusMessageDropPickUpGameFileDamaged) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt8(-3)
+		return w.Bytes()
+	}
+}
+
+func (m *StatusMessageDropPickUpGameFileDamaged) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.mode = r.ReadByte()
 		_ = r.ReadInt8()

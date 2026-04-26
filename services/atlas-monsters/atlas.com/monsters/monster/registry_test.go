@@ -461,7 +461,7 @@ func TestCreateMoveDamageKill(t *testing.T) {
 	}
 
 	// Damage (30 HP)
-	ds, err := r.ApplyDamage(ten, 1, 30, m.UniqueId())
+	ds, err := r.ApplyDamage(ten, 1, 30, m.UniqueId(), time.Now().UnixMilli())
 	if err != nil {
 		t.Fatalf("ApplyDamage failed: %v", err)
 	}
@@ -473,7 +473,7 @@ func TestCreateMoveDamageKill(t *testing.T) {
 	}
 
 	// Damage to kill (200 > remaining 70)
-	ds, err = r.ApplyDamage(ten, 2, 200, m.UniqueId())
+	ds, err = r.ApplyDamage(ten, 2, 200, m.UniqueId(), time.Now().UnixMilli())
 	if err != nil {
 		t.Fatalf("ApplyDamage failed: %v", err)
 	}
@@ -506,7 +506,7 @@ func TestConcurrentDamage(t *testing.T) {
 		go func(charId uint32) {
 			defer wg.Done()
 			for j := 0; j < hitsPerAttacker; j++ {
-				r.ApplyDamage(ten, charId, damagePerHit, m.UniqueId())
+				r.ApplyDamage(ten, charId, damagePerHit, m.UniqueId(), time.Now().UnixMilli())
 			}
 		}(uint32(i + 1))
 	}
@@ -905,7 +905,7 @@ func TestLoadMonsterWithCjsonEmptyObjectArrays(t *testing.T) {
 			len(got.DamageEntries()), len(got.StatusEffects()))
 	}
 
-	ds, err := r.ApplyDamage(ten, 1, 30, m.UniqueId())
+	ds, err := r.ApplyDamage(ten, 1, 30, m.UniqueId(), time.Now().UnixMilli())
 	if err != nil {
 		t.Fatalf("ApplyDamage failed after recovering from corruption: %v", err)
 	}
@@ -956,6 +956,87 @@ func TestControllerHasAggroRoundTrip(t *testing.T) {
 	}
 	if got.ControllerHasAggro() {
 		t.Fatal("legacy missing field must default to false")
+	}
+}
+
+// TestApplyDamageWasFirstHit verifies the WasFirstHit flag in DamageSummary.
+// First hit on a monster that has a controller flips controllerHasAggro from
+// false to true and reports WasFirstHit=true. Subsequent hits report false.
+// A monster with no controller never reports WasFirstHit=true.
+func TestApplyDamageWasFirstHit(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	// (a) No controller -> WasFirstHit is always false.
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	now := int64(1_000_000)
+	s, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+	if s.WasFirstHit {
+		t.Errorf("WasFirstHit should be false when no controller is set")
+	}
+
+	// (b) With controller -> first hit flips aggro and reports true.
+	m2 := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	if _, err := r.ControlMonster(ten, m2.UniqueId(), 42); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	s, err = r.ApplyDamage(ten, 7, 10, m2.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+	if !s.WasFirstHit {
+		t.Errorf("first hit on controlled monster should report WasFirstHit=true")
+	}
+	if !s.Monster.ControllerHasAggro() {
+		t.Errorf("ControllerHasAggro must flip true after first hit")
+	}
+
+	// (c) Second hit on same monster reports false even from a different attacker.
+	s, err = r.ApplyDamage(ten, 8, 5, m2.UniqueId(), now+1)
+	if err != nil {
+		t.Fatalf("ApplyDamage 2: %v", err)
+	}
+	if s.WasFirstHit {
+		t.Errorf("subsequent hits must report WasFirstHit=false")
+	}
+}
+
+// TestApplyDamageAggregatesByCharacterId verifies that two hits from the same
+// character produce a single aggregated entry with summed damage and the most
+// recent lastHitMs.
+func TestApplyDamageAggregatesByCharacterId(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	if _, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), 100); err != nil {
+		t.Fatalf("ApplyDamage 1: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 25, m.UniqueId(), 200); err != nil {
+		t.Fatalf("ApplyDamage 2: %v", err)
+	}
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	entries := got.DamageEntries()
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 aggregated entry, got %d (%+v)", len(entries), entries)
+	}
+	if entries[0].CharacterId != 1 || entries[0].Damage != 35 {
+		t.Errorf("entry: expected charId=1 damage=35, got %+v", entries[0])
+	}
+	if entries[0].LastHitMs != 200 {
+		t.Errorf("expected LastHitMs=200, got %d", entries[0].LastHitMs)
 	}
 }
 

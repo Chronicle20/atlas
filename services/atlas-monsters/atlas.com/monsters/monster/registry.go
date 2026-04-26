@@ -408,6 +408,7 @@ var applyDamageScript = goredis.NewScript(`
 local key = KEYS[1]
 local charId = tonumber(ARGV[1])
 local damage = tonumber(ARGV[2])
+local nowMs = tonumber(ARGV[3])
 local j = redis.call('GET', key)
 if not j then
     return redis.error_reply("monster not found")
@@ -416,19 +417,49 @@ local m = cjson.decode(j)
 local hp = m.hp
 local actual = hp - math.max(hp - damage, 0)
 m.hp = hp - actual
-table.insert(m.damageEntries, {characterId = charId, damage = actual})
-local encoded = cjson.encode(m)
-redis.call('SET', key, encoded)
-return encoded
+
+local entries = m.damageEntries
+if type(entries) ~= 'table' then
+    entries = {}
+end
+
+local found = false
+for _, e in ipairs(entries) do
+    if e.characterId == charId then
+        e.damage = e.damage + actual
+        e.lastHitMs = nowMs
+        found = true
+        break
+    end
+end
+if not found then
+    table.insert(entries, {
+        characterId = charId,
+        damage = actual,
+        lastHitMs = nowMs
+    })
+end
+m.damageEntries = entries
+
+local hadAggro = m.controllerHasAggro
+local wasFirstHit = false
+if m.controlCharacterId ~= 0 and not hadAggro then
+    m.controllerHasAggro = true
+    wasFirstHit = true
+end
+
+redis.call('SET', key, cjson.encode(m))
+return cjson.encode({wasFirstHit = wasFirstHit, monster = m})
 `)
 
-func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32, uniqueId uint32) (DamageSummary, error) {
+func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32, uniqueId uint32, nowMs int64) (DamageSummary, error) {
 	ctx := context.Background()
 	key := monsterKey(t, uniqueId)
 
 	result, err := applyDamageScript.Run(ctx, r.client, []string{key},
 		strconv.FormatUint(uint64(characterId), 10),
 		strconv.FormatUint(uint64(damage), 10),
+		strconv.FormatInt(nowMs, 10),
 	).Result()
 	if err != nil {
 		return DamageSummary{}, errors.New("monster not found")
@@ -439,11 +470,14 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		return DamageSummary{}, errors.New("unexpected response type")
 	}
 
-	var sm storedMonster
-	if err := json.Unmarshal([]byte(resultStr), &sm); err != nil {
+	var env struct {
+		WasFirstHit bool          `json:"wasFirstHit"`
+		Monster     storedMonster `json:"monster"`
+	}
+	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
 		return DamageSummary{}, err
 	}
-	_, m, err := fromStored(sm)
+	_, m, err := fromStored(env.Monster)
 	if err != nil {
 		return DamageSummary{}, err
 	}
@@ -452,8 +486,8 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 		CharacterId:   characterId,
 		Monster:       m,
 		VisibleDamage: damage,
-		ActualDamage:  int64(m.Hp() - m.Hp()),
 		Killed:        m.Hp() == 0,
+		WasFirstHit:   env.WasFirstHit,
 	}, nil
 }
 

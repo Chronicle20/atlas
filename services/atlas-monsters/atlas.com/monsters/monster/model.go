@@ -16,6 +16,7 @@ type DamageSummary struct {
 	VisibleDamage uint32
 	ActualDamage  int64
 	Killed        bool
+	WasFirstHit   bool
 }
 
 type Model struct {

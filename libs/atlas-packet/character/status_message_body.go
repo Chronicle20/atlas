@@ -24,6 +24,16 @@ func CharacterStatusMessageDropPickUpInventoryFullBody() func(logrus.FieldLogger
 	})
 }
 
+// CharacterStatusMessageDropPickUpGameFileDamagedBody renders the apologetic
+// "reinstall the game" string (StringPool 5317 + chat log 5311). Currently
+// unused — provided so future failure paths can opt into it without
+// rediscovering the byte mapping.
+func CharacterStatusMessageDropPickUpGameFileDamagedBody() func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
+	return atlas_packet.WithResolvedCode("operations", "DROP_PICK_UP", func(mode byte) packet.Encoder {
+		return clientbound.NewStatusMessageDropPickUpGameFileDamaged(mode)
+	})
+}
+
 func CharacterStatusMessageOperationDropPickUpStackableItemBody(itemId uint32, amount uint32) func(logrus.FieldLogger, context.Context) func(map[string]interface{}) []byte {
 	return atlas_packet.WithResolvedCode("operations", "DROP_PICK_UP", func(mode byte) packet.Encoder {
 		return clientbound.NewStatusMessageDropPickUpStackableItem(mode, itemId, amount)

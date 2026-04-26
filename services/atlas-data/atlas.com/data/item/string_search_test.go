@@ -4,16 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
+	"atlas-data/rest"
 	"atlas-data/searchindex"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
@@ -423,6 +428,134 @@ func TestParsePagingParams_RejectsNonInteger(t *testing.T) {
 	q := mustParseQuery(t, "page[size]=abc")
 	_, _, code := parsePagingParams(q)
 	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+type fakeServerInfo struct{}
+
+func (fakeServerInfo) GetBaseURL() string { return "" }
+func (fakeServerInfo) GetPrefix() string  { return "" }
+
+func setupItemHandlerFixture(t *testing.T, n int) (*gorm.DB, context.Context) {
+	t.Helper()
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+	for i := 0; i < n; i++ {
+		// Seed n rows with non-zero compartment so default-browse sees them.
+		seedIdxFull(t, db, ctx, tn.Id(), uint32(1+i), fmt.Sprintf("Item %05d", i+1), 1, "", nil)
+	}
+	return db, ctx
+}
+
+func dispatchItemStrings(t *testing.T, w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+	t.Helper()
+	l, _ := test.NewNullLogger()
+	d := server.NewHandlerDependency(l, r.Context())
+	c := server.NewHandlerContext(fakeServerInfo{})
+	handler := handleGetItemStringsRequest(db)(&d, &c)
+	handler(w, r)
+}
+
+func decodeJsonApi(t *testing.T, body []byte) jsonapi.Document {
+	t.Helper()
+	var doc jsonapi.Document
+	require.NoError(t, json.Unmarshal(body, &doc))
+	return doc
+}
+
+func newItemStringsRequest(t *testing.T, target string, ctx context.Context) *http.Request {
+	t.Helper()
+	req, err := http.NewRequest(http.MethodGet, target, nil)
+	require.NoError(t, err)
+	return req.WithContext(ctx)
+}
+
+// Compile-time assertion that rest aliases match server types.
+var _ = rest.HandlerDependency{}
+
+func TestHandleGetItemStrings_Page1_EnvelopeShape(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 100)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=20", ctx)
+	dispatchItemStrings(t, w, req, db)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	assert.Len(t, doc.Data.DataArray, 20)
+	assert.EqualValues(t, 100, doc.Meta["total"])
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 1, page["number"])
+	assert.EqualValues(t, 20, page["size"])
+	assert.EqualValues(t, 5, page["last"])
+
+	assert.Contains(t, doc.Links, "self")
+	assert.Contains(t, doc.Links, "first")
+	assert.Contains(t, doc.Links, "next")
+	assert.Contains(t, doc.Links, "last")
+	_, hasPrev := doc.Links["prev"]
+	assert.False(t, hasPrev, "prev must be omitted on page 1")
+}
+
+func TestHandleGetItemStrings_Page2_PrevPresent(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 100)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=20&page[number]=2", ctx)
+	dispatchItemStrings(t, w, req, db)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	assert.Len(t, doc.Data.DataArray, 20)
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 2, page["number"])
+	_, hasPrev := doc.Links["prev"]
+	_, hasNext := doc.Links["next"]
+	assert.True(t, hasPrev)
+	assert.True(t, hasNext)
+}
+
+func TestHandleGetItemStrings_LastPage_NextOmitted(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 100)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=20&page[number]=5", ctx)
+	dispatchItemStrings(t, w, req, db)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	_, hasNext := doc.Links["next"]
+	assert.False(t, hasNext)
+}
+
+func TestHandleGetItemStrings_PastEnd_EmptyDataAndPrevToLast(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 100)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings?page[size]=20&page[number]=999999", ctx)
+	dispatchItemStrings(t, w, req, db)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	assert.Empty(t, doc.Data.DataArray)
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 999999, page["number"])
+	assert.EqualValues(t, 5, page["last"])
+	assert.Contains(t, doc.Links["prev"].Href, "page%5Bnumber%5D=5")
+	_, hasNext := doc.Links["next"]
+	assert.False(t, hasNext)
+}
+
+func TestHandleGetItemStrings_DefaultBrowsePaginates(t *testing.T) {
+	db, ctx := setupItemHandlerFixture(t, 75)
+	w := httptest.NewRecorder()
+	req := newItemStringsRequest(t, "/data/item-strings", ctx)
+	dispatchItemStrings(t, w, req, db)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	doc := decodeJsonApi(t, w.Body.Bytes())
+	assert.Len(t, doc.Data.DataArray, 50)
+	assert.EqualValues(t, 75, doc.Meta["total"])
+	page := doc.Meta["page"].(map[string]interface{})
+	assert.EqualValues(t, 1, page["number"])
+	assert.EqualValues(t, 50, page["size"])
+	assert.EqualValues(t, 2, page["last"])
 }
 
 func TestSearchIndex_FilterClassAny(t *testing.T) {

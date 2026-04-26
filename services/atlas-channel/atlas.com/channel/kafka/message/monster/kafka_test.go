@@ -36,3 +36,53 @@ func TestDamageCommandBody_DecodeRoundTrip(t *testing.T) {
 		t.Fatalf("round-trip mismatch: %+v", got)
 	}
 }
+
+func TestStatusEventStartControlBody_DecodesControllerHasAggro(t *testing.T) {
+	raw := []byte(`{"actorId":42,"x":1,"y":2,"stance":3,"fh":4,"team":5,"controllerHasAggro":true}`)
+	var body StatusEventStartControlBody
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !body.ControllerHasAggro {
+		t.Errorf("expected ControllerHasAggro=true, got %v", body.ControllerHasAggro)
+	}
+	if body.ActorId != 42 {
+		t.Errorf("expected ActorId=42, got %d", body.ActorId)
+	}
+}
+
+func TestStatusEventStartControlBody_LegacyDefaultsFalse(t *testing.T) {
+	raw := []byte(`{"actorId":42,"x":1,"y":2,"stance":3,"fh":4,"team":5}`)
+	var body StatusEventStartControlBody
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if body.ControllerHasAggro {
+		t.Errorf("missing field should default to false")
+	}
+}
+
+func TestStatusEventAggroChangedBody_RoundTrip(t *testing.T) {
+	body := StatusEventAggroChangedBody{ControllerCharacterId: 7, ControllerHasAggro: true}
+	raw, err := json.Marshal(body)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	want := `{"controllerCharacterId":7,"controllerHasAggro":true}`
+	if string(raw) != want {
+		t.Errorf("got %s, want %s", string(raw), want)
+	}
+	var got StatusEventAggroChangedBody
+	if err := json.Unmarshal(raw, &got); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if got.ControllerCharacterId != 7 || !got.ControllerHasAggro {
+		t.Errorf("round-trip mismatch: %+v", got)
+	}
+}
+
+func TestEventStatusAggroChangedConstant(t *testing.T) {
+	if EventStatusAggroChanged != "AGGRO_CHANGED" {
+		t.Errorf("EventStatusAggroChanged=%q, want AGGRO_CHANGED", EventStatusAggroChanged)
+	}
+}

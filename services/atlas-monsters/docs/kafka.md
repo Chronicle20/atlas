@@ -315,10 +315,13 @@ Emitted when a character begins controlling a monster.
     "y": 0,
     "stance": 0,
     "fh": 0,
-    "team": 0
+    "team": 0,
+    "controllerHasAggro": false
   }
 }
 ```
+
+`controllerHasAggro` is `true` when the controller is engaged with the monster (active control — auto-attack timer running) and `false` when idle (passive). atlas-channel uses this to pick `ControlMonsterTypeActiveRequest` vs `ControlMonsterTypeActiveInit` when calling `StartControlMonsterBody`.
 
 #### STOP_CONTROL
 
@@ -335,6 +338,28 @@ Emitted when a character stops controlling a monster.
   "type": "STOP_CONTROL",
   "body": {
     "actorId": 0
+  }
+}
+```
+
+#### AGGRO_CHANGED
+
+Emitted when `controllerHasAggro` flips on a monster *without* a controller change. The most common case is the existing controller landing the first hit on a freshly-spawned mob: the controller stays the same, but the monster transitions from passive (idle/wander) to active (engaged). atlas-channel responds by re-sending `MonsterControlWriter` to the controller's session with the new control type, but does NOT emit a STOP_CONTROL.
+
+Suppressed when the same damage line that flipped the flag also triggered a controller switch — in that case the new `START_CONTROL` carries `controllerHasAggro: true` and an additional event would be redundant.
+
+```json
+{
+  "worldId": 0,
+  "channelId": 0,
+  "mapId": 0,
+  "instance": "uuid",
+  "uniqueId": 0,
+  "monsterId": 0,
+  "type": "AGGRO_CHANGED",
+  "body": {
+    "controllerCharacterId": 0,
+    "controllerHasAggro": false
   }
 }
 ```
@@ -622,6 +647,18 @@ Spawns an item or meso drop in a field.
   }
 }
 ```
+
+## Background Tasks
+
+#### MonsterAggroDecayTask
+
+Runs every 1500ms. For each non-boss monster across all tenants:
+- Skips bosses (`information.Boss() == true`) and monsters with empty damage tables.
+- Pre-filters in Go: if no damage entry has been idle longer than `AggroIdleThresholdMs` (10s), the monster is skipped without a Redis write.
+- Otherwise calls `decayDamageEntriesScript` (Lua) which decays idle entries by `AggroDecayMultiplier` (0.85) per tick and prunes any below `AggroDecayFloor` (1).
+- When all entries are pruned and the monster has a controller, the script clears the controller and the task emits `STOP_CONTROL` with the previous controller id. `controllerHasAggro` resets to `false`.
+
+Boss monsters retain their damage table and controller until death.
 
 ## Transaction Semantics
 

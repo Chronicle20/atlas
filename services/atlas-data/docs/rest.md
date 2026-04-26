@@ -324,11 +324,19 @@ Returns a specific ETC item.
 
 ### GET /api/data/item-strings
 
-Returns all item strings. Supports search filtering.
+Returns paginated item strings with optional search and filter. Pagination follows JSON:API §4.4 page-number form.
 
 #### Query Parameters
 
-- search: Filter by item ID prefix or name substring (case-insensitive, limit 50 results)
+- `search` (optional): Filter by item ID prefix or name substring (case-insensitive). Max length 128.
+- `filter[compartment]` (optional): One of `equipment`, `use`, `setup`, `etc`, `cash`.
+- `filter[subcategory]` (optional): Subcategory name within the chosen compartment.
+- `filter[class]` (optional): Comma-separated equipment classes (e.g. `warrior,bowman`) or the literal `any`.
+- `page[number]` (optional, default 1): Page number, must be >= 1. URL-encode the brackets as `%5B`/`%5D`.
+- `page[size]` (optional, default 50, max 50): Page size, must be in `[1, 50]`. URL-encode the brackets as `%5B`/`%5D`.
+- Legacy `?limit=` is **rejected with 400**. Use `page[size]` instead.
+
+Validation order: `search` -> `filter[*]` -> `page[*]` -> `?limit=` rejection. Out-of-range/non-integer page params, oversized search strings, and the presence of the legacy `?limit=` key all return 400.
 
 #### Response Model
 
@@ -338,11 +346,29 @@ Returns all item strings. Supports search filtering.
     "type": "item-strings",
     "id": "1000000",
     "attributes": {
-      "name": "Sword"
+      "name": "Sword",
+      "compartment": "equipment",
+      "subcategory": "one-handed-sword"
     }
-  }]
+  }],
+  "meta": {
+    "total": 1234,
+    "page": { "number": 1, "size": 50, "last": 25 }
+  },
+  "links": {
+    "self":  "/api/data/item-strings?page%5Bnumber%5D=1&page%5Bsize%5D=50",
+    "first": "/api/data/item-strings?page%5Bnumber%5D=1&page%5Bsize%5D=50",
+    "next":  "/api/data/item-strings?page%5Bnumber%5D=2&page%5Bsize%5D=50",
+    "last":  "/api/data/item-strings?page%5Bnumber%5D=25&page%5Bsize%5D=50"
+  }
 }
 ```
+
+`meta.total` is the absolute matching row count across all pages. `meta.page.last` is `ceil(total/size)` with a floor of 1. `links.prev` is omitted on page 1; `links.next` is omitted on the last page. For past-end requests (`page[number] > meta.page.last`), the data array is empty and `links.prev` recovers to the last page.
+
+#### Tenant semantics
+
+The handler picks a single tenant partition per request: if the active tenant has any rows in `item_string_search_index`, only that tenant's rows are visible; otherwise the global (`uuid.Nil`) partition is used wholesale. There is no per-row merge. The same single-partition rule applies to all five searchindex-backed endpoints (`item-strings`, `maps`, `npcs`, `monsters`, `reactors`).
 
 ---
 
@@ -372,6 +398,10 @@ Returns all maps. Supports search filtering.
 #### Response Model
 
 - 200: Array of maps resources
+
+#### Tenant semantics
+
+Single-partition: see [GET /api/data/item-strings → Tenant semantics](#tenant-semantics).
 
 ---
 
@@ -611,11 +641,19 @@ Finds the foothold below a position in a map.
 
 ### GET /api/data/monsters
 
-Returns all monsters.
+Returns all monsters. Supports search filtering.
+
+#### Query Parameters
+
+- search: Filter by monster ID prefix or name substring (case-insensitive, limit 50 results)
 
 #### Response Model
 
 - 200: Array of monsters resources
+
+#### Tenant semantics
+
+Single-partition: see [GET /api/data/item-strings → Tenant semantics](#tenant-semantics).
 
 ---
 
@@ -661,6 +699,10 @@ Returns all NPCs.
 #### Response Model
 
 - 200: Array of npcs resources
+
+#### Tenant semantics
+
+Single-partition: see [GET /api/data/item-strings → Tenant semantics](#tenant-semantics).
 
 ---
 
@@ -750,6 +792,10 @@ Returns all reactors.
 #### Response Model
 
 - 200: Array of reactors resources
+
+#### Tenant semantics
+
+Single-partition: see [GET /api/data/item-strings → Tenant semantics](#tenant-semantics).
 
 ---
 

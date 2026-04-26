@@ -565,6 +565,16 @@ func (r *Registry) DeductMp(t tenant.Model, uniqueId uint32, amount uint32) (Mod
 	})
 }
 
+// SetNextSkillDecision atomically replaces the monster's in-memory picker
+// decision. The decision is dropped on Redis round-trip (storedMonster does
+// not carry it); on rehydration the picker re-runs and emits a fresh
+// decision.
+func (r *Registry) SetNextSkillDecision(t tenant.Model, uniqueId uint32, d nextSkillDecision) (Model, error) {
+	return r.atomicUpdate(context.Background(), t, uniqueId, func(m Model) Model {
+		return Clone(m).SetNextSkillDecision(d).Build()
+	})
+}
+
 func (r *Registry) UpdateMonster(t tenant.Model, uniqueId uint32, m Model) {
 	r.storeMonster(context.Background(), t, m)
 }

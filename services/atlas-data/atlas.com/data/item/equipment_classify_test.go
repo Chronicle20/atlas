@@ -16,7 +16,7 @@ func TestUpdateEquipmentClassification_SetsJobMask(t *testing.T) {
 
 	seedIdxFull(t, db, ctx, tn.Id(), 1452000, "Wooden Bow", 1, "bow", nil)
 
-	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4))
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4, false))
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1452000).Error)
@@ -33,7 +33,7 @@ func TestUpdateEquipmentClassification_NoClassRestriction(t *testing.T) {
 
 	seedIdxFull(t, db, ctx, tn.Id(), 1002000, "Snail Shell Helmet", 1, "hat", nil)
 
-	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1002000, "Cp", 0))
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1002000, "Cp", 0, false))
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1002000).Error)
@@ -48,11 +48,26 @@ func TestUpdateEquipmentClassification_SlotDisambiguatesEarringVsTop(t *testing.
 
 	seedIdxFull(t, db, ctx, tn.Id(), 1040002, "White Undershirt", 1, "earring", nil)
 
-	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1040002, "Cp", 0))
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1040002, "Cp", 0, false))
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1040002).Error)
 	assert.Equal(t, "top", row.Subcategory)
+}
+
+func TestUpdateEquipmentClassification_CashOverridesCompartment(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	// 1052021 is a cash overall — id prefix says equipment, but the WZ Cash flag puts it in Cash.
+	seedIdxFull(t, db, ctx, tn.Id(), 1052021, "Cash Overall", uint8(CompartmentEquipment), "top", nil)
+
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1052021, "Cp", 0, true))
+
+	var row testSearchIndexEntity
+	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1052021).Error)
+	assert.Equal(t, uint8(CompartmentCash), row.Compartment)
 }
 
 func TestUpdateEquipmentClassification_Idempotent(t *testing.T) {
@@ -62,8 +77,8 @@ func TestUpdateEquipmentClassification_Idempotent(t *testing.T) {
 
 	seedIdxFull(t, db, ctx, tn.Id(), 1452000, "Wooden Bow", 1, "bow", nil)
 
-	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4))
-	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4))
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4, false))
+	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1452000, "Bw", 4, false))
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1452000).Error)

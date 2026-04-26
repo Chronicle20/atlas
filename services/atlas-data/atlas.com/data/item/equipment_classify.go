@@ -13,10 +13,14 @@ import (
 // transaction equipment.Register uses, so this UPDATE participates in any
 // rollback.
 //
+// When isCash is true (NX cosmetic equipment) the row is reassigned to the
+// Cash compartment so it doesn't surface under Equipment filters — its id
+// prefix lies in the equipment range but it functionally belongs to Cash.
+//
 // Precondition: the StringStorage.Add pass already wrote the search-index row
 // for this item; if it didn't, GORM's Updates is a silent no-op (RowsAffected=0)
 // rather than an error.
-func UpdateEquipmentClassification(tx *gorm.DB, ctx context.Context, itemId uint32, slotWZ string, reqJob uint16) error {
+func UpdateEquipmentClassification(tx *gorm.DB, ctx context.Context, itemId uint32, slotWZ string, reqJob uint16, isCash bool) error {
 	t := tenant.MustFromContext(ctx)
 	// Bits 0..4 = Warrior/Magician/Bowman/Thief/Pirate per PRD §4.3.
 	// Verify against seed-tenant rows during Task 9 ingest verification —
@@ -25,6 +29,9 @@ func UpdateEquipmentClassification(tx *gorm.DB, ctx context.Context, itemId uint
 
 	updates := map[string]interface{}{
 		"job_mask": mask,
+	}
+	if isCash {
+		updates["compartment"] = uint8(CompartmentCash)
 	}
 	if sub, ok := disambiguateSlotSubcategory(itemId, slotWZ); ok {
 		updates["subcategory"] = sub

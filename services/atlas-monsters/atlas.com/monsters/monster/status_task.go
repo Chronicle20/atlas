@@ -83,7 +83,7 @@ func (t *StatusExpirationTask) processDoTTick(ten tenant.Model, ctx context.Cont
 	}
 
 	// Apply damage
-	ds, err := GetMonsterRegistry().ApplyDamage(ten, se.SourceCharacterId(), totalDamage, m.UniqueId())
+	ds, err := GetMonsterRegistry().ApplyDamage(ten, se.SourceCharacterId(), totalDamage, m.UniqueId(), time.Now().UnixMilli())
 	if err != nil {
 		t.l.WithError(err).Errorf("Unable to apply DoT damage to monster [%d].", m.UniqueId())
 		return

@@ -270,8 +270,9 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	var last DamageSummary
 	hasLast := false
 	killed := false
+	nowMs := time.Now().UnixMilli()
 	for _, d := range damages {
-		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId())
+		s, err := GetMonsterRegistry().ApplyDamage(p.t, characterId, d, m.UniqueId(), nowMs)
 		if err != nil {
 			p.l.WithError(err).Errorf("Error applying damage to monster %d from character %d.", m.UniqueId(), characterId)
 			break
@@ -370,7 +371,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 	now := time.Now()
 	GetDropTimerRegistry().RecordHit(p.ctx, p.t, uniqueId, now)
 
-	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId)
+	s, err := GetMonsterRegistry().ApplyDamage(p.t, attackerUniqueId, damage, uniqueId, time.Now().UnixMilli())
 	if err != nil {
 		p.l.WithError(err).Errorf("Error applying friendly damage to monster [%d].", uniqueId)
 		return

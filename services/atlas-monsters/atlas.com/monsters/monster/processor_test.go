@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -199,7 +200,7 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 1, 50)
 	uniqueId := m.UniqueId()
 	// Apply a killing hit directly via the registry (no emit).
-	r.ApplyDamage(ten, 1, 999, uniqueId)
+	r.ApplyDamage(ten, 1, 999, uniqueId, time.Now().UnixMilli())
 	// Do NOT remove the monster — just leave it at HP=0 in the registry so
 	// Processor.Damage hits the !m.Alive() early-return path.
 

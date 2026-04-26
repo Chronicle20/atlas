@@ -4,6 +4,7 @@ import (
 	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
 	"context"
+	"math/rand"
 	"time"
 
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
@@ -208,3 +209,73 @@ func pickNextSkill(
 	chosen.NextEligibleRepickAtMs = nextRepick
 	return chosen
 }
+
+// repickAndEmit reads the monster from the registry, runs the picker, writes
+// the decision back into the registry, and emits a NEXT_SKILL_DECIDED event.
+// Always emits — even if the new decision is the sentinel or unchanged —
+// because atlas-channel's inbox is single-use and stale-cache-coherent: a
+// missed emission would leave a stale prediction in place. Logs at debug
+// per-run; logs at info level on sentinel↔non-sentinel transitions.
+func (p *ProcessorImpl) repickAndEmit(uniqueId uint32, reason RepickReason) error {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		// Monster gone (destroyed between trigger and call). Drop quietly.
+		return nil
+	}
+
+	infoFn := func(monsterId uint32) (information.Model, error) {
+		return information.GetById(p.l)(p.ctx)(monsterId)
+	}
+	skillsFn := func(skillId, skillLevel uint16) (mobskill.Model, error) {
+		return mobskill.GetByIdAndLevel(p.l)(p.ctx)(skillId, skillLevel)
+	}
+	rng := pickerRNG{}
+
+	prev := m.NextSkillDecision()
+	now := time.Now().UnixMilli()
+	d := pickNextSkill(p.l, p.ctx, p.t, m, infoFn, skillsFn, GetCooldownRegistry(), rng, now)
+
+	// Sentinel↔non-sentinel transition logging at info level.
+	wasSentinel := prev.skillId == 0
+	isSentinel := d.IsSentinel()
+	if wasSentinel != isSentinel {
+		if isSentinel {
+			p.l.Infof("Picker: monster [%d] transition non-sentinel(%d)→sentinel reason=%s.", m.UniqueId(), prev.skillId, reason)
+		} else {
+			p.l.Infof("Picker: monster [%d] transition sentinel→casting(%d) reason=%s.", m.UniqueId(), d.SkillId, reason)
+		}
+	}
+
+	updated, err := GetMonsterRegistry().SetNextSkillDecision(p.t, uniqueId, nextSkillDecision{
+		skillId:                d.SkillId,
+		skillLevel:             d.SkillLevel,
+		decidedAtMs:            d.DecidedAtMs,
+		nextEligibleRepickAtMs: d.NextEligibleRepickAtMs,
+	})
+	if err != nil {
+		p.l.WithError(err).Errorf("Picker: failed to store decision for monster [%d].", uniqueId)
+		// Continue and emit anyway: the consumer is the source of truth for
+		// atlas-channel's inbox, and a stale local store will repair on the
+		// next picker run.
+	}
+	_ = updated
+
+	// Always emit, even on sentinel/unchanged decisions, to keep atlas-channel
+	// inbox coherent.
+	if err := p.emit(EnvEventTopicMonsterStatus, nextSkillDecidedStatusEventProvider(m, nextSkillDecision{
+		skillId:                d.SkillId,
+		skillLevel:             d.SkillLevel,
+		decidedAtMs:            d.DecidedAtMs,
+		nextEligibleRepickAtMs: d.NextEligibleRepickAtMs,
+	})); err != nil {
+		p.l.WithError(err).Errorf("Picker: failed to emit NEXT_SKILL_DECIDED for monster [%d].", uniqueId)
+		return err
+	}
+	return nil
+}
+
+// pickerRNG is the production RNG. Wraps math/rand for the randSource
+// interface. Tests inject fakeRand instead.
+type pickerRNG struct{}
+
+func (pickerRNG) Intn(n int) int { return rand.Intn(n) }

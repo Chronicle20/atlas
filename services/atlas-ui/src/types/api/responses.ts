@@ -89,7 +89,7 @@ export type ExtractApiData<T> = T extends ApiResponse<infer U> ? U : never;
 /**
  * API response for endpoints that paginate per JSON:API §4.4.
  * meta.total is the total matching row count; meta.page describes the served slice.
- * links carry first/prev/next/last with page[number] rewritten per link.
+ * links carry self/first/prev/next/last with page[number] rewritten per link.
  */
 export interface ApiPagedResponse<T = unknown> extends ApiResponse<T[]> {
   data: T[];
@@ -97,5 +97,11 @@ export interface ApiPagedResponse<T = unknown> extends ApiResponse<T[]> {
     total?: number;
     page?: { number?: number; size?: number; last?: number };
   };
-  links?: Record<string, string | undefined>;
+  links?: {
+    self?: string;
+    first?: string;
+    prev?: string;
+    next?: string;
+    last?: string;
+  };
 }

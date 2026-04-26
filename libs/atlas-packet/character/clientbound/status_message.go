@@ -80,6 +80,43 @@ func (m *StatusMessageDropPickUpInventoryFull) Decode(_ logrus.FieldLogger, _ co
 	}
 }
 
+// StatusMessageDropPickUpGameFileDamaged - "the game file has been damaged" (-3).
+// CWvsContext::OnDropPickUpMessage case -3 renders StringPool 5317 as a screen
+// message and StringPool 5311 as a chat log entry. No follow-up bytes are read
+// by the client. Currently unused — kept here so future error paths that want
+// the apologetic "reinstall the game" string can wire it up without
+// rediscovering the byte mapping.
+type StatusMessageDropPickUpGameFileDamaged struct {
+	mode byte
+}
+
+func NewStatusMessageDropPickUpGameFileDamaged(mode byte) StatusMessageDropPickUpGameFileDamaged {
+	return StatusMessageDropPickUpGameFileDamaged{mode: mode}
+}
+
+func (m StatusMessageDropPickUpGameFileDamaged) Operation() string {
+	return CharacterStatusMessageWriter
+}
+func (m StatusMessageDropPickUpGameFileDamaged) String() string {
+	return fmt.Sprintf("drop pick up game file damaged, mode [%d]", m.mode)
+}
+
+func (m StatusMessageDropPickUpGameFileDamaged) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+	w := response.NewWriter(l)
+	return func(options map[string]interface{}) []byte {
+		w.WriteByte(m.mode)
+		w.WriteInt8(-3)
+		return w.Bytes()
+	}
+}
+
+func (m *StatusMessageDropPickUpGameFileDamaged) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+	return func(r *request.Reader, options map[string]interface{}) {
+		m.mode = r.ReadByte()
+		_ = r.ReadInt8()
+	}
+}
+
 // StatusMessageDropPickUpStackableItem - picked up stackable item
 type StatusMessageDropPickUpStackableItem struct {
 	mode   byte

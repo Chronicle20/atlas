@@ -70,11 +70,11 @@ func buildSubcategoryCompartments() map[string][]Compartment {
 	}
 	add(m, CompartmentCash, "other-cash")
 
+	// Plain "other" is a fallback Classify only ever returns for Equipment and Use.
+	// Setup/Etc/Cash use "other-setup"/"other-etc"/"other-cash" instead, so accepting
+	// bare "other" under those compartments would surface zero rows on every query.
 	add(m, CompartmentEquipment, "other")
 	add(m, CompartmentUse, "other")
-	add(m, CompartmentSetup, "other")
-	add(m, CompartmentEtc, "other")
-	add(m, CompartmentCash, "other")
 
 	return m
 }

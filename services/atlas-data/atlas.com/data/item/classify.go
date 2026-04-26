@@ -216,7 +216,7 @@ func etcSubcategory(itemId uint32) string {
 
 var cashByClassification = map[uint32]string{
 	500: "pet",
-	501: "pet-skill",
+	501: "character-effect",
 	502: "cosmetic-throwing-star",
 	503: "hired-merchant",
 	504: "teleport-rock",

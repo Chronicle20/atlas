@@ -44,15 +44,15 @@ export const COMPARTMENT_TAXONOMY: Record<Exclude<Compartment, "unknown">, strin
     "mastery-book", "bullet", "monster-card",
     "other",
   ],
-  setup: ["chair", "hired-merchant", "other-setup", "other"],
+  setup: ["chair", "hired-merchant", "other-setup"],
   etc: [
     "crafting-material", "ore", "production-item", "mineral-ore",
     "mineral-refined", "gem-rough", "gem-cut", "monster-drop",
     "magnifying-glass", "quest-item", "simulator", "book-page",
-    "other-etc", "other",
+    "other-etc",
   ],
   cash: [
-    "pet", "pet-skill", "cosmetic-throwing-star", "hired-merchant",
+    "pet", "cosmetic-throwing-star", "hired-merchant",
     "teleport-rock", "point-reset", "item-imprint", "megaphone",
     "message-banner", "note", "song-player", "field-effect",
     "death-protection", "store-permit", "cosmetic-coupon", "expression",
@@ -62,7 +62,7 @@ export const COMPARTMENT_TAXONOMY: Record<Exclude<Compartment, "unknown">, strin
     "chalkboard", "pet-evolution", "avatar-megaphone", "character-imprint",
     "cosmetic-membership-coupon", "character-creation", "remote-merchant",
     "pet-multi-consumable", "remote-store",
-    "other-cash", "other",
+    "other-cash",
   ],
 };
 

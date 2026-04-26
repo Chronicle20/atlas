@@ -66,7 +66,7 @@ Applies damage to a monster from a character.
   "type": "DAMAGE",
   "body": {
     "characterId": 0,
-    "damage": 0,
+    "damages": [0],
     "attackType": 0
   }
 }

@@ -65,10 +65,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 
 					mp := monster.NewProcessor(l, ctx)
 					for _, di := range ai.DamageInfo() {
-						for _, d := range di.Damages() {
-							err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), d, byte(ai.AttackType()))
-							if err != nil {
-								l.WithError(err).Errorf("Unable to apply damage [%d] to monster [%d] from character [%d].", d, di.MonsterId(), s.CharacterId())
+						if damages := di.Damages(); len(damages) > 0 {
+							if err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), damages, byte(ai.AttackType())); err != nil {
+								l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), s.CharacterId())
 							}
 						}
 

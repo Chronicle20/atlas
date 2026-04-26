@@ -57,15 +57,16 @@ type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l    logrus.FieldLogger
-	ctx  context.Context
-	t    tenant.Model
-	emit emitter
+	l         logrus.FieldLogger
+	ctx       context.Context
+	t         tenant.Model
+	emit      emitter
+	inFieldFn func(f field.Model) ([]uint32, error)
 }
 
 // NewProcessor creates a new Processor
 func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
-	return &ProcessorImpl{
+	p := &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
@@ -73,6 +74,10 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 			return producer.ProviderImpl(l)(ctx)(topic)(provider)
 		},
 	}
+	p.inFieldFn = func(f field.Model) ([]uint32, error) {
+		return _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f)()
+	}
+	return p
 }
 
 // ByIdProvider returns a provider for a monster by ID
@@ -906,6 +911,22 @@ func (p *ProcessorImpl) checkReflect(m Model, characterId uint32, attackType byt
 			}
 		}
 	}
+}
+
+// attackerInField reports whether characterId is currently in the monster's
+// field. Returns (false, err) on provider error so callers can fail closed
+// (FR-10): we don't grant control to an attacker we cannot verify.
+func (p *ProcessorImpl) attackerInField(f field.Model, characterId uint32) (bool, error) {
+	ids, err := p.inFieldFn(f)
+	if err != nil {
+		return false, err
+	}
+	for _, id := range ids {
+		if id == characterId {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 // Helper functions

@@ -3,6 +3,7 @@ package monster
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -48,6 +49,9 @@ func newRecordingProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]e
 			}
 			return nil
 		},
+	}
+	p.inFieldFn = func(_ field.Model) ([]uint32, error) {
+		return nil, nil
 	}
 	return p, &events
 }
@@ -209,5 +213,50 @@ func TestDamageAlreadyDeadMonster(t *testing.T) {
 
 	if len(*events) != 0 {
 		t.Fatalf("expected 0 events for already-dead monster, got %d: %v", len(*events), *events)
+	}
+}
+
+// TestAttackerInField verifies the FR-10 helper:
+//   - returns true when the attacker's id is in the field's character id list
+//   - returns false when not
+//   - returns false (fail-closed) on provider error
+func TestAttackerInField(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	tests := []struct {
+		name   string
+		ids    []uint32
+		err    error
+		wantIn bool
+	}{
+		{"in field", []uint32{1, 7, 9}, nil, true},
+		{"not in field", []uint32{1, 9}, nil, false},
+		{"empty field", []uint32{}, nil, false},
+		{"provider error fails closed", nil, errors.New("boom"), false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &ProcessorImpl{
+				l:   logrus.New(),
+				ctx: ctx,
+				t:   ten,
+				inFieldFn: func(_ field.Model) ([]uint32, error) {
+					return tc.ids, tc.err
+				},
+			}
+			got, err := p.attackerInField(f, 7)
+			if tc.err != nil {
+				if err == nil {
+					t.Errorf("expected error from helper, got nil")
+				}
+			}
+			if got != tc.wantIn {
+				t.Errorf("attackerInField=%v want %v", got, tc.wantIn)
+			}
+		})
 	}
 }

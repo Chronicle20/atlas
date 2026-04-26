@@ -9,7 +9,13 @@ import { itemsService, type ItemSearchFilters } from "@/services/api/items.servi
 vi.mock("@/services/api/items.service", async () => {
   return {
     itemsService: {
-      searchItems: vi.fn(async () => []),
+      searchItems: vi.fn(async () => ({
+        items: [],
+        total: 0,
+        pageNumber: 1,
+        pageSize: 50,
+        lastPage: 1,
+      })),
     },
     buildItemSearchQuery: (await vi.importActual<typeof import("@/services/api/items.service")>("@/services/api/items.service")).buildItemSearchQuery,
   };
@@ -36,7 +42,14 @@ function renderAt(initial: string) {
 
 describe("ItemsPage", () => {
   beforeEach(() => {
-    vi.mocked(itemsService.searchItems).mockClear();
+    vi.mocked(itemsService.searchItems).mockReset();
+    vi.mocked(itemsService.searchItems).mockResolvedValue({
+      items: [],
+      total: 0,
+      pageNumber: 1,
+      pageSize: 50,
+      lastPage: 1,
+    });
   });
 
   it("fires the default browse query on mount with no params", async () => {
@@ -45,7 +58,8 @@ describe("ItemsPage", () => {
       expect(itemsService.searchItems).toHaveBeenCalled();
     });
     const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0] as ItemSearchFilters;
-    expect(lastCall).toEqual({});
+    expect(lastCall.pageNumber).toBe(1);
+    expect(lastCall.pageSize).toBe(50);
   });
 
   it("hydrates compartment + class from URL params", async () => {
@@ -77,6 +91,65 @@ describe("ItemsPage", () => {
     await waitFor(() => {
       const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0] as ItemSearchFilters;
       expect(lastCall.classes).toEqual(["any"]);
+    });
+  });
+
+  it("calls searchItems with pageNumber=1, pageSize=50 by default", async () => {
+    vi.mocked(itemsService.searchItems).mockResolvedValue({
+      items: [], total: 0, pageNumber: 1, pageSize: 50, lastPage: 1,
+    });
+    renderAt("/items");
+    await waitFor(() => {
+      const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0];
+      expect(lastCall.pageNumber).toBe(1);
+      expect(lastCall.pageSize).toBe(50);
+    });
+  });
+
+  it("hydrates pageNumber from ?page=", async () => {
+    vi.mocked(itemsService.searchItems).mockResolvedValue({
+      items: [], total: 1000, pageNumber: 3, pageSize: 50, lastPage: 20,
+    });
+    renderAt("/items?page=3");
+    await waitFor(() => {
+      const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0];
+      expect(lastCall.pageNumber).toBe(3);
+    });
+  });
+
+  it("clicking Next advances the URL to ?page=2 and refires the query", async () => {
+    vi.mocked(itemsService.searchItems).mockResolvedValue({
+      items: [{ id: "1", name: "A", compartment: "use", subcategory: "", type: "Consumable" }],
+      total: 75, pageNumber: 1, pageSize: 50, lastPage: 2,
+    });
+    const user = userEvent.setup();
+    renderAt("/items");
+    await screen.findByRole("button", { name: /next page/i });
+    await user.click(screen.getByRole("button", { name: /next page/i }));
+    await waitFor(() => {
+      const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0];
+      expect(lastCall.pageNumber).toBe(2);
+    });
+  });
+
+  it("changing a filter resets pageNumber to 1", async () => {
+    vi.mocked(itemsService.searchItems).mockResolvedValue({
+      items: [], total: 0, pageNumber: 1, pageSize: 50, lastPage: 1,
+    });
+    const user = userEvent.setup();
+    renderAt("/items?page=4&comp=equipment");
+    // Verify hydration: starts on page 4.
+    await waitFor(() => {
+      const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0];
+      expect(lastCall.pageNumber).toBe(4);
+    });
+    // Toggle a class filter — this is a plain Button (not a Radix Select), so it
+    // works under jsdom without the hasPointerCapture polyfill.
+    await user.click(screen.getByRole("button", { name: "Warrior" }));
+    await waitFor(() => {
+      const lastCall = vi.mocked(itemsService.searchItems).mock.calls.at(-1)![0];
+      expect(lastCall.pageNumber).toBe(1);
+      expect(lastCall.classes).toEqual(["warrior"]);
     });
   });
 });

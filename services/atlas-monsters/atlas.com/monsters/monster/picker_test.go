@@ -248,3 +248,39 @@ func TestPicker_NextEligibleMinimumAcrossCooldownGated(t *testing.T) {
 		t.Fatalf("expected min-cooldown expiry %d; got %d", now+3000, d.NextEligibleRepickAtMs)
 	}
 }
+
+func TestPicker_InfoFetchError_ReturnsSentinel(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	errInfo := func(_ uint32) (information.Model, error) {
+		return information.Model{}, errors.New("atlas-data down")
+	}
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		errInfo, mobSkillTable(nil),
+		&fakeCooldown{}, &fakeRand{}, 1000)
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel on info fetch error; got %+v", d)
+	}
+}
+
+func TestPicker_SecondSkillWinsAfterFirstPropFails(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	skills := []information.Skill{
+		{Id: 100, Level: 1},
+		{Id: 101, Level: 1},
+	}
+	skillTable := map[uint32]mobskill.Model{
+		100*1000 + 1: mskill(t, 100, 1, 10, 0, 0, 0),  // 10% prop
+		101*1000 + 1: mskill(t, 101, 1, 100, 0, 0, 0), // 100% prop
+	}
+
+	// First roll = 95: 95 < 10 false, skill 100 skipped.
+	// Second roll = 0:  0 < 100 true, skill 101 wins.
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{95, 0}}, 1000)
+	if d.SkillId != 101 {
+		t.Fatalf("expected skill 101 to win; got %d", d.SkillId)
+	}
+}

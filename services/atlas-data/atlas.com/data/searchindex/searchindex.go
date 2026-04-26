@@ -245,6 +245,71 @@ func runTenantQueries[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUI
 	return results, seen, nil
 }
 
+// Count returns the total matching row count for the substring + (optional)
+// exact-id predicate against a single tenant partition. The exact-id branch
+// is included only when q parses as a non-negative integer.
+func Count[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, q string, spec QuerySpec[E]) (int, error) {
+	bypass := database.WithoutTenantFilter(ctx)
+
+	pattern := "%" + strings.ToLower(q) + "%"
+	nameOrs := make([]string, 0, len(spec.NameColumns))
+	nameArgs := make([]interface{}, 0, len(spec.NameColumns))
+	for _, col := range spec.NameColumns {
+		nameOrs = append(nameOrs, "LOWER("+col+") LIKE ?")
+		nameArgs = append(nameArgs, pattern)
+	}
+
+	matchClause := "(" + strings.Join(nameOrs, " OR ") + ")"
+	args := []interface{}{tenantId}
+	args = append(args, nameArgs...)
+
+	if numeric, err := strconv.Atoi(q); err == nil {
+		matchClause = "(" + matchClause + " OR " + spec.EntityIdColumn + " = ?)"
+		args = append(args, numeric)
+	}
+
+	where := []string{"tenant_id = ?", matchClause}
+	if spec.ExtraPredicate != "" {
+		where = append(where, "("+spec.ExtraPredicate+")")
+		args = append(args, spec.ExtraArgs...)
+	}
+
+	var entity E
+	var n int64
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Where(strings.Join(where, " AND "), args...).
+		Count(&n).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(n), nil
+}
+
+// CountWithFilter returns the total matching row count for the filter-only
+// predicate against a single tenant partition.
+func CountWithFilter[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, spec QuerySpec[E]) (int, error) {
+	bypass := database.WithoutTenantFilter(ctx)
+
+	where := []string{"tenant_id = ?"}
+	args := []interface{}{tenantId}
+	if spec.ExtraPredicate != "" {
+		where = append(where, "("+spec.ExtraPredicate+")")
+		args = append(args, spec.ExtraArgs...)
+	}
+
+	var entity E
+	var n int64
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Where(strings.Join(where, " AND "), args...).
+		Count(&n).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(n), nil
+}
+
 func runFilterQuery[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, limit int, spec QuerySpec[E]) ([]E, map[uint64]struct{}, error) {
 	seen := make(map[uint64]struct{})
 	results := make([]E, 0, limit)

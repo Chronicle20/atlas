@@ -214,3 +214,38 @@ func TestDeleteAllForTenant(t *testing.T) {
 	require.NoError(t, db.WithContext(database.WithoutTenantFilter(ctx)).Model(&testEntity{}).Count(&count).Error)
 	assert.Equal(t, int64(1), count, "only tenant rows should be deleted")
 }
+
+func TestResolveTenantId_TenantHasRows(t *testing.T) {
+	db := setupTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	seed(t, db, ctx, tn.Id(), 1, "Active", "", false)
+	seed(t, db, ctx, uuid.Nil, 2, "Global", "", false)
+
+	got, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, tn.Id(), got)
+}
+
+func TestResolveTenantId_TenantHasZeroRows(t *testing.T) {
+	db := setupTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	seed(t, db, ctx, uuid.Nil, 1, "Global", "", false)
+
+	got, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, uuid.Nil, got)
+}
+
+func TestResolveTenantId_EmptyTable(t *testing.T) {
+	db := setupTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	got, err := ResolveTenantId[testEntity](db, ctx, QuerySpec[testEntity]{})
+	require.NoError(t, err)
+	assert.Equal(t, uuid.Nil, got)
+}

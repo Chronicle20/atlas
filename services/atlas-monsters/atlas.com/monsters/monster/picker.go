@@ -65,12 +65,12 @@ type monsterInfoFetcher func(monsterId uint32) (information.Model, error)
 // expire flips picker eligibility. SEAL gates everything; the *_REFLECT and
 // *_IMMUNITY statuses gate stacking checks for those skill categories.
 var pickerRelevantStatuses = map[string]struct{}{
-	"SEAL":            {},
-	"WEAPON_REFLECT":  {},
-	"MAGIC_REFLECT":   {},
-	"WEAPON_IMMUNITY": {},
-	"MAGIC_IMMUNITY":  {},
-	"SEAL_SKILL":      {},
+	string(monster2.TemporaryStatTypeSeal):               {},
+	string(monster2.TemporaryStatTypeSealSkill):          {},
+	string(monster2.TemporaryStatTypeWeaponAttackImmune): {},
+	string(monster2.TemporaryStatTypeMagicAttackImmune):  {},
+	string(monster2.TemporaryStatTypeWeaponCounter):      {},
+	string(monster2.TemporaryStatTypeMagicCounter):       {},
 }
 
 // isPickerRelevantStatus reports whether the given status-name string

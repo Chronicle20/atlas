@@ -42,6 +42,7 @@ type Model struct {
 type entry struct {
 	CharacterId uint32
 	Damage      uint32
+	LastHitMs   int64
 }
 
 func NewMonster(f field.Model, uniqueId uint32, monsterId uint32, x int16, y int16, fh int16, stance byte, team int8, hp uint32, mp uint32) Model {

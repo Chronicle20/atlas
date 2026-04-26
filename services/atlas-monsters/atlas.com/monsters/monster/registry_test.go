@@ -522,8 +522,8 @@ func TestConcurrentDamage(t *testing.T) {
 	if got.Hp() != expectedHp {
 		t.Fatalf("Expected HP=%d after %d damage, got HP=%d", expectedHp, totalDamage, got.Hp())
 	}
-	if len(got.DamageEntries()) != numAttackers*hitsPerAttacker {
-		t.Fatalf("Expected %d damage entries, got %d", numAttackers*hitsPerAttacker, len(got.DamageEntries()))
+	if len(got.DamageEntries()) != numAttackers {
+		t.Fatalf("Expected %d aggregated damage entries, got %d", numAttackers, len(got.DamageEntries()))
 	}
 }
 
@@ -911,5 +911,53 @@ func TestLoadMonsterWithCjsonEmptyObjectArrays(t *testing.T) {
 	}
 	if ds.Monster.Hp() != 70 {
 		t.Fatalf("Expected HP=70 after 30 damage, got %d", ds.Monster.Hp())
+	}
+}
+
+// TestFromStoredCollapsesLegacyDamageEntries verifies that a Redis blob with
+// the old multi-row-per-character shape and no lastHitMs round-trips into a
+// single aggregated entry per character with LastHitMs == 0.
+func TestFromStoredCollapsesLegacyDamageEntries(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+
+	legacy := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
+		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
+		`,"tenantMajorVersion":83,"tenantMinorVersion":1` +
+		`,"worldId":0,"channelId":0,"mapId":40000` +
+		`,"instance":"00000000-0000-0000-0000-000000000000"` +
+		`,"maxHp":100,"hp":100,"maxMp":50,"mp":50` +
+		`,"monsterId":9300018,"controlCharacterId":0` +
+		`,"x":0,"y":0,"fh":0,"stance":5,"team":0` +
+		`,"damageEntries":[` +
+		`{"characterId":7,"damage":10},` +
+		`{"characterId":7,"damage":15},` +
+		`{"characterId":9,"damage":5}` +
+		`],"statusEffects":[]}`
+	testMiniRedis.Set(monsterKey(ten, m.UniqueId()), legacy)
+
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster failed: %v", err)
+	}
+	entries := got.DamageEntries()
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 aggregated entries, got %d (%+v)", len(entries), entries)
+	}
+	for _, e := range entries {
+		if e.CharacterId == 7 && e.Damage != 25 {
+			t.Errorf("character 7 damage: expected 25, got %d", e.Damage)
+		}
+		if e.CharacterId == 9 && e.Damage != 5 {
+			t.Errorf("character 9 damage: expected 5, got %d", e.Damage)
+		}
+		if e.LastHitMs != 0 {
+			t.Errorf("legacy entry should default LastHitMs=0, got %d", e.LastHitMs)
+		}
 	}
 }

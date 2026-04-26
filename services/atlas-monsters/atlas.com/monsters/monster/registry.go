@@ -76,6 +76,7 @@ func unmarshalTolerantArray[T any](data []byte, out *[]T) error {
 type storedDamageEntry struct {
 	CharacterId uint32 `json:"characterId"`
 	Damage      uint32 `json:"damage"`
+	LastHitMs   int64  `json:"lastHitMs"`
 }
 
 type storedStatusEffect struct {
@@ -95,7 +96,11 @@ type storedStatusEffect struct {
 func toStored(t tenant.Model, m Model) storedMonster {
 	des := make([]storedDamageEntry, 0, len(m.damageEntries))
 	for _, e := range m.damageEntries {
-		des = append(des, storedDamageEntry{CharacterId: e.CharacterId, Damage: e.Damage})
+		des = append(des, storedDamageEntry{
+			CharacterId: e.CharacterId,
+			Damage:      e.Damage,
+			LastHitMs:   e.LastHitMs,
+		})
 	}
 	ses := make([]storedStatusEffect, 0, len(m.statusEffects))
 	for _, se := range m.statusEffects {
@@ -153,9 +158,27 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		return tenant.Model{}, Model{}, err
 	}
 
-	des := make([]entry, 0, len(sm.DamageEntries))
+	agg := make(map[uint32]*entry)
+	order := make([]uint32, 0, len(sm.DamageEntries))
 	for _, de := range sm.DamageEntries {
-		des = append(des, entry{CharacterId: de.CharacterId, Damage: de.Damage})
+		if existing, ok := agg[de.CharacterId]; ok {
+			existing.Damage += de.Damage
+			// Take the latest non-zero lastHitMs; legacy rows have 0.
+			if de.LastHitMs > existing.LastHitMs {
+				existing.LastHitMs = de.LastHitMs
+			}
+			continue
+		}
+		agg[de.CharacterId] = &entry{
+			CharacterId: de.CharacterId,
+			Damage:      de.Damage,
+			LastHitMs:   de.LastHitMs,
+		}
+		order = append(order, de.CharacterId)
+	}
+	des := make([]entry, 0, len(order))
+	for _, cid := range order {
+		des = append(des, *agg[cid])
 	}
 	ses := make([]StatusEffect, 0, len(sm.StatusEffects))
 	for _, sse := range sm.StatusEffects {

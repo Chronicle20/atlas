@@ -6,7 +6,10 @@ import (
 	"atlas-inventory/data/consumable"
 	dcp "atlas-inventory/data/consumable/mock"
 	"atlas-inventory/kafka/message"
+	compartmentMsg "atlas-inventory/kafka/message/compartment"
+	dropMsg "atlas-inventory/kafka/message/drop"
 	"context"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -611,5 +614,90 @@ func TestDropNonRechargeableInsufficientQuantity(t *testing.T) {
 
 	if err := cp.Drop(mb)(uuid.New(), characterId, inventory.TypeValueUse, testFieldModel(), 0, 0, int16(1), 5); err == nil {
 		t.Fatalf("expected drop to fail when quantity exceeds owned")
+	}
+}
+
+// TestAttemptItemPickUpInventoryFull guards two related bugs in the drop pickup
+// failure path:
+//
+//  1. The inner CreateAsset must emit CREATION_FAILED with the dedicated
+//     INVENTORY_FULL error code (not the generic UNKNOWN_ERROR), so atlas-channel
+//     can render the right client status message.
+//  2. The outer AttemptItemPickUp must keep CREATION_FAILED *and* the drop-side
+//     CANCEL_RESERVATION command in the same buffer. A previous version
+//     reassigned the local `mb` to a fresh buffer before queueing the cancel,
+//     orphaning that command so atlas-drops never learned the reservation
+//     should be released.
+func TestAttemptItemPickUpInventoryFull(t *testing.T) {
+	characterId := uint32(304)
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	// Capacity-1 USE compartment that is already full with a different
+	// templateId, forcing the new pickup to need a fresh slot.
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+		t.Fatalf("Failed to seed compartment with existing item: %v", err)
+	}
+
+	// Reset the buffer so we only inspect events from the failing pickup.
+	mb = message.NewBuffer()
+
+	// 2070000 (subi throwing-stars classification ≠ 2000000), guaranteed not to
+	// merge into the existing stack so the path falls through to NextFreeSlot.
+	if err := cp.AttemptItemPickUp(mb)(uuid.New(), testFieldModel(), characterId, uint32(42), uint32(2070000), uint32(1)); err != nil {
+		t.Fatalf("AttemptItemPickUp returned unexpected error: %v", err)
+	}
+
+	events := mb.GetAll()
+
+	statusMsgs := events[compartmentMsg.EnvEventTopicStatus]
+	var sawCreationFailed bool
+	for _, msg := range statusMsgs {
+		var ev compartmentMsg.StatusEvent[compartmentMsg.CreationFailedStatusEventBody]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		if ev.Type != compartmentMsg.StatusEventTypeCreationFailed {
+			continue
+		}
+		sawCreationFailed = true
+		if ev.Body.ErrorCode != compartmentMsg.CreateAssetInventoryFull {
+			t.Fatalf("CREATION_FAILED error code = %q, want %q", ev.Body.ErrorCode, compartmentMsg.CreateAssetInventoryFull)
+		}
+	}
+	if !sawCreationFailed {
+		t.Fatalf("expected a CREATION_FAILED compartment status event, got %d events on topic", len(statusMsgs))
+	}
+
+	dropCmds := events[dropMsg.EnvCommandTopic]
+	var sawCancel bool
+	for _, msg := range dropCmds {
+		var cmd dropMsg.Command[dropMsg.CancelReservationCommandBody]
+		if err := json.Unmarshal(msg.Value, &cmd); err != nil {
+			continue
+		}
+		if cmd.Type == dropMsg.CommandTypeCancelReservation {
+			sawCancel = true
+			break
+		}
+	}
+	if !sawCancel {
+		t.Fatalf("expected a CANCEL_RESERVATION drop command in the same buffer; got %d drop commands", len(dropCmds))
 	}
 }

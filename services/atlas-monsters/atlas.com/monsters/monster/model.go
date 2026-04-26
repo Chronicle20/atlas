@@ -134,24 +134,11 @@ func (m Model) DamageEntries() []entry {
 	return m.damageEntries
 }
 
+// DamageSummary returns the per-character damage entries. Entries are now
+// pre-aggregated by characterId at write time (Task 1+4), so this is a
+// straight passthrough of m.damageEntries.
 func (m Model) DamageSummary() []entry {
-	var damageSummary = make(map[uint32]uint32)
-	for _, x := range m.damageEntries {
-		if _, ok := damageSummary[x.CharacterId]; ok {
-			damageSummary[x.CharacterId] += x.Damage
-		} else {
-			damageSummary[x.CharacterId] = x.Damage
-		}
-	}
-
-	var results []entry
-	for id, dmg := range damageSummary {
-		results = append(results, entry{
-			CharacterId: id,
-			Damage:      dmg,
-		})
-	}
-	return results
+	return m.damageEntries
 }
 
 func (m Model) Move(x int16, y int16, stance byte) Model {

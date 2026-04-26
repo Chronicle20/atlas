@@ -31,12 +31,25 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
 
   // atlas-effective-stats returns post-equip primary stats and HP/MP caps.
   // While loading or on error we fall through to the raw character record so
-  // the panel stays populated.
-  const { data: effective } = useCharacterEffectiveStats(
-    tenant,
-    a.worldId,
-    character.id,
-  );
+  // the panel stays populated. `error` is exposed (but not surfaced visually
+  // by default) so a missing/unhealthy backend service is observable in the
+  // browser console rather than silently rendering base values.
+  const {
+    data: effective,
+    isError: effectiveErrored,
+    error: effectiveError,
+  } = useCharacterEffectiveStats(tenant, a.worldId, character.id);
+
+  if (effectiveErrored) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[AttributesPanel] atlas-effective-stats fetch failed; HP/MP and primary-stat bonuses are using the raw character record as a fallback.",
+      effectiveError,
+    );
+  }
+
+  const hpBonus = effective ? Math.max(0, effective.maxHP - a.maxHp) : 0;
+  const mpBonus = effective ? Math.max(0, effective.maxMP - a.maxMp) : 0;
 
   return (
     <Card className="flex-1">
@@ -99,12 +112,14 @@ export function AttributesPanel({ character, tenantConfig, tenant }: Props) {
             label="HP"
             cur={a.hp}
             max={effective?.maxHP ?? a.maxHp}
+            bonus={hpBonus}
             colorClass="bg-red-500/70"
           />
           <HpMpBar
             label="MP"
             cur={a.mp}
             max={effective?.maxMP ?? a.maxMp}
+            bonus={mpBonus}
             colorClass="bg-blue-500/70"
           />
           <div>

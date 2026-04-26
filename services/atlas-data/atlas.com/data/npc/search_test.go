@@ -56,7 +56,6 @@ func searchSpec(storebankOnly bool) searchindex.QuerySpec[SearchIndexEntity] {
 		EntityIdColumn: "npc_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, npc_id ASC",
-		IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.NpcId) },
 	}
 	if storebankOnly {
 		spec.ExtraPredicate = "storebank = ?"
@@ -73,7 +72,7 @@ func TestNpcSearch_ExactIdFirst(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 9010000, "Alpha", false)
 	seedIdx(t, db, ctx, tn.Id(), 9010001, "Alpha Other", false)
 
-	res, err := searchindex.Search(db, ctx, "9010001", 50, searchSpec(false))
+	res, err := searchindex.Search(db, ctx, tn.Id(), "9010001", 0, 50, searchSpec(false))
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(9010001), res[0].NpcId)
@@ -87,7 +86,7 @@ func TestNpcSearch_Substring(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 1, "Storage Keeper", true)
 	seedIdx(t, db, ctx, tn.Id(), 2, "Gate Guard", false)
 
-	res, err := searchindex.Search(db, ctx, "keeper", 50, searchSpec(false))
+	res, err := searchindex.Search(db, ctx, tn.Id(), "keeper", 0, 50, searchSpec(false))
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, uint32(1), res[0].NpcId)
@@ -101,12 +100,12 @@ func TestNpcSearch_LimitEnforced(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seedIdx(t, db, ctx, tn.Id(), uint32(1000+i), "Box", false)
 	}
-	res, err := searchindex.Search(db, ctx, "box", 50, searchSpec(false))
+	res, err := searchindex.Search(db, ctx, tn.Id(), "box", 0, 50, searchSpec(false))
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
 
-func TestNpcSearch_TenantFallback(t *testing.T) {
+func TestNpcSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupSearchTestDB(t)
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
@@ -115,15 +114,22 @@ func TestNpcSearch_TenantFallback(t *testing.T) {
 	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalOverridden", false)
 	seedIdx(t, db, ctx, uuid.Nil, 6, "GlobalExtra", false)
 
-	res, err := searchindex.Search(db, ctx, "npc", 50, searchSpec(false))
+	res, err := searchindex.Search(db, ctx, tn.Id(), "npc", 0, 50, searchSpec(false))
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "TenantNpc", res[0].Name)
+}
 
-	res, err = searchindex.Search(db, ctx, "globalextra", 50, searchSpec(false))
+func TestNpcSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+
+	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalNpc", false)
+	seedIdx(t, db, ctx, uuid.Nil, 6, "OtherNpc", false)
+
+	res, err := searchindex.Search(db, ctx, uuid.Nil, "npc", 0, 50, searchSpec(false))
 	require.NoError(t, err)
-	require.Len(t, res, 1)
-	assert.Equal(t, uint32(6), res[0].NpcId)
+	require.Len(t, res, 2)
 }
 
 func TestNpcSearch_StorebankFilterAlone(t *testing.T) {
@@ -135,7 +141,7 @@ func TestNpcSearch_StorebankFilterAlone(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 2, "Is Storebank", true)
 	seedIdx(t, db, ctx, tn.Id(), 3, "Also Storebank", true)
 
-	res, err := searchindex.SearchWithFilter(db, ctx, 50, searchSpec(true))
+	res, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, searchSpec(true))
 	require.NoError(t, err)
 	require.Len(t, res, 2)
 	for _, r := range res {
@@ -152,7 +158,7 @@ func TestNpcSearch_StorebankFilterComposedWithSearch(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 2, "Henesys Guard", false)
 	seedIdx(t, db, ctx, tn.Id(), 3, "Ellinia Keeper", true)
 
-	res, err := searchindex.Search(db, ctx, "henesys", 50, searchSpec(true))
+	res, err := searchindex.Search(db, ctx, tn.Id(), "henesys", 0, 50, searchSpec(true))
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, uint32(1), res[0].NpcId)

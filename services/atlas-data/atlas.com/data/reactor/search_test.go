@@ -51,7 +51,6 @@ func searchSpec() searchindex.QuerySpec[SearchIndexEntity] {
 		EntityIdColumn: "reactor_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, reactor_id ASC",
-		IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.ReactorId) },
 	}
 }
 
@@ -63,7 +62,7 @@ func TestReactorSearch_ExactIdFirst(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 2001000, "Alpha")
 	seedIdx(t, db, ctx, tn.Id(), 2001001, "Beta")
 
-	res, err := searchindex.Search(db, ctx, "2001001", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "2001001", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(2001001), res[0].ReactorId)
@@ -77,7 +76,7 @@ func TestReactorSearch_Substring(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 1, "Box Reactor")
 	seedIdx(t, db, ctx, tn.Id(), 2, "Gate")
 
-	res, err := searchindex.Search(db, ctx, "box", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "box", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "Box Reactor", res[0].Name)
@@ -91,23 +90,36 @@ func TestReactorSearch_LimitEnforced(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seedIdx(t, db, ctx, tn.Id(), uint32(1000+i), "Box")
 	}
-	res, err := searchindex.Search(db, ctx, "box", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "box", 0, 50, searchSpec())
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
 
-func TestReactorSearch_TenantFallback(t *testing.T) {
+func TestReactorSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupSearchTestDB(t)
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
 
 	seedIdx(t, db, ctx, tn.Id(), 5, "TenantReactor")
 	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalOverridden")
+	seedIdx(t, db, ctx, uuid.Nil, 6, "GlobalOnly Reactor")
 
-	res, err := searchindex.Search(db, ctx, "reactor", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "reactor", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "TenantReactor", res[0].Name)
+}
+
+func TestReactorSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+
+	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalReactor")
+	seedIdx(t, db, ctx, uuid.Nil, 6, "Other Reactor")
+
+	res, err := searchindex.Search(db, ctx, uuid.Nil, "reactor", 0, 50, searchSpec())
+	require.NoError(t, err)
+	require.Len(t, res, 2)
 }
 
 func TestReactorStorage_Add_RollbackOnIndexFailure(t *testing.T) {

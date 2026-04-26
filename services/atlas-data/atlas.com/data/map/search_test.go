@@ -87,7 +87,7 @@ func TestSearch_LimitEnforced(t *testing.T) {
 	assert.Len(t, res, 50)
 }
 
-func TestSearch_TenantFallback_TenantWins(t *testing.T) {
+func TestSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupStorageTestDB(t)
 	l, _ := test.NewNullLogger()
 
@@ -95,16 +95,28 @@ func TestSearch_TenantFallback_TenantWins(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), tn)
 
 	seedIndex(t, db, ctx, tn.Id(), 100, "TenantMap", "TenantStreet")
-	// global row for same map_id — tenant row should win
+	// global rows are shadowed because the active tenant has rows
 	seedIndex(t, db, ctx, uuid.Nil, 100, "GlobalMap", "GlobalStreet")
-	// global-only map filling remainder
+	seedIndex(t, db, ctx, uuid.Nil, 101, "ExtraMap", "Road")
+
+	res, err := SearchByQuery(l, db)(ctx)("map", 50)
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	assert.Equal(t, "TenantMap", res[0].Name)
+}
+
+func TestSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupStorageTestDB(t)
+	l, _ := test.NewNullLogger()
+
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+	_ = tn
+
+	seedIndex(t, db, ctx, uuid.Nil, 100, "GlobalMap", "GlobalStreet")
 	seedIndex(t, db, ctx, uuid.Nil, 101, "ExtraMap", "Road")
 
 	res, err := SearchByQuery(l, db)(ctx)("map", 50)
 	require.NoError(t, err)
 	require.Len(t, res, 2)
-
-	byId := map[uint32]SearchResult{res[0].Id: res[0], res[1].Id: res[1]}
-	assert.Equal(t, "TenantMap", byId[100].Name, "tenant-scoped row must win")
-	assert.Equal(t, "ExtraMap", byId[101].Name)
 }

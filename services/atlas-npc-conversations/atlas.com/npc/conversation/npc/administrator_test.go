@@ -3,11 +3,14 @@ package npc
 import (
 	"atlas-npc-conversations/conversation"
 	"atlas-npc-conversations/test"
+	"context"
 	"testing"
 
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 func createTestModel(t *testing.T, npcId uint32) Model {
@@ -178,4 +181,51 @@ func TestModelBuilder(t *testing.T) {
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "state")
 	})
+}
+
+func TestCreateNpcConversation_WorksInsideExternalTransaction(t *testing.T) {
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	tenantId := uuid.New()
+	te, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	m := createTestModel(t, 4242)
+
+	err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		_, err := createNpcConversation(tx)(tenantId)(m)
+		return err
+	})
+	if err != nil {
+		t.Fatalf("transaction: %v", err)
+	}
+
+	var entity Entity
+	if err := db.WithContext(ctx).Where("npc_id = ?", uint32(4242)).First(&entity).Error; err != nil {
+		t.Fatalf("read back: %v", err)
+	}
+}
+
+func TestCreateNpcConversation_RollsBackOnTxError(t *testing.T) {
+	db := test.SetupTestDB(t, MigrateTable)
+	defer test.CleanupTestDB(t, db)
+
+	tenantId := uuid.New()
+	te, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), te)
+
+	m := createTestModel(t, 5252)
+
+	_ = db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if _, err := createNpcConversation(tx)(tenantId)(m); err != nil {
+			return err
+		}
+		return assert.AnError
+	})
+
+	var entity Entity
+	if err := db.WithContext(ctx).Where("npc_id = ?", uint32(5252)).First(&entity).Error; err == nil {
+		t.Fatalf("conversation should not have been persisted; row found: %+v", entity)
+	}
 }

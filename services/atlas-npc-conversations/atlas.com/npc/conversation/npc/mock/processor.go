@@ -2,6 +2,7 @@ package mock
 
 import (
 	"atlas-npc-conversations/conversation/npc"
+	"atlas-npc-conversations/conversation/recipe"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -36,6 +37,9 @@ type ProcessorMock struct {
 
 	// SeedFunc is a function field for the Seed method
 	SeedFunc func() (npc.SeedResult, error)
+
+	// ReindexAllRecipesFunc is a function field for the ReindexAllRecipes method
+	ReindexAllRecipesFunc func() (recipe.ReindexResult, error)
 
 	// CountFunc is a function field for the Count method
 	CountFunc func() (int64, *time.Time, error)
@@ -119,6 +123,16 @@ func (m *ProcessorMock) Seed() (npc.SeedResult, error) {
 		return m.SeedFunc()
 	}
 	return npc.SeedResult{}, nil
+}
+
+// Seed is a mock implementation of the npc.Processor.Seed method — already defined above
+
+// ReindexAllRecipes is a mock implementation of the npc.Processor.ReindexAllRecipes method
+func (m *ProcessorMock) ReindexAllRecipes() (recipe.ReindexResult, error) {
+	if m.ReindexAllRecipesFunc != nil {
+		return m.ReindexAllRecipesFunc()
+	}
+	return recipe.ReindexResult{}, nil
 }
 
 // Count is a mock implementation of the npc.Processor.Count method

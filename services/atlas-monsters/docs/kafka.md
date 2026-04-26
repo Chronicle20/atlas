@@ -656,9 +656,9 @@ Runs every 1500ms. For each non-boss monster across all tenants:
 - Skips bosses (`information.Boss() == true`) and monsters with empty damage tables.
 - Pre-filters in Go: if no damage entry has been idle longer than `AggroIdleThresholdMs` (10s), the monster is skipped without a Redis write.
 - Otherwise calls `decayDamageEntriesScript` (Lua) which decays idle entries by `AggroDecayMultiplier` (0.85) per tick and prunes any below `AggroDecayFloor` (1).
-- When all entries are pruned and the monster has a controller, the script clears the controller and the task emits `STOP_CONTROL` with the previous controller id. `controllerHasAggro` resets to `false`.
+- When all entries are pruned on a monster whose `controllerHasAggro` was `true`, the script flips `controllerHasAggro` to `false` (active → passive) and the task emits `AGGRO_CHANGED` with the existing `controllerCharacterId` and `controllerHasAggro: false`. The controller itself is **not** cleared — losing aggro is not the same as losing control; the existing controller continues driving the monster's idle/wander AI on the client.
 
-Boss monsters retain their damage table and controller until death.
+Boss monsters retain their damage table and aggro state until death.
 
 ## Transaction Semantics
 

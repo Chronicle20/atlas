@@ -107,20 +107,25 @@ func handleSearchNpcs(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.Handl
 					EntityIdColumn: "npc_id",
 					NameColumns:    []string{"name"},
 					Order:          "name ASC, npc_id ASC",
-					IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.NpcId) },
 				}
 				if storebank {
 					spec.ExtraPredicate = "storebank = ?"
 					spec.ExtraArgs = []interface{}{true}
 				}
 
+				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("NPC tenant resolve failed.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
 				start := time.Now()
 				var rows []SearchIndexEntity
-				var err error
 				if hasSearch {
-					rows, err = searchindex.Search(db, d.Context(), q, limit, spec)
+					rows, err = searchindex.Search(db, d.Context(), tenantId, q, 0, limit, spec)
 				} else {
-					rows, err = searchindex.SearchWithFilter(db, d.Context(), limit, spec)
+					rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, limit, spec)
 				}
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {

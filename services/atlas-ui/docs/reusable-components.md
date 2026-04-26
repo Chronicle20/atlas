@@ -246,6 +246,44 @@ function UsersTable() {
 - `headerActions?`: Optional header action buttons
 - `className?`: Additional CSS classes
 
+## Pagination
+
+### Pager
+
+A controlled pagination control: First / Prev / current ± 2 numbered window / Next / Last buttons plus status text (`Page N of M • T results`, or `No results` when empty). Lives in `src/components/common/Pager.tsx` and owns no state — the parent decides whether the page lives in the URL or in React state.
+
+```tsx
+import { Pager } from '@/components/common/Pager';
+
+function ItemsPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = Number(searchParams.get('page') ?? '1');
+  const { data } = useItemStrings({ page, pageSize: 50 });
+
+  return (
+    <>
+      <DataTableWrapper columns={columns} data={data?.items ?? []} />
+      <Pager
+        page={page}
+        lastPage={data?.lastPage ?? 1}
+        total={data?.total ?? 0}
+        pageSize={50}
+        onPageChange={(n) => setSearchParams({ page: String(n) })}
+      />
+    </>
+  );
+}
+```
+
+**Props:**
+- `page`: Current page number (1-based)
+- `lastPage`: Total number of pages (`ceil(total/pageSize)`, floored to 1)
+- `total`: Total result count across all pages
+- `pageSize`: Page size (used for status calculation)
+- `onPageChange`: Callback fired with the requested page number
+
+**Used by:** `ItemsPage` (URL `?page=` state, backed by `GET /api/data/item-strings` page-number pagination) and `MerchantsPage` (local React state).
+
 ## Form Components
 
 ### FormField

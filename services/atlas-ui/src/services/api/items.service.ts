@@ -10,6 +10,7 @@ import {
   type ItemDetailData,
 } from "@/types/models/item";
 import type { Compartment } from "@/lib/items/taxonomy";
+import type { ApiPagedResponse } from "@/types/api/responses";
 
 const BASE_PATH = "/api/data/item-strings";
 
@@ -27,6 +28,16 @@ export interface ItemSearchFilters {
   compartment?: Exclude<Compartment, "unknown">;
   subcategory?: string;
   classes?: string[];
+  pageNumber: number;
+  pageSize: number;
+}
+
+export interface ItemSearchPage {
+  items: ItemSearchResult[];
+  total: number;
+  pageNumber: number;
+  pageSize: number;
+  lastPage: number;
 }
 
 function compartmentFromWire(raw: string | undefined): Compartment {
@@ -54,20 +65,30 @@ export function buildItemSearchQuery(filters: ItemSearchFilters): string {
       params.set("filter[class]", [...filters.classes].sort().join(","));
     }
   }
-  const qs = params.toString();
-  return qs ? `?${qs}` : "";
+  params.set("page[number]", String(filters.pageNumber));
+  params.set("page[size]", String(filters.pageSize));
+  return `?${params.toString()}`;
 }
 
 export const itemsService = {
-  async searchItems(filters: ItemSearchFilters): Promise<ItemSearchResult[]> {
-    const items = await api.getList<ItemStringSearchData>(`${BASE_PATH}${buildItemSearchQuery(filters)}`);
-    return items.map((item) => ({
+  async searchItems(filters: ItemSearchFilters): Promise<ItemSearchPage> {
+    const resp = await api.get<ApiPagedResponse<ItemStringSearchData>>(
+      `${BASE_PATH}${buildItemSearchQuery(filters)}`,
+    );
+    const items = resp.data.map((item) => ({
       id: item.id,
       name: item.attributes.name,
       compartment: compartmentFromWire(item.attributes.compartment),
       subcategory: item.attributes.subcategory ?? "",
       type: getItemType(item.id),
     }));
+    return {
+      items,
+      total: resp.meta?.total ?? items.length,
+      pageNumber: resp.meta?.page?.number ?? filters.pageNumber,
+      pageSize: resp.meta?.page?.size ?? filters.pageSize,
+      lastPage: resp.meta?.page?.last ?? 1,
+    };
   },
 
   async getItemName(itemId: string): Promise<string> {

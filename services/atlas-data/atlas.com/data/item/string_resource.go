@@ -4,11 +4,13 @@ import (
 	"atlas-data/rest"
 	"atlas-data/searchindex"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -61,20 +63,14 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				}
 			}
 
-			limit := searchindex.MaxLimit
-			if raw := query.Get("limit"); raw != "" {
-				parsed, err := strconv.Atoi(raw)
-				if err != nil || parsed <= 0 {
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				if parsed > searchindex.MaxLimit {
-					parsed = searchindex.MaxLimit
-				}
-				limit = parsed
+			fspec, errCode := parseFilters(query)
+			if errCode != 0 {
+				w.WriteHeader(errCode)
+				return
 			}
 
-			fspec, errCode := parseFilters(query)
+			// Page params (PRD §4.1, validation order: search -> filter -> page -> limit-rejection).
+			pageNumber, pageSize, errCode := parsePagingParams(query)
 			if errCode != 0 {
 				w.WriteHeader(errCode)
 				return
@@ -86,7 +82,6 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				EntityIdColumn: "item_id",
 				NameColumns:    []string{"name"},
 				Order:          "item_id ASC",
-				IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 			}
 
 			predicates, args := buildPredicates(fspec, !hasSearch && !hasFilter)
@@ -95,13 +90,28 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				spec.ExtraArgs = args
 			}
 
+			tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Item-string tenant resolve failed.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			offset := (pageNumber - 1) * pageSize
+
 			start := time.Now()
 			var rows []StringSearchIndexEntity
-			var err error
+			var total int
 			if hasSearch {
-				rows, err = searchindex.Search(db, d.Context(), searchQuery, limit, spec)
+				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, offset, pageSize, spec)
+				if err == nil {
+					total, err = searchindex.Count(db, d.Context(), tenantId, searchQuery, spec)
+				}
 			} else {
-				rows, err = searchindex.SearchWithFilter(db, d.Context(), limit, spec)
+				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, offset, pageSize, spec)
+				if err == nil {
+					total, err = searchindex.CountWithFilter(db, d.Context(), tenantId, spec)
+				}
 			}
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {
@@ -119,6 +129,9 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 					"compartment":  compartmentLogValue(fspec.Compartment),
 					"subcategory":  stringOrAny(fspec.Subcategory),
 					"class_filter": fspec.Class,
+					"page_number":  pageNumber,
+					"page_size":    pageSize,
+					"total":        total,
 				}).Debugf("Item-string search served.")
 			}
 
@@ -132,10 +145,41 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				})
 			}
 
+			env := paginate.Envelope{Total: total, PageNumber: pageNumber, PageSize: pageSize}
 			queryParams := jsonapi.ParseQueryFields(&query)
-			server.MarshalResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
+			server.MarshalPaginatedResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms, env, r)
 		}
 	}
+}
+
+// parsePagingParams parses JSON:API-style page[number]/page[size] query params and rejects
+// the legacy ?limit= param. Returns (pageNumber, pageSize, errCode). errCode is 0 on success
+// or an HTTP status code (e.g. 400) on validation failure.
+//
+// Defaults: page[number]=1, page[size]=searchindex.MaxLimit (50).
+// Bounds: page[number] >= 1; page[size] in [1, searchindex.MaxLimit]. Out-of-range or
+// non-integer values yield 400. Presence of legacy ?limit= yields 400 (no shim).
+func parsePagingParams(query url.Values) (int, int, int) {
+	pageSize := searchindex.MaxLimit
+	if raw := query.Get("page[size]"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 || parsed > searchindex.MaxLimit {
+			return 0, 0, http.StatusBadRequest
+		}
+		pageSize = parsed
+	}
+	pageNumber := 1
+	if raw := query.Get("page[number]"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			return 0, 0, http.StatusBadRequest
+		}
+		pageNumber = parsed
+	}
+	if _, hasLimit := query["limit"]; hasLimit {
+		return 0, 0, http.StatusBadRequest
+	}
+	return pageNumber, pageSize, 0
 }
 
 func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{}) {

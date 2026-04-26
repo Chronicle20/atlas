@@ -23,28 +23,29 @@ const maxRetries = 10
 
 // storedMonster is the JSON-serializable representation stored in Redis.
 type storedMonster struct {
-	UniqueId           uint32             `json:"uniqueId"`
-	TenantId           string             `json:"tenantId"`
-	TenantRegion       string             `json:"tenantRegion"`
-	TenantMajorVersion uint16             `json:"tenantMajorVersion"`
-	TenantMinorVersion uint16             `json:"tenantMinorVersion"`
-	WorldId            byte               `json:"worldId"`
-	ChannelId          byte               `json:"channelId"`
-	MapId              uint32             `json:"mapId"`
-	Instance           string             `json:"instance"`
-	MaxHp              uint32             `json:"maxHp"`
-	Hp                 uint32             `json:"hp"`
-	MaxMp              uint32             `json:"maxMp"`
-	Mp                 uint32             `json:"mp"`
-	MonsterId          uint32             `json:"monsterId"`
-	ControlCharacterId uint32             `json:"controlCharacterId"`
-	X                  int16              `json:"x"`
-	Y                  int16              `json:"y"`
-	Fh                 int16              `json:"fh"`
-	Stance             byte               `json:"stance"`
-	Team               int8               `json:"team"`
-	DamageEntries      damageEntryList    `json:"damageEntries"`
-	StatusEffects      statusEffectList   `json:"statusEffects"`
+	UniqueId             uint32           `json:"uniqueId"`
+	TenantId             string           `json:"tenantId"`
+	TenantRegion         string           `json:"tenantRegion"`
+	TenantMajorVersion   uint16           `json:"tenantMajorVersion"`
+	TenantMinorVersion   uint16           `json:"tenantMinorVersion"`
+	WorldId              byte             `json:"worldId"`
+	ChannelId            byte             `json:"channelId"`
+	MapId                uint32           `json:"mapId"`
+	Instance             string           `json:"instance"`
+	MaxHp                uint32           `json:"maxHp"`
+	Hp                   uint32           `json:"hp"`
+	MaxMp                uint32           `json:"maxMp"`
+	Mp                   uint32           `json:"mp"`
+	MonsterId            uint32           `json:"monsterId"`
+	ControlCharacterId   uint32           `json:"controlCharacterId"`
+	ControllerHasAggro   bool             `json:"controllerHasAggro"`
+	X                    int16            `json:"x"`
+	Y                    int16            `json:"y"`
+	Fh                   int16            `json:"fh"`
+	Stance               byte             `json:"stance"`
+	Team                 int8             `json:"team"`
+	DamageEntries        damageEntryList  `json:"damageEntries"`
+	StatusEffects        statusEffectList `json:"statusEffects"`
 }
 
 // damageEntryList and statusEffectList tolerate the empty-object form ("{}")
@@ -134,6 +135,7 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		Mp:                 m.mp,
 		MonsterId:          m.monsterId,
 		ControlCharacterId: m.controlCharacterId,
+		ControllerHasAggro: m.controllerHasAggro,
 		X:                  m.x,
 		Y:                  m.y,
 		Fh:                 m.fh,
@@ -213,6 +215,7 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		mp:                 sm.Mp,
 		monsterId:          sm.MonsterId,
 		controlCharacterId: sm.ControlCharacterId,
+		controllerHasAggro: sm.ControllerHasAggro,
 		x:                  sm.X,
 		y:                  sm.Y,
 		fh:                 sm.Fh,

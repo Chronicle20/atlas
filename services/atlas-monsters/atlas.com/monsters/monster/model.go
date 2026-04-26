@@ -10,6 +10,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// nextSkillDecision is the picker's decision for the next skill (if any) the
+// monster should fire on the controller's next tick. Held in-memory only;
+// not persisted to Redis. Zero value is the sentinel "no skill, no scheduled
+// re-pick" decision.
+type nextSkillDecision struct {
+	skillId                byte
+	skillLevel             byte
+	decidedAtMs            int64
+	nextEligibleRepickAtMs int64
+}
+
 type DamageSummary struct {
 	CharacterId   uint32
 	Monster       Model
@@ -39,6 +50,7 @@ type Model struct {
 	team                 int8
 	damageEntries        []entry
 	statusEffects        []StatusEffect
+	nextSkillDecision    nextSkillDecision
 }
 
 type entry struct {
@@ -200,6 +212,10 @@ func (m Model) Mp() uint32 {
 
 func (m Model) StatusEffects() []StatusEffect {
 	return m.statusEffects
+}
+
+func (m Model) NextSkillDecision() nextSkillDecision {
+	return m.nextSkillDecision
 }
 
 func (m Model) HasStatusEffect(statusType string) bool {

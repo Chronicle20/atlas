@@ -633,11 +633,16 @@ func (r *Registry) scanAndDelete(ctx context.Context, pattern string) {
 	}
 }
 
-// DecaySummary is returned by DecayDamageEntries.
+// DecaySummary is returned by DecayDamageEntries. AggroFlippedOff is true when
+// the entry list became empty and the monster's controller was switched from
+// active to passive (controllerHasAggro flipped true→false). The controller is
+// NOT cleared during decay — losing aggro is not the same as losing control;
+// the existing controller continues to drive the monster's idle/wander AI on
+// the client.
 type DecaySummary struct {
-	Monster           Model
-	PrevControllerId  uint32
-	ControllerCleared bool
+	Monster               Model
+	ControllerCharacterId uint32
+	AggroFlippedOff       bool
 }
 
 var decayDamageEntriesScript = goredis.NewScript(`
@@ -659,8 +664,12 @@ end
 
 local kept = {}
 for _, e in ipairs(entries) do
-    if (now - e.lastHitMs) > idleMs then
+    -- Legacy entries written before this branch shipped have no lastHitMs.
+    -- Treat them as having a lastHit of 0 (effectively always idle).
+    local lastHit = e.lastHitMs or 0
+    if (now - lastHit) > idleMs then
         e.damage = math.floor(e.damage * mult)
+        e.lastHitMs = lastHit
     end
     if e.damage >= floorVal then
         table.insert(kept, e)
@@ -668,20 +677,17 @@ for _, e in ipairs(entries) do
 end
 m.damageEntries = kept
 
-local prevControllerId = m.controlCharacterId
-local controllerCleared = false
-if #kept == 0 then
-    if m.controlCharacterId ~= 0 then
-        m.controlCharacterId = 0
-        controllerCleared = true
-    end
+local hadAggro = m.controllerHasAggro
+local aggroFlippedOff = false
+if #kept == 0 and hadAggro then
     m.controllerHasAggro = false
+    aggroFlippedOff = true
 end
 
 redis.call('SET', key, cjson.encode(m))
 return cjson.encode({
-    controllerCleared = controllerCleared,
-    prevControllerId = prevControllerId,
+    aggroFlippedOff = aggroFlippedOff,
+    controllerCharacterId = m.controlCharacterId,
     monster = m,
 })
 `)
@@ -705,9 +711,9 @@ func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int
 	}
 
 	var env struct {
-		ControllerCleared bool          `json:"controllerCleared"`
-		PrevControllerId  uint32        `json:"prevControllerId"`
-		Monster           storedMonster `json:"monster"`
+		AggroFlippedOff       bool          `json:"aggroFlippedOff"`
+		ControllerCharacterId uint32        `json:"controllerCharacterId"`
+		Monster               storedMonster `json:"monster"`
 	}
 	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
 		return DecaySummary{}, err
@@ -717,9 +723,9 @@ func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int
 		return DecaySummary{}, err
 	}
 	return DecaySummary{
-		Monster:           m,
-		PrevControllerId:  env.PrevControllerId,
-		ControllerCleared: env.ControllerCleared,
+		Monster:               m,
+		ControllerCharacterId: env.ControllerCharacterId,
+		AggroFlippedOff:       env.AggroFlippedOff,
 	}, nil
 }
 

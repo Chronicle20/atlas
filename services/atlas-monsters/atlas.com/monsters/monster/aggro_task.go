@@ -87,9 +87,9 @@ func (tk *MonsterAggroDecayTask) Run() {
 				tk.l.WithError(err).Errorf("Decay failed for monster [%d].", m.UniqueId())
 				continue
 			}
-			if summary.ControllerCleared {
-				_ = tk.emit(ten, EnvEventTopicMonsterStatus, stopControlStatusEventProvider(summary.Monster, summary.PrevControllerId))
-				tk.l.Debugf("Aggro decay cleared controller [%d] for monster [%d].", summary.PrevControllerId, summary.Monster.UniqueId())
+			if summary.AggroFlippedOff {
+				_ = tk.emit(ten, EnvEventTopicMonsterStatus, aggroChangedStatusEventProvider(summary.Monster, summary.ControllerCharacterId, false))
+				tk.l.Debugf("Aggro decay flipped controller [%d] to passive for monster [%d].", summary.ControllerCharacterId, summary.Monster.UniqueId())
 			}
 		}
 	}

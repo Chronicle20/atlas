@@ -1064,8 +1064,8 @@ func TestDecayDamageEntriesIdleEntriesDecay(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DecayDamageEntries: %v", err)
 	}
-	if summary.ControllerCleared {
-		t.Error("controllerCleared should be false (no controller was set)")
+	if summary.AggroFlippedOff {
+		t.Error("aggroFlippedOff should be false (entries remain)")
 	}
 	entries := summary.Monster.DamageEntries()
 	if len(entries) != 2 {
@@ -1120,10 +1120,12 @@ func TestDecayDamageEntriesPrunesBelowFloor(t *testing.T) {
 	}
 }
 
-// TestDecayDamageEntriesClearsController verifies the FR-19 path: when all
-// entries prune and a controller exists, ControllerCleared=true and
-// PrevControllerId is set.
-func TestDecayDamageEntriesClearsController(t *testing.T) {
+// TestDecayDamageEntriesFlipsAggroOffKeepingController verifies the post-fix
+// behavior: when all entries prune on a monster with active aggro, the script
+// flips controllerHasAggro false but keeps controlCharacterId in place. Losing
+// aggro is not the same as losing control — the controller continues driving
+// the monster's idle/wander AI on the client.
+func TestDecayDamageEntriesFlipsAggroOffKeepingController(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := testContext(ten)
@@ -1134,7 +1136,7 @@ func TestDecayDamageEntriesClearsController(t *testing.T) {
 	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
 		t.Fatalf("ControlMonster: %v", err)
 	}
-	// Single tiny entry that will be floored on first decay.
+	// First-hit flips controllerHasAggro true server-side (controller exists).
 	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
 		t.Fatalf("ApplyDamage: %v", err)
 	}
@@ -1143,17 +1145,79 @@ func TestDecayDamageEntriesClearsController(t *testing.T) {
 	if err != nil {
 		t.Fatalf("DecayDamageEntries: %v", err)
 	}
-	if !summary.ControllerCleared {
-		t.Fatal("expected ControllerCleared=true")
+	if !summary.AggroFlippedOff {
+		t.Fatal("expected AggroFlippedOff=true")
 	}
-	if summary.PrevControllerId != 42 {
-		t.Errorf("expected PrevControllerId=42, got %d", summary.PrevControllerId)
+	if summary.ControllerCharacterId != 42 {
+		t.Errorf("expected ControllerCharacterId=42, got %d", summary.ControllerCharacterId)
 	}
-	if summary.Monster.ControlCharacterId() != 0 {
-		t.Errorf("expected post-state controller=0, got %d", summary.Monster.ControlCharacterId())
+	if summary.Monster.ControlCharacterId() != 42 {
+		t.Errorf("expected post-state controller=42 (not cleared), got %d", summary.Monster.ControlCharacterId())
 	}
 	if summary.Monster.ControllerHasAggro() {
 		t.Error("expected post-state controllerHasAggro=false")
+	}
+}
+
+// TestDecayDamageEntriesNoFlipWhenAggroAlreadyOff verifies that decaying a
+// monster whose aggro is already off (e.g. no controller, or already passive)
+// does NOT report AggroFlippedOff=true even when the entry list empties.
+func TestDecayDamageEntriesNoFlipWhenAggroAlreadyOff(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	// No controller set -> ApplyDamage cannot flip aggro on.
+	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+	now := int64(20_000)
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("DecayDamageEntries: %v", err)
+	}
+	if summary.AggroFlippedOff {
+		t.Error("expected AggroFlippedOff=false when aggro was already off")
+	}
+}
+
+// TestDecayDamageEntriesLegacyEntryWithoutLastHitMs verifies the Lua script
+// tolerates legacy Redis blobs whose damage entries lack the `lastHitMs` field
+// entirely — without throwing 'attempt to perform arithmetic on a nil value'.
+func TestDecayDamageEntriesLegacyEntryWithoutLastHitMs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	legacy := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
+		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
+		`,"tenantMajorVersion":83,"tenantMinorVersion":1` +
+		`,"worldId":0,"channelId":0,"mapId":40000` +
+		`,"instance":"00000000-0000-0000-0000-000000000000"` +
+		`,"maxHp":1000,"hp":1000,"maxMp":50,"mp":50` +
+		`,"monsterId":9300018,"controlCharacterId":0` +
+		`,"x":0,"y":0,"fh":0,"stance":5,"team":0` +
+		`,"damageEntries":[{"characterId":7,"damage":100}]` +
+		`,"statusEffects":[]}`
+	testMiniRedis.Set(monsterKey(ten, m.UniqueId()), legacy)
+
+	now := int64(20_000)
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("DecayDamageEntries on legacy blob: %v", err)
+	}
+	entries := summary.Monster.DamageEntries()
+	if len(entries) != 1 {
+		t.Fatalf("expected 1 entry after decay, got %d", len(entries))
+	}
+	if entries[0].Damage != 85 {
+		t.Errorf("legacy entry should decay 100 -> 85 (treated as idle), got %d", entries[0].Damage)
 	}
 }
 

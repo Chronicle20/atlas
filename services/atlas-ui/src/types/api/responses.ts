@@ -85,3 +85,17 @@ export function isApiSuccessResponse<T>(response: unknown): response is ApiRespo
  * Utility type for extracting the data type from an API response
  */
 export type ExtractApiData<T> = T extends ApiResponse<infer U> ? U : never;
+
+/**
+ * API response for endpoints that paginate per JSON:API §4.4.
+ * meta.total is the total matching row count; meta.page describes the served slice.
+ * links carry first/prev/next/last with page[number] rewritten per link.
+ */
+export interface ApiPagedResponse<T = unknown> extends ApiResponse<T[]> {
+  data: T[];
+  meta?: {
+    total?: number;
+    page?: { number?: number; size?: number; last?: number };
+  };
+  links?: Record<string, string | undefined>;
+}

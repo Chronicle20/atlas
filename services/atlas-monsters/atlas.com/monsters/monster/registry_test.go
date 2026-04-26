@@ -914,6 +914,51 @@ func TestLoadMonsterWithCjsonEmptyObjectArrays(t *testing.T) {
 	}
 }
 
+// TestControllerHasAggroRoundTrip verifies that storedMonster.ControllerHasAggro
+// round-trips through Redis and that legacy blobs missing the field default to
+// false.
+func TestControllerHasAggroRoundTrip(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 100, 50)
+	if m.ControllerHasAggro() {
+		t.Fatal("freshly spawned monster should default ControllerHasAggro=false")
+	}
+
+	updated := Clone(m).SetControllerHasAggro(true).Build()
+	r.UpdateMonster(ten, m.UniqueId(), updated)
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster failed: %v", err)
+	}
+	if !got.ControllerHasAggro() {
+		t.Fatal("expected ControllerHasAggro=true after persisted update")
+	}
+
+	// Legacy blob missing the field
+	legacy := `{"uniqueId":` + strconv.FormatUint(uint64(m.UniqueId()), 10) +
+		`,"tenantId":"` + ten.Id().String() + `","tenantRegion":"GMS"` +
+		`,"tenantMajorVersion":83,"tenantMinorVersion":1` +
+		`,"worldId":0,"channelId":0,"mapId":40000` +
+		`,"instance":"00000000-0000-0000-0000-000000000000"` +
+		`,"maxHp":100,"hp":100,"maxMp":50,"mp":50` +
+		`,"monsterId":9300018,"controlCharacterId":0` +
+		`,"x":0,"y":0,"fh":0,"stance":5,"team":0` +
+		`,"damageEntries":[],"statusEffects":[]}`
+	testMiniRedis.Set(monsterKey(ten, m.UniqueId()), legacy)
+	got, err = r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster legacy failed: %v", err)
+	}
+	if got.ControllerHasAggro() {
+		t.Fatal("legacy missing field must default to false")
+	}
+}
+
 // TestFromStoredCollapsesLegacyDamageEntries verifies that a Redis blob with
 // the old multi-row-per-character shape and no lastHitMs round-trips into a
 // single aggregated entry per character with LastHitMs == 0.

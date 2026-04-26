@@ -19,24 +19,25 @@ type DamageSummary struct {
 }
 
 type Model struct {
-	uniqueId           uint32
-	worldId            world.Id
-	channelId          channel.Id
-	mapId              _map.Id
-	instance           uuid.UUID
-	maxHp              uint32
-	hp                 uint32
-	maxMp              uint32
-	mp                 uint32
-	monsterId          uint32
-	controlCharacterId uint32
-	x                  int16
-	y                  int16
-	fh                 int16
-	stance             byte
-	team               int8
-	damageEntries      []entry
-	statusEffects      []StatusEffect
+	uniqueId             uint32
+	worldId              world.Id
+	channelId            channel.Id
+	mapId                _map.Id
+	instance             uuid.UUID
+	maxHp                uint32
+	hp                   uint32
+	maxMp                uint32
+	mp                   uint32
+	monsterId            uint32
+	controlCharacterId   uint32
+	controllerHasAggro   bool
+	x                    int16
+	y                    int16
+	fh                   int16
+	stance               byte
+	team                 int8
+	damageEntries        []entry
+	statusEffects        []StatusEffect
 }
 
 type entry struct {
@@ -102,6 +103,10 @@ func (m Model) MonsterId() uint32 {
 
 func (m Model) ControlCharacterId() uint32 {
 	return m.controlCharacterId
+}
+
+func (m Model) ControllerHasAggro() bool {
+	return m.controllerHasAggro
 }
 
 func (m Model) Fh() int16 {

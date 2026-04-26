@@ -54,7 +54,30 @@ func (r *cooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, mon
 
 func (r *cooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte, duration time.Duration) {
 	key := cooldownKey(t, monsterId, skillId)
-	r.client.Set(ctx, key, "1", duration)
+	expiryMs := time.Now().Add(duration).UnixMilli()
+	r.client.Set(ctx, key, strconv.FormatInt(expiryMs, 10), duration)
+}
+
+// Remaining returns the time until the cooldown expires, or zero if there is
+// no active cooldown. Tolerates legacy "1" values (parses to 1ms epoch =>  in
+// the past => zero) and any other parse error (treats as eligible). Use
+// IsOnCooldown for the simple boolean answer; Remaining is for picker
+// scheduling.
+func (r *cooldownRegistry) Remaining(ctx context.Context, t tenant.Model, monsterId uint32, skillId byte) time.Duration {
+	key := cooldownKey(t, monsterId, skillId)
+	val, err := r.client.Get(ctx, key).Result()
+	if err != nil {
+		return 0
+	}
+	expiryMs, perr := strconv.ParseInt(val, 10, 64)
+	if perr != nil {
+		return 0
+	}
+	now := time.Now().UnixMilli()
+	if expiryMs <= now {
+		return 0
+	}
+	return time.Duration(expiryMs-now) * time.Millisecond
 }
 
 func (r *cooldownRegistry) ClearCooldowns(ctx context.Context, t tenant.Model, monsterId uint32) {

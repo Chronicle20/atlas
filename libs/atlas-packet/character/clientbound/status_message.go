@@ -11,6 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// CWvsContext::OnMessage
 const CharacterStatusMessageWriter = "CharacterStatusMessage"
 
 // StatusMessageDropPickUpItemUnavailable - item unavailable (-2)
@@ -22,7 +23,9 @@ func NewStatusMessageDropPickUpItemUnavailable(mode byte) StatusMessageDropPickU
 	return StatusMessageDropPickUpItemUnavailable{mode: mode}
 }
 
-func (m StatusMessageDropPickUpItemUnavailable) Operation() string { return CharacterStatusMessageWriter }
+func (m StatusMessageDropPickUpItemUnavailable) Operation() string {
+	return CharacterStatusMessageWriter
+}
 func (m StatusMessageDropPickUpItemUnavailable) String() string {
 	return fmt.Sprintf("drop pick up item unavailable, mode [%d]", m.mode)
 }
@@ -43,7 +46,11 @@ func (m *StatusMessageDropPickUpItemUnavailable) Decode(_ logrus.FieldLogger, _ 
 	}
 }
 
-// StatusMessageDropPickUpInventoryFull - inventory full (-3)
+// StatusMessageDropPickUpInventoryFull - inventory full.
+// CWvsContext::OnDropPickUpMessage routes -2 to "Item Unavailable" (string 2983)
+// and -3 to "the game file has been damaged…" (string 5317). The generic
+// "you cannot pick up any more items" string (295) is rendered by the switch's
+// default branch, so we send -1 to fall through to it.
 type StatusMessageDropPickUpInventoryFull struct {
 	mode byte
 }
@@ -61,7 +68,7 @@ func (m StatusMessageDropPickUpInventoryFull) Encode(l logrus.FieldLogger, _ con
 	w := response.NewWriter(l)
 	return func(options map[string]interface{}) []byte {
 		w.WriteByte(m.mode)
-		w.WriteInt8(-3)
+		w.WriteInt8(-1)
 		return w.Bytes()
 	}
 }

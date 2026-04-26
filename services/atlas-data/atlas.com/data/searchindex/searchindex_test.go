@@ -3,6 +3,7 @@ package searchindex
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -60,7 +61,6 @@ func widgetSpec() QuerySpec[testEntity] {
 	return QuerySpec[testEntity]{
 		EntityIdColumn: "widget_id",
 		NameColumns:    []string{"name"},
-		IdOf:           func(e testEntity) uint64 { return uint64(e.WidgetId) },
 		Order:          "name ASC, widget_id ASC",
 	}
 }
@@ -73,7 +73,7 @@ func TestSearch_SubstringMatch(t *testing.T) {
 	seed(t, db, ctx, tn.Id(), 1, "Henesys", "red", false)
 	seed(t, db, ctx, tn.Id(), 2, "Ellinia", "green", false)
 
-	res, err := Search(db, ctx, "nesys", 50, widgetSpec())
+	res, err := Search(db, ctx, tn.Id(), "nesys", 0, 50, widgetSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "Henesys", res[0].Name)
@@ -88,7 +88,7 @@ func TestSearch_ExactIdFirst(t *testing.T) {
 	seed(t, db, ctx, tn.Id(), 101, "Alpha 101", "", false)
 	seed(t, db, ctx, tn.Id(), 102, "Alpha 102", "", false)
 
-	res, err := Search(db, ctx, "101", 50, widgetSpec())
+	res, err := Search(db, ctx, tn.Id(), "101", 0, 50, widgetSpec())
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(101), res[0].WidgetId)
@@ -102,12 +102,12 @@ func TestSearch_LimitEnforced(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seed(t, db, ctx, tn.Id(), uint32(1000+i), "Box", "", false)
 	}
-	res, err := Search(db, ctx, "box", 50, widgetSpec())
+	res, err := Search(db, ctx, tn.Id(), "box", 0, 50, widgetSpec())
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
 
-func TestSearch_TenantFallback_TenantWins(t *testing.T) {
+func TestSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupTestDB(t)
 	tn := newTestTenant(t)
 	ctx := tenant.WithContext(context.Background(), tn)
@@ -116,13 +116,27 @@ func TestSearch_TenantFallback_TenantWins(t *testing.T) {
 	seed(t, db, ctx, uuid.Nil, 7, "GlobalWidget", "", false)
 	seed(t, db, ctx, uuid.Nil, 8, "ExtraWidget", "", false)
 
-	res, err := Search(db, ctx, "widget", 50, widgetSpec())
+	// Caller resolves to the tenant id since the tenant has rows; only
+	// tenant rows should be visible.
+	res, err := Search(db, ctx, tn.Id(), "widget", 0, 50, widgetSpec())
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	assert.Equal(t, "TenantWidget", res[0].Name)
+}
+
+func TestSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupTestDB(t)
+	tn := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	// Tenant has no rows; only global rows present.
+	seed(t, db, ctx, uuid.Nil, 7, "GlobalWidget", "", false)
+	seed(t, db, ctx, uuid.Nil, 8, "ExtraWidget", "", false)
+
+	// Caller resolves to uuid.Nil; only global rows should be visible.
+	res, err := Search(db, ctx, uuid.Nil, "widget", 0, 50, widgetSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 2)
-
-	byId := map[uint32]testEntity{res[0].WidgetId: res[0], res[1].WidgetId: res[1]}
-	assert.Equal(t, "TenantWidget", byId[7].Name, "tenant row must win over global")
-	assert.Equal(t, "ExtraWidget", byId[8].Name)
 }
 
 func TestSearch_ExtraPredicate(t *testing.T) {
@@ -137,7 +151,7 @@ func TestSearch_ExtraPredicate(t *testing.T) {
 	spec.ExtraPredicate = "flagged = ?"
 	spec.ExtraArgs = []interface{}{true}
 
-	res, err := Search(db, ctx, "shop", 50, spec)
+	res, err := Search(db, ctx, tn.Id(), "shop", 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, uint32(1), res[0].WidgetId)
@@ -156,11 +170,89 @@ func TestSearchWithFilter(t *testing.T) {
 	spec.ExtraPredicate = "flagged = ?"
 	spec.ExtraArgs = []interface{}{true}
 
-	res, err := SearchWithFilter(db, ctx, 50, spec)
+	res, err := SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, res, 2)
 	assert.Equal(t, uint32(1), res[0].WidgetId)
 	assert.Equal(t, uint32(3), res[1].WidgetId)
+}
+
+func TestSearch_Pagination_MiddlePage(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+	for i := 0; i < 100; i++ {
+		seed(t, db, ctx, tn.Id(), uint32(1+i), fmt.Sprintf("Apple %03d", i+1), "", false)
+	}
+	spec := QuerySpec[testEntity]{
+		EntityIdColumn: "widget_id",
+		NameColumns:    []string{"name"},
+		Order:          "widget_id ASC",
+	}
+	rows, err := Search(db, ctx, tn.Id(), "apple", 40, 20, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 20)
+	assert.Equal(t, uint32(41), rows[0].WidgetId)
+	assert.Equal(t, uint32(60), rows[19].WidgetId)
+}
+
+func TestSearch_Pagination_PastEnd(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+	for i := 0; i < 10; i++ {
+		seed(t, db, ctx, tn.Id(), uint32(1+i), "Apple", "", false)
+	}
+	spec := QuerySpec[testEntity]{EntityIdColumn: "widget_id", NameColumns: []string{"name"}, Order: "widget_id ASC"}
+	rows, err := Search(db, ctx, tn.Id(), "apple", 9999, 20, spec)
+	require.NoError(t, err)
+	assert.Empty(t, rows)
+}
+
+func TestSearch_ExactIdHoistOnlyPage1(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+	// Seed ids 1400..1599 so id=1500 exists for the exact-id hoist.
+	for i := 0; i < 200; i++ {
+		seed(t, db, ctx, tn.Id(), uint32(1400+i), "Bow", "", false)
+	}
+	spec := QuerySpec[testEntity]{EntityIdColumn: "widget_id", NameColumns: []string{"name"}, Order: "widget_id ASC"}
+
+	page1, err := Search(db, ctx, tn.Id(), "1500", 0, 50, spec)
+	require.NoError(t, err)
+	require.NotEmpty(t, page1)
+	assert.Equal(t, uint32(1500), page1[0].WidgetId, "exact-id row should be hoisted on page 1")
+
+	page2, err := Search(db, ctx, tn.Id(), "1500", 50, 50, spec)
+	require.NoError(t, err)
+	// In this seed, no row's name contains "1500", so substring matches zero.
+	// Exact-id hoist on page 1 returns row 1500 only. Page 2 returns empty.
+	assert.Empty(t, page2)
+}
+
+func TestSearchWithFilter_SinglePartition_TenantHasRows(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	tn := tenant.MustFromContext(ctx)
+	seed(t, db, ctx, tn.Id(), 1, "TenantA", "", false)
+	seed(t, db, ctx, uuid.Nil, 2, "Global", "", false)
+	spec := QuerySpec[testEntity]{EntityIdColumn: "widget_id", Order: "widget_id ASC"}
+	rows, err := SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "TenantA", rows[0].Name)
+}
+
+func TestSearchWithFilter_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newTestTenant(t))
+	seed(t, db, ctx, uuid.Nil, 1, "Global", "", false)
+	spec := QuerySpec[testEntity]{EntityIdColumn: "widget_id", Order: "widget_id ASC"}
+	rows, err := SearchWithFilter(db, ctx, uuid.Nil, 0, 50, spec)
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	assert.Equal(t, "Global", rows[0].Name)
 }
 
 func TestUpsert_InsertThenUpdate(t *testing.T) {

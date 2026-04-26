@@ -26,12 +26,16 @@ type SearchResult struct {
 func SearchByQuery(_ logrus.FieldLogger, db *gorm.DB) func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
 	return func(ctx context.Context) func(q string, limit int) ([]SearchResult, error) {
 		return func(q string, limit int) ([]SearchResult, error) {
-			rows, err := searchindex.Search[SearchIndexEntity](db, ctx, q, limit, searchindex.QuerySpec[SearchIndexEntity]{
+			spec := searchindex.QuerySpec[SearchIndexEntity]{
 				EntityIdColumn: "map_id",
 				NameColumns:    []string{"name", "street_name"},
 				Order:          "name ASC, map_id ASC",
-				IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.MapId) },
-			})
+			}
+			tenantId, err := searchindex.ResolveTenantId(db, ctx, spec)
+			if err != nil {
+				return nil, err
+			}
+			rows, err := searchindex.Search[SearchIndexEntity](db, ctx, tenantId, q, 0, limit, spec)
 			if err != nil {
 				return nil, err
 			}

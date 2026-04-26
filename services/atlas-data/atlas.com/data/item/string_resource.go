@@ -86,7 +86,6 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				EntityIdColumn: "item_id",
 				NameColumns:    []string{"name"},
 				Order:          "item_id ASC",
-				IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 			}
 
 			predicates, args := buildPredicates(fspec, !hasSearch && !hasFilter)
@@ -95,13 +94,19 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				spec.ExtraArgs = args
 			}
 
+			tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
+			if err != nil {
+				d.Logger().WithError(err).Errorf("Tenant resolve failed.")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
 			start := time.Now()
 			var rows []StringSearchIndexEntity
-			var err error
 			if hasSearch {
-				rows, err = searchindex.Search(db, d.Context(), searchQuery, limit, spec)
+				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, 0, limit, spec)
 			} else {
-				rows, err = searchindex.SearchWithFilter(db, d.Context(), limit, spec)
+				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, limit, spec)
 			}
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {

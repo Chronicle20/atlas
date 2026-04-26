@@ -89,7 +89,6 @@ func searchSpec() searchindex.QuerySpec[StringSearchIndexEntity] {
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
-		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 	}
 }
 
@@ -101,7 +100,7 @@ func TestItemStringSearch_ExactIdFirst(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 1002000, "Hat")
 	seedIdx(t, db, ctx, tn.Id(), 1002001, "Cap")
 
-	res, err := searchindex.Search(db, ctx, "1002001", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "1002001", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(1002001), res[0].ItemId)
@@ -115,7 +114,7 @@ func TestItemStringSearch_Substring(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 1, "Red Cap")
 	seedIdx(t, db, ctx, tn.Id(), 2, "Blue Helm")
 
-	res, err := searchindex.Search(db, ctx, "cap", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "cap", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "Red Cap", res[0].Name)
@@ -129,23 +128,38 @@ func TestItemStringSearch_LimitEnforced(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seedIdx(t, db, ctx, tn.Id(), uint32(1000+i), "Apple")
 	}
-	res, err := searchindex.Search(db, ctx, "apple", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "apple", 0, 50, searchSpec())
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
 
-func TestItemStringSearch_TenantFallback(t *testing.T) {
+func TestItemStringSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupSearchTestDB(t)
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
 
 	seedIdx(t, db, ctx, tn.Id(), 5, "TenantItem")
 	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalOverridden")
+	seedIdx(t, db, ctx, uuid.Nil, 6, "GlobalOnly Item")
 
-	res, err := searchindex.Search(db, ctx, "item", 50, searchSpec())
+	// Caller resolves to tenant id; only tenant rows visible.
+	res, err := searchindex.Search(db, ctx, tn.Id(), "item", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "TenantItem", res[0].Name)
+}
+
+func TestItemStringSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+
+	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalItem")
+	seedIdx(t, db, ctx, uuid.Nil, 6, "GlobalOther Item")
+
+	// Caller passes uuid.Nil since the tenant has no rows.
+	res, err := searchindex.Search(db, ctx, uuid.Nil, "item", 0, 50, searchSpec())
+	require.NoError(t, err)
+	require.Len(t, res, 2)
 }
 
 func TestItemStringStorage_Add_RollbackOnIndexFailure(t *testing.T) {
@@ -312,10 +326,9 @@ func TestSearchIndex_DefaultBrowse_ExcludesStaleAndOrders(t *testing.T) {
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
-		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 		ExtraPredicate: "compartment != 0",
 	}
-	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 	assert.Equal(t, "Apple", rows[0].Name)
@@ -334,11 +347,10 @@ func TestSearchIndex_FilterCompartmentOnly(t *testing.T) {
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
-		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 		ExtraPredicate: "compartment = ?",
 		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
 	}
-	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	assert.Equal(t, "Hat", rows[0].Name)
@@ -358,11 +370,10 @@ func TestSearchIndex_FilterClassIntersection(t *testing.T) {
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
-		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND (job_mask = 0 OR (job_mask & ?) = ?))",
 		ExtraArgs:      []interface{}{int(CompartmentEquipment), uint8(1), uint8(1)},
 	}
-	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
 }
@@ -380,11 +391,10 @@ func TestSearchIndex_FilterClassAny(t *testing.T) {
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
-		IdOf:           func(e StringSearchIndexEntity) uint64 { return uint64(e.ItemId) },
 		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND job_mask = 0)",
 		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
 	}
-	rows, err := searchindex.SearchWithFilter(db, ctx, 50, spec)
+	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
 	assert.Equal(t, "Hat", rows[0].Name)

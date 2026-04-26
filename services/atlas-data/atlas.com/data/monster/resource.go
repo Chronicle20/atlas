@@ -96,13 +96,20 @@ func handleSearchMonsters(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.H
 					limit = parsed
 				}
 
-				start := time.Now()
-				rows, err := searchindex.Search(db, d.Context(), q, limit, searchindex.QuerySpec[SearchIndexEntity]{
+				spec := searchindex.QuerySpec[SearchIndexEntity]{
 					EntityIdColumn: "monster_id",
 					NameColumns:    []string{"name"},
 					Order:          "name ASC, monster_id ASC",
-					IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.MonsterId) },
-				})
+				}
+				tenantId, err := searchindex.ResolveTenantId(db, d.Context(), spec)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Monster tenant resolve failed.")
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+
+				start := time.Now()
+				rows, err := searchindex.Search(db, d.Context(), tenantId, q, 0, limit, spec)
 				elapsedMs := time.Since(start).Milliseconds()
 				if err != nil {
 					d.Logger().WithError(err).Errorf("Monster search failed.")

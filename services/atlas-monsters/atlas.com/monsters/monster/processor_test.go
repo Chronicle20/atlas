@@ -493,6 +493,61 @@ func TestAttackerInField(t *testing.T) {
 	}
 }
 
+// TestApplyAnimationDelayedEffect_DeadMonsterSkipsExecute verifies that
+// applyAnimationDelayedEffect skips both the executeEffect and postExecute
+// closures when the monster is dead (HP=0) at time of invocation.
+func TestApplyAnimationDelayedEffect_DeadMonsterSkipsExecute(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	// Mark the monster dead by zeroing its HP directly in the registry.
+	dead := Clone(m).SetHp(0).Build()
+	r.UpdateMonster(tm, m.UniqueId(), dead)
+
+	executed, posted := false, false
+	p := &ProcessorImpl{
+		l:    logrus.New(),
+		ctx:  ctx,
+		t:    tm,
+		emit: func(string, model.Provider[[]kafka.Message]) error { return nil },
+	}
+	p.applyAnimationDelayedEffect(m.UniqueId(), func() { executed = true }, func() { posted = true })
+
+	if executed || posted {
+		t.Fatalf("dead monster should skip both execute (%v) and postExecute (%v)", executed, posted)
+	}
+}
+
+// TestApplyAnimationDelayedEffect_AliveMonsterRunsBoth verifies that
+// applyAnimationDelayedEffect runs both the executeEffect and postExecute
+// closures when the monster is alive.
+func TestApplyAnimationDelayedEffect_AliveMonsterRunsBoth(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, tm, f, 9000000, 0, 0, 0, 0, 0, 100, 50)
+
+	executed, posted := false, false
+	p := &ProcessorImpl{
+		l:    logrus.New(),
+		ctx:  ctx,
+		t:    tm,
+		emit: func(string, model.Provider[[]kafka.Message]) error { return nil },
+	}
+	p.applyAnimationDelayedEffect(m.UniqueId(), func() { executed = true }, func() { posted = true })
+
+	if !executed || !posted {
+		t.Fatalf("alive monster should run both execute (%v) and postExecute (%v)", executed, posted)
+	}
+}
+
 // TestDamage_TriggersRepick verifies that a non-killing damage call that changes
 // the monster's HP percentage emits at least one NEXT_SKILL_DECIDED event on
 // the monster-status topic, confirming the damage repick trigger fires.

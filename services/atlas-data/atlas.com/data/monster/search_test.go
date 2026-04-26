@@ -51,7 +51,6 @@ func searchSpec() searchindex.QuerySpec[SearchIndexEntity] {
 		EntityIdColumn: "monster_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, monster_id ASC",
-		IdOf:           func(e SearchIndexEntity) uint64 { return uint64(e.MonsterId) },
 	}
 }
 
@@ -63,7 +62,7 @@ func TestMonsterSearch_ExactIdFirst(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 100100, "Blue Snail")
 	seedIdx(t, db, ctx, tn.Id(), 100101, "Red Snail")
 
-	res, err := searchindex.Search(db, ctx, "100101", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "100101", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.NotEmpty(t, res)
 	assert.Equal(t, uint32(100101), res[0].MonsterId)
@@ -77,7 +76,7 @@ func TestMonsterSearch_Substring(t *testing.T) {
 	seedIdx(t, db, ctx, tn.Id(), 1, "Papulatus")
 	seedIdx(t, db, ctx, tn.Id(), 2, "Snail")
 
-	res, err := searchindex.Search(db, ctx, "papu", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "papu", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 1)
 	assert.Equal(t, "Papulatus", res[0].Name)
@@ -91,12 +90,12 @@ func TestMonsterSearch_LimitEnforced(t *testing.T) {
 	for i := 0; i < 60; i++ {
 		seedIdx(t, db, ctx, tn.Id(), uint32(1000+i), "Slime")
 	}
-	res, err := searchindex.Search(db, ctx, "slime", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "slime", 0, 50, searchSpec())
 	require.NoError(t, err)
 	assert.Len(t, res, 50)
 }
 
-func TestMonsterSearch_TenantFallback(t *testing.T) {
+func TestMonsterSearch_SinglePartition_TenantOwnsDataset(t *testing.T) {
 	db := setupSearchTestDB(t)
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
@@ -105,12 +104,22 @@ func TestMonsterSearch_TenantFallback(t *testing.T) {
 	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalOverridden")
 	seedIdx(t, db, ctx, uuid.Nil, 6, "Mob")
 
-	res, err := searchindex.Search(db, ctx, "mob", 50, searchSpec())
+	res, err := searchindex.Search(db, ctx, tn.Id(), "mob", 0, 50, searchSpec())
+	require.NoError(t, err)
+	require.Len(t, res, 1)
+	assert.Equal(t, "TenantMob", res[0].Name)
+}
+
+func TestMonsterSearch_SinglePartition_ZeroRowTenantFallsBack(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+
+	seedIdx(t, db, ctx, uuid.Nil, 5, "GlobalMob")
+	seedIdx(t, db, ctx, uuid.Nil, 6, "OtherMob")
+
+	res, err := searchindex.Search(db, ctx, uuid.Nil, "mob", 0, 50, searchSpec())
 	require.NoError(t, err)
 	require.Len(t, res, 2)
-
-	byId := map[uint32]SearchIndexEntity{res[0].MonsterId: res[0], res[1].MonsterId: res[1]}
-	assert.Equal(t, "TenantMob", byId[5].Name, "tenant row must win over global")
 }
 
 func TestMonsterStorage_Add_RollbackOnIndexFailure(t *testing.T) {

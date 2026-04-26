@@ -62,116 +62,57 @@ func DeleteAllForTenant(tx *gorm.DB, tenantId uuid.UUID, entity interface{}) err
 	return tx.Where("tenant_id = ?", tenantId).Delete(entity).Error
 }
 
-// QuerySpec configures a Search call for a specific search-index table.
+// ResolveTenantId picks the tenant_id partition this request should query.
+// Returns the active tenant id if the active tenant has any rows in the
+// resource's search-index table; otherwise returns uuid.Nil.
 //
-// The entity type E is the GORM-mapped search-index row; IdOf extracts its
-// entity-id for dedup across the tenant-scoped and global query phases.
+// The check is a single EXISTS lookup against the existing (tenant_id, ...)
+// PK / btree. Callers MUST resolve once per request and pass the result into
+// Search / SearchWithFilter / Count / CountWithFilter so all queries see the
+// same partition.
+func ResolveTenantId[E any](db *gorm.DB, ctx context.Context, _ QuerySpec[E]) (uuid.UUID, error) {
+	t := tenant.MustFromContext(ctx)
+	bypass := database.WithoutTenantFilter(ctx)
+
+	var entity E
+	var dummy int
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Select("1").
+		Where("tenant_id = ?", t.Id()).
+		Limit(1).
+		Scan(&dummy).Error
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if dummy == 1 {
+		return t.Id(), nil
+	}
+	return uuid.Nil, nil
+}
+
+// QuerySpec configures Search / Count calls. IdOf has been removed; the lib
+// no longer dedupes Go-side because all queries hit a single tenant partition.
 type QuerySpec[E any] struct {
-	// EntityIdColumn is the per-resource id column name (e.g. "map_id", "npc_id").
 	EntityIdColumn string
-	// NameColumns is the ordered list of text columns to match case-insensitively.
-	NameColumns []string
-	// ExtraPredicate is an optional SQL fragment AND-joined into every query.
-	// It is parameterized: use ? placeholders bound to ExtraArgs.
+	NameColumns    []string
 	ExtraPredicate string
 	ExtraArgs      []interface{}
-	// Order overrides the default `name ASC, <EntityIdColumn> ASC`.
-	Order string
-	// IdOf extracts the entity-id used to dedup results across tenant phases.
-	IdOf func(E) uint64
+	Order          string
 }
 
-// Search runs the two-phase tenant lookup: active tenant first, then uuid.Nil
-// fallback. Numeric queries perform an exact-id lookup before the substring
-// match and are unioned ahead of substring results. Results are deduplicated
-// by IdOf, with tenant-scoped rows winning over globals.
-func Search[E any](db *gorm.DB, ctx context.Context, q string, limit int, spec QuerySpec[E]) ([]E, error) {
-	t := tenant.MustFromContext(ctx)
+// Search runs the substring + exact-id-hoist data query against a single
+// tenant partition. The exact-id hoist applies only when offset == 0
+// (page 1). On pages >= 2 the hoist is skipped and the substring fetch runs
+// with OFFSET/LIMIT against natural ordering.
+func Search[E any](
+	db *gorm.DB, ctx context.Context,
+	tenantId uuid.UUID, q string,
+	offset, limit int,
+	spec QuerySpec[E],
+) ([]E, error) {
 	bypass := database.WithoutTenantFilter(ctx)
-
-	results, seen, err := runTenantQueries(db, bypass, t.Id(), q, limit, spec)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) >= limit {
-		return results[:limit], nil
-	}
-
-	globalResults, _, err := runTenantQueries(db, bypass, uuid.Nil, q, limit, spec)
-	if err != nil {
-		return nil, err
-	}
-	for _, gr := range globalResults {
-		id := spec.IdOf(gr)
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		results = append(results, gr)
-		seen[id] = struct{}{}
-		if len(results) >= limit {
-			break
-		}
-	}
-	return results, nil
-}
-
-// SearchWithFilter runs the same two-phase lookup as Search but skips the
-// substring match entirely. Useful for filter-only fast paths (e.g. the NPC
-// `filter[storebank]=true` request with no search term).
-func SearchWithFilter[E any](db *gorm.DB, ctx context.Context, limit int, spec QuerySpec[E]) ([]E, error) {
-	t := tenant.MustFromContext(ctx)
-	bypass := database.WithoutTenantFilter(ctx)
-
-	results, seen, err := runFilterQuery(db, bypass, t.Id(), limit, spec)
-	if err != nil {
-		return nil, err
-	}
-	if len(results) >= limit {
-		return results[:limit], nil
-	}
-
-	globals, _, err := runFilterQuery(db, bypass, uuid.Nil, limit, spec)
-	if err != nil {
-		return nil, err
-	}
-	for _, gr := range globals {
-		id := spec.IdOf(gr)
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		results = append(results, gr)
-		seen[id] = struct{}{}
-		if len(results) >= limit {
-			break
-		}
-	}
-	return results, nil
-}
-
-func runTenantQueries[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, q string, limit int, spec QuerySpec[E]) ([]E, map[uint64]struct{}, error) {
-	seen := make(map[uint64]struct{})
 	results := make([]E, 0, limit)
-
-	if numeric, err := strconv.Atoi(q); err == nil {
-		var row E
-		where := []string{"tenant_id = ?", spec.EntityIdColumn + " = ?"}
-		args := []interface{}{tenantId, numeric}
-		if spec.ExtraPredicate != "" {
-			where = append(where, "("+spec.ExtraPredicate+")")
-			args = append(args, spec.ExtraArgs...)
-		}
-		exactErr := db.WithContext(ctx).
-			Where(strings.Join(where, " AND "), args...).
-			Take(&row).Error
-		if exactErr == nil {
-			results = append(results, row)
-			seen[spec.IdOf(row)] = struct{}{}
-		}
-	}
-
-	if len(results) >= limit {
-		return results, seen, nil
-	}
 
 	pattern := "%" + strings.ToLower(q) + "%"
 	nameOrs := make([]string, 0, len(spec.NameColumns))
@@ -180,6 +121,65 @@ func runTenantQueries[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUI
 		nameOrs = append(nameOrs, "LOWER("+col+") LIKE ?")
 		nameArgs = append(nameArgs, pattern)
 	}
+
+	order := spec.Order
+	if order == "" {
+		order = fmt.Sprintf("name ASC, %s ASC", spec.EntityIdColumn)
+	}
+
+	if offset == 0 {
+		// Page 1: exact-id hoist if q is numeric.
+		hoisted := false
+		var hoistedNumeric int
+		if numeric, err := strconv.Atoi(q); err == nil {
+			where := []string{"tenant_id = ?", spec.EntityIdColumn + " = ?"}
+			args := []interface{}{tenantId, numeric}
+			if spec.ExtraPredicate != "" {
+				where = append(where, "("+spec.ExtraPredicate+")")
+				args = append(args, spec.ExtraArgs...)
+			}
+			var row E
+			exactErr := db.WithContext(bypass).
+				Where(strings.Join(where, " AND "), args...).
+				Take(&row).Error
+			if exactErr == nil {
+				results = append(results, row)
+				hoisted = true
+				hoistedNumeric = numeric
+				if len(results) >= limit {
+					return results, nil
+				}
+			}
+		}
+
+		// Substring fetch. Exclude the hoisted id directly in SQL so we
+		// don't need a Go-side dedup (and so the LIMIT is exact).
+		where := []string{"tenant_id = ?", "(" + strings.Join(nameOrs, " OR ") + ")"}
+		args := []interface{}{tenantId}
+		args = append(args, nameArgs...)
+		if spec.ExtraPredicate != "" {
+			where = append(where, "("+spec.ExtraPredicate+")")
+			args = append(args, spec.ExtraArgs...)
+		}
+		if hoisted {
+			where = append(where, spec.EntityIdColumn+" <> ?")
+			args = append(args, hoistedNumeric)
+		}
+
+		fetch := limit - len(results)
+		var rows []E
+		if err := db.WithContext(bypass).
+			Where(strings.Join(where, " AND "), args...).
+			Order(order).
+			Limit(fetch).
+			Find(&rows).Error; err != nil {
+			return nil, err
+		}
+		results = append(results, rows...)
+		return results, nil
+	}
+
+	// Page >= 2: natural-ordered substring with OFFSET/LIMIT. No hoist.
 	where := []string{"tenant_id = ?", "(" + strings.Join(nameOrs, " OR ") + ")"}
 	args := []interface{}{tenantId}
 	args = append(args, nameArgs...)
@@ -188,37 +188,27 @@ func runTenantQueries[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUI
 		args = append(args, spec.ExtraArgs...)
 	}
 
-	order := spec.Order
-	if order == "" {
-		order = fmt.Sprintf("name ASC, %s ASC", spec.EntityIdColumn)
-	}
-
 	var rows []E
-	err := db.WithContext(ctx).
+	if err := db.WithContext(bypass).
 		Where(strings.Join(where, " AND "), args...).
 		Order(order).
+		Offset(offset).
 		Limit(limit).
-		Find(&rows).Error
-	if err != nil {
-		return nil, nil, err
+		Find(&rows).Error; err != nil {
+		return nil, err
 	}
-	for _, r := range rows {
-		id := spec.IdOf(r)
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		results = append(results, r)
-		seen[id] = struct{}{}
-		if len(results) >= limit {
-			break
-		}
-	}
-	return results, seen, nil
+	return rows, nil
 }
 
-func runFilterQuery[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, limit int, spec QuerySpec[E]) ([]E, map[uint64]struct{}, error) {
-	seen := make(map[uint64]struct{})
-	results := make([]E, 0, limit)
+// SearchWithFilter runs the filter-only data query (no substring match)
+// against a single tenant partition with OFFSET/LIMIT.
+func SearchWithFilter[E any](
+	db *gorm.DB, ctx context.Context,
+	tenantId uuid.UUID,
+	offset, limit int,
+	spec QuerySpec[E],
+) ([]E, error) {
+	bypass := database.WithoutTenantFilter(ctx)
 
 	where := []string{"tenant_id = ?"}
 	args := []interface{}{tenantId}
@@ -232,24 +222,78 @@ func runFilterQuery[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID,
 	}
 
 	var rows []E
-	err := db.WithContext(ctx).
+	if err := db.WithContext(bypass).
 		Where(strings.Join(where, " AND "), args...).
 		Order(order).
+		Offset(offset).
 		Limit(limit).
-		Find(&rows).Error
+		Find(&rows).Error; err != nil {
+		return nil, err
+	}
+	return rows, nil
+}
+
+// Count returns the total matching row count for the substring + (optional)
+// exact-id predicate against a single tenant partition. The exact-id branch
+// is included only when q parses as a non-negative integer.
+func Count[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, q string, spec QuerySpec[E]) (int, error) {
+	bypass := database.WithoutTenantFilter(ctx)
+
+	pattern := "%" + strings.ToLower(q) + "%"
+	nameOrs := make([]string, 0, len(spec.NameColumns))
+	nameArgs := make([]interface{}, 0, len(spec.NameColumns))
+	for _, col := range spec.NameColumns {
+		nameOrs = append(nameOrs, "LOWER("+col+") LIKE ?")
+		nameArgs = append(nameArgs, pattern)
+	}
+
+	matchClause := "(" + strings.Join(nameOrs, " OR ") + ")"
+	args := []interface{}{tenantId}
+	args = append(args, nameArgs...)
+
+	if numeric, err := strconv.Atoi(q); err == nil {
+		matchClause = "(" + matchClause + " OR " + spec.EntityIdColumn + " = ?)"
+		args = append(args, numeric)
+	}
+
+	where := []string{"tenant_id = ?", matchClause}
+	if spec.ExtraPredicate != "" {
+		where = append(where, "("+spec.ExtraPredicate+")")
+		args = append(args, spec.ExtraArgs...)
+	}
+
+	var entity E
+	var n int64
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Where(strings.Join(where, " AND "), args...).
+		Count(&n).Error
 	if err != nil {
-		return nil, nil, err
+		return 0, err
 	}
-	for _, r := range rows {
-		id := spec.IdOf(r)
-		if _, ok := seen[id]; ok {
-			continue
-		}
-		results = append(results, r)
-		seen[id] = struct{}{}
-		if len(results) >= limit {
-			break
-		}
+	return int(n), nil
+}
+
+// CountWithFilter returns the total matching row count for the filter-only
+// predicate against a single tenant partition.
+func CountWithFilter[E any](db *gorm.DB, ctx context.Context, tenantId uuid.UUID, spec QuerySpec[E]) (int, error) {
+	bypass := database.WithoutTenantFilter(ctx)
+
+	where := []string{"tenant_id = ?"}
+	args := []interface{}{tenantId}
+	if spec.ExtraPredicate != "" {
+		where = append(where, "("+spec.ExtraPredicate+")")
+		args = append(args, spec.ExtraArgs...)
 	}
-	return results, seen, nil
+
+	var entity E
+	var n int64
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Where(strings.Join(where, " AND "), args...).
+		Count(&n).Error
+	if err != nil {
+		return 0, err
+	}
+	return int(n), nil
 }

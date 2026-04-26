@@ -27,6 +27,16 @@ func TestStatusMessageDropPickUpInventoryFull(t *testing.T) {
 	}
 }
 
+func TestStatusMessageDropPickUpGameFileDamaged(t *testing.T) {
+	input := NewStatusMessageDropPickUpGameFileDamaged(0)
+	for _, v := range test.Variants {
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := test.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			test.RoundTrip(t, ctx, input.Encode, input.Decode, nil)
+		})
+	}
+}
+
 func TestStatusMessageDropPickUpStackableItem(t *testing.T) {
 	input := NewStatusMessageDropPickUpStackableItem(0, 2000000, 5)
 	for _, v := range test.Variants {

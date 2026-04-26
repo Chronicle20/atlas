@@ -633,3 +633,93 @@ func (r *Registry) scanAndDelete(ctx context.Context, pattern string) {
 	}
 }
 
+// DecaySummary is returned by DecayDamageEntries.
+type DecaySummary struct {
+	Monster           Model
+	PrevControllerId  uint32
+	ControllerCleared bool
+}
+
+var decayDamageEntriesScript = goredis.NewScript(`
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local idleMs = tonumber(ARGV[2])
+local mult = tonumber(ARGV[3])
+local floorVal = tonumber(ARGV[4])
+local j = redis.call('GET', key)
+if not j then
+    return redis.error_reply("monster not found")
+end
+local m = cjson.decode(j)
+
+local entries = m.damageEntries
+if type(entries) ~= 'table' then
+    entries = {}
+end
+
+local kept = {}
+for _, e in ipairs(entries) do
+    if (now - e.lastHitMs) > idleMs then
+        e.damage = math.floor(e.damage * mult)
+    end
+    if e.damage >= floorVal then
+        table.insert(kept, e)
+    end
+end
+m.damageEntries = kept
+
+local prevControllerId = m.controlCharacterId
+local controllerCleared = false
+if #kept == 0 then
+    if m.controlCharacterId ~= 0 then
+        m.controlCharacterId = 0
+        controllerCleared = true
+    end
+    m.controllerHasAggro = false
+end
+
+redis.call('SET', key, cjson.encode(m))
+return cjson.encode({
+    controllerCleared = controllerCleared,
+    prevControllerId = prevControllerId,
+    monster = m,
+})
+`)
+
+func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int64) (DecaySummary, error) {
+	ctx := context.Background()
+	key := monsterKey(t, uniqueId)
+
+	result, err := decayDamageEntriesScript.Run(ctx, r.client, []string{key},
+		strconv.FormatInt(nowMs, 10),
+		strconv.FormatInt(AggroIdleThresholdMs, 10),
+		strconv.FormatFloat(AggroDecayMultiplier, 'f', -1, 64),
+		strconv.FormatUint(uint64(AggroDecayFloor), 10),
+	).Result()
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	resultStr, ok := result.(string)
+	if !ok {
+		return DecaySummary{}, errors.New("unexpected response type")
+	}
+
+	var env struct {
+		ControllerCleared bool          `json:"controllerCleared"`
+		PrevControllerId  uint32        `json:"prevControllerId"`
+		Monster           storedMonster `json:"monster"`
+	}
+	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
+		return DecaySummary{}, err
+	}
+	_, m, err := fromStored(env.Monster)
+	if err != nil {
+		return DecaySummary{}, err
+	}
+	return DecaySummary{
+		Monster:           m,
+		PrevControllerId:  env.PrevControllerId,
+		ControllerCleared: env.ControllerCleared,
+	}, nil
+}
+

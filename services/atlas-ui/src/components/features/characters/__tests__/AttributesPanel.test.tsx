@@ -18,6 +18,12 @@ vi.mock("@/lib/hooks/api/useCharacterGuild", () => ({
   useCharacterGuild: (...a: unknown[]) => useCharacterGuildMock(...a),
 }));
 
+const useCharacterEffectiveStatsMock = vi.fn();
+vi.mock("@/lib/hooks/api/useCharacterEffectiveStats", () => ({
+  useCharacterEffectiveStats: (...a: unknown[]) =>
+    useCharacterEffectiveStatsMock(...a),
+}));
+
 function renderPanel(character: never) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -64,6 +70,15 @@ describe("AttributesPanel", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useCharacterGuildMock.mockReturnValue({ guild: null, isLoading: false, error: null });
+    // Default: hook returns no data (loading) so the panel falls back to the
+    // raw character record. Individual tests override when they want to
+    // exercise the +bonus rendering.
+    useCharacterEffectiveStatsMock.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+    });
   });
 
   it("labels gender 0 as Male and 1 as Female", () => {
@@ -139,5 +154,65 @@ describe("AttributesPanel", () => {
     // Tooltip content (the raw worldId) renders into a Radix portal on
     // hover/focus; jsdom doesn't drive that reliably, so we verify the
     // trigger is wired and rely on Radix coverage for the open behavior.
+  });
+
+  it("renders +bonus next to a primary stat when the effective value exceeds the base", () => {
+    useCharacterEffectiveStatsMock.mockReturnValue({
+      data: {
+        strength: 14,
+        dexterity: 25,
+        intelligence: 4,
+        luck: 4,
+        maxHP: 1500,
+        maxMP: 200,
+        weaponAttack: 0,
+        weaponDefense: 0,
+        magicAttack: 0,
+        magicDefense: 0,
+        accuracy: 0,
+        avoidability: 0,
+        speed: 0,
+        jump: 0,
+        bonuses: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+    renderPanel(baseCharacter({ strength: 4 }));
+    // STR base 4 with effective 14 → render '4' followed by '+10' in green.
+    expect(screen.getByText("+10")).toBeInTheDocument();
+    // No bonus on DEX (effective 25 == base 25) → no "+0" rendering.
+    expect(screen.queryByText("+0")).not.toBeInTheDocument();
+  });
+
+  it("uses the effective maxHP as the HP bar's max when present", () => {
+    useCharacterEffectiveStatsMock.mockReturnValue({
+      data: {
+        strength: 4,
+        dexterity: 25,
+        intelligence: 4,
+        luck: 4,
+        maxHP: 3000, // raw maxHp on the character is 2000
+        maxMP: 200,
+        weaponAttack: 0,
+        weaponDefense: 0,
+        magicAttack: 0,
+        magicDefense: 0,
+        accuracy: 0,
+        avoidability: 0,
+        speed: 0,
+        jump: 0,
+        bonuses: [],
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    });
+    const { container } = renderPanel(baseCharacter());
+    // HpMpBar concatenates label + current + ' / ' + max across multiple text
+    // nodes, so we assert against the wrapper's full textContent rather than
+    // a single text leaf.
+    expect(container.textContent).toMatch(/HP:\s*1500\s*\/\s*3000/);
   });
 });

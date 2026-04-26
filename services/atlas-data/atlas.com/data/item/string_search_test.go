@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
 	"net/url"
 	"testing"
 	"time"
@@ -376,6 +377,52 @@ func TestSearchIndex_FilterClassIntersection(t *testing.T) {
 	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
 	require.Len(t, rows, 2)
+}
+
+func TestParsePagingParams_RejectsLegacyLimit(t *testing.T) {
+	q := mustParseQuery(t, "limit=10")
+	_, _, code := parsePagingParams(q)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestParsePagingParams_RejectsPageSizeOver50(t *testing.T) {
+	q := mustParseQuery(t, "page[size]=51")
+	_, _, code := parsePagingParams(q)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestParsePagingParams_RejectsZeroPageSize(t *testing.T) {
+	q := mustParseQuery(t, "page[size]=0")
+	_, _, code := parsePagingParams(q)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestParsePagingParams_RejectsZeroPageNumber(t *testing.T) {
+	q := mustParseQuery(t, "page[number]=0")
+	_, _, code := parsePagingParams(q)
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestParsePagingParams_DefaultsWhenAbsent(t *testing.T) {
+	q := mustParseQuery(t, "")
+	pageNumber, pageSize, code := parsePagingParams(q)
+	require.Equal(t, 0, code)
+	assert.Equal(t, 1, pageNumber)
+	assert.Equal(t, searchindex.MaxLimit, pageSize)
+}
+
+func TestParsePagingParams_AcceptsValidValues(t *testing.T) {
+	q := mustParseQuery(t, "page[number]=3&page[size]=25")
+	pageNumber, pageSize, code := parsePagingParams(q)
+	require.Equal(t, 0, code)
+	assert.Equal(t, 3, pageNumber)
+	assert.Equal(t, 25, pageSize)
+}
+
+func TestParsePagingParams_RejectsNonInteger(t *testing.T) {
+	q := mustParseQuery(t, "page[size]=abc")
+	_, _, code := parsePagingParams(q)
+	assert.Equal(t, http.StatusBadRequest, code)
 }
 
 func TestSearchIndex_FilterClassAny(t *testing.T) {

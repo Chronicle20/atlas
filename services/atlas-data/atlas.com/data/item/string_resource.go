@@ -4,6 +4,7 @@ import (
 	"atlas-data/rest"
 	"atlas-data/searchindex"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -61,24 +62,19 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				}
 			}
 
-			limit := searchindex.MaxLimit
-			if raw := query.Get("limit"); raw != "" {
-				parsed, err := strconv.Atoi(raw)
-				if err != nil || parsed <= 0 {
-					w.WriteHeader(http.StatusBadRequest)
-					return
-				}
-				if parsed > searchindex.MaxLimit {
-					parsed = searchindex.MaxLimit
-				}
-				limit = parsed
-			}
-
 			fspec, errCode := parseFilters(query)
 			if errCode != 0 {
 				w.WriteHeader(errCode)
 				return
 			}
+
+			// Page params (PRD §4.1, validation order: search -> filter -> page -> limit-rejection).
+			pageNumber, pageSize, errCode := parsePagingParams(query)
+			if errCode != 0 {
+				w.WriteHeader(errCode)
+				return
+			}
+			_ = pageNumber // Wired in Task 7 (offset = (pageNumber-1) * pageSize).
 
 			hasFilter := fspec.Compartment != nil || fspec.Subcategory != "" || fspec.Class != ""
 
@@ -104,9 +100,9 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			start := time.Now()
 			var rows []StringSearchIndexEntity
 			if hasSearch {
-				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, 0, limit, spec)
+				rows, err = searchindex.Search(db, d.Context(), tenantId, searchQuery, 0, pageSize, spec)
 			} else {
-				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, limit, spec)
+				rows, err = searchindex.SearchWithFilter(db, d.Context(), tenantId, 0, pageSize, spec)
 			}
 			elapsedMs := time.Since(start).Milliseconds()
 			if err != nil {
@@ -141,6 +137,36 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 			server.MarshalResponse[[]StringSearchResultRestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(rms)
 		}
 	}
+}
+
+// parsePagingParams parses JSON:API-style page[number]/page[size] query params and rejects
+// the legacy ?limit= param. Returns (pageNumber, pageSize, errCode). errCode is 0 on success
+// or an HTTP status code (e.g. 400) on validation failure.
+//
+// Defaults: page[number]=1, page[size]=searchindex.MaxLimit (50).
+// Bounds: page[number] >= 1; page[size] in [1, searchindex.MaxLimit]. Out-of-range or
+// non-integer values yield 400. Presence of legacy ?limit= yields 400 (no shim).
+func parsePagingParams(query url.Values) (int, int, int) {
+	pageSize := searchindex.MaxLimit
+	if raw := query.Get("page[size]"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 || parsed > searchindex.MaxLimit {
+			return 0, 0, http.StatusBadRequest
+		}
+		pageSize = parsed
+	}
+	pageNumber := 1
+	if raw := query.Get("page[number]"); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed <= 0 {
+			return 0, 0, http.StatusBadRequest
+		}
+		pageNumber = parsed
+	}
+	if _, hasLimit := query["limit"]; hasLimit {
+		return 0, 0, http.StatusBadRequest
+	}
+	return pageNumber, pageSize, 0
 }
 
 func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{}) {

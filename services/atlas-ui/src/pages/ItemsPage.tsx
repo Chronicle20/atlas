@@ -1,9 +1,8 @@
 import { useTenant } from "@/context/tenant-context";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { itemsService, type ItemSearchFilters } from "@/services/api/items.service";
+import { itemsService, type ItemSearchFilters, type ItemSearchPage } from "@/services/api/items.service";
 import {
-  type ItemSearchResult,
   getCompartmentBadgeVariant,
 } from "@/types/models/item";
 import {
@@ -41,10 +40,12 @@ import { Package, Loader2 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useDebounce } from "@/lib/utils/debounce";
+import { Pager } from "@/components/common/Pager";
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
 const ANY_VALUE = "__any__";
+const PAGE_SIZE = 50;
 
 type FilterCompartment = Exclude<Compartment, "unknown">;
 
@@ -64,6 +65,8 @@ function ItemsPageContent() {
   const urlComp = (searchParams.get("comp") ?? "") as FilterCompartment | "";
   const urlSub = searchParams.get("sub") ?? "";
   const urlClassRaw = searchParams.get("class");
+  const urlPageRaw = searchParams.get("page");
+  const pageNumber = Math.max(1, Number.parseInt(urlPageRaw ?? "1", 10) || 1);
 
   const [searchInput, setSearchInput] = useState(urlQ);
   const debounced = useDebounce(searchInput.trim(), DEBOUNCE_MS);
@@ -72,58 +75,70 @@ function ItemsPageContent() {
   const subcategory = urlSub;
   const { selected: classSelected, allClasses } = parseClassFilter(urlClassRaw);
 
-  const writeUrl = (next: { q?: string; comp?: FilterCompartment | ""; sub?: string; classFilter?: string }) => {
+  const writeUrlReplace = (next: { q?: string; comp?: FilterCompartment | ""; sub?: string; classFilter?: string }) => {
     const out = new URLSearchParams();
     if (next.q && next.q.length > 0) out.set("q", next.q);
     if (next.comp) out.set("comp", next.comp);
     if (next.sub) out.set("sub", next.sub);
     if (next.classFilter) out.set("class", next.classFilter);
+    // page is intentionally dropped — resets to 1.
     setSearchParams(out, { replace: true });
+  };
+
+  const writeUrlPush = (nextPage: number) => {
+    const out = new URLSearchParams();
+    if (urlQ.length > 0) out.set("q", urlQ);
+    if (compartment) out.set("comp", compartment);
+    if (subcategory) out.set("sub", subcategory);
+    const classStr = serializeClassFilter(classSelected, allClasses);
+    if (classStr) out.set("class", classStr);
+    if (nextPage > 1) out.set("page", String(nextPage));
+    setSearchParams(out, { replace: false });
   };
 
   // Search input → URL.
   useEffect(() => {
     if (debounced.length >= MIN_QUERY_LENGTH) {
       if (debounced !== urlQ) {
-        writeUrl({ q: debounced, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
+        writeUrlReplace({ q: debounced, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
       }
     } else if (urlQ !== "" && debounced.length === 0) {
-      writeUrl({ q: "", comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
+      writeUrlReplace({ q: "", comp: compartment, sub: subcategory, classFilter: serializeClassFilter(classSelected, allClasses) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debounced]);
 
   const onCompartmentChange = (raw: string) => {
     const next = raw === ANY_VALUE ? "" : (raw as FilterCompartment);
-    writeUrl({ q: urlQ, comp: next, sub: "", classFilter: next === "equipment" ? serializeClassFilter(classSelected, allClasses) : "" });
+    writeUrlReplace({ q: urlQ, comp: next, sub: "", classFilter: next === "equipment" ? serializeClassFilter(classSelected, allClasses) : "" });
   };
 
   const onSubcategoryChange = (raw: string) => {
     const next = raw === ANY_VALUE ? "" : raw;
-    writeUrl({ q: urlQ, comp: compartment, sub: next, classFilter: serializeClassFilter(classSelected, allClasses) });
+    writeUrlReplace({ q: urlQ, comp: compartment, sub: next, classFilter: serializeClassFilter(classSelected, allClasses) });
   };
 
   const onToggleClass = (klass: ClassOption) => {
     const next = new Set(classSelected);
     if (next.has(klass)) next.delete(klass);
     else next.add(klass);
-    writeUrl({ q: urlQ, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(next, false) });
+    writeUrlReplace({ q: urlQ, comp: compartment, sub: subcategory, classFilter: serializeClassFilter(next, false) });
   };
 
   const onToggleAllClasses = () => {
     const next = !allClasses;
-    writeUrl({ q: urlQ, comp: compartment, sub: subcategory, classFilter: next ? "any" : "" });
+    writeUrlReplace({ q: urlQ, comp: compartment, sub: subcategory, classFilter: next ? "any" : "" });
   };
 
   const filters: ItemSearchFilters = useMemo(() => {
-    const out: ItemSearchFilters = {};
+    const out: ItemSearchFilters = { pageNumber, pageSize: PAGE_SIZE };
     if (urlQ.length >= MIN_QUERY_LENGTH) out.q = urlQ;
     if (compartment) out.compartment = compartment;
     if (subcategory) out.subcategory = subcategory;
     if (allClasses) out.classes = ["any"];
     else if (classSelected.size > 0) out.classes = Array.from(classSelected);
     return out;
-  }, [urlQ, compartment, subcategory, allClasses, classSelected]);
+  }, [urlQ, compartment, subcategory, allClasses, classSelected, pageNumber]);
 
   const queryEnabled = !!activeTenant && (
     urlQ.length === 0 ||
@@ -131,7 +146,7 @@ function ItemsPageContent() {
     !!compartment || !!subcategory || allClasses || classSelected.size > 0
   );
 
-  const itemsQuery = useQuery<ItemSearchResult[], Error>({
+  const itemsQuery = useQuery<ItemSearchPage, Error>({
     queryKey: [
       "items", "search",
       activeTenant?.id ?? "no-tenant",
@@ -139,6 +154,8 @@ function ItemsPageContent() {
       compartment,
       subcategory,
       allClasses ? "any" : Array.from(classSelected).sort().join(","),
+      pageNumber,
+      PAGE_SIZE,
     ],
     queryFn: () => itemsService.searchItems(filters),
     enabled: queryEnabled,
@@ -146,13 +163,18 @@ function ItemsPageContent() {
     placeholderData: keepPreviousData,
   });
 
-  const items = itemsQuery.data ?? [];
+  const pageData = itemsQuery.data ?? { items: [], total: 0, pageNumber, pageSize: PAGE_SIZE, lastPage: 1 };
+  const items = pageData.items;
   const fetching = itemsQuery.isFetching;
   const showResults = queryEnabled;
 
+  const firstRow = pageData.total === 0 ? 0 : (pageData.pageNumber - 1) * pageData.pageSize + 1;
+  const lastRow = Math.min(pageData.pageNumber * pageData.pageSize, pageData.total);
+  const statusCopy = pageData.total === 0 ? "No results." : `Showing ${firstRow}–${lastRow} of ${pageData.total} results.`;
+
   const handleClear = () => {
     setSearchInput("");
-    writeUrl({ q: "", comp: "", sub: "", classFilter: "" });
+    writeUrlReplace({ q: "", comp: "", sub: "", classFilter: "" });
   };
 
   const subcategoryOptions = compartment ? COMPARTMENT_TAXONOMY[compartment] : [];
@@ -168,7 +190,7 @@ function ItemsPageContent() {
         <CardHeader>
           <CardTitle>Search Items</CardTitle>
           <CardDescription>
-            Search by ID or name, or filter by compartment, subcategory, and equipment class. Results are limited to 50 entries.
+            Search by ID or name, or filter by compartment, subcategory, and equipment class. {statusCopy}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -257,9 +279,9 @@ function ItemsPageContent() {
           <CardHeader className="shrink-0">
             <CardTitle>
               Results
-              {items.length > 0 && (
+              {pageData.total > 0 && (
                 <span className="ml-2 text-muted-foreground font-normal">
-                  ({items.length} {items.length === 1 ? "item" : "items"})
+                  ({pageData.total} {pageData.total === 1 ? "item" : "items"})
                 </span>
               )}
             </CardTitle>
@@ -339,6 +361,15 @@ function ItemsPageContent() {
                   </TableBody>
                 </Table>
               </div>
+            )}
+            {items.length > 0 && (
+              <Pager
+                page={pageData.pageNumber}
+                lastPage={pageData.lastPage}
+                total={pageData.total}
+                pageSize={pageData.pageSize}
+                onPageChange={writeUrlPush}
+              />
             )}
           </CardContent>
         </Card>

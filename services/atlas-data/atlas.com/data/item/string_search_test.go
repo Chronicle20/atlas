@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"atlas-data/rest"
 	"atlas-data/searchindex"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
@@ -469,9 +468,6 @@ func newItemStringsRequest(t *testing.T, target string, ctx context.Context) *ht
 	require.NoError(t, err)
 	return req.WithContext(ctx)
 }
-
-// Compile-time assertion that rest aliases match server types.
-var _ = rest.HandlerDependency{}
 
 func TestHandleGetItemStrings_Page1_EnvelopeShape(t *testing.T) {
 	db, ctx := setupItemHandlerFixture(t, 100)

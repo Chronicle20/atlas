@@ -119,3 +119,16 @@ func killedStatusEventProvider(m Model, killerId uint32, boss bool, damageSummar
 		DamageEntries: damageEntries,
 	})
 }
+
+// nextSkillDecidedStatusEventProvider partitions on uniqueId so per-monster
+// decision events stay ordered for atlas-channel's inbox writes.
+func nextSkillDecidedStatusEventProvider(m Model, d nextSkillDecision) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(m.UniqueId()))
+	value := statusEventFromField(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusNextSkillDecided, statusEventNextSkillDecidedBody{
+		SkillId:                d.skillId,
+		SkillLevel:             d.skillLevel,
+		DecidedAtMs:            d.decidedAtMs,
+		NextEligibleRepickAtMs: d.nextEligibleRepickAtMs,
+	})
+	return producer.SingleMessageProvider(key, &value)
+}

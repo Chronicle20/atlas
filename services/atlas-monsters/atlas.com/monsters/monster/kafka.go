@@ -23,6 +23,7 @@ const (
 	EventMonsterStatusDamageReflected = "DAMAGE_REFLECTED"
 	EventMonsterStatusFriendlyDrop    = "FRIENDLY_DROP"
 	EventMonsterStatusAggroChanged    = "AGGRO_CHANGED"
+	EventMonsterStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -132,4 +133,11 @@ type statusEventDamageReflectedBody struct {
 
 type statusEventFriendlyDropBody struct {
 	ItemCount uint32 `json:"itemCount"`
+}
+
+type statusEventNextSkillDecidedBody struct {
+	SkillId                byte  `json:"skillId"`
+	SkillLevel             byte  `json:"skillLevel"`
+	DecidedAtMs            int64 `json:"decidedAtMs"`
+	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
 }

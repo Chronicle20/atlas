@@ -59,6 +59,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventStopControl(sc, wp)))); err != nil {
 					return err
 				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventAggroChanged(sc, wp)))); err != nil {
+					return err
+				}
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEffectApplied(sc, wp)))); err != nil {
 					return err
 				}
@@ -263,6 +266,28 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
 		if err != nil {
 			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
+		}
+	}
+}
+
+func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventAggroChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventAggroChangedBody]) {
+		if e.Type != monster2.EventStatusAggroChanged {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		m, err := monster.NewProcessor(l, ctx).GetById(e.UniqueId)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to retrieve monster [%d] for aggro change.", e.UniqueId)
+			return
+		}
+		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
+		err = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ControllerCharacterId, sf)
+		if err != nil {
+			l.WithError(err).Errorf("Unable to refresh control state for monster [%d] for character [%d].", e.UniqueId, e.Body.ControllerCharacterId)
 		}
 	}
 }

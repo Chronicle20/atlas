@@ -477,7 +477,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 	}
 
 	// Check cooldown
-	if GetCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, skillId) {
+	if GetCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, byte(skillId)) {
 		p.l.Debugf("Monster [%d] skill [%d] is on cooldown.", uniqueId, skillId)
 		return
 	}
@@ -505,7 +505,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 
 	// Register cooldown
 	if sd.Interval() > 0 {
-		GetCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, skillId, time.Duration(sd.Interval())*time.Second)
+		GetCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, byte(skillId), time.Duration(sd.Interval())*time.Second)
 	}
 
 	// Probability check

@@ -1040,6 +1040,146 @@ func TestApplyDamageAggregatesByCharacterId(t *testing.T) {
 	}
 }
 
+// TestDecayDamageEntriesIdleEntriesDecay verifies that an entry idle past the
+// threshold is decayed by AggroDecayMultiplier on each call, and that an entry
+// not idle is unchanged.
+func TestDecayDamageEntriesIdleEntriesDecay(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	// Two entries: one idle (lastHitMs=0), one fresh (lastHitMs=now).
+	now := int64(20_000)
+	if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), 0); err != nil {
+		t.Fatalf("ApplyDamage 1: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 2, 50, m.UniqueId(), now); err != nil {
+		t.Fatalf("ApplyDamage 2: %v", err)
+	}
+
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("DecayDamageEntries: %v", err)
+	}
+	if summary.ControllerCleared {
+		t.Error("controllerCleared should be false (no controller was set)")
+	}
+	entries := summary.Monster.DamageEntries()
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+	for _, e := range entries {
+		if e.CharacterId == 1 && e.Damage != 85 {
+			t.Errorf("idle entry should decay 100 -> 85, got %d", e.Damage)
+		}
+		if e.CharacterId == 2 && e.Damage != 50 {
+			t.Errorf("fresh entry should remain 50, got %d", e.Damage)
+		}
+	}
+}
+
+// TestDecayDamageEntriesPrunesBelowFloor verifies the deterministic decay
+// sequence and that entries below AggroDecayFloor are pruned.
+func TestDecayDamageEntriesPrunesBelowFloor(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), 0); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	expected := []uint32{85, 72, 61, 51, 43, 36, 30, 25, 21, 17, 14, 11, 9, 7, 5, 4, 3, 2, 1}
+	now := int64(20_000)
+	for i, want := range expected {
+		summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+		if err != nil {
+			t.Fatalf("Decay %d: %v", i, err)
+		}
+		entries := summary.Monster.DamageEntries()
+		if len(entries) != 1 {
+			t.Fatalf("Decay %d: expected 1 entry, got %d", i, len(entries))
+		}
+		if entries[0].Damage != want {
+			t.Errorf("Decay %d: damage want=%d got=%d", i, want, entries[0].Damage)
+		}
+	}
+	// Next decay drops below floor and prunes.
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("Decay final: %v", err)
+	}
+	if len(summary.Monster.DamageEntries()) != 0 {
+		t.Fatalf("expected pruned (0 entries), got %d", len(summary.Monster.DamageEntries()))
+	}
+}
+
+// TestDecayDamageEntriesClearsController verifies the FR-19 path: when all
+// entries prune and a controller exists, ControllerCleared=true and
+// PrevControllerId is set.
+func TestDecayDamageEntriesClearsController(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	if _, err := r.ControlMonster(ten, m.UniqueId(), 42); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	// Single tiny entry that will be floored on first decay.
+	if _, err := r.ApplyDamage(ten, 1, 1, m.UniqueId(), 0); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+	now := int64(20_000)
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("DecayDamageEntries: %v", err)
+	}
+	if !summary.ControllerCleared {
+		t.Fatal("expected ControllerCleared=true")
+	}
+	if summary.PrevControllerId != 42 {
+		t.Errorf("expected PrevControllerId=42, got %d", summary.PrevControllerId)
+	}
+	if summary.Monster.ControlCharacterId() != 0 {
+		t.Errorf("expected post-state controller=0, got %d", summary.Monster.ControlCharacterId())
+	}
+	if summary.Monster.ControllerHasAggro() {
+		t.Error("expected post-state controllerHasAggro=false")
+	}
+}
+
+// TestDecayDamageEntriesNoOpWhenAllFresh verifies a no-op when nothing is idle.
+func TestDecayDamageEntriesNoOpWhenAllFresh(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	now := int64(20_000)
+	if _, err := r.ApplyDamage(ten, 1, 100, m.UniqueId(), now); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+	summary, err := r.DecayDamageEntries(ten, m.UniqueId(), now)
+	if err != nil {
+		t.Fatalf("DecayDamageEntries: %v", err)
+	}
+	entries := summary.Monster.DamageEntries()
+	if len(entries) != 1 || entries[0].Damage != 100 {
+		t.Errorf("fresh entry should be untouched: %+v", entries)
+	}
+}
+
 // TestFromStoredCollapsesLegacyDamageEntries verifies that a Redis blob with
 // the old multi-row-per-character shape and no lastHitMs round-trips into a
 // single aggregated entry per character with LastHitMs == 0.

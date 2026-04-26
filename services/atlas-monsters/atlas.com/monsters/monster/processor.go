@@ -43,8 +43,8 @@ type Processor interface {
 	Move(id uint32, x int16, y int16, stance byte) error
 	Destroy(uniqueId uint32) error
 	DestroyInField(f field.Model) error
-	UseSkill(uniqueId uint32, characterId uint32, skillId uint16, skillLevel uint16)
-	UseSkillGM(uniqueId uint32, skillId uint16, skillLevel uint16)
+	UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte)
+	UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte)
 	ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error
 	CancelStatusEffect(uniqueId uint32, statusTypes []string) error
 	CancelAllStatusEffects(uniqueId uint32) error
@@ -468,7 +468,7 @@ func (p *ProcessorImpl) Move(id uint32, x int16, y int16, stance byte) error {
 }
 
 // UseSkill validates and executes a monster skill
-func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId uint16, skillLevel uint16) {
+func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster [%d] for skill use.", uniqueId)
@@ -485,14 +485,14 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 	}
 
 	// Fetch skill definition from data service
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(skillId, skillLevel)
+	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d].", skillId, skillLevel)
 		return
 	}
 
 	// Check cooldown
-	if GetCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, byte(skillId)) {
+	if GetCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, skillId) {
 		p.l.Debugf("Monster [%d] skill [%d] is on cooldown.", uniqueId, skillId)
 		return
 	}
@@ -520,21 +520,13 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 
 	// Register cooldown
 	if sd.Interval() > 0 {
-		GetCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, byte(skillId), time.Duration(sd.Interval())*time.Second)
-	}
-
-	// Probability check
-	if sd.Prop() < 100 {
-		if rand.Intn(100) >= int(sd.Prop()) {
-			p.l.Debugf("Monster [%d] skill [%d] probability check failed [%d%%].", uniqueId, skillId, sd.Prop())
-			return
-		}
+		GetCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, skillId, time.Duration(sd.Interval())*time.Second)
 	}
 
 	// Stacking check for reflect/immunity - cannot apply if already active
-	category := monster2.SkillCategory(skillId)
+	category := monster2.SkillCategory(uint16(skillId))
 	if category == monster2.SkillCategoryImmunity || category == monster2.SkillCategoryReflect {
-		statusName := monster2.SkillTypeToStatusName(skillId)
+		statusName := monster2.SkillTypeToStatusName(uint16(skillId))
 		if statusName != "" && m.HasStatusEffect(string(statusName)) {
 			p.l.Debugf("Monster [%d] already has active [%s]. Skill [%d] rejected.", uniqueId, statusName, skillId)
 			return
@@ -565,18 +557,42 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId ui
 		}
 	}
 
+	postExecute := func() {
+		if rerr := p.repickAndEmit(uniqueId, RepickReasonPostUseSkill); rerr != nil {
+			p.l.WithError(rerr).Warnf("Post-UseSkill picker: monster [%d] re-pick failed.", uniqueId)
+		}
+	}
+
 	if animDelay > 0 {
 		go func() {
 			time.Sleep(animDelay)
-			executeEffect()
+			p.applyAnimationDelayedEffect(uniqueId, executeEffect, postExecute)
 		}()
 	} else {
 		executeEffect()
+		postExecute()
 	}
 }
 
+// applyAnimationDelayedEffect re-fetches the monster post-anim-delay, applies
+// the executeEffect closure only if the monster is still present and alive,
+// and then runs postExecute. Exposed for testing the alive guard.
+func (p *ProcessorImpl) applyAnimationDelayedEffect(uniqueId uint32, executeEffect func(), postExecute func()) {
+	current, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.Debugf("UseSkill: monster [%d] no longer present after anim delay; skipping execute.", uniqueId)
+		return
+	}
+	if !current.Alive() {
+		p.l.Debugf("UseSkill: monster [%d] died during anim delay; skipping execute.", uniqueId)
+		return
+	}
+	executeEffect()
+	postExecute()
+}
+
 // UseSkillGM executes a mob skill on a monster without validation checks (GM command).
-func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId uint16, skillLevel uint16) {
+func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte) {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to get monster [%d] for GM skill use.", uniqueId)
@@ -586,13 +602,13 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId uint16, skillLevel u
 		return
 	}
 
-	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(skillId, skillLevel)
+	sd, err := mobskill.GetByIdAndLevel(p.l)(p.ctx)(uint16(skillId), uint16(skillLevel))
 	if err != nil {
 		p.l.WithError(err).Errorf("Unable to retrieve mob skill [%d] level [%d] for GM command.", skillId, skillLevel)
 		return
 	}
 
-	category := monster2.SkillCategory(skillId)
+	category := monster2.SkillCategory(uint16(skillId))
 	switch category {
 	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
 		p.executeStatBuff(m, sd, skillId, skillLevel)
@@ -608,8 +624,8 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId uint16, skillLevel u
 }
 
 // executeStatBuff applies a stat buff/immunity/reflect to the monster (and nearby monsters for AoE)
-func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId uint16, skillLevel uint16) {
-	statusName := monster2.SkillTypeToStatusName(skillId)
+func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
+	statusName := monster2.SkillTypeToStatusName(uint16(skillId))
 	if statusName == "" {
 		p.l.Warnf("No status mapping for skill type [%d].", skillId)
 		return
@@ -636,7 +652,7 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId uint
 
 	applyBuff(m.UniqueId())
 
-	if monster2.IsAoeSkill(skillId) && sd.HasBoundingBox() {
+	if monster2.IsAoeSkill(uint16(skillId)) && sd.HasBoundingBox() {
 		_ = model.ForEachSlice(p.ByFieldProvider(m.Field()), func(other Model) error {
 			if other.UniqueId() == m.UniqueId() {
 				return nil
@@ -684,20 +700,20 @@ func (p *ProcessorImpl) executeHeal(m Model, observerId uint32, sd mobskill.Mode
 }
 
 // executeDebuff applies a disease to target players
-func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId uint16, skillLevel uint16) {
+func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
 	// Special handling for dispel
-	if skillId == monster2.SkillTypeDispel {
+	if uint16(skillId) == monster2.SkillTypeDispel {
 		p.executeDispel(m, sd)
 		return
 	}
 
 	// Special handling for banish
-	if skillId == monster2.SkillTypeBanish {
+	if uint16(skillId) == monster2.SkillTypeBanish {
 		p.executeBanish(m, sd)
 		return
 	}
 
-	diseaseName := monster2.SkillTypeToDiseaseName(skillId)
+	diseaseName := monster2.SkillTypeToDiseaseName(uint16(skillId))
 	if diseaseName == "" {
 		p.l.Warnf("No disease mapping for skill type [%d].", skillId)
 		return
@@ -708,7 +724,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId uint16
 	targets := p.getDiseaseTargets(m, sd)
 
 	for _, characterId := range targets {
-		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(applyDiseaseCommandProvider(m.Field(), characterId, skillId, skillLevel, diseaseName, value, duration))
+		err := producer.ProviderImpl(p.l)(p.ctx)(EnvCommandTopicCharacterBuff)(applyDiseaseCommandProvider(m.Field(), characterId, uint16(skillId), uint16(skillLevel), diseaseName, value, duration))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to apply disease [%s] to character [%d] from monster [%d].", diseaseName, characterId, m.UniqueId())
 		}

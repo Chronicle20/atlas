@@ -62,6 +62,35 @@ func DeleteAllForTenant(tx *gorm.DB, tenantId uuid.UUID, entity interface{}) err
 	return tx.Where("tenant_id = ?", tenantId).Delete(entity).Error
 }
 
+// ResolveTenantId picks the tenant_id partition this request should query.
+// Returns the active tenant id if the active tenant has any rows in the
+// resource's search-index table; otherwise returns uuid.Nil.
+//
+// The check is a single EXISTS lookup against the existing (tenant_id, ...)
+// PK / btree. Callers MUST resolve once per request and pass the result into
+// Search / SearchWithFilter / Count / CountWithFilter so all queries see the
+// same partition.
+func ResolveTenantId[E any](db *gorm.DB, ctx context.Context, _ QuerySpec[E]) (uuid.UUID, error) {
+	t := tenant.MustFromContext(ctx)
+	bypass := database.WithoutTenantFilter(ctx)
+
+	var entity E
+	var dummy int
+	err := db.WithContext(bypass).
+		Model(&entity).
+		Select("1").
+		Where("tenant_id = ?", t.Id()).
+		Limit(1).
+		Scan(&dummy).Error
+	if err != nil {
+		return uuid.Nil, err
+	}
+	if dummy == 1 {
+		return t.Id(), nil
+	}
+	return uuid.Nil, nil
+}
+
 // QuerySpec configures a Search call for a specific search-index table.
 //
 // The entity type E is the GORM-mapped search-index row; IdOf extracts its

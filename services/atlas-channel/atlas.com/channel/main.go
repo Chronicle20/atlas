@@ -30,6 +30,7 @@ import (
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
 	"atlas-channel/kafka/consumer/monster"
+	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
 	"atlas-channel/kafka/consumer/npc/shop"
@@ -150,6 +151,8 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
+
+	monsterDomain.InitNextSkillInbox()
 
 	account2.InitConsumers(l)(cmf)(consumerGroupId)
 	asset.InitConsumers(l)(cmf)(consumerGroupId)

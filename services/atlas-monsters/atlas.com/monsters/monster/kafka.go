@@ -11,18 +11,19 @@ import (
 const (
 	EnvEventTopicMonsterStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
-	EventMonsterStatusCreated         = "CREATED"
-	EventMonsterStatusDestroyed       = "DESTROYED"
-	EventMonsterStatusStartControl    = "START_CONTROL"
-	EventMonsterStatusStopControl     = "STOP_CONTROL"
-	EventMonsterStatusDamaged         = "DAMAGED"
-	EventMonsterStatusKilled          = "KILLED"
-	EventMonsterStatusEffectApplied   = "STATUS_APPLIED"
-	EventMonsterStatusEffectExpired   = "STATUS_EXPIRED"
-	EventMonsterStatusEffectCancelled = "STATUS_CANCELLED"
-	EventMonsterStatusDamageReflected = "DAMAGE_REFLECTED"
-	EventMonsterStatusFriendlyDrop    = "FRIENDLY_DROP"
-	EventMonsterStatusAggroChanged    = "AGGRO_CHANGED"
+	EventMonsterStatusCreated          = "CREATED"
+	EventMonsterStatusDestroyed        = "DESTROYED"
+	EventMonsterStatusStartControl     = "START_CONTROL"
+	EventMonsterStatusStopControl      = "STOP_CONTROL"
+	EventMonsterStatusDamaged          = "DAMAGED"
+	EventMonsterStatusKilled           = "KILLED"
+	EventMonsterStatusEffectApplied    = "STATUS_APPLIED"
+	EventMonsterStatusEffectExpired    = "STATUS_EXPIRED"
+	EventMonsterStatusEffectCancelled  = "STATUS_CANCELLED"
+	EventMonsterStatusDamageReflected  = "DAMAGE_REFLECTED"
+	EventMonsterStatusFriendlyDrop     = "FRIENDLY_DROP"
+	EventMonsterStatusAggroChanged     = "AGGRO_CHANGED"
+	EventMonsterStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -132,4 +133,11 @@ type statusEventDamageReflectedBody struct {
 
 type statusEventFriendlyDropBody struct {
 	ItemCount uint32 `json:"itemCount"`
+}
+
+type statusEventNextSkillDecidedBody struct {
+	SkillId                byte  `json:"skillId"`
+	SkillLevel             byte  `json:"skillLevel"`
+	DecidedAtMs            int64 `json:"decidedAtMs"`
+	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
 }

@@ -3,7 +3,17 @@ package monster
 import (
 	"sort"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	"github.com/google/uuid"
 )
+
+func testField() field.Model {
+	return field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+}
 
 func makeModelWithEntries(entries []entry) Model {
 	return Model{damageEntries: entries}
@@ -37,5 +47,23 @@ func TestDamageLeaderOverAggregatedEntries(t *testing.T) {
 	leader := m.DamageLeader()
 	if leader != 2 {
 		t.Fatalf("expected leader=2, got %d", leader)
+	}
+}
+
+func TestModel_NextSkillDecision(t *testing.T) {
+	zero := nextSkillDecision{}
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	if m.NextSkillDecision() != zero {
+		t.Fatalf("default decision should be sentinel zero, got %+v", m.NextSkillDecision())
+	}
+
+	d := nextSkillDecision{
+		skillId: 100, skillLevel: 1,
+		decidedAtMs:            1700000000000,
+		nextEligibleRepickAtMs: 1700000005000,
+	}
+	updated := Clone(m).SetNextSkillDecision(d).Build()
+	if updated.NextSkillDecision() != d {
+		t.Fatalf("decision not persisted, got %+v", updated.NextSkillDecision())
 	}
 }

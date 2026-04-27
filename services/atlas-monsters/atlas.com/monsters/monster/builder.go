@@ -32,6 +32,7 @@ func Clone(m Model) *ModelBuilder {
 		team:               m.team,
 		damageEntries:      m.damageEntries,
 		statusEffects:      effects,
+		nextSkillDecision:  m.nextSkillDecision,
 	}
 }
 
@@ -56,6 +57,7 @@ type ModelBuilder struct {
 	team               int8
 	damageEntries      []entry
 	statusEffects      []StatusEffect
+	nextSkillDecision  nextSkillDecision
 }
 
 // SetX sets the X coordinate.
@@ -97,6 +99,13 @@ func (b *ModelBuilder) SetControllerHasAggro(v bool) *ModelBuilder {
 // SetMp sets the current mana points.
 func (b *ModelBuilder) SetMp(mp uint32) *ModelBuilder {
 	b.mp = mp
+	return b
+}
+
+// SetNextSkillDecision sets the picker's chosen next skill (or sentinel zero
+// for "no skill"). Picker-only API; not used by gameplay code.
+func (b *ModelBuilder) SetNextSkillDecision(d nextSkillDecision) *ModelBuilder {
+	b.nextSkillDecision = d
 	return b
 }
 
@@ -188,5 +197,6 @@ func (b *ModelBuilder) Build() Model {
 		team:               b.team,
 		damageEntries:      b.damageEntries,
 		statusEffects:      b.statusEffects,
+		nextSkillDecision:  b.nextSkillDecision,
 	}
 }

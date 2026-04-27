@@ -14,8 +14,8 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	"github.com/Chronicle20/atlas/libs/atlas-service"
 )
 
 const serviceName = "atlas-monsters"
@@ -84,6 +84,7 @@ func main() {
 	tasks.Register(l, tdm.Context())(monster.NewStatusExpirationTask(l, tdm.Context(), time.Second))
 	tasks.Register(l, tdm.Context())(monster.NewDropTimerTask(l, tdm.Context(), time.Second))
 	tasks.Register(l, tdm.Context())(monster.NewMonsterAggroDecayTask(l, tdm.Context(), monster.AggroSweepInterval))
+	tasks.Register(l, tdm.Context())(monster.NewMonsterSkillPickerSweepTask(l, tdm.Context(), monster.MonsterSkillPickerSweepInterval))
 
 	tdm.TeardownFunc(monster.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

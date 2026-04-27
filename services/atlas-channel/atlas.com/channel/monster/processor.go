@@ -45,7 +45,7 @@ func (p *Processor) Damage(f field.Model, monsterId uint32, characterId uint32, 
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(f, monsterId, characterId, damages, attackType))
 }
 
-func (p *Processor) UseSkill(f field.Model, monsterId uint32, characterId uint32, skillId uint16, skillLevel uint16) error {
+func (p *Processor) UseSkill(f field.Model, monsterId uint32, characterId uint32, skillId byte, skillLevel byte) error {
 	p.l.Debugf("Monster [%d] using skill [%d] level [%d]. Controller [%d].", monsterId, skillId, skillLevel, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(UseSkillCommandProvider(f, monsterId, characterId, skillId, skillLevel))
 }

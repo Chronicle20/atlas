@@ -57,13 +57,13 @@ type cancelStatusCommandBody struct {
 
 type useSkillCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
-	SkillId     uint16 `json:"skillId"`
-	SkillLevel  uint16 `json:"skillLevel"`
+	SkillId     byte   `json:"skillId"`
+	SkillLevel  byte   `json:"skillLevel"`
 }
 
 type useSkillFieldCommandBody struct {
-	SkillId    uint16 `json:"skillId"`
-	SkillLevel uint16 `json:"skillLevel"`
+	SkillId    byte `json:"skillId"`
+	SkillLevel byte `json:"skillLevel"`
 }
 
 type destroyFieldCommandBody struct{}

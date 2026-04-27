@@ -1244,6 +1244,142 @@ func TestDecayDamageEntriesNoOpWhenAllFresh(t *testing.T) {
 	}
 }
 
+// TestApplyDamageWritesLastDamageTakenMs verifies that ApplyDamage stamps the
+// monster's lastDamageTakenMs with the passed nowMs (drives the recovery
+// task's HP-regen idle gate).
+func TestApplyDamageWritesLastDamageTakenMs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	now := int64(1_700_000_000_000)
+	if _, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), now); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.LastDamageTakenMs() != now {
+		t.Errorf("expected lastDamageTakenMs=%d after damage; got %d", now, got.LastDamageTakenMs())
+	}
+}
+
+func TestApplyRecovery_AppliesMpUnconditionally(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	if _, err := r.DeductMp(ten, m.UniqueId(), 50); err != nil {
+		t.Fatalf("DeductMp: %v", err)
+	}
+
+	updated, hpApplied, mpApplied, err := r.ApplyRecovery(ten, m.UniqueId(), 0, 5, time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("ApplyRecovery: %v", err)
+	}
+	if hpApplied {
+		t.Errorf("hpApplied should be false when hpRecovery=0")
+	}
+	if !mpApplied {
+		t.Errorf("mpApplied should be true when mp<maxMp")
+	}
+	if updated.Mp() != 55 {
+		t.Errorf("expected mp=55; got %d", updated.Mp())
+	}
+}
+
+func TestApplyRecovery_ClampsAtMax(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	if _, err := r.DeductMp(ten, m.UniqueId(), 5); err != nil {
+		t.Fatalf("DeductMp: %v", err)
+	}
+
+	updated, _, _, err := r.ApplyRecovery(ten, m.UniqueId(), 0, 1000, time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("ApplyRecovery: %v", err)
+	}
+	if updated.Mp() != 100 {
+		t.Errorf("expected mp clamped at 100; got %d", updated.Mp())
+	}
+}
+
+func TestApplyRecovery_HpGatedByIdleWindow(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 100)
+	if _, err := r.ControlMonster(ten, m.UniqueId(), 99); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+
+	dmgAt := int64(1_000_000_000)
+	if _, err := r.ApplyDamage(ten, 99, 100, m.UniqueId(), dmgAt); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	// Inside idle window: nowMs - dmgAt = 5000 < 10000 → HP not applied.
+	updated, hpApplied, _, err := r.ApplyRecovery(ten, m.UniqueId(), 50, 0, dmgAt+5000)
+	if err != nil {
+		t.Fatalf("ApplyRecovery (inside): %v", err)
+	}
+	if hpApplied {
+		t.Errorf("hpApplied must be false inside idle window")
+	}
+	if updated.Hp() != 900 {
+		t.Errorf("expected hp unchanged at 900; got %d", updated.Hp())
+	}
+
+	// Outside idle window: nowMs - dmgAt = 11000 > 10000 → HP applied.
+	updated, hpApplied, _, err = r.ApplyRecovery(ten, m.UniqueId(), 50, 0, dmgAt+11000)
+	if err != nil {
+		t.Fatalf("ApplyRecovery (outside): %v", err)
+	}
+	if !hpApplied {
+		t.Errorf("hpApplied must be true outside idle window")
+	}
+	if updated.Hp() != 950 {
+		t.Errorf("expected hp=950; got %d", updated.Hp())
+	}
+}
+
+func TestApplyRecovery_SkipsDeadMob(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1, 100)
+
+	if _, err := r.ApplyDamage(ten, 99, 1, m.UniqueId(), time.Now().UnixMilli()); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	updated, hpApplied, mpApplied, err := r.ApplyRecovery(ten, m.UniqueId(), 100, 100, time.Now().UnixMilli()+30_000)
+	if err != nil {
+		t.Fatalf("ApplyRecovery: %v", err)
+	}
+	if hpApplied || mpApplied {
+		t.Errorf("dead mob: must not apply recovery; got hp=%v mp=%v", hpApplied, mpApplied)
+	}
+	if updated.Hp() != 0 {
+		t.Errorf("expected hp=0 (dead); got %d", updated.Hp())
+	}
+}
+
 // TestFromStoredCollapsesLegacyDamageEntries verifies that a Redis blob with
 // the old multi-row-per-character shape and no lastHitMs round-trips into a
 // single aggregated entry per character with LastHitMs == 0.

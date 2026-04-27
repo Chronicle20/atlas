@@ -1,0 +1,114 @@
+{
+  "service": "atlas-monsters + atlas-data",
+  "path": "services/atlas-monsters/atlas.com/monsters + services/atlas-data/atlas.com/data",
+  "branch": "task-035-mob-skill-firing-and-regen",
+  "date": "2026-04-27",
+  "build": "pass",
+  "testsPassed": "all",
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "scope": [
+    "atlas-monsters/atlas.com/monsters/monster (Redis-backed domain, no GORM)",
+    "atlas-monsters/atlas.com/monsters/monster/information (sub-domain, no GORM)",
+    "atlas-data/atlas.com/data/monster (read-only WZ projector, no GORM)"
+  ],
+  "domains": [
+    {
+      "name": "atlas-monsters/monster",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go fluent setters", "status": "pass", "evidence": "monster/builder.go:41 ModelBuilder; :188 Build; :116-119 SetLastDamageTakenMs returns *ModelBuilder; Clone propagates at :36" },
+        { "id": "DOM-02", "name": "ToEntity()", "status": "n/a", "evidence": "No GORM; toStored at monster/registry.go:99-151 round-trips lastDamageTakenMs at :149" },
+        { "id": "DOM-03", "name": "Make(Entity)", "status": "n/a", "evidence": "No GORM; fromStored at monster/registry.go:153-235" },
+        { "id": "DOM-04", "name": "Transform function", "status": "pass", "evidence": "monster/rest.go:61 Transform; new fields exposed at :96-97" },
+        { "id": "DOM-05", "name": "TransformSlice equivalent", "status": "pass", "evidence": "monster/rest.go:62 model.SliceMap(TransformDamageEntry); resource.go:34 model.Map(Transform) for singular GET" },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "monster/processor.go:60-66 ProcessorImpl.l logrus.FieldLogger; :69 NewProcessor signature" },
+        { "id": "DOM-07", "name": "Handlers pass d.Logger()", "status": "pass", "evidence": "monster/resource.go:28 NewProcessor(d.Logger(), d.Context()); zero logrus.StandardLogger() across changed files" },
+        { "id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler", "status": "n/a", "evidence": "Only handler is GET at monster/resource.go:21" },
+        { "id": "DOM-09", "name": "Transform errors handled", "status": "pass", "evidence": "monster/resource.go:34-39 checks err and returns 500" },
+        { "id": "DOM-10", "name": "Test DB has tenant callbacks", "status": "n/a", "evidence": "No GORM; miniredis at monster/registry_test.go:23-38; tasks use tenant.WithContext at recovery_task.go:56,61, picker_task.go:40,44" },
+        { "id": "DOM-11", "name": "Providers use lazy evaluation", "status": "pass", "evidence": "monster/processor.go:86 ByIdProvider returns func; recovery_task.go:55-58 defers info lookup" },
+        { "id": "DOM-12", "name": "No os.Getenv() in handlers/picker/task", "status": "pass", "evidence": "grep across resource.go, processor.go, picker.go, picker_task.go, recovery_task.go: zero matches" },
+        { "id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "monster/resource.go:25-44 only calls p.GetById and Transform" },
+        { "id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "monster/resource.go:29 calls processor method" },
+        { "id": "DOM-15", "name": "No direct entity creation in handlers", "status": "pass", "evidence": "No GORM; resource.go does no Redis writes" },
+        { "id": "DOM-16", "name": "administrator.go for writes", "status": "n/a", "evidence": "Registry at monster/registry.go:237-252 plays that role; ApplyRecovery at :553; lastDamageTakenMs serialization at :149" },
+        { "id": "DOM-17", "name": "Domain error to HTTP status mapping", "status": "pass", "evidence": "monster/resource.go:31 not-found to 404; :37 Transform error to 500" },
+        { "id": "DOM-18", "name": "JSON:API interface on REST models", "status": "pass", "evidence": "monster/rest.go:48-59 GetID, SetID, GetName; no jsonapi tags" },
+        { "id": "DOM-19", "name": "Request models flat", "status": "n/a", "evidence": "No new request models; response model RestModel extended at rest.go:32-33 with flat fields" },
+        { "id": "DOM-20", "name": "Table-driven tests", "status": "pass", "evidence": "processor_test.go:462-494 TestAttackerInField; :727-749 TestDamageRepickGuard_FiresOnFirstHitMiss" }
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster/information",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists", "status": "pass", "evidence": "information/builder.go:5 ModelBuilder, :33 Build, :22-29 SetHpRecovery/SetMpRecovery return *ModelBuilder" },
+        { "id": "DOM-04", "name": "Extract function", "status": "pass", "evidence": "information/rest.go:82 Extract; recovery fields at :100-101" },
+        { "id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "information/rest.go:69-80" },
+        { "id": "DOM-19", "name": "Flat request structure", "status": "n/a", "evidence": "No new request models" },
+        { "id": "DOM-20", "name": "Tests", "status": "partial", "evidence": "information/rest_test.go:5-23 single Extract test; surface is two integers, single case adequate" }
+      ]
+    },
+    {
+      "name": "atlas-data/data/monster",
+      "type": "sub-domain",
+      "checks": [
+        { "id": "DOM-04", "name": "Read function", "status": "pass", "evidence": "data/monster/reader.go:32 Read; new fields wired at :62-63" },
+        { "id": "DOM-18", "name": "JSON:API interface", "status": "pass", "evidence": "data/monster/rest.go:45-60" },
+        { "id": "DOM-20", "name": "Reader/REST tests", "status": "pass", "evidence": "data/monster/reader_test.go:32-33 XML; data/monster/rest_test.go:64-67 round-trip" }
+      ]
+    },
+    {
+      "name": "MonsterRecoveryTask",
+      "type": "support",
+      "checks": [
+        { "id": "TASK-TENANT", "name": "Tenant scoping correct", "status": "pass", "evidence": "recovery_task.go:56,61 tenant.WithContext for both info and emit; mirrors picker_task.go:40,44" },
+        { "id": "TASK-CACHE", "name": "Per-tenant info cache", "status": "pass", "evidence": "recovery_task.go:80,84,95-104 keyed by tenant.Id() (uuid.UUID)" },
+        { "id": "TASK-WRITE", "name": "Writes go through Registry", "status": "pass", "evidence": "applyFn -> Registry.ApplyRecovery (registry.go:553) atomically via Lua" },
+        { "id": "TASK-LUA", "name": "applyRecoveryScript matches applyDamageScript pattern", "status": "pass", "evidence": "registry.go:503-545 vs :415-462; same GET/decode/mutate/SET/encode envelope" },
+        { "id": "TASK-DEAD", "name": "Dead-mob early-return", "status": "pass", "evidence": "registry.go:516-518 forbids healing dead" },
+        { "id": "TASK-LOG", "name": "Log level Debug consistent w/ plan", "status": "non-blocking", "evidence": "recovery_task.go:99,115,121 Debug; intentional per plan/user prompt" }
+      ]
+    },
+    {
+      "name": "MonsterSkillPickerSweepTask",
+      "type": "support",
+      "checks": [
+        { "id": "SWEEP-AGGRO", "name": "Aggro gate added", "status": "pass", "evidence": "picker_task.go:70-72; tests at picker_task_test.go:104-167" },
+        { "id": "SWEEP-TENANT", "name": "Tenant scoping unchanged", "status": "pass", "evidence": "picker_task.go:40,44" }
+      ]
+    },
+    {
+      "name": "Picker (picker.go)",
+      "type": "support",
+      "checks": [
+        { "id": "PICKER-PROP", "name": "propEligibleSeen set after all gates", "status": "pass", "evidence": "picker.go:204 reached only after cooldown/hp/mp/reflect/prop>0" },
+        { "id": "PICKER-MIN", "name": "min-merge with cooldown nextRepick", "status": "pass", "evidence": "picker.go:218-222; tests at picker_test.go:290-390 cover all four matrix variants" },
+        { "id": "PICKER-SENTINEL", "name": "sentinel zero-id check", "status": "pass", "evidence": "picker.go:218 chosen.SkillId == 0 guard" }
+      ]
+    },
+    {
+      "name": "Processor aggro gates",
+      "type": "support",
+      "checks": [
+        { "id": "AGGRO-SPAWN", "name": "Spawn picker gated by aggro", "status": "pass", "evidence": "processor.go:138-142; tests processor_test.go:601-652" },
+        { "id": "AGGRO-POSTUSE", "name": "Post-UseSkill re-fetches monster (no TOCTOU)", "status": "pass", "evidence": "processor.go:570-585 GetMonsterRegistry().GetMonster + ControllerHasAggro on freshly-loaded model" },
+        { "id": "AGGRO-DAMAGE", "name": "Damage repick fires on first-hit miss", "status": "pass", "evidence": "processor.go:289,299-301,321-325; table test processor_test.go:727-749" },
+        { "id": "AGGRO-IFACE", "name": "RepickAndEmit on Processor interface", "status": "pass", "evidence": "processor.go:51 interface; picker.go:234 impl" }
+      ]
+    }
+  ],
+  "security": [
+    { "id": "SEC-01", "name": "Tenant header parsing not bypassed", "status": "pass", "evidence": "tenant.MustFromContext at processor.go:73; tasks use Registry.GetMonsters tenant-keyed iterator" },
+    { "id": "SEC-02", "name": "No cross-tenant key collisions", "status": "pass", "evidence": "monsterKey at registry.go:254 includes t.Id().String(); recovery info cache keyed by tenant.Id() at recovery_task.go:80,84,95" },
+    { "id": "SEC-03", "name": "No hardcoded secrets/keys", "status": "pass", "evidence": "grep across modified files: zero matches; topic resolved via env var name kafka.go:12" },
+    { "id": "SEC-04", "name": "Lua injection surface", "status": "pass", "evidence": "applyRecoveryScript argv at registry.go:557-562 uses strconv.FormatUint/FormatInt; no string interpolation into Lua source" }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "Recovery task logs at Debug while picker logs analogous failures at Warn — intentional per plan and user prompt; recorded for transparency only.",
+    "picker.go:130 uses nextRepick == 0 as 'unset' sentinel — unreachable ambiguity in practice (nowMs > 0).",
+    "monster/rest.go:30-33 column alignment cosmetics — gofmt-acceptable."
+  ]
+}

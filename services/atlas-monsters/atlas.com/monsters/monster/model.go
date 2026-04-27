@@ -51,6 +51,7 @@ type Model struct {
 	damageEntries        []entry
 	statusEffects        []StatusEffect
 	nextSkillDecision    nextSkillDecision
+	lastDamageTakenMs    int64
 }
 
 type entry struct {
@@ -276,4 +277,8 @@ func (m Model) HpPercentage() uint32 {
 		return 0
 	}
 	return (m.hp * 100) / m.maxHp
+}
+
+func (m Model) LastDamageTakenMs() int64 {
+	return m.lastDamageTakenMs
 }

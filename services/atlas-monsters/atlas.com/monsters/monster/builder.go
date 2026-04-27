@@ -33,6 +33,7 @@ func Clone(m Model) *ModelBuilder {
 		damageEntries:      m.damageEntries,
 		statusEffects:      effects,
 		nextSkillDecision:  m.nextSkillDecision,
+		lastDamageTakenMs:  m.lastDamageTakenMs,
 	}
 }
 
@@ -58,6 +59,7 @@ type ModelBuilder struct {
 	damageEntries      []entry
 	statusEffects      []StatusEffect
 	nextSkillDecision  nextSkillDecision
+	lastDamageTakenMs  int64
 }
 
 // SetX sets the X coordinate.
@@ -106,6 +108,13 @@ func (b *ModelBuilder) SetMp(mp uint32) *ModelBuilder {
 // for "no skill"). Picker-only API; not used by gameplay code.
 func (b *ModelBuilder) SetNextSkillDecision(d nextSkillDecision) *ModelBuilder {
 	b.nextSkillDecision = d
+	return b
+}
+
+// SetLastDamageTakenMs sets the most-recent damage timestamp. Used by the
+// recovery task's HP-regen idle gate.
+func (b *ModelBuilder) SetLastDamageTakenMs(v int64) *ModelBuilder {
+	b.lastDamageTakenMs = v
 	return b
 }
 
@@ -198,5 +207,6 @@ func (b *ModelBuilder) Build() Model {
 		damageEntries:      b.damageEntries,
 		statusEffects:      b.statusEffects,
 		nextSkillDecision:  b.nextSkillDecision,
+		lastDamageTakenMs:  b.lastDamageTakenMs,
 	}
 }

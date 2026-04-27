@@ -131,8 +131,14 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 
 	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
 
-	if err := p.RepickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
-		p.l.WithError(err).Warnf("Spawn picker: monster [%d] re-pick failed.", m.UniqueId())
+	// FR-2.1: Only fire the spawn picker when the freshly-created monster
+	// already has aggro. In practice this is always false at spawn (no damage
+	// yet); the guard makes the post-condition explicit and protects against
+	// any future code path that flips aggro before first damage.
+	if m.ControllerHasAggro() {
+		if err := p.RepickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
+			p.l.WithError(err).Warnf("Spawn picker: monster [%d] re-pick failed.", m.UniqueId())
+		}
 	}
 
 	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
@@ -309,7 +315,10 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 	}
 
-	if !killed && last.Monster.HpPercentage() != oldHpPercentage {
+	// FR-3.1: Fire the picker on every first hit (so a missed attack that
+	// flips controllerHasAggro can begin casting), and on every subsequent hit
+	// that changes HP percentage.
+	if !killed && (firstHitObserved || last.Monster.HpPercentage() != oldHpPercentage) {
 		if err := p.RepickAndEmit(last.Monster.UniqueId(), RepickReasonDamaged); err != nil {
 			p.l.WithError(err).Warnf("Damage picker: monster [%d] re-pick failed.", last.Monster.UniqueId())
 		}
@@ -559,6 +568,17 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	postExecute := func() {
+		// FR-2.3: Aggro can decay during the animation delay. Re-fetch and gate
+		// the repick on current aggro state.
+		current, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+		if err != nil {
+			p.l.Debugf("Post-UseSkill picker: monster [%d] gone; skipping re-pick.", uniqueId)
+			return
+		}
+		if !current.ControllerHasAggro() {
+			p.l.Debugf("Post-UseSkill picker: monster [%d] lost aggro during anim delay; skipping re-pick.", uniqueId)
+			return
+		}
 		if rerr := p.RepickAndEmit(uniqueId, RepickReasonPostUseSkill); rerr != nil {
 			p.l.WithError(rerr).Warnf("Post-UseSkill picker: monster [%d] re-pick failed.", uniqueId)
 		}

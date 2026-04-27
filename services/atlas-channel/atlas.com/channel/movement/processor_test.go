@@ -28,3 +28,10 @@ func TestNarrowSkill_OverflowRejected(t *testing.T) {
 		t.Fatalf("expected reject for skillLevel > 255")
 	}
 }
+
+func TestNarrowSkill_BoundaryAccepted(t *testing.T) {
+	id, lvl, ok := narrowSkillBytes(255, 255)
+	if !ok || id != 255 || lvl != 255 {
+		t.Fatalf("got id=%d lvl=%d ok=%v; want 255 255 true", id, lvl, ok)
+	}
+}

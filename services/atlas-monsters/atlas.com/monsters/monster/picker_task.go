@@ -67,6 +67,9 @@ func (tk *MonsterSkillPickerSweepTask) Run() {
 			if d.nextEligibleRepickAtMs == 0 || d.nextEligibleRepickAtMs > now {
 				continue
 			}
+			if !m.ControllerHasAggro() {
+				continue
+			}
 			templateId := m.MonsterId()
 			tenantId := ten.Id()
 			if skillCache[tenantId] == nil {

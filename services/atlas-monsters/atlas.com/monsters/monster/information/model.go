@@ -13,6 +13,8 @@ type Model struct {
 	skills         []Skill
 	revives        []uint32
 	banish         Banish
+	hpRecovery     uint32
+	mpRecovery     uint32
 }
 
 type Skill struct {
@@ -83,4 +85,12 @@ func (m Model) IsImmuneToElement(element string) bool {
 		return r == "1"
 	}
 	return false
+}
+
+func (m Model) HpRecovery() uint32 {
+	return m.hpRecovery
+}
+
+func (m Model) MpRecovery() uint32 {
+	return m.mpRecovery
 }

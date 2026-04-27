@@ -23,29 +23,30 @@ const maxRetries = 10
 
 // storedMonster is the JSON-serializable representation stored in Redis.
 type storedMonster struct {
-	UniqueId             uint32           `json:"uniqueId"`
-	TenantId             string           `json:"tenantId"`
-	TenantRegion         string           `json:"tenantRegion"`
-	TenantMajorVersion   uint16           `json:"tenantMajorVersion"`
-	TenantMinorVersion   uint16           `json:"tenantMinorVersion"`
-	WorldId              byte             `json:"worldId"`
-	ChannelId            byte             `json:"channelId"`
-	MapId                uint32           `json:"mapId"`
-	Instance             string           `json:"instance"`
-	MaxHp                uint32           `json:"maxHp"`
-	Hp                   uint32           `json:"hp"`
-	MaxMp                uint32           `json:"maxMp"`
-	Mp                   uint32           `json:"mp"`
-	MonsterId            uint32           `json:"monsterId"`
-	ControlCharacterId   uint32           `json:"controlCharacterId"`
-	ControllerHasAggro   bool             `json:"controllerHasAggro"`
-	X                    int16            `json:"x"`
-	Y                    int16            `json:"y"`
-	Fh                   int16            `json:"fh"`
-	Stance               byte             `json:"stance"`
-	Team                 int8             `json:"team"`
-	DamageEntries        damageEntryList  `json:"damageEntries"`
-	StatusEffects        statusEffectList `json:"statusEffects"`
+	UniqueId               uint32           `json:"uniqueId"`
+	TenantId               string           `json:"tenantId"`
+	TenantRegion           string           `json:"tenantRegion"`
+	TenantMajorVersion     uint16           `json:"tenantMajorVersion"`
+	TenantMinorVersion     uint16           `json:"tenantMinorVersion"`
+	WorldId                byte             `json:"worldId"`
+	ChannelId              byte             `json:"channelId"`
+	MapId                  uint32           `json:"mapId"`
+	Instance               string           `json:"instance"`
+	MaxHp                  uint32           `json:"maxHp"`
+	Hp                     uint32           `json:"hp"`
+	MaxMp                  uint32           `json:"maxMp"`
+	Mp                     uint32           `json:"mp"`
+	MonsterId              uint32           `json:"monsterId"`
+	ControlCharacterId     uint32           `json:"controlCharacterId"`
+	ControllerHasAggro     bool             `json:"controllerHasAggro"`
+	X                      int16            `json:"x"`
+	Y                      int16            `json:"y"`
+	Fh                     int16            `json:"fh"`
+	Stance                 byte             `json:"stance"`
+	Team                   int8             `json:"team"`
+	DamageEntries          damageEntryList  `json:"damageEntries"`
+	StatusEffects          statusEffectList `json:"statusEffects"`
+	NextEligibleRepickAtMs int64            `json:"nextEligibleRepickAtMs,omitempty"`
 }
 
 // damageEntryList and statusEffectList tolerate the empty-object form ("{}")
@@ -120,29 +121,30 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		})
 	}
 	return storedMonster{
-		UniqueId:           m.uniqueId,
-		TenantId:           t.Id().String(),
-		TenantRegion:       t.Region(),
-		TenantMajorVersion: t.MajorVersion(),
-		TenantMinorVersion: t.MinorVersion(),
-		WorldId:            byte(m.worldId),
-		ChannelId:          byte(m.channelId),
-		MapId:              uint32(m.mapId),
-		Instance:           m.instance.String(),
-		MaxHp:              m.maxHp,
-		Hp:                 m.hp,
-		MaxMp:              m.maxMp,
-		Mp:                 m.mp,
-		MonsterId:          m.monsterId,
-		ControlCharacterId: m.controlCharacterId,
-		ControllerHasAggro: m.controllerHasAggro,
-		X:                  m.x,
-		Y:                  m.y,
-		Fh:                 m.fh,
-		Stance:             m.stance,
-		Team:               m.team,
-		DamageEntries:      des,
-		StatusEffects:      ses,
+		UniqueId:               m.uniqueId,
+		TenantId:               t.Id().String(),
+		TenantRegion:           t.Region(),
+		TenantMajorVersion:     t.MajorVersion(),
+		TenantMinorVersion:     t.MinorVersion(),
+		WorldId:                byte(m.worldId),
+		ChannelId:              byte(m.channelId),
+		MapId:                  uint32(m.mapId),
+		Instance:               m.instance.String(),
+		MaxHp:                  m.maxHp,
+		Hp:                     m.hp,
+		MaxMp:                  m.maxMp,
+		Mp:                     m.mp,
+		MonsterId:              m.monsterId,
+		ControlCharacterId:     m.controlCharacterId,
+		ControllerHasAggro:     m.controllerHasAggro,
+		X:                      m.x,
+		Y:                      m.y,
+		Fh:                     m.fh,
+		Stance:                 m.stance,
+		Team:                   m.team,
+		DamageEntries:          des,
+		StatusEffects:          ses,
+		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
 	}
 }
 
@@ -223,6 +225,9 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		team:               sm.Team,
 		damageEntries:      des,
 		statusEffects:      ses,
+		nextSkillDecision: nextSkillDecision{
+			nextEligibleRepickAtMs: sm.NextEligibleRepickAtMs,
+		},
 	}, nil
 }
 
@@ -738,4 +743,3 @@ func (r *Registry) DecayDamageEntries(t tenant.Model, uniqueId uint32, nowMs int
 		AggroFlippedOff:       env.AggroFlippedOff,
 	}, nil
 }
-

@@ -565,6 +565,17 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	postExecute := func() {
+		// FR-2.3: Aggro can decay during the animation delay. Re-fetch and gate
+		// the repick on current aggro state.
+		current, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+		if err != nil {
+			p.l.Debugf("Post-UseSkill picker: monster [%d] gone; skipping re-pick.", uniqueId)
+			return
+		}
+		if !current.ControllerHasAggro() {
+			p.l.Debugf("Post-UseSkill picker: monster [%d] lost aggro during anim delay; skipping re-pick.", uniqueId)
+			return
+		}
 		if rerr := p.RepickAndEmit(uniqueId, RepickReasonPostUseSkill); rerr != nil {
 			p.l.WithError(rerr).Warnf("Post-UseSkill picker: monster [%d] re-pick failed.", uniqueId)
 		}

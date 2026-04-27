@@ -17,6 +17,7 @@ type Decision struct {
 	NextEligibleRepickAtMs int64
 }
 
+// IsSentinel reports whether the decision is the no-skill sentinel.
 func (d Decision) IsSentinel() bool { return d.SkillId == 0 }
 
 // nextSkillInbox is a per-channel-process, in-memory single-use handoff
@@ -32,6 +33,7 @@ var (
 	nextSkillInboxOnce sync.Once
 )
 
+// InitNextSkillInbox initializes the singleton. Call once at process startup.
 func InitNextSkillInbox() {
 	nextSkillInboxOnce.Do(func() {
 		nextSkillInboxInst = &nextSkillInbox{
@@ -40,8 +42,12 @@ func InitNextSkillInbox() {
 	})
 }
 
+// GetNextSkillInbox returns the singleton inbox. Returns nil until
+// InitNextSkillInbox has been called.
 func GetNextSkillInbox() *nextSkillInbox { return nextSkillInboxInst }
 
+// Put writes (or overwrites — last-writer-wins) the decision for the given
+// (tenant, uniqueId) pair.
 func (r *nextSkillInbox) Put(t tenant.Model, uniqueId uint32, d Decision) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -54,6 +60,9 @@ func (r *nextSkillInbox) Put(t tenant.Model, uniqueId uint32, d Decision) {
 	inner[uniqueId] = d
 }
 
+// TakeAndClear returns the current decision for the (tenant, uniqueId) pair
+// and removes it. Subsequent reads miss until a fresh Put. Single-use serve
+// semantics (PRD §FR-21).
 func (r *nextSkillInbox) TakeAndClear(t tenant.Model, uniqueId uint32) (Decision, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -70,6 +79,8 @@ func (r *nextSkillInbox) TakeAndClear(t tenant.Model, uniqueId uint32) (Decision
 	return d, true
 }
 
+// Evict removes the entry for the given (tenant, uniqueId) without returning
+// it. Used on MONSTER_DESTROYED to keep the inbox bounded.
 func (r *nextSkillInbox) Evict(t tenant.Model, uniqueId uint32) {
 	r.mu.Lock()
 	defer r.mu.Unlock()

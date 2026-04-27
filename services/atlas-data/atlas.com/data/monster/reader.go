@@ -59,6 +59,8 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 			m.Experience = uint32(node.GetIntegerWithDefault("exp", 0))
 			m.Level = uint32(node.GetIntegerWithDefault("level", 0))
 			m.RemoveAfter = uint32(node.GetIntegerWithDefault("removeAfter", 0))
+			m.HpRecovery = uint32(node.GetIntegerWithDefault("hpRecovery", 0))
+			m.MpRecovery = uint32(node.GetIntegerWithDefault("mpRecovery", 0))
 			m.Boss = node.GetIntegerWithDefault("boss", 0) > 0
 			m.ExplosiveReward = node.GetIntegerWithDefault("explosiveReward", 0) > 0
 			m.FFALoot = node.GetIntegerWithDefault("publicReward", 0) > 0

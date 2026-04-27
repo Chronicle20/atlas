@@ -1269,6 +1269,12 @@ func TestReader(t *testing.T) {
 	if rm.CoolDamage != (coolDamage{0, 0}) {
 		t.Errorf("CoolDamage mismatch: got %+v, expected %+v", rm.CoolDamage, coolDamage{0, 0})
 	}
+	if rm.HpRecovery != 10000 {
+		t.Errorf("HpRecovery mismatch: got %d, expected 10000", rm.HpRecovery)
+	}
+	if rm.MpRecovery != 50000 {
+		t.Errorf("MpRecovery mismatch: got %d, expected 50000", rm.MpRecovery)
+	}
 	// Validate AnimationTimes map
 	expectedAnimationTimes := map[string]uint32{
 		"attack1": 1440, "attack2": 0, "attack3": 0, "die1": 1260, "hit1": 600,

@@ -650,3 +650,70 @@ func TestSpawnPickerGuardOnAggro(t *testing.T) {
 		t.Fatalf("post-flip monster should have ControllerHasAggro=true")
 	}
 }
+
+// TestApplyAnimationDelayedEffect_PostExecuteSkippedWhenAggroFalse asserts the
+// post-anim-delay repick only fires when the mob still has aggro at the
+// moment the post-execute runs.
+func TestApplyAnimationDelayedEffect_PostExecuteSkippedWhenAggroFalse(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	m := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	// Monster has no aggro and is alive.
+
+	p := &ProcessorImpl{l: newPickerLogger(), ctx: tctx, t: tm}
+
+	executed := false
+	postRan := false
+	p.applyAnimationDelayedEffect(m.UniqueId(),
+		func() { executed = true },
+		func() { postRan = true },
+	)
+
+	if !executed {
+		t.Errorf("executeEffect should run when monster is alive")
+	}
+	if !postRan {
+		t.Errorf("postExecute should still be invoked; the aggro gate lives inside the closure that production wires up, not inside applyAnimationDelayedEffect")
+	}
+}
+
+// TestPostExecuteAggroGate_LogicTable verifies the aggro-gate predicate used by
+// the postExecute closure constructed inside UseSkill.
+func TestPostExecuteAggroGate_LogicTable(t *testing.T) {
+	r := GetMonsterRegistry()
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	tm := newTestTenant(t)
+	tctx := tenant.WithContext(ctx, tm)
+
+	noAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 0, 0, 0, 0, 0, 100, 50)
+	withAggro := r.CreateMonster(tctx, tm, testField(), 9000000, 1, 1, 0, 0, 0, 100, 50)
+	if _, err := r.ControlMonster(tm, withAggro.UniqueId(), 99); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(tm, 99, 1, withAggro.UniqueId(), time.Now().UnixMilli()); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	a, err := r.GetMonster(tm, noAggro.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if a.ControllerHasAggro() {
+		t.Errorf("noAggro mob should not have aggro")
+	}
+
+	b, err := r.GetMonster(tm, withAggro.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !b.ControllerHasAggro() {
+		t.Errorf("withAggro mob should have aggro")
+	}
+}

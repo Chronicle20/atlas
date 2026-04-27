@@ -315,7 +315,10 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 		p.l.WithError(err).Errorf("Monster [%d] damaged, but unable to display that for the characters in the field.", last.Monster.UniqueId())
 	}
 
-	if !killed && last.Monster.HpPercentage() != oldHpPercentage {
+	// FR-3.1: Fire the picker on every first hit (so a missed attack that
+	// flips controllerHasAggro can begin casting), and on every subsequent hit
+	// that changes HP percentage.
+	if !killed && (firstHitObserved || last.Monster.HpPercentage() != oldHpPercentage) {
 		if err := p.RepickAndEmit(last.Monster.UniqueId(), RepickReasonDamaged); err != nil {
 			p.l.WithError(err).Warnf("Damage picker: monster [%d] re-pick failed.", last.Monster.UniqueId())
 		}

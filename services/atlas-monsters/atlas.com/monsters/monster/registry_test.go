@@ -1244,6 +1244,31 @@ func TestDecayDamageEntriesNoOpWhenAllFresh(t *testing.T) {
 	}
 }
 
+// TestApplyDamageWritesLastDamageTakenMs verifies that ApplyDamage stamps the
+// monster's lastDamageTakenMs with the passed nowMs (drives the recovery
+// task's HP-regen idle gate).
+func TestApplyDamageWritesLastDamageTakenMs(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := testContext(ten)
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+
+	now := int64(1_700_000_000_000)
+	if _, err := r.ApplyDamage(ten, 1, 10, m.UniqueId(), now); err != nil {
+		t.Fatalf("ApplyDamage: %v", err)
+	}
+
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.LastDamageTakenMs() != now {
+		t.Errorf("expected lastDamageTakenMs=%d after damage; got %d", now, got.LastDamageTakenMs())
+	}
+}
+
 // TestFromStoredCollapsesLegacyDamageEntries verifies that a Redis blob with
 // the old multi-row-per-character shape and no lastHitMs round-trips into a
 // single aggregated entry per character with LastHitMs == 0.

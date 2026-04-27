@@ -47,6 +47,7 @@ type storedMonster struct {
 	DamageEntries          damageEntryList  `json:"damageEntries"`
 	StatusEffects          statusEffectList `json:"statusEffects"`
 	NextEligibleRepickAtMs int64            `json:"nextEligibleRepickAtMs,omitempty"`
+	LastDamageTakenMs      int64            `json:"lastDamageTakenMs,omitempty"`
 }
 
 // damageEntryList and statusEffectList tolerate the empty-object form ("{}")
@@ -145,6 +146,7 @@ func toStored(t tenant.Model, m Model) storedMonster {
 		DamageEntries:          des,
 		StatusEffects:          ses,
 		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
+		LastDamageTakenMs:      m.lastDamageTakenMs,
 	}
 }
 
@@ -228,6 +230,7 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 		nextSkillDecision: nextSkillDecision{
 			nextEligibleRepickAtMs: sm.NextEligibleRepickAtMs,
 		},
+		lastDamageTakenMs: sm.LastDamageTakenMs,
 	}, nil
 }
 
@@ -445,6 +448,7 @@ if not found then
     })
 end
 m.damageEntries = entries
+m.lastDamageTakenMs = nowMs
 
 local hadAggro = m.controllerHasAggro
 local wasFirstHit = false

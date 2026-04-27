@@ -14,12 +14,12 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
 	npcpkt "github.com/Chronicle20/atlas/libs/atlas-packet/npc/clientbound"
 	petpkt "github.com/Chronicle20/atlas/libs/atlas-packet/pet/clientbound"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/sirupsen/logrus"
 )
 
 type Processor struct {
@@ -118,7 +118,15 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		return err
 	}
 	go func() {
-		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, uint16(mo.Mp()), false, 0, 0).Encode)
+		useSkills := false
+		var skillIdByte, skillLevelByte byte
+		if d, hit := monster.GetNextSkillInbox().TakeAndClear(p.t, objectId); hit && !d.IsSentinel() {
+			useSkills = true
+			skillIdByte = d.SkillId
+			skillLevelByte = d.SkillLevel
+			p.l.Debugf("Inbox: serving predicted skill (%d,%d) into MoveMonsterAck for monster [%d].", skillIdByte, skillLevelByte, objectId)
+		}
+		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, uint16(mo.Mp()), useSkills, skillIdByte, skillLevelByte).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
@@ -143,12 +151,17 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		}
 	}()
 	if skillId > 0 {
-		go func() {
-			err := monster.NewProcessor(p.l, p.ctx).UseSkill(f, objectId, characterId, uint16(skillId), uint16(skillLevel))
-			if err != nil {
-				p.l.WithError(err).Errorf("Unable to issue use skill command for monster [%d].", objectId)
-			}
-		}()
+		id, lvl, ok := narrowSkillBytes(skillId, skillLevel)
+		if !ok {
+			p.l.Warnf("Monster [%d] inbound skill out of range (id=%d level=%d); dropping.", objectId, skillId, skillLevel)
+		} else {
+			go func() {
+				err := monster.NewProcessor(p.l, p.ctx).UseSkill(f, objectId, characterId, id, lvl)
+				if err != nil {
+					p.l.WithError(err).Errorf("Unable to issue use skill command for monster [%d].", objectId)
+				}
+			}()
+		}
 	}
 	return nil
 }
@@ -194,4 +207,14 @@ func foldMovementSummary(s summary, e interface{}) (summary, error) {
 	default:
 		return ms, nil
 	}
+}
+
+// narrowSkillBytes narrows the inbound MoveLife skill values from int16 to
+// byte. Returns ok=false on negative or out-of-range values; the caller
+// should drop the skill cast in that case.
+func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
+	if skillId < 0 || skillId > 255 || skillLevel < 0 || skillLevel > 255 {
+		return 0, 0, false
+	}
+	return byte(skillId), byte(skillLevel), true
 }

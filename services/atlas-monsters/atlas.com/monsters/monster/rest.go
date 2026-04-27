@@ -27,8 +27,10 @@ type RestModel struct {
 	Hp                 uint32              `json:"hp"`
 	MaxMp              uint32              `json:"maxMp"`
 	Mp                 uint32              `json:"mp"`
-	DamageEntries      []DamageEntry       `json:"damageEntries"`
-	StatusEffects      []StatusEffectEntry `json:"statusEffects"`
+	DamageEntries          []DamageEntry       `json:"damageEntries"`
+	StatusEffects          []StatusEffectEntry `json:"statusEffects"`
+	ControllerHasAggro     bool                `json:"controllerHasAggro"`
+	NextEligibleRepickAtMs int64               `json:"nextEligibleRepickAtMs,omitempty"`
 }
 
 type StatusEffectEntry struct {
@@ -89,8 +91,10 @@ func Transform(m Model) (RestModel, error) {
 		Hp:                 m.hp,
 		MaxMp:              m.maxMp,
 		Mp:                 m.mp,
-		DamageEntries:      des,
-		StatusEffects:      ses,
+		DamageEntries:          des,
+		StatusEffects:          ses,
+		ControllerHasAggro:     m.controllerHasAggro,
+		NextEligibleRepickAtMs: m.nextSkillDecision.nextEligibleRepickAtMs,
 	}, nil
 }
 

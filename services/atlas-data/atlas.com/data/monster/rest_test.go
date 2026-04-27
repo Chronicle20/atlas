@@ -61,6 +61,10 @@ func TestRest(t *testing.T) {
 	err = jsonapi.Unmarshal(body, &output)
 
 	ok := compare(input, output)
+	if output.HpRecovery != 10000 || output.MpRecovery != 50000 {
+		t.Fatalf("recovery fields lost in round-trip: got hp=%d mp=%d, want hp=10000 mp=50000",
+			output.HpRecovery, output.MpRecovery)
+	}
 	if !ok {
 		t.Fatalf("Failed to compare model: %v", input.Id)
 	}

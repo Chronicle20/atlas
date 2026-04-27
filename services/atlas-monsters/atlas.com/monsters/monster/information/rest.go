@@ -13,6 +13,8 @@ type RestModel struct {
 	MagicDefense       uint32            `json:"magic_defense"`
 	Friendly           bool              `json:"friendly"`
 	RemoveAfter        uint32            `json:"remove_after"`
+	HpRecovery         uint32            `json:"hp_recovery"`
+	MpRecovery         uint32            `json:"mp_recovery"`
 	Boss               bool              `json:"boss"`
 	ExplosiveReward    bool              `json:"explosive_reward"`
 	FFALoot            bool              `json:"ffa_loot"`
@@ -95,5 +97,7 @@ func Extract(rm RestModel) (Model, error) {
 		skills:         skills,
 		revives:        rm.Revives,
 		banish:         Banish{Message: rm.Banish.Message, MapId: rm.Banish.MapId, PortalName: rm.Banish.PortalName},
+		hpRecovery:     rm.HpRecovery,
+		mpRecovery:     rm.MpRecovery,
 	}, nil
 }

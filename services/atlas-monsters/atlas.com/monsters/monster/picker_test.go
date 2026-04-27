@@ -287,6 +287,108 @@ func TestPicker_SecondSkillWinsAfterFirstPropFails(t *testing.T) {
 	}
 }
 
+func TestPicker_AllPropFailReschedulesAtSweepCadence(t *testing.T) {
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+
+	skills := []information.Skill{{Id: 100, Level: 1}, {Id: 101, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{
+		100*1000 + 1: mskill(t, 100, 1, 50, 0, 0, 0), // 50% prop
+		101*1000 + 1: mskill(t, 101, 1, 50, 0, 0, 0), // 50% prop
+	}
+
+	now := int64(1_000_000)
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		&fakeCooldown{}, &fakeRand{values: []int{99, 99}}, now)
+
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel after all rolls fail; got %+v", d)
+	}
+	want := now + int64(MonsterSkillPickerSweepInterval/time.Millisecond)
+	if d.NextEligibleRepickAtMs != want {
+		t.Errorf("expected NextEligibleRepickAtMs=%d; got %d", want, d.NextEligibleRepickAtMs)
+	}
+}
+
+func TestPicker_AllPropFailMergesWithLongCooldown(t *testing.T) {
+	// Skill A on 5s cooldown; skill B prop-fails at 50%. Sweep cadence (1500ms)
+	// is shorter than the 5s cooldown, so sweep wins via min().
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+
+	skills := []information.Skill{{Id: 100, Level: 1}, {Id: 101, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{
+		100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0), // would always fire if not on cooldown
+		101*1000 + 1: mskill(t, 101, 1, 50, 0, 0, 0),  // prop-eligible, fail
+	}
+	cd := &fakeCooldown{
+		on:        map[byte]bool{100: true},
+		remaining: map[byte]time.Duration{100: 5 * time.Second},
+	}
+
+	now := int64(1_000_000)
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		cd, &fakeRand{values: []int{99}}, now)
+
+	if !d.IsSentinel() {
+		t.Fatalf("expected sentinel; got %+v", d)
+	}
+	want := now + int64(MonsterSkillPickerSweepInterval/time.Millisecond)
+	if d.NextEligibleRepickAtMs != want {
+		t.Errorf("expected sweep to win min(); got %d, want %d", d.NextEligibleRepickAtMs, want)
+	}
+}
+
+func TestPicker_AllPropFailLosesToShorterCooldown(t *testing.T) {
+	// Skill A on 500ms cooldown; skill B prop-fails. Cooldown (500ms) wins
+	// via min() over sweep cadence (1500ms).
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+
+	skills := []information.Skill{{Id: 100, Level: 1}, {Id: 101, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{
+		100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0),
+		101*1000 + 1: mskill(t, 101, 1, 50, 0, 0, 0),
+	}
+	cd := &fakeCooldown{
+		on:        map[byte]bool{100: true},
+		remaining: map[byte]time.Duration{100: 500 * time.Millisecond},
+	}
+
+	now := int64(1_000_000)
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		cd, &fakeRand{values: []int{99}}, now)
+
+	if d.NextEligibleRepickAtMs != now+500 {
+		t.Errorf("expected cooldown to win min(); got %d, want %d", d.NextEligibleRepickAtMs, now+500)
+	}
+}
+
+func TestPicker_AllCooldownGated_NoPropEligible_NoSweepMerge(t *testing.T) {
+	// Single skill, on cooldown, no prop-eligible candidates.
+	// nextRepick should be the cooldown expiry exactly, not min'd with sweep.
+	tm := newTestTenant(t)
+	m := newPickerTestMonster(t, 100, 50)
+	skills := []information.Skill{{Id: 100, Level: 1}}
+	skillTable := map[uint32]mobskill.Model{100*1000 + 1: mskill(t, 100, 1, 100, 0, 0, 0)}
+	cd := &fakeCooldown{
+		on:        map[byte]bool{100: true},
+		remaining: map[byte]time.Duration{100: 5 * time.Second},
+	}
+
+	now := int64(1_000_000)
+	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
+		skillsOnly(skills), mobSkillTable(skillTable),
+		cd, &fakeRand{values: []int{0}}, now)
+
+	if d.NextEligibleRepickAtMs != now+5000 {
+		t.Errorf("expected cooldown expiry %d (no sweep merge); got %d", now+5000, d.NextEligibleRepickAtMs)
+	}
+}
+
 func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
 	r := GetMonsterRegistry()
 	tm := newTestTenant(t)

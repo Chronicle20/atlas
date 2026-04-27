@@ -17,6 +17,7 @@ func newTestTenant(t *testing.T) tenant.Model {
 	return tm
 }
 
+// resetInbox resets the singleton for test isolation. Test-only.
 func resetInbox() {
 	nextSkillInboxOnce = sync.Once{}
 	nextSkillInboxInst = nil

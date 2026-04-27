@@ -44,8 +44,7 @@ func (t *StatusExpirationTask) processMonsterEffects(ten tenant.Model, m Model) 
 			}
 			_ = producer.ProviderImpl(t.l)(tctx)(EnvEventTopicMonsterStatus)(statusEffectExpiredEventProvider(updated, se))
 			if effectTouchesPicker(se) {
-				p := NewProcessor(t.l, tctx).(*ProcessorImpl)
-				if err := p.repickAndEmit(updated.UniqueId(), RepickReasonStatusExpired); err != nil {
+				if err := NewProcessor(t.l, tctx).RepickAndEmit(updated.UniqueId(), RepickReasonStatusExpired); err != nil {
 					t.l.WithError(err).Warnf("Status-expired picker: monster [%d] re-pick failed.", updated.UniqueId())
 				}
 			}

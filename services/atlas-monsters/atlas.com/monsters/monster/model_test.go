@@ -67,3 +67,14 @@ func TestModel_NextSkillDecision(t *testing.T) {
 		t.Fatalf("decision not persisted, got %+v", updated.NextSkillDecision())
 	}
 }
+
+func TestModel_LastDamageTakenMsRoundTrip(t *testing.T) {
+	m := NewMonster(testField(), 1, 9000000, 0, 0, 0, 0, 0, 100, 50)
+	if m.LastDamageTakenMs() != 0 {
+		t.Errorf("expected zero initial lastDamageTakenMs; got %d", m.LastDamageTakenMs())
+	}
+	m2 := Clone(m).SetLastDamageTakenMs(123456).Build()
+	if m2.LastDamageTakenMs() != 123456 {
+		t.Errorf("expected 123456 after builder set; got %d", m2.LastDamageTakenMs())
+	}
+}

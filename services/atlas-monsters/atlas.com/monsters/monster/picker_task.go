@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -22,7 +23,7 @@ type MonsterSkillPickerSweepTask struct {
 	interval    time.Duration
 	nowFn       func() int64
 	repickFn    func(t tenant.Model, uniqueId uint32) error
-	hasSkillsFn func(monsterId uint32) bool
+	hasSkillsFn func(t tenant.Model, monsterId uint32) bool
 }
 
 // NewMonsterSkillPickerSweepTask constructs a sweep task with production
@@ -37,11 +38,11 @@ func NewMonsterSkillPickerSweepTask(l logrus.FieldLogger, ctx context.Context, i
 	}
 	tk.repickFn = func(t tenant.Model, uniqueId uint32) error {
 		tctx := tenant.WithContext(tk.ctx, t)
-		p := NewProcessor(tk.l, tctx).(*ProcessorImpl)
-		return p.repickAndEmit(uniqueId, RepickReasonSweep)
+		return NewProcessor(tk.l, tctx).RepickAndEmit(uniqueId, RepickReasonSweep)
 	}
-	tk.hasSkillsFn = func(monsterId uint32) bool {
-		ma, err := information.GetById(tk.l)(tk.ctx)(monsterId)
+	tk.hasSkillsFn = func(t tenant.Model, monsterId uint32) bool {
+		tctx := tenant.WithContext(tk.ctx, t)
+		ma, err := information.GetById(tk.l)(tctx)(monsterId)
 		if err != nil {
 			return false
 		}
@@ -58,7 +59,7 @@ func (tk *MonsterSkillPickerSweepTask) SleepTime() time.Duration { return tk.int
 func (tk *MonsterSkillPickerSweepTask) Run() {
 	monsters := GetMonsterRegistry().GetMonsters()
 	now := tk.nowFn()
-	skillCache := make(map[uint32]bool)
+	skillCache := make(map[uuid.UUID]map[uint32]bool)
 
 	for ten, mons := range monsters {
 		for _, m := range mons {
@@ -67,10 +68,14 @@ func (tk *MonsterSkillPickerSweepTask) Run() {
 				continue
 			}
 			templateId := m.MonsterId()
-			has, cached := skillCache[templateId]
+			tenantId := ten.Id()
+			if skillCache[tenantId] == nil {
+				skillCache[tenantId] = make(map[uint32]bool)
+			}
+			has, cached := skillCache[tenantId][templateId]
 			if !cached {
-				has = tk.hasSkillsFn(templateId)
-				skillCache[templateId] = has
+				has = tk.hasSkillsFn(ten, templateId)
+				skillCache[tenantId][templateId] = has
 			}
 			if !has {
 				continue

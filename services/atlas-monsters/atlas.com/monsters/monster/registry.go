@@ -500,6 +500,90 @@ func (r *Registry) ApplyDamage(t tenant.Model, characterId uint32, damage uint32
 	}, nil
 }
 
+var applyRecoveryScript = goredis.NewScript(`
+local key = KEYS[1]
+local hpRecovery = tonumber(ARGV[1])
+local mpRecovery = tonumber(ARGV[2])
+local idleThresholdMs = tonumber(ARGV[3])
+local nowMs = tonumber(ARGV[4])
+
+local raw = redis.call('GET', key)
+if not raw then
+    return redis.error_reply("monster not found")
+end
+local mon = cjson.decode(raw)
+
+if mon.hp == 0 then
+    return cjson.encode({hpApplied = false, mpApplied = false, monster = mon})
+end
+
+local hpApplied = false
+local mpApplied = false
+
+if hpRecovery > 0 and mon.hp < mon.maxHp then
+    local lastDamage = mon.lastDamageTakenMs or 0
+    if (nowMs - lastDamage) > idleThresholdMs then
+        local newHp = mon.hp + hpRecovery
+        if newHp > mon.maxHp then newHp = mon.maxHp end
+        mon.hp = newHp
+        hpApplied = true
+    end
+end
+
+if mpRecovery > 0 and mon.mp < mon.maxMp then
+    local newMp = mon.mp + mpRecovery
+    if newMp > mon.maxMp then newMp = mon.maxMp end
+    mon.mp = newMp
+    mpApplied = true
+end
+
+if hpApplied or mpApplied then
+    redis.call('SET', key, cjson.encode(mon))
+end
+
+return cjson.encode({hpApplied = hpApplied, mpApplied = mpApplied, monster = mon})
+`)
+
+// ApplyRecovery atomically applies HP/MP recovery to the monster. Returns the
+// updated Model along with flags indicating whether HP and MP were actually
+// changed. HP recovery is gated by the idle window: applies only when
+// nowMs - lastDamageTakenMs > AggroIdleThresholdMs. MP recovery is unconditional
+// (independent of SEAL and other cast-blocking statuses, per design D5).
+// A dead mob (hp == 0) is skipped — healing the dead is forbidden.
+func (r *Registry) ApplyRecovery(t tenant.Model, uniqueId uint32, hpRecovery, mpRecovery uint32, nowMs int64) (Model, bool, bool, error) {
+	ctx := context.Background()
+	key := monsterKey(t, uniqueId)
+
+	result, err := applyRecoveryScript.Run(ctx, r.client, []string{key},
+		strconv.FormatUint(uint64(hpRecovery), 10),
+		strconv.FormatUint(uint64(mpRecovery), 10),
+		strconv.FormatInt(AggroIdleThresholdMs, 10),
+		strconv.FormatInt(nowMs, 10),
+	).Result()
+	if err != nil {
+		return Model{}, false, false, err
+	}
+
+	resultStr, ok := result.(string)
+	if !ok {
+		return Model{}, false, false, errors.New("unexpected response type")
+	}
+
+	var env struct {
+		HpApplied bool          `json:"hpApplied"`
+		MpApplied bool          `json:"mpApplied"`
+		Monster   storedMonster `json:"monster"`
+	}
+	if err := json.Unmarshal([]byte(resultStr), &env); err != nil {
+		return Model{}, false, false, err
+	}
+	_, m, err := fromStored(env.Monster)
+	if err != nil {
+		return Model{}, false, false, err
+	}
+	return m, env.HpApplied, env.MpApplied, nil
+}
+
 func (r *Registry) RemoveMonster(ctx context.Context, t tenant.Model, uniqueId uint32) (Model, error) {
 	key := monsterKey(t, uniqueId)
 	data, err := r.client.Get(ctx, key).Result()

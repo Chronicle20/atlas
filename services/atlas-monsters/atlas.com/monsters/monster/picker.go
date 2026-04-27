@@ -216,7 +216,7 @@ func pickNextSkill(
 // because atlas-channel's inbox is single-use and stale-cache-coherent: a
 // missed emission would leave a stale prediction in place. Logs at debug
 // per-run; logs at info level on sentinel↔non-sentinel transitions.
-func (p *ProcessorImpl) repickAndEmit(uniqueId uint32, reason RepickReason) error {
+func (p *ProcessorImpl) RepickAndEmit(uniqueId uint32, reason RepickReason) error {
 	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 	if err != nil {
 		// Monster gone (destroyed between trigger and call). Drop quietly.

@@ -312,7 +312,7 @@ func TestRepickAndEmit_AlwaysEmits(t *testing.T) {
 			return nil
 		},
 	}
-	if err := p.repickAndEmit(uniqueId, RepickReasonSpawn); err != nil {
+	if err := p.RepickAndEmit(uniqueId, RepickReasonSpawn); err != nil {
 		t.Fatalf("repickAndEmit: %v", err)
 	}
 	if emitted != 1 {

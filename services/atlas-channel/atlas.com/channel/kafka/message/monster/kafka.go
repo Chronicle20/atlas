@@ -53,8 +53,8 @@ type CancelStatusCommandBody struct {
 
 type UseSkillCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
-	SkillId     uint16 `json:"skillId"`
-	SkillLevel  uint16 `json:"skillLevel"`
+	SkillId     byte   `json:"skillId"`
+	SkillLevel  byte   `json:"skillLevel"`
 }
 
 const (

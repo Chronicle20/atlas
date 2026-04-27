@@ -127,6 +127,8 @@ func pickNextSkill(
 
 	chosen := Decision{}
 	var nextRepick int64
+	propEligibleSeen := false
+	sweepIntervalMs := MonsterSkillPickerSweepInterval.Milliseconds()
 
 	for _, s := range ma.Skills() {
 		// Defensive byte-overflow guard. atlas-data Skill carries uint32; we
@@ -196,6 +198,10 @@ func pickNextSkill(
 		if prop > 100 {
 			prop = 100
 		}
+		// Reaching here means every gate passed and the skill is rolling. Mark
+		// propEligibleSeen so the loop can schedule a sweep-cadence repick if
+		// every roll fails (PRD §FR-4.4, design D3).
+		propEligibleSeen = true
 		if rng.Intn(100) < prop {
 			chosen = Decision{
 				SkillId:    byte(skillId16),
@@ -206,6 +212,15 @@ func pickNextSkill(
 	}
 
 	chosen.DecidedAtMs = nowMs
+
+	// D3: when sentinel returned and at least one candidate prop-rolled, schedule
+	// a sweep-cadence repick. min-merges with any cooldown-derived nextRepick.
+	if chosen.SkillId == 0 && propEligibleSeen {
+		candidate := nowMs + sweepIntervalMs
+		if nextRepick == 0 || candidate < nextRepick {
+			nextRepick = candidate
+		}
+	}
 	chosen.NextEligibleRepickAtMs = nextRepick
 	return chosen
 }

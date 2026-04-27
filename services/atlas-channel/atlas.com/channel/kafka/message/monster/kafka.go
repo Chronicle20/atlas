@@ -60,17 +60,18 @@ type UseSkillCommandBody struct {
 const (
 	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
-	EventStatusCreated         = "CREATED"
-	EventStatusDestroyed       = "DESTROYED"
-	EventStatusStartControl    = "START_CONTROL"
-	EventStatusStopControl     = "STOP_CONTROL"
-	EventStatusDamaged         = "DAMAGED"
-	EventStatusKilled          = "KILLED"
-	EventStatusEffectApplied   = "STATUS_APPLIED"
-	EventStatusEffectExpired   = "STATUS_EXPIRED"
-	EventStatusEffectCancelled = "STATUS_CANCELLED"
-	EventStatusDamageReflected = "DAMAGE_REFLECTED"
-	EventStatusAggroChanged    = "AGGRO_CHANGED"
+	EventStatusCreated          = "CREATED"
+	EventStatusDestroyed        = "DESTROYED"
+	EventStatusStartControl     = "START_CONTROL"
+	EventStatusStopControl      = "STOP_CONTROL"
+	EventStatusDamaged          = "DAMAGED"
+	EventStatusKilled           = "KILLED"
+	EventStatusEffectApplied    = "STATUS_APPLIED"
+	EventStatusEffectExpired    = "STATUS_EXPIRED"
+	EventStatusEffectCancelled  = "STATUS_CANCELLED"
+	EventStatusDamageReflected  = "DAMAGE_REFLECTED"
+	EventStatusAggroChanged     = "AGGRO_CHANGED"
+	EventStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
@@ -163,4 +164,11 @@ type StatusEventDamageReflectedBody struct {
 type StatusEventAggroChangedBody struct {
 	ControllerCharacterId uint32 `json:"controllerCharacterId"`
 	ControllerHasAggro    bool   `json:"controllerHasAggro"`
+}
+
+type StatusEventNextSkillDecidedBody struct {
+	SkillId                byte  `json:"skillId"`
+	SkillLevel             byte  `json:"skillLevel"`
+	DecidedAtMs            int64 `json:"decidedAtMs"`
+	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
 }

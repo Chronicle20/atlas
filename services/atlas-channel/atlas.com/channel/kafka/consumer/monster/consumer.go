@@ -74,6 +74,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDamageReflected(sc)))); err != nil {
 					return err
 				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventNextSkillDecided(sc, wp)))); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -127,6 +130,7 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
+		monster.GetNextSkillInbox().Evict(tenant.MustFromContext(ctx), e.UniqueId)
 	}
 }
 
@@ -376,5 +380,24 @@ func handleDamageReflected(sc server.Model) message.Handler[monster2.StatusEvent
 
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		_ = character.NewProcessor(l, ctx).ChangeHP(f, e.Body.CharacterId, -int16(e.Body.ReflectDamage))
+	}
+}
+
+func handleStatusEventNextSkillDecided(sc server.Model, _ writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventNextSkillDecidedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventNextSkillDecidedBody]) {
+		if e.Type != monster2.EventStatusNextSkillDecided {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+		t := tenant.MustFromContext(ctx)
+		monster.GetNextSkillInbox().Put(t, e.UniqueId, monster.Decision{
+			SkillId:                e.Body.SkillId,
+			SkillLevel:             e.Body.SkillLevel,
+			DecidedAtMs:            e.Body.DecidedAtMs,
+			NextEligibleRepickAtMs: e.Body.NextEligibleRepickAtMs,
+		})
+		l.Debugf("Inbox: stored decision (skill=%d level=%d) for monster [%d].", e.Body.SkillId, e.Body.SkillLevel, e.UniqueId)
 	}
 }

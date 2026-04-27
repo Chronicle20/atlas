@@ -259,7 +259,7 @@ func (p *ProcessorImpl) repickAndEmit(uniqueId uint32, reason RepickReason) erro
 		// atlas-channel's inbox, and a stale local store will repair on the
 		// next picker run.
 	}
-	_ = updated // decision is in-memory only; not persisted (see SetNextSkillDecision doc)
+	_ = updated // skill choice is in-memory only; only nextEligibleRepickAtMs persists (see SetNextSkillDecision doc)
 
 	// Always emit, even on sentinel/unchanged decisions, to keep atlas-channel
 	// inbox coherent.

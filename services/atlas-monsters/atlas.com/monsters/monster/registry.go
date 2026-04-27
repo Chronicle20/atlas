@@ -570,10 +570,14 @@ func (r *Registry) DeductMp(t tenant.Model, uniqueId uint32, amount uint32) (Mod
 	})
 }
 
-// SetNextSkillDecision atomically replaces the monster's in-memory picker
-// decision. The decision is dropped on Redis round-trip (storedMonster does
-// not carry it); on rehydration the picker re-runs and emits a fresh
-// decision.
+// SetNextSkillDecision atomically replaces the monster's picker decision.
+// The skill choice (skillId, skillLevel, decidedAtMs) is in-memory only and
+// dropped on Redis round-trip — atlas-channel's nextSkillInbox is the source
+// of truth for what the monster will cast next. Only nextEligibleRepickAtMs
+// survives a round-trip, so the sweep task can identify monsters whose
+// cooldown-driven next-repick window has elapsed across in-memory rebuilds.
+// On rehydration of the skill choice fields, the picker re-runs and emits a
+// fresh decision via NEXT_SKILL_DECIDED.
 func (r *Registry) SetNextSkillDecision(t tenant.Model, uniqueId uint32, d nextSkillDecision) (Model, error) {
 	return r.atomicUpdate(context.Background(), t, uniqueId, func(m Model) Model {
 		return Clone(m).SetNextSkillDecision(d).Build()

@@ -30,7 +30,7 @@ func ApplyStatusCommandProvider(f field.Model, monsterId uint32, sourceCharacter
 	return producer.SingleMessageProvider(key, value)
 }
 
-func UseSkillCommandProvider(f field.Model, monsterId uint32, characterId uint32, skillId uint16, skillLevel uint16) model.Provider[[]kafka.Message] {
+func UseSkillCommandProvider(f field.Model, monsterId uint32, characterId uint32, skillId byte, skillLevel byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.UseSkillCommandBody]{
 		WorldId:   f.WorldId(),

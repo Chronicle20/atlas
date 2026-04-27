@@ -771,7 +771,7 @@ func TestCooldownExpiration(t *testing.T) {
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := context.Background()
 	monsterId := uint32(9300018)
-	skillId := uint16(100)
+	skillId := byte(100)
 
 	// Set a cooldown with 2 second TTL
 	cr.SetCooldown(ctx, ten, monsterId, skillId, 2*time.Second)
@@ -801,28 +801,28 @@ func TestCooldownClearAll(t *testing.T) {
 	monsterId := uint32(9300019)
 
 	// Set multiple cooldowns
-	cr.SetCooldown(ctx, ten, monsterId, 100, 10*time.Second)
-	cr.SetCooldown(ctx, ten, monsterId, 200, 10*time.Second)
-	cr.SetCooldown(ctx, ten, monsterId, 300, 10*time.Second)
+	cr.SetCooldown(ctx, ten, monsterId, byte(100), 10*time.Second)
+	cr.SetCooldown(ctx, ten, monsterId, byte(200), 10*time.Second)
+	cr.SetCooldown(ctx, ten, monsterId, byte(55), 10*time.Second)
 
-	if !cr.IsOnCooldown(ctx, ten, monsterId, 100) {
+	if !cr.IsOnCooldown(ctx, ten, monsterId, byte(100)) {
 		t.Fatal("Expected skill 100 on cooldown")
 	}
-	if !cr.IsOnCooldown(ctx, ten, monsterId, 200) {
+	if !cr.IsOnCooldown(ctx, ten, monsterId, byte(200)) {
 		t.Fatal("Expected skill 200 on cooldown")
 	}
 
 	// Clear all cooldowns for this monster
 	cr.ClearCooldowns(ctx, ten, monsterId)
 
-	if cr.IsOnCooldown(ctx, ten, monsterId, 100) {
+	if cr.IsOnCooldown(ctx, ten, monsterId, byte(100)) {
 		t.Fatal("Expected skill 100 cooldown cleared")
 	}
-	if cr.IsOnCooldown(ctx, ten, monsterId, 200) {
+	if cr.IsOnCooldown(ctx, ten, monsterId, byte(200)) {
 		t.Fatal("Expected skill 200 cooldown cleared")
 	}
-	if cr.IsOnCooldown(ctx, ten, monsterId, 300) {
-		t.Fatal("Expected skill 300 cooldown cleared")
+	if cr.IsOnCooldown(ctx, ten, monsterId, byte(55)) {
+		t.Fatal("Expected skill 55 cooldown cleared")
 	}
 }
 

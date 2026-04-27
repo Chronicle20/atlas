@@ -717,3 +717,33 @@ func TestPostExecuteAggroGate_LogicTable(t *testing.T) {
 		t.Errorf("withAggro mob should have aggro")
 	}
 }
+
+// damageRepickGuardWouldFire mirrors the guard at processor.go:312 so we can
+// exercise its logic table without spinning up the full Damage path.
+func damageRepickGuardWouldFire(killed bool, firstHitObserved bool, oldHpPct, newHpPct uint32) bool {
+	return !killed && (firstHitObserved || newHpPct != oldHpPct)
+}
+
+func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
+	cases := []struct {
+		name             string
+		killed           bool
+		firstHitObserved bool
+		oldHpPct         uint32
+		newHpPct         uint32
+		want             bool
+	}{
+		{"first-hit miss (0 dmg) fires", false, true, 100, 100, true},
+		{"second-hit miss does not fire", false, false, 100, 100, false},
+		{"hit with HP change fires", false, false, 100, 90, true},
+		{"killed never fires", true, true, 100, 0, false},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got := damageRepickGuardWouldFire(c.killed, c.firstHitObserved, c.oldHpPct, c.newHpPct)
+			if got != c.want {
+				t.Errorf("guard for %q: got %v, want %v", c.name, got, c.want)
+			}
+		})
+	}
+}

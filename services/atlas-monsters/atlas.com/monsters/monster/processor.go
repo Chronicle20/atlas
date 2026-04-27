@@ -131,8 +131,14 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 
 	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
 
-	if err := p.RepickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
-		p.l.WithError(err).Warnf("Spawn picker: monster [%d] re-pick failed.", m.UniqueId())
+	// FR-2.1: Only fire the spawn picker when the freshly-created monster
+	// already has aggro. In practice this is always false at spawn (no damage
+	// yet); the guard makes the post-condition explicit and protects against
+	// any future code path that flips aggro before first damage.
+	if m.ControllerHasAggro() {
+		if err := p.RepickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
+			p.l.WithError(err).Warnf("Spawn picker: monster [%d] re-pick failed.", m.UniqueId())
+		}
 	}
 
 	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))

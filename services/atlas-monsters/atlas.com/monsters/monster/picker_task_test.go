@@ -41,7 +41,7 @@ func TestPickerSweep_RepicksOnlyEligibleMonsters(t *testing.T) {
 			repicked[uniqueId]++
 			return nil
 		},
-		hasSkillsFn: func(monsterId uint32) bool { return true },
+		hasSkillsFn: func(_ tenant.Model, monsterId uint32) bool { return true },
 	}
 	tk.Run()
 
@@ -82,7 +82,7 @@ func TestPickerSweep_SkipsMonstersWithNoSkills(t *testing.T) {
 		interval:    1500 * time.Millisecond,
 		nowFn:       func() int64 { return time.Now().UnixMilli() },
 		repickFn:    func(_ tenant.Model, _ uint32) error { repicked++; return nil },
-		hasSkillsFn: func(_ uint32) bool { return false }, // no skills
+		hasSkillsFn: func(_ tenant.Model, _ uint32) bool { return false }, // no skills
 	}
 	tk.Run()
 

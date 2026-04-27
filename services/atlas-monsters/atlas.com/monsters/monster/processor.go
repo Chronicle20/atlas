@@ -48,6 +48,7 @@ type Processor interface {
 	ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error
 	CancelStatusEffect(uniqueId uint32, statusTypes []string) error
 	CancelAllStatusEffects(uniqueId uint32) error
+	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -130,7 +131,7 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 
 	m := GetMonsterRegistry().CreateMonster(p.ctx, p.t, f, input.MonsterId, input.X, input.Y, input.Fh, 5, input.Team, ma.Hp(), ma.Mp())
 
-	if err := p.repickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
+	if err := p.RepickAndEmit(m.UniqueId(), RepickReasonSpawn); err != nil {
 		p.l.WithError(err).Warnf("Spawn picker: monster [%d] re-pick failed.", m.UniqueId())
 	}
 
@@ -226,7 +227,7 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	if err == nil {
 		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
-		if rerr := p.repickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
+		if rerr := p.RepickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
 			p.l.WithError(rerr).Warnf("Controller-change picker: monster [%d] re-pick failed.", uniqueId)
 		}
 	}
@@ -309,7 +310,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	}
 
 	if !killed && last.Monster.HpPercentage() != oldHpPercentage {
-		if err := p.repickAndEmit(last.Monster.UniqueId(), RepickReasonDamaged); err != nil {
+		if err := p.RepickAndEmit(last.Monster.UniqueId(), RepickReasonDamaged); err != nil {
 			p.l.WithError(err).Warnf("Damage picker: monster [%d] re-pick failed.", last.Monster.UniqueId())
 		}
 	}
@@ -558,7 +559,7 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	postExecute := func() {
-		if rerr := p.repickAndEmit(uniqueId, RepickReasonPostUseSkill); rerr != nil {
+		if rerr := p.RepickAndEmit(uniqueId, RepickReasonPostUseSkill); rerr != nil {
 			p.l.WithError(rerr).Warnf("Post-UseSkill picker: monster [%d] re-pick failed.", uniqueId)
 		}
 	}
@@ -872,7 +873,7 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 
 	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(statusEffectAppliedEventProvider(m, effect))
 	if effectTouchesPicker(effect) {
-		if err := p.repickAndEmit(uniqueId, RepickReasonStatusApplied); err != nil {
+		if err := p.RepickAndEmit(uniqueId, RepickReasonStatusApplied); err != nil {
 			p.l.WithError(err).Warnf("Status-applied picker: monster [%d] re-pick failed.", uniqueId)
 		}
 	}
@@ -937,7 +938,7 @@ func (p *ProcessorImpl) CancelStatusEffect(uniqueId uint32, statusTypes []string
 		}
 	}
 	if pickerTouched {
-		if rerr := p.repickAndEmit(uniqueId, RepickReasonStatusExpired); rerr != nil {
+		if rerr := p.RepickAndEmit(uniqueId, RepickReasonStatusExpired); rerr != nil {
 			p.l.WithError(rerr).Warnf("Status-cancelled picker: monster [%d] re-pick failed.", uniqueId)
 		}
 	}
@@ -962,7 +963,7 @@ func (p *ProcessorImpl) CancelAllStatusEffects(uniqueId uint32) error {
 	}
 	for _, se := range effects {
 		if effectTouchesPicker(se) {
-			if rerr := p.repickAndEmit(uniqueId, RepickReasonStatusExpired); rerr != nil {
+			if rerr := p.RepickAndEmit(uniqueId, RepickReasonStatusExpired); rerr != nil {
 				p.l.WithError(rerr).Warnf("Status-cancelled picker: monster [%d] re-pick failed.", uniqueId)
 			}
 			break

@@ -85,6 +85,7 @@ func main() {
 	tasks.Register(l, tdm.Context())(monster.NewDropTimerTask(l, tdm.Context(), time.Second))
 	tasks.Register(l, tdm.Context())(monster.NewMonsterAggroDecayTask(l, tdm.Context(), monster.AggroSweepInterval))
 	tasks.Register(l, tdm.Context())(monster.NewMonsterSkillPickerSweepTask(l, tdm.Context(), monster.MonsterSkillPickerSweepInterval))
+	tasks.Register(l, tdm.Context())(monster.NewMonsterRecoveryTask(l, tdm.Context(), monster.MonsterRecoveryInterval))
 
 	tdm.TeardownFunc(monster.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

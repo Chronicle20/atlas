@@ -130,7 +130,9 @@ func handleStatusEventDestroyed(sc server.Model, wp writer.Producer) message.Han
 		if err != nil {
 			l.WithError(err).Errorf("Unable to destroy monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
-		monster.GetNextSkillInbox().Evict(tenant.MustFromContext(ctx), e.UniqueId)
+		t := tenant.MustFromContext(ctx)
+		monster.GetNextSkillInbox().Evict(t, e.UniqueId)
+		monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
 	}
 }
 
@@ -214,6 +216,7 @@ func handleStatusEventKilled(sc server.Model, wp writer.Producer) message.Handle
 		if err != nil {
 			l.WithError(err).Errorf("Unable to kill monster [%d] for characters in map [%d].", e.UniqueId, e.MapId)
 		}
+		monster.GetStatusMirror().OnMonsterGone(tenant.MustFromContext(ctx), e.UniqueId)
 	}
 }
 
@@ -317,6 +320,23 @@ func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Hand
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect applied to monster [%d].", e.UniqueId)
 		}
+
+		monster.GetStatusMirror().OnApplied(t, e.UniqueId, monster.StatusEffectAppliedBody{
+			EffectId:          e.Body.EffectId,
+			SourceType:        e.Body.SourceType,
+			SourceCharacterId: e.Body.SourceCharacterId,
+			SourceSkillId:     e.Body.SourceSkillId,
+			SourceSkillLevel:  e.Body.SourceSkillLevel,
+			Statuses:          e.Body.Statuses,
+			Duration:          int64(e.Body.Duration),
+			ReflectKind:       e.Body.ReflectKind,
+			ReflectPercent:    e.Body.ReflectPercent,
+			ReflectLtX:        e.Body.ReflectLtX,
+			ReflectLtY:        e.Body.ReflectLtY,
+			ReflectRbX:        e.Body.ReflectRbX,
+			ReflectRbY:        e.Body.ReflectRbY,
+			ReflectMaxDamage:  e.Body.ReflectMaxDamage,
+		}, time.Now())
 	}
 }
 
@@ -341,6 +361,8 @@ func handleStatusEffectExpired(sc server.Model, wp writer.Producer) message.Hand
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect expired from monster [%d].", e.UniqueId)
 		}
+
+		monster.GetStatusMirror().OnExpired(t, e.UniqueId, e.Body.EffectId)
 	}
 }
 
@@ -365,6 +387,8 @@ func handleStatusEffectCancelled(sc server.Model, wp writer.Producer) message.Ha
 		if err != nil {
 			l.WithError(err).Errorf("Unable to broadcast status effect cancelled from monster [%d].", e.UniqueId)
 		}
+
+		monster.GetStatusMirror().OnCancelled(t, e.UniqueId, e.Body.EffectId)
 	}
 }
 

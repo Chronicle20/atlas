@@ -143,6 +143,13 @@ type StatusEffectAppliedBody struct {
 	SourceSkillLevel  uint32           `json:"sourceSkillLevel"`
 	Statuses          map[string]int32 `json:"statuses"`
 	Duration          uint32           `json:"duration"`
+	ReflectKind       string           `json:"reflectKind"`
+	ReflectPercent    int32            `json:"reflectPercent"`
+	ReflectLtX        int16            `json:"reflectLtX"`
+	ReflectLtY        int16            `json:"reflectLtY"`
+	ReflectRbX        int16            `json:"reflectRbX"`
+	ReflectRbY        int16            `json:"reflectRbY"`
+	ReflectMaxDamage  int32            `json:"reflectMaxDamage"`
 }
 
 type StatusEffectExpiredBody struct {

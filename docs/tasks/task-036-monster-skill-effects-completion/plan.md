@@ -1,6 +1,6 @@
 # Monster Skill Effects Completion Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Close the long tail of monster skill mechanics — reflect actually reflects, venom stacks correctly, mist (`AREA_POISON`) zones spawn/tick/expire as first-class atlas-maps objects with player HP DoT driven by atlas-buffs' existing `PoisonTick`, plus immunity mutual exclusion and dispel-guard invariants — across atlas-monsters, atlas-channel, atlas-buffs, atlas-maps, libs/atlas-packet, and libs/atlas-constants.
 
@@ -27,11 +27,11 @@
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/kafka.go:108-132`
 - Test: `services/atlas-monsters/atlas.com/monsters/monster/kafka_test.go` (create if absent)
 
-- [ ] **Step 1.1: Inventory slice/map fields on status-event bodies**
+- [x] **Step 1.1: Inventory slice/map fields on status-event bodies**
 
 Read `services/atlas-monsters/atlas.com/monsters/monster/kafka.go` lines 80-145. List every body type containing a slice or map field — at minimum: `statusEventDamagedBody.DamageEntries`, `statusEventKilledBody.DamageEntries`, `statusEffectAppliedBody.Statuses`, `statusEffectExpiredBody.Statuses`, `statusEffectCancelledBody.Statuses`. Record the inventory in a comment block at the top of the new test file.
 
-- [ ] **Step 1.2: Write failing round-trip tests for each body**
+- [x] **Step 1.2: Write failing round-trip tests for each body**
 
 Create `services/atlas-monsters/atlas.com/monsters/monster/kafka_test.go`:
 
@@ -101,7 +101,7 @@ func TestStatusEventDamagedBody_RoundTripPreservesEmpty(t *testing.T) {
 }
 ```
 
-- [ ] **Step 1.3: Run tests — confirm they fail**
+- [x] **Step 1.3: Run tests — confirm they fail**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEvent.*MarshalsAs|TestStatusEffect.*MarshalsAs' -v
@@ -109,7 +109,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: tests fail because slice/map fields with `nil` value marshal as `null`.
 
-- [ ] **Step 1.4: Implement custom `MarshalJSON` for each affected body**
+- [x] **Step 1.4: Implement custom `MarshalJSON` for each affected body**
 
 For each body type that owns a slice field (`statusEventDamagedBody`, `statusEventKilledBody`), implement `MarshalJSON` that substitutes `nil` slices with empty slices before delegating to the standard marshaller via a type alias. Apply the established pattern from prior cjson fixes (commits `2c0ac23f2`, `afc3bd28a`):
 
@@ -159,7 +159,7 @@ func (b statusEffectCancelledBody) MarshalJSON() ([]byte, error) {
 
 (Add `"encoding/json"` to imports if absent.)
 
-- [ ] **Step 1.5: Run tests — confirm they pass**
+- [x] **Step 1.5: Run tests — confirm they pass**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEvent.*MarshalsAs|TestStatusEffect.*MarshalsAs|TestStatusEventDamagedBody_RoundTripPreservesEmpty' -v
@@ -167,7 +167,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: all PASS.
 
-- [ ] **Step 1.6: Run full atlas-monsters test suite**
+- [x] **Step 1.6: Run full atlas-monsters test suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -175,7 +175,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS (no regressions on producer / picker / aggro tests).
 
-- [ ] **Step 1.7: Commit**
+- [x] **Step 1.7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/kafka.go services/atlas-monsters/atlas.com/monsters/monster/kafka_test.go
@@ -193,11 +193,11 @@ git commit -m "task-036: cjson empty-array safety on monster status-event bodies
 - Create: `libs/atlas-packet/field/clientbound/affected_area_removed.go`
 - Test: `libs/atlas-packet/field/clientbound/affected_area_test.go`
 
-- [ ] **Step 2.1: Read existing template**
+- [x] **Step 2.1: Read existing template**
 
 Read `libs/atlas-packet/reactor/clientbound/spawn.go` (lines 1-65) and `libs/atlas-packet/field/clientbound/clock.go` (lines 24-101). Confirm the writer pattern: struct + getters + `Operation()` returning a writer-name constant + `Encode(l, ctx)` returning a closure that writes bytes via the existing packet writer helpers.
 
-- [ ] **Step 2.2: Write failing tests**
+- [x] **Step 2.2: Write failing tests**
 
 Create `libs/atlas-packet/field/clientbound/affected_area_test.go`:
 
@@ -255,7 +255,7 @@ func TestAffectedAreaCreated_Getters(t *testing.T) {
 }
 ```
 
-- [ ] **Step 2.3: Run tests — confirm they fail**
+- [x] **Step 2.3: Run tests — confirm they fail**
 
 ```bash
 cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestAffectedArea' -v
@@ -263,7 +263,7 @@ cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestAffectedArea' -v
 
 Expected: FAIL with undefined identifiers.
 
-- [ ] **Step 2.4: Create `affected_area_created.go`**
+- [x] **Step 2.4: Create `affected_area_created.go`**
 
 Pattern: mirror `reactor/clientbound/spawn.go`. v83 affected-area opcode constant goes in the writer name; the actual byte opcode is consumed by the packet writer registration layer. Follow the in-tree convention (search `clock.go:54` for the `Operation()` style).
 
@@ -349,7 +349,7 @@ func (a AffectedAreaCreated) Encode(l logrus.FieldLogger, ctx context.Context) f
 
 > The exact `newPacketWriter()` API is the helper used by sibling writers in this directory. **Before writing, confirm by reading `libs/atlas-packet/field/clientbound/clock.go:60-80`** and use the identical helper invocation. If the helper exposes typed methods like `WriteByte`, `WriteUint16`, etc. instead of `WriteInt16`, adjust accordingly. Do not invent new helpers.
 
-- [ ] **Step 2.5: Create `affected_area_removed.go`**
+- [x] **Step 2.5: Create `affected_area_removed.go`**
 
 ```go
 package clientbound
@@ -386,7 +386,7 @@ func (a AffectedAreaRemoved) Encode(l logrus.FieldLogger, ctx context.Context) f
 }
 ```
 
-- [ ] **Step 2.6: Run tests — confirm they pass**
+- [x] **Step 2.6: Run tests — confirm they pass**
 
 ```bash
 cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestAffectedArea' -v
@@ -394,7 +394,7 @@ cd libs/atlas-packet && go test ./field/clientbound/ -run 'TestAffectedArea' -v
 
 Expected: PASS.
 
-- [ ] **Step 2.7: Run full libs/atlas-packet suite**
+- [x] **Step 2.7: Run full libs/atlas-packet suite**
 
 ```bash
 cd libs/atlas-packet && go build ./... && go test ./...
@@ -402,7 +402,7 @@ cd libs/atlas-packet && go build ./... && go test ./...
 
 Expected: PASS (no regressions on existing field/reactor/character/etc. writers).
 
-- [ ] **Step 2.8: Commit**
+- [x] **Step 2.8: Commit**
 
 ```bash
 git add libs/atlas-packet/field/clientbound/affected_area_created.go libs/atlas-packet/field/clientbound/affected_area_removed.go libs/atlas-packet/field/clientbound/affected_area_test.go
@@ -419,7 +419,7 @@ git commit -m "task-036: AffectedAreaCreated/Removed packet writers"
 - Modify: `libs/atlas-constants/monster/skill.go:6-12`
 - Test: `libs/atlas-constants/monster/skill_test.go` (create or extend if exists)
 
-- [ ] **Step 3.1: Write failing test for the new constants**
+- [x] **Step 3.1: Write failing test for the new constants**
 
 Create or open `libs/atlas-constants/monster/skill_test.go` and add:
 
@@ -458,7 +458,7 @@ func TestReflectKindForSkill(t *testing.T) {
 
 > The combined-counter skill (`SkillTypePhysicalMagicCounter` = 145) returns `PHYSICAL` for the dispel-guard's purpose; the same monster will *also* have an active reflect of `MAGICAL` recorded as a separate `StatusEffect` because the existing code maps the skill to the `WEAPON_COUNTER` and `MAGIC_COUNTER` statuses — we expose both via mirror lookups in T10. The `ReflectKindForSkill` is used only by the picker / dispel guard to classify the *skill itself*, not the resulting statuses.
 
-- [ ] **Step 3.2: Run test — confirm failure**
+- [x] **Step 3.2: Run test — confirm failure**
 
 ```bash
 cd libs/atlas-constants && go test ./monster/ -run 'TestReflectKind' -v
@@ -466,7 +466,7 @@ cd libs/atlas-constants && go test ./monster/ -run 'TestReflectKind' -v
 
 Expected: FAIL — `ReflectKindPhysical`, `ReflectKindMagical`, `ReflectKindForSkill` undefined.
 
-- [ ] **Step 3.3: Implement constants and helper**
+- [x] **Step 3.3: Implement constants and helper**
 
 Edit `libs/atlas-constants/monster/skill.go` — add to the constant block (next to the existing `SkillCategory*` constants near lines 6-12) and add `ReflectKindForSkill` next to `SkillCategory(skillType uint16)` at lines 187-218:
 
@@ -495,7 +495,7 @@ func ReflectKindForSkill(skillType uint16) string {
 }
 ```
 
-- [ ] **Step 3.4: Run test — confirm passing**
+- [x] **Step 3.4: Run test — confirm passing**
 
 ```bash
 cd libs/atlas-constants && go test ./monster/ -run 'TestReflectKind' -v
@@ -503,7 +503,7 @@ cd libs/atlas-constants && go test ./monster/ -run 'TestReflectKind' -v
 
 Expected: PASS.
 
-- [ ] **Step 3.5: Run full libs/atlas-constants suite**
+- [x] **Step 3.5: Run full libs/atlas-constants suite**
 
 ```bash
 cd libs/atlas-constants && go build ./... && go test ./...
@@ -511,7 +511,7 @@ cd libs/atlas-constants && go build ./... && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 3.6: Commit**
+- [x] **Step 3.6: Commit**
 
 ```bash
 git add libs/atlas-constants/monster/skill.go libs/atlas-constants/monster/skill_test.go
@@ -528,7 +528,7 @@ git commit -m "task-036: ReflectKind constants and ReflectKindForSkill helper"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/builder.go:130-156`
 - Test: `services/atlas-monsters/atlas.com/monsters/monster/builder_test.go` (create or extend)
 
-- [ ] **Step 4.1: Write failing test**
+- [x] **Step 4.1: Write failing test**
 
 Create or open `services/atlas-monsters/atlas.com/monsters/monster/builder_test.go` and add:
 
@@ -606,7 +606,7 @@ func hasEffectWithExpiry(effs []StatusEffect, at time.Time) bool {
 
 > If `NewMonsterBuilder` requires arguments, check the existing builder API in `services/atlas-monsters/atlas.com/monsters/monster/builder.go` (top of file) and pass the minimum needed to construct an empty builder. If construction is awkward, use whichever helper existing tests in the same package use (look in `model_test.go`).
 
-- [ ] **Step 4.2: Run test — confirm failure**
+- [x] **Step 4.2: Run test — confirm failure**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestAddStatusEffect_VenomOverflow' -v
@@ -634,7 +634,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestAd
 
 Expected: FAIL on the FIFO-bug assertion.
 
-- [ ] **Step 4.3: Implement eviction by earliest `ExpiresAt`**
+- [x] **Step 4.3: Implement eviction by earliest `ExpiresAt`**
 
 Edit `services/atlas-monsters/atlas.com/monsters/monster/builder.go` lines 130-156. Replace the FIFO eviction with min-`ExpiresAt`:
 
@@ -668,7 +668,7 @@ func (b *ModelBuilder) AddStatusEffect(effect StatusEffect) *ModelBuilder {
 }
 ```
 
-- [ ] **Step 4.4: Run test — confirm passing**
+- [x] **Step 4.4: Run test — confirm passing**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestAddStatusEffect_VenomOverflow' -v
@@ -676,7 +676,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestAd
 
 Expected: PASS.
 
-- [ ] **Step 4.5: Add concurrency regression test (per risks §3)**
+- [x] **Step 4.5: Add concurrency regression test (per risks §3)**
 
 Append to `builder_test.go`:
 
@@ -708,7 +708,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestAd
 
 Expected: PASS.
 
-- [ ] **Step 4.6: Run full atlas-monsters test suite**
+- [x] **Step 4.6: Run full atlas-monsters test suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -716,7 +716,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 4.7: Commit**
+- [x] **Step 4.7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/builder.go services/atlas-monsters/atlas.com/monsters/monster/builder_test.go
@@ -734,7 +734,7 @@ git commit -m "task-036: evict oldest-by-ExpiresAt on VENOM stack overflow"
 - Verify: `services/atlas-buffs/atlas.com/buffs/main.go:64`
 - Test: `services/atlas-buffs/atlas.com/buffs/tasks/poison_test.go` (create)
 
-- [ ] **Step 5.1: Confirm wiring in main.go**
+- [x] **Step 5.1: Confirm wiring in main.go**
 
 ```bash
 grep -n "PoisonTick" services/atlas-buffs/atlas.com/buffs/main.go
@@ -742,7 +742,7 @@ grep -n "PoisonTick" services/atlas-buffs/atlas.com/buffs/main.go
 
 Expected: line 64 — `go tasks.Register(tasks.NewPoisonTick(l, 1000))`. If absent or different, fix it (must mirror the `Expiration` registration on line 63).
 
-- [ ] **Step 5.2: Write a behavioural test**
+- [x] **Step 5.2: Write a behavioural test**
 
 Create `services/atlas-buffs/atlas.com/buffs/tasks/poison_test.go`:
 
@@ -785,7 +785,7 @@ func TestPoisonTick_Run_DoesNotPanicWithNoTenants(t *testing.T) {
 > }
 > ```
 
-- [ ] **Step 5.3: Run tests — confirm passing on first run (existing impl)**
+- [x] **Step 5.3: Run tests — confirm passing on first run (existing impl)**
 
 ```bash
 cd services/atlas-buffs/atlas.com/buffs && go test ./tasks/ -run 'TestPoisonTick' -v
@@ -793,7 +793,7 @@ cd services/atlas-buffs/atlas.com/buffs && go test ./tasks/ -run 'TestPoisonTick
 
 Expected: PASS (the impl already exists; we're adding regression coverage).
 
-- [ ] **Step 5.4: Run full atlas-buffs suite**
+- [x] **Step 5.4: Run full atlas-buffs suite**
 
 ```bash
 cd services/atlas-buffs/atlas.com/buffs && go build ./... && go test ./...
@@ -801,7 +801,7 @@ cd services/atlas-buffs/atlas.com/buffs && go build ./... && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 5.5: Commit**
+- [x] **Step 5.5: Commit**
 
 ```bash
 git add services/atlas-buffs/atlas.com/buffs/tasks/poison_test.go
@@ -821,7 +821,7 @@ git commit -m "task-036: regression tests for tasks.PoisonTick"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/status.go:14-108`
 - Test: `services/atlas-monsters/atlas.com/monsters/monster/status_test.go` (create or extend)
 
-- [ ] **Step 6.1: Write failing test**
+- [x] **Step 6.1: Write failing test**
 
 Create or extend `services/atlas-monsters/atlas.com/monsters/monster/status_test.go`:
 
@@ -877,7 +877,7 @@ func TestStatusEffect_WithLastTick_PreservesReflectFields(t *testing.T) {
 }
 ```
 
-- [ ] **Step 6.2: Run test — confirm failure**
+- [x] **Step 6.2: Run test — confirm failure**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEffect_Reflect|TestNewReflectStatusEffect' -v
@@ -885,7 +885,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: FAIL — undefined fields and constructor.
 
-- [ ] **Step 6.3: Implement struct extension and constructor**
+- [x] **Step 6.3: Implement struct extension and constructor**
 
 Edit `services/atlas-monsters/atlas.com/monsters/monster/status.go` lines 14-26 to add fields, and append getters + the new `NewReflectStatusEffect` constructor:
 
@@ -964,7 +964,7 @@ func (s StatusEffect) IsReflect() bool          { return s.reflectKind != "" }
 
 > `WithLastTick` already returns by-value (existing pattern at status.go:105-108) — the new fields automatically propagate. Confirm by reading the existing method.
 
-- [ ] **Step 6.4: Run test — confirm passing**
+- [x] **Step 6.4: Run test — confirm passing**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEffect_Reflect|TestNewReflectStatusEffect' -v
@@ -972,7 +972,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: PASS.
 
-- [ ] **Step 6.5: Run full atlas-monsters test suite**
+- [x] **Step 6.5: Run full atlas-monsters test suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -980,7 +980,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS (no regressions; existing call sites use `NewStatusEffect` which is unchanged).
 
-- [ ] **Step 6.6: Commit**
+- [x] **Step 6.6: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/status.go services/atlas-monsters/atlas.com/monsters/monster/status_test.go
@@ -998,7 +998,7 @@ git commit -m "task-036: extend StatusEffect with reflect metadata fields"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/producer.go` (the existing `statusEffectAppliedProvider`)
 - Test: extend `services/atlas-monsters/atlas.com/monsters/monster/kafka_test.go` from T1
 
-- [ ] **Step 7.1: Write failing test**
+- [x] **Step 7.1: Write failing test**
 
 Append to `kafka_test.go`:
 
@@ -1043,7 +1043,7 @@ func TestStatusEffectAppliedBody_Reflect_SerializesAllReflectFields(t *testing.T
 }
 ```
 
-- [ ] **Step 7.2: Run — confirm failure**
+- [x] **Step 7.2: Run — confirm failure**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEffectAppliedBody_(Non)?Reflect' -v
@@ -1051,7 +1051,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: FAIL — fields don't exist on the body.
 
-- [ ] **Step 7.3: Extend the body**
+- [x] **Step 7.3: Extend the body**
 
 Edit `kafka.go` lines 108-116:
 
@@ -1076,7 +1076,7 @@ type statusEffectAppliedBody struct {
 }
 ```
 
-- [ ] **Step 7.4: Update `statusEffectAppliedProvider` to populate reflect fields from the StatusEffect**
+- [x] **Step 7.4: Update `statusEffectAppliedProvider` to populate reflect fields from the StatusEffect**
 
 Open `services/atlas-monsters/atlas.com/monsters/monster/producer.go`, find the function that constructs `statusEffectAppliedBody` (search for `statusEffectAppliedBody{`). Pass the reflect fields from the `StatusEffect` argument:
 
@@ -1103,7 +1103,7 @@ body := statusEffectAppliedBody{
 
 > Search for the actual location: `grep -n 'statusEffectAppliedBody{' services/atlas-monsters/atlas.com/monsters/monster/producer.go` and edit the matched provider in place.
 
-- [ ] **Step 7.5: Run tests — confirm passing**
+- [x] **Step 7.5: Run tests — confirm passing**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusEffectAppliedBody_(Non)?Reflect' -v
@@ -1111,7 +1111,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: PASS.
 
-- [ ] **Step 7.6: Verify no regressions on existing producer tests**
+- [x] **Step 7.6: Verify no regressions on existing producer tests**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -1119,7 +1119,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 7.7: Commit**
+- [x] **Step 7.7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/kafka.go services/atlas-monsters/atlas.com/monsters/monster/producer.go services/atlas-monsters/atlas.com/monsters/monster/kafka_test.go
@@ -1136,11 +1136,11 @@ git commit -m "task-036: extend StatusEffectApplied event with structured reflec
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go:647-689` (`executeStatBuff`)
 - Test: `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go` (extend)
 
-- [ ] **Step 8.1: Read existing executeStatBuff**
+- [x] **Step 8.1: Read existing executeStatBuff**
 
 Re-read `services/atlas-monsters/atlas.com/monsters/monster/processor.go:647-689` to confirm the current shape (the `applyBuff` closure at lines 658-672 builds `NewStatusEffect`).
 
-- [ ] **Step 8.2: Verify reflect-skill mapping against actual mob skill data**
+- [x] **Step 8.2: Verify reflect-skill mapping against actual mob skill data**
 
 The PRD §6.2 + risks §4 require verifying `sd.X()/Y()/LtX/LtY/RbX/RbY` interpretation for skill type 143 (`SkillTypePhysicalCounter`). Per design D4 the mapping is locked:
 - `ReflectPercent ← sd.X()`
@@ -1149,7 +1149,7 @@ The PRD §6.2 + risks §4 require verifying `sd.X()/Y()/LtX/LtY/RbX/RbY` interpr
 
 If atlas-data is running in dev, sanity-check by calling: `curl -s 'http://localhost:<atlas-data-port>/data/mob-skills/143/levels/1' | jq '.attributes | {x, y, ltX, ltY, rbX, rbY}'`. Otherwise document the assumption inline in code and proceed.
 
-- [ ] **Step 8.3: Write failing test**
+- [x] **Step 8.3: Write failing test**
 
 Add to `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go`:
 
@@ -1188,7 +1188,7 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 
 > The exact test boilerplate depends on existing helpers in `processor_test.go` and `picker_test.go` (the latter at lines 1-150+ uses `monsterInfoFetcher` and `mobSkillFetcher` closures). Match that style. Replace `t.Skip` with the concrete assertions once the helper layout is clear.
 
-- [ ] **Step 8.4: Implement reflect metadata in executeStatBuff**
+- [x] **Step 8.4: Implement reflect metadata in executeStatBuff**
 
 Edit `processor.go` lines 647-689. After `statuses` is computed (line 655), branch on the skill category:
 
@@ -1253,7 +1253,7 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 
 > Confirm `sd.LtX()` etc. return types (likely `int32` — narrow with `int16(...)` if so, per the mob skill model at `mobskill/model.go:71-83` which shows getter signatures).
 
-- [ ] **Step 8.5: Replace test skip with concrete assertions, run tests**
+- [x] **Step 8.5: Replace test skip with concrete assertions, run tests**
 
 Fill in the test body using the existing test helpers (`monsterInfoFetcher`, `mobSkillFetcher`). Run:
 
@@ -1263,7 +1263,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestEx
 
 Expected: PASS.
 
-- [ ] **Step 8.6: Run picker tests + already-active gate test**
+- [x] **Step 8.6: Run picker tests + already-active gate test**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPicker|TestExecuteStatBuff' -v
@@ -1271,7 +1271,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPi
 
 Expected: PASS — confirms FR-4.1.3 (re-applying reflect blocked by existing gate at `picker.go:185-191`).
 
-- [ ] **Step 8.7: Run full atlas-monsters suite**
+- [x] **Step 8.7: Run full atlas-monsters suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -1279,7 +1279,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 8.8: Commit**
+- [x] **Step 8.8: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/processor_test.go
@@ -1298,7 +1298,7 @@ git commit -m "task-036: populate reflect metadata in executeStatBuff"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go:536-544` (the existing `category == SkillCategoryImmunity` gate area)
 - Test: extend `processor_test.go`
 
-- [ ] **Step 9.1: Confirm the immunity status name strings**
+- [x] **Step 9.1: Confirm the immunity status name strings**
 
 ```bash
 grep -n 'WEAPON_ATTACK_IMMUNE\|MAGIC_ATTACK_IMMUNE\|PHYSICAL_IMMUNE\|MAGIC_IMMUNE' libs/atlas-constants/monster/
@@ -1306,7 +1306,7 @@ grep -n 'WEAPON_ATTACK_IMMUNE\|MAGIC_ATTACK_IMMUNE\|PHYSICAL_IMMUNE\|MAGIC_IMMUN
 
 Lock the two strings used by `SkillTypeToStatusName` for the immunity skills. Most likely: `WEAPON_ATTACK_IMMUNE` and `MAGIC_ATTACK_IMMUNE` (per `temporary_stat.go:24-25`). Reference `SkillTypeToStatusName` at `libs/atlas-constants/monster/skill.go:61-86` for the actual mapping.
 
-- [ ] **Step 9.2: Write failing test**
+- [x] **Step 9.2: Write failing test**
 
 Add to `processor_test.go`:
 
@@ -1333,11 +1333,11 @@ func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T
 }
 ```
 
-- [ ] **Step 9.3: Run tests — confirm they fail (after fleshing out)**
+- [x] **Step 9.3: Run tests — confirm they fail (after fleshing out)**
 
 After replacing `t.Skip` with real assertions in step 9.4, expect FAIL because no mutual-exclusion logic exists.
 
-- [ ] **Step 9.4: Implement mutual-exclusion in `executeStatBuff` AND in `UseSkill`**
+- [x] **Step 9.4: Implement mutual-exclusion in `executeStatBuff` AND in `UseSkill`**
 
 Two call paths set immunity statuses: `executeStatBuff` (for AoE / direct apply) and the same path is reached via `UseSkill → executeStatBuff` (line 558). The existing already-active gate at `processor.go:537-543` rejects the *new* skill if the same status is already present. We must run the opposite-immunity cancel **before** that gate.
 
@@ -1383,7 +1383,7 @@ if category == monster2.SkillCategoryImmunity || category == monster2.SkillCateg
 
 > Confirm the exact `CancelStatusEffect` signature in `processor.go` (search `func.*CancelStatusEffect`). It must accept `[]string` of status names; if it accepts `[]string` of effect ids, switch to `CancelStatusByType` or wrap with the appropriate helper. **Read the existing impl before writing the call.**
 
-- [ ] **Step 9.5: Replace test skips with concrete assertions, run tests**
+- [x] **Step 9.5: Replace test skips with concrete assertions, run tests**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestExecuteStatBuff_(PhysicalImmune|MagicImmune)' -v
@@ -1391,7 +1391,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestEx
 
 Expected: PASS — including event ordering.
 
-- [ ] **Step 9.6: Run full atlas-monsters suite**
+- [x] **Step 9.6: Run full atlas-monsters suite**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
@@ -1399,7 +1399,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 9.7: Commit**
+- [x] **Step 9.7: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/processor_test.go
@@ -1416,7 +1416,7 @@ git commit -m "task-036: immunity mutual exclusion in executeStatBuff"
 - Create: `services/atlas-channel/atlas.com/channel/monster/status_mirror.go`
 - Test: `services/atlas-channel/atlas.com/channel/monster/status_mirror_test.go`
 
-- [ ] **Step 10.1: Write failing test**
+- [x] **Step 10.1: Write failing test**
 
 Create `services/atlas-channel/atlas.com/channel/monster/status_mirror_test.go`:
 
@@ -1561,7 +1561,7 @@ func newTestStatusMirror() *StatusMirror {
 }
 ```
 
-- [ ] **Step 10.2: Run tests — confirm failure**
+- [x] **Step 10.2: Run tests — confirm failure**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./monster/ -run 'TestStatusMirror' -v
@@ -1569,7 +1569,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./monster/ -run 'TestStat
 
 Expected: FAIL — types undefined.
 
-- [ ] **Step 10.3: Implement the mirror**
+- [x] **Step 10.3: Implement the mirror**
 
 Create `services/atlas-channel/atlas.com/channel/monster/status_mirror.go`:
 
@@ -1765,7 +1765,7 @@ func (m *StatusMirror) VenomCount(t tenant.Model, uniqueId uint32) int {
 
 > The exact `tenant.Create(...)` API used in tests must match the in-tree convention. Search `tenant.Create\|tenant.MustFromContext` for an example test usage and adjust.
 
-- [ ] **Step 10.4: Run tests — confirm passing**
+- [x] **Step 10.4: Run tests — confirm passing**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./monster/ -run 'TestStatusMirror' -v -race
@@ -1773,7 +1773,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./monster/ -run 'TestStat
 
 Expected: PASS, including the concurrent-access test under `-race`.
 
-- [ ] **Step 10.5: Run full atlas-channel suite**
+- [x] **Step 10.5: Run full atlas-channel suite**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
@@ -1781,7 +1781,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 10.6: Commit**
+- [x] **Step 10.6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/monster/status_mirror.go services/atlas-channel/atlas.com/channel/monster/status_mirror_test.go
@@ -1797,7 +1797,7 @@ git commit -m "task-036: monster.StatusMirror — in-process per-tenant projecti
 **Files:**
 - Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:299-403` (handlers) and `:119-228` (destroy/killed)
 
-- [ ] **Step 11.1: Inspect existing handler signatures and event body types**
+- [x] **Step 11.1: Inspect existing handler signatures and event body types**
 
 Read `services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go` lines 119-228 and 299-403. Confirm the event-body types referenced — they may be defined in `services/atlas-channel/atlas.com/channel/kafka/message/monster/` (search for `statusEffectAppliedBody`). If atlas-channel mirrors atlas-monsters' kafka body shape, ensure the new reflect fields are present in the channel-side struct as well (T7 only modified atlas-monsters).
 
@@ -1809,7 +1809,7 @@ grep -rn 'StatusEffectAppliedBody\|statusEffectAppliedBody' services/atlas-chann
 
 Edit the channel-side body (likely at `services/atlas-channel/atlas.com/channel/kafka/message/monster/<file>.go`) to add the same `ReflectKind`/etc. fields with matching json tags.
 
-- [ ] **Step 11.2: Wire mirror calls into handlers**
+- [x] **Step 11.2: Wire mirror calls into handlers**
 
 In `consumer.go`:
 
@@ -1845,7 +1845,7 @@ monster.GetStatusMirror().OnMonsterGone(t, e.UniqueId)
 
 > Locate the actual `t` (tenant.Model) variable name in each handler — likely extracted from the event header via `tenant.MustFromContext` or `e.Tenant`. Use whatever the existing handlers use. Match the surrounding style.
 
-- [ ] **Step 11.3: Build to confirm syntax**
+- [x] **Step 11.3: Build to confirm syntax**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go build ./...
@@ -1853,7 +1853,7 @@ cd services/atlas-channel/atlas.com/channel && go build ./...
 
 Expected: PASS.
 
-- [ ] **Step 11.4: Add a regression test asserting handlers populate the mirror**
+- [x] **Step 11.4: Add a regression test asserting handlers populate the mirror**
 
 Create or extend `services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer_test.go`:
 
@@ -1871,7 +1871,7 @@ func TestHandleStatusEffectApplied_PopulatesMirror(t *testing.T) {
 
 > Mirror tests in this package may need a way to reset the singleton between tests. Add a `resetStatusMirrorForTest()` exported only via a `_test.go` file in the `monster` package. Confirm existing reset patterns by looking at how other singletons in atlas-channel are tested.
 
-- [ ] **Step 11.5: Run all atlas-channel tests**
+- [x] **Step 11.5: Run all atlas-channel tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./...
@@ -1879,7 +1879,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 11.6: Commit**
+- [x] **Step 11.6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer_test.go services/atlas-channel/atlas.com/channel/kafka/message/monster/  # whichever file was extended
@@ -1895,7 +1895,7 @@ git commit -m "task-036: wire StatusMirror into monster status consumers"
 **Files:**
 - Modify: `services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:299-321` (apply) and `:323-369` (expire/cancel)
 
-- [ ] **Step 12.1: Write failing test**
+- [x] **Step 12.1: Write failing test**
 
 Add to `consumer_test.go`:
 
@@ -1921,7 +1921,7 @@ func TestHandleStatusEffectExpired_VenomLastSlot_BroadcastsMonsterStatReset(t *t
 }
 ```
 
-- [ ] **Step 12.2: Implement collapse logic**
+- [x] **Step 12.2: Implement collapse logic**
 
 Edit `handleStatusEffectApplied` — wrap the existing `MonsterStatSetWriter` call so VENOM is suppressed if the mirror already had ≥1 VENOM entry **before** this apply:
 
@@ -1975,7 +1975,7 @@ if isVenom {
 
 > Mirror the same suppression in `handleStatusEffectCancelled`.
 
-- [ ] **Step 12.3: Run tests**
+- [x] **Step 12.3: Run tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/monster/ -v
@@ -1983,7 +1983,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./kafka/consumer/monster/
 
 Expected: PASS.
 
-- [ ] **Step 12.4: Commit**
+- [x] **Step 12.4: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer_test.go
@@ -2002,7 +2002,7 @@ These tasks build the new `mist` package in atlas-maps. Sequence is internal: mo
 - Create: `services/atlas-maps/atlas.com/maps/mist/model.go`
 - Test: `services/atlas-maps/atlas.com/maps/mist/model_test.go`
 
-- [ ] **Step 13.1: Write failing test**
+- [x] **Step 13.1: Write failing test**
 
 Create `services/atlas-maps/atlas.com/maps/mist/model_test.go`:
 
@@ -2089,7 +2089,7 @@ func TestMist_ShouldTick_RespectsLastTick(t *testing.T) {
 }
 ```
 
-- [ ] **Step 13.2: Run — confirm failure**
+- [x] **Step 13.2: Run — confirm failure**
 
 ```bash
 cd services/atlas-maps/atlas.com/maps && go test ./mist/ -v
@@ -2097,7 +2097,7 @@ cd services/atlas-maps/atlas.com/maps && go test ./mist/ -v
 
 Expected: FAIL — package missing.
 
-- [ ] **Step 13.3: Implement model + builder**
+- [x] **Step 13.3: Implement model + builder**
 
 Create `services/atlas-maps/atlas.com/maps/mist/model.go`:
 
@@ -2242,7 +2242,7 @@ func (b *Builder) SetSource(skillId, skillLevel uint32) *Builder {
 func (b *Builder) Build() Mist { return b.m }
 ```
 
-- [ ] **Step 13.4: Run tests — confirm passing**
+- [x] **Step 13.4: Run tests — confirm passing**
 
 ```bash
 cd services/atlas-maps/atlas.com/maps && go test ./mist/ -v
@@ -2250,7 +2250,7 @@ cd services/atlas-maps/atlas.com/maps && go test ./mist/ -v
 
 Expected: PASS.
 
-- [ ] **Step 13.5: Commit**
+- [x] **Step 13.5: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/mist/model.go services/atlas-maps/atlas.com/maps/mist/model_test.go
@@ -2265,7 +2265,7 @@ git commit -m "task-036: mist.Mist immutable model and builder"
 - Create: `services/atlas-maps/atlas.com/maps/mist/registry.go`
 - Test: `services/atlas-maps/atlas.com/maps/mist/registry_test.go`
 
-- [ ] **Step 14.1: Write failing test**
+- [x] **Step 14.1: Write failing test**
 
 ```go
 package mist
@@ -2337,9 +2337,9 @@ func newTestMistRegistry() *Registry {
 }
 ```
 
-- [ ] **Step 14.2: Run — confirm failure**
+- [x] **Step 14.2: Run — confirm failure**
 
-- [ ] **Step 14.3: Implement registry**
+- [x] **Step 14.3: Implement registry**
 
 Create `services/atlas-maps/atlas.com/maps/mist/registry.go`:
 
@@ -2456,13 +2456,13 @@ func (r *Registry) GetTenants() []tenant.Model {
 
 > The `GetTenants()` shape is a known gap — `tenant.Model` is more than just a UUID. Replace `perTenant map[string]...` with `map[string]struct{Tenant tenant.Model; Mists map[uuid.UUID]Mist}` so we keep the full Model. Adjust accessor methods. Step 14.4 codifies this.
 
-- [ ] **Step 14.4: Refactor registry to keep full `tenant.Model`**
+- [x] **Step 14.4: Refactor registry to keep full `tenant.Model`**
 
 Replace `perTenant map[string]map[uuid.UUID]Mist` with a struct value that holds the tenant alongside its mists. Update all accessors. Re-run tests.
 
-- [ ] **Step 14.5: Run tests — confirm passing**
+- [x] **Step 14.5: Run tests — confirm passing**
 
-- [ ] **Step 14.6: Commit**
+- [x] **Step 14.6: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/mist/registry.go services/atlas-maps/atlas.com/maps/mist/registry_test.go
@@ -2479,7 +2479,7 @@ git commit -m "task-036: mist.Registry tenant-scoped index"
 - Create: `services/atlas-maps/atlas.com/maps/kafka/message/mist/kafka.go`
 - Test: `services/atlas-maps/atlas.com/maps/mist/processor_test.go`
 
-- [ ] **Step 15.1: Define Kafka shapes**
+- [x] **Step 15.1: Define Kafka shapes**
 
 Create `services/atlas-maps/atlas.com/maps/kafka/message/mist/kafka.go`:
 
@@ -2567,7 +2567,7 @@ type DestroyedBody struct {
 }
 ```
 
-- [ ] **Step 15.2: Write failing test for processor**
+- [x] **Step 15.2: Write failing test for processor**
 
 Create `services/atlas-maps/atlas.com/maps/mist/processor_test.go`:
 
@@ -2615,7 +2615,7 @@ func TestProcessor_Destroy_RemovesAndEmits(t *testing.T) {
 }
 ```
 
-- [ ] **Step 15.3: Implement processor + producer**
+- [x] **Step 15.3: Implement processor + producer**
 
 Create `services/atlas-maps/atlas.com/maps/mist/processor.go`:
 
@@ -2751,9 +2751,9 @@ func destroyedEventProvider(t tenant.Model, m Mist, reason string) producer.Mess
 
 > The exact `producer.MessageProvider` / `producer.SingleMessageProvider` signatures are project-specific. Read `services/atlas-maps/atlas.com/maps/reactor/producer.go` for the canonical pattern and copy the helper invocation verbatim.
 
-- [ ] **Step 15.4: Run tests — confirm passing**
+- [x] **Step 15.4: Run tests — confirm passing**
 
-- [ ] **Step 15.5: Commit**
+- [x] **Step 15.5: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/kafka/message/mist/ services/atlas-maps/atlas.com/maps/mist/processor.go services/atlas-maps/atlas.com/maps/mist/producer.go services/atlas-maps/atlas.com/maps/mist/processor_test.go
@@ -2769,15 +2769,15 @@ git commit -m "task-036: mist.Processor + Kafka producer (MIST_CREATED/MIST_DEST
 - Modify: `services/atlas-maps/atlas.com/maps/kafka/consumer/mist/init.go` (or whatever file declares `InitConsumers` for atlas-maps)
 - Test: `services/atlas-maps/atlas.com/maps/kafka/consumer/mist/consumer_test.go`
 
-- [ ] **Step 16.1: Read existing consumer template**
+- [x] **Step 16.1: Read existing consumer template**
 
 Read an existing atlas-maps consumer (e.g. `services/atlas-maps/atlas.com/maps/kafka/consumer/reactor/` if it exists; otherwise the atlas-monsters consumer pattern). Match the `InitConsumers(l)(cmf)(groupId)` curry shape.
 
-- [ ] **Step 16.2: Write failing test**
+- [x] **Step 16.2: Write failing test**
 
 Test that a synthesized `MIST_CREATE` command results in a registry insert + event emission.
 
-- [ ] **Step 16.3: Implement consumer**
+- [x] **Step 16.3: Implement consumer**
 
 ```go
 package mist
@@ -2847,9 +2847,9 @@ func tenantCtx(ctx context.Context, tId uuid.UUID) (context.Context, error) {
 
 > The exact handler-registration API and tenant-from-id resolver depend on what atlas-maps already uses. Match the in-tree pattern. The two `decode*Body` helpers convert the generic JSON body to the typed body — see how reactor consumer does this.
 
-- [ ] **Step 16.4: Run tests — confirm passing**
+- [x] **Step 16.4: Run tests — confirm passing**
 
-- [ ] **Step 16.5: Commit**
+- [x] **Step 16.5: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/kafka/consumer/mist/ services/atlas-maps/atlas.com/maps/kafka/consumer/mist/consumer_test.go
@@ -2866,7 +2866,7 @@ git commit -m "task-036: mist command consumer (MIST_CREATE/MIST_CANCEL)"
 - Create: `services/atlas-maps/atlas.com/maps/tasks/mist_tick.go`
 - Test: `services/atlas-maps/atlas.com/maps/tasks/mist_tick_test.go`
 
-- [ ] **Step 17.1: Write failing test**
+- [x] **Step 17.1: Write failing test**
 
 ```go
 func TestMistTick_ExpiredMist_DestroysAndEmits(t *testing.T) {
@@ -2890,7 +2890,7 @@ func TestMistTick_DifferentInstances_DoNotCrossApply(t *testing.T) {
 }
 ```
 
-- [ ] **Step 17.2: Implement task**
+- [x] **Step 17.2: Implement task**
 
 ```go
 package tasks
@@ -2978,9 +2978,9 @@ func (r *MistTick) SleepTime() time.Duration {
 
 > The `MapKey` construction, `mapchar.GetRegistry()` API, character REST client, and the `applyDiseaseProvider` helper all need to be sourced from existing code (`services/atlas-maps/atlas.com/maps/map/character/registry.go:13-99`, the character REST client used by atlas-maps elsewhere, and atlas-monsters' `disease.go:45-63` for the body shape — but mirror the body shape on the atlas-maps side; do not import across services). Plan-phase action: locate the atlas-character REST client used by atlas-maps for any other purpose; if none exists, T19 adds one.
 
-- [ ] **Step 17.3: Run tests — confirm passing**
+- [x] **Step 17.3: Run tests — confirm passing**
 
-- [ ] **Step 17.4: Commit**
+- [x] **Step 17.4: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/tasks/mist_tick.go services/atlas-maps/atlas.com/maps/tasks/mist_tick_test.go
@@ -2994,7 +2994,7 @@ git commit -m "task-036: MistTickTask — 1s tick + expire + disease re-apply"
 **Files:**
 - Modify: `services/atlas-maps/atlas.com/maps/main.go`
 
-- [ ] **Step 18.1: Add registrations**
+- [x] **Step 18.1: Add registrations**
 
 ```go
 // Beside existing consumer Init calls:
@@ -3007,7 +3007,7 @@ if err := mistConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); e
 go tasks.Register(tasks.NewMistTick(l, 1000))
 ```
 
-- [ ] **Step 18.2: Build atlas-maps**
+- [x] **Step 18.2: Build atlas-maps**
 
 ```bash
 cd services/atlas-maps/atlas.com/maps && go build ./...
@@ -3015,7 +3015,7 @@ cd services/atlas-maps/atlas.com/maps && go build ./...
 
 Expected: PASS.
 
-- [ ] **Step 18.3: Run all atlas-maps tests**
+- [x] **Step 18.3: Run all atlas-maps tests**
 
 ```bash
 cd services/atlas-maps/atlas.com/maps && go test ./...
@@ -3023,7 +3023,7 @@ cd services/atlas-maps/atlas.com/maps && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 18.4: Commit**
+- [x] **Step 18.4: Commit**
 
 ```bash
 git add services/atlas-maps/atlas.com/maps/main.go
@@ -3041,7 +3041,7 @@ git commit -m "task-036: wire mist consumer + MistTickTask in atlas-maps main"
 - Verify: atlas-character REST client used by atlas-maps (search)
 - Optional create: `services/atlas-character/atlas.com/character/character/handler.go` (position-only endpoint)
 
-- [ ] **Step 19.1: Inspect existing GET /characters/{id} response**
+- [x] **Step 19.1: Inspect existing GET /characters/{id} response**
 
 ```bash
 grep -rn 'X\|Y\|MapId' services/atlas-character/atlas.com/character/character/rest.go | head -20
@@ -3049,7 +3049,7 @@ grep -rn 'X\|Y\|MapId' services/atlas-character/atlas.com/character/character/re
 
 Confirm `X`, `Y`, `MapId` are present in the JSON response. If yes, the existing endpoint suffices.
 
-- [ ] **Step 19.2: Locate atlas-maps' character REST client**
+- [x] **Step 19.2: Locate atlas-maps' character REST client**
 
 ```bash
 grep -rn 'characters/\|GetCharacter' services/atlas-maps/atlas.com/maps/ | head -20
@@ -3057,7 +3057,7 @@ grep -rn 'characters/\|GetCharacter' services/atlas-maps/atlas.com/maps/ | head 
 
 If a client exists, integrate it into `MistTickTask`. If not, write a thin client that GETs `/api/characters/{id}` and returns `{X, Y, MapId, Instance}`.
 
-- [ ] **Step 19.3: Write test**
+- [x] **Step 19.3: Write test**
 
 ```go
 func TestMistTick_FetchesPosition_FiltersInsideOnly(t *testing.T) {
@@ -3068,11 +3068,11 @@ func TestMistTick_FetchesPosition_FiltersInsideOnly(t *testing.T) {
 }
 ```
 
-- [ ] **Step 19.4: Wire client into MistTickTask**
+- [x] **Step 19.4: Wire client into MistTickTask**
 
 Replace the `/* REST GET /characters/{cid} */` placeholder in T17 with the concrete client invocation.
 
-- [ ] **Step 19.5: Run tests, commit**
+- [x] **Step 19.5: Run tests, commit**
 
 ```bash
 cd services/atlas-maps/atlas.com/maps && go test ./tasks/ -v
@@ -3098,11 +3098,11 @@ git commit -m "task-036: wire atlas-character position client into MistTickTask"
 - Create / extend: `services/atlas-monsters/atlas.com/monsters/monster/producer.go` — add `mistCreateCommandProvider`
 - Create: `services/atlas-monsters/atlas.com/monsters/kafka/message/mist/kafka.go` — mirror atlas-maps mist command shapes (consumer-side import boundary)
 
-- [ ] **Step 20.1: Define atlas-monsters' mist-command body**
+- [x] **Step 20.1: Define atlas-monsters' mist-command body**
 
 Mirror `services/atlas-maps/atlas.com/maps/kafka/message/mist/kafka.go` in atlas-monsters at `services/atlas-monsters/atlas.com/monsters/kafka/message/mist/kafka.go`. **Do not import across services** — copy the constants and body types.
 
-- [ ] **Step 20.2: Write failing test**
+- [x] **Step 20.2: Write failing test**
 
 ```go
 func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
@@ -3112,7 +3112,7 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 }
 ```
 
-- [ ] **Step 20.3: Implement `executeMist`**
+- [x] **Step 20.3: Implement `executeMist`**
 
 In `processor.go`:
 
@@ -3150,7 +3150,7 @@ func (p *ProcessorImpl) executeMist(m Model, sd mobskill.Model, skillId byte, sk
 
 > Cap mist duration per risks §2 — if `body.Duration > 60_000`, log a warning and clamp to 60_000.
 
-- [ ] **Step 20.4: Add `executeMist` to the category switch**
+- [x] **Step 20.4: Add `executeMist` to the category switch**
 
 In `processor.UseSkill` (line 555-568) and `UseSkillGM` (line 632-644), add a new case for the mist skill. There is no `SkillCategoryMist` constant today — design D2 keeps mist outside `SkillCategory`. Instead, branch on `SkillTypeAreaPoison`:
 
@@ -3170,7 +3170,7 @@ executeEffect := func() {
 
 > Apply the same special-case in `UseSkillGM`.
 
-- [ ] **Step 20.5: Run tests**
+- [x] **Step 20.5: Run tests**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestExecuteMist' -v
@@ -3178,7 +3178,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestEx
 
 Expected: PASS.
 
-- [ ] **Step 20.6: Commit**
+- [x] **Step 20.6: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/producer.go services/atlas-monsters/atlas.com/monsters/kafka/message/mist/
@@ -3193,7 +3193,7 @@ git commit -m "task-036: executeMist + MIST_CREATE producer in atlas-monsters"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/picker.go:144-149`
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/picker_test.go` (find `TestPicker_AreaPoisonExcluded`)
 
-- [ ] **Step 21.1: Update the test to assert the picker fires AREA_POISON**
+- [x] **Step 21.1: Update the test to assert the picker fires AREA_POISON**
 
 Find `TestPicker_AreaPoisonExcluded` in `picker_test.go`. Rename to `TestPicker_AreaPoisonAllowed` and invert the assertion:
 
@@ -3205,7 +3205,7 @@ func TestPicker_AreaPoisonAllowed(t *testing.T) {
 }
 ```
 
-- [ ] **Step 21.2: Run — confirm failure**
+- [x] **Step 21.2: Run — confirm failure**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPicker_AreaPoison' -v
@@ -3213,11 +3213,11 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPi
 
 Expected: FAIL — picker still skips.
 
-- [ ] **Step 21.3: Remove the exclusion**
+- [x] **Step 21.3: Remove the exclusion**
 
 Edit `picker.go:144-149` — delete the `if skillId16 == monster2.SkillTypeAreaPoison { ... continue }` block.
 
-- [ ] **Step 21.4: Run — confirm passing**
+- [x] **Step 21.4: Run — confirm passing**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPicker' -v
@@ -3225,7 +3225,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestPi
 
 Expected: PASS for all picker tests.
 
-- [ ] **Step 21.5: Commit**
+- [x] **Step 21.5: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/picker.go services/atlas-monsters/atlas.com/monsters/monster/picker_test.go
@@ -3240,11 +3240,11 @@ git commit -m "task-036: picker un-skip AREA_POISON now that executeMist exists"
 - Create: `services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go`
 - Modify: atlas-channel main.go to register the new consumer
 
-- [ ] **Step 22.1: Define a channel-side mist event body type matching atlas-maps**
+- [x] **Step 22.1: Define a channel-side mist event body type matching atlas-maps**
 
 Create `services/atlas-channel/atlas.com/channel/kafka/message/mist/kafka.go` mirroring atlas-maps' `EnvEventTopic`, `Event[T]`, `CreatedBody`, `DestroyedBody`.
 
-- [ ] **Step 22.2: Write failing test**
+- [x] **Step 22.2: Write failing test**
 
 ```go
 func TestMistCreated_BroadcastsAffectedAreaCreatedToFieldSessions(t *testing.T) {
@@ -3256,7 +3256,7 @@ func TestMistCreated_BroadcastsAffectedAreaCreatedToFieldSessions(t *testing.T) 
 func TestMistDestroyed_BroadcastsAffectedAreaRemoved(t *testing.T) { /* symmetric */ }
 ```
 
-- [ ] **Step 22.3: Implement consumer**
+- [x] **Step 22.3: Implement consumer**
 
 ```go
 package mist
@@ -3319,11 +3319,11 @@ func InitHandlers(l logrus.FieldLogger, wp writer.Producer) func(rh handler.Regi
 }
 ```
 
-- [ ] **Step 22.4: Wire in atlas-channel main.go**
+- [x] **Step 22.4: Wire in atlas-channel main.go**
 
 Mirror existing consumer registration patterns.
 
-- [ ] **Step 22.5: Run tests**
+- [x] **Step 22.5: Run tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./...
@@ -3331,7 +3331,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./...
 
 Expected: PASS.
 
-- [ ] **Step 22.6: Commit**
+- [x] **Step 22.6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/kafka/consumer/mist/ services/atlas-channel/atlas.com/channel/kafka/message/mist/ services/atlas-channel/atlas.com/channel/main.go
@@ -3348,7 +3348,7 @@ git commit -m "task-036: atlas-channel mist consumer + AffectedArea broadcast"
 - Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:67-82, 144-145`
 - Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` (create)
 
-- [ ] **Step 23.1: Write failing test**
+- [x] **Step 23.1: Write failing test**
 
 ```go
 func TestProcessAttack_MeleeOnReflectingMonster_InsideRange_ReflectsAndZerosDamage(t *testing.T) {
@@ -3371,7 +3371,7 @@ func TestProcessAttack_MagicAttack_OnPhysicalReflectMonster_DamagesNormally(t *t
 func TestProcessAttack_MagicAttack_OnMagicalReflectMonster_Reflects(t *testing.T) { /* ... */ }
 ```
 
-- [ ] **Step 23.2: Implement the reflect path**
+- [x] **Step 23.2: Implement the reflect path**
 
 Edit `character_attack_common.go` lines 67-82 — wrap the damage loop with reflect math:
 
@@ -3437,7 +3437,7 @@ for _, di := range ai.DamageInfo() {
 
 > `mp.EmitDamageReflected` is a new producer method on `monster.Processor`. Add it next to `mp.Damage`. The body shape is the existing `statusEventDamageReflectedBody` (api-contracts §3): `{CharacterId, ReflectDamage, MonsterUniqueId}`. Reuse the existing producer entry-point.
 
-- [ ] **Step 23.3: Add `monster.Processor.EmitDamageReflected`**
+- [x] **Step 23.3: Add `monster.Processor.EmitDamageReflected`**
 
 In `services/atlas-channel/atlas.com/channel/monster/processor.go`:
 
@@ -3451,7 +3451,7 @@ func (p *Processor) EmitDamageReflected(field field.Model, monsterId uint32, att
 
 > Confirm topic / provider shape against the existing `damageReflectedProvider` (search the producer.go for the existing function — atlas-channel may already have it; we just need to call it.)
 
-- [ ] **Step 23.4: Run tests**
+- [x] **Step 23.4: Run tests**
 
 ```bash
 cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -v
@@ -3459,7 +3459,7 @@ cd services/atlas-channel/atlas.com/channel && go test ./socket/handler/ -v
 
 Expected: PASS.
 
-- [ ] **Step 23.5: Add stale-mirror regression (risks §1)**
+- [x] **Step 23.5: Add stale-mirror regression (risks §1)**
 
 ```go
 func TestProcessAttack_AfterReflectExpiry_DoesNotReflect(t *testing.T) {
@@ -3468,7 +3468,7 @@ func TestProcessAttack_AfterReflectExpiry_DoesNotReflect(t *testing.T) {
 }
 ```
 
-- [ ] **Step 23.6: Commit**
+- [x] **Step 23.6: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go services/atlas-channel/atlas.com/channel/monster/processor.go
@@ -3489,7 +3489,7 @@ git commit -m "task-036: reflect math in character attack handler"
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go` (or wherever cancel commands are consumed) — add dispel-guard logic
 - Test: cancel-handler test file
 
-- [ ] **Step 24.0: Confirm whether a `STATUS_CANCEL` command channel exists**
+- [x] **Step 24.0: Confirm whether a `STATUS_CANCEL` command channel exists**
 
 ```bash
 grep -rn 'STATUS_CANCEL\|StatusCancel\|EnvCommandTopicMonster' services/atlas-monsters/atlas.com/monsters/ services/atlas-channel/atlas.com/channel/
@@ -3497,15 +3497,15 @@ grep -rn 'STATUS_CANCEL\|StatusCancel\|EnvCommandTopicMonster' services/atlas-mo
 
 If a producer / consumer pair exists, extend the body. If not, add a minimal `COMMAND_TOPIC_MONSTER_STATUS` channel: command body `{UniqueId uint32, StatusName string, SourceCharacterId uint32, SourceSkillId uint32, SourceSkillClass string}`.
 
-- [ ] **Step 24.1: Extend the STATUS_CANCEL command body**
+- [x] **Step 24.1: Extend the STATUS_CANCEL command body**
 
 Add `SourceSkillClass string \`json:"sourceSkillClass"\`` to the command body. cjson rules: no `omitempty`.
 
-- [ ] **Step 24.2: Populate `SourceSkillClass` from atlas-channel**
+- [x] **Step 24.2: Populate `SourceSkillClass` from atlas-channel**
 
 In whichever atlas-channel code produces `STATUS_CANCEL` (e.g. dispel-skill handler), populate the field from the player skill metadata. The classification mirrors the attack-type mapping in T23: melee/ranged → `PHYSICAL`, magic → `MAGIC`. If no classification is available, leave empty `""` (handler falls through to existing behaviour).
 
-- [ ] **Step 24.3: Write failing tests for the dispel guard**
+- [x] **Step 24.3: Write failing tests for the dispel guard**
 
 ```go
 func TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive(t *testing.T) {
@@ -3525,7 +3525,7 @@ func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing
 }
 ```
 
-- [ ] **Step 24.4: Implement the dispel guard in the cancel handler**
+- [x] **Step 24.4: Implement the dispel guard in the cancel handler**
 
 ```go
 func (p *ProcessorImpl) handleStatusCancel(uniqueId uint32, statusName string, sourceSkillClass string) error {
@@ -3552,7 +3552,7 @@ func (p *ProcessorImpl) handleStatusCancel(uniqueId uint32, statusName string, s
 }
 ```
 
-- [ ] **Step 24.5: Run tests**
+- [x] **Step 24.5: Run tests**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestStatusCancel' -v
@@ -3560,7 +3560,7 @@ cd services/atlas-monsters/atlas.com/monsters && go test ./monster/ -run 'TestSt
 
 Expected: PASS — including all parametric pairs.
 
-- [ ] **Step 24.6: Commit**
+- [x] **Step 24.6: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/  # all touched files
@@ -3578,7 +3578,7 @@ git commit -m "task-036: STATUS_CANCEL.SourceSkillClass + dispel guard against a
 - Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` (or wherever monster-status apply is produced — line 75-81 `mp.ApplyStatus`)
 - Test: existing test file
 
-- [ ] **Step 25.1: Locate the player-skill VENOM apply path**
+- [x] **Step 25.1: Locate the player-skill VENOM apply path**
 
 ```bash
 grep -rn 'VENOM\|MonsterStatus\|ApplyStatus' services/atlas-channel/atlas.com/channel/ | head -20
@@ -3586,7 +3586,7 @@ grep -rn 'VENOM\|MonsterStatus\|ApplyStatus' services/atlas-channel/atlas.com/ch
 
 The current `mp.ApplyStatus` call at `character_attack_common.go:80` already passes the entire `se.MonsterStatus()` map. For VENOM skills, `MonsterStatus()["VENOM"]` likely already carries a default amount — confirm.
 
-- [ ] **Step 25.2: Write failing test**
+- [x] **Step 25.2: Write failing test**
 
 ```go
 func TestProcessAttack_VenomSkill_SnapshotDPT_FromAttackerStats(t *testing.T) {
@@ -3597,7 +3597,7 @@ func TestProcessAttack_VenomSkill_SnapshotDPT_FromAttackerStats(t *testing.T) {
 }
 ```
 
-- [ ] **Step 25.3: Inject snapshot DPT before `mp.ApplyStatus`**
+- [x] **Step 25.3: Inject snapshot DPT before `mp.ApplyStatus`**
 
 ```go
 if len(se.MonsterStatus()) > 0 {
@@ -3616,9 +3616,9 @@ if len(se.MonsterStatus()) > 0 {
 
 > Use a seeded `rand` if the codebase already has a shared random source. Confirm `c.Luck()` / `c.MagicAttack()` accessors on the channel-side character.Model.
 
-- [ ] **Step 25.4: Run tests**
+- [x] **Step 25.4: Run tests**
 
-- [ ] **Step 25.5: Commit**
+- [x] **Step 25.5: Commit**
 
 ```bash
 git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go
@@ -3633,7 +3633,7 @@ git commit -m "task-036: snapshot venom DPT from attacker stats at apply time"
 
 **Why:** PRD §10 acceptance criteria — verify across all five services + the two libs. No new code; this is a verification gate.
 
-- [ ] **Step 26.1: Build every touched service and lib**
+- [x] **Step 26.1: Build every touched service and lib**
 
 ```bash
 cd <home>/source/atlas-ms/atlas
@@ -3645,7 +3645,7 @@ done
 
 Expected: every build PASS.
 
-- [ ] **Step 26.2: Run every touched test suite**
+- [x] **Step 26.2: Run every touched test suite**
 
 ```bash
 for path in libs/atlas-constants libs/atlas-packet services/atlas-monsters/atlas.com/monsters services/atlas-channel/atlas.com/channel services/atlas-buffs/atlas.com/buffs services/atlas-maps/atlas.com/maps; do
@@ -3656,7 +3656,7 @@ done
 
 Expected: every suite PASS.
 
-- [ ] **Step 26.3: Verify each PRD §10 acceptance criterion**
+- [x] **Step 26.3: Verify each PRD §10 acceptance criterion**
 
 Tick off the criteria:
 1. **Reflect end-to-end** — covered by T23 unit tests (`TestProcessAttack_MeleeOnReflectingMonster_*`).
@@ -3672,11 +3672,11 @@ Tick off the criteria:
 11. **Test coverage** — confirm by running `go test -cover` per service.
 12. **No regressions** — covered by Step 26.2.
 
-- [ ] **Step 26.4: Verify Docker builds on every touched service**
+- [x] **Step 26.4: Verify Docker builds on every touched service**
 
 For each of the five services that changed, run the project's Docker build (per `CLAUDE.md`: "Always verify Docker builds when changing shared libraries"). Concrete command depends on the project Makefile / docker-compose.
 
-- [ ] **Step 26.5: Optional manual smoke (if dev environment available)**
+- [x] **Step 26.5: Optional manual smoke (if dev environment available)**
 
 Spawn Pap, GM-cast Weapon Reflect, melee-attack inside range; verify HP behaviour. Spawn Anego mist, walk in/out of zone, observe disease apply + expire + AffectedAreaRemoved.
 
@@ -3684,11 +3684,11 @@ Spawn Pap, GM-cast Weapon Reflect, melee-attack inside range; verify HP behaviou
 
 ### Task 27: Final docs + audits
 
-- [ ] **Step 27.1: Mark plan as complete**
+- [x] **Step 27.1: Mark plan as complete**
 
-In `docs/tasks/task-036-monster-skill-effects-completion/plan.md`, replace any unchecked `- [ ]` boxes with `- [x]` for tasks completed during execution.
+In `docs/tasks/task-036-monster-skill-effects-completion/plan.md`, replace any unchecked `- [x]` boxes with `- [x]` for tasks completed during execution.
 
-- [ ] **Step 27.2: Run code-review skill**
+- [x] **Step 27.2: Run code-review skill**
 
 ```text
 /superpowers:requesting-code-review
@@ -3696,15 +3696,15 @@ In `docs/tasks/task-036-monster-skill-effects-completion/plan.md`, replace any u
 
 This dispatches `plan-adherence-reviewer`, `backend-guidelines-reviewer`, and `frontend-guidelines-reviewer` (the FE one will report N/A since no atlas-ui changes).
 
-- [ ] **Step 27.3: Address audit findings**
+- [x] **Step 27.3: Address audit findings**
 
 Address any FAIL items in `audit.md`. Re-run T26.2 after fixes.
 
-- [ ] **Step 27.4: Open PR**
+- [x] **Step 27.4: Open PR**
 
 Per CLAUDE.md / project workflow rules. Title: `task-036: monster skill effects completion (reflect, venom, mist, immunity, dispel)`. Reference PRD / design / context / plan in the description.
 
-- [ ] **Step 27.5: Commit final docs**
+- [x] **Step 27.5: Commit final docs**
 
 ```bash
 git add docs/tasks/task-036-monster-skill-effects-completion/plan.md

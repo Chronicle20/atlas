@@ -299,6 +299,50 @@ func handleStatusEventAggroChanged(sc server.Model, wp writer.Producer) message.
 	}
 }
 
+// statusVenomKey is the Statuses map key used by atlas-monsters to denote
+// the VENOM stat. Centralised here so the wire-collapse gate has a single
+// source of truth.
+const statusVenomKey = "VENOM"
+
+// monsterStatBroadcaster is the channel-side broadcast seam. The handlers
+// below build a *MonsterTemporaryStat and ask the broadcaster to fan it
+// out to every session in the map. Held as package-level vars so tests
+// can swap in a recording spy without standing up a REST mock for
+// _map.ForSessionsInMap. The defaults preserve the historical behaviour
+// of announcing through wp + session.Announce.
+var monsterStatSetBroadcaster = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, f field.Model, uniqueId uint32, stat *packetmodel.MonsterTemporaryStat) {
+	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f,
+		session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatSetWriter)(monsterpkt.NewMonsterStatSet(uniqueId, stat).Encode))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to broadcast status effect applied to monster [%d].", uniqueId)
+	}
+}
+
+var monsterStatResetBroadcaster = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, wp writer.Producer, f field.Model, uniqueId uint32, stat *packetmodel.MonsterTemporaryStat) {
+	err := _map.NewProcessor(l, ctx).ForSessionsInMap(f,
+		session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatResetWriter)(monsterpkt.NewMonsterStatReset(uniqueId, stat).Encode))
+	if err != nil {
+		l.WithError(err).Errorf("Unable to broadcast status effect reset for monster [%d].", uniqueId)
+	}
+}
+
+// statusesWithoutVenom returns a copy of statuses with VENOM removed.
+// Callers use it to broadcast a non-VENOM-only stat-set/reset when VENOM
+// is being collapsed.
+func statusesWithoutVenom(in map[string]int32) map[string]int32 {
+	if len(in) == 0 {
+		return in
+	}
+	out := make(map[string]int32, len(in))
+	for k, v := range in {
+		if k == statusVenomKey {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
 func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEffectAppliedBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEffectAppliedBody]) {
 		if e.Type != monster2.EventStatusEffectApplied {
@@ -310,17 +354,20 @@ func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		t := tenant.MustFromContext(ctx)
-		stat := packetmodel.NewMonsterTemporaryStat()
-		for s, a := range e.Body.Statuses {
-			stat.AddStat(l)(t)(s, e.Body.SourceSkillId, e.Body.SourceSkillLevel, a, time.Now().Add(time.Duration(e.Body.Duration)*time.Millisecond))
+
+		// Capture pre-OnApplied venom count so we can detect the
+		// 0->1 transition. We only collapse subsequent applies on
+		// the wire; the first (transition-to-active) still emits a
+		// MonsterStatSet so the client renders the stat icon.
+		_, isVenom := e.Body.Statuses[statusVenomKey]
+		priorVenomCount := 0
+		if isVenom {
+			priorVenomCount = monster.GetStatusMirror().VenomCount(t, e.UniqueId)
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatSetWriter)(monsterpkt.NewMonsterStatSet(e.UniqueId, stat).Encode))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to broadcast status effect applied to monster [%d].", e.UniqueId)
-		}
-
+		// Update the mirror BEFORE the broadcast decision so that
+		// downstream consumers (and follow-up logic) see post-apply
+		// state. The transition decision uses the snapshot above.
 		monster.GetStatusMirror().OnApplied(t, e.UniqueId, monster.StatusEffectAppliedBody{
 			EffectId:          e.Body.EffectId,
 			SourceType:        e.Body.SourceType,
@@ -337,6 +384,25 @@ func handleStatusEffectApplied(sc server.Model, wp writer.Producer) message.Hand
 			ReflectRbY:        e.Body.ReflectRbY,
 			ReflectMaxDamage:  e.Body.ReflectMaxDamage,
 		}, time.Now())
+
+		// Wire-collapse: if VENOM is already active on this monster
+		// before this apply, suppress the VENOM portion of the
+		// broadcast. Non-VENOM statuses in the same body still
+		// broadcast normally.
+		statuses := e.Body.Statuses
+		if isVenom && priorVenomCount > 0 {
+			statuses = statusesWithoutVenom(e.Body.Statuses)
+		}
+		if len(statuses) == 0 {
+			return
+		}
+
+		stat := packetmodel.NewMonsterTemporaryStat()
+		for s, a := range statuses {
+			stat.AddStat(l)(t)(s, e.Body.SourceSkillId, e.Body.SourceSkillLevel, a, time.Now().Add(time.Duration(e.Body.Duration)*time.Millisecond))
+		}
+
+		monsterStatSetBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.UniqueId, stat)
 	}
 }
 
@@ -351,18 +417,26 @@ func handleStatusEffectExpired(sc server.Model, wp writer.Producer) message.Hand
 		}
 
 		t := tenant.MustFromContext(ctx)
+
+		// Update the mirror first so VenomCount reflects the
+		// post-removal state used by the wire-collapse decision.
+		monster.GetStatusMirror().OnExpired(t, e.UniqueId, e.Body.EffectId)
+
+		_, isVenom := e.Body.Statuses[statusVenomKey]
+		statuses := e.Body.Statuses
+		if isVenom && monster.GetStatusMirror().VenomCount(t, e.UniqueId) > 0 {
+			statuses = statusesWithoutVenom(e.Body.Statuses)
+		}
+		if len(statuses) == 0 {
+			return
+		}
+
 		stat := packetmodel.NewMonsterTemporaryStat()
-		for s, a := range e.Body.Statuses {
+		for s, a := range statuses {
 			stat.AddStat(l)(t)(s, 0, 0, a, time.Now())
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatResetWriter)(monsterpkt.NewMonsterStatReset(e.UniqueId, stat).Encode))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to broadcast status effect expired from monster [%d].", e.UniqueId)
-		}
-
-		monster.GetStatusMirror().OnExpired(t, e.UniqueId, e.Body.EffectId)
+		monsterStatResetBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.UniqueId, stat)
 	}
 }
 
@@ -377,18 +451,26 @@ func handleStatusEffectCancelled(sc server.Model, wp writer.Producer) message.Ha
 		}
 
 		t := tenant.MustFromContext(ctx)
+
+		// Update the mirror first so VenomCount reflects the
+		// post-removal state used by the wire-collapse decision.
+		monster.GetStatusMirror().OnCancelled(t, e.UniqueId, e.Body.EffectId)
+
+		_, isVenom := e.Body.Statuses[statusVenomKey]
+		statuses := e.Body.Statuses
+		if isVenom && monster.GetStatusMirror().VenomCount(t, e.UniqueId) > 0 {
+			statuses = statusesWithoutVenom(e.Body.Statuses)
+		}
+		if len(statuses) == 0 {
+			return
+		}
+
 		stat := packetmodel.NewMonsterTemporaryStat()
-		for s, a := range e.Body.Statuses {
+		for s, a := range statuses {
 			stat.AddStat(l)(t)(s, 0, 0, a, time.Now())
 		}
 
-		err := _map.NewProcessor(l, ctx).ForSessionsInMap(sc.Field(e.MapId, e.Instance),
-			session.Announce(l)(ctx)(wp)(monsterpkt.MonsterStatResetWriter)(monsterpkt.NewMonsterStatReset(e.UniqueId, stat).Encode))
-		if err != nil {
-			l.WithError(err).Errorf("Unable to broadcast status effect cancelled from monster [%d].", e.UniqueId)
-		}
-
-		monster.GetStatusMirror().OnCancelled(t, e.UniqueId, e.Body.EffectId)
+		monsterStatResetBroadcaster(l, ctx, sc, wp, sc.Field(e.MapId, e.Instance), e.UniqueId, stat)
 	}
 }
 

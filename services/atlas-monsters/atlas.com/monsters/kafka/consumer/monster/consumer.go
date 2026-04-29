@@ -121,11 +121,7 @@ func handleCancelStatusCommand(l logrus.FieldLogger, ctx context.Context, c comm
 	}
 
 	p := monster.NewProcessor(l, ctx)
-	if len(c.Body.StatusTypes) == 0 {
-		_ = p.CancelAllStatusEffects(c.MonsterId)
-	} else {
-		_ = p.CancelStatusEffect(c.MonsterId, c.Body.StatusTypes)
-	}
+	_ = p.CancelStatusEffectGuarded(c.MonsterId, c.Body.StatusTypes, c.Body.SourceSkillClass)
 }
 
 func handleUseSkillCommand(l logrus.FieldLogger, ctx context.Context, c command[useSkillCommandBody]) {
@@ -193,11 +189,7 @@ func handleCancelStatusFieldCommand(l logrus.FieldLogger, ctx context.Context, c
 	}
 
 	for _, m := range monsters {
-		if len(c.Body.StatusTypes) == 0 {
-			_ = p.CancelAllStatusEffects(m.UniqueId())
-		} else {
-			_ = p.CancelStatusEffect(m.UniqueId(), c.Body.StatusTypes)
-		}
+		_ = p.CancelStatusEffectGuarded(m.UniqueId(), c.Body.StatusTypes, c.Body.SourceSkillClass)
 	}
 }
 

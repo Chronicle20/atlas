@@ -94,6 +94,13 @@ type storedStatusEffect struct {
 	LastTickMs        int64            `json:"lastTickMs"`
 	CreatedAtMs       int64            `json:"createdAtMs"`
 	ExpiresAtMs       int64            `json:"expiresAtMs"`
+	ReflectKind       string           `json:"reflectKind,omitempty"`
+	ReflectPercent    int32            `json:"reflectPercent,omitempty"`
+	ReflectLtX        int16            `json:"reflectLtX,omitempty"`
+	ReflectLtY        int16            `json:"reflectLtY,omitempty"`
+	ReflectRbX        int16            `json:"reflectRbX,omitempty"`
+	ReflectRbY        int16            `json:"reflectRbY,omitempty"`
+	ReflectMaxDamage  int32            `json:"reflectMaxDamage,omitempty"`
 }
 
 func toStored(t tenant.Model, m Model) storedMonster {
@@ -119,6 +126,13 @@ func toStored(t tenant.Model, m Model) storedMonster {
 			LastTickMs:        se.lastTick.UnixMilli(),
 			CreatedAtMs:       se.createdAt.UnixMilli(),
 			ExpiresAtMs:       se.expiresAt.UnixMilli(),
+			ReflectKind:       se.reflectKind,
+			ReflectPercent:    se.reflectPercent,
+			ReflectLtX:        se.reflectLtX,
+			ReflectLtY:        se.reflectLtY,
+			ReflectRbX:        se.reflectRbX,
+			ReflectRbY:        se.reflectRbY,
+			ReflectMaxDamage:  se.reflectMaxDamage,
 		})
 	}
 	return storedMonster{
@@ -204,6 +218,13 @@ func fromStored(sm storedMonster) (tenant.Model, Model, error) {
 			lastTick:          time.UnixMilli(sse.LastTickMs),
 			createdAt:         time.UnixMilli(sse.CreatedAtMs),
 			expiresAt:         time.UnixMilli(sse.ExpiresAtMs),
+			reflectKind:       sse.ReflectKind,
+			reflectPercent:    sse.ReflectPercent,
+			reflectLtX:        sse.ReflectLtX,
+			reflectLtY:        sse.ReflectLtY,
+			reflectRbX:        sse.ReflectRbX,
+			reflectRbY:        sse.ReflectRbY,
+			reflectMaxDamage:  sse.ReflectMaxDamage,
 		})
 	}
 

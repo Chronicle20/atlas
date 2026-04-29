@@ -29,6 +29,7 @@ import (
 	merchantConsumer "atlas-channel/kafka/consumer/merchant"
 	"atlas-channel/kafka/consumer/message"
 	"atlas-channel/kafka/consumer/messenger"
+	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
 	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
@@ -169,6 +170,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
 	party_quest.InitConsumers(l)(cmf)(consumerGroupId)
 	session2.InitConsumers(l)(cmf)(consumerGroupId)
@@ -269,6 +271,9 @@ func main() {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 				if err = monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = mistConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
 				}
 				if err = conversation.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {

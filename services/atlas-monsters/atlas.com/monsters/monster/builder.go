@@ -128,24 +128,25 @@ func (b *ModelBuilder) AddDamageEntry(characterId uint32, damage uint32) *ModelB
 }
 
 // AddStatusEffect adds a status effect, replacing any existing effect with overlapping status types.
-// Exception: VENOM stacks up to 3 times.
+// Exception: VENOM stacks up to 3 times. When the cap is reached, the
+// VENOM-bearing effect with the earliest ExpiresAt is evicted (not the
+// first-inserted), per design D3 / PRD FR-4.4.2.
 func (b *ModelBuilder) AddStatusEffect(effect StatusEffect) *ModelBuilder {
 	for statusType := range effect.Statuses() {
 		if statusType == "VENOM" {
 			venomCount := 0
-			for _, se := range b.statusEffects {
-				if se.HasStatus("VENOM") {
-					venomCount++
+			evictIdx := -1
+			for i, se := range b.statusEffects {
+				if !se.HasStatus("VENOM") {
+					continue
+				}
+				venomCount++
+				if evictIdx < 0 || se.ExpiresAt().Before(b.statusEffects[evictIdx].ExpiresAt()) {
+					evictIdx = i
 				}
 			}
-			if venomCount >= 3 {
-				// At max stacks, replace the oldest
-				for i, se := range b.statusEffects {
-					if se.HasStatus("VENOM") {
-						b.statusEffects = append(b.statusEffects[:i], b.statusEffects[i+1:]...)
-						break
-					}
-				}
+			if venomCount >= 3 && evictIdx >= 0 {
+				b.statusEffects = append(b.statusEffects[:evictIdx], b.statusEffects[evictIdx+1:]...)
 			}
 		} else {
 			b.RemoveStatusEffectByType(statusType)

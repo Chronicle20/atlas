@@ -141,13 +141,6 @@ func pickNextSkill(
 		skillId16 := uint16(s.Id)
 		skillLevel16 := uint16(s.Level)
 
-		// AREA_POISON exclusion. TODO(spec-task-3): remove when the mist
-		// executor lands so the picker can fire mist skills.
-		if skillId16 == monster2.SkillTypeAreaPoison {
-			l.Debugf("Picker: monster [%d] skipping AREA_POISON (skill type %d) until spec-task-3.", m.UniqueId(), skillId16)
-			continue
-		}
-
 		sd, err := skills(skillId16, skillLevel16)
 		if err != nil {
 			l.WithError(err).Debugf("Picker: monster [%d] cannot fetch skill (%d,%d); skipping.", m.UniqueId(), skillId16, skillLevel16)

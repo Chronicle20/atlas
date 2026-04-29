@@ -45,6 +45,18 @@ func (p *Processor) Damage(f field.Model, monsterId uint32, characterId uint32, 
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(f, monsterId, characterId, damages, attackType))
 }
 
+// EmitDamageReflected publishes a DAMAGE_REFLECTED status event so the
+// existing monster-status consumer can apply the reflected damage to the
+// attacker's HP. Called from the attack handler when a monster's reflect
+// effect (PHYSICAL or MAGICAL) bounces a player attack. uniqueId is the
+// spawned monster's unique id (same as mp.Damage's monsterId arg);
+// templateId is the monster template id, required for the StatusEvent
+// envelope. reflectType is the reflect kind (PHYSICAL/MAGICAL).
+func (p *Processor) EmitDamageReflected(f field.Model, uniqueId uint32, templateId uint32, characterId uint32, reflectDamage uint32, reflectType string) error {
+	p.l.Debugf("Emitting DAMAGE_REFLECTED for monster [%d] -> character [%d]. Reflect [%d] kind [%s].", uniqueId, characterId, reflectDamage, reflectType)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvEventTopicStatus)(DamageReflectedStatusEventProvider(f, uniqueId, templateId, characterId, reflectDamage, reflectType))
+}
+
 func (p *Processor) UseSkill(f field.Model, monsterId uint32, characterId uint32, skillId byte, skillLevel byte) error {
 	p.l.Debugf("Monster [%d] using skill [%d] level [%d]. Controller [%d].", monsterId, skillId, skillLevel, characterId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(UseSkillCommandProvider(f, monsterId, characterId, skillId, skillLevel))
@@ -60,7 +72,7 @@ func (p *Processor) DamageFriendly(f field.Model, attackedUniqueId uint32, obser
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageFriendlyCommandProvider(f, attackedUniqueId, observerUniqueId, attackerUniqueId))
 }
 
-func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []string) error {
-	p.l.Debugf("Cancelling status from monster [%d]. Types [%v].", monsterId, statusTypes)
-	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes))
+func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error {
+	p.l.Debugf("Cancelling status from monster [%d]. Types [%v]. Source character [%d] skill [%d] class [%s].", monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass))
 }

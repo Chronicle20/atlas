@@ -48,7 +48,15 @@ type ApplyStatusCommandBody struct {
 }
 
 type CancelStatusCommandBody struct {
-	StatusTypes []string `json:"statusTypes"`
+	StatusTypes       []string `json:"statusTypes"`
+	SourceCharacterId uint32   `json:"sourceCharacterId"`
+	SourceSkillId     uint32   `json:"sourceSkillId"`
+	// SourceSkillClass classifies the originating player skill as
+	// "PHYSICAL" or "MAGICAL" (matching atlas-monsters'
+	// monster.ReflectKind* constants). Empty when the cancel does not
+	// originate from a player skill. atlas-monsters consults this to
+	// refuse same-kind dispels of an active reflect (FR-4.9.1.2).
+	SourceSkillClass string `json:"sourceSkillClass"`
 }
 
 type UseSkillCommandBody struct {
@@ -143,6 +151,13 @@ type StatusEffectAppliedBody struct {
 	SourceSkillLevel  uint32           `json:"sourceSkillLevel"`
 	Statuses          map[string]int32 `json:"statuses"`
 	Duration          uint32           `json:"duration"`
+	ReflectKind       string           `json:"reflectKind"`
+	ReflectPercent    int32            `json:"reflectPercent"`
+	ReflectLtX        int16            `json:"reflectLtX"`
+	ReflectLtY        int16            `json:"reflectLtY"`
+	ReflectRbX        int16            `json:"reflectRbX"`
+	ReflectRbY        int16            `json:"reflectRbY"`
+	ReflectMaxDamage  int32            `json:"reflectMaxDamage"`
 }
 
 type StatusEffectExpiredBody struct {

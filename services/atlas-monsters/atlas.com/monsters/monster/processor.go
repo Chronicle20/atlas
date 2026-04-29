@@ -1,6 +1,7 @@
 package monster
 
 import (
+	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/kafka/producer"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
@@ -47,6 +48,7 @@ type Processor interface {
 	UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte)
 	ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error
 	CancelStatusEffect(uniqueId uint32, statusTypes []string) error
+	CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 }
@@ -553,6 +555,14 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	executeEffect := func() {
+		// FR-4.6.5: AREA_POISON is dispatched as a mist-create command rather
+		// than the normal category switch, regardless of the category mapping
+		// (which may classify 131 as a debuff). The mist field-effect supplants
+		// the per-target disease apply.
+		if uint16(skillId) == monster2.SkillTypeAreaPoison {
+			p.executeMist(m, sd, skillId, skillLevel)
+			return
+		}
 		switch category {
 		case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
 			p.executeStatBuff(m, sd, skillId, skillLevel)
@@ -629,6 +639,13 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
+	// FR-4.6.5: AREA_POISON dispatches to the mist-create command path, not
+	// the normal category switch.
+	if uint16(skillId) == monster2.SkillTypeAreaPoison {
+		p.executeMist(m, sd, skillId, skillLevel)
+		return
+	}
+
 	category := monster2.SkillCategory(uint16(skillId))
 	switch category {
 	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
@@ -644,6 +661,52 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 	}
 }
 
+// MistDurationCapMs caps the requested mist duration. AREA_POISON skill data
+// occasionally reports very long durations (tens of minutes); the spec
+// (risks §2) caps server-side at 60s to bound per-mist tick load.
+const MistDurationCapMs int64 = 60_000
+
+// executeMist publishes a MIST_CREATE command for the monster's AREA_POISON
+// skill so atlas-maps can spawn and tick the resulting field effect.
+func (p *ProcessorImpl) executeMist(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
+	body := buildMistCreateBody(m, sd, skillId, skillLevel)
+	if err := p.emit(mistKafka.EnvCommandTopic, mistCreateCommandProvider(p.t, body)); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit MIST_CREATE for monster [%d].", m.UniqueId())
+	}
+}
+
+// buildMistCreateBody constructs the MIST_CREATE body for a monster casting an
+// AREA_POISON skill. Pure (no side effects) so it can be unit-tested directly
+// without a Kafka mock.
+func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel byte) mistKafka.CreateCommandBody {
+	durMs := int64(sd.Duration()) * int64(time.Second/time.Millisecond)
+	if durMs > MistDurationCapMs {
+		durMs = MistDurationCapMs
+	}
+	f := m.Field()
+	return mistKafka.CreateCommandBody{
+		WorldId:          f.WorldId(),
+		ChannelId:        f.ChannelId(),
+		MapId:            f.MapId(),
+		Instance:         f.Instance(),
+		OwnerType:        "MONSTER",
+		OwnerId:          m.UniqueId(),
+		OriginX:          m.X(),
+		OriginY:          m.Y(),
+		LtX:              int16(sd.LtX()),
+		LtY:              int16(sd.LtY()),
+		RbX:              int16(sd.RbX()),
+		RbY:              int16(sd.RbY()),
+		Disease:          "POISON",
+		DiseaseValue:     sd.X(),
+		DiseaseDuration:  durMs,
+		Duration:         durMs,
+		TickIntervalMs:   1000,
+		SourceSkillId:    uint32(skillId),
+		SourceSkillLevel: uint32(skillLevel),
+	}
+}
+
 // executeStatBuff applies a stat buff/immunity/reflect to the monster (and nearby monsters for AoE)
 func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
 	statusName := monster2.SkillTypeToStatusName(uint16(skillId))
@@ -654,19 +717,68 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 
 	statuses := map[string]int32{string(statusName): sd.X()}
 	duration := time.Duration(sd.Duration()) * time.Second
+	category := monster2.SkillCategory(uint16(skillId))
+
+	// FR-4.8: Immunity mutual exclusion. WEAPON_ATTACK_IMMUNE and
+	// MAGIC_ATTACK_IMMUNE are mutually exclusive — applying one while the
+	// opposite is active must cancel the opposite first. This pre-cancel runs
+	// before the existing already-active gate enforced by ApplyStatusEffect's
+	// upstream callers, ensuring the new immunity always replaces the old.
+	var oppositeImmunity string
+	if category == monster2.SkillCategoryImmunity {
+		switch string(statusName) {
+		case string(monster2.TemporaryStatTypeWeaponAttackImmune):
+			oppositeImmunity = string(monster2.TemporaryStatTypeMagicAttackImmune)
+		case string(monster2.TemporaryStatTypeMagicAttackImmune):
+			oppositeImmunity = string(monster2.TemporaryStatTypeWeaponAttackImmune)
+		}
+	}
 
 	applyBuff := func(targetId uint32) {
-		effect := NewStatusEffect(
-			SourceTypeMonsterSkill,
-			0,
-			uint32(skillId),
-			uint32(skillLevel),
-			statuses,
-			duration,
-			0,
-		)
-		err := p.ApplyStatusEffect(targetId, effect)
-		if err != nil {
+		// Cancel opposite immunity (FR-4.8) before applying the new one.
+		// Re-fetch the target to avoid stale state — the caster `m` may
+		// equal `targetId`, but for AoE applies the target may be a
+		// different monster, and even for the caster, prior applyBuff
+		// invocations may have mutated registry state.
+		if oppositeImmunity != "" {
+			target, terr := GetMonsterRegistry().GetMonster(p.t, targetId)
+			if terr == nil && target.HasStatusEffect(oppositeImmunity) {
+				if cerr := p.CancelStatusEffect(targetId, []string{oppositeImmunity}); cerr != nil {
+					p.l.WithError(cerr).Warnf("Failed to cancel opposite immunity [%s] on monster [%d].", oppositeImmunity, targetId)
+				}
+			}
+		}
+
+		var effect StatusEffect
+		if category == monster2.SkillCategoryReflect {
+			kind := monster2.ReflectKindForSkill(uint16(skillId))
+			effect = NewReflectStatusEffect(
+				SourceTypeMonsterSkill,
+				0,
+				uint32(skillId),
+				uint32(skillLevel),
+				statuses,
+				duration,
+				kind,
+				sd.X(),
+				int16(sd.LtX()),
+				int16(sd.LtY()),
+				int16(sd.RbX()),
+				int16(sd.RbY()),
+				32767,
+			)
+		} else {
+			effect = NewStatusEffect(
+				SourceTypeMonsterSkill,
+				0,
+				uint32(skillId),
+				uint32(skillLevel),
+				statuses,
+				duration,
+				0,
+			)
+		}
+		if err := p.ApplyStatusEffect(targetId, effect); err != nil {
 			p.l.WithError(err).Errorf("Unable to apply stat buff to monster [%d].", targetId)
 		}
 	}
@@ -963,6 +1075,45 @@ func (p *ProcessorImpl) CancelStatusEffect(uniqueId uint32, statusTypes []string
 		}
 	}
 	return nil
+}
+
+// CancelStatusEffectGuarded cancels status effects, applying the FR-4.9
+// dispel guard: when sourceSkillClass is non-empty (i.e. the cancel
+// originates from a player crash/dispel and atlas-channel populated
+// SourceSkillClass), the entire cancel is refused if the monster currently
+// has a same-kind reflect (WEAPON_COUNTER for "PHYSICAL", MAGIC_COUNTER for
+// "MAGICAL") active. The carve-out in FR-4.9.1.1 keeps the reflect itself
+// cancellable: if every requested status type is a reflect status, the
+// guard does not engage. An empty sourceSkillClass falls through to the
+// pre-existing CancelStatusEffect / CancelAllStatusEffects behavior so
+// internal callers (expiry, mutual-exclusion) are unaffected.
+func (p *ProcessorImpl) CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error {
+	if sourceSkillClass != "" {
+		// FR-4.9.1.1: targeting reflect statuses themselves bypasses the guard.
+		targetingReflectOnly := len(statusTypes) > 0
+		for _, st := range statusTypes {
+			if st != string(monster2.TemporaryStatTypeWeaponCounter) && st != string(monster2.TemporaryStatTypeMagicCounter) {
+				targetingReflectOnly = false
+				break
+			}
+		}
+		if !targetingReflectOnly {
+			// FR-4.9.1.2: refuse the cancel if a same-kind reflect is active.
+			m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+			if err == nil {
+				for _, se := range m.StatusEffects() {
+					if se.IsReflect() && se.ReflectKind() == sourceSkillClass {
+						p.l.Debugf("Refusing STATUS_CANCEL on monster [%d]: same-kind %s reflect active.", uniqueId, sourceSkillClass)
+						return nil
+					}
+				}
+			}
+		}
+	}
+	if len(statusTypes) == 0 {
+		return p.CancelAllStatusEffects(uniqueId)
+	}
+	return p.CancelStatusEffect(uniqueId, statusTypes)
 }
 
 // CancelAllStatusEffects cancels all status effects from a monster

@@ -160,7 +160,7 @@ func TestPicker_CooldownGated_NextEligibleRepickAtSet(t *testing.T) {
 	}
 }
 
-func TestPicker_AreaPoisonExcluded(t *testing.T) {
+func TestPicker_AreaPoisonAllowed(t *testing.T) {
 	tm := newTestTenant(t)
 	m := newPickerTestMonster(t, 100, 50)
 	skills := []information.Skill{{Id: uint32(monster2.SkillTypeAreaPoison), Level: 1}}
@@ -171,8 +171,11 @@ func TestPicker_AreaPoisonExcluded(t *testing.T) {
 	d := pickNextSkill(newPickerLogger(), context.Background(), tm, m,
 		skillsOnly(skills), mobSkillTable(skillTable),
 		&fakeCooldown{}, &fakeRand{values: []int{0}}, 1000)
-	if !d.IsSentinel() {
-		t.Fatalf("expected sentinel; AREA_POISON should be excluded; got %+v", d)
+	if d.IsSentinel() {
+		t.Fatalf("expected AREA_POISON to be picked; got sentinel")
+	}
+	if d.SkillId != byte(monster2.SkillTypeAreaPoison) {
+		t.Fatalf("expected SkillId=%d (AREA_POISON); got %d", monster2.SkillTypeAreaPoison, d.SkillId)
 	}
 }
 

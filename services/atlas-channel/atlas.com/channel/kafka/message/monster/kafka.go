@@ -48,7 +48,15 @@ type ApplyStatusCommandBody struct {
 }
 
 type CancelStatusCommandBody struct {
-	StatusTypes []string `json:"statusTypes"`
+	StatusTypes       []string `json:"statusTypes"`
+	SourceCharacterId uint32   `json:"sourceCharacterId"`
+	SourceSkillId     uint32   `json:"sourceSkillId"`
+	// SourceSkillClass classifies the originating player skill as
+	// "PHYSICAL" or "MAGICAL" (matching atlas-monsters'
+	// monster.ReflectKind* constants). Empty when the cancel does not
+	// originate from a player skill. atlas-monsters consults this to
+	// refuse same-kind dispels of an active reflect (FR-4.9.1.2).
+	SourceSkillClass string `json:"sourceSkillClass"`
 }
 
 type UseSkillCommandBody struct {

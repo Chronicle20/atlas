@@ -48,6 +48,7 @@ type Processor interface {
 	UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte)
 	ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error
 	CancelStatusEffect(uniqueId uint32, statusTypes []string) error
+	CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
 }
@@ -1074,6 +1075,45 @@ func (p *ProcessorImpl) CancelStatusEffect(uniqueId uint32, statusTypes []string
 		}
 	}
 	return nil
+}
+
+// CancelStatusEffectGuarded cancels status effects, applying the FR-4.9
+// dispel guard: when sourceSkillClass is non-empty (i.e. the cancel
+// originates from a player crash/dispel and atlas-channel populated
+// SourceSkillClass), the entire cancel is refused if the monster currently
+// has a same-kind reflect (WEAPON_COUNTER for "PHYSICAL", MAGIC_COUNTER for
+// "MAGICAL") active. The carve-out in FR-4.9.1.1 keeps the reflect itself
+// cancellable: if every requested status type is a reflect status, the
+// guard does not engage. An empty sourceSkillClass falls through to the
+// pre-existing CancelStatusEffect / CancelAllStatusEffects behavior so
+// internal callers (expiry, mutual-exclusion) are unaffected.
+func (p *ProcessorImpl) CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error {
+	if sourceSkillClass != "" {
+		// FR-4.9.1.1: targeting reflect statuses themselves bypasses the guard.
+		targetingReflectOnly := len(statusTypes) > 0
+		for _, st := range statusTypes {
+			if st != string(monster2.TemporaryStatTypeWeaponCounter) && st != string(monster2.TemporaryStatTypeMagicCounter) {
+				targetingReflectOnly = false
+				break
+			}
+		}
+		if !targetingReflectOnly {
+			// FR-4.9.1.2: refuse the cancel if a same-kind reflect is active.
+			m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+			if err == nil {
+				for _, se := range m.StatusEffects() {
+					if se.IsReflect() && se.ReflectKind() == sourceSkillClass {
+						p.l.Debugf("Refusing STATUS_CANCEL on monster [%d]: same-kind %s reflect active.", uniqueId, sourceSkillClass)
+						return nil
+					}
+				}
+			}
+		}
+	}
+	if len(statusTypes) == 0 {
+		return p.CancelAllStatusEffects(uniqueId)
+	}
+	return p.CancelStatusEffect(uniqueId, statusTypes)
 }
 
 // CancelAllStatusEffects cancels all status effects from a monster

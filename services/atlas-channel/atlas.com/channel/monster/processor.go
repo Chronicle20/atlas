@@ -72,7 +72,7 @@ func (p *Processor) DamageFriendly(f field.Model, attackedUniqueId uint32, obser
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageFriendlyCommandProvider(f, attackedUniqueId, observerUniqueId, attackerUniqueId))
 }
 
-func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []string) error {
-	p.l.Debugf("Cancelling status from monster [%d]. Types [%v].", monsterId, statusTypes)
-	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes))
+func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) error {
+	p.l.Debugf("Cancelling status from monster [%d]. Types [%v]. Source character [%d] skill [%d] class [%s].", monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass))
 }

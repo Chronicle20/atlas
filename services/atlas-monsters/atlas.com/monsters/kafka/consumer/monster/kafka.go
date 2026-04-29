@@ -52,7 +52,15 @@ type applyStatusCommandBody struct {
 }
 
 type cancelStatusCommandBody struct {
-	StatusTypes []string `json:"statusTypes"`
+	StatusTypes       []string `json:"statusTypes"`
+	SourceCharacterId uint32   `json:"sourceCharacterId"`
+	SourceSkillId     uint32   `json:"sourceSkillId"`
+	// SourceSkillClass classifies a player-originated cancel as "PHYSICAL"
+	// or "MAGICAL" (matching monster.ReflectKind* constants), or is empty
+	// when the cancel originates internally (expiry, mutual exclusion).
+	// The processor consults it to gate dispels against same-kind reflects
+	// (FR-4.9.1.2).
+	SourceSkillClass string `json:"sourceSkillClass"`
 }
 
 type useSkillCommandBody struct {

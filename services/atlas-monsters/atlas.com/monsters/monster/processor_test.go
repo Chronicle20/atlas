@@ -1,6 +1,7 @@
 package monster
 
 import (
+	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"encoding/json"
@@ -1009,5 +1010,149 @@ func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 				t.Errorf("guard for %q: got %v, want %v", c.name, got, c.want)
 			}
 		})
+	}
+}
+
+// TestBuildMistCreateBody verifies the pure mapping from a casting monster +
+// AREA_POISON skill data to the wire MIST_CREATE body. Field identity, owner
+// identity, origin coordinates, bounding box, disease/duration, and skill
+// references must all flow through unchanged (modulo seconds→ms).
+func TestBuildMistCreateBody(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	instance := uuid.New()
+	f := field.NewBuilder(world.Id(7), channel.Id(2), _map.Id(100020000)).SetInstance(instance).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(10). // seconds
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if body.WorldId != world.Id(7) || body.ChannelId != channel.Id(2) || body.MapId != _map.Id(100020000) {
+		t.Errorf("field mismatch: got world=%d channel=%d map=%d", body.WorldId, body.ChannelId, body.MapId)
+	}
+	if body.Instance != instance {
+		t.Errorf("instance mismatch: got %s want %s", body.Instance, instance)
+	}
+	if body.OwnerType != "MONSTER" {
+		t.Errorf("ownerType: got %q want %q", body.OwnerType, "MONSTER")
+	}
+	if body.OwnerId != m.UniqueId() {
+		t.Errorf("ownerId: got %d want %d", body.OwnerId, m.UniqueId())
+	}
+	if body.OriginX != 300 || body.OriginY != 400 {
+		t.Errorf("origin: got (%d,%d) want (300,400)", body.OriginX, body.OriginY)
+	}
+	if body.LtX != -50 || body.LtY != -30 || body.RbX != 50 || body.RbY != 30 {
+		t.Errorf("bbox: got lt=(%d,%d) rb=(%d,%d)", body.LtX, body.LtY, body.RbX, body.RbY)
+	}
+	if body.Disease != "POISON" {
+		t.Errorf("disease: got %q want POISON", body.Disease)
+	}
+	if body.DiseaseValue != 80 {
+		t.Errorf("diseaseValue: got %d want 80", body.DiseaseValue)
+	}
+	if body.Duration != 10_000 || body.DiseaseDuration != 10_000 {
+		t.Errorf("duration: got %d/%d want 10000/10000", body.Duration, body.DiseaseDuration)
+	}
+	if body.TickIntervalMs != 1000 {
+		t.Errorf("tickIntervalMs: got %d want 1000", body.TickIntervalMs)
+	}
+	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
+		t.Errorf("skill id/level: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
+	}
+}
+
+// TestBuildMistCreateBody_DurationCap verifies that absurdly long durations
+// (e.g. atlas-data reporting 30 minutes) are clamped to MistDurationCapMs so
+// the per-mist tick load is bounded.
+func TestBuildMistCreateBody_DurationCap(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(1).
+		SetX(80).
+		SetDuration(1800). // 30 minutes — must clamp
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 1)
+	if body.Duration != MistDurationCapMs || body.DiseaseDuration != MistDurationCapMs {
+		t.Errorf("expected clamp to %d, got Duration=%d DiseaseDuration=%d",
+			MistDurationCapMs, body.Duration, body.DiseaseDuration)
+	}
+}
+
+// TestExecuteMist_ProducesMistCreateCommand verifies that executeMist publishes
+// exactly one MIST_CREATE command on COMMAND_TOPIC_MIST with the body that
+// buildMistCreateBody would compute for the same inputs.
+func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 300, 400, 0, 5, 0, 100, 50)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(10).
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.executeMist(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if len(*events) != 1 {
+		t.Fatalf("expected 1 emitted message, got %d: %+v", len(*events), *events)
+	}
+	ev := (*events)[0]
+	if ev.Topic != mistKafka.EnvCommandTopic {
+		t.Errorf("topic: got %q want %q", ev.Topic, mistKafka.EnvCommandTopic)
+	}
+	if ev.Type != mistKafka.CommandTypeCreate {
+		t.Errorf("type: got %q want %q", ev.Type, mistKafka.CommandTypeCreate)
+	}
+
+	var body mistKafka.CreateCommandBody
+	if err := json.Unmarshal(ev.Body, &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.OwnerType != "MONSTER" || body.OwnerId != m.UniqueId() {
+		t.Errorf("owner: got (%s,%d) want (MONSTER,%d)", body.OwnerType, body.OwnerId, m.UniqueId())
+	}
+	if body.OriginX != 300 || body.OriginY != 400 {
+		t.Errorf("origin: got (%d,%d)", body.OriginX, body.OriginY)
+	}
+	if body.LtX != -50 || body.LtY != -30 || body.RbX != 50 || body.RbY != 30 {
+		t.Errorf("bbox: got lt=(%d,%d) rb=(%d,%d)", body.LtX, body.LtY, body.RbX, body.RbY)
+	}
+	if body.Disease != "POISON" || body.DiseaseValue != 80 {
+		t.Errorf("disease: got (%s,%d) want (POISON,80)", body.Disease, body.DiseaseValue)
+	}
+	if body.Duration != 10_000 || body.TickIntervalMs != 1000 {
+		t.Errorf("durations: got duration=%d tick=%d", body.Duration, body.TickIntervalMs)
+	}
+	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
+		t.Errorf("skill: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
 	}
 }

@@ -1,6 +1,7 @@
 package monster
 
 import (
+	mistKafka "atlas-monsters/kafka/message/mist"
 	"atlas-monsters/kafka/producer"
 	_map "atlas-monsters/map"
 	"atlas-monsters/monster/information"
@@ -553,6 +554,14 @@ func (p *ProcessorImpl) UseSkill(uniqueId uint32, characterId uint32, skillId by
 	}
 
 	executeEffect := func() {
+		// FR-4.6.5: AREA_POISON is dispatched as a mist-create command rather
+		// than the normal category switch, regardless of the category mapping
+		// (which may classify 131 as a debuff). The mist field-effect supplants
+		// the per-target disease apply.
+		if uint16(skillId) == monster2.SkillTypeAreaPoison {
+			p.executeMist(m, sd, skillId, skillLevel)
+			return
+		}
 		switch category {
 		case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
 			p.executeStatBuff(m, sd, skillId, skillLevel)
@@ -629,6 +638,13 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		return
 	}
 
+	// FR-4.6.5: AREA_POISON dispatches to the mist-create command path, not
+	// the normal category switch.
+	if uint16(skillId) == monster2.SkillTypeAreaPoison {
+		p.executeMist(m, sd, skillId, skillLevel)
+		return
+	}
+
 	category := monster2.SkillCategory(uint16(skillId))
 	switch category {
 	case monster2.SkillCategoryStatBuff, monster2.SkillCategoryImmunity, monster2.SkillCategoryReflect:
@@ -641,6 +657,52 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		p.executeSummon(m, sd)
 	default:
 		p.l.Warnf("Monster [%d] unknown skill category for GM skill [%d].", uniqueId, skillId)
+	}
+}
+
+// MistDurationCapMs caps the requested mist duration. AREA_POISON skill data
+// occasionally reports very long durations (tens of minutes); the spec
+// (risks §2) caps server-side at 60s to bound per-mist tick load.
+const MistDurationCapMs int64 = 60_000
+
+// executeMist publishes a MIST_CREATE command for the monster's AREA_POISON
+// skill so atlas-maps can spawn and tick the resulting field effect.
+func (p *ProcessorImpl) executeMist(m Model, sd mobskill.Model, skillId byte, skillLevel byte) {
+	body := buildMistCreateBody(m, sd, skillId, skillLevel)
+	if err := p.emit(mistKafka.EnvCommandTopic, mistCreateCommandProvider(p.t, body)); err != nil {
+		p.l.WithError(err).Errorf("Unable to emit MIST_CREATE for monster [%d].", m.UniqueId())
+	}
+}
+
+// buildMistCreateBody constructs the MIST_CREATE body for a monster casting an
+// AREA_POISON skill. Pure (no side effects) so it can be unit-tested directly
+// without a Kafka mock.
+func buildMistCreateBody(m Model, sd mobskill.Model, skillId byte, skillLevel byte) mistKafka.CreateCommandBody {
+	durMs := int64(sd.Duration()) * int64(time.Second/time.Millisecond)
+	if durMs > MistDurationCapMs {
+		durMs = MistDurationCapMs
+	}
+	f := m.Field()
+	return mistKafka.CreateCommandBody{
+		WorldId:          f.WorldId(),
+		ChannelId:        f.ChannelId(),
+		MapId:            f.MapId(),
+		Instance:         f.Instance(),
+		OwnerType:        "MONSTER",
+		OwnerId:          m.UniqueId(),
+		OriginX:          m.X(),
+		OriginY:          m.Y(),
+		LtX:              int16(sd.LtX()),
+		LtY:              int16(sd.LtY()),
+		RbX:              int16(sd.RbX()),
+		RbY:              int16(sd.RbY()),
+		Disease:          "POISON",
+		DiseaseValue:     sd.X(),
+		DiseaseDuration:  durMs,
+		Duration:         durMs,
+		TickIntervalMs:   1000,
+		SourceSkillId:    uint32(skillId),
+		SourceSkillLevel: uint32(skillLevel),
 	}
 }
 

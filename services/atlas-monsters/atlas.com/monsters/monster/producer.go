@@ -1,11 +1,27 @@
 package monster
 
 import (
+	mistKafka "atlas-monsters/kafka/message/mist"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
 )
+
+// mistCreateCommandProvider builds a MIST_CREATE command keyed by the owning
+// monster's unique id so concurrent commands from the same monster preserve
+// their causal order on a single partition.
+func mistCreateCommandProvider(t tenant.Model, body mistKafka.CreateCommandBody) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(body.OwnerId))
+	value := &mistKafka.Command[mistKafka.CreateCommandBody]{
+		Tenant: t.Id(),
+		Type:   mistKafka.CommandTypeCreate,
+		Body:   body,
+	}
+	return producer.SingleMessageProvider(key, value)
+}
 
 func createdStatusEventProvider(m Model) model.Provider[[]kafka.Message] {
 	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusCreated, statusEventCreatedBody{ActorId: 0})

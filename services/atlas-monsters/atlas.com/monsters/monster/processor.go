@@ -656,7 +656,36 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 	duration := time.Duration(sd.Duration()) * time.Second
 	category := monster2.SkillCategory(uint16(skillId))
 
+	// FR-4.8: Immunity mutual exclusion. WEAPON_ATTACK_IMMUNE and
+	// MAGIC_ATTACK_IMMUNE are mutually exclusive — applying one while the
+	// opposite is active must cancel the opposite first. This pre-cancel runs
+	// before the existing already-active gate enforced by ApplyStatusEffect's
+	// upstream callers, ensuring the new immunity always replaces the old.
+	var oppositeImmunity string
+	if category == monster2.SkillCategoryImmunity {
+		switch string(statusName) {
+		case string(monster2.TemporaryStatTypeWeaponAttackImmune):
+			oppositeImmunity = string(monster2.TemporaryStatTypeMagicAttackImmune)
+		case string(monster2.TemporaryStatTypeMagicAttackImmune):
+			oppositeImmunity = string(monster2.TemporaryStatTypeWeaponAttackImmune)
+		}
+	}
+
 	applyBuff := func(targetId uint32) {
+		// Cancel opposite immunity (FR-4.8) before applying the new one.
+		// Re-fetch the target to avoid stale state — the caster `m` may
+		// equal `targetId`, but for AoE applies the target may be a
+		// different monster, and even for the caster, prior applyBuff
+		// invocations may have mutated registry state.
+		if oppositeImmunity != "" {
+			target, terr := GetMonsterRegistry().GetMonster(p.t, targetId)
+			if terr == nil && target.HasStatusEffect(oppositeImmunity) {
+				if cerr := p.CancelStatusEffect(targetId, []string{oppositeImmunity}); cerr != nil {
+					p.l.WithError(cerr).Warnf("Failed to cancel opposite immunity [%s] on monster [%d].", oppositeImmunity, targetId)
+				}
+			}
+		}
+
 		var effect StatusEffect
 		if category == monster2.SkillCategoryReflect {
 			kind := monster2.ReflectKindForSkill(uint16(skillId))

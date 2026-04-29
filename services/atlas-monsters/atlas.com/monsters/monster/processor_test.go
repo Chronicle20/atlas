@@ -799,6 +799,195 @@ func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
 	}
 }
 
+// applyImmunityForTest constructs a non-reflect status effect carrying the
+// given immunity status name and applies it to the target via
+// p.ApplyStatusEffect. Used by the immunity mutual-exclusion tests to seed an
+// "already-active" opposite immunity without depending on executeStatBuff.
+func applyImmunityForTest(t *testing.T, p *ProcessorImpl, targetId uint32, statusName string, x int32) {
+	t.Helper()
+	effect := NewStatusEffect(
+		SourceTypeMonsterSkill,
+		0,
+		0,
+		1,
+		map[string]int32{statusName: x},
+		60*time.Second,
+		0,
+	)
+	if err := p.ApplyStatusEffect(targetId, effect); err != nil {
+		t.Fatalf("seed ApplyStatusEffect(%s): %v", statusName, err)
+	}
+}
+
+// TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune verifies that
+// applying WEAPON_ATTACK_IMMUNE while MAGIC_ATTACK_IMMUNE is already active
+// cancels the magic immunity before the new physical immunity takes hold,
+// implementing FR-4.8 mutual exclusion. The assertion is at the
+// registry-state level: after the call the monster has WEAPON_ATTACK_IMMUNE
+// and no MAGIC_ATTACK_IMMUNE. We deliberately avoid asserting Kafka event
+// ordering here because ApplyStatusEffect/CancelStatusEffect emit through
+// producer.ProviderImpl directly (not p.emit), and instrumenting that is
+// disproportionate to the value gained.
+func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	// Seed: monster already has MAGIC_ATTACK_IMMUNE.
+	applyImmunityForTest(t, p, m.UniqueId(), string(monster2.TemporaryStatTypeMagicAttackImmune), 1)
+
+	// Refresh model so executeStatBuff sees the seeded status.
+	m, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(seed): %v", err)
+	}
+	if !m.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Fatalf("seed: expected MAGIC_ATTACK_IMMUNE present")
+	}
+
+	// Apply: WEAPON_ATTACK_IMMUNE (skill type 140 = PhysicalImmune).
+	skillId := byte(monster2.SkillTypePhysicalImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("expected MAGIC_ATTACK_IMMUNE to have been cancelled by mutual exclusion")
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been applied")
+	}
+}
+
+// TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune is the symmetric
+// counterpart of the physical-cancels-magic test: applying
+// MAGIC_ATTACK_IMMUNE while WEAPON_ATTACK_IMMUNE is already active must cancel
+// the weapon immunity before the new magic immunity takes hold.
+func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	applyImmunityForTest(t, p, m.UniqueId(), string(monster2.TemporaryStatTypeWeaponAttackImmune), 1)
+
+	m, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(seed): %v", err)
+	}
+	if !m.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Fatalf("seed: expected WEAPON_ATTACK_IMMUNE present")
+	}
+
+	skillId := byte(monster2.SkillTypeMagicImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been cancelled by mutual exclusion")
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("expected MAGIC_ATTACK_IMMUNE to have been applied")
+	}
+}
+
+// TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel is the
+// negative/sanity case: when the opposite immunity is not active, applying a
+// physical immunity must not perform a spurious cancellation and the result
+// should carry exactly one status (WEAPON_ATTACK_IMMUNE).
+func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	skillId := byte(monster2.SkillTypePhysicalImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been applied")
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("did not expect MAGIC_ATTACK_IMMUNE on the monster")
+	}
+	if len(got.StatusEffects()) != 1 {
+		t.Errorf("expected exactly 1 status effect, got %d", len(got.StatusEffects()))
+	}
+}
+
 func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 	cases := []struct {
 		name             string

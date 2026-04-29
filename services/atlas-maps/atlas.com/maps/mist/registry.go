@@ -47,6 +47,13 @@ func GetRegistry() *Registry {
 	return registry
 }
 
+// NewTestRegistry returns a fresh, isolated Registry suitable for use in
+// tests where the singleton's shared state would otherwise leak across
+// cases. It is not used in production code paths.
+func NewTestRegistry() *Registry {
+	return &Registry{perTenant: map[string]*tenantBucket{}}
+}
+
 func tenantKey(t tenant.Model) string {
 	return t.Id().String()
 }

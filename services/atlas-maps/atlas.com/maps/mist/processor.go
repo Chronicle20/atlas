@@ -35,12 +35,20 @@ type ProcessorImpl struct {
 // NewProcessor constructs the canonical Processor wired to the singleton
 // registry and the supplied producer.Provider. Tenant is resolved from ctx.
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, p producer.Provider) Processor {
+	return NewProcessorWithRegistry(l, ctx, p, GetRegistry())
+}
+
+// NewProcessorWithRegistry constructs a Processor backed by the supplied
+// registry instead of the singleton. Used by tick tasks and tests that need
+// to operate on a non-singleton registry while reusing the lifecycle
+// emission logic.
+func NewProcessorWithRegistry(l logrus.FieldLogger, ctx context.Context, p producer.Provider, r *Registry) Processor {
 	return &ProcessorImpl{
 		l:   l,
 		ctx: ctx,
 		t:   tenant.MustFromContext(ctx),
 		p:   p,
-		r:   GetRegistry(),
+		r:   r,
 	}
 }
 

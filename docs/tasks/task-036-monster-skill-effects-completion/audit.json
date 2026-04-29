@@ -1,0 +1,125 @@
+{
+  "service": "task-036-monster-skill-effects",
+  "path": "services/atlas-monsters, services/atlas-channel, services/atlas-maps, services/atlas-buffs, libs/atlas-constants, libs/atlas-packet",
+  "date": "2026-04-29",
+  "diffRange": "5af5a1a1f..66fb58c69",
+  "build": "pass",
+  "testsPassed": 1,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-maps/mist",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-immut", "name": "Immutable model (private fields + getters)", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/model.go:16-37"},
+        {"id": "DOM-builder", "name": "Builder + NewBuilder + Build()", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/model.go:185-298"},
+        {"id": "DOM-process", "name": "NewProcessor resolves tenant from ctx", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/processor.go:37-53"},
+        {"id": "DOM-producer", "name": "Producer uses SingleMessageProvider", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/producer.go:14-37"},
+        {"id": "DOM-singleton", "name": "Registry is process singleton via sync.Once", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/registry.go:36-48"},
+        {"id": "DOM-rwmutex", "name": "Registry RWMutex (RLock for reads, Lock for writes)", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/registry.go:32,75,88,108,125,141,157"},
+        {"id": "DOM-tenant-key", "name": "Tenant scoping via tenant.Model", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/registry.go:24-27,57-59"},
+        {"id": "DOM-rollback", "name": "Processor rolls back registry insert on emit failure", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/processor.go:71-82"},
+        {"id": "DOM-functional", "name": "No DB calls / no os.Getenv in processor", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/processor.go:58-100"},
+        {"id": "DOM-test-table", "name": "Table-driven tests cover non-trivial logic", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/mist/model_test.go, services/atlas-maps/atlas.com/maps/mist/registry_test.go"}
+      ]
+    },
+    {
+      "name": "atlas-maps/character (REST client)",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "REST-CL-1", "name": "JSON:API interface on RestModel", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/character/rest.go:21-43"},
+        {"id": "REST-CL-2", "name": "requests.RootUrl(SERVICE) for base URL", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/character/requests.go:16"},
+        {"id": "REST-CL-3", "name": "Curried requests.Request[T] shape", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/character/requests.go:18-20, services/atlas-maps/atlas.com/maps/character/processor.go:30"},
+        {"id": "REST-CL-4", "name": "Test seam for base URL", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/character/requests.go:14-16"},
+        {"id": "REST-CL-5", "name": "ID field marked json:\"-\"", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/character/rest.go:14"}
+      ]
+    },
+    {
+      "name": "atlas-monsters/monster (extension)",
+      "type": "domain",
+      "checks": [
+        {"id": "IMM-1", "name": "StatusEffect immutable shape (incl. reflect fields)", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/status.go:14-33,76-167"},
+        {"id": "IMM-2", "name": "Builder copy semantics for StatusEffects slice", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/builder.go:12-38,134-157"},
+        {"id": "KAFKA-1", "name": "Producer body wired with reflect fields", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/producer.go:83-100, services/atlas-monsters/atlas.com/monsters/monster/kafka.go:110-125"},
+        {"id": "KAFKA-2", "name": "Mist command keyed on OwnerId", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/producer.go:16-24"},
+        {"id": "KAFKA-3", "name": "cjson empty-array safety (FR-4.10)", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/kafka.go:154-198"},
+        {"id": "MISTBUILD", "name": "buildMistCreateBody is pure / unit-testable", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:681-708"},
+        {"id": "MISTCAP", "name": "Mist duration capped at 60s", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:667,683-685"},
+        {"id": "DISPELG", "name": "CancelStatusEffectGuarded only triggers on non-empty class; reflect-only carve-out", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:1090-1117"},
+        {"id": "IMMUNX", "name": "Immunity mutual exclusion pre-cancels opposite immunity", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/processor.go:722-750"},
+        {"id": "VENOMEV", "name": "VENOM eviction picks oldest-by-ExpiresAt", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/builder.go:135-150"},
+        {"id": "REGRED", "name": "Redis round-trip preserves reflect fields", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/registry.go:85-104,115-136,204-228"},
+        {"id": "REGCJSON", "name": "Lua cjson empty-table tolerance", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/registry.go:53-77"},
+        {"id": "TICKAUTO", "name": "DoT auto tick interval covers POISON + VENOM", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:93-101,154-162"},
+        {"id": "GUARDFLD", "name": "Field-level cancel uses guarded variant", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:191-193"},
+        {"id": "PICKER-AREA", "name": "Picker no longer skips AREA_POISON", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/picker.go (no exclusion); libs/atlas-constants/monster/skill.go:218-223; services/atlas-monsters/atlas.com/monsters/monster/processor.go:563,645"},
+        {"id": "MIRRORHANDOFF", "name": "Producer wire body matches consumer-side struct byte-for-byte", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/kafka.go:110-125 vs services/atlas-channel/atlas.com/channel/kafka/message/monster/kafka.go:146-161"}
+      ]
+    },
+    {
+      "name": "atlas-channel/monster (StatusMirror)",
+      "type": "domain",
+      "checks": [
+        {"id": "MIRROR-SINGLE", "name": "StatusMirror singleton via sync.Once", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/status_mirror.go:69-84"},
+        {"id": "MIRROR-MUTEX", "name": "RWMutex with proper RLock/Lock pairing", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/status_mirror.go:65,117,150,193,213,245"},
+        {"id": "MIRROR-TENANT", "name": "Per-tenant nesting; tenant key via t.Id()", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/status_mirror.go:64-67,140,151,194,215,247"},
+        {"id": "MIRROR-PRUNE", "name": "OnMonsterGone clears state on DESTROYED + KILLED", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:135,219"},
+        {"id": "MIRROR-EXP", "name": "OnExpired/OnCancelled remove only matching EffectId", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/status_mirror.go:148-175"},
+        {"id": "MIRROR-RACE", "name": "GetReflect skips entries past wall-clock expiry", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/monster/status_mirror.go:233-235"},
+        {"id": "WIRE-COLLAPSE", "name": "Wire-collapse captures pre-OnApplied venom count", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:362-366,371,392-395"},
+        {"id": "MIRROR-EXP-COLL", "name": "Expiry/cancel mutates mirror first, computes collapse against post-state", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:423,457"},
+        {"id": "BCAST-SEAM", "name": "Broadcast seams are package-level vars (test-injectable)", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:313-327, services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:55-69"},
+        {"id": "ATTACK-PURE", "name": "computeReflect is pure (no IO); inclusive-edge bbox check", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:34-49"},
+        {"id": "ATTACK-KIND", "name": "AttackType→reflect kind via attackKindFromAttackType", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:81-89,137,160"},
+        {"id": "VENOMSNAP", "name": "Venom DPT snapshot at apply time", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:56-58,151,193"},
+        {"id": "DISPCLASS", "name": "Channel populates SourceSkillClass for crash/dispel skills", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/skill/handler/common.go:90-102, services/atlas-channel/atlas.com/channel/monster/producer.go:51-68"}
+      ]
+    },
+    {
+      "name": "atlas-channel/kafka/consumer/mist",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "MIST-CON", "name": "Span+tenant header parsers, persistent config", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:24-43"},
+        {"id": "MIST-CON-TENANT", "name": "Tenant + world/channel match enforced before broadcast", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:76,98"},
+        {"id": "MIST-CON-WIRE", "name": "Channel envelope/bodies match atlas-maps producer byte-for-byte", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/message/mist/kafka.go:60-87 vs services/atlas-channel/atlas.com/channel/kafka/message/mist/kafka.go:18-46"},
+        {"id": "MIST-CON-FALLBACK", "name": "Type-mismatch early returns", "status": "pass", "evidence": "services/atlas-channel/atlas.com/channel/kafka/consumer/mist/consumer.go:73,95"}
+      ]
+    },
+    {
+      "name": "atlas-maps/tasks (MistTickTask)",
+      "type": "support",
+      "checks": [
+        {"id": "TASK-FACTORY", "name": "producer.Provider + processorFactory + posLookup all injectable", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:87-119"},
+        {"id": "TASK-TENANT", "name": "Per-tenant fan-out via tenant.WithContext", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:147-148,169"},
+        {"id": "TASK-EMIT-BUF", "name": "Apply-disease emitted via message.Emit + Buffer", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:167-181"},
+        {"id": "TASK-EXPIRY", "name": "Expired mists destroyed (so MIST_DESTROYED still emits) before tick", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:153-157"},
+        {"id": "TASK-EMPTY-FIELD", "name": "Empty-field still advances lastTick", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:163-166"},
+        {"id": "MIST-CON-MAPS", "name": "Maps mist consumer uses standard producer.ProviderImpl seam", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/mist/consumer.go:21-23"},
+        {"id": "MIST-CON-MAPS-TENANT", "name": "Header parsers attached", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/mist/consumer.go:31"},
+        {"id": "TICK-RACE", "name": "Fan-out via WaitGroup; registry mutations under registry RWMutex", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:133-145"},
+        {"id": "BUFFTOPIC", "name": "Canonical COMMAND_TOPIC_CHARACTER_BUFF env var", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/tasks/mist_tick.go:32 matches services/atlas-buffs/atlas.com/buffs/kafka/message/character/kafka.go:13"}
+      ]
+    },
+    {
+      "name": "libs/atlas-packet + libs/atlas-constants",
+      "type": "support",
+      "checks": [
+        {"id": "LIB-PKT-1", "name": "AffectedAreaCreated/Removed packet writers complete", "status": "pass", "evidence": "libs/atlas-packet/field/clientbound/affected_area_created.go:32-77; libs/atlas-packet/field/clientbound/affected_area_removed.go"},
+        {"id": "LIB-PKT-2", "name": "mistKey UUID->uint32 derivation documented", "status": "pass", "evidence": "libs/atlas-packet/field/clientbound/affected_area_created.go:80-87"},
+        {"id": "LIB-CONST-1", "name": "Reflect kind constants colocated with monster skill constants", "status": "pass", "evidence": "libs/atlas-constants/monster/skill.go:18-19"},
+        {"id": "LIB-CONST-2", "name": "ReflectKindForSkill covers all reflect skills", "status": "pass", "evidence": "libs/atlas-constants/monster/skill.go:197-208"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "mist Builder is co-located in mist/model.go rather than a separate builder.go file (file-responsibilities recommendation, not an enforced rule).",
+    "StatusMirror.StatusEntry.Statuses field is exported and shares the underlying map with the source body (no defensive copy on insert at services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go:377). Safe today; cheap to harden if a future caller mutates after dispatch.",
+    "Producer-side statusEffectAppliedBody (services/atlas-monsters/atlas.com/monsters/monster/kafka.go:110-125) does not carry TickInterval, while channel-side StatusEffectAppliedBody (services/atlas-channel/atlas.com/channel/monster/status_mirror.go:18-34) declares it. The consumer never reads TickInterval for monster status, so this is benign; flag during any future DoT-visualization work."
+  ],
+  "securityReview": {
+    "applies": false,
+    "reason": "task-036 does not touch authentication, JWT, callback URLs, or secrets handling."
+  }
+}

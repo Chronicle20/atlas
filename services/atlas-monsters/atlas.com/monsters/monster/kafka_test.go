@@ -77,3 +77,41 @@ func TestStatusEventDamagedBody_RoundTripPreservesEmpty(t *testing.T) {
 	var back statusEventDamagedBody
 	require.NoError(t, json.Unmarshal(out, &back))
 }
+
+func TestStatusEffectAppliedBody_NonReflect_SerializesEmptyReflectFields(t *testing.T) {
+	b := statusEffectAppliedBody{
+		EffectId: "test-effect-id",
+		Statuses: map[string]int32{"FREEZE": 1},
+	}
+	out, err := json.Marshal(b)
+	require.NoError(t, err)
+	s := string(out)
+	require.Contains(t, s, `"reflectKind":""`, "got: %s", s)
+	require.Contains(t, s, `"reflectPercent":0`)
+	require.Contains(t, s, `"reflectLtX":0`)
+	require.Contains(t, s, `"reflectLtY":0`)
+	require.Contains(t, s, `"reflectRbX":0`)
+	require.Contains(t, s, `"reflectRbY":0`)
+	require.Contains(t, s, `"reflectMaxDamage":0`)
+	require.NotContains(t, s, `"reflectKind":null`)
+}
+
+func TestStatusEffectAppliedBody_Reflect_SerializesAllReflectFields(t *testing.T) {
+	b := statusEffectAppliedBody{
+		EffectId:         "test-effect-id",
+		Statuses:         map[string]int32{"WEAPON_COUNTER": 30},
+		ReflectKind:      "PHYSICAL",
+		ReflectPercent:   30,
+		ReflectLtX:       -50,
+		ReflectLtY:       -30,
+		ReflectRbX:       50,
+		ReflectRbY:       30,
+		ReflectMaxDamage: 32767,
+	}
+	out, err := json.Marshal(b)
+	require.NoError(t, err)
+	s := string(out)
+	require.Contains(t, s, `"reflectKind":"PHYSICAL"`)
+	require.Contains(t, s, `"reflectPercent":30`)
+	require.Contains(t, s, `"reflectMaxDamage":32767`)
+}

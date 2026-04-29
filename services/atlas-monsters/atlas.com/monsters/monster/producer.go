@@ -73,6 +73,13 @@ func statusEffectAppliedEventProvider(m Model, effect StatusEffect) model.Provid
 		SourceSkillLevel:  effect.SourceSkillLevel(),
 		Statuses:          effect.Statuses(),
 		Duration:          uint32(effect.Duration().Milliseconds()),
+		ReflectKind:       effect.ReflectKind(),
+		ReflectPercent:    effect.ReflectPercent(),
+		ReflectLtX:        effect.ReflectLtX(),
+		ReflectLtY:        effect.ReflectLtY(),
+		ReflectRbX:        effect.ReflectRbX(),
+		ReflectRbY:        effect.ReflectRbY(),
+		ReflectMaxDamage:  effect.ReflectMaxDamage(),
 	})
 }
 

@@ -12,6 +12,12 @@ const (
 	SkillCategorySummon      = "SUMMON"
 	SkillCategoryCarnivalBuf = "CARNIVAL_BUFF"
 
+	// Reflect kind values returned by ReflectKindForSkill. Used by the
+	// picker's dispel-guard classification (atlas-monsters) and by
+	// atlas-channel when populating StatusCancel.SourceSkillClass.
+	ReflectKindPhysical = "PHYSICAL"
+	ReflectKindMagical  = "MAGICAL"
+
 	// MobSkill type IDs (from MobSkill.img.xml)
 	SkillTypeWeaponAttackUp     = 100
 	SkillTypeMagicAttackUp      = 101
@@ -182,6 +188,23 @@ func SkillTypeNames() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// ReflectKindForSkill returns the reflect kind associated with a mob skill id.
+// Returns "" for non-reflect skills. Used by the picker's dispel-guard
+// classification (atlas-monsters) and by atlas-channel when populating
+// StatusCancel.SourceSkillClass.
+func ReflectKindForSkill(skillType uint16) string {
+	switch skillType {
+	case SkillTypePhysicalCounter:
+		return ReflectKindPhysical
+	case SkillTypeMagicCounter:
+		return ReflectKindMagical
+	case SkillTypePhysicalMagicCounter:
+		return ReflectKindPhysical
+	default:
+		return ""
+	}
 }
 
 func SkillCategory(skillType uint16) string {

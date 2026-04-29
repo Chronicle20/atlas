@@ -11,14 +11,82 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
+	"math"
+	"math/rand"
 
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
+
+// computeReflect computes the damage that should be reflected back to the
+// attacker for one attack damage entry. dx/dy bounds-check (attacker minus
+// monster) is inclusive on every edge so a hit on the LtX/LtY/RbX/RbY edge
+// still triggers reflect — matching classic v83 behaviour. The reflected
+// total is the sum of all damage lines multiplied by Percent and clamped
+// to MaxDamage. Kind matching is the caller's responsibility (see
+// monster.StatusMirror.GetReflect).
+func computeReflect(damages []int32, info monster.ReflectInfo, attackerX, attackerY, monsterX, monsterY int16) (reflected int32, withinRange bool) {
+	dx := attackerX - monsterX
+	dy := attackerY - monsterY
+	if dx < info.LtX || dx > info.RbX || dy < info.LtY || dy > info.RbY {
+		return 0, false
+	}
+	total := int32(0)
+	for _, d := range damages {
+		total += d
+	}
+	r := total * info.Percent / 100
+	if r > info.MaxDamage {
+		r = info.MaxDamage
+	}
+	return r, true
+}
+
+// snapshotVenomDamagePerTick computes the per-tick damage applied by a
+// VENOM stack at apply time. Classic formula: round(coef * Luck *
+// MagicAttack), where coef is drawn from [0.1, 0.2). The math is pulled
+// out of the handler so it can be pinned by unit tests; the production
+// site picks the coef via rand.Float64() and feeds the result here.
+func snapshotVenomDamagePerTick(luck, magicAttack int, coef float64) int32 {
+	return int32(math.Round(coef * float64(luck) * float64(magicAttack)))
+}
+
+// totalMagicAttack sums the magicAttack stat across the character's
+// currently-equipped slots (regular + cash equipable). atlas-channel
+// does not expose a single MagicAttack accessor on character.Model, so
+// the snapshot reads each equipped asset's contribution directly.
+func totalMagicAttack(c character.Model) int {
+	total := 0
+	for _, s := range c.Equipment().Slots() {
+		if s.Equipable != nil {
+			total += int(s.Equipable.MagicAttack())
+		}
+		if s.CashEquipable != nil {
+			total += int(s.CashEquipable.MagicAttack())
+		}
+	}
+	return total
+}
+
+// attackKindFromAttackType maps a packet AttackType to the reflect kind the
+// monster's reflect would have to match for the attack to be reflected.
+// Returns the empty string for attack types that cannot be reflected
+// (e.g. ENERGY).
+func attackKindFromAttackType(at packetmodel.AttackType) string {
+	switch at {
+	case packetmodel.AttackTypeMelee, packetmodel.AttackTypeRanged:
+		return monster2.ReflectKindPhysical
+	case packetmodel.AttackTypeMagic:
+		return monster2.ReflectKindMagical
+	}
+	return ""
+}
 
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -64,8 +132,51 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					projectilePlan, hasProjectilePlan := pp.Plan(c, ai, se)
 
 					mp := monster.NewProcessor(l, ctx)
+					mirror := monster.GetStatusMirror()
+					t := tenant.MustFromContext(ctx)
+					attackKind := attackKindFromAttackType(ai.AttackType())
+
 					for _, di := range ai.DamageInfo() {
-						if damages := di.Damages(); len(damages) > 0 {
+						damages := di.Damages()
+						if len(damages) == 0 {
+							// Still allow status apply path (matches prior behaviour
+							// of looping into the apply block on empty damage).
+							if len(se.MonsterStatus()) > 0 {
+								ms := make(map[string]int32)
+								for k, v := range se.MonsterStatus() {
+									ms[k] = int32(v)
+								}
+								if _, isVenom := ms["VENOM"]; isVenom {
+									coef := 0.1 + rand.Float64()*0.1
+									ms["VENOM"] = snapshotVenomDamagePerTick(int(c.Luck()), totalMagicAttack(c), coef)
+								}
+								_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
+							}
+							continue
+						}
+
+						reflected := false
+						if attackKind != "" {
+							if info, ok := mirror.GetReflect(t, di.MonsterId(), attackKind); ok {
+								mon, mErr := mp.GetById(di.MonsterId())
+								if mErr == nil {
+									entry := make([]int32, 0, len(damages))
+									for _, d := range damages {
+										entry = append(entry, int32(d))
+									}
+									r, within := computeReflect(entry, info, c.X(), c.Y(), mon.X(), mon.Y())
+									if within {
+										l.Debugf("reflect: char [%d] hit monster [%d] for %d reflected damage.", s.CharacterId(), di.MonsterId(), r)
+										if eErr := mp.EmitDamageReflected(s.Field(), di.MonsterId(), mon.MonsterId(), s.CharacterId(), uint32(r), info.Kind); eErr != nil {
+											l.WithError(eErr).Errorf("Unable to emit DAMAGE_REFLECTED for monster [%d] / character [%d].", di.MonsterId(), s.CharacterId())
+										}
+										reflected = true
+									}
+								}
+							}
+						}
+
+						if !reflected {
 							if err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), damages, byte(ai.AttackType())); err != nil {
 								l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), s.CharacterId())
 							}
@@ -76,6 +187,10 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							ms := make(map[string]int32)
 							for k, v := range se.MonsterStatus() {
 								ms[k] = int32(v)
+							}
+							if _, isVenom := ms["VENOM"]; isVenom {
+								coef := 0.1 + rand.Float64()*0.1
+								ms["VENOM"] = snapshotVenomDamagePerTick(int(c.Luck()), totalMagicAttack(c), coef)
 							}
 							_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
 						}
@@ -141,8 +256,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO Heavens Hammer
 					// TODO ComboTempest
 					// TODO BodyPressure
-					// TODO Monster Weapon Atk Reflect
-					// TODO Monster Magic Atk Reflect
 					// TODO Apply MPEater
 
 					return nil

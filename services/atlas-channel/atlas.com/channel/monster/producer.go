@@ -48,7 +48,7 @@ func UseSkillCommandProvider(f field.Model, monsterId uint32, characterId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []string) model.Provider[[]kafka.Message] {
+func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.CancelStatusCommandBody]{
 		WorldId:   f.WorldId(),
@@ -58,7 +58,10 @@ func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []
 		MonsterId: monsterId,
 		Type:      monster2.CommandTypeCancelStatus,
 		Body: monster2.CancelStatusCommandBody{
-			StatusTypes: statusTypes,
+			StatusTypes:       statusTypes,
+			SourceCharacterId: sourceCharacterId,
+			SourceSkillId:     sourceSkillId,
+			SourceSkillClass:  sourceSkillClass,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)
@@ -76,6 +79,31 @@ func DamageFriendlyCommandProvider(f field.Model, attackedUniqueId uint32, obser
 		Body: monster2.DamageFriendlyCommandBody{
 			AttackerUniqueId: attackerUniqueId,
 			ObserverUniqueId: observerUniqueId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+// DamageReflectedStatusEventProvider produces a StatusEvent[DAMAGE_REFLECTED]
+// describing reflect damage that should be applied to the attacker. The
+// existing atlas-channel monster status consumer (handleDamageReflected)
+// reads the event and decrements the character's HP. Emitting the event
+// from the attack handler keeps the reflect math out of atlas-monsters'
+// hot path while reusing the established status-event channel.
+func DamageReflectedStatusEventProvider(f field.Model, uniqueId uint32, monsterId uint32, characterId uint32, reflectDamage uint32, reflectType string) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(uniqueId))
+	value := &monster2.StatusEvent[monster2.StatusEventDamageReflectedBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		UniqueId:  uniqueId,
+		MonsterId: monsterId,
+		Type:      monster2.EventStatusDamageReflected,
+		Body: monster2.StatusEventDamageReflectedBody{
+			CharacterId:   characterId,
+			ReflectDamage: reflectDamage,
+			ReflectType:   reflectType,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

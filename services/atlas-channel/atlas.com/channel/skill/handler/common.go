@@ -51,10 +51,13 @@ func applyToMobs(l logrus.FieldLogger, ctx context.Context, f field.Model, chara
 	mp := monster.NewProcessor(l, ctx)
 	sid := skill2.Id(info.SkillId())
 
-	// Crash and Priest Dispel cancel monster self-buffs
+	// Crash and Priest Dispel cancel monster self-buffs. We classify the
+	// originating skill so atlas-monsters can refuse a same-kind dispel
+	// against an active reflect (FR-4.9.1.2).
 	if isCrashOrDispel(sid) {
+		class := dispelSkillClass(sid)
 		for _, mobId := range mobIds {
-			_ = mp.CancelStatus(f, mobId, nil)
+			_ = mp.CancelStatus(f, mobId, nil, characterId, uint32(info.SkillId()), class)
 		}
 	}
 
@@ -77,6 +80,25 @@ func isCrashOrDispel(skillId skill2.Id) bool {
 		skill2.DragonKnightPowerCrashId,
 		skill2.PriestDispelId,
 	)
+}
+
+// dispelSkillClass classifies a crash/dispel skill by the attacker's hit
+// class — warrior crashes are physical melee, Priest Dispel is magic. The
+// returned string matches atlas-monsters' monster.ReflectKind* constants
+// ("PHYSICAL" / "MAGICAL"). Returns "" for unrecognized skills so the
+// downstream guard falls through to normal cancel semantics.
+func dispelSkillClass(skillId skill2.Id) string {
+	switch {
+	case skill2.Is(skillId,
+		skill2.CrusaderArmorCrashId,
+		skill2.WhiteKnightMagicCrashId,
+		skill2.DragonKnightPowerCrashId):
+		return "PHYSICAL"
+	case skill2.Is(skillId, skill2.PriestDispelId):
+		return "MAGICAL"
+	default:
+		return ""
+	}
 }
 
 func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {

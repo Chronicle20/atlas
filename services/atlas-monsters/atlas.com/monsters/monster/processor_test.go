@@ -1,6 +1,8 @@
 package monster
 
 import (
+	mistKafka "atlas-monsters/kafka/message/mist"
+	"atlas-monsters/monster/mobskill"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +12,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -724,6 +727,268 @@ func damageRepickGuardWouldFire(killed bool, firstHitObserved bool, oldHpPct, ne
 	return !killed && (firstHitObserved || newHpPct != oldHpPct)
 }
 
+// TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata verifies that
+// executeStatBuff routes WEAPON_COUNTER (skill type 143) through the reflect
+// constructor, populating the reflect metadata fields on the StatusEffect from
+// the mob skill's X (percent) and bounding box (lt/rb), with reflectMaxDamage
+// pinned to the design constant 32767.
+func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	skillId := byte(monster2.SkillTypePhysicalCounter) // 143
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(30).
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if len(got.StatusEffects()) != 1 {
+		t.Fatalf("expected 1 status effect, got %d", len(got.StatusEffects()))
+	}
+	se := got.StatusEffects()[0]
+	if !se.HasStatus(string(monster2.TemporaryStatTypeWeaponCounter)) {
+		t.Errorf("expected status %q to be present", monster2.TemporaryStatTypeWeaponCounter)
+	}
+	if !se.IsReflect() {
+		t.Errorf("expected IsReflect()=true, got false")
+	}
+	if se.ReflectKind() != monster2.ReflectKindPhysical {
+		t.Errorf("ReflectKind: got %q, want %q", se.ReflectKind(), monster2.ReflectKindPhysical)
+	}
+	if se.ReflectPercent() != 30 {
+		t.Errorf("ReflectPercent: got %d, want 30", se.ReflectPercent())
+	}
+	if se.ReflectLtX() != -50 {
+		t.Errorf("ReflectLtX: got %d, want -50", se.ReflectLtX())
+	}
+	if se.ReflectLtY() != -30 {
+		t.Errorf("ReflectLtY: got %d, want -30", se.ReflectLtY())
+	}
+	if se.ReflectRbX() != 50 {
+		t.Errorf("ReflectRbX: got %d, want 50", se.ReflectRbX())
+	}
+	if se.ReflectRbY() != 30 {
+		t.Errorf("ReflectRbY: got %d, want 30", se.ReflectRbY())
+	}
+	if se.ReflectMaxDamage() != 32767 {
+		t.Errorf("ReflectMaxDamage: got %d, want 32767", se.ReflectMaxDamage())
+	}
+}
+
+// applyImmunityForTest constructs a non-reflect status effect carrying the
+// given immunity status name and applies it to the target via
+// p.ApplyStatusEffect. Used by the immunity mutual-exclusion tests to seed an
+// "already-active" opposite immunity without depending on executeStatBuff.
+func applyImmunityForTest(t *testing.T, p *ProcessorImpl, targetId uint32, statusName string, x int32) {
+	t.Helper()
+	effect := NewStatusEffect(
+		SourceTypeMonsterSkill,
+		0,
+		0,
+		1,
+		map[string]int32{statusName: x},
+		60*time.Second,
+		0,
+	)
+	if err := p.ApplyStatusEffect(targetId, effect); err != nil {
+		t.Fatalf("seed ApplyStatusEffect(%s): %v", statusName, err)
+	}
+}
+
+// TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune verifies that
+// applying WEAPON_ATTACK_IMMUNE while MAGIC_ATTACK_IMMUNE is already active
+// cancels the magic immunity before the new physical immunity takes hold,
+// implementing FR-4.8 mutual exclusion. The assertion is at the
+// registry-state level: after the call the monster has WEAPON_ATTACK_IMMUNE
+// and no MAGIC_ATTACK_IMMUNE. We deliberately avoid asserting Kafka event
+// ordering here because ApplyStatusEffect/CancelStatusEffect emit through
+// producer.ProviderImpl directly (not p.emit), and instrumenting that is
+// disproportionate to the value gained.
+func TestExecuteStatBuff_PhysicalImmune_CancelsActiveMagicImmune(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	// Seed: monster already has MAGIC_ATTACK_IMMUNE.
+	applyImmunityForTest(t, p, m.UniqueId(), string(monster2.TemporaryStatTypeMagicAttackImmune), 1)
+
+	// Refresh model so executeStatBuff sees the seeded status.
+	m, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(seed): %v", err)
+	}
+	if !m.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Fatalf("seed: expected MAGIC_ATTACK_IMMUNE present")
+	}
+
+	// Apply: WEAPON_ATTACK_IMMUNE (skill type 140 = PhysicalImmune).
+	skillId := byte(monster2.SkillTypePhysicalImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("expected MAGIC_ATTACK_IMMUNE to have been cancelled by mutual exclusion")
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been applied")
+	}
+}
+
+// TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune is the symmetric
+// counterpart of the physical-cancels-magic test: applying
+// MAGIC_ATTACK_IMMUNE while WEAPON_ATTACK_IMMUNE is already active must cancel
+// the weapon immunity before the new magic immunity takes hold.
+func TestExecuteStatBuff_MagicImmune_CancelsActivePhysicalImmune(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	applyImmunityForTest(t, p, m.UniqueId(), string(monster2.TemporaryStatTypeWeaponAttackImmune), 1)
+
+	m, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(seed): %v", err)
+	}
+	if !m.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Fatalf("seed: expected WEAPON_ATTACK_IMMUNE present")
+	}
+
+	skillId := byte(monster2.SkillTypeMagicImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been cancelled by mutual exclusion")
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("expected MAGIC_ATTACK_IMMUNE to have been applied")
+	}
+}
+
+// TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel is the
+// negative/sanity case: when the opposite immunity is not active, applying a
+// physical immunity must not perform a spurious cancellation and the result
+// should carry exactly one status (WEAPON_ATTACK_IMMUNE).
+func TestExecuteStatBuff_PhysicalImmune_NoMagicImmune_DoesNotCancel(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	skillId := byte(monster2.SkillTypePhysicalImmune)
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(1).
+		Build()
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster(after): %v", err)
+	}
+	if !got.HasStatusEffect(string(monster2.TemporaryStatTypeWeaponAttackImmune)) {
+		t.Errorf("expected WEAPON_ATTACK_IMMUNE to have been applied")
+	}
+	if got.HasStatusEffect(string(monster2.TemporaryStatTypeMagicAttackImmune)) {
+		t.Errorf("did not expect MAGIC_ATTACK_IMMUNE on the monster")
+	}
+	if len(got.StatusEffects()) != 1 {
+		t.Errorf("expected exactly 1 status effect, got %d", len(got.StatusEffects()))
+	}
+}
+
 func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 	cases := []struct {
 		name             string
@@ -745,5 +1010,358 @@ func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {
 				t.Errorf("guard for %q: got %v, want %v", c.name, got, c.want)
 			}
 		})
+	}
+}
+
+// TestBuildMistCreateBody verifies the pure mapping from a casting monster +
+// AREA_POISON skill data to the wire MIST_CREATE body. Field identity, owner
+// identity, origin coordinates, bounding box, disease/duration, and skill
+// references must all flow through unchanged (modulo seconds→ms).
+func TestBuildMistCreateBody(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	instance := uuid.New()
+	f := field.NewBuilder(world.Id(7), channel.Id(2), _map.Id(100020000)).SetInstance(instance).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(8800002), 300, 400, 0, 5, 0, 1000, 200)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(10). // seconds
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if body.WorldId != world.Id(7) || body.ChannelId != channel.Id(2) || body.MapId != _map.Id(100020000) {
+		t.Errorf("field mismatch: got world=%d channel=%d map=%d", body.WorldId, body.ChannelId, body.MapId)
+	}
+	if body.Instance != instance {
+		t.Errorf("instance mismatch: got %s want %s", body.Instance, instance)
+	}
+	if body.OwnerType != "MONSTER" {
+		t.Errorf("ownerType: got %q want %q", body.OwnerType, "MONSTER")
+	}
+	if body.OwnerId != m.UniqueId() {
+		t.Errorf("ownerId: got %d want %d", body.OwnerId, m.UniqueId())
+	}
+	if body.OriginX != 300 || body.OriginY != 400 {
+		t.Errorf("origin: got (%d,%d) want (300,400)", body.OriginX, body.OriginY)
+	}
+	if body.LtX != -50 || body.LtY != -30 || body.RbX != 50 || body.RbY != 30 {
+		t.Errorf("bbox: got lt=(%d,%d) rb=(%d,%d)", body.LtX, body.LtY, body.RbX, body.RbY)
+	}
+	if body.Disease != "POISON" {
+		t.Errorf("disease: got %q want POISON", body.Disease)
+	}
+	if body.DiseaseValue != 80 {
+		t.Errorf("diseaseValue: got %d want 80", body.DiseaseValue)
+	}
+	if body.Duration != 10_000 || body.DiseaseDuration != 10_000 {
+		t.Errorf("duration: got %d/%d want 10000/10000", body.Duration, body.DiseaseDuration)
+	}
+	if body.TickIntervalMs != 1000 {
+		t.Errorf("tickIntervalMs: got %d want 1000", body.TickIntervalMs)
+	}
+	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
+		t.Errorf("skill id/level: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
+	}
+}
+
+// TestBuildMistCreateBody_DurationCap verifies that absurdly long durations
+// (e.g. atlas-data reporting 30 minutes) are clamped to MistDurationCapMs so
+// the per-mist tick load is bounded.
+func TestBuildMistCreateBody_DurationCap(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 0, 0, 0, 5, 0, 100, 50)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(1).
+		SetX(80).
+		SetDuration(1800). // 30 minutes — must clamp
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	body := buildMistCreateBody(m, sd, byte(monster2.SkillTypeAreaPoison), 1)
+	if body.Duration != MistDurationCapMs || body.DiseaseDuration != MistDurationCapMs {
+		t.Errorf("expected clamp to %d, got Duration=%d DiseaseDuration=%d",
+			MistDurationCapMs, body.Duration, body.DiseaseDuration)
+	}
+}
+
+// TestExecuteMist_ProducesMistCreateCommand verifies that executeMist publishes
+// exactly one MIST_CREATE command on COMMAND_TOPIC_MIST with the body that
+// buildMistCreateBody would compute for the same inputs.
+func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, uint32(9300018), 300, 400, 0, 5, 0, 100, 50)
+
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(monster2.SkillTypeAreaPoison)).
+		SetLevel(5).
+		SetX(80).
+		SetDuration(10).
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	p.executeMist(m, sd, byte(monster2.SkillTypeAreaPoison), 5)
+
+	if len(*events) != 1 {
+		t.Fatalf("expected 1 emitted message, got %d: %+v", len(*events), *events)
+	}
+	ev := (*events)[0]
+	if ev.Topic != mistKafka.EnvCommandTopic {
+		t.Errorf("topic: got %q want %q", ev.Topic, mistKafka.EnvCommandTopic)
+	}
+	if ev.Type != mistKafka.CommandTypeCreate {
+		t.Errorf("type: got %q want %q", ev.Type, mistKafka.CommandTypeCreate)
+	}
+
+	var body mistKafka.CreateCommandBody
+	if err := json.Unmarshal(ev.Body, &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.OwnerType != "MONSTER" || body.OwnerId != m.UniqueId() {
+		t.Errorf("owner: got (%s,%d) want (MONSTER,%d)", body.OwnerType, body.OwnerId, m.UniqueId())
+	}
+	if body.OriginX != 300 || body.OriginY != 400 {
+		t.Errorf("origin: got (%d,%d)", body.OriginX, body.OriginY)
+	}
+	if body.LtX != -50 || body.LtY != -30 || body.RbX != 50 || body.RbY != 30 {
+		t.Errorf("bbox: got lt=(%d,%d) rb=(%d,%d)", body.LtX, body.LtY, body.RbX, body.RbY)
+	}
+	if body.Disease != "POISON" || body.DiseaseValue != 80 {
+		t.Errorf("disease: got (%s,%d) want (POISON,80)", body.Disease, body.DiseaseValue)
+	}
+	if body.Duration != 10_000 || body.TickIntervalMs != 1000 {
+		t.Errorf("durations: got duration=%d tick=%d", body.Duration, body.TickIntervalMs)
+	}
+	if body.SourceSkillId != uint32(monster2.SkillTypeAreaPoison) || body.SourceSkillLevel != 5 {
+		t.Errorf("skill: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
+	}
+}
+
+// applyReflectForTest seeds a reflect status effect of the given kind on the
+// target monster. Used by the dispel-guard tests below to put the monster in
+// a known reflect state without depending on executeStatBuff.
+func applyReflectForTest(t *testing.T, ten tenant.Model, targetId uint32, kind string, statusName string) {
+	t.Helper()
+	se := NewReflectStatusEffect(
+		SourceTypeMonsterSkill, 0, 143, 1,
+		map[string]int32{statusName: 30}, 60*time.Second,
+		kind, 30, -50, -30, 50, 30, 32767,
+	)
+	if _, err := GetMonsterRegistry().ApplyStatusEffect(ten, targetId, se); err != nil {
+		t.Fatalf("seed reflect %s: %v", kind, err)
+	}
+}
+
+// applyPlainStatusForTest seeds a non-reflect status effect on the target.
+func applyPlainStatusForTest(t *testing.T, ten tenant.Model, targetId uint32, statusName string) {
+	t.Helper()
+	se := NewStatusEffect(
+		SourceTypePlayerSkill, 0, 0, 1,
+		map[string]int32{statusName: 1}, 60*time.Second, 0,
+	)
+	if _, err := GetMonsterRegistry().ApplyStatusEffect(ten, targetId, se); err != nil {
+		t.Fatalf("seed plain %s: %v", statusName, err)
+	}
+}
+
+// TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive verifies
+// FR-4.9.1.2: a player dispel/crash whose SourceSkillClass is "PHYSICAL" must
+// be rejected while a PHYSICAL reflect (WEAPON_COUNTER) is active on the
+// monster. FREEZE — the unrelated status the dispel was targeting — must
+// remain on the monster.
+func TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE was cancelled, but PHYSICAL dispel must be refused while WEAPON_COUNTER is active")
+	}
+	if !got.HasStatusEffect("WEAPON_COUNTER") {
+		t.Errorf("WEAPON_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive is the
+// symmetric counterpart for MAGIC reflect.
+func TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "MAGICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE was cancelled, but MAGICAL dispel must be refused while MAGIC_COUNTER is active")
+	}
+	if !got.HasStatusEffect("MAGIC_COUNTER") {
+		t.Errorf("MAGIC_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive verifies
+// the cross-kind case: a PHYSICAL dispel proceeds normally when only a
+// MAGICAL reflect is active.
+func TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE should have been cancelled — different reflect kind must not gate the dispel")
+	}
+	if !got.HasStatusEffect("MAGIC_COUNTER") {
+		t.Errorf("MAGIC_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel verifies that an
+// empty SourceSkillClass (e.g. an internal cancel that pre-dates this
+// field) proceeds without consulting the reflect guard. This preserves the
+// behavior of all existing callers that pass through CancelStatusEffect.
+func TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, ""); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE should have been cancelled when SourceSkillClass is empty (back-compat path)")
+	}
+}
+
+// TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass verifies
+// FR-4.9.1.1: a cancel that targets WEAPON_COUNTER or MAGIC_COUNTER itself
+// is always allowed, even when its SourceSkillClass matches the active
+// reflect's kind. Without this carve-out the reflect would become permanent
+// because the guard would refuse to cancel it.
+func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"WEAPON_COUNTER"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("WEAPON_COUNTER") {
+		t.Errorf("WEAPON_COUNTER should have been cancelled — targeting the reflect itself is always allowed")
 	}
 }

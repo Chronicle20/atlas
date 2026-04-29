@@ -1,6 +1,8 @@
 package monster
 
 import (
+	"encoding/json"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -140,4 +142,50 @@ type statusEventNextSkillDecidedBody struct {
 	SkillLevel             byte  `json:"skillLevel"`
 	DecidedAtMs            int64 `json:"decidedAtMs"`
 	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
+}
+
+// MarshalJSON ensures DamageEntries marshals as `[]` rather than `null` when nil.
+// See PRD FR-4.10 (cjson empty-array safety).
+func (b statusEventDamagedBody) MarshalJSON() ([]byte, error) {
+	type alias statusEventDamagedBody
+	if b.DamageEntries == nil {
+		b.DamageEntries = []damageEntry{}
+	}
+	return json.Marshal(alias(b))
+}
+
+// MarshalJSON ensures DamageEntries marshals as `[]` rather than `null` when nil.
+func (b statusEventKilledBody) MarshalJSON() ([]byte, error) {
+	type alias statusEventKilledBody
+	if b.DamageEntries == nil {
+		b.DamageEntries = []damageEntry{}
+	}
+	return json.Marshal(alias(b))
+}
+
+// MarshalJSON ensures Statuses marshals as `{}` rather than `null` when nil.
+func (b statusEffectAppliedBody) MarshalJSON() ([]byte, error) {
+	type alias statusEffectAppliedBody
+	if b.Statuses == nil {
+		b.Statuses = map[string]int32{}
+	}
+	return json.Marshal(alias(b))
+}
+
+// MarshalJSON ensures Statuses marshals as `{}` rather than `null` when nil.
+func (b statusEffectExpiredBody) MarshalJSON() ([]byte, error) {
+	type alias statusEffectExpiredBody
+	if b.Statuses == nil {
+		b.Statuses = map[string]int32{}
+	}
+	return json.Marshal(alias(b))
+}
+
+// MarshalJSON ensures Statuses marshals as `{}` rather than `null` when nil.
+func (b statusEffectCancelledBody) MarshalJSON() ([]byte, error) {
+	type alias statusEffectCancelledBody
+	if b.Statuses == nil {
+		b.Statuses = map[string]int32{}
+	}
+	return json.Marshal(alias(b))
 }

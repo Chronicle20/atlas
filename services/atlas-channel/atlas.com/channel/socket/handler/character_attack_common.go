@@ -5,6 +5,7 @@ import (
 	"atlas-channel/character/skill"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
@@ -55,23 +56,6 @@ func computeReflect(damages []int32, info monster.ReflectInfo, attackerX, attack
 // site picks the coef via rand.Float64() and feeds the result here.
 func snapshotVenomDamagePerTick(luck, magicAttack int, coef float64) int32 {
 	return int32(math.Round(coef * float64(luck) * float64(magicAttack)))
-}
-
-// totalMagicAttack sums the magicAttack stat across the character's
-// currently-equipped slots (regular + cash equipable). atlas-channel
-// does not expose a single MagicAttack accessor on character.Model, so
-// the snapshot reads each equipped asset's contribution directly.
-func totalMagicAttack(c character.Model) int {
-	total := 0
-	for _, s := range c.Equipment().Slots() {
-		if s.Equipable != nil {
-			total += int(s.Equipable.MagicAttack())
-		}
-		if s.CashEquipable != nil {
-			total += int(s.CashEquipable.MagicAttack())
-		}
-	}
-	return total
 }
 
 // attackKindFromAttackType maps a packet AttackType to the reflect kind the
@@ -136,6 +120,24 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					t := tenant.MustFromContext(ctx)
 					attackKind := attackKindFromAttackType(ai.AttackType())
 
+					// Lazy effective-stats fetch: only needed when a damage entry
+					// produces a VENOM apply. Cached for the duration of one attack.
+					var venomStats effective_stats.RestModel
+					venomStatsLoaded := false
+					loadVenomStats := func() effective_stats.RestModel {
+						if venomStatsLoaded {
+							return venomStats
+						}
+						venomStatsLoaded = true
+						stats, sErr := effective_stats.NewProcessor(l, ctx).GetByCharacterId(s.WorldId(), s.ChannelId(), s.CharacterId())
+						if sErr != nil {
+							l.WithError(sErr).Errorf("Unable to fetch effective stats for character [%d]; venom DPT will fall back to zero.", s.CharacterId())
+							return effective_stats.RestModel{}
+						}
+						venomStats = stats
+						return venomStats
+					}
+
 					for _, di := range ai.DamageInfo() {
 						damages := di.Damages()
 						if len(damages) == 0 {
@@ -147,8 +149,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 									ms[k] = int32(v)
 								}
 								if _, isVenom := ms["VENOM"]; isVenom {
+									stats := loadVenomStats()
 									coef := 0.1 + rand.Float64()*0.1
-									ms["VENOM"] = snapshotVenomDamagePerTick(int(c.Luck()), totalMagicAttack(c), coef)
+									ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 								}
 								_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
 							}
@@ -176,10 +179,15 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							}
 						}
 
-						if !reflected {
-							if err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), damages, byte(ai.AttackType())); err != nil {
-								l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), s.CharacterId())
-							}
+						if reflected {
+							// On reflect: monster takes no damage AND no monster status
+							// is applied for this entry (FREEZE/STUN/etc. would let the
+							// player slip through the reflect's intent).
+							continue
+						}
+
+						if err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), damages, byte(ai.AttackType())); err != nil {
+							l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), s.CharacterId())
 						}
 
 						// Apply monster status effects from skill (e.g., freeze, poison, stun)
@@ -189,8 +197,9 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 								ms[k] = int32(v)
 							}
 							if _, isVenom := ms["VENOM"]; isVenom {
+								stats := loadVenomStats()
 								coef := 0.1 + rand.Float64()*0.1
-								ms["VENOM"] = snapshotVenomDamagePerTick(int(c.Luck()), totalMagicAttack(c), coef)
+								ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 							}
 							_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
 						}

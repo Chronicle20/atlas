@@ -12,17 +12,24 @@ const (
 )
 
 type StatusEffect struct {
-	effectId           uuid.UUID
-	sourceType         string
-	sourceCharacterId  uint32
-	sourceSkillId      uint32
-	sourceSkillLevel   uint32
-	statuses           map[string]int32
-	duration           time.Duration
-	tickInterval       time.Duration
-	lastTick           time.Time
-	createdAt          time.Time
-	expiresAt          time.Time
+	effectId          uuid.UUID
+	sourceType        string
+	sourceCharacterId uint32
+	sourceSkillId     uint32
+	sourceSkillLevel  uint32
+	statuses          map[string]int32
+	duration          time.Duration
+	tickInterval      time.Duration
+	lastTick          time.Time
+	createdAt         time.Time
+	expiresAt         time.Time
+	reflectKind       string
+	reflectPercent    int32
+	reflectLtX        int16
+	reflectLtY        int16
+	reflectRbX        int16
+	reflectRbY        int16
+	reflectMaxDamage  int32
 }
 
 func NewStatusEffect(sourceType string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillLevel uint32, statuses map[string]int32, duration time.Duration, tickInterval time.Duration) StatusEffect {
@@ -39,6 +46,30 @@ func NewStatusEffect(sourceType string, sourceCharacterId uint32, sourceSkillId 
 		lastTick:          now,
 		createdAt:         now,
 		expiresAt:         now.Add(duration),
+	}
+}
+
+func NewReflectStatusEffect(sourceType string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillLevel uint32, statuses map[string]int32, duration time.Duration, reflectKind string, reflectPercent int32, reflectLtX int16, reflectLtY int16, reflectRbX int16, reflectRbY int16, reflectMaxDamage int32) StatusEffect {
+	now := time.Now()
+	return StatusEffect{
+		effectId:          uuid.New(),
+		sourceType:        sourceType,
+		sourceCharacterId: sourceCharacterId,
+		sourceSkillId:     sourceSkillId,
+		sourceSkillLevel:  sourceSkillLevel,
+		statuses:          statuses,
+		duration:          duration,
+		tickInterval:      0,
+		lastTick:          now,
+		createdAt:         now,
+		expiresAt:         now.Add(duration),
+		reflectKind:       reflectKind,
+		reflectPercent:    reflectPercent,
+		reflectLtX:        reflectLtX,
+		reflectLtY:        reflectLtY,
+		reflectRbX:        reflectRbX,
+		reflectRbY:        reflectRbY,
+		reflectMaxDamage:  reflectMaxDamage,
 	}
 }
 
@@ -105,4 +136,36 @@ func (s StatusEffect) ShouldTick() bool {
 func (s StatusEffect) WithLastTick(t time.Time) StatusEffect {
 	s.lastTick = t
 	return s
+}
+
+func (s StatusEffect) ReflectKind() string {
+	return s.reflectKind
+}
+
+func (s StatusEffect) ReflectPercent() int32 {
+	return s.reflectPercent
+}
+
+func (s StatusEffect) ReflectLtX() int16 {
+	return s.reflectLtX
+}
+
+func (s StatusEffect) ReflectLtY() int16 {
+	return s.reflectLtY
+}
+
+func (s StatusEffect) ReflectRbX() int16 {
+	return s.reflectRbX
+}
+
+func (s StatusEffect) ReflectRbY() int16 {
+	return s.reflectRbY
+}
+
+func (s StatusEffect) ReflectMaxDamage() int32 {
+	return s.reflectMaxDamage
+}
+
+func (s StatusEffect) IsReflect() bool {
+	return s.reflectKind != ""
 }

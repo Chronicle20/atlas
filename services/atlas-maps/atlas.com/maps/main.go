@@ -5,6 +5,7 @@ import (
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	mapConsumer "atlas-maps/kafka/consumer/map"
+	mistConsumer "atlas-maps/kafka/consumer/mist"
 	"atlas-maps/kafka/consumer/monster"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
@@ -14,6 +15,8 @@ import (
 	"atlas-maps/tasks"
 	"atlas-maps/tracing"
 	"atlas-maps/visit"
+	"context"
+	"errors"
 	"os"
 	"time"
 
@@ -67,6 +70,7 @@ func main() {
 	cashshop.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	mapConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
@@ -79,11 +83,22 @@ func main() {
 	if err := mapConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
+	if err := mistConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register mist kafka handlers.")
+	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
+	// posLookup is a stub until task-019 wires the atlas-character REST
+	// client. Returning an error here makes MistTick a no-op for live mists
+	// (no apply-disease emissions) without breaking the tick loop.
+	posLookup := func(_ context.Context, _ uint32) (int16, int16, error) {
+		return 0, 0, errors.New("posLookup not yet wired (task-019 pending)")
+	}
+
 	go tasks.Register(tasks.NewRespawn(l, 10000))
 	go tasks.Register(tasks.NewWeather(l, time.Second))
+	go tasks.Register(tasks.NewMistTick(l, 1000, posLookup))
 
 	server.New(l).
 		WithContext(tdm.Context()).

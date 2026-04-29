@@ -1,6 +1,7 @@
 package monster
 
 import (
+	"atlas-monsters/monster/mobskill"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -722,6 +724,79 @@ func TestPostExecuteAggroGate_LogicTable(t *testing.T) {
 // exercise its logic table without spinning up the full Damage path.
 func damageRepickGuardWouldFire(killed bool, firstHitObserved bool, oldHpPct, newHpPct uint32) bool {
 	return !killed && (firstHitObserved || newHpPct != oldHpPct)
+}
+
+// TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata verifies that
+// executeStatBuff routes WEAPON_COUNTER (skill type 143) through the reflect
+// constructor, populating the reflect metadata fields on the StatusEffect from
+// the mob skill's X (percent) and bounding box (lt/rb), with reflectMaxDamage
+// pinned to the design constant 32767.
+func TestExecuteStatBuff_ReflectStatus_PopulatesReflectMetadata(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	skillId := byte(monster2.SkillTypePhysicalCounter) // 143
+	skillLevel := byte(1)
+	sd := mobskill.NewModelBuilder().
+		SetSkillId(uint16(skillId)).
+		SetLevel(uint16(skillLevel)).
+		SetDuration(60).
+		SetX(30).
+		SetBoundingBox(-50, -30, 50, 30).
+		Build()
+
+	p := &ProcessorImpl{
+		l:   logrus.New(),
+		ctx: ctx,
+		t:   tm,
+		emit: func(_ string, _ model.Provider[[]kafka.Message]) error {
+			return nil
+		},
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	p.executeStatBuff(m, sd, skillId, skillLevel)
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if len(got.StatusEffects()) != 1 {
+		t.Fatalf("expected 1 status effect, got %d", len(got.StatusEffects()))
+	}
+	se := got.StatusEffects()[0]
+	if !se.HasStatus(string(monster2.TemporaryStatTypeWeaponCounter)) {
+		t.Errorf("expected status %q to be present", monster2.TemporaryStatTypeWeaponCounter)
+	}
+	if !se.IsReflect() {
+		t.Errorf("expected IsReflect()=true, got false")
+	}
+	if se.ReflectKind() != monster2.ReflectKindPhysical {
+		t.Errorf("ReflectKind: got %q, want %q", se.ReflectKind(), monster2.ReflectKindPhysical)
+	}
+	if se.ReflectPercent() != 30 {
+		t.Errorf("ReflectPercent: got %d, want 30", se.ReflectPercent())
+	}
+	if se.ReflectLtX() != -50 {
+		t.Errorf("ReflectLtX: got %d, want -50", se.ReflectLtX())
+	}
+	if se.ReflectLtY() != -30 {
+		t.Errorf("ReflectLtY: got %d, want -30", se.ReflectLtY())
+	}
+	if se.ReflectRbX() != 50 {
+		t.Errorf("ReflectRbX: got %d, want 50", se.ReflectRbX())
+	}
+	if se.ReflectRbY() != 30 {
+		t.Errorf("ReflectRbY: got %d, want 30", se.ReflectRbY())
+	}
+	if se.ReflectMaxDamage() != 32767 {
+		t.Errorf("ReflectMaxDamage: got %d, want 32767", se.ReflectMaxDamage())
+	}
 }
 
 func TestDamageRepickGuard_FiresOnFirstHitMiss(t *testing.T) {

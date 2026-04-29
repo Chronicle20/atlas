@@ -654,19 +654,39 @@ func (p *ProcessorImpl) executeStatBuff(m Model, sd mobskill.Model, skillId byte
 
 	statuses := map[string]int32{string(statusName): sd.X()}
 	duration := time.Duration(sd.Duration()) * time.Second
+	category := monster2.SkillCategory(uint16(skillId))
 
 	applyBuff := func(targetId uint32) {
-		effect := NewStatusEffect(
-			SourceTypeMonsterSkill,
-			0,
-			uint32(skillId),
-			uint32(skillLevel),
-			statuses,
-			duration,
-			0,
-		)
-		err := p.ApplyStatusEffect(targetId, effect)
-		if err != nil {
+		var effect StatusEffect
+		if category == monster2.SkillCategoryReflect {
+			kind := monster2.ReflectKindForSkill(uint16(skillId))
+			effect = NewReflectStatusEffect(
+				SourceTypeMonsterSkill,
+				0,
+				uint32(skillId),
+				uint32(skillLevel),
+				statuses,
+				duration,
+				kind,
+				sd.X(),
+				int16(sd.LtX()),
+				int16(sd.LtY()),
+				int16(sd.RbX()),
+				int16(sd.RbY()),
+				32767,
+			)
+		} else {
+			effect = NewStatusEffect(
+				SourceTypeMonsterSkill,
+				0,
+				uint32(skillId),
+				uint32(skillLevel),
+				statuses,
+				duration,
+				0,
+			)
+		}
+		if err := p.ApplyStatusEffect(targetId, effect); err != nil {
 			p.l.WithError(err).Errorf("Unable to apply stat buff to monster [%d].", targetId)
 		}
 	}

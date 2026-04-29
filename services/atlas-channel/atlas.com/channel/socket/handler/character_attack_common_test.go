@@ -286,6 +286,31 @@ func TestReflectFlow_AfterExpiry_NoReflect(t *testing.T) {
 	}
 }
 
+// TestSnapshotVenomDamagePerTick_LowCoef pins the rounded value at the
+// low end of the [0.1, 0.2) coefficient range. Luck=120, MAtk=200,
+// coef=0.1 -> round(0.1 * 120 * 200) = 2400.
+func TestSnapshotVenomDamagePerTick_LowCoef(t *testing.T) {
+	if got := snapshotVenomDamagePerTick(120, 200, 0.1); got != 2400 {
+		t.Fatalf("snapshotVenomDamagePerTick(120, 200, 0.1) = %d, want 2400", got)
+	}
+}
+
+// TestSnapshotVenomDamagePerTick_HighCoef pins the rounded value at the
+// high end of the [0.1, 0.2) coefficient range. coef=0.2 -> 4800.
+func TestSnapshotVenomDamagePerTick_HighCoef(t *testing.T) {
+	if got := snapshotVenomDamagePerTick(120, 200, 0.2); got != 4800 {
+		t.Fatalf("snapshotVenomDamagePerTick(120, 200, 0.2) = %d, want 4800", got)
+	}
+}
+
+// TestSnapshotVenomDamagePerTick_Mid pins a midpoint value to confirm
+// rounding behaviour matches math.Round (banker's rounding NOT used).
+func TestSnapshotVenomDamagePerTick_Mid(t *testing.T) {
+	if got := snapshotVenomDamagePerTick(120, 200, 0.15); got != 3600 {
+		t.Fatalf("snapshotVenomDamagePerTick(120, 200, 0.15) = %d, want 3600", got)
+	}
+}
+
 // TestAttackKindFromAttackType maps each AttackType to the reflect kind
 // the handler will look up in the StatusMirror.
 func TestAttackKindFromAttackType(t *testing.T) {

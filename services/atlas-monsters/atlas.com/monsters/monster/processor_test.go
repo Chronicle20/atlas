@@ -1156,3 +1156,212 @@ func TestExecuteMist_ProducesMistCreateCommand(t *testing.T) {
 		t.Errorf("skill: got (%d,%d)", body.SourceSkillId, body.SourceSkillLevel)
 	}
 }
+
+// applyReflectForTest seeds a reflect status effect of the given kind on the
+// target monster. Used by the dispel-guard tests below to put the monster in
+// a known reflect state without depending on executeStatBuff.
+func applyReflectForTest(t *testing.T, ten tenant.Model, targetId uint32, kind string, statusName string) {
+	t.Helper()
+	se := NewReflectStatusEffect(
+		SourceTypeMonsterSkill, 0, 143, 1,
+		map[string]int32{statusName: 30}, 60*time.Second,
+		kind, 30, -50, -30, 50, 30, 32767,
+	)
+	if _, err := GetMonsterRegistry().ApplyStatusEffect(ten, targetId, se); err != nil {
+		t.Fatalf("seed reflect %s: %v", kind, err)
+	}
+}
+
+// applyPlainStatusForTest seeds a non-reflect status effect on the target.
+func applyPlainStatusForTest(t *testing.T, ten tenant.Model, targetId uint32, statusName string) {
+	t.Helper()
+	se := NewStatusEffect(
+		SourceTypePlayerSkill, 0, 0, 1,
+		map[string]int32{statusName: 1}, 60*time.Second, 0,
+	)
+	if _, err := GetMonsterRegistry().ApplyStatusEffect(ten, targetId, se); err != nil {
+		t.Fatalf("seed plain %s: %v", statusName, err)
+	}
+}
+
+// TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive verifies
+// FR-4.9.1.2: a player dispel/crash whose SourceSkillClass is "PHYSICAL" must
+// be rejected while a PHYSICAL reflect (WEAPON_COUNTER) is active on the
+// monster. FREEZE — the unrelated status the dispel was targeting — must
+// remain on the monster.
+func TestStatusCancel_PhysicalSkill_RejectedWhilePhysicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE was cancelled, but PHYSICAL dispel must be refused while WEAPON_COUNTER is active")
+	}
+	if !got.HasStatusEffect("WEAPON_COUNTER") {
+		t.Errorf("WEAPON_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive is the
+// symmetric counterpart for MAGIC reflect.
+func TestStatusCancel_MagicSkill_RejectedWhileMagicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "MAGICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE was cancelled, but MAGICAL dispel must be refused while MAGIC_COUNTER is active")
+	}
+	if !got.HasStatusEffect("MAGIC_COUNTER") {
+		t.Errorf("MAGIC_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive verifies
+// the cross-kind case: a PHYSICAL dispel proceeds normally when only a
+// MAGICAL reflect is active.
+func TestStatusCancel_PhysicalSkill_AllowedWhileMagicalReflectActive(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "MAGICAL", "MAGIC_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE should have been cancelled — different reflect kind must not gate the dispel")
+	}
+	if !got.HasStatusEffect("MAGIC_COUNTER") {
+		t.Errorf("MAGIC_COUNTER must remain active")
+	}
+}
+
+// TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel verifies that an
+// empty SourceSkillClass (e.g. an internal cancel that pre-dates this
+// field) proceeds without consulting the reflect guard. This preserves the
+// behavior of all existing callers that pass through CancelStatusEffect.
+func TestStatusCancel_NoSkillClass_FallsThroughToNormalCancel(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+	applyPlainStatusForTest(t, tm, m.UniqueId(), "FREEZE")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"FREEZE"}, ""); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("FREEZE") {
+		t.Errorf("FREEZE should have been cancelled when SourceSkillClass is empty (back-compat path)")
+	}
+}
+
+// TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass verifies
+// FR-4.9.1.1: a cancel that targets WEAPON_COUNTER or MAGIC_COUNTER itself
+// is always allowed, even when its SourceSkillClass matches the active
+// reflect's kind. Without this carve-out the reflect would become permanent
+// because the guard would refuse to cancel it.
+func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing.T) {
+	r := GetMonsterRegistry()
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	r.Clear(ctx)
+
+	f := testField()
+	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	applyReflectForTest(t, tm, m.UniqueId(), "PHYSICAL", "WEAPON_COUNTER")
+
+	p := &ProcessorImpl{
+		l: logrus.New(), ctx: ctx, t: tm,
+		emit:      func(_ string, _ model.Provider[[]kafka.Message]) error { return nil },
+		inFieldFn: func(_ field.Model) ([]uint32, error) { return nil, nil },
+	}
+
+	if err := p.CancelStatusEffectGuarded(m.UniqueId(), []string{"WEAPON_COUNTER"}, "PHYSICAL"); err != nil {
+		t.Fatalf("CancelStatusEffectGuarded: %v", err)
+	}
+
+	got, err := r.GetMonster(tm, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.HasStatusEffect("WEAPON_COUNTER") {
+		t.Errorf("WEAPON_COUNTER should have been cancelled — targeting the reflect itself is always allowed")
+	}
+}

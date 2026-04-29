@@ -48,7 +48,7 @@ func UseSkillCommandProvider(f field.Model, monsterId uint32, characterId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
-func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []string) model.Provider[[]kafka.Message] {
+func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.CancelStatusCommandBody]{
 		WorldId:   f.WorldId(),
@@ -58,7 +58,10 @@ func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []
 		MonsterId: monsterId,
 		Type:      monster2.CommandTypeCancelStatus,
 		Body: monster2.CancelStatusCommandBody{
-			StatusTypes: statusTypes,
+			StatusTypes:       statusTypes,
+			SourceCharacterId: sourceCharacterId,
+			SourceSkillId:     sourceSkillId,
+			SourceSkillClass:  sourceSkillClass,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

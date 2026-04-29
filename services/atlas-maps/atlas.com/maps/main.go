@@ -2,6 +2,7 @@ package main
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	characterClient "atlas-maps/character"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	mapConsumer "atlas-maps/kafka/consumer/map"
@@ -16,7 +17,6 @@ import (
 	"atlas-maps/tracing"
 	"atlas-maps/visit"
 	"context"
-	"errors"
 	"os"
 	"time"
 
@@ -89,11 +89,11 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	// posLookup is a stub until task-019 wires the atlas-character REST
-	// client. Returning an error here makes MistTick a no-op for live mists
-	// (no apply-disease emissions) without breaking the tick loop.
-	posLookup := func(_ context.Context, _ uint32) (int16, int16, error) {
-		return 0, 0, errors.New("posLookup not yet wired (task-019 pending)")
+	// posLookup resolves a character's world coordinates via the
+	// atlas-character REST client. The closure is recreated per-call so
+	// each lookup runs against the caller's tenant-scoped context.
+	posLookup := func(ctx context.Context, characterId uint32) (int16, int16, error) {
+		return characterClient.NewProcessor(l, ctx).Position(characterId)
 	}
 
 	go tasks.Register(tasks.NewRespawn(l, 10000))

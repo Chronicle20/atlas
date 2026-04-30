@@ -34,6 +34,16 @@ func (i *ItemRestModel) SetID(id string) error {
 	return nil
 }
 
+// SetToOneReferenceID and SetToManyReferenceIDs satisfy the jsonapi
+// UnmarshalToOneRelations and UnmarshalToManyRelations interfaces. atlas-data's
+// equipment response includes a "slots" relationship; without these stubs
+// api2go's Unmarshal returns an error about the unimplemented interface, which
+// the caller surfaces as "item not found in atlas-data". The relationship
+// payload is irrelevant to existence-check semantics, so the methods are
+// intentionally no-ops.
+func (i *ItemRestModel) SetToOneReferenceID(_, _ string) error              { return nil }
+func (i *ItemRestModel) SetToManyReferenceIDs(_ string, _ []string) error  { return nil }
+
 // requestEquipmentById hits GET /data/equipment/{id} which returns equip statistics.
 // A 404 from atlas-data means the template does not exist as equip data.
 func requestEquipmentById(id uint32) requests.Request[ItemRestModel] {

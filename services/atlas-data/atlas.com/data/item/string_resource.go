@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -138,7 +139,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				rms = append(rms, StringSearchResultRestModel{
 					Id:          strconv.Itoa(int(row.ItemId)),
 					Name:        row.Name,
-					Compartment: Compartment(row.Compartment).String(),
+					Compartment: row.Compartment.Token(),
 					Subcategory: row.Subcategory,
 				})
 			}
@@ -208,11 +209,11 @@ func buildPredicates(f filterSpec) ([]string, []interface{}) {
 	return preds, args
 }
 
-func compartmentLogValue(c *Compartment) string {
+func compartmentLogValue(c *inventory.Type) string {
 	if c == nil {
 		return "any"
 	}
-	return c.String()
+	return c.Token()
 }
 
 func stringOrAny(s string) string {

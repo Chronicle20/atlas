@@ -3,6 +3,7 @@ package item
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"gorm.io/gorm"
 )
@@ -28,7 +29,7 @@ func UpdateEquipmentClassification(tx *gorm.DB, ctx context.Context, itemId uint
 		"job_mask": mask,
 	}
 	if isCash {
-		updates["compartment"] = uint8(CompartmentCash)
+		updates["compartment"] = uint8(inventory.TypeValueCash)
 	}
 
 	return tx.WithContext(ctx).

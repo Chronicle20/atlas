@@ -214,23 +214,18 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
+			mp := character2.NewProcessor(l, ctx)
 
-			c, err := cp.GetById()(characterId)
-			if err != nil {
+			pg, _ := model.NewGroup(ctx)
+			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
+			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			c, m, ci := fc.Get(), fm.Get(), fi.Get()
 
-			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
-
-			ci, err := p.cdp.GetById(uint32(itemId))
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
-
-			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}

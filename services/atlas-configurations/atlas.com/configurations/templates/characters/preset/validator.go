@@ -3,6 +3,7 @@ package preset
 import (
 	"atlas-configurations/data"
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
@@ -95,7 +96,11 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 		if hasTenant {
 			info, err := v.client.GetItemById(ctx, eq.TemplateId)
 			if err != nil {
-				add(fieldPath("equipment", i, "templateId"), "item not found in atlas-data")
+				if errors.Is(err, data.ErrNotFound) {
+					add(fieldPath("equipment", i, "templateId"), "item not found in atlas-data")
+				} else {
+					add(fieldPath("equipment", i, "templateId"), "atlas-data lookup failed: "+err.Error())
+				}
 				continue
 			}
 			if !info.Equipable {
@@ -116,7 +121,11 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 	for i, it := range p.Attributes.Inventory {
 		if hasTenant {
 			if _, err := v.client.GetItemById(ctx, it.TemplateId); err != nil {
-				add(fieldPath("inventory", i, "templateId"), "item not found in atlas-data")
+				if errors.Is(err, data.ErrNotFound) {
+					add(fieldPath("inventory", i, "templateId"), "item not found in atlas-data")
+				} else {
+					add(fieldPath("inventory", i, "templateId"), "atlas-data lookup failed: "+err.Error())
+				}
 			}
 		}
 		if it.Quantity < 1 {

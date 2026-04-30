@@ -6,7 +6,7 @@ import (
 	fame2 "atlas-fame/kafka/consumer/fame"
 	"atlas-fame/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-fame/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

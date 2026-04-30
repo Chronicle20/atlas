@@ -15,7 +15,7 @@ import (
 	"atlas-guilds/tasks"
 	"atlas-guilds/thread"
 	"atlas-guilds/thread/reply"
-	"atlas-guilds/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

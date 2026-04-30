@@ -107,6 +107,13 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		desc = ss.Desc()
 	}
 
+	maxLevel := uint8(0)
+	if n := len(es); n > 255 {
+		maxLevel = 255
+	} else {
+		maxLevel = uint8(n)
+	}
+
 	m := RestModel{
 		Id:            uint32(skillId),
 		Name:          name,
@@ -114,6 +121,7 @@ func produceSkill(t tenant.Model, skillId skill.Id, xml xml.Node) (RestModel, er
 		Action:        action,
 		Element:       element,
 		AnimationTime: 0,
+		MaxLevel:      maxLevel,
 		Effects:       es,
 	}
 

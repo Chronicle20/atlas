@@ -1,9 +1,12 @@
 package factory
 
 import (
+	"atlas-character-factory/character"
 	"atlas-character-factory/rest"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -13,7 +16,9 @@ import (
 )
 
 const (
-	CreateCharacter = "create_character"
+	CreateCharacter    = "create_character"
+	CreateFromPreset   = "create_from_preset"
+	GetNameValidity    = "get_name_validity"
 )
 
 // writeErrorResponse writes a JSON:API compliant error response
@@ -81,6 +86,86 @@ func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
 	return func(router *mux.Router, l logrus.FieldLogger) {
 		r := router.PathPrefix("/characters/seed").Subrouter()
 		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
+
+		cr := router.PathPrefix("/characters").Subrouter()
+		cr.HandleFunc("/from-preset", rest.RegisterHandler(l)(si)(CreateFromPreset, handleCreateFromPreset)).Methods(http.MethodPost)
+		cr.HandleFunc("/name-validity", rest.RegisterHandler(l)(si)(GetNameValidity, handleNameValidity)).Methods(http.MethodGet)
+	}
+}
+
+func categorizePresetError(err error) int {
+	var nie *NameInvalidError
+	switch {
+	case errors.Is(err, ErrInvalidPresetId):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrPresetNotFound):
+		return http.StatusNotFound
+	case errors.As(err, &nie):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrNameDuplicate):
+		return http.StatusConflict
+	case errors.Is(err, ErrAtlasDataUnreachable):
+		return http.StatusBadGateway
+	case errors.Is(err, ErrPresetValidation):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+func handleCreateFromPreset(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var in PresetCreateRestModel
+		if err := json.NewDecoder(r.Body).Decode(&in); err != nil {
+			writeErrorResponse(w, http.StatusBadRequest, "invalid JSON body")
+			return
+		}
+		defer r.Body.Close()
+
+		if in.PresetId == "" || in.Name == "" {
+			writeErrorResponse(w, http.StatusBadRequest, "presetId and name are required")
+			return
+		}
+
+		processor := NewProcessor(d.Logger())
+		transactionId, err := processor.CreateFromPreset(d.Context(), in)
+		if err != nil {
+			statusCode := categorizePresetError(err)
+			writeErrorResponse(w, statusCode, err.Error())
+			return
+		}
+
+		response := CreateCharacterResponse{TransactionId: transactionId}
+		w.WriteHeader(http.StatusAccepted)
+		server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
+	}
+}
+
+func handleNameValidity(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		name := q.Get("name")
+		widRaw := q.Get("worldId")
+		if name == "" || widRaw == "" {
+			writeErrorResponse(w, http.StatusBadRequest, "name and worldId are required")
+			return
+		}
+		wid, err := strconv.ParseUint(widRaw, 10, 8)
+		if err != nil {
+			writeErrorResponse(w, http.StatusBadRequest, "worldId must be a non-negative integer")
+			return
+		}
+
+		client := character.NewNameValidityClient(d.Logger())
+		res, err := client.Check(d.Context(), name, byte(wid))
+		if err != nil {
+			d.Logger().WithError(err).Error("name-validity passthrough failed")
+			writeErrorResponse(w, http.StatusBadGateway, err.Error())
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(res)
 	}
 }
 

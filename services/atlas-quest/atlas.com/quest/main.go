@@ -10,7 +10,7 @@ import (
 	"atlas-quest/quest"
 	"atlas-quest/quest/progress"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-quest/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

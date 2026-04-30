@@ -7,7 +7,7 @@ import (
 	"atlas-reactor-actions/logger"
 	"atlas-reactor-actions/script"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-reactor-actions/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"

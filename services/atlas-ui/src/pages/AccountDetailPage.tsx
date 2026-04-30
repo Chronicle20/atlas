@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useAccount } from "@/lib/hooks/api/useAccounts";
 import { useWallet } from "@/lib/hooks/api/useWallet";
+import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { ErrorDisplay } from "@/components/common";
 import { AccountDetailSkeleton } from "@/components/common/skeletons/AccountDetailSkeleton";
 import { WalletPanel } from "@/components/features/accounts/WalletPanel";
+import { ApplyPresetDialog } from "@/components/features/characters/ApplyPresetDialog";
 
 function getLoginStateName(state: number): string {
   if (state === 0) return "Logged Out";
@@ -24,9 +28,13 @@ function getLoginStateBadgeVariant(state: number): "secondary" | "default" | "ou
 export function AccountDetailPage() {
   const { id } = useParams();
   const { activeTenant } = useTenant();
+  const [applyOpen, setApplyOpen] = useState(false);
 
   const accountQuery = useAccount(activeTenant!, id ?? "");
   const walletQuery = useWallet(activeTenant!, id ?? "");
+  const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
+  const hasPresets =
+    (((tenantConfigQuery.data?.attributes as any)?.characters as any)?.presets ?? []).length > 0;
 
   const account = accountQuery.data ?? null;
   const wallet = walletQuery.data ?? null;
@@ -43,11 +51,24 @@ export function AccountDetailPage() {
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen overflow-auto">
-      <div className="items-center justify-between space-y-2">
+      <div className="flex items-center justify-between space-y-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{account.attributes.name}</h2>
         </div>
+        <div>
+          {activeTenant && hasPresets && (
+            <Button onClick={() => setApplyOpen(true)}>Add character from preset</Button>
+          )}
+        </div>
       </div>
+      {activeTenant && (
+        <ApplyPresetDialog
+          tenant={activeTenant}
+          accountId={Number(account.id)}
+          open={applyOpen}
+          onOpenChange={setApplyOpen}
+        />
+      )}
 
       <div className="flex flex-row gap-6">
         <Card className="flex-1">

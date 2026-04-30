@@ -6,6 +6,7 @@ import (
 	"atlas-channel/compartment"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
+	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
 	"strconv"
@@ -54,6 +55,7 @@ type Model struct {
 	inventory          inventory.Model
 	skills             []skill.Model
 	quests             []quest.Model
+	party              party.Model
 }
 
 func (m Model) Gm() bool {
@@ -260,6 +262,18 @@ func (m Model) Quests() []quest.Model {
 	return m.quests
 }
 
+func (m Model) Party() party.Model {
+	return m.party
+}
+
+// InParty reports whether the character is currently a member of a party.
+// Returns false on an undecorated model (zero-valued party). Callers should
+// apply PartyDecorator (or check InParty themselves before assuming party
+// data is loaded) before relying on this value.
+func (m Model) InParty() bool {
+	return m.party.Id() != 0
+}
+
 func (m Model) SetInventory(i inventory.Model) Model {
 	eq := equipment.NewModel()
 	ec := compartment.NewBuilder(i.Equipable().Id(), m.Id(), i.Equipable().Type(), i.Equipable().Capacity())
@@ -312,4 +326,8 @@ func (m Model) SetPets(ms []pet.Model) Model {
 
 func (m Model) SetQuests(ms []quest.Model) Model {
 	return CloneModel(m).SetQuests(ms).MustBuild()
+}
+
+func (m Model) SetParty(p party.Model) Model {
+	return CloneModel(m).SetParty(p).MustBuild()
 }

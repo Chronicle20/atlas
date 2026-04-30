@@ -214,23 +214,18 @@ func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, it
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cp := character.NewProcessor(l, ctx)
+			mp := character2.NewProcessor(l, ctx)
 
-			c, err := cp.GetById()(characterId)
-			if err != nil {
+			pg, _ := model.NewGroup(ctx)
+			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
+			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			c, m, ci := fc.Get(), fm.Get(), fi.Get()
 
-			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
-
-			ci, err := p.cdp.GetById(uint32(itemId))
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
-
-			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -246,20 +241,21 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			mp := character2.NewProcessor(l, ctx)
 
-			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
-			if err != nil {
+			pg, _ := model.NewGroup(ctx)
+			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			m, ci := fm.Get(), fi.Get()
 
-			ci, err := p.cdp.GetById(uint32(itemId))
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
 			toMapId := _map2.EmptyMapId
 			if val, ok := ci.GetSpec(consumable3.SpecTypeMoveTo); ok && val > 0 {
 				toMapId = _map2.Id(val)
 			}
+			// Dependent read: needs m.MapId() — stays sequential after Wait().
 			if toMapId == _map2.EmptyMapId {
 				mm, err := _map3.NewProcessor(l, ctx).GetById(m.MapId())
 				if err != nil {
@@ -268,7 +264,7 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				toMapId = mm.ReturnMapId()
 			}
 
-			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err := cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
@@ -290,6 +286,10 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 
+			// Sequential reads: PRD §4.3 names ConsumeStandard / ConsumeTownScroll /
+			// ConsumeSummoningSack as the parallelisation targets. ConsumePetFood's two
+			// reads are independent and could be parallelised in a follow-up — left
+			// sequential here to keep the cleanup tightly scoped.
 			pe, err := pp.HungriestByOwnerProvider(characterId)()
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
@@ -324,6 +324,8 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 
+			// Sequential reads: ci.Indexes() feeds the pet filter built immediately
+			// after, so reads are not independent.
 			ci, err := cash.NewProcessor(l, ctx).GetById(uint32(itemId))
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
@@ -358,19 +360,21 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
-			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
+			p := NewProcessor(l, ctx)
+			cp := character.NewProcessor(l, ctx)
 
-			ci, err := consumable3.NewProcessor(l, ctx).GetById(uint32(itemId))
-			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			pg, _ := model.NewGroup(ctx)
+			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			c, ci := fc.Get(), fi.Get()
 
+			// Dependent read: needs c.MapId(), c.X(), c.Y() — stays sequential.
 			pos, err := position.NewProcessor(l, ctx).GetInMap(c.MapId(), c.X(), c.Y(), c.X(), c.Y())()
 			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
 			l.Debugf("Character [%d] summoning [%d] monsters at [%d,%d]. They are at [%d,%d].", characterId, len(ci.MonsterSummons()), pos.X(), pos.Y(), c.X(), c.Y())
@@ -389,7 +393,7 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 
 			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			return nil
 		}
@@ -403,6 +407,8 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	transactionId := uuid.New()
 	reserves := make([]compartment.Reserves, 0)
 
+	// Sequential reads: equipment lookup and reservation logic below all
+	// depend on c.Inventory(); the read chain is genuinely sequential.
 	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)

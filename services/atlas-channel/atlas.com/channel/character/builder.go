@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/equipment"
 	"atlas-channel/inventory"
+	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
 	"errors"
@@ -54,6 +55,7 @@ type modelBuilder struct {
 	inventory          inventory.Model
 	skills             []skill.Model
 	quests             []quest.Model
+	party              party.Model
 }
 
 // NewModelBuilder creates a new builder instance
@@ -100,6 +102,7 @@ func CloneModel(m Model) *modelBuilder {
 		inventory:          m.inventory,
 		skills:             m.skills,
 		quests:             m.quests,
+		party:              m.party,
 	}
 }
 
@@ -139,6 +142,7 @@ func (b *modelBuilder) SetEquipment(v equipment.Model) *modelBuilder { b.equipme
 func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder { b.inventory = v; return b }
 func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills = v; return b }
 func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
+func (b *modelBuilder) SetParty(v party.Model) *modelBuilder         { b.party = v; return b }
 
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {
@@ -182,6 +186,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		inventory:          b.inventory,
 		skills:             b.skills,
 		quests:             b.quests,
+		party:              b.party,
 	}, nil
 }
 

@@ -218,6 +218,7 @@ const (
 	SkipReasonActionMismatch     = "action_mismatch"
 	SkipReasonTemplateIdMismatch = "template_id_mismatch"
 	SkipReasonUnmatchedEvent     = "unmatched_event"
+	SkipReasonNilTransactionId   = "nil_transaction_id"
 )
 
 // LogSkip emits a debug-level structured log with a `reason` field.

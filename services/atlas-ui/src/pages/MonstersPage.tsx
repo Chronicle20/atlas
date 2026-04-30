@@ -192,10 +192,13 @@ function MonstersPageContent() {
                           <TableCell>{detail ? detail.experience.toLocaleString() : <Skeleton className="h-4 w-16" />}</TableCell>
                           <TableCell>
                             {detail ? (
-                              <div className="flex gap-1">
+                              <div className="flex flex-wrap gap-1">
                                 {detail.boss && <Badge variant="destructive">Boss</Badge>}
                                 {detail.undead && <Badge variant="secondary">Undead</Badge>}
                                 {detail.friendly && <Badge variant="outline">Friendly</Badge>}
+                                {detail.flying && <Badge variant="outline">Flying</Badge>}
+                                {detail.swimming && <Badge variant="outline">Swimming</Badge>}
+                                {detail.first_attack && <Badge variant="destructive">First attack</Badge>}
                               </div>
                             ) : (
                               <Skeleton className="h-4 w-20" />

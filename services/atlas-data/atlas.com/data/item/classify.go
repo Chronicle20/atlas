@@ -2,99 +2,57 @@ package item
 
 import (
 	itemc "github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
-
-type Compartment uint8
-
-const (
-	CompartmentUnknown   Compartment = 0
-	CompartmentEquipment Compartment = 1
-	CompartmentUse       Compartment = 2
-	CompartmentSetup     Compartment = 3
-	CompartmentEtc       Compartment = 4
-	CompartmentCash      Compartment = 5
-)
-
-func (c Compartment) String() string {
-	switch c {
-	case CompartmentEquipment:
-		return "equipment"
-	case CompartmentUse:
-		return "use"
-	case CompartmentSetup:
-		return "setup"
-	case CompartmentEtc:
-		return "etc"
-	case CompartmentCash:
-		return "cash"
-	default:
-		return "unknown"
-	}
-}
 
 // Classify derives (compartment, subcategory) from an item id alone.
-func Classify(itemId uint32) (Compartment, string) {
-	compartment := compartmentOf(itemId)
-	if compartment == CompartmentUnknown {
-		return CompartmentUnknown, "other"
+func Classify(itemId uint32) (inventory.Type, string) {
+	compartment, ok := inventory.TypeFromItemId(itemc.Id(itemId))
+	if !ok {
+		return inventory.Type(0), "other"
 	}
 
 	switch compartment {
-	case CompartmentEquipment:
-		return CompartmentEquipment, equipmentSubcategory(itemId)
-	case CompartmentUse:
-		return CompartmentUse, useSubcategory(itemId)
-	case CompartmentSetup:
-		return CompartmentSetup, setupSubcategory(itemId)
-	case CompartmentEtc:
-		return CompartmentEtc, etcSubcategory(itemId)
-	case CompartmentCash:
-		return CompartmentCash, cashSubcategory(itemId)
+	case inventory.TypeValueEquip:
+		return compartment, equipmentSubcategory(itemId)
+	case inventory.TypeValueUse:
+		return compartment, useSubcategory(itemId)
+	case inventory.TypeValueSetup:
+		return compartment, setupSubcategory(itemId)
+	case inventory.TypeValueETC:
+		return compartment, etcSubcategory(itemId)
+	case inventory.TypeValueCash:
+		return compartment, cashSubcategory(itemId)
 	}
 	return compartment, "other"
 }
 
-func compartmentOf(itemId uint32) Compartment {
-	switch itemId / 1_000_000 {
-	case 1:
-		return CompartmentEquipment
-	case 2:
-		return CompartmentUse
-	case 3:
-		return CompartmentSetup
-	case 4:
-		return CompartmentEtc
-	case 5:
-		return CompartmentCash
-	default:
-		return CompartmentUnknown
-	}
+func classOf(itemId uint32) itemc.Classification {
+	return itemc.GetClassification(itemc.Id(itemId))
 }
 
-func classification(itemId uint32) uint32 { return itemId / 10_000 }
-
-var equipmentArmorByClassification = map[uint32]string{
-	100: "hat",
-	101: "face-accessory",
-	102: "eye-accessory",
-	103: "earring",
-	104: "top",
-	105: "overall",
-	106: "bottom",
-	107: "shoes",
-	108: "gloves",
-	109: "shield",
-	110: "cape",
-	111: "ring",
-	112: "pendant",
-	113: "belt",
-	114: "medal",
-	190: "tamed-mob",
-	191: "saddle",
+var equipmentArmorByClassification = map[itemc.Classification]string{
+	itemc.ClassificationHat:           "hat",
+	itemc.ClassificationFaceAccessory: "face-accessory",
+	itemc.ClassificationEyeAccessory:  "eye-accessory",
+	itemc.ClassificationEarring:       "earring",
+	itemc.ClassificationTop:           "top",
+	itemc.ClassificationOverall:       "overall",
+	itemc.ClassificationBottom:        "bottom",
+	itemc.ClassificationShoes:         "shoes",
+	itemc.ClassificationGloves:        "gloves",
+	itemc.ClassificationShield:        "shield",
+	itemc.ClassificationCape:          "cape",
+	itemc.ClassificationRing:          "ring",
+	itemc.ClassificationPendant:       "pendant",
+	itemc.ClassificationBelt:          "belt",
+	itemc.ClassificationMedal:         "medal",
+	itemc.ClassificationTamedMob:      "tamed-mob",
+	itemc.ClassificationSaddle:        "saddle",
 }
 
 func equipmentSubcategory(itemId uint32) string {
-	cls := classification(itemId)
+	cls := classOf(itemId)
 	if cls >= 130 && cls <= 149 {
 		wt := itemc.GetWeaponType(itemc.Id(itemId))
 		return weaponTypeToken(wt)
@@ -147,108 +105,116 @@ func weaponTypeToken(wt itemc.WeaponType) string {
 	}
 }
 
-var useByClassification = map[uint32]string{
-	200: "potion", 201: "potion", 202: "potion",
-	203: "town-warp",
-	204: "scroll", 205: "scroll",
-	206: "arrow",
-	207: "throwing-star",
-	208: "megaphone",
-	210: "summoning-sack",
-	212: "pet-food",
-	221: "transformation",
-	228: "skill-book",
-	229: "mastery-book",
-	233: "bullet",
-	238: "monster-card",
+var useByClassification = map[itemc.Classification]string{
+	itemc.ClassificationConsumableTownWarp:       "town-warp",
+	itemc.ClassificationConsumableArrow:          "arrow",
+	itemc.ClassificationConsumableThrowingStar:   "throwing-star",
+	itemc.ClassificationConsumableMegaphone:      "megaphone",
+	itemc.ClassificationConsumableSummoningSack:  "summoning-sack",
+	itemc.ClassificationConsumablePetFood:        "pet-food",
+	itemc.ClassificationConsumableTransformation: "transformation",
+	itemc.ClassificationConsumableSkillBook:      "skill-book",
+	itemc.ClassificationConsumableMasteryBook:    "mastery-book",
+	itemc.ClassificationBullet:                   "bullet",
+	itemc.ClassificationConsumableMonsterCard:    "monster-card",
 }
 
 func useSubcategory(itemId uint32) string {
-	if name, ok := useByClassification[classification(itemId)]; ok {
+	cls := classOf(itemId)
+	if cls >= 200 && cls <= 202 {
+		return "potion"
+	}
+	if cls == itemc.ClassificationConsumableScroll || cls == 205 {
+		return "scroll"
+	}
+	if name, ok := useByClassification[cls]; ok {
 		return name
 	}
 	return "other"
 }
 
-var setupByClassification = map[uint32]string{
-	301: "chair",
-	303: "hired-merchant",
+var setupByClassification = map[itemc.Classification]string{
+	itemc.ClassificationChair:              "chair",
+	itemc.ClassificationSetupHiredMerchant: "hired-merchant",
 }
 
 func setupSubcategory(itemId uint32) string {
-	if name, ok := setupByClassification[classification(itemId)]; ok {
+	if name, ok := setupByClassification[classOf(itemId)]; ok {
 		return name
 	}
 	return "other-setup"
 }
 
-var etcByClassification = map[uint32]string{
-	400: "crafting-material",
-	401: "ore", 402: "ore",
-	403: "production-item",
-	404: "mineral-ore",
-	405: "mineral-refined",
-	406: "gem-rough",
-	407: "gem-cut",
-	411: "monster-drop", 412: "monster-drop", 413: "monster-drop", 414: "monster-drop",
-	415: "monster-drop", 416: "monster-drop", 417: "monster-drop", 418: "monster-drop",
-	419: "monster-drop",
-	421: "magnifying-glass",
-	422: "quest-item", 423: "quest-item", 424: "quest-item", 425: "quest-item",
-	426: "quest-item", 427: "quest-item", 428: "quest-item",
-	430: "simulator",
-	431: "book-page",
+var etcByClassification = map[itemc.Classification]string{
+	itemc.ClassificationCraftingMaterial: "crafting-material",
+	401:                                  "ore",
+	402:                                  "ore",
+	itemc.ClassificationProductionItem:   "production-item",
+	itemc.ClassificationMineralOre:       "mineral-ore",
+	itemc.ClassificationMineralRefined:   "mineral-refined",
+	itemc.ClassificationGemRough:         "gem-rough",
+	itemc.ClassificationGemCut:           "gem-cut",
+	itemc.ClassificationMagnifyingGlass:  "magnifying-glass",
+	itemc.ClassificationSimulator:        "simulator",
+	itemc.ClassificationBookPage:         "book-page",
 }
 
 func etcSubcategory(itemId uint32) string {
-	if name, ok := etcByClassification[classification(itemId)]; ok {
+	cls := classOf(itemId)
+	if cls >= 411 && cls <= 419 {
+		return "monster-drop"
+	}
+	if cls >= 422 && cls <= 428 {
+		return "quest-item"
+	}
+	if name, ok := etcByClassification[cls]; ok {
 		return name
 	}
 	return "other-etc"
 }
 
-var cashByClassification = map[uint32]string{
-	500: "pet",
-	501: "character-effect",
-	502: "cosmetic-throwing-star",
-	503: "hired-merchant",
-	504: "teleport-rock",
-	505: "point-reset",
-	506: "item-imprint",
-	507: "megaphone",
-	508: "message-banner",
-	509: "note",
-	510: "song-player",
-	512: "field-effect",
-	513: "death-protection",
-	514: "store-permit",
-	515: "cosmetic-coupon",
-	516: "expression",
-	517: "pet-imprint",
-	520: "currency-sack",
-	521: "experience-coupon",
-	522: "gachapon-coupon",
-	523: "store-search",
-	524: "pet-consumable",
-	525: "wedding-ticket",
-	528: "character-effect",
-	529: "guild-emote",
-	530: "transformation-coupon",
-	533: "duey-coupon",
-	536: "drop-coupon",
-	537: "chalkboard",
-	538: "pet-evolution",
-	539: "avatar-megaphone",
-	540: "character-imprint",
-	542: "cosmetic-membership-coupon",
-	543: "character-creation",
-	545: "remote-merchant",
-	546: "pet-multi-consumable",
-	547: "remote-store",
+var cashByClassification = map[itemc.Classification]string{
+	itemc.ClassificationPet:                      "pet",
+	itemc.ClassificationCharacterEffect:          "character-effect",
+	itemc.ClassificationCosmeticThrowingStar:     "cosmetic-throwing-star",
+	itemc.ClassificationHiredMerchant:            "hired-merchant",
+	itemc.ClassificationTeleportRock:             "teleport-rock",
+	itemc.ClassificationPointReset:               "point-reset",
+	itemc.ClassificationItemImprints:             "item-imprint",
+	itemc.ClassificationMegaphones:               "megaphone",
+	itemc.ClassificationMessageBanner:            "message-banner",
+	itemc.ClassificationNote:                     "note",
+	itemc.ClassificationSongPlayer:               "song-player",
+	itemc.ClassificationFieldEffect:              "field-effect",
+	itemc.ClassificationDeathProtection:          "death-protection",
+	itemc.ClassificationStorePermit:              "store-permit",
+	itemc.ClassificationCosmeticCoupon:           "cosmetic-coupon",
+	itemc.ClassificationExpression:               "expression",
+	itemc.ClassificationPetImprints:              "pet-imprint",
+	itemc.ClassificationCurrencySack:             "currency-sack",
+	itemc.ClassificationExperienceCoupon:         "experience-coupon",
+	itemc.ClassificationGachaponCoupon:           "gachapon-coupon",
+	itemc.ClassificationStoreSearch:              "store-search",
+	itemc.ClassificationPetConsumable:            "pet-consumable",
+	itemc.ClassificationWeddingTicket:            "wedding-ticket",
+	itemc.ClassificationCharacterEffect2:         "character-effect",
+	itemc.ClassificationGuildEmote:               "guild-emote",
+	itemc.ClassificationTransformationCoupon:     "transformation-coupon",
+	itemc.ClassificationDueyCoupon:               "duey-coupon",
+	itemc.ClassificationDropCoupon:               "drop-coupon",
+	itemc.ClassificationChalkboard:               "chalkboard",
+	itemc.ClassificationPetEvolution:             "pet-evolution",
+	itemc.ClassificationAvatarMegaphone:          "avatar-megaphone",
+	itemc.ClassificationCharacterImprints:        "character-imprint",
+	itemc.ClassificationCosmeticMembershipCoupon: "cosmetic-membership-coupon",
+	itemc.ClassificationCharacterCreation:        "character-creation",
+	itemc.ClassificationRemoteMerchant:           "remote-merchant",
+	itemc.ClassificationPetMultiConsumable:       "pet-multi-consumable",
+	itemc.ClassificationRemoteStore:              "remote-store",
 }
 
 func cashSubcategory(itemId uint32) string {
-	if name, ok := cashByClassification[classification(itemId)]; ok {
+	if name, ok := cashByClassification[classOf(itemId)]; ok {
 		return name
 	}
 	return "other-cash"

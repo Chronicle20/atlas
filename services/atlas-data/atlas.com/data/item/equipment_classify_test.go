@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,13 +48,13 @@ func TestUpdateEquipmentClassification_CashOverridesCompartment(t *testing.T) {
 	tn := tenant.MustFromContext(ctx)
 
 	// 1052021 is a cash overall — id prefix says equipment, but the WZ Cash flag puts it in Cash.
-	seedIdxFull(t, db, ctx, tn.Id(), 1052021, "Cash Overall", uint8(CompartmentEquipment), "overall", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 1052021, "Cash Overall", uint8(inventory.TypeValueEquip), "overall", nil)
 
 	require.NoError(t, UpdateEquipmentClassification(db, ctx, 1052021, 0, true))
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 1052021).Error)
-	assert.Equal(t, uint8(CompartmentCash), row.Compartment)
+	assert.Equal(t, uint8(inventory.TypeValueCash), row.Compartment)
 }
 
 func TestUpdateEquipmentClassification_Idempotent(t *testing.T) {

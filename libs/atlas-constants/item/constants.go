@@ -9,7 +9,26 @@ type Classification uint32
 type WeaponType byte
 
 const (
-	ClassificationOverall                  = Classification(105)
+	// Equipment armor classifications (compartment 1).
+	ClassificationHat            = Classification(100)
+	ClassificationFaceAccessory  = Classification(101)
+	ClassificationEyeAccessory   = Classification(102)
+	ClassificationEarring        = Classification(103)
+	ClassificationTop            = Classification(104)
+	ClassificationOverall        = Classification(105)
+	ClassificationBottom         = Classification(106)
+	ClassificationShoes          = Classification(107)
+	ClassificationGloves         = Classification(108)
+	ClassificationShield         = Classification(109)
+	ClassificationCape           = Classification(110)
+	ClassificationRing           = Classification(111)
+	ClassificationPendant        = Classification(112)
+	ClassificationBelt           = Classification(113)
+	ClassificationMedal          = Classification(114)
+	ClassificationTamedMob       = Classification(190)
+	ClassificationSaddle         = Classification(191)
+
+	// Use compartment classifications (compartment 2).
 	ClassificationConsumableTownWarp       = Classification(203)
 	ClassificationConsumableScroll         = Classification(204)
 	ClassificationConsumableArrow          = Classification(206)
@@ -22,6 +41,25 @@ const (
 	ClassificationConsumableMasteryBook    = Classification(229)
 	ClassificationBullet                   = Classification(233)
 	ClassificationConsumableMonsterCard    = Classification(238)
+
+	// Setup compartment classifications (compartment 3).
+	ClassificationChair               = Classification(301)
+	ClassificationSetupHiredMerchant  = Classification(303)
+
+	// Etc compartment classifications (compartment 4). Singletons only;
+	// monster-drop (411-419) and quest-item (422-428) are ranges, expressed
+	// as bounds checks at call sites.
+	ClassificationCraftingMaterial = Classification(400)
+	ClassificationProductionItem   = Classification(403)
+	ClassificationMineralOre       = Classification(404)
+	ClassificationMineralRefined   = Classification(405)
+	ClassificationGemRough         = Classification(406)
+	ClassificationGemCut           = Classification(407)
+	ClassificationMagnifyingGlass  = Classification(421)
+	ClassificationSimulator        = Classification(430)
+	ClassificationBookPage         = Classification(431)
+
+	// Cash compartment classifications (compartment 5).
 	ClassificationPet                      = Classification(500)
 	ClassificationCharacterEffect          = Classification(501)
 	ClassificationCosmeticThrowingStar     = Classification(502)

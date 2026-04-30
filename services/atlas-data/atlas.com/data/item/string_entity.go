@@ -5,16 +5,17 @@ import (
 
 	"atlas-data/searchindex"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type StringSearchIndexEntity struct {
-	TenantId    uuid.UUID `gorm:"type:uuid;primaryKey"`
-	ItemId      uint32    `gorm:"primaryKey"`
-	Name        string    `gorm:"not null"`
-	Compartment uint8     `gorm:"not null;default:0"`
-	Subcategory string    `gorm:"not null;default:''"`
+	TenantId    uuid.UUID      `gorm:"type:uuid;primaryKey"`
+	ItemId      uint32         `gorm:"primaryKey"`
+	Name        string         `gorm:"not null"`
+	Compartment inventory.Type `gorm:"not null;default:0"`
+	Subcategory string         `gorm:"not null;default:''"`
 	JobMask     *uint8
 	UpdatedAt   time.Time `gorm:"autoUpdateTime"`
 }

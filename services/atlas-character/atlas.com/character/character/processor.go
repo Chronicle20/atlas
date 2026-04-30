@@ -279,7 +279,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 
 		var res Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm)
+			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm, input.meso)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error persisting character in database.")
 				tx.Rollback()

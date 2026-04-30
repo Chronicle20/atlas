@@ -14,7 +14,7 @@ import (
 
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
-func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, mapId _map.Id, gm int) (Model, error) {
+func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, mapId _map.Id, gm int, meso uint32) (Model, error) {
 	e := &entity{
 		TenantId:     tenantId,
 		AccountId:    accountId,
@@ -37,6 +37,7 @@ func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id,
 		MapId:        mapId,
 		SP:           "0, 0, 0, 0, 0, 0, 0, 0, 0, 0",
 		GM:           gm,
+		Meso:         meso,
 	}
 
 	err := db.Create(e).Error

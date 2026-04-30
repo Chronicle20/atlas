@@ -189,3 +189,32 @@ func TestCreateAndEquipAssetPayload_UseAverageStats_RoundTrip(t *testing.T) {
 		t.Fatalf("expected legacy payload to default UseAverageStats=false")
 	}
 }
+
+func TestCharacterCreatePayload_GmAndMeso_RoundTrip(t *testing.T) {
+	in := CharacterCreatePayload{
+		AccountId: 1,
+		Name:      "AdminHero",
+		Gm:        2,
+		Meso:      100_000_000,
+	}
+	bs, _ := json.Marshal(in)
+	if !strings.Contains(string(bs), `"gm":2`) || !strings.Contains(string(bs), `"meso":100000000`) {
+		t.Fatalf("expected gm/meso in payload, got %s", string(bs))
+	}
+	var out CharacterCreatePayload
+	if err := json.Unmarshal(bs, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if out.Gm != 2 || out.Meso != 100_000_000 {
+		t.Fatalf("expected gm=2 meso=1e8, got gm=%d meso=%d", out.Gm, out.Meso)
+	}
+
+	// Backwards-compat: legacy payload defaults both to zero.
+	var legacy CharacterCreatePayload
+	if err := json.Unmarshal([]byte(`{"accountId":1,"name":"Foo"}`), &legacy); err != nil {
+		t.Fatalf("legacy: %v", err)
+	}
+	if legacy.Gm != 0 || legacy.Meso != 0 {
+		t.Fatalf("expected gm=0 meso=0 from legacy payload")
+	}
+}

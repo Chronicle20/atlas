@@ -5,6 +5,14 @@
 import type { ServiceOptions } from '@/lib/api/query-params';
 import type { Character, UpdateCharacterData } from '@/types/models/character';
 import { api } from '@/lib/api/client';
+import { tenantHeaders } from '@/lib/headers';
+import type { Tenant } from '@/types/models/tenant';
+
+export interface NameValidityResponse {
+  valid: boolean;
+  reason?: 'regex' | 'length' | 'blocked' | 'duplicate';
+  detail?: string;
+}
 
 class CharactersService {
   private basePath = '/api/characters';
@@ -51,6 +59,25 @@ class CharactersService {
     // Use the centralized API client to update the character
     // The API client handles all error cases and status codes automatically
     return api.patch<void>(`/api/characters/${characterId}`, requestBody, options);
+  }
+
+  /**
+   * GET /api/characters/name-validity?name=&worldId=
+   *
+   * atlas-character is the authority on character names (per task-037 design D-6).
+   * Returns plain JSON {valid, reason?, detail?} — not JSON:API. Tenant headers
+   * are passed explicitly so the call works regardless of singleton client state.
+   */
+  async checkNameValidity(
+    tenant: Tenant,
+    name: string,
+    worldId: number,
+  ): Promise<NameValidityResponse> {
+    const params = new URLSearchParams({ name, worldId: String(worldId) });
+    return api.get<NameValidityResponse>(
+      `${this.basePath}/name-validity?${params.toString()}`,
+      { headers: tenantHeaders(tenant) },
+    );
   }
 
 }

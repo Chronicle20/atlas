@@ -7,7 +7,7 @@ import (
 	keymap "atlas-keys/key"
 	"atlas-keys/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-keys/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

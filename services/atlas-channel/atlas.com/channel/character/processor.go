@@ -7,6 +7,7 @@ import (
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
 	"context"
@@ -27,6 +28,7 @@ type Processor interface {
 	PetAssetEnrichmentDecorator(m Model) Model
 	SkillModelDecorator(m Model) Model
 	QuestModelDecorator(m Model) Model
+	PartyDecorator(m Model) Model
 	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model]
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
@@ -149,6 +151,19 @@ func (p *ProcessorImpl) QuestModelDecorator(m Model) Model {
 		return m
 	}
 	return m.SetQuests(ms)
+}
+
+// PartyDecorator fetches the party (if any) the character is a member of
+// and attaches it via Model.SetParty. Mirrors InventoryDecorator: REST
+// failures and "no party" cases both surface as the undecorated model.
+// Callers must use Model.InParty() to distinguish "in a party" from
+// "solo or not yet decorated".
+func (p *ProcessorImpl) PartyDecorator(m Model) Model {
+	pm, err := party.NewProcessor(p.l, p.ctx).GetByMemberId(m.Id())
+	if err != nil {
+		return m
+	}
+	return m.SetParty(pm)
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model] {

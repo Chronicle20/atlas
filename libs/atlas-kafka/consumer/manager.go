@@ -268,12 +268,15 @@ func (c *Consumer) recordFetch() {
 }
 
 // recordTimeout marks one deadline expiration; called per tick by runFetchLoop.
-// Idle, not an error: lastError / lastErrorAt are untouched.
-func (c *Consumer) recordTimeout() {
+// Idle, not an error: lastError / lastErrorAt are untouched. Returns the new
+// consecutiveTimeouts value so callers can branch on the threshold without a
+// second mutex acquisition.
+func (c *Consumer) recordTimeout() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.lastTimeoutAt = time.Now()
 	c.consecutiveTimeouts++
+	return c.consecutiveTimeouts
 }
 
 func (c *Consumer) recordError(err error) {
@@ -383,15 +386,14 @@ func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reade
 				return err
 			}
 			if errors.Is(err, context.DeadlineExceeded) {
-				c.recordTimeout()
-				snapshot := c.Snapshot()
-				if snapshot.ConsecutiveTimeouts >= c.maxConsecutiveTimeouts {
+				consecutive := c.recordTimeout()
+				if consecutive >= c.maxConsecutiveTimeouts {
 					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
-						snapshot.ConsecutiveTimeouts, c.topic, c.groupId)
+						consecutive, c.topic, c.groupId)
 					return errFetchWedged
 				}
 				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
-					snapshot.ConsecutiveTimeouts, c.maxConsecutiveTimeouts)
+					consecutive, c.maxConsecutiveTimeouts)
 				continue
 			}
 			return err

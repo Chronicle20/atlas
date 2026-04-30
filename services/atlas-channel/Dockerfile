@@ -14,6 +14,7 @@ COPY libs/atlas-packet/go.mod libs/atlas-packet/go.sum libs/atlas-packet/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-socket/go.mod libs/atlas-socket/go.sum libs/atlas-socket/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
+COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
 COPY libs/atlas-opcodes/go.mod libs/atlas-opcodes/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
@@ -33,6 +34,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-socket' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-opcodes' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
@@ -51,6 +53,7 @@ COPY libs/atlas-packet libs/atlas-packet
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-socket libs/atlas-socket
 COPY libs/atlas-tenant libs/atlas-tenant
+COPY libs/atlas-tracing libs/atlas-tracing
 
 COPY libs/atlas-opcodes libs/atlas-opcodes
 COPY libs/atlas-retry libs/atlas-retry
@@ -73,6 +76,7 @@ RUN cd services/atlas-channel/atlas.com/channel && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-socket=/app/libs/atlas-socket \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
     && go mod tidy
 
 # Build

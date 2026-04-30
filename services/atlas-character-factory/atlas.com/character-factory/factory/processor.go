@@ -43,6 +43,7 @@ func (e *NameInvalidError) Error() string { return "invalid name: " + e.Reason }
 type Processor interface {
 	Create(ctx context.Context, input RestModel) (string, error)
 	CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error)
+	CheckNameValidity(ctx context.Context, name string, worldId byte) (character.NameValidityResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
@@ -324,6 +325,11 @@ func (p *ProcessorImpl) CreateFromPreset(ctx context.Context, in PresetCreateRes
 		return "", err
 	}
 	return transactionId.String(), nil
+}
+
+// CheckNameValidity delegates the name validity check to atlas-character via the injected client.
+func (p *ProcessorImpl) CheckNameValidity(ctx context.Context, name string, worldId byte) (character.NameValidityResult, error) {
+	return p.nameClient.Check(ctx, name, worldId)
 }
 
 // buildPresetCharacterCreationSaga constructs a CharacterCreation saga from a preset

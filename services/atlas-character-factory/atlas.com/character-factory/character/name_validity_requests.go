@@ -45,7 +45,10 @@ func (c *NameValidityClientImpl) Check(ctx context.Context, name string, worldId
 		return NameValidityResult{}, err
 	}
 
-	// Apply span and tenant headers the same way the atlas-rest GetRequest helper does.
+	// atlas-character's GET /characters/name-validity returns plain JSON, not JSON:API.
+	// libs/atlas-rest/requests.GetRequest[T] calls jsonapi.Unmarshal on the response body,
+	// which would fail here. We therefore use http.DefaultClient directly and apply the
+	// standard span + tenant header decorators manually to match what GetRequest does.
 	requests.SpanHeaderDecorator(ctx)(req.Header)
 	requests.TenantHeaderDecorator(ctx)(req.Header)
 

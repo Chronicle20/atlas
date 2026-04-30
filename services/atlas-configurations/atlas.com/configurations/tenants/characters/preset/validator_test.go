@@ -7,7 +7,22 @@ import (
 	"errors"
 	"strings"
 	"testing"
+
+	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 )
+
+// tenantCtx returns a context carrying a synthetic tenant so the validator's
+// atlas-data-dependent rules (R-6..R-12) execute. Tests that explicitly cover
+// the "no tenant" path use context.Background() directly.
+func tenantCtx(t *testing.T) context.Context {
+	t.Helper()
+	tn, err := tenantlib.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant create: %v", err)
+	}
+	return tenantlib.WithContext(context.Background(), tn)
+}
 
 // helpers
 
@@ -62,7 +77,7 @@ func hasError(errs []ValidationError, field, substr string) bool {
 
 func TestValidator_AllGood(t *testing.T) {
 	v := NewValidator(makeClient())
-	_, errs := v.Validate(context.Background(), []RestModel{validPreset()})
+	_, errs := v.Validate(tenantCtx(t), []RestModel{validPreset()})
 	if len(errs) != 0 {
 		t.Fatalf("expected no errors, got %+v", errs)
 	}
@@ -74,7 +89,7 @@ func TestValidator_AssignsMissingId(t *testing.T) {
 	v := NewValidator(makeClient())
 	p := validPreset()
 	p.Id = ""
-	out, _ := v.Validate(context.Background(), []RestModel{p})
+	out, _ := v.Validate(tenantCtx(t), []RestModel{p})
 	if out[0].Id == "" {
 		t.Fatal("expected UUID to be assigned to empty Id")
 	}
@@ -85,7 +100,7 @@ func TestValidator_ErrorCarriesAssignedId(t *testing.T) {
 	p := validPreset()
 	p.Id = ""
 	p.Attributes.Name = "" // force a validation error
-	out, errs := v.Validate(context.Background(), []RestModel{p})
+	out, errs := v.Validate(tenantCtx(t), []RestModel{p})
 	if out[0].Id == "" {
 		t.Fatal("expected UUID assigned")
 	}
@@ -238,7 +253,7 @@ func TestValidator_Rules(t *testing.T) {
 			v := NewValidator(makeClient())
 			p := validPreset()
 			tc.mutate(&p)
-			_, errs := v.Validate(context.Background(), []RestModel{p})
+			_, errs := v.Validate(tenantCtx(t), []RestModel{p})
 			if !hasError(errs, tc.field, tc.msgPart) {
 				t.Fatalf("expected error on field %q containing %q, got: %+v", tc.field, tc.msgPart, errs)
 			}
@@ -252,7 +267,7 @@ func TestValidator_SkillsBatchError(t *testing.T) {
 	fake.SkillsErr = errors.New("atlas-data unreachable")
 	v := NewValidator(fake)
 	p := validPreset()
-	_, errs := v.Validate(context.Background(), []RestModel{p})
+	_, errs := v.Validate(tenantCtx(t), []RestModel{p})
 	if !hasError(errs, "skills", "atlas-data lookup failed") {
 		t.Fatalf("expected skills batch error, got: %+v", errs)
 	}
@@ -263,7 +278,7 @@ func TestValidator_DescriptionExactly512(t *testing.T) {
 	v := NewValidator(makeClient())
 	p := validPreset()
 	p.Attributes.Description = strings.Repeat("x", 512)
-	_, errs := v.Validate(context.Background(), []RestModel{p})
+	_, errs := v.Validate(tenantCtx(t), []RestModel{p})
 	if hasError(errs, "description", "") {
 		t.Fatalf("512-char description should not produce error, got: %+v", errs)
 	}
@@ -274,7 +289,7 @@ func TestValidator_Level250Valid(t *testing.T) {
 	v := NewValidator(makeClient())
 	p := validPreset()
 	p.Attributes.Level = 250
-	_, errs := v.Validate(context.Background(), []RestModel{p})
+	_, errs := v.Validate(tenantCtx(t), []RestModel{p})
 	if hasError(errs, "level", "") {
 		t.Fatalf("level 250 should be valid, got: %+v", errs)
 	}
@@ -289,8 +304,58 @@ func TestValidator_EquipmentDifferentSlots(t *testing.T) {
 		{TemplateId: goodHat.Id},
 		{TemplateId: goodGlove.Id},
 	}
-	_, errs := v.Validate(context.Background(), []RestModel{p})
+	_, errs := v.Validate(tenantCtx(t), []RestModel{p})
 	if hasError(errs, "equipment[1].templateId", "collision") {
 		t.Fatalf("different slot buckets should not collide, got: %+v", errs)
+	}
+}
+
+// Without a tenant context (template PATCH path), atlas-data lookups are
+// skipped: structural rules still fire, but rules R-6, R-8, R-10..R-12 don't.
+func TestValidator_NoTenant_SkipsAtlasDataRules(t *testing.T) {
+	v := NewValidator(makeClient())
+	p := validPreset()
+	// All atlas-data-dependent fields point at non-existent ids — would error if
+	// the validator ran the lookups. Should not error here.
+	p.Attributes.Equipment = []EquipmentEntry{{TemplateId: 9999991}, {TemplateId: 9999992}}
+	p.Attributes.Inventory = []InventoryEntry{{TemplateId: 9999993, Quantity: 1}}
+	p.Attributes.Skills = []SkillEntry{{SkillId: 9999994, Level: 99}}
+
+	_, errs := v.Validate(context.Background(), []RestModel{p})
+	for _, e := range errs {
+		if strings.Contains(e.Field, "equipment") && strings.Contains(e.Message, "not found") {
+			t.Fatalf("equipment existence check ran without tenant: %+v", e)
+		}
+		if strings.Contains(e.Field, "inventory") && strings.Contains(e.Message, "not found") {
+			t.Fatalf("inventory existence check ran without tenant: %+v", e)
+		}
+		if strings.HasPrefix(e.Field, "skills") {
+			t.Fatalf("skill rules ran without tenant: %+v", e)
+		}
+	}
+}
+
+// Structural rules (slot uniqueness, quantity ≥ 1, name/level/etc.) must still
+// fire on the no-tenant path.
+func TestValidator_NoTenant_StructuralRulesStillRun(t *testing.T) {
+	v := NewValidator(makeClient())
+	p := validPreset()
+	// Two equipment entries in the same slot bucket — pure structural check.
+	p.Attributes.Equipment = []EquipmentEntry{
+		{TemplateId: 1002357}, // bucket 100
+		{TemplateId: 1002500}, // bucket 100
+	}
+	p.Attributes.Inventory = []InventoryEntry{{TemplateId: 2000000, Quantity: 0}}
+	p.Attributes.Name = "" // R-1 violation
+
+	_, errs := v.Validate(context.Background(), []RestModel{p})
+	if !hasError(errs, "name", "1..64") {
+		t.Fatalf("expected name length error without tenant, got: %+v", errs)
+	}
+	if !hasError(errs, "equipment[1].templateId", "slot collision") {
+		t.Fatalf("expected slot collision error without tenant, got: %+v", errs)
+	}
+	if !hasError(errs, "inventory[0].quantity", "≥1") {
+		t.Fatalf("expected quantity error without tenant, got: %+v", errs)
 	}
 }

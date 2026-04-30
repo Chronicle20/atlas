@@ -21,6 +21,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 type Processor struct {
@@ -171,11 +173,27 @@ func Announce(l logrus.FieldLogger) func(ctx context.Context) func(writerProduce
 			return func(writerName string) func(encoder packet.Encode) model.Operator[Model] {
 				return func(encoder packet.Encode) model.Operator[Model] {
 					return func(s Model) error {
+						spanCtx, span := otel.GetTracerProvider().Tracer("atlas-channel").Start(ctx, "session.Announce")
+						defer span.End()
+						t := tenant.MustFromContext(ctx)
+						span.SetAttributes(
+							attribute.String("writer.name", writerName),
+							attribute.String("tenant.id", t.Id().String()),
+							attribute.Int("world.id", int(s.WorldId())),
+						)
+
 						w, err := writerProducer(writerName)
 						if err != nil {
+							span.RecordError(err)
+							span.SetStatus(codes.Error, err.Error())
 							return err
 						}
-						return s.announceEncrypted(w(l, ctx)(encoder))
+						if err := s.announceEncrypted(w(l, spanCtx)(encoder)); err != nil {
+							span.RecordError(err)
+							span.SetStatus(codes.Error, err.Error())
+							return err
+						}
+						return nil
 					}
 				}
 			}

@@ -97,12 +97,13 @@ type IncreaseCapacityCommandBody struct {
 }
 
 type CreateAssetCommandBody struct {
-	TemplateId   uint32    `json:"templateId"`
-	Quantity     uint32    `json:"quantity"`
-	Expiration   time.Time `json:"expiration"`
-	OwnerId      uint32    `json:"ownerId"`
-	Flag         uint16    `json:"flag"`
-	Rechargeable uint64    `json:"rechargeable"`
+	TemplateId      uint32    `json:"templateId"`
+	Quantity        uint32    `json:"quantity"`
+	Expiration      time.Time `json:"expiration"`
+	OwnerId         uint32    `json:"ownerId"`
+	Flag            uint16    `json:"flag"`
+	Rechargeable    uint64    `json:"rechargeable"`
+	UseAverageStats bool      `json:"useAverageStats,omitempty"`
 }
 
 type RechargeCommandBody struct {

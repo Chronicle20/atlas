@@ -104,13 +104,13 @@ func TestCompactAndSort(t *testing.T) {
 	}
 
 	// Create assets with gaps in slots
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
 	// Create an asset with a higher template ID but in a higher slot
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 3, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 3, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 2: %v", err)
 	}
@@ -170,13 +170,13 @@ func TestSort(t *testing.T) {
 	}
 
 	// Create two assets with the same template ID but in different slots
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
 
 	// Create an asset with a lower template ID but in a higher slot
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 5, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2070000, 5, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 3: %v", err)
 	}
@@ -235,15 +235,15 @@ func TestMergeAndCompact(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 1, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
@@ -295,15 +295,15 @@ func TestMergeAndCompactOverflow(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
@@ -361,7 +361,7 @@ func TestConsumeRechargeablePreservesRow(t *testing.T) {
 				t.Fatalf("Failed to create compartment: %v", err)
 			}
 			slot := int16(1)
-			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0); err != nil {
+			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0, false); err != nil {
 				t.Fatalf("Failed to create asset: %v", err)
 			}
 
@@ -418,7 +418,7 @@ func TestConsumeNonRechargeableDeletes(t *testing.T) {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
 	// 2000000 — classification 200, generic consumable (potion family), not rechargeable.
-	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0, false); err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
 
@@ -473,11 +473,11 @@ func TestMergeAndCompactGood(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 100, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 100, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
-	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0)
+	err = cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2120000, 50, time.Time{}, 0, 0, 0, false)
 	if err != nil {
 		t.Fatalf("Failed to create asset 1: %v", err)
 	}
@@ -541,7 +541,7 @@ func TestDropRechargeableWithZeroQuantity(t *testing.T) {
 				t.Fatalf("Failed to create compartment: %v", err)
 			}
 			slot := int16(1)
-			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0); err != nil {
+			if err := cp.CreateAsset(mb)(uuid.New(), tc.characterId, inventory.TypeValueUse, tc.templateId, 1, time.Time{}, 0, 0, 0, false); err != nil {
 				t.Fatalf("Failed to create asset: %v", err)
 			}
 
@@ -608,7 +608,7 @@ func TestDropNonRechargeableInsufficientQuantity(t *testing.T) {
 	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 40); err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0, false); err != nil {
 		t.Fatalf("Failed to create asset: %v", err)
 	}
 
@@ -651,7 +651,7 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 1); err != nil {
 		t.Fatalf("Failed to create compartment: %v", err)
 	}
-	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0); err != nil {
+	if err := cp.CreateAsset(mb)(uuid.New(), characterId, inventory.TypeValueUse, 2000000, 1, time.Time{}, 0, 0, 0, false); err != nil {
 		t.Fatalf("Failed to seed compartment with existing item: %v", err)
 	}
 

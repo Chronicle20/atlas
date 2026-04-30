@@ -34,6 +34,12 @@ import (
 var blockedNameErr = errors.New("blocked name")
 var invalidLevelErr = errors.New("invalid level")
 
+type NameValidityResult struct {
+	Valid  bool
+	Reason string
+	Detail string
+}
+
 const (
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -53,6 +59,7 @@ type Processor interface {
 	GetAll(decorators ...model.Decorator[Model]) ([]Model, error)
 	SkillModelDecorator(m Model) Model
 	IsValidName(name string) (bool, error)
+	CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error)
 	CreateAndEmit(transactionId uuid.UUID, input Model) (Model, error)
 	Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model) (Model, error)
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error
@@ -215,6 +222,29 @@ func (p *ProcessorImpl) IsValidName(name string) (bool, error) {
 
 	return true, nil
 
+}
+
+func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error) {
+	if len(name) < 3 || len(name) > 12 {
+		return NameValidityResult{Valid: false, Reason: "length", Detail: "Name must be 3-12 characters."}, nil
+	}
+	m, err := regexp.MatchString("[A-Za-z0-9\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]{3,12}", name)
+	if err != nil {
+		return NameValidityResult{}, err
+	}
+	if !m {
+		return NameValidityResult{Valid: false, Reason: "regex", Detail: "Name contains invalid characters."}, nil
+	}
+	cs, err := p.GetForName()(name)
+	if err != nil {
+		return NameValidityResult{}, err
+	}
+	for _, c := range cs {
+		if c.WorldId() == worldId {
+			return NameValidityResult{Valid: false, Reason: "duplicate", Detail: "Name already taken."}, nil
+		}
+	}
+	return NameValidityResult{Valid: true}, nil
 }
 
 func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model) (Model, error) {

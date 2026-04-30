@@ -30,6 +30,7 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
 			r.HandleFunc("", registerGet("get_characters", handleGetCharacters)).Methods(http.MethodGet)
 			r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(db)(si)("create_character", handleCreateCharacter)).Methods(http.MethodPost)
+			r.HandleFunc("/name-validity", registerGet("get_name_validity", handleGetNameValidity)).Methods(http.MethodGet)
 			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet).Queries("include", "{include}")
 			r.HandleFunc("/{characterId}", registerGet("get_character", handleGetCharacter)).Methods(http.MethodGet)
 			r.HandleFunc("/{characterId}", rest.RegisterInputHandler[RestModel](l)(db)(si)("update_character", handleUpdateCharacter)).Methods(http.MethodPatch)

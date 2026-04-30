@@ -241,20 +241,21 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 		return func(ctx context.Context) error {
 			p := NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
+			mp := character2.NewProcessor(l, ctx)
 
-			m, err := character2.NewProcessor(l, ctx).GetMap(characterId)
-			if err != nil {
+			pg, _ := model.NewGroup(ctx)
+			fm := model.Submit(pg, func() (field.Model, error) { return mp.GetMap(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return p.cdp.GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			m, ci := fm.Get(), fi.Get()
 
-			ci, err := p.cdp.GetById(uint32(itemId))
-			if err != nil {
-				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
 			toMapId := _map2.EmptyMapId
 			if val, ok := ci.GetSpec(consumable3.SpecTypeMoveTo); ok && val > 0 {
 				toMapId = _map2.Id(val)
 			}
+			// Dependent read: needs m.MapId() — stays sequential after Wait().
 			if toMapId == _map2.EmptyMapId {
 				mm, err := _map3.NewProcessor(l, ctx).GetById(m.MapId())
 				if err != nil {
@@ -263,7 +264,7 @@ func ConsumeTownScroll(transactionId uuid.UUID, characterId uint32, slot int16, 
 				toMapId = mm.ReturnMapId()
 			}
 
-			err = cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
+			err := cpp.ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}

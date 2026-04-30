@@ -197,11 +197,7 @@ data:
       proxy_pass http://atlas-character-factory:8080;
     }
 
-    location ~ ^/api/characters/from-preset(/.*)?$ {
-      proxy_pass http://atlas-character-factory:8080;
-    }
-
-    location ~ ^/api/characters/name-validity(/.*)?$ {
+    location ~ ^/api/factory(/.*)?$ {
       proxy_pass http://atlas-character-factory:8080;
     }
 

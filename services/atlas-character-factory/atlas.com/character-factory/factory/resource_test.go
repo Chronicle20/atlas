@@ -70,48 +70,6 @@ func TestHandleCreateFromPreset_InvalidPresetIdFormat(t *testing.T) {
 	}
 }
 
-func TestHandleNameValidity_MissingWorldId(t *testing.T) {
-	d, c := newTestDeps(t)
-	handler := handleNameValidity(d, c)
-
-	req := httptest.NewRequest(http.MethodGet, "/characters/name-validity?name=TestChar", nil)
-	rr := httptest.NewRecorder()
-
-	handler.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("Expected status 400, got %d", rr.Code)
-	}
-}
-
-func TestHandleNameValidity_MissingName(t *testing.T) {
-	d, c := newTestDeps(t)
-	handler := handleNameValidity(d, c)
-
-	req := httptest.NewRequest(http.MethodGet, "/characters/name-validity?worldId=0", nil)
-	rr := httptest.NewRecorder()
-
-	handler.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("Expected status 400, got %d", rr.Code)
-	}
-}
-
-func TestHandleNameValidity_InvalidWorldId(t *testing.T) {
-	d, c := newTestDeps(t)
-	handler := handleNameValidity(d, c)
-
-	req := httptest.NewRequest(http.MethodGet, "/characters/name-validity?name=TestChar&worldId=notanumber", nil)
-	rr := httptest.NewRecorder()
-
-	handler.ServeHTTP(rr, req)
-
-	if rr.Code != http.StatusBadRequest {
-		t.Errorf("Expected status 400, got %d", rr.Code)
-	}
-}
-
 func TestCategorizePresetError(t *testing.T) {
 	tests := []struct {
 		name       string

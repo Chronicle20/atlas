@@ -539,6 +539,47 @@ func TestHandleGetItemStrings_PastEnd_EmptyDataAndPrevToLast(t *testing.T) {
 	assert.False(t, hasNext)
 }
 
+// Regression: face/hair items live in the index with compartment=0 (the
+// 0xxxx id range maps to inventory.Type(0) via inventory.TypeFromItemId).
+// They must never surface in the items page — neither in default browse
+// nor when a filter or search is applied.
+func TestHandleGetItemStrings_ExcludesUnknownCompartment(t *testing.T) {
+	db := setupSearchTestDB(t)
+	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
+	tn := tenant.MustFromContext(ctx)
+
+	// Two faces (compartment=0) — these must be hidden.
+	seedIdxFull(t, db, ctx, tn.Id(), 20803, "Face 20803", 0, "other", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 30150, "Hair 30150", 0, "other", nil)
+	// One legitimate equipment item — this must remain visible.
+	seedIdxFull(t, db, ctx, tn.Id(), 1002000, "Snail Shell Helmet", uint8(inventory.TypeValueEquip), "hat", nil)
+
+	cases := []struct {
+		name string
+		url  string
+	}{
+		{"default-browse", "/data/item-strings"},
+		{"filter-compartment", "/data/item-strings?filter[compartment]=equipment"},
+		{"search-by-name", "/data/item-strings?search=Hair"},
+		{"search-by-id", "/data/item-strings?search=20803"},
+	}
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			w := httptest.NewRecorder()
+			req := newItemStringsRequest(t, tc.url, ctx)
+			dispatchItemStrings(t, w, req, db)
+			require.Equal(t, http.StatusOK, w.Code)
+
+			doc := decodeJsonApi(t, w.Body.Bytes())
+			for _, row := range doc.Data.DataArray {
+				assert.NotEqualf(t, "20803", row.ID, "face item leaked via %s", tc.name)
+				assert.NotEqualf(t, "30150", row.ID, "hair item leaked via %s", tc.name)
+			}
+		})
+	}
+}
+
 func TestHandleGetItemStrings_DefaultBrowsePaginates(t *testing.T) {
 	db, ctx := setupItemHandlerFixture(t, 75)
 	w := httptest.NewRecorder()

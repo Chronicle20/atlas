@@ -8,7 +8,7 @@ import (
 	"atlas-parties/logger"
 	"atlas-parties/party"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-parties/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

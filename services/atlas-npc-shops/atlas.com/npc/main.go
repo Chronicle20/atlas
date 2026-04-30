@@ -9,7 +9,7 @@ import (
 	"atlas-npc/seed"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-npc/shops"
-	"atlas-npc/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -12,7 +12,7 @@ import (
 	"atlas-npc-conversations/kafka/consumer/saga"
 	"atlas-npc-conversations/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-npc-conversations/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -286,6 +286,10 @@ func ConsumePetFood(transactionId uuid.UUID, characterId uint32, slot int16, ite
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 
+			// Sequential reads: PRD §4.3 names ConsumeStandard / ConsumeTownScroll /
+			// ConsumeSummoningSack as the parallelisation targets. ConsumePetFood's two
+			// reads are independent and could be parallelised in a follow-up — left
+			// sequential here to keep the cleanup tightly scoped.
 			pe, err := pp.HungriestByOwnerProvider(characterId)()
 			if err != nil {
 				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
@@ -320,6 +324,8 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 			pp := pet.NewProcessor(l, ctx)
 			cpp := compartment.NewProcessor(l, ctx)
 
+			// Sequential reads: ci.Indexes() feeds the pet filter built immediately
+			// after, so reads are not independent.
 			ci, err := cash.NewProcessor(l, ctx).GetById(uint32(itemId))
 			if err != nil {
 				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueCash, slot, err)
@@ -401,6 +407,8 @@ func (p *Processor) RequestScroll(characterId uint32, scrollSlot int16, equipSlo
 	transactionId := uuid.New()
 	reserves := make([]compartment.Reserves, 0)
 
+	// Sequential reads: equipment lookup and reservation logic below all
+	// depend on c.Inventory(); the read chain is genuinely sequential.
 	c, err := cp.GetById(cp.InventoryDecorator)(characterId)
 	if err != nil {
 		return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, scrollSlot, err)

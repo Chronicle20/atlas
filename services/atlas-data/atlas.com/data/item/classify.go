@@ -33,9 +33,6 @@ func (c Compartment) String() string {
 }
 
 // Classify derives (compartment, subcategory) from an item id alone.
-// Subcategory is best-effort: classifications that genuinely require equipment
-// metadata (slot disambiguation) return a placeholder that
-// UpdateEquipmentClassification overrides later.
 func Classify(itemId uint32) (Compartment, string) {
 	compartment := compartmentOf(itemId)
 	if compartment == CompartmentUnknown {
@@ -77,11 +74,12 @@ func compartmentOf(itemId uint32) Compartment {
 func classification(itemId uint32) uint32 { return itemId / 10_000 }
 
 var equipmentArmorByClassification = map[uint32]string{
-	100: "hat", 101: "hat",
-	102: "face-accessory",
-	103: "eye-accessory",
-	104: "earring",
-	105: "top",
+	100: "hat",
+	101: "face-accessory",
+	102: "eye-accessory",
+	103: "earring",
+	104: "top",
+	105: "overall",
 	106: "bottom",
 	107: "shoes",
 	108: "gloves",
@@ -103,11 +101,6 @@ func equipmentSubcategory(itemId uint32) string {
 	}
 	if cls >= 180 && cls <= 189 {
 		return "pet-equip"
-	}
-	// 4-digit prefix override for cls 104: ids in 1040xxx / 1041xxx are tops, the rest stay earrings
-	prefix4 := itemId / 1_000
-	if cls == 104 && (prefix4 == 1040 || prefix4 == 1041) {
-		return "top"
 	}
 	if name, ok := equipmentArmorByClassification[cls]; ok {
 		return name

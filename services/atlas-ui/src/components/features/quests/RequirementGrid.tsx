@@ -68,22 +68,24 @@ export function RequirementGrid({ requirements, phase }: RequirementGridProps) {
   }
 
   if (requirements.jobs && requirements.jobs.length > 0) {
-    chips.push(
-      <Chip
+    blocks.push(
+      <Block
         key="jobs"
-        icon={<Sword className="h-3.5 w-3.5" />}
-        label="Jobs"
-        value={
-          <span>
-            {requirements.jobs.map((j, idx) => (
-              <span key={j}>
-                {idx > 0 && ", "}
-                <JobName id={j} />
-              </span>
-            ))}
-          </span>
-        }
-      />,
+        label={`Jobs (${requirements.jobs.length})`}
+      >
+        <div className="flex flex-wrap gap-1.5">
+          {requirements.jobs.map((j) => (
+            <Badge
+              key={j}
+              variant="secondary"
+              className="gap-1 py-0.5 pl-1.5 pr-2 font-normal text-xs"
+            >
+              <Sword className="h-3 w-3 text-muted-foreground" />
+              <JobName id={j} />
+            </Badge>
+          ))}
+        </div>
+      </Block>,
     );
   }
 

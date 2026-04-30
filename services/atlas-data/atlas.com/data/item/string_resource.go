@@ -76,15 +76,13 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				return
 			}
 
-			hasFilter := fspec.Compartment != nil || fspec.Subcategory != "" || fspec.Class != ""
-
 			spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 				EntityIdColumn: "item_id",
 				NameColumns:    []string{"name"},
 				Order:          "item_id ASC",
 			}
 
-			predicates, args := buildPredicates(fspec, !hasSearch && !hasFilter)
+			predicates, args := buildPredicates(fspec)
 			if len(predicates) > 0 {
 				spec.ExtraPredicate = strings.Join(predicates, " AND ")
 				spec.ExtraArgs = args
@@ -182,9 +180,14 @@ func parsePagingParams(query url.Values) (int, int, int) {
 	return pageNumber, pageSize, 0
 }
 
-func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{}) {
+func buildPredicates(f filterSpec) ([]string, []interface{}) {
 	var preds []string
 	var args []interface{}
+
+	// Always exclude unknown-compartment items (faces, hairs, skins in the 0xxxx
+	// range): they live in the search index but have no equipment/use/etc role
+	// and would only be visible to clients that target them by id.
+	preds = append(preds, "compartment != 0")
 
 	if f.Compartment != nil {
 		preds = append(preds, "compartment = ?")
@@ -201,9 +204,6 @@ func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{
 			preds = append(preds, "(job_mask IS NOT NULL AND (job_mask = 0 OR (job_mask & ?) = ?))")
 			args = append(args, f.JobMaskBits, f.JobMaskBits)
 		}
-	}
-	if isDefaultBrowse {
-		preds = append(preds, "compartment != 0")
 	}
 	return preds, args
 }

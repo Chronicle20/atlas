@@ -13,10 +13,13 @@ func TestClassify(t *testing.T) {
 		subcategory string
 	}{
 		{1002000, CompartmentEquipment, "hat"},
+		{1012070, CompartmentEquipment, "face-accessory"},
+		{1022000, CompartmentEquipment, "eye-accessory"},
+		{1032000, CompartmentEquipment, "earring"},
 		{1040002, CompartmentEquipment, "top"},
 		{1041002, CompartmentEquipment, "top"},
-		{1042000, CompartmentEquipment, "earring"},
-		{1050000, CompartmentEquipment, "top"},
+		{1042000, CompartmentEquipment, "top"},
+		{1050000, CompartmentEquipment, "overall"},
 		{1060000, CompartmentEquipment, "bottom"},
 		{1070000, CompartmentEquipment, "shoes"},
 		{1080000, CompartmentEquipment, "gloves"},
@@ -76,8 +79,13 @@ func TestClassify_AllTaxonomyFixtures(t *testing.T) {
 		subcategory string
 	}{
 		{1002000, CompartmentEquipment, "hat"},
+		{1012070, CompartmentEquipment, "face-accessory"},
+		{1022000, CompartmentEquipment, "eye-accessory"},
+		{1032000, CompartmentEquipment, "earring"},
 		{1040002, CompartmentEquipment, "top"},
 		{1041002, CompartmentEquipment, "top"},
+		{1042000, CompartmentEquipment, "top"},
+		{1050000, CompartmentEquipment, "overall"},
 		{1452000, CompartmentEquipment, "bow"},
 		{1462000, CompartmentEquipment, "crossbow"},
 		{1472000, CompartmentEquipment, "claw"},

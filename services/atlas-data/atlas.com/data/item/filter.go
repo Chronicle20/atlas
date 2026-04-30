@@ -44,7 +44,6 @@ func buildSubcategoryCompartments() map[string][]Compartment {
 		add(m, CompartmentEquipment, sub)
 	}
 	add(m, CompartmentEquipment,
-		"top", "earring",
 		"one-handed-sword", "one-handed-axe", "one-handed-mace", "dagger",
 		"wand", "staff",
 		"two-handed-sword", "two-handed-axe", "two-handed-mace",

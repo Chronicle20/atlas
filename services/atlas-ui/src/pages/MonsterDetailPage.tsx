@@ -139,43 +139,7 @@ export function MonsterDetailPage() {
         friendly={attrs.friendly}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-        <Card>
-          <CardHeader className="py-2 px-4">
-            <CardTitle className="text-sm font-medium">Combat Stats</CardTitle>
-          </CardHeader>
-          <CardContent className="py-2 px-4 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Level</span><span>{attrs.level}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">HP</span><span>{attrs.hp.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">MP</span><span>{attrs.mp.toLocaleString()}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">EXP</span><span>{attrs.experience.toLocaleString()}</span></div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="py-2 px-4">
-            <CardTitle className="text-sm font-medium">Attack / Defense</CardTitle>
-          </CardHeader>
-          <CardContent className="py-2 px-4 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">Weapon Attack</span><span>{attrs.weapon_attack}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Weapon Defense</span><span>{attrs.weapon_defense}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Magic Attack</span><span>{attrs.magic_attack}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Magic Defense</span><span>{attrs.magic_defense}</span></div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="py-2 px-4">
-            <CardTitle className="text-sm font-medium">Properties</CardTitle>
-          </CardHeader>
-          <CardContent className="py-2 px-4 space-y-1 text-sm">
-            <div className="flex justify-between"><span className="text-muted-foreground">First Attack</span><span>{attrs.first_attack ? "Yes" : "No"}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">FFA Loot</span><span>{attrs.ffa_loot ? "Yes" : "No"}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Explosive Reward</span><span>{attrs.explosive_reward ? "Yes" : "No"}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">CP</span><span>{attrs.cp}</span></div>
-          </CardContent>
-        </Card>
-      </div>
+      <MonsterStatsCard attrs={attrs} />
 
       <MonsterTagsCard attrs={attrs} />
 
@@ -274,15 +238,54 @@ export function MonsterDetailPage() {
   );
 }
 
+function MonsterStatsCard({ attrs }: { attrs: MonsterAttributes }) {
+  // Single dense stat grid replacing the previous Combat / Attack-Defense /
+  // Properties trio. Keeps the relevant numeric facts in one place.
+  const stats: { label: string; value: string }[] = [
+    { label: "Level", value: String(attrs.level) },
+    { label: "EXP", value: attrs.experience.toLocaleString() },
+    { label: "HP", value: attrs.hp.toLocaleString() },
+    { label: "MP", value: attrs.mp.toLocaleString() },
+    { label: "Wpn Atk", value: String(attrs.weapon_attack) },
+    { label: "Wpn Def", value: String(attrs.weapon_defense) },
+    { label: "Mag Atk", value: String(attrs.magic_attack) },
+    { label: "Mag Def", value: String(attrs.magic_defense) },
+  ];
+  if (attrs.cp > 0) stats.push({ label: "CP", value: String(attrs.cp) });
+  if (attrs.hp_recovery > 0) stats.push({ label: "HP regen", value: `${attrs.hp_recovery}/s` });
+  if (attrs.mp_recovery > 0) stats.push({ label: "MP regen", value: `${attrs.mp_recovery}/s` });
+
+  return (
+    <Card>
+      <CardHeader className="py-2 px-4">
+        <CardTitle className="text-sm font-medium">Stats</CardTitle>
+      </CardHeader>
+      <CardContent className="py-3 px-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-x-4 gap-y-2 text-sm">
+          {stats.map((s) => (
+            <div key={s.label} className="flex flex-col">
+              <span className="text-xs text-muted-foreground uppercase tracking-wide">{s.label}</span>
+              <span className="font-medium">{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 function MonsterTagsCard({ attrs }: { attrs: MonsterAttributes }) {
+  // Boss/Undead/Friendly already render in MonsterHeader; everything else
+  // (formerly split between "Properties" and "Tags & Attributes") lives here.
   const tags: { label: string; tone?: "warn" }[] = [];
+  if (attrs.first_attack) tags.push({ label: "First attack", tone: "warn" });
   if (attrs.flying) tags.push({ label: "Flying" });
   if (attrs.swimming) tags.push({ label: "Swimming" });
+  if (attrs.ffa_loot) tags.push({ label: "FFA loot" });
+  if (attrs.explosive_reward) tags.push({ label: "Explosive reward" });
   if (attrs.changeable) tags.push({ label: "Changeable" });
   if (attrs.remove_on_miss) tags.push({ label: "Removed on miss", tone: "warn" });
   if (attrs.fixed_stance > 0) tags.push({ label: `Fixed stance ${attrs.fixed_stance}` });
-  if (attrs.hp_recovery > 0) tags.push({ label: `HP regen ${attrs.hp_recovery}/s` });
-  if (attrs.mp_recovery > 0) tags.push({ label: `MP regen ${attrs.mp_recovery}/s` });
   if (attrs.buff_to_give > 0) tags.push({ label: `Self-buffs (#${attrs.buff_to_give})` });
 
   const resistanceEntries = Object.entries(attrs.resistances ?? {}).filter(([, v]) => v && v.length > 0);
@@ -292,7 +295,7 @@ function MonsterTagsCard({ attrs }: { attrs: MonsterAttributes }) {
   return (
     <Card>
       <CardHeader className="py-2 px-4">
-        <CardTitle className="text-sm font-medium">Tags & Attributes</CardTitle>
+        <CardTitle className="text-sm font-medium">Tags</CardTitle>
       </CardHeader>
       <CardContent className="py-2 px-4 space-y-3">
         {tags.length > 0 && (

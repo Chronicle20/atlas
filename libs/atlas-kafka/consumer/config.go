@@ -10,23 +10,27 @@ import (
 //goland:noinspection GoUnusedExportedFunction
 func NewConfig(brokers []string, name string, topic string, groupId string) Config {
 	return Config{
-		brokers:     brokers,
-		name:        name,
-		topic:       topic,
-		groupId:     groupId,
-		maxWait:     50 * time.Millisecond,
-		startOffset: kafka.FirstOffset,
+		brokers:                brokers,
+		name:                   name,
+		topic:                  topic,
+		groupId:                groupId,
+		maxWait:                50 * time.Millisecond,
+		startOffset:            kafka.FirstOffset,
+		fetchTimeout:           5 * time.Minute,
+		maxConsecutiveTimeouts: 3,
 	}
 }
 
 type Config struct {
-	brokers       []string
-	name          string
-	topic         string
-	groupId       string
-	maxWait       time.Duration
-	headerParsers []HeaderParser
-	startOffset   int64
+	brokers                []string
+	name                   string
+	topic                  string
+	groupId                string
+	maxWait                time.Duration
+	headerParsers          []HeaderParser
+	startOffset            int64
+	fetchTimeout           time.Duration
+	maxConsecutiveTimeouts int
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -49,6 +53,22 @@ func SetMaxWait(duration time.Duration) model.Decorator[Config] {
 func SetHeaderParsers(parsers ...HeaderParser) model.Decorator[Config] {
 	return func(config Config) Config {
 		config.headerParsers = parsers
+		return config
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SetFetchTimeout(d time.Duration) model.Decorator[Config] {
+	return func(config Config) Config {
+		config.fetchTimeout = d
+		return config
+	}
+}
+
+//goland:noinspection GoUnusedExportedFunction
+func SetMaxConsecutiveTimeouts(n int) model.Decorator[Config] {
+	return func(config Config) Config {
+		config.maxConsecutiveTimeouts = n
 		return config
 	}
 }

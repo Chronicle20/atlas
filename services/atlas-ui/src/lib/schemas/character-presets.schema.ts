@@ -2,7 +2,7 @@ import { z } from "zod";
 
 const equipmentEntry = z.object({
     templateId: z.number().int().nonnegative(),
-    useAverageStats: z.boolean().default(true),
+    useAverageStats: z.boolean(),
 });
 
 const inventoryEntry = z.object({
@@ -28,8 +28,8 @@ export const presetSchema = z.object({
     id: z.string().optional(),
     attributes: z.object({
         name: z.string().min(1).max(64),
-        description: z.string().max(512).optional().default(""),
-        tags: z.array(z.string()).default([]),
+        description: z.string().max(512),
+        tags: z.array(z.string()),
         jobId: z.number().int().nonnegative(),
         gender: z.union([z.literal(0), z.literal(1)]),
         face: z.number().int().nonnegative(),
@@ -41,10 +41,10 @@ export const presetSchema = z.object({
         meso: z.number().int().nonnegative(),
         gm: z.number().int().min(0),
         stats,
-        defaultName: z.string().optional().default(""),
-        equipment: z.array(equipmentEntry).default([]),
-        inventory: z.array(inventoryEntry).default([]),
-        skills: z.array(skillEntry).default([]),
+        defaultName: z.string(),
+        equipment: z.array(equipmentEntry),
+        inventory: z.array(inventoryEntry),
+        skills: z.array(skillEntry),
     }),
 });
 

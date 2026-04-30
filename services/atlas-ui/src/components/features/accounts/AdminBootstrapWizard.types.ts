@@ -102,7 +102,7 @@ export function wizardReducer(state: WizardState, action: WizardAction): WizardS
           [action.presetId]: {
             ...row,
             applyStatus: action.status,
-            error: action.error,
+            ...(action.error !== undefined ? { error: action.error } : {}),
           },
         },
       };

@@ -273,9 +273,20 @@ func (p *Processor) DeleteAndEmit(transactionId uuid.UUID, characterId uint32, c
 	})
 }
 
-func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model, error) {
-	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) (Model, error) {
-		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, quantity, templateId, slot, compartmentId.String())
+// CreateOptions holds all optional parameters for asset creation.
+// UseAverageStats is reserved for Task 11 (average-stat preset items) and is currently unused.
+type CreateOptions struct {
+	Quantity        uint32
+	Expiration      time.Time
+	OwnerId         uint32
+	Flag            uint16
+	Rechargeable    uint64
+	UseAverageStats bool
+}
+
+func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
+	return func(transactionId uuid.UUID, characterId uint32, compartmentId uuid.UUID, templateId uint32, slot int16, opts CreateOptions) (Model, error) {
+		p.l.Debugf("Character [%d] attempting to create [%d] item(s) [%d] in slot [%d] of compartment [%s].", characterId, opts.Quantity, templateId, slot, compartmentId.String())
 		var a Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
 			inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
@@ -285,7 +296,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 
 			b := NewBuilder(compartmentId, templateId).
 				SetSlot(slot).
-				SetExpiration(expiration).
+				SetExpiration(opts.Expiration).
 				SetCreatedAt(time.Now())
 
 			switch inventoryType {
@@ -317,10 +328,10 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 					SetJump(getRandomStat(ea.Jump(), 5)).
 					SetSlots(ea.Slots())
 			case inventory.TypeValueUse, inventory.TypeValueSetup, inventory.TypeValueETC:
-				b.SetQuantity(quantity).
-					SetOwnerId(ownerId).
-					SetFlag(flag).
-					SetRechargeable(rechargeable)
+				b.SetQuantity(opts.Quantity).
+					SetOwnerId(opts.OwnerId).
+					SetFlag(opts.Flag).
+					SetRechargeable(opts.Rechargeable)
 			case inventory.TypeValueCash:
 				if item.GetClassification(item.Id(templateId)) == item.ClassificationPet {
 					pe, err := p.petProcessor.Create(characterId, templateId)
@@ -334,9 +345,9 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 						SetExpiration(pe.Expiration()).
 						SetPurchaseBy(pe.PurchaseBy())
 				} else {
-					b.SetQuantity(quantity).
-						SetOwnerId(ownerId).
-						SetFlag(flag)
+					b.SetQuantity(opts.Quantity).
+						SetOwnerId(opts.OwnerId).
+						SetFlag(opts.Flag)
 				}
 			}
 

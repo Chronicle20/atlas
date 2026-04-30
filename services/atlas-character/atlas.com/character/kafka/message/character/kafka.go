@@ -76,6 +76,8 @@ type CreateCharacterCommandBody struct {
 	Face         uint32  `json:"face"`
 	SkinColor    byte    `json:"skinColor"`
 	MapId        _map.Id `json:"mapId"`
+	Gm           int     `json:"gm,omitempty"`
+	Meso         uint32  `json:"meso,omitempty"`
 }
 
 type ChangeMapBody struct {

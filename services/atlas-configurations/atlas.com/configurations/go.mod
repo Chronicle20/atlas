@@ -3,6 +3,7 @@ module atlas-configurations
 go 1.25.5
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-database v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
@@ -21,6 +22,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

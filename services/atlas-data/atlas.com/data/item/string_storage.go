@@ -63,7 +63,7 @@ func (s *StringStorage) Add(ctx context.Context) func(m StringRestModel) model.P
 				TenantId:    t.Id(),
 				ItemId:      uint32(itemId),
 				Name:        m.Name,
-				Compartment: uint8(compartment),
+				Compartment: compartment,
 				Subcategory: subcategory,
 				UpdatedAt:   time.Now(),
 			}

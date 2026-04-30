@@ -17,6 +17,7 @@ import {
   mapsService,
   reactorsService,
   itemStringsService,
+  questsService,
 } from '@/services/api';
 import { servicesService, getServiceTypeDisplayName } from '@/services/api/services.service';
 
@@ -62,6 +63,7 @@ export const EntityType = {
   REACTOR: 'reactor',
   PORTAL: 'portal',
   ITEM: 'item',
+  QUEST: 'quest',
 } as const;
 export type EntityType = typeof EntityType[keyof typeof EntityType];
 
@@ -88,6 +90,7 @@ const CACHE_CONFIG = {
     [EntityType.REACTOR]: 30 * 60 * 1000,      // 30 minutes (rarely changes)
     [EntityType.PORTAL]: 30 * 60 * 1000,       // 30 minutes (rarely changes)
     [EntityType.ITEM]: 30 * 60 * 1000,          // 30 minutes (rarely changes)
+    [EntityType.QUEST]: 30 * 60 * 1000,         // 30 minutes (rarely changes)
   },
   // Maximum cache size per entity type
   MAX_SIZE: 1000,
@@ -322,6 +325,16 @@ const resolvers: Record<EntityType, EntityResolver> = {
       throw new ResolverError(`Failed to resolve item: ${error}`, true);
     }
   },
+
+  [EntityType.QUEST]: async (_tenant, entityId, options = {}) => {
+    try {
+      const quest = await questsService.getQuestById(entityId, options);
+      return quest.attributes?.name || `Quest ${entityId}`;
+    } catch (error) {
+      console.warn(`Failed to resolve quest name for ID ${entityId}:`, error);
+      throw new ResolverError(`Failed to resolve quest: ${error}`, true);
+    }
+  },
 };
 
 /**
@@ -495,6 +508,7 @@ export function getEntityTypeFromRoute(pathname: string): EntityType | null {
   if (pathname.includes('/maps/')) return EntityType.MAP;
   if (pathname.includes('/reactors/')) return EntityType.REACTOR;
   if (pathname.includes('/items/')) return EntityType.ITEM;
+  if (pathname.includes('/quests/')) return EntityType.QUEST;
 
   return null;
 }

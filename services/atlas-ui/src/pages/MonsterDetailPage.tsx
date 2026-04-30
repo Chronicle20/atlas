@@ -5,6 +5,7 @@ import { useMonsterDrops } from "@/lib/hooks/api/useDrops";
 import { useMobData } from "@/lib/hooks/useMobData";
 import { useItemBatchData } from "@/lib/hooks/useItemData";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { PageLoader } from "@/components/common/PageLoader";
 import { ErrorDisplay } from "@/components/common/ErrorDisplay";
 import { MonsterHeader } from "@/components/features/monsters/MonsterHeader";
@@ -14,6 +15,7 @@ import { MonsterSpawnMapWidget } from "@/components/features/monsters/MonsterSpa
 import { MonsterSkillChip } from "@/components/features/monsters/MonsterSkillChip";
 import { getItemType } from "@/types/models/item";
 import type { DropData } from "@/types/models/drop";
+import type { MonsterAttributes } from "@/types/models/monster";
 
 type DropGroupKey = "equipment" | "consumable" | "setup" | "etc" | "cash" | "other";
 
@@ -175,6 +177,8 @@ export function MonsterDetailPage() {
         </Card>
       </div>
 
+      <MonsterTagsCard attrs={attrs} />
+
       {attrs.skills && attrs.skills.length > 0 && (
         <Card>
           <CardHeader>
@@ -267,5 +271,58 @@ export function MonsterDetailPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function MonsterTagsCard({ attrs }: { attrs: MonsterAttributes }) {
+  const tags: { label: string; tone?: "warn" }[] = [];
+  if (attrs.flying) tags.push({ label: "Flying" });
+  if (attrs.swimming) tags.push({ label: "Swimming" });
+  if (attrs.changeable) tags.push({ label: "Changeable" });
+  if (attrs.remove_on_miss) tags.push({ label: "Removed on miss", tone: "warn" });
+  if (attrs.fixed_stance > 0) tags.push({ label: `Fixed stance ${attrs.fixed_stance}` });
+  if (attrs.hp_recovery > 0) tags.push({ label: `HP regen ${attrs.hp_recovery}/s` });
+  if (attrs.mp_recovery > 0) tags.push({ label: `MP regen ${attrs.mp_recovery}/s` });
+  if (attrs.buff_to_give > 0) tags.push({ label: `Self-buffs (#${attrs.buff_to_give})` });
+
+  const resistanceEntries = Object.entries(attrs.resistances ?? {}).filter(([, v]) => v && v.length > 0);
+
+  if (tags.length === 0 && resistanceEntries.length === 0) return null;
+
+  return (
+    <Card>
+      <CardHeader className="py-2 px-4">
+        <CardTitle className="text-sm font-medium">Tags & Attributes</CardTitle>
+      </CardHeader>
+      <CardContent className="py-2 px-4 space-y-3">
+        {tags.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {tags.map((t) => (
+              <Badge
+                key={t.label}
+                variant={t.tone === "warn" ? "destructive" : "secondary"}
+                className="text-xs font-normal"
+              >
+                {t.label}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {resistanceEntries.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Elemental resistances
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {resistanceEntries.map(([element, level]) => (
+                <Badge key={element} variant="outline" className="text-xs font-normal">
+                  {element}: {level}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }

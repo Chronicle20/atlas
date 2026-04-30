@@ -93,6 +93,7 @@ For EACH domain package identified in Phase 2, run every check below. These are 
 | DOM-18 | JSON:API interface on REST models | Read `rest.go` | RestModel implements `GetName()`, `GetID()`, `SetID()` |
 | DOM-19 | Request models use flat structure | Read `rest.go` | CreateRequest/UpdateRequest have no nested Data/Type/Attributes structs |
 | DOM-20 | Table-driven tests | Read test files | Tests use `tests := []struct{...}` pattern with `t.Run` |
+| DOM-21 | No duplication of atlas-constants types | For each new `type X` declaration, named `const` block, or numeric-literal classification check in the changed packages, grep `libs/atlas-constants/` for an equivalent. Specifically check item-id classifications (`itemId / 10000`, `itemId / 1_000_000`), inventory types (1..5 enums for equipment/use/setup/etc/cash), weapon types, world/channel/character/map id widths, and job/skill/monster id types. | Either no shared equivalent exists, or the new type explicitly wraps/uses the atlas-constants version (e.g. `inventory.Type`, `item.Classification`, `item.GetClassification`, `world.Id`). FAIL if the service redeclares a type, helper, or numeric constant that already lives in `libs/atlas-constants/`. See `libs/atlas-constants/README.md` for the package index. |
 
 ### Sub-Domain Package Checklist (action-event packages without `model.go`)
 

@@ -27,11 +27,7 @@ func Register(tx *gorm.DB, s *document.Storage[string, RestModel]) func(ctx cont
 			if _, err = s.Add(ctx)(m)(); err != nil {
 				return err
 			}
-			slotWZ := ""
-			if len(m.EquipSlots) > 0 {
-				slotWZ = m.EquipSlots[0].WZ
-			}
-			return item.UpdateEquipmentClassification(tx, ctx, m.Id, slotWZ, m.ReqJob, m.Cash)
+			return item.UpdateEquipmentClassification(tx, ctx, m.Id, m.ReqJob, m.Cash)
 		}
 	}
 }

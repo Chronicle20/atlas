@@ -8,7 +8,7 @@ import (
 	marriageService "atlas-marriages/marriage"
 	"atlas-marriages/scheduler"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-marriages/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

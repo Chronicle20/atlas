@@ -15,7 +15,7 @@ import (
 	message2 "atlas-messages/kafka/consumer/message"
 	"atlas-messages/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-messages/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -441,8 +441,9 @@ func setupItemHandlerFixture(t *testing.T, n int) (*gorm.DB, context.Context) {
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
 	for i := 0; i < n; i++ {
-		// Seed n rows with non-zero compartment so default-browse sees them.
-		seedIdxFull(t, db, ctx, tn.Id(), uint32(1+i), fmt.Sprintf("Item %05d", i+1), 1, "", nil)
+		// Seed n rows in the legitimate equipment id range (>= 1_000_000) so
+		// default-browse sees them — handler always filters out appearance ids.
+		seedIdxFull(t, db, ctx, tn.Id(), uint32(1_000_000+i), fmt.Sprintf("Item %05d", i+1), 1, "", nil)
 	}
 	return db, ctx
 }
@@ -548,9 +549,13 @@ func TestHandleGetItemStrings_ExcludesUnknownCompartment(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
 
-	// Two faces (compartment=0) — these must be hidden.
+	// Face/hair appearance rows that must be hidden:
+	//  - 20803 with compartment=0 (the well-formed case)
+	//  - 30150 with compartment=2 (a data-inconsistent case — some other
+	//    ingest path stamped a non-zero compartment onto an appearance row).
+	//    The id-range check must catch this regardless of the column's value.
 	seedIdxFull(t, db, ctx, tn.Id(), 20803, "Face 20803", 0, "other", nil)
-	seedIdxFull(t, db, ctx, tn.Id(), 30150, "Hair 30150", 0, "other", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 30150, "Hair 30150", uint8(inventory.TypeValueUse), "other", nil)
 	// One legitimate equipment item — this must remain visible.
 	seedIdxFull(t, db, ctx, tn.Id(), 1002000, "Snail Shell Helmet", uint8(inventory.TypeValueEquip), "hat", nil)
 

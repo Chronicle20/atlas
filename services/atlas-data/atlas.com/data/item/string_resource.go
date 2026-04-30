@@ -185,10 +185,13 @@ func buildPredicates(f filterSpec) ([]string, []interface{}) {
 	var preds []string
 	var args []interface{}
 
-	// Always exclude unknown-compartment items (faces, hairs, skins in the 0xxxx
-	// range): they live in the search index but have no equipment/use/etc role
-	// and would only be visible to clients that target them by id.
-	preds = append(preds, "compartment != 0")
+	// Always exclude character-appearance templates (faces 20xxx, hairs 30xxx,
+	// skins 40xxx, etc.). The id-range check is the ground truth — any item
+	// with id < 1_000_000 is an appearance template, not a real item, regardless
+	// of the compartment column's value. Filtering on item_id directly defends
+	// against stale rows where another ingest path may have stamped a non-zero
+	// compartment on an appearance row.
+	preds = append(preds, "item_id >= 1000000")
 
 	if f.Compartment != nil {
 		preds = append(preds, "compartment = ?")

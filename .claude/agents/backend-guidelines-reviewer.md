@@ -104,6 +104,17 @@ For EACH domain package identified in Phase 2, run every check below. These are 
 | SUB-03 | Uses `RegisterInputHandler[T]` for POST | Grep `resource.go` | POST endpoints use typed input handler |
 | SUB-04 | No manual JSON parsing | Grep `resource.go` for `json.NewDecoder`, `json.Unmarshal`, `io.ReadAll` | Zero matches |
 
+### External HTTP Client Checklist (any new package that calls another atlas service via `requests.GetRequest[T]` / `requests.PostRequest[T]`)
+
+Triggers: package contains a file that calls `requests.RootUrl(...)` or `requests.GetRequest[T]` / `requests.PostRequest[T]` for a non-local service.
+
+| ID | Check | How to Verify | Pass Criteria |
+|----|-------|---------------|---------------|
+| EXT-01 | JSON:API target struct implements relationship interfaces | Grep target rest model for `SetToOneReferenceID` and `SetToManyReferenceIDs` | Both methods present, even if no-op. Without them, api2go errors on any response with a `relationships` block — see `libs/atlas-rest/CLAUDE.md`. Past bug: task-037 surfaced this twice as misleading "not found" errors. |
+| EXT-02 | httptest-backed integration test exists | Look for `httptest.NewServer` (or equivalent) under the client package or its sibling `_test.go` | Test serves a representative fixture response (matching the upstream's actual JSON:API shape, including any `relationships` block) and asserts the client's domain method returns a populated struct. `FakeClient` mocks alone do NOT satisfy this — they bypass unmarshal. |
+| EXT-03 | Errors distinguish 404 from other failures | Grep client for `requests.ErrNotFound` or `errors.Is(err, requests.ErrNotFound)` | Only genuine 404s map to a domain-level "not found" error; transport / decode / 5xx failures bubble up with their original error. Surfacing every error as "not found" hides deploy bugs. |
+| EXT-04 | Service URL not hardcoded; uses `RootUrl(domain)` | Read client request file | URL composed via `requests.RootUrl(<DOMAIN>) + "<path>"`. Direct service DNS only when ingress would loop back; document with a comment if so. |
+
 ## Phase 4: Security Review (auth-related services only)
 
 If the service handles authentication, authorization, or token management:

@@ -1,8 +1,7 @@
-import { api } from "@/lib/api/client";
 import { tenantHeaders } from "@/lib/headers";
 import type { Tenant } from "@/types/models/tenant";
 
-const BASE_PATH = "/api/characters";
+const BASE_PATH = "/api/factory";
 
 export interface CreateFromPresetPayload {
   presetId: string;
@@ -33,7 +32,7 @@ interface CreateFromPresetEnvelope {
 
 export const factoryService = {
   /**
-   * POST /api/characters/from-preset
+   * POST /api/factory/characters/from-preset
    *
    * Sends a JSON:API-encoded body and receives a 202 Accepted with a JSON:API
    * envelope. The backend uses RegisterInputHandler[PresetCreateRestModel] which
@@ -62,7 +61,7 @@ export const factoryService = {
       },
     };
 
-    const response = await fetch(`${BASE_PATH}/from-preset`, {
+    const response = await fetch(`${BASE_PATH}/characters/from-preset`, {
       method: "POST",
       headers,
       body: JSON.stringify(requestBody),
@@ -84,26 +83,5 @@ export const factoryService = {
 
     const responseBody = (await response.json()) as CreateFromPresetEnvelope;
     return { transactionId: responseBody.data.attributes.transactionId };
-  },
-
-  /**
-   * GET /api/characters/name-validity?name=&worldId=
-   *
-   * Returns plain JSON {valid, reason?, detail?}.  api.get<T> returns the raw
-   * parsed body as T (no JSON:API unwrapping), so it is used directly here.
-   * Tenant headers are already on the singleton api client (set by TenantProvider),
-   * but we pass them explicitly via options.headers to stay consistent with the
-   * rest of the service in case the caller provides a different tenant.
-   */
-  async checkNameValidity(
-    tenant: Tenant,
-    name: string,
-    worldId: number,
-  ): Promise<NameValidityResponse> {
-    const params = new URLSearchParams({ name, worldId: String(worldId) });
-    return api.get<NameValidityResponse>(
-      `${BASE_PATH}/name-validity?${params.toString()}`,
-      { headers: tenantHeaders(tenant) },
-    );
   },
 };

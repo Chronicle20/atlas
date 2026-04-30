@@ -1,20 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { factoryService } from "../factory.service";
-import { api } from "@/lib/api/client";
 import type { Tenant } from "@/types/models/tenant";
 
 // Mock fetch for createFromPreset (uses fetch directly, like seed.service)
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
-
-// Mock the api client for checkNameValidity
-vi.mock("@/lib/api/client", () => ({
-  api: {
-    get: vi.fn(),
-  },
-}));
-
-const mockApiGet = vi.mocked(api.get);
 
 const mockTenant: Tenant = {
   id: "tenant-123",
@@ -57,7 +47,7 @@ describe("factoryService", () => {
       expect(result).toEqual({ transactionId: "txn-abc" });
     });
 
-    it("sends a JSON:API-encoded body to /api/characters/from-preset", async () => {
+    it("sends a JSON:API-encoded body to /api/factory/characters/from-preset", async () => {
       const envelope = {
         data: {
           type: "create-character-response",
@@ -80,7 +70,7 @@ describe("factoryService", () => {
       });
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe("/api/characters/from-preset");
+      expect(url).toBe("/api/factory/characters/from-preset");
       expect(init.method).toBe("POST");
       expect(JSON.parse(init.body as string)).toEqual({
         data: {
@@ -157,53 +147,6 @@ describe("factoryService", () => {
           name: "N",
         }),
       ).rejects.toMatchObject({ status: 502 });
-    });
-  });
-
-  describe("checkNameValidity", () => {
-    it("returns the plain JSON shape when name is valid", async () => {
-      mockApiGet.mockResolvedValueOnce({ valid: true });
-
-      const result = await factoryService.checkNameValidity(mockTenant, "GoodName", 0);
-
-      expect(result).toEqual({ valid: true });
-    });
-
-    it("returns reason and detail when name is invalid", async () => {
-      mockApiGet.mockResolvedValueOnce({
-        valid: false,
-        reason: "duplicate",
-        detail: "name already in use",
-      });
-
-      const result = await factoryService.checkNameValidity(mockTenant, "TakenName", 0);
-
-      expect(result).toEqual({
-        valid: false,
-        reason: "duplicate",
-        detail: "name already in use",
-      });
-    });
-
-    it("builds the URL with name and worldId query params", async () => {
-      mockApiGet.mockResolvedValueOnce({ valid: true });
-
-      await factoryService.checkNameValidity(mockTenant, "MyChar", 2);
-
-      const [url] = mockApiGet.mock.calls[0] as [string, ...unknown[]];
-      expect(url).toContain("/api/characters/name-validity");
-      expect(url).toContain("name=MyChar");
-      expect(url).toContain("worldId=2");
-    });
-
-    it("passes tenant headers to the api.get options", async () => {
-      mockApiGet.mockResolvedValueOnce({ valid: true });
-
-      await factoryService.checkNameValidity(mockTenant, "N", 0);
-
-      const [, options] = mockApiGet.mock.calls[0] as [string, { headers: Headers }];
-      expect(options.headers.get("TENANT_ID")).toBe("tenant-123");
-      expect(options.headers.get("REGION")).toBe("GMS");
     });
   });
 });

@@ -117,14 +117,16 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		}
 
 		con := &Consumer{
-			name:          c.name,
-			topic:         c.topic,
-			groupId:       c.groupId,
-			brokers:       append([]string(nil), c.brokers...),
-			readerConfig:  readerConfig,
-			rp:            m.rp,
-			handlers:      make(map[string]handler.Handler),
-			headerParsers: c.headerParsers,
+			name:                   c.name,
+			topic:                  c.topic,
+			groupId:                c.groupId,
+			brokers:                append([]string(nil), c.brokers...),
+			readerConfig:           readerConfig,
+			rp:                     m.rp,
+			handlers:               make(map[string]handler.Handler),
+			headerParsers:          c.headerParsers,
+			fetchTimeout:           c.fetchTimeout,
+			maxConsecutiveTimeouts: c.maxConsecutiveTimeouts,
 		}
 
 		m.consumers[c.topic] = con
@@ -247,6 +249,8 @@ func (c *Consumer) onReaderCreated(attempt int) {
 	if attempt > 0 {
 		c.recreateCount++
 		c.lastError = ""
+		c.consecutiveTimeouts = 0
+		c.lastTimeoutAt = time.Time{}
 	}
 }
 
@@ -255,6 +259,7 @@ func (c *Consumer) recordFetch() {
 	defer c.mu.Unlock()
 	c.lastFetchAt = time.Now()
 	c.lastError = ""
+	c.consecutiveTimeouts = 0
 }
 
 // recordTimeout marks one deadline expiration; called per tick by runFetchLoop.

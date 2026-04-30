@@ -10,7 +10,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -361,35 +360,40 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 }
 
 // runFetchLoop blocks the caller until the supplied reader errors out or
-// the parent ctx is canceled. On return, the reader should be closed by the
-// caller and (if the error is not a ctx-cancel) a new reader should be
-// created. The inner retry is intentionally short — a transient kafka-go
-// hiccup that self-resolves within ~1s stays on the current reader;
-// everything else falls through to reader recreation.
+// the parent ctx is canceled. Each iteration runs FetchMessage under a
+// per-call deadline (c.fetchTimeout). A deadline expiration is treated as
+// idle: the consumer ticks back to the top of the loop with a fresh
+// deadline, the same reader, and the same partition assignment. After
+// c.maxConsecutiveTimeouts consecutive deadline expirations without a
+// successful fetch in between, the loop returns errFetchWedged so the
+// outer start loop closes the reader and recreates it. A successful
+// fetch resets the counter via recordFetch.
 func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		var msg kafka.Message
-		cfg := retry.DefaultConfig().
-			WithMaxRetries(3).
-			WithInitialDelay(100 * time.Millisecond).
-			WithMaxDelay(500 * time.Millisecond)
-		err := retry.Try(ctx, cfg, func(attempt int) (bool, error) {
-			var ferr error
-			msg, ferr = reader.FetchMessage(ctx)
-			if ferr == nil {
-				return false, nil
-			}
-			if errors.Is(ferr, context.Canceled) {
-				return false, ferr
-			}
-			l.WithError(ferr).Warnf("Could not fetch message on topic, will retry.")
-			return true, ferr
-		})
+		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		msg, err := reader.FetchMessage(fetchCtx)
+		cancelFetch()
+
 		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+				return err
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				c.recordTimeout()
+				snapshot := c.Snapshot()
+				if snapshot.ConsecutiveTimeouts >= c.maxConsecutiveTimeouts {
+					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
+						snapshot.ConsecutiveTimeouts, c.topic, c.groupId)
+					return errFetchWedged
+				}
+				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
+					snapshot.ConsecutiveTimeouts, c.maxConsecutiveTimeouts)
+				continue
+			}
 			return err
 		}
 

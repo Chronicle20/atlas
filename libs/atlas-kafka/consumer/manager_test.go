@@ -690,3 +690,57 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestFetchTimeoutTicksWithoutRecreate(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// Empty scriptedReader always blocks on ctx — every FetchMessage call
+	// returns DeadlineExceeded when the per-call deadline fires.
+	r1 := &scriptedReader{}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer wg.Wait()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "tick-consumer", "tick-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetFetchTimeout(50*time.Millisecond),
+		consumer.SetMaxConsecutiveTimeouts(3),
+	)
+
+	// Wait long enough for at least one deadline to fire (50ms) but well
+	// short of three (150ms).
+	time.Sleep(75 * time.Millisecond)
+
+	snaps := cm.Consumers()
+	if len(snaps) != 1 {
+		t.Fatalf("expected 1 consumer, got %d", len(snaps))
+	}
+	s := snaps[0].Snapshot()
+
+	if s.ConsecutiveTimeouts < 1 {
+		t.Fatalf("expected ConsecutiveTimeouts >= 1 after a tick, got %d", s.ConsecutiveTimeouts)
+	}
+	if s.RecreateCount != 0 {
+		t.Fatalf("expected RecreateCount == 0 after a single tick, got %d", s.RecreateCount)
+	}
+	if s.LastError != "" {
+		t.Fatalf("expected LastError empty (idle is not an error), got %q", s.LastError)
+	}
+	if s.LastTimeoutAt.IsZero() {
+		t.Fatal("expected LastTimeoutAt to be set after a tick")
+	}
+
+	cancel()
+	wg.Wait()
+
+	if r1.Closes() != 1 {
+		t.Fatalf("expected reader closed exactly once on ctx-cancel, got %d", r1.Closes())
+	}
+}

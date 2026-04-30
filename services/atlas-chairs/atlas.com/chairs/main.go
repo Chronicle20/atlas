@@ -7,7 +7,7 @@ import (
 	"atlas-chairs/kafka/consumer/character"
 	"atlas-chairs/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-chairs/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

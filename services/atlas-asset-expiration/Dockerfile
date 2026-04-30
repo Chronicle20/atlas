@@ -12,6 +12,7 @@ COPY libs/atlas-kafka/go.mod libs/atlas-kafka/go.sum libs/atlas-kafka/
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
+COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
@@ -27,6 +28,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./services/atlas-asset-expiration/atlas.com/asset-expiration' >> go.work && \
@@ -41,6 +43,7 @@ COPY libs/atlas-kafka libs/atlas-kafka
 COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-tenant libs/atlas-tenant
+COPY libs/atlas-tracing libs/atlas-tracing
 
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
@@ -57,6 +60,7 @@ RUN cd services/atlas-asset-expiration/atlas.com/asset-expiration && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
     && go mod tidy
 
 # Build

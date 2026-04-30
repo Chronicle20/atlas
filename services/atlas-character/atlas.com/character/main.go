@@ -14,7 +14,7 @@ import (
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-character/session/history"
 	"atlas-character/tasks"
-	"atlas-character/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

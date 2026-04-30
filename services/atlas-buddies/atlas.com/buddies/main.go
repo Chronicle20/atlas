@@ -10,7 +10,7 @@ import (
 	"atlas-buddies/list"
 	"atlas-buddies/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-buddies/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

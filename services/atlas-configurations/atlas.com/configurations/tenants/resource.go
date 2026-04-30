@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	tenantlib "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/jtumidanski/api2go/jsonapi"
@@ -69,7 +70,20 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				p := NewProcessor(d.Logger(), d.Context(), db).
+				// atlas-configurations is a bootstrap-tier service that does
+				// not require tenant headers on incoming requests, so the
+				// request ctx has no tenant. The validator's atlas-data calls
+				// are tenant-scoped; for the tenant PATCH path we synthesize
+				// a tenant context from {URL tenantId, body region/major/minor}
+				// so the validator can fully run R-6..R-12. The template path
+				// has no equivalent identity and skips those rules instead.
+				ctx := d.Context()
+				if t, terr := tenantlib.Create(tenantId, input.Region, input.MajorVersion, input.MinorVersion); terr == nil {
+					ctx = tenantlib.WithContext(ctx, t)
+				} else {
+					d.Logger().WithError(terr).Warn("Unable to construct tenant model from PATCH input; preset validation will skip atlas-data lookups.")
+				}
+				p := NewProcessor(d.Logger(), ctx, db).
 					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
 				err := p.UpdateById(tenantId, input)
 				if err != nil {

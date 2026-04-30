@@ -360,6 +360,12 @@ func (p *ProcessorImpl) StepCompletedWithResult(transactionId uuid.UUID, success
 // AcceptEvent is the single gate at which a saga-tagged Kafka event is
 // matched against the saga's pending step. See PRD §4 and plan Task 3.
 func (p *ProcessorImpl) AcceptEvent(transactionId uuid.UUID, kind EventKind) (AcceptDecision, bool) {
+	if transactionId == uuid.Nil {
+		LogSkip(p.l, logrus.Fields{
+			"event_kind": kind,
+		}, SkipReasonNilTransactionId)
+		return AcceptDecision{}, false
+	}
 	s, err := p.GetById(transactionId)
 	if err != nil {
 		LogSkip(p.l, logrus.Fields{

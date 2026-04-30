@@ -227,3 +227,19 @@ func TestProcessorInterface(t *testing.T) {
 	// Verify that MockProcessor implements character.Processor interface
 	var _ character.Processor = (*mock.MockProcessor)(nil)
 }
+
+func TestProcessorImpl_PartyDecorator_NotInParty(t *testing.T) {
+	mockProc := mock.NewMockProcessor()
+	c := createTestCharacter(123, "SoloChar", 10)
+
+	// Mock decorator is a pass-through that does NOT populate party.
+	out := mockProc.PartyDecorator(c)
+	if out.InParty() {
+		t.Error("InParty() = true on mock-decorated solo character, want false")
+	}
+}
+
+func TestProcessorImpl_PartyDecorator_InterfaceContract(t *testing.T) {
+	// Compile-time assertion that PartyDecorator is on the interface.
+	var _ func(character.Model) character.Model = (mock.NewMockProcessor()).PartyDecorator
+}

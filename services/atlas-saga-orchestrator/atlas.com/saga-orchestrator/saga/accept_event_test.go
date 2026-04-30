@@ -177,3 +177,21 @@ func TestAcceptEvent_NoWarnWhenLaterStepAcceptsKind(t *testing.T) {
 		}
 	}
 }
+
+func TestAcceptEvent_NilTransactionId(t *testing.T) {
+	p, hook, _ := newAcceptEventTestProcessor(t)
+
+	_, ok := p.AcceptEvent(uuid.Nil, EventKindAssetCreated)
+	assert.False(t, ok, "AcceptEvent must return false for uuid.Nil")
+
+	require.Len(t, hook.AllEntries(), 1, "exactly one debug log expected")
+	entry := hook.AllEntries()[0]
+	assert.Equal(t, logrus.DebugLevel, entry.Level)
+	assert.Equal(t, SkipReasonNilTransactionId, entry.Data["reason"])
+	assert.NotEqual(t, SkipReasonSagaNotFound, entry.Data["reason"], "must NOT log saga_not_found for nil-UUID events")
+
+	// transaction_id field must NOT be on the log payload — there is no
+	// meaningful UUID to log.
+	_, hasTxId := entry.Data["transaction_id"]
+	assert.False(t, hasTxId, "transaction_id should be omitted from nil-UUID skip logs")
+}

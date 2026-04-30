@@ -27,16 +27,18 @@ type debugResource struct {
 }
 
 type debugAttributes struct {
-	Name          string    `json:"name"`
-	Topic         string    `json:"topic"`
-	GroupID       string    `json:"groupId"`
-	Brokers       []string  `json:"brokers"`
-	AliveSince    time.Time `json:"aliveSince"`
-	LastFetchAt   time.Time `json:"lastFetchAt"`
-	LastErrorAt   time.Time `json:"lastErrorAt"`
-	LastError     string    `json:"lastError"`
-	RecreateCount int       `json:"recreateCount"`
-	HandlerCount  int       `json:"handlerCount"`
+	Name                string    `json:"name"`
+	Topic               string    `json:"topic"`
+	GroupID             string    `json:"groupId"`
+	Brokers             []string  `json:"brokers"`
+	AliveSince          time.Time `json:"aliveSince"`
+	LastFetchAt         time.Time `json:"lastFetchAt"`
+	LastErrorAt         time.Time `json:"lastErrorAt"`
+	LastError           string    `json:"lastError"`
+	RecreateCount       int       `json:"recreateCount"`
+	HandlerCount        int       `json:"handlerCount"`
+	LastTimeoutAt       time.Time `json:"lastTimeoutAt"`
+	ConsecutiveTimeouts int       `json:"consecutiveTimeouts"`
 }
 
 func decodeDebug(t *testing.T, body []byte) debugDoc {
@@ -164,6 +166,12 @@ func TestDebugHandler_PopulatedConsumer(t *testing.T) {
 	}
 	if a.LastFetchAt.IsZero() {
 		t.Fatal("expected lastFetchAt to be set after successful fetch")
+	}
+	if a.ConsecutiveTimeouts != 0 {
+		t.Fatalf("expected consecutiveTimeouts=0 after a successful fetch, got %d", a.ConsecutiveTimeouts)
+	}
+	if !a.LastTimeoutAt.IsZero() {
+		t.Fatalf("expected lastTimeoutAt zero on a consumer that has never timed out, got %v", a.LastTimeoutAt)
 	}
 }
 

@@ -1,8 +1,10 @@
-
-import {HandlersForm} from "@/pages/tenants-handlers-form";
+import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
+import { HandlersForm } from "@/pages/tenants-handlers-form";
 
 export function TenantsHandlersPage() {
     return (
-        <HandlersForm/>
+        <TenantDetailLayout>
+            <HandlersForm />
+        </TenantDetailLayout>
     );
 }

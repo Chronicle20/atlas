@@ -1,8 +1,10 @@
-
-import {HandlersForm} from "@/pages/templates-handlers-form";
+import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
+import { HandlersForm } from "@/pages/templates-handlers-form";
 
 export function TemplatesHandlersPage() {
     return (
-        <HandlersForm/>
+        <TemplateDetailLayout>
+            <HandlersForm />
+        </TemplateDetailLayout>
     );
 }

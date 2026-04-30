@@ -12,6 +12,7 @@ import { ErrorDisplay } from "@/components/common";
 import { AccountDetailSkeleton } from "@/components/common/skeletons/AccountDetailSkeleton";
 import { WalletPanel } from "@/components/features/accounts/WalletPanel";
 import { ApplyPresetDialog } from "@/components/features/characters/ApplyPresetDialog";
+import { BootstrapCharactersDialog } from "@/components/features/characters/BootstrapCharactersDialog";
 
 function getLoginStateName(state: number): string {
   if (state === 0) return "Logged Out";
@@ -29,6 +30,7 @@ export function AccountDetailPage() {
   const { id } = useParams();
   const { activeTenant } = useTenant();
   const [applyOpen, setApplyOpen] = useState(false);
+  const [bootstrapOpen, setBootstrapOpen] = useState(false);
 
   const accountQuery = useAccount(activeTenant!, id ?? "");
   const walletQuery = useWallet(activeTenant!, id ?? "");
@@ -55,7 +57,12 @@ export function AccountDetailPage() {
         <div>
           <h2 className="text-2xl font-bold tracking-tight">{account.attributes.name}</h2>
         </div>
-        <div>
+        <div className="flex items-center gap-2">
+          {activeTenant && hasPresets && (
+            <Button variant="outline" onClick={() => setBootstrapOpen(true)}>
+              Bootstrap characters
+            </Button>
+          )}
           {activeTenant && hasPresets && (
             <Button onClick={() => setApplyOpen(true)}>Add character from preset</Button>
           )}
@@ -67,6 +74,14 @@ export function AccountDetailPage() {
           accountId={Number(account.id)}
           open={applyOpen}
           onOpenChange={setApplyOpen}
+        />
+      )}
+      {activeTenant && (
+        <BootstrapCharactersDialog
+          tenant={activeTenant}
+          accountId={Number(account.id)}
+          open={bootstrapOpen}
+          onOpenChange={setBootstrapOpen}
         />
       )}
 

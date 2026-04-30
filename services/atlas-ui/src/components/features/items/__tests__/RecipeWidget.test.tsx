@@ -8,6 +8,9 @@ import type { Recipe } from "@/types/models/recipe";
 vi.mock("@/lib/hooks/useNpcData", () => ({
   useNpcData: () => ({ name: "Tylus", iconUrl: undefined, isLoading: false }),
 }));
+vi.mock("@/lib/hooks/useItemData", () => ({
+  useItemData: (id: number) => ({ name: `Item Name ${id}`, iconUrl: undefined, isLoading: false }),
+}));
 vi.mock("@/services/api/items.service", () => ({
   itemsService: {
     getItemName: async (id: string) => `Item Name ${id}`,
@@ -47,9 +50,9 @@ describe("RecipeWidget", () => {
     expect(screen.getByText(/18,000\s+mesos/)).toBeInTheDocument();
   });
 
-  it("renders one row per material with the fallback id while name resolves", () => {
+  it("renders one widget per material with the resolved name and quantity", () => {
     render(wrap(<RecipeWidget recipe={baseRecipe} />));
-    expect(screen.getByText(/Item #4011000/)).toBeInTheDocument();
+    expect(screen.getByText("Item Name 4011000")).toBeInTheDocument();
     expect(screen.getByText(/× 3/)).toBeInTheDocument();
   });
 

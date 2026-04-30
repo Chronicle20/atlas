@@ -41,6 +41,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
 import { useDebounce } from "@/lib/utils/debounce";
 import { Pager } from "@/components/common/Pager";
+import { isRetryableError } from "@/lib/api/errors";
 
 const MIN_QUERY_LENGTH = 2;
 const DEBOUNCE_MS = 250;
@@ -161,6 +162,12 @@ function ItemsPageContent() {
     enabled: queryEnabled,
     staleTime: 30 * 1000,
     placeholderData: keepPreviousData,
+    retry: (failureCount, error) => {
+      // Skip retry on 4xx (e.g. unsupported subcategory yields 400) — only
+      // retry network/5xx where retrying might actually succeed.
+      if (!isRetryableError(error)) return false;
+      return failureCount < 3;
+    },
   });
 
   const pageData = itemsQuery.data ?? { items: [], total: 0, pageNumber, pageSize: PAGE_SIZE, lastPage: 1 };
@@ -300,7 +307,6 @@ function ItemsPageContent() {
                       <TableHead>Name</TableHead>
                       <TableHead>Compartment</TableHead>
                       <TableHead>Subcategory</TableHead>
-                      <TableHead>Type</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -351,9 +357,6 @@ function ItemsPageContent() {
                             <Badge variant="secondary">
                               {item.subcategory ? subcategoryLabel(item.subcategory) : "—"}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{item.type}</Badge>
                           </TableCell>
                         </TableRow>
                       );

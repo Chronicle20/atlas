@@ -12,7 +12,7 @@ import { useNpcData } from "@/lib/hooks/useNpcData";
 import { useTenant } from "@/context/tenant-context";
 import { itemsService } from "@/services/api/items.service";
 import { hasStimulator, type Recipe } from "@/types/models/recipe";
-import { MaterialRow } from "./MaterialRow";
+import { EntityWidget } from "@/components/features/quests/EntityWidget";
 
 interface RecipeWidgetProps {
   recipe: Recipe;
@@ -76,11 +76,21 @@ export function RecipeWidget({ recipe }: RecipeWidgetProps) {
         )}
       </div>
       {recipe.materials.length > 0 && (
-        <ul className="ml-12 list-disc space-y-1">
-          {recipe.materials.map((mat, idx) => (
-            <MaterialRow key={`${mat.itemId}-${idx}`} itemId={mat.itemId} quantity={mat.quantity} />
-          ))}
-        </ul>
+        <div className="flex flex-col gap-2">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+            Ingredients
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {recipe.materials.map((mat, idx) => (
+              <EntityWidget
+                key={`${mat.itemId}-${idx}`}
+                kind="item"
+                id={mat.itemId}
+                count={mat.quantity}
+              />
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );

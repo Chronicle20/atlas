@@ -8,7 +8,7 @@ import (
 	"atlas-world/rate"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-world/tasks"
-	"atlas-world/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-world/world"
 	"context"
 	"os"

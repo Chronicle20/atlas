@@ -10,6 +10,7 @@ COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
+COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 
 # Copy service module definitions
 COPY services/atlas-wz-extractor/atlas.com/wz-extractor/go.mod services/atlas-wz-extractor/atlas.com/wz-extractor/go.sum services/atlas-wz-extractor/atlas.com/wz-extractor/
@@ -23,6 +24,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./services/atlas-wz-extractor/atlas.com/wz-extractor' >> go.work && \
     echo ')' >> go.work
 
@@ -35,6 +37,7 @@ COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
 COPY libs/atlas-tenant libs/atlas-tenant
+COPY libs/atlas-tracing libs/atlas-tracing
 # Copy service source code
 COPY services/atlas-wz-extractor/atlas.com/wz-extractor services/atlas-wz-extractor/atlas.com/wz-extractor
 
@@ -46,6 +49,7 @@ RUN cd services/atlas-wz-extractor/atlas.com/wz-extractor && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
     && go mod tidy
 
 # Build

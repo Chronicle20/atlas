@@ -10,7 +10,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-skills/skill"
 	"atlas-skills/tasks"
-	"atlas-skills/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -67,8 +67,8 @@ describe("wizardReducer", () => {
       presetId: "p1",
       name: "NewName",
     });
-    expect(renamed.rows["p1"].name).toBe("NewName");
-    expect(renamed.rows["p1"].validity).toBeNull();
+    expect(renamed.rows["p1"]!.name).toBe("NewName");
+    expect(renamed.rows["p1"]!.validity).toBeNull();
   });
 
   it("SET_NAME is a no-op for unknown presetId", () => {
@@ -91,7 +91,7 @@ describe("wizardReducer", () => {
       presetId: "p1",
       validity: { valid: true },
     });
-    expect(next.rows["p1"].validity).toEqual({ valid: true });
+    expect(next.rows["p1"]!.validity).toEqual({ valid: true });
   });
 
   it("SET_VALIDITY is a no-op for unknown presetId", () => {
@@ -115,8 +115,8 @@ describe("wizardReducer", () => {
       status: "failed",
       error: "409 Conflict",
     });
-    expect(next.rows["p1"].applyStatus).toBe("failed");
-    expect(next.rows["p1"].error).toBe("409 Conflict");
+    expect(next.rows["p1"]!.applyStatus).toBe("failed");
+    expect(next.rows["p1"]!.error).toBe("409 Conflict");
   });
 
   it("SET_ROW_STATUS is a no-op for unknown presetId", () => {
@@ -321,8 +321,8 @@ describe("AdminBootstrapWizard component", () => {
     // Enter the same name in both inputs
     const inputs = screen.getAllByPlaceholderText(/3.12 characters/i);
     expect(inputs).toHaveLength(2);
-    fireEvent.change(inputs[0], { target: { value: "SameName" } });
-    fireEvent.change(inputs[1], { target: { value: "SameName" } });
+    fireEvent.change(inputs[0]!, { target: { value: "SameName" } });
+    fireEvent.change(inputs[1]!, { target: { value: "SameName" } });
 
     // Both rows should show "Duplicate within wizard"
     await waitFor(() => {

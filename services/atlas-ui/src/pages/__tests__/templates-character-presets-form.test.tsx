@@ -146,7 +146,7 @@ describe("TemplatesPresetsForm", () => {
             expect(updateMutateMock).toHaveBeenCalledTimes(1);
         });
 
-        const [mutateArg] = updateMutateMock.mock.calls[0];
+        const [mutateArg] = updateMutateMock.mock.calls[0]!;
         expect(mutateArg.id).toBe("tpl-1");
         // Verify the characters object includes the presets key
         expect(mutateArg.updates.characters).toHaveProperty("presets");

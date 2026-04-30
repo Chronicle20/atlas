@@ -18,6 +18,12 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+// errFetchWedged is returned from runFetchLoop when FetchMessage has hit
+// its deadline maxConsecutiveTimeouts times in a row without a successful
+// fetch in between. The outer start loop treats it identically to any
+// other recreate-eligible error: close reader, backoff, rebuild.
+var errFetchWedged = errors.New("consumer fetch wedged: exceeded consecutive timeouts")
+
 type KafkaReader interface {
 	MessageReader
 	MessageCommitter

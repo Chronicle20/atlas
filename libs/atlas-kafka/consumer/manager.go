@@ -188,27 +188,35 @@ type Consumer struct {
 	headerParsers []HeaderParser
 	mu            sync.Mutex
 
+	// Read-only after construction; copied from Config in AddConsumer.
+	fetchTimeout           time.Duration
+	maxConsecutiveTimeouts int
+
 	// Observable state — protected by mu.
-	aliveSince    time.Time
-	lastFetchAt   time.Time
-	lastErrorAt   time.Time
-	lastError     string
-	recreateCount int
+	aliveSince          time.Time
+	lastFetchAt         time.Time
+	lastErrorAt         time.Time
+	lastError           string
+	recreateCount       int
+	consecutiveTimeouts int
+	lastTimeoutAt       time.Time
 }
 
 // Snapshot is a point-in-time view of a Consumer's observable state, suitable
 // for JSON serialization by the debug route.
 type Snapshot struct {
-	Name          string
-	Topic         string
-	GroupID       string
-	Brokers       []string
-	AliveSince    time.Time
-	LastFetchAt   time.Time
-	LastErrorAt   time.Time
-	LastError     string
-	RecreateCount int
-	HandlerCount  int
+	Name                string
+	Topic               string
+	GroupID             string
+	Brokers             []string
+	AliveSince          time.Time
+	LastFetchAt         time.Time
+	LastErrorAt         time.Time
+	LastError           string
+	RecreateCount       int
+	HandlerCount        int
+	LastTimeoutAt       time.Time
+	ConsecutiveTimeouts int
 }
 
 // Snapshot returns a consistent snapshot of the consumer's observable state.
@@ -217,16 +225,18 @@ func (c *Consumer) Snapshot() Snapshot {
 	defer c.mu.Unlock()
 	brokers := append([]string(nil), c.brokers...)
 	return Snapshot{
-		Name:          c.name,
-		Topic:         c.topic,
-		GroupID:       c.groupId,
-		Brokers:       brokers,
-		AliveSince:    c.aliveSince,
-		LastFetchAt:   c.lastFetchAt,
-		LastErrorAt:   c.lastErrorAt,
-		LastError:     c.lastError,
-		RecreateCount: c.recreateCount,
-		HandlerCount:  len(c.handlers),
+		Name:                c.name,
+		Topic:               c.topic,
+		GroupID:             c.groupId,
+		Brokers:             brokers,
+		AliveSince:          c.aliveSince,
+		LastFetchAt:         c.lastFetchAt,
+		LastErrorAt:         c.lastErrorAt,
+		LastError:           c.lastError,
+		RecreateCount:       c.recreateCount,
+		HandlerCount:        len(c.handlers),
+		LastTimeoutAt:       c.lastTimeoutAt,
+		ConsecutiveTimeouts: c.consecutiveTimeouts,
 	}
 }
 
@@ -245,6 +255,15 @@ func (c *Consumer) recordFetch() {
 	defer c.mu.Unlock()
 	c.lastFetchAt = time.Now()
 	c.lastError = ""
+}
+
+// recordTimeout marks one deadline expiration; called per tick by runFetchLoop.
+// Idle, not an error: lastError / lastErrorAt are untouched.
+func (c *Consumer) recordTimeout() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastTimeoutAt = time.Now()
+	c.consecutiveTimeouts++
 }
 
 func (c *Consumer) recordError(err error) {

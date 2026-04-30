@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -91,4 +92,15 @@ func TestRestModel_DescriptionInJSON(t *testing.T) {
 	b, err := json.Marshal(m)
 	require.NoError(t, err)
 	require.Contains(t, string(b), `"description":"desc"`)
+}
+
+func TestRestModel_MaxLevel_Serialization(t *testing.T) {
+	rm := RestModel{Id: 1121008, Name: "Hero's Will", MaxLevel: 5}
+	bs, err := json.Marshal(rm)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(bs), `"maxLevel":5`) {
+		t.Fatalf("expected maxLevel:5 in JSON, got %s", string(bs))
+	}
 }

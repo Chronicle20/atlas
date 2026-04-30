@@ -2,6 +2,7 @@ package saga
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -155,5 +156,36 @@ func TestUnmarshalRebalanceAPStep(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestCreateAndEquipAssetPayload_UseAverageStats_RoundTrip(t *testing.T) {
+	in := CreateAndEquipAssetPayload{
+		CharacterId:     42,
+		Item:            ItemPayload{TemplateId: 1002357, Quantity: 1},
+		UseAverageStats: true,
+	}
+	bs, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	if !strings.Contains(string(bs), `"useAverageStats":true`) {
+		t.Fatalf("expected useAverageStats:true in payload, got %s", string(bs))
+	}
+	var out CreateAndEquipAssetPayload
+	if err := json.Unmarshal(bs, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !out.UseAverageStats {
+		t.Fatalf("expected UseAverageStats=true after round-trip, got false")
+	}
+
+	// Backwards-compat: missing field decodes to false.
+	var legacy CreateAndEquipAssetPayload
+	if err := json.Unmarshal([]byte(`{"characterId":7,"item":{"templateId":1,"quantity":1}}`), &legacy); err != nil {
+		t.Fatalf("legacy unmarshal: %v", err)
+	}
+	if legacy.UseAverageStats {
+		t.Fatalf("expected legacy payload to default UseAverageStats=false")
 	}
 }

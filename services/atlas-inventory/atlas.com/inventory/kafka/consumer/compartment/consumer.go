@@ -209,7 +209,7 @@ func handleCreateAssetCommand(db *gorm.DB) message.Handler[compartment2.Command[
 		if c.Type != compartment2.CommandCreateAsset {
 			return
 		}
-		_ = compartment.NewProcessor(l, ctx, db).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable)
+		_ = compartment.NewProcessor(l, ctx, db).CreateAssetAndEmit(c.TransactionId, c.CharacterId, inventory.Type(c.InventoryType), c.Body.TemplateId, c.Body.Quantity, c.Body.Expiration, c.Body.OwnerId, c.Body.Flag, c.Body.Rechargeable, c.Body.UseAverageStats)
 	}
 }
 

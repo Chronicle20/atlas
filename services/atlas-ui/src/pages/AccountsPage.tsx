@@ -8,6 +8,8 @@ import type { Account } from "@/types/models/account";
 import { BanType, type Ban, type CheckBanAttributes } from "@/types/models/ban";
 import { CreateBanDialog } from "@/components/features/bans/CreateBanDialog";
 import { DeleteBanDialog } from "@/components/features/bans/DeleteBanDialog";
+import { AdminBootstrapWizard } from "@/components/features/accounts/AdminBootstrapWizard";
+import { Button } from "@/components/ui/button";
 import { Toaster, toast } from "sonner";
 import { AccountPageSkeleton } from "@/components/common/skeletons/AccountPageSkeleton";
 
@@ -26,6 +28,7 @@ export function AccountsPage() {
   const [deleteBanDialogOpen, setDeleteBanDialogOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
   const [banToDelete, setBanToDelete] = useState<Ban | null>(null);
+  const [bootstrapOpen, setBootstrapOpen] = useState(false);
 
   // Ban statuses are fetched once per account list with bounded concurrency.
   // Kept as a side effect rather than a query because the fan-out and
@@ -114,9 +117,12 @@ export function AccountsPage() {
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16">
-      <div className="items-center justify-between space-y-2">
+      <div className="flex items-center justify-between space-y-2">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Accounts</h2>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button onClick={() => setBootstrapOpen(true)}>Bootstrap Admin Account</Button>
         </div>
       </div>
       <div className="mt-4">
@@ -151,6 +157,14 @@ export function AccountsPage() {
         tenant={activeTenant}
         onSuccess={handleBanDeleted}
       />
+
+      {activeTenant && (
+        <AdminBootstrapWizard
+          tenant={activeTenant}
+          open={bootstrapOpen}
+          onOpenChange={setBootstrapOpen}
+        />
+      )}
 
       <Toaster richColors />
     </div>

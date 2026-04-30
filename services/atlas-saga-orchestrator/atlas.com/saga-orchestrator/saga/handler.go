@@ -1391,7 +1391,7 @@ func (h *HandlerImpl) handleCreateCharacter(s Saga, st Step[any]) error {
 	}
 
 	// Call the character processor
-	err := h.charP.RequestCreateCharacter(s.TransactionId(), payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId)
+	err := h.charP.RequestCreateCharacter(s.TransactionId(), payload.AccountId, payload.WorldId, payload.Name, payload.Level, payload.Strength, payload.Dexterity, payload.Intelligence, payload.Luck, payload.Hp, payload.Mp, payload.JobId, payload.Gender, payload.Face, payload.Hair, payload.Skin, payload.MapId, payload.Gm, payload.Meso)
 	if err != nil {
 		h.logActionError(s, st, err, "Unable to create character.")
 		return err
@@ -1418,6 +1418,7 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 			TemplateId: payload.Item.TemplateId,
 			Quantity:   payload.Item.Quantity,
 		},
+		UseAverageStats: payload.UseAverageStats,
 	}
 
 	err := h.compP.RequestCreateAndEquipAsset(s.TransactionId(), compartmentPayload)

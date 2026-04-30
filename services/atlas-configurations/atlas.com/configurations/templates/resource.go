@@ -1,7 +1,11 @@
 package templates
 
 import (
+	"atlas-configurations/data"
 	"atlas-configurations/rest"
+	"atlas-configurations/templates/characters/preset"
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -114,10 +118,20 @@ func handleUpdateConfigurationTemplate(db *gorm.DB) rest.InputHandler[RestModel]
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseTemplateId(d.Logger(), func(templateId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(templateId, input)
+				p := NewProcessor(d.Logger(), d.Context(), db).
+					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
+				err := p.UpdateById(templateId, input)
 				if err != nil {
+					var ve *validationFailureError
+					if errors.As(err, &ve) {
+						w.Header().Set("Content-Type", "application/vnd.api+json")
+						w.WriteHeader(http.StatusBadRequest)
+						_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+						return
+					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration template.")
 					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 			}
 		})

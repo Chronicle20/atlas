@@ -292,3 +292,150 @@ func testJSONAPICompliance(t *testing.T, testServer *httptest.Server, tenantId u
 		assert.Equal(t, "skills", data["type"])
 	})
 }
+
+func TestSkillIdsFilter(t *testing.T) {
+	db := setupResourceTestDB(t)
+	tenantId := uuid.New()
+	setupTestSkillData(t, db, tenantId)
+
+	router := setupTestRouter(db)
+	testServer := httptest.NewServer(router)
+	defer testServer.Close()
+
+	client := &http.Client{}
+
+	t.Run("IdsCSV_ReturnsBoth", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills?ids=1001004,3001004", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		require.Contains(t, response, "data")
+		items := response["data"].([]interface{})
+		assert.Len(t, items, 2)
+
+		ids := make(map[string]bool)
+		for _, item := range items {
+			elem := item.(map[string]interface{})
+			ids[elem["id"].(string)] = true
+		}
+		assert.True(t, ids["1001004"])
+		assert.True(t, ids["3001004"])
+	})
+
+	t.Run("IdsNoMatch_EmptyData", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills?ids=9999999", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		require.Contains(t, response, "data")
+		items := response["data"].([]interface{})
+		assert.Len(t, items, 0)
+	})
+
+	t.Run("IdsRepeated_ReturnsBoth", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills?ids=1001004&ids=2001002", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		require.Contains(t, response, "data")
+		items := response["data"].([]interface{})
+		assert.Len(t, items, 2)
+
+		ids := make(map[string]bool)
+		for _, item := range items {
+			elem := item.(map[string]interface{})
+			ids[elem["id"].(string)] = true
+		}
+		assert.True(t, ids["1001004"])
+		assert.True(t, ids["2001002"])
+	})
+
+	t.Run("IdsMalformed_Returns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills?ids=abc", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("IdsWinsOverName_ReturnsOnlyById", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills?ids=1001004&name=ignored", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		require.Contains(t, response, "data")
+		items := response["data"].([]interface{})
+		assert.Len(t, items, 1)
+		elem := items[0].(map[string]interface{})
+		assert.Equal(t, "1001004", elem["id"].(string))
+	})
+
+	t.Run("NoParams_Returns400", func(t *testing.T) {
+		url := fmt.Sprintf("%s/data/skills", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, resp.StatusCode)
+	})
+
+	t.Run("NameSearch_StillWorks", func(t *testing.T) {
+		// The name= path is preserved with 10-result cap
+		url := fmt.Sprintf("%s/data/skills?name=a", testServer.URL)
+		req := createRequestWithTenant("GET", url, tenantId)
+
+		resp, err := client.Do(req)
+		require.NoError(t, err)
+		defer resp.Body.Close()
+
+		// Just verifying the endpoint still returns 200 for a valid name= query
+		assert.Equal(t, http.StatusOK, resp.StatusCode)
+
+		var response map[string]interface{}
+		err = json.NewDecoder(resp.Body).Decode(&response)
+		require.NoError(t, err)
+
+		assert.Contains(t, response, "data")
+	})
+}

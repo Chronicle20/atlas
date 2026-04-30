@@ -310,3 +310,15 @@ Strict `tsconfig.app.json` status — all 7 home-hub strict flags are now on for
 
 ### Playwright (not in task-004 scope)
 - [ ] No existing e2e suite. A smoke-test Playwright project covering the 46 routes + tenant switch would catch regressions that feature-parity refactors are prone to.
+
+---
+
+## task-037 character-presets follow-ups
+
+Logged from `docs/tasks/task-037-character-presets/` design §7.
+
+- [ ] **atlas-npc-shops deterministic stats migration** — set `UseAverageStats=true` in `services/atlas-npc-shops/atlas.com/npc/compartment/producer.go:13-19` so shop-bought equipment uses base stats verbatim.
+- [ ] **atlas-character-factory player-creation deterministic stats** — set `UseAverageStats=true` for the four equip steps in `buildCharacterCreationSaga` (`services/atlas-character-factory/atlas.com/character-factory/factory/processor.go:138-211`).
+- [ ] **AdminBootstrapWizard saga transactionId polling** — replace the "mutation resolved = success" assumption with per-row saga status polling (atlas-ui `AdminBootstrapWizard.tsx` step 4).
+- [ ] **`<ItemPicker>` / `<SkillPicker>` components** — replace free-text uint32 inputs in `services/atlas-ui/src/pages/{templates,tenants}-character-presets-form.tsx` with searchable pickers backed by atlas-data.
+- [ ] **Non-explorer 4th-job presets** — extend `services/atlas-configurations/seed-data/templates/template_gms_83_1.json` with Cygnus / Aran / Resistance / Legend 4th-job presets.

@@ -945,7 +945,10 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 					p.l.WithError(err).Warnf("Unable to find free slot for replacement item [%d]. Item will not be created.", replaceItemId)
 					return nil // Don't fail the expiration if we can't create the replacement
 				}
-				_, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), replaceItemId, nfs, 1, time.Time{}, 0, 0, 0)
+				_, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), replaceItemId, nfs, asset.CreateOptions{
+					Quantity:   1,
+					Expiration: time.Time{},
+				})
 				if err != nil {
 					p.l.WithError(err).Warnf("Unable to create replacement item [%d] for character [%d].", replaceItemId, characterId)
 					return nil // Don't fail the expiration if we can't create the replacement
@@ -962,23 +965,23 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 	}
 }
 
-func (p *Processor) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+func (p *Processor) CreateAssetAndEmit(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 	return message.Emit(p.producer)(func(buf *message.Buffer) error {
-		return p.CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable)
+		return p.CreateAssetAndLock(buf)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
 	})
 }
 
-func (p *Processor) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+func (p *Processor) CreateAssetAndLock(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 		invLock := LockRegistry().Get(characterId, inventoryType)
 		invLock.Lock()
 		defer invLock.Unlock()
-		return p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable)
+		return p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, expiration, ownerId, flag, rechargeable, useAverageStats)
 	}
 }
 
-func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
-	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64) error {
+func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
+	return func(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, ownerId uint32, flag uint16, rechargeable uint64, useAverageStats bool) error {
 		p.l.Debugf("Character [%d] attempting to create asset in inventory [%d].", characterId, inventoryType)
 
 		var a asset.Model
@@ -1015,7 +1018,14 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 								if nfsErr != nil {
 									return nfsErr
 								}
-								a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, remainingQuantity, expiration, ownerId, flag, rechargeable)
+								a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, asset.CreateOptions{
+									Quantity:        remainingQuantity,
+									Expiration:      expiration,
+									OwnerId:         ownerId,
+									Flag:            flag,
+									Rechargeable:    rechargeable,
+									UseAverageStats: useAverageStats,
+								})
 								return err
 							}
 						}
@@ -1027,7 +1037,14 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 			if err != nil {
 				return err
 			}
-			a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, quantity, expiration, ownerId, flag, rechargeable)
+			a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, asset.CreateOptions{
+				Quantity:        quantity,
+				Expiration:      expiration,
+				OwnerId:         ownerId,
+				Flag:            flag,
+				Rechargeable:    rechargeable,
+				UseAverageStats: useAverageStats,
+			})
 			if err != nil {
 				return err
 			}
@@ -1188,7 +1205,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 					p.l.Debugf("Character [%d] increased quantity of asset [%d] to max [%d].", characterId, assetToUpdate.Id(), slotMax)
 
 					// Create a new asset with the remaining quantity
-					err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0)
+					err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, remainingQuantity, time.Time{}, 0, 0, 0, false)
 					if err != nil {
 						p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d] with remaining quantity [%d].", templateId, characterId, remainingQuantity)
 						return err
@@ -1204,7 +1221,7 @@ func (p *Processor) AttemptItemPickUp(mb *message.Buffer) func(transactionId uui
 				}
 			} else {
 				// Create a new asset
-				err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0)
+				err = p.CreateAsset(mb)(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, 0, 0, 0, false)
 				if err != nil {
 					p.l.WithError(err).Errorf("Unable to create asset [%d] for character [%d].", templateId, characterId)
 					return err

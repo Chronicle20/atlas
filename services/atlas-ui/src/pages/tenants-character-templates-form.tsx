@@ -52,7 +52,7 @@ export function TemplatesForm() {
     const onSubmit = (data: FormValues) => {
         if (!tenant) return;
         updateTenantConfig.mutate(
-            { tenant, updates: { characters: { templates: data.templates } } },
+            { tenant, updates: { characters: { ...tenant.attributes.characters, templates: data.templates } } },
             {
                 onSuccess: () => toast.success("Successfully saved tenant configuration."),
                 onError: () => toast.error("Failed to update tenant configuration"),

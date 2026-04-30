@@ -354,19 +354,21 @@ func ConsumeCashPetFood(transactionId uuid.UUID, characterId uint32, slot int16,
 func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {
 	return func(l logrus.FieldLogger) func(ctx context.Context) error {
 		return func(ctx context.Context) error {
-			c, err := character.NewProcessor(l, ctx).GetById()(characterId)
-			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
-			}
+			p := NewProcessor(l, ctx)
+			cp := character.NewProcessor(l, ctx)
 
-			ci, err := consumable3.NewProcessor(l, ctx).GetById(uint32(itemId))
-			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+			pg, _ := model.NewGroup(ctx)
+			fc := model.Submit(pg, func() (character.Model, error) { return cp.GetById()(characterId) })
+			fi := model.Submit(pg, func() (consumable3.Model, error) { return consumable3.NewProcessor(l, ctx).GetById(uint32(itemId)) })
+			if err := pg.Wait(); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
+			c, ci := fc.Get(), fi.Get()
 
+			// Dependent read: needs c.MapId(), c.X(), c.Y() — stays sequential.
 			pos, err := position.NewProcessor(l, ctx).GetInMap(c.MapId(), c.X(), c.Y(), c.X(), c.Y())()
 			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 
 			l.Debugf("Character [%d] summoning [%d] monsters at [%d,%d]. They are at [%d,%d].", characterId, len(ci.MonsterSummons()), pos.X(), pos.Y(), c.X(), c.Y())
@@ -385,7 +387,7 @@ func ConsumeSummoningSack(transactionId uuid.UUID, ch channel.Model, characterId
 
 			err = compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventory2.TypeValueUse, transactionId, slot)
 			if err != nil {
-				return NewProcessor(l, ctx).ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
+				return p.ConsumeError(characterId, transactionId, inventory2.TypeValueUse, slot, err)
 			}
 			return nil
 		}

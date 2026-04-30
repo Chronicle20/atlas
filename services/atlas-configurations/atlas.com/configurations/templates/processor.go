@@ -2,6 +2,7 @@ package templates
 
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"atlas-configurations/templates/characters/preset"
 	"context"
 	"encoding/json"
 
@@ -12,9 +13,10 @@ import (
 )
 
 type Processor struct {
-	l   logrus.FieldLogger
-	ctx context.Context
-	db  *gorm.DB
+	l         logrus.FieldLogger
+	ctx       context.Context
+	db        *gorm.DB
+	validator *preset.Validator
 }
 
 func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Processor {
@@ -23,6 +25,11 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context, db *gorm.DB) *Proce
 		ctx: ctx,
 		db:  db,
 	}
+	return p
+}
+
+func (p *Processor) WithValidator(v *preset.Validator) *Processor {
+	p.validator = v
 	return p
 }
 
@@ -96,6 +103,14 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 }
 
 func (p *Processor) UpdateById(templateId uuid.UUID, input RestModel) error {
+	if p.validator != nil {
+		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
+		input.Characters.Presets = assigned
+		if len(errs) > 0 {
+			return &validationFailureError{errors: errs}
+		}
+	}
+
 	res, err := json.Marshal(input)
 	if err != nil {
 		return err

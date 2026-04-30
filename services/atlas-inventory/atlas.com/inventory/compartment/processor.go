@@ -945,7 +945,10 @@ func (p *Processor) ExpireAsset(mb *message.Buffer) func(transactionId uuid.UUID
 					p.l.WithError(err).Warnf("Unable to find free slot for replacement item [%d]. Item will not be created.", replaceItemId)
 					return nil // Don't fail the expiration if we can't create the replacement
 				}
-				_, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), replaceItemId, nfs, 1, time.Time{}, 0, 0, 0)
+				_, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), replaceItemId, nfs, asset.CreateOptions{
+					Quantity:   1,
+					Expiration: time.Time{},
+				})
 				if err != nil {
 					p.l.WithError(err).Warnf("Unable to create replacement item [%d] for character [%d].", replaceItemId, characterId)
 					return nil // Don't fail the expiration if we can't create the replacement
@@ -1015,7 +1018,13 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 								if nfsErr != nil {
 									return nfsErr
 								}
-								a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, remainingQuantity, expiration, ownerId, flag, rechargeable)
+								a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, asset.CreateOptions{
+									Quantity:     remainingQuantity,
+									Expiration:   expiration,
+									OwnerId:      ownerId,
+									Flag:         flag,
+									Rechargeable: rechargeable,
+								})
 								return err
 							}
 						}
@@ -1027,7 +1036,13 @@ func (p *Processor) CreateAsset(mb *message.Buffer) func(transactionId uuid.UUID
 			if err != nil {
 				return err
 			}
-			a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, quantity, expiration, ownerId, flag, rechargeable)
+			a, err = p.assetProcessor.WithTransaction(tx).Create(mb)(transactionId, characterId, c.Id(), templateId, nfs, asset.CreateOptions{
+				Quantity:     quantity,
+				Expiration:   expiration,
+				OwnerId:      ownerId,
+				Flag:         flag,
+				Rechargeable: rechargeable,
+			})
 			if err != nil {
 				return err
 			}

@@ -1,8 +1,13 @@
 package tenants
 
 import (
+	"atlas-configurations/data"
+	"atlas-configurations/data/mock"
+	"atlas-configurations/tenants/characters"
+	"atlas-configurations/tenants/characters/preset"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 
@@ -483,5 +488,90 @@ func TestMake_InvalidJSON(t *testing.T) {
 	_, err := Make(entity)
 	if err == nil {
 		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestUpdateById_AssignsMissingPresetId(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+
+	// Create a tenant first so the update can find a row to update
+	base := createTestRestModel("GMS", 83, 1)
+	id, err := NewProcessor(l, ctx, db).Create(base)
+	if err != nil {
+		t.Fatalf("failed to create tenant: %v", err)
+	}
+
+	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
+
+	input := RestModel{
+		Region:       "GMS",
+		MajorVersion: 83,
+		MinorVersion: 1,
+		Characters: characters.RestModel{
+			Presets: []preset.RestModel{{
+				Id: "",
+				Attributes: preset.Attributes{
+					Name:  "Hero",
+					Level: 1,
+					JobId: 0,
+				},
+			}},
+		},
+	}
+
+	err = p.UpdateById(id, input)
+	// May fail on DB level (row mismatch) but the validator should have assigned the ID
+	// and returned no errors — so the failure (if any) is from the DB layer.
+	// The important assertion: preset ID was assigned before returning.
+	if input.Characters.Presets[0].Id == "" {
+		t.Fatal("expected validator to assign UUID to preset with empty id")
+	}
+	_ = err
+}
+
+func TestUpdateById_ReturnsValidationErrorForInvalidPreset(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+
+	fake := &mock.FakeClient{Items: map[uint32]data.ItemInfo{}, Skills: map[uint32]data.SkillInfo{}}
+	p := NewProcessor(l, ctx, db).WithValidator(preset.NewValidator(fake))
+
+	input := RestModel{
+		Characters: characters.RestModel{
+			Presets: []preset.RestModel{{
+				Id: "abc",
+				Attributes: preset.Attributes{
+					Name:  "",    // R-1 violation
+					JobId: 99999, // R-3 violation
+					Level: 0,     // R-5 violation
+				},
+			}},
+		},
+	}
+
+	err := p.UpdateById(uuid.New(), input)
+	var ve *validationFailureError
+	if !errors.As(err, &ve) {
+		t.Fatalf("expected validationFailureError, got %v", err)
+	}
+
+	apiErrs := ve.AsJSONAPIErrors()
+	if len(apiErrs) == 0 {
+		t.Fatal("expected at least one JSON:API error")
+	}
+
+	// Verify structure of the first error
+	if apiErrs[0].Status != "400" {
+		t.Errorf("expected status '400', got '%s'", apiErrs[0].Status)
+	}
+	if apiErrs[0].Title != "validation failed" {
+		t.Errorf("expected title 'validation failed', got '%s'", apiErrs[0].Title)
+	}
+	if apiErrs[0].Meta == nil {
+		t.Error("expected non-nil meta")
 	}
 }

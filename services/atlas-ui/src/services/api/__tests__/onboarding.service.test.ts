@@ -45,6 +45,7 @@ describe('OnboardingService', () => {
       usesPin: true,
       characters: {
         templates: [],
+        presets: [],
       },
       npcs: [],
       socket: {
@@ -72,7 +73,7 @@ describe('OnboardingService', () => {
       majorVersion: 83,
       minorVersion: 1,
       usesPin: true,
-      characters: { templates: [] },
+      characters: { templates: [], presets: [] },
       npcs: [],
       socket: { handlers: [], writers: [] },
       worlds: [],
@@ -100,7 +101,7 @@ describe('OnboardingService', () => {
           majorVersion: 83,
           minorVersion: 1,
           usesPin: true,
-          characters: { templates: [] },
+          characters: { templates: [], presets: [] },
           npcs: [],
           socket: { handlers: [], writers: [] },
           worlds: [],

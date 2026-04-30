@@ -18,7 +18,6 @@ const mockApiGet = vi.mocked(api.get);
 
 const mockTenant: Tenant = {
   id: "tenant-123",
-  type: "tenant",
   attributes: {
     name: "Test Tenant",
     region: "GMS",
@@ -58,7 +57,7 @@ describe("factoryService", () => {
       expect(result).toEqual({ transactionId: "txn-abc" });
     });
 
-    it("sends the four flat fields as a plain-JSON body", async () => {
+    it("sends a JSON:API-encoded body to /api/characters/from-preset", async () => {
       const envelope = {
         data: {
           type: "create-character-response",
@@ -81,13 +80,18 @@ describe("factoryService", () => {
       });
 
       const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toBe("/api/factory/characters/from-preset");
+      expect(url).toBe("/api/characters/from-preset");
       expect(init.method).toBe("POST");
       expect(JSON.parse(init.body as string)).toEqual({
-        presetId: "preset-2",
-        accountId: 7,
-        worldId: 1,
-        name: "AnotherChar",
+        data: {
+          type: "preset-create",
+          attributes: {
+            presetId: "preset-2",
+            accountId: 7,
+            worldId: 1,
+            name: "AnotherChar",
+          },
+        },
       });
     });
 
@@ -187,7 +191,7 @@ describe("factoryService", () => {
       await factoryService.checkNameValidity(mockTenant, "MyChar", 2);
 
       const [url] = mockApiGet.mock.calls[0] as [string, ...unknown[]];
-      expect(url).toContain("/api/factory/characters/name-validity");
+      expect(url).toContain("/api/characters/name-validity");
       expect(url).toContain("name=MyChar");
       expect(url).toContain("worldId=2");
     });

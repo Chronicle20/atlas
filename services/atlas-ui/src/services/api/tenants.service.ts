@@ -17,6 +17,56 @@ interface TenantBasic {
   attributes: TenantBasicAttributes;
 }
 
+interface CharacterPresetStatBlock {
+  str: number;
+  dex: number;
+  int: number;
+  luk: number;
+  hp: number;
+  mp: number;
+}
+
+interface CharacterPresetEquipmentEntry {
+  templateId: number;
+  useAverageStats: boolean;
+}
+
+interface CharacterPresetInventoryEntry {
+  templateId: number;
+  quantity: number;
+}
+
+interface CharacterPresetSkillEntry {
+  skillId: number;
+  level: number;
+}
+
+interface CharacterPresetAttributes {
+  name: string;
+  description: string;
+  tags: string[];
+  jobId: number;
+  gender: 0 | 1;
+  face: number;
+  hair: number;
+  hairColor: number;
+  skinColor: number;
+  mapId: number;
+  level: number;
+  meso: number;
+  gm: number;
+  stats: CharacterPresetStatBlock;
+  defaultName: string;
+  equipment: CharacterPresetEquipmentEntry[];
+  inventory: CharacterPresetInventoryEntry[];
+  skills: CharacterPresetSkillEntry[];
+}
+
+interface CharacterPreset {
+  id?: string;
+  attributes: CharacterPresetAttributes;
+}
+
 interface TenantConfigAttributes {
   region: string;
   majorVersion: number;
@@ -39,6 +89,7 @@ interface TenantConfigAttributes {
       items: number[];
       skills: number[];
     }[];
+    presets: CharacterPreset[];
   };
   npcs: {
     npcId: number;

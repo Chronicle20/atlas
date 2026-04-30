@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useTenantConfiguration, useUpdateTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { toast } from "sonner";
-import { presetsFormSchema, type PresetsFormValues } from "@/pages/character-presets-schema";
+import { presetsFormSchema, type PresetsFormValues } from "@/lib/schemas/character-presets.schema";
+import { FormSkeleton } from "@/components/common/FormSkeleton";
+import type { CharacterPreset } from "@/types/models/template";
 import { Plus, Trash, X } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -45,11 +47,9 @@ export function TenantsPresetsForm() {
 
     useEffect(() => {
         if (tenant) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const presets = (tenant.attributes.characters as any).presets ?? [];
+            const presets = tenant.attributes.characters.presets ?? [];
             form.reset({
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                presets: presets.map((p: any) => ({
+                presets: presets.map((p) => ({
                     id: p.id,
                     attributes: { ...DEFAULT_PRESET_ATTRIBUTES, ...p.attributes },
                 })),
@@ -67,7 +67,7 @@ export function TenantsPresetsForm() {
                 updates: {
                     characters: {
                         ...tenant.attributes.characters,
-                        presets: data.presets,
+                        presets: data.presets as CharacterPreset[],
                     },
                 },
             },
@@ -100,7 +100,7 @@ export function TenantsPresetsForm() {
         );
     };
 
-    if (tenantQuery.isLoading) return <div className="flex justify-center items-center p-8">Loading tenant configuration...</div>;
+    if (tenantQuery.isLoading) return <FormSkeleton fields={6} showLabels showSubmitButton />;
     if (!tenant) return <div className="flex justify-center items-center p-8">Tenant configuration not found</div>;
 
     return (

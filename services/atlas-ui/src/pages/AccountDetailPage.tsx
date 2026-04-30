@@ -34,7 +34,7 @@ export function AccountDetailPage() {
   const walletQuery = useWallet(activeTenant!, id ?? "");
   const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
   const hasPresets =
-    (((tenantConfigQuery.data?.attributes as any)?.characters as any)?.presets ?? []).length > 0;
+    (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).length > 0;
 
   const account = accountQuery.data ?? null;
   const wallet = walletQuery.data ?? null;

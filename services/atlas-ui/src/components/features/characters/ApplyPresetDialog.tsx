@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import {
   Dialog,
   DialogContent,
@@ -32,21 +31,10 @@ import { useNameValidity } from "@/lib/hooks/api/useNameValidity";
 import { useCreateCharacterFromPreset } from "@/lib/hooks/api/useCharacterFromPresetMutation";
 import { toast } from "sonner";
 import type { Tenant } from "@/types/models/tenant";
+import { applyPresetSchema, type ApplyPresetFormValues } from "@/lib/schemas/apply-preset.schema";
+import { createErrorFromUnknown } from "@/types/api/errors";
 
-const schema = z.object({
-  presetId: z.string().min(1, "Select a preset"),
-  worldId: z.number().int().min(0),
-  name: z.string().min(3, "Name must be at least 3 characters").max(12, "Name must be at most 12 characters"),
-});
-type FormValues = z.infer<typeof schema>;
-
-interface PresetItem {
-  id: string;
-  attributes: {
-    name: string;
-    jobId: number;
-  };
-}
+type FormValues = ApplyPresetFormValues;
 
 interface ApplyPresetDialogProps {
   tenant: Tenant;
@@ -57,11 +45,13 @@ interface ApplyPresetDialogProps {
 
 export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
-  const presets = (((tenantConfigQuery.data?.attributes as any)?.characters as any)?.presets ?? []) as PresetItem[];
+  const presets = (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
+    (p): p is typeof p & { id: string } => !!p.id,
+  );
   const mutation = useCreateCharacterFromPreset(tenant);
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(applyPresetSchema),
     defaultValues: { presetId: "", worldId: 0, name: "" },
   });
 
@@ -95,12 +85,12 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
           onOpenChange(false);
         },
         onError: (err: unknown) => {
-          const error = err as Error & { status?: number; response?: { status?: number } };
+          const error = err as { status?: number; response?: { status?: number } };
           const status = error?.status ?? error?.response?.status;
           if (status === 409) {
             form.setError("name", { message: "Name already taken." });
           } else {
-            toast.error(error?.message ?? "Failed to apply preset.");
+            toast.error(createErrorFromUnknown(err).message);
           }
         },
       },

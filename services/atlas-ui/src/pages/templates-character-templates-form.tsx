@@ -69,7 +69,7 @@ export function TemplatesForm() {
     const onSubmit: SubmitHandler<FormValues> = (data) => {
         if (!template) return;
         updateTemplate.mutate(
-            { id: template.id, updates: { characters: { templates: data.templates } } },
+            { id: template.id, updates: { characters: { ...template.attributes.characters, templates: data.templates } } },
             { onSuccess: () => toast.success("Successfully saved template.") },
         );
     };

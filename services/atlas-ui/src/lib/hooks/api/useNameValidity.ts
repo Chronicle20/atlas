@@ -24,7 +24,7 @@ export function useNameValidity(
   return useQuery({
     queryKey: nameValidityKeys.query(tenant?.id, worldId, debounced),
     queryFn: () => factoryService.checkNameValidity(tenant, debounced, worldId),
-    enabled: (options.enabled ?? true) && debounced.length >= 3,
+    enabled: !!tenant?.id && (options.enabled ?? true) && debounced.length >= 3,
     staleTime: 0,
   });
 }

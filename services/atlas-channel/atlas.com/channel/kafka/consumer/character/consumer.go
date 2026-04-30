@@ -96,14 +96,17 @@ func handleStatusEventStatChanged(sc server.Model, wp writer.Producer) func(l lo
 			}
 		}
 		if hpChange {
-			// TODO - field migration this seems like a bug not using instance
-			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, c.MapId()).Build()
-			imf := party.OtherMemberInMap(f, c.Id())
-			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(e.CharacterId)))
-			err = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(c.Id(), c.Hp(), c.MaxHp()).Encode))
-			if err != nil {
-				l.WithError(err).Debugf("Unable to announce character [%d] health to party members.", c.Id())
+			cp := character.NewProcessor(l, ctx)
+			cd, derr := cp.GetById(cp.PartyDecorator)(c.Id())
+			if derr != nil || !cd.InParty() {
+				return
 			}
+			// TODO - field migration this seems like a bug not using instance
+			f := field.NewBuilder(e.WorldId, e.Body.ChannelId, cd.MapId()).Build()
+			imf := party.OtherMemberInMap(f, cd.Id())
+			pmp := model.FixedProvider(cd.Party())
+			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
+			_ = session.NewProcessor(l, ctx).ForEachByCharacterId(sc.Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(cd.Id(), cd.Hp(), cd.MaxHp()).Encode))
 		}
 	}
 }

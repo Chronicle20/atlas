@@ -28,8 +28,11 @@ func InitResource(db *gorm.DB) func(si jsonapi.ServerInformation) server.RouteIn
 func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
 		return func(w http.ResponseWriter, r *http.Request) {
-			nameQuery := r.URL.Query().Get("name")
-			if nameQuery == "" {
+			query := r.URL.Query()
+			idParams := query["ids"]
+			nameQuery := query.Get("name")
+
+			if len(idParams) == 0 && nameQuery == "" {
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
@@ -42,18 +45,41 @@ func handleSearchSkillsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c *r
 				return
 			}
 
-			nameQueryLower := strings.ToLower(nameQuery)
 			results := make([]RestModel, 0)
-			for _, skill := range allSkills {
-				if strings.Contains(strings.ToLower(skill.Name), nameQueryLower) {
-					results = append(results, skill)
-					if len(results) >= 10 {
-						break
+
+			if len(idParams) > 0 {
+				idSet := make(map[uint32]struct{})
+				for _, raw := range idParams {
+					for _, part := range strings.Split(raw, ",") {
+						part = strings.TrimSpace(part)
+						if part == "" {
+							continue
+						}
+						id, err := strconv.ParseUint(part, 10, 32)
+						if err != nil {
+							w.WriteHeader(http.StatusBadRequest)
+							return
+						}
+						idSet[uint32(id)] = struct{}{}
+					}
+				}
+				for _, sk := range allSkills {
+					if _, ok := idSet[sk.Id]; ok {
+						results = append(results, sk)
+					}
+				}
+			} else {
+				nameQueryLower := strings.ToLower(nameQuery)
+				for _, sk := range allSkills {
+					if strings.Contains(strings.ToLower(sk.Name), nameQueryLower) {
+						results = append(results, sk)
+						if len(results) >= 10 {
+							break
+						}
 					}
 				}
 			}
 
-			query := r.URL.Query()
 			queryParams := jsonapi.ParseQueryFields(&query)
 			server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(results)
 		}

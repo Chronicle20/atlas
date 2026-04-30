@@ -842,3 +842,109 @@ func TestFetchTimeoutEscalatesAfterMaxToWedge(t *testing.T) {
 	}
 }
 
+// alternatingReader returns DeadlineExceeded on odd-numbered FetchMessage
+// calls (1st, 3rd, 5th, ...) and a scripted message on even-numbered calls.
+// Used to exercise the timeout-success-timeout-success cycle that should
+// keep consecutiveTimeouts pinned at 0 across many iterations.
+type alternatingReader struct {
+	mu        sync.Mutex
+	calls     int
+	committed []kafka.Message
+	closes    int
+}
+
+func (r *alternatingReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
+	r.mu.Lock()
+	r.calls++
+	n := r.calls
+	r.mu.Unlock()
+
+	if n%2 == 1 {
+		<-ctx.Done()
+		return kafka.Message{}, ctx.Err()
+	}
+	return kafka.Message{Value: []byte("ok")}, nil
+}
+
+func (r *alternatingReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.committed = append(r.committed, msgs...)
+	return nil
+}
+
+func (r *alternatingReader) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.closes++
+	return nil
+}
+
+func (r *alternatingReader) Closes() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.closes
+}
+
+func (r *alternatingReader) Committed() []kafka.Message {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]kafka.Message, len(r.committed))
+	copy(out, r.committed)
+	return out
+}
+
+func TestFetchTimeoutResetsOnSuccessfulFetch(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	r := &alternatingReader{}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "reset-consumer", "reset-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetFetchTimeout(50*time.Millisecond),
+		consumer.SetMaxConsecutiveTimeouts(3),
+	)
+
+	handlerInvocations := atomic.Int32{}
+	gotThree := make(chan struct{})
+	_, _ = cm.RegisterHandler("reset-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		if handlerInvocations.Add(1) == 3 {
+			close(gotThree)
+		}
+		return true, nil
+	})
+
+	// 3 successes interleaved with 3 timeouts ≈ 200ms wall-clock.
+	select {
+	case <-gotThree:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("expected 3 handler invocations, got %d", handlerInvocations.Load())
+	}
+
+	snaps := cm.Consumers()
+	s := snaps[0].Snapshot()
+
+	if s.RecreateCount != 0 {
+		t.Fatalf("expected RecreateCount == 0 (counter resets between successes), got %d", s.RecreateCount)
+	}
+	if s.ConsecutiveTimeouts != 0 {
+		t.Fatalf("expected ConsecutiveTimeouts == 0 after a success, got %d", s.ConsecutiveTimeouts)
+	}
+	if r.Closes() != 0 {
+		t.Fatalf("expected reader to remain open across timeout/success cycles, got Closes=%d", r.Closes())
+	}
+}
+

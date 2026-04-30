@@ -7,7 +7,7 @@ import (
 	"atlas-consumables/logger"
 	mapCharacter "atlas-consumables/map/character"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-consumables/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -16,15 +16,19 @@ require (
 	github.com/segmentio/kafka-go v0.4.51
 	github.com/sirupsen/logrus v1.9.4
 	go.elastic.co/ecslogrus v1.0.0
-	go.opentelemetry.io/otel v1.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0
-	go.opentelemetry.io/otel/sdk v1.43.0
 	gorm.io/gorm v1.31.1
 )
 
 require (
+	go.opentelemetry.io/otel v1.43.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
+)
+
+require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
@@ -83,3 +87,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-saga => ../../../../libs/atlas-s
 replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/atlas-script-core
 
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket
+
+replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing

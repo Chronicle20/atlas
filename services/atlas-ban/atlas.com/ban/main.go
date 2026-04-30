@@ -9,7 +9,7 @@ import (
 	"atlas-ban/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-ban/tasks"
-	"atlas-ban/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

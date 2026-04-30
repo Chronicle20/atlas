@@ -15,6 +15,7 @@ use (
 	./libs/atlas-script-core
 	./libs/atlas-service
 	./libs/atlas-socket
+	./libs/atlas-tracing
 	./libs/atlas-tenant
 	./tools/cideps
 	./services/atlas-account/atlas.com/account

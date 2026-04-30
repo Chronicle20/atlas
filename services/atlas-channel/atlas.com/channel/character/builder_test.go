@@ -2,6 +2,7 @@ package character_test
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/party"
 	"errors"
 	"testing"
 )
@@ -180,5 +181,53 @@ func TestBuilderFluentChaining(t *testing.T) {
 	}
 	if model.Hair() != 30000 {
 		t.Errorf("model.Hair() = %d, want 30000", model.Hair())
+	}
+}
+
+func TestBuild_PartyDefaultsToZero(t *testing.T) {
+	model, err := character.NewModelBuilder().
+		SetId(1).
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+	if model.InParty() {
+		t.Error("InParty() = true on undecorated model, want false")
+	}
+	if model.Party().Id() != 0 {
+		t.Errorf("Party().Id() = %d, want 0", model.Party().Id())
+	}
+}
+
+func TestBuild_SetParty(t *testing.T) {
+	pm := party.NewBuilder().SetId(42).SetLeaderId(7).MustBuild()
+	model, err := character.NewModelBuilder().
+		SetId(1).
+		SetParty(pm).
+		Build()
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+	if !model.InParty() {
+		t.Error("InParty() = false after SetParty, want true")
+	}
+	if model.Party().Id() != 42 {
+		t.Errorf("Party().Id() = %d, want 42", model.Party().Id())
+	}
+}
+
+func TestCloneModel_PreservesParty(t *testing.T) {
+	pm := party.NewBuilder().SetId(99).MustBuild()
+	original := character.NewModelBuilder().
+		SetId(1).
+		SetParty(pm).
+		MustBuild()
+
+	cloned, err := character.CloneModel(original).Build()
+	if err != nil {
+		t.Fatalf("CloneModel().Build() unexpected error: %v", err)
+	}
+	if cloned.Party().Id() != 99 {
+		t.Errorf("cloned.Party().Id() = %d, want 99", cloned.Party().Id())
 	}
 }

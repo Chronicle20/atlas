@@ -6,7 +6,7 @@ import (
 	"atlas-notes/logger"
 	"atlas-notes/note"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-notes/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"

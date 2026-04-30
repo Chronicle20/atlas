@@ -9,7 +9,7 @@ import (
 	"atlas-portal-actions/logger"
 	"atlas-portal-actions/script"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-portal-actions/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"

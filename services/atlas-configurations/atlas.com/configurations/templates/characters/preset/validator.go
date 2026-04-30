@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
 
@@ -50,6 +51,15 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 		errs = append(errs, ValidationError{PresetId: p.Id, Field: field, Message: msg})
 	}
 
+	// atlas-data lookups are tenant-scoped. atlas-configurations is a
+	// bootstrap-tier service that does not require tenant headers on incoming
+	// requests, so the template PATCH path has no tenant in ctx — in that case
+	// we skip atlas-data-dependent rules (equipment existence, skill MaxLevel)
+	// and rely on apply-time validation in atlas-character-factory's
+	// CreateFromPreset as the safety net. Structural rules below still run.
+	_, tenantErr := tenant.FromContext(ctx)()
+	hasTenant := tenantErr == nil
+
 	// R-1: name length 1..64
 	if l := len(p.Attributes.Name); l < 1 || l > 64 {
 		add("name", "must be 1..64 characters")
@@ -78,16 +88,20 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 	// R-6 + R-7: equipment templateId exists + equippable + slot uniqueness.
 	// Slot bucket is templateId/10000 (coarse taxonomy; catches duplicate hats,
 	// gloves, etc. — the apply-time validator is the safety net for edge cases).
+	// Existence + equippable checks require atlas-data and are skipped without
+	// a tenant context; slot uniqueness is purely structural and always runs.
 	seenSlots := map[uint32]uint32{}
 	for i, eq := range p.Attributes.Equipment {
-		info, err := v.client.GetItemById(ctx, eq.TemplateId)
-		if err != nil {
-			add(fieldPath("equipment", i, "templateId"), "item not found in atlas-data")
-			continue
-		}
-		if !info.Equipable {
-			add(fieldPath("equipment", i, "templateId"), "item is not equippable")
-			continue
+		if hasTenant {
+			info, err := v.client.GetItemById(ctx, eq.TemplateId)
+			if err != nil {
+				add(fieldPath("equipment", i, "templateId"), "item not found in atlas-data")
+				continue
+			}
+			if !info.Equipable {
+				add(fieldPath("equipment", i, "templateId"), "item is not equippable")
+				continue
+			}
 		}
 		slotBucket := eq.TemplateId / 10000
 		if other, exists := seenSlots[slotBucket]; exists {
@@ -98,9 +112,12 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 	}
 
 	// R-8 + R-9: inventory templateId exists; quantity ≥ 1.
+	// Existence requires atlas-data; quantity check is structural.
 	for i, it := range p.Attributes.Inventory {
-		if _, err := v.client.GetItemById(ctx, it.TemplateId); err != nil {
-			add(fieldPath("inventory", i, "templateId"), "item not found in atlas-data")
+		if hasTenant {
+			if _, err := v.client.GetItemById(ctx, it.TemplateId); err != nil {
+				add(fieldPath("inventory", i, "templateId"), "item not found in atlas-data")
+			}
 		}
 		if it.Quantity < 1 {
 			add(fieldPath("inventory", i, "quantity"), "must be ≥1")
@@ -108,7 +125,8 @@ func (v *Validator) validateOne(ctx context.Context, p RestModel) []ValidationEr
 	}
 
 	// R-10 + R-11 + R-12: skill ids exist; level in [1, maxLevel]; batch error.
-	if len(p.Attributes.Skills) > 0 {
+	// Entirely atlas-data-dependent — skipped without a tenant context.
+	if hasTenant && len(p.Attributes.Skills) > 0 {
 		ids := make([]uint32, 0, len(p.Attributes.Skills))
 		for _, s := range p.Attributes.Skills {
 			ids = append(ids, s.SkillId)

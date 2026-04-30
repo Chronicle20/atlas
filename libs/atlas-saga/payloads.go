@@ -125,8 +125,9 @@ type UnequipAssetPayload struct {
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset.
 type CreateAndEquipAssetPayload struct {
-	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
-	Item        ItemPayload `json:"item"`        // Item to create and equip
+	CharacterId     uint32      `json:"characterId"`               // CharacterId associated with the action
+	Item            ItemPayload `json:"item"`                      // Item to create and equip
+	UseAverageStats bool        `json:"useAverageStats,omitempty"` // UseAverageStats indicates whether average stats should be used when creating the item
 }
 
 // ChangeJobPayload represents the payload required to change a character's job.

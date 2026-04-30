@@ -5,6 +5,7 @@ import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAccount } from "@/lib/hooks/api/useAccounts";
 import { useWallet } from "@/lib/hooks/api/useWallet";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
@@ -58,13 +59,43 @@ export function AccountDetailPage() {
           <h2 className="text-2xl font-bold tracking-tight">{account.attributes.name}</h2>
         </div>
         <div className="flex items-center gap-2">
-          {activeTenant && hasPresets && (
-            <Button variant="outline" onClick={() => setBootstrapOpen(true)}>
-              Bootstrap characters
-            </Button>
-          )}
-          {activeTenant && hasPresets && (
-            <Button onClick={() => setApplyOpen(true)}>Add character from preset</Button>
+          {activeTenant && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={hasPresets ? -1 : 0}>
+                    <Button
+                      variant="outline"
+                      onClick={() => setBootstrapOpen(true)}
+                      disabled={!hasPresets}
+                    >
+                      Bootstrap characters
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!hasPresets && (
+                  <TooltipContent>
+                    No presets configured for this tenant. Configure them under
+                    Tenant Details &rarr; Character Presets.
+                  </TooltipContent>
+                )}
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={hasPresets ? -1 : 0}>
+                    <Button onClick={() => setApplyOpen(true)} disabled={!hasPresets}>
+                      Add character from preset
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!hasPresets && (
+                  <TooltipContent>
+                    No presets configured for this tenant. Configure them under
+                    Tenant Details &rarr; Character Presets.
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
           )}
         </div>
       </div>

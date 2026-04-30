@@ -6,6 +6,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -58,7 +59,17 @@ func (c *ClientImpl) GetItemById(ctx context.Context, id uint32) (ItemInfo, erro
 		return ItemInfo{Id: id, Equipable: false}, nil
 	}
 	if _, err := requestEquipmentById(id)(c.l, ctx); err != nil {
-		return ItemInfo{}, ErrNotFound
+		// Distinguish a real 404 from atlas-data ("template not present") from
+		// any other failure (HTTP transport, JSON:API decode, etc). Surfacing
+		// every error as ErrNotFound makes deploy bugs (see task-037, where
+		// missing UnmarshalToManyRelations stubs surfaced as "item not found")
+		// indistinguishable from genuine missing-data. Log non-404 errors at
+		// warn so the cause is one log line away.
+		if errors.Is(err, requests.ErrNotFound) {
+			return ItemInfo{}, ErrNotFound
+		}
+		c.l.WithError(err).Warnf("atlas-data lookup for equipment [%d] failed (non-404)", id)
+		return ItemInfo{}, err
 	}
 	return ItemInfo{Id: id, Equipable: true}, nil
 }

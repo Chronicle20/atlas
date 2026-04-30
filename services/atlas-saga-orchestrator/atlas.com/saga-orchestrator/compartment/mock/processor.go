@@ -11,6 +11,7 @@ import (
 // ProcessorMock is a mock implementation of the compartment.Processor interface
 type ProcessorMock struct {
 	RequestCreateItemFunc           func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestCreateItemWithStatsFunc  func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
 	RequestDestroyItemFunc          func(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestEquipAssetFunc           func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
 	RequestUnequipAssetFunc         func(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
@@ -24,6 +25,14 @@ type ProcessorMock struct {
 func (m *ProcessorMock) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
 	if m.RequestCreateItemFunc != nil {
 		return m.RequestCreateItemFunc(transactionId, characterId, templateId, quantity, expiration)
+	}
+	return nil
+}
+
+// RequestCreateItemWithStats is a mock implementation of the compartment.Processor.RequestCreateItemWithStats method
+func (m *ProcessorMock) RequestCreateItemWithStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error {
+	if m.RequestCreateItemWithStatsFunc != nil {
+		return m.RequestCreateItemWithStatsFunc(transactionId, characterId, templateId, quantity, expiration, useAverageStats)
 	}
 	return nil
 }

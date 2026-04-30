@@ -23,12 +23,14 @@ type ItemPayload struct {
 
 // CreateAndEquipAssetPayload represents the payload required to create and equip an asset
 type CreateAndEquipAssetPayload struct {
-	CharacterId uint32      `json:"characterId"` // CharacterId associated with the action
-	Item        ItemPayload `json:"item"`        // Item to create and equip
+	CharacterId     uint32      `json:"characterId"`               // CharacterId associated with the action
+	Item            ItemPayload `json:"item"`                      // Item to create and equip
+	UseAverageStats bool        `json:"useAverageStats,omitempty"` // UseAverageStats indicates whether average stats should be used when creating the item
 }
 
 type Processor interface {
 	RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error
+	RequestCreateItemWithStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error
 	RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error
 	RequestDestroyItemFromSlot(transactionId uuid.UUID, characterId uint32, inventoryType byte, slot int16, quantity uint32) error
 	RequestEquipAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, source int16, destination int16) error
@@ -52,11 +54,15 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 }
 
 func (p *ProcessorImpl) RequestCreateItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time) error {
+	return p.RequestCreateItemWithStats(transactionId, characterId, templateId, quantity, expiration, false)
+}
+
+func (p *ProcessorImpl) RequestCreateItemWithStats(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) error {
 	inventoryType, ok := inventory.TypeFromItemId(item.Id(templateId))
 	if !ok {
 		return errors.New("invalid templateId")
 	}
-	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration))
+	return producer.ProviderImpl(p.l)(p.ctx)(compartment.EnvCommandTopic)(RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, expiration, useAverageStats))
 }
 
 func (p *ProcessorImpl) RequestDestroyItem(transactionId uuid.UUID, characterId uint32, templateId uint32, quantity uint32, removeAll bool) error {
@@ -100,7 +106,7 @@ func (p *ProcessorImpl) RequestUnequipAsset(transactionId uuid.UUID, characterId
 }
 
 func (p *ProcessorImpl) RequestCreateAndEquipAsset(transactionId uuid.UUID, payload CreateAndEquipAssetPayload) error {
-	return p.RequestCreateItem(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration)
+	return p.RequestCreateItemWithStats(transactionId, payload.CharacterId, payload.Item.TemplateId, payload.Item.Quantity, payload.Item.Expiration, payload.UseAverageStats)
 }
 
 func (p *ProcessorImpl) RequestAcceptAsset(transactionId uuid.UUID, characterId uint32, inventoryType byte, templateId uint32, assetData asset2.AssetData) error {

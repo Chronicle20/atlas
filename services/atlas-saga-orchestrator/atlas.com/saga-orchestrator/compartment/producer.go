@@ -12,7 +12,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time) model.Provider[[]kafka.Message] {
+func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint32, inventoryType inventory.Type, templateId uint32, quantity uint32, expiration time.Time, useAverageStats bool) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &compartment.Command[compartment.CreateAssetCommandBody]{
 		TransactionId: transactionId,
@@ -20,12 +20,13 @@ func RequestCreateAssetCommandProvider(transactionId uuid.UUID, characterId uint
 		InventoryType: byte(inventoryType),
 		Type:          compartment.CommandCreateAsset,
 		Body: compartment.CreateAssetCommandBody{
-			TemplateId:   templateId,
-			Quantity:     quantity,
-			Expiration:   expiration,
-			OwnerId:      0,
-			Flag:         0,
-			Rechargeable: 0,
+			TemplateId:      templateId,
+			Quantity:        quantity,
+			Expiration:      expiration,
+			OwnerId:         0,
+			Flag:            0,
+			Rechargeable:    0,
+			UseAverageStats: useAverageStats,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

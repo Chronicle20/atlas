@@ -1418,6 +1418,7 @@ func (h *HandlerImpl) handleCreateAndEquipAsset(s Saga, st Step[any]) error {
 			TemplateId: payload.Item.TemplateId,
 			Quantity:   payload.Item.Quantity,
 		},
+		UseAverageStats: payload.UseAverageStats,
 	}
 
 	err := h.compP.RequestCreateAndEquipAsset(s.TransactionId(), compartmentPayload)

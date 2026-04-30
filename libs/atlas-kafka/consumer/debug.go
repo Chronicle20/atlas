@@ -53,29 +53,33 @@ type jsonAPIResource struct {
 }
 
 type debugAttributes struct {
-	Name          string    `json:"name"`
-	Topic         string    `json:"topic"`
-	GroupID       string    `json:"groupId"`
-	Brokers       []string  `json:"brokers"`
-	AliveSince    time.Time `json:"aliveSince"`
-	LastFetchAt   time.Time `json:"lastFetchAt"`
-	LastErrorAt   time.Time `json:"lastErrorAt"`
-	LastError     string    `json:"lastError"`
-	RecreateCount int       `json:"recreateCount"`
-	HandlerCount  int       `json:"handlerCount"`
+	Name                string    `json:"name"`
+	Topic               string    `json:"topic"`
+	GroupID             string    `json:"groupId"`
+	Brokers             []string  `json:"brokers"`
+	AliveSince          time.Time `json:"aliveSince"`
+	LastFetchAt         time.Time `json:"lastFetchAt"`
+	LastErrorAt         time.Time `json:"lastErrorAt"`
+	LastError           string    `json:"lastError"`
+	RecreateCount       int       `json:"recreateCount"`
+	HandlerCount        int       `json:"handlerCount"`
+	LastTimeoutAt       time.Time `json:"lastTimeoutAt"`
+	ConsecutiveTimeouts int       `json:"consecutiveTimeouts"`
 }
 
 func snapshotToAttributes(s Snapshot) debugAttributes {
 	return debugAttributes{
-		Name:          s.Name,
-		Topic:         s.Topic,
-		GroupID:       s.GroupID,
-		Brokers:       s.Brokers,
-		AliveSince:    s.AliveSince,
-		LastFetchAt:   s.LastFetchAt,
-		LastErrorAt:   s.LastErrorAt,
-		LastError:     s.LastError,
-		RecreateCount: s.RecreateCount,
-		HandlerCount:  s.HandlerCount,
+		Name:                s.Name,
+		Topic:               s.Topic,
+		GroupID:             s.GroupID,
+		Brokers:             s.Brokers,
+		AliveSince:          s.AliveSince,
+		LastFetchAt:         s.LastFetchAt,
+		LastErrorAt:         s.LastErrorAt,
+		LastError:           s.LastError,
+		RecreateCount:       s.RecreateCount,
+		HandlerCount:        s.HandlerCount,
+		LastTimeoutAt:       s.LastTimeoutAt,
+		ConsecutiveTimeouts: s.ConsecutiveTimeouts,
 	}
 }

@@ -10,13 +10,18 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-retry"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
+
+// errFetchWedged is returned from runFetchLoop when FetchMessage has hit
+// its deadline maxConsecutiveTimeouts times in a row without a successful
+// fetch in between. The outer start loop treats it identically to any
+// other recreate-eligible error: close reader, backoff, rebuild.
+var errFetchWedged = errors.New("consumer fetch wedged: exceeded consecutive timeouts")
 
 type KafkaReader interface {
 	MessageReader
@@ -117,14 +122,16 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 		}
 
 		con := &Consumer{
-			name:          c.name,
-			topic:         c.topic,
-			groupId:       c.groupId,
-			brokers:       append([]string(nil), c.brokers...),
-			readerConfig:  readerConfig,
-			rp:            m.rp,
-			handlers:      make(map[string]handler.Handler),
-			headerParsers: c.headerParsers,
+			name:                   c.name,
+			topic:                  c.topic,
+			groupId:                c.groupId,
+			brokers:                append([]string(nil), c.brokers...),
+			readerConfig:           readerConfig,
+			rp:                     m.rp,
+			handlers:               make(map[string]handler.Handler),
+			headerParsers:          c.headerParsers,
+			fetchTimeout:           c.fetchTimeout,
+			maxConsecutiveTimeouts: c.maxConsecutiveTimeouts,
 		}
 
 		m.consumers[c.topic] = con
@@ -188,27 +195,35 @@ type Consumer struct {
 	headerParsers []HeaderParser
 	mu            sync.Mutex
 
+	// Read-only after construction; copied from Config in AddConsumer.
+	fetchTimeout           time.Duration
+	maxConsecutiveTimeouts int
+
 	// Observable state — protected by mu.
-	aliveSince    time.Time
-	lastFetchAt   time.Time
-	lastErrorAt   time.Time
-	lastError     string
-	recreateCount int
+	aliveSince          time.Time
+	lastFetchAt         time.Time
+	lastErrorAt         time.Time
+	lastError           string
+	recreateCount       int
+	consecutiveTimeouts int
+	lastTimeoutAt       time.Time
 }
 
 // Snapshot is a point-in-time view of a Consumer's observable state, suitable
 // for JSON serialization by the debug route.
 type Snapshot struct {
-	Name          string
-	Topic         string
-	GroupID       string
-	Brokers       []string
-	AliveSince    time.Time
-	LastFetchAt   time.Time
-	LastErrorAt   time.Time
-	LastError     string
-	RecreateCount int
-	HandlerCount  int
+	Name                string
+	Topic               string
+	GroupID             string
+	Brokers             []string
+	AliveSince          time.Time
+	LastFetchAt         time.Time
+	LastErrorAt         time.Time
+	LastError           string
+	RecreateCount       int
+	HandlerCount        int
+	LastTimeoutAt       time.Time
+	ConsecutiveTimeouts int
 }
 
 // Snapshot returns a consistent snapshot of the consumer's observable state.
@@ -217,16 +232,18 @@ func (c *Consumer) Snapshot() Snapshot {
 	defer c.mu.Unlock()
 	brokers := append([]string(nil), c.brokers...)
 	return Snapshot{
-		Name:          c.name,
-		Topic:         c.topic,
-		GroupID:       c.groupId,
-		Brokers:       brokers,
-		AliveSince:    c.aliveSince,
-		LastFetchAt:   c.lastFetchAt,
-		LastErrorAt:   c.lastErrorAt,
-		LastError:     c.lastError,
-		RecreateCount: c.recreateCount,
-		HandlerCount:  len(c.handlers),
+		Name:                c.name,
+		Topic:               c.topic,
+		GroupID:             c.groupId,
+		Brokers:             brokers,
+		AliveSince:          c.aliveSince,
+		LastFetchAt:         c.lastFetchAt,
+		LastErrorAt:         c.lastErrorAt,
+		LastError:           c.lastError,
+		RecreateCount:       c.recreateCount,
+		HandlerCount:        len(c.handlers),
+		LastTimeoutAt:       c.lastTimeoutAt,
+		ConsecutiveTimeouts: c.consecutiveTimeouts,
 	}
 }
 
@@ -237,6 +254,8 @@ func (c *Consumer) onReaderCreated(attempt int) {
 	if attempt > 0 {
 		c.recreateCount++
 		c.lastError = ""
+		c.consecutiveTimeouts = 0
+		c.lastTimeoutAt = time.Time{}
 	}
 }
 
@@ -245,6 +264,19 @@ func (c *Consumer) recordFetch() {
 	defer c.mu.Unlock()
 	c.lastFetchAt = time.Now()
 	c.lastError = ""
+	c.consecutiveTimeouts = 0
+}
+
+// recordTimeout marks one deadline expiration; called per tick by runFetchLoop.
+// Idle, not an error: lastError / lastErrorAt are untouched. Returns the new
+// consecutiveTimeouts value so callers can branch on the threshold without a
+// second mutex acquisition.
+func (c *Consumer) recordTimeout() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.lastTimeoutAt = time.Now()
+	c.consecutiveTimeouts++
+	return c.consecutiveTimeouts
 }
 
 func (c *Consumer) recordError(err error) {
@@ -331,35 +363,39 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 }
 
 // runFetchLoop blocks the caller until the supplied reader errors out or
-// the parent ctx is canceled. On return, the reader should be closed by the
-// caller and (if the error is not a ctx-cancel) a new reader should be
-// created. The inner retry is intentionally short — a transient kafka-go
-// hiccup that self-resolves within ~1s stays on the current reader;
-// everything else falls through to reader recreation.
+// the parent ctx is canceled. Each iteration runs FetchMessage under a
+// per-call deadline (c.fetchTimeout). A deadline expiration is treated as
+// idle: the consumer ticks back to the top of the loop with a fresh
+// deadline, the same reader, and the same partition assignment. After
+// c.maxConsecutiveTimeouts consecutive deadline expirations without a
+// successful fetch in between, the loop returns errFetchWedged so the
+// outer start loop closes the reader and recreates it. A successful
+// fetch resets the counter via recordFetch.
 func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 
-		var msg kafka.Message
-		cfg := retry.DefaultConfig().
-			WithMaxRetries(3).
-			WithInitialDelay(100 * time.Millisecond).
-			WithMaxDelay(500 * time.Millisecond)
-		err := retry.Try(ctx, cfg, func(attempt int) (bool, error) {
-			var ferr error
-			msg, ferr = reader.FetchMessage(ctx)
-			if ferr == nil {
-				return false, nil
-			}
-			if errors.Is(ferr, context.Canceled) {
-				return false, ferr
-			}
-			l.WithError(ferr).Warnf("Could not fetch message on topic, will retry.")
-			return true, ferr
-		})
+		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		msg, err := reader.FetchMessage(fetchCtx)
+		cancelFetch()
+
 		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+				return err
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				consecutive := c.recordTimeout()
+				if consecutive >= c.maxConsecutiveTimeouts {
+					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
+						consecutive, c.topic, c.groupId)
+					return errFetchWedged
+				}
+				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
+					consecutive, c.maxConsecutiveTimeouts)
+				continue
+			}
 			return err
 		}
 

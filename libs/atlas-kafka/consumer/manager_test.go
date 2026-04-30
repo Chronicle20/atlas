@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"io"
+	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -36,7 +38,7 @@ func (r *MockReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
 	}
 
 	<-ctx.Done()
-	return kafka.Message{}, context.Canceled
+	return kafka.Message{}, ctx.Err()
 }
 
 func (r *MockReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
@@ -119,7 +121,7 @@ func (r *ChannelMockReader) FetchMessage(ctx context.Context) (kafka.Message, er
 	case m := <-r.msgCh:
 		return m, nil
 	case <-ctx.Done():
-		return kafka.Message{}, context.Canceled
+		return kafka.Message{}, ctx.Err()
 	}
 }
 
@@ -457,7 +459,7 @@ func (r *scriptedReader) FetchMessage(ctx context.Context) (kafka.Message, error
 	}
 	r.mu.Unlock()
 	<-ctx.Done()
-	return kafka.Message{}, context.Canceled
+	return kafka.Message{}, ctx.Err()
 }
 
 func (r *scriptedReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
@@ -690,3 +692,259 @@ func TestMultipleHandlersAllCompleteBeforeCommit(t *testing.T) {
 	cancel()
 	wg.Wait()
 }
+
+func TestFetchTimeoutTicksWithoutRecreate(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// Empty scriptedReader always blocks on ctx — every FetchMessage call
+	// returns DeadlineExceeded when the per-call deadline fires.
+	r1 := &scriptedReader{}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer wg.Wait()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "tick-consumer", "tick-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetFetchTimeout(50*time.Millisecond),
+		consumer.SetMaxConsecutiveTimeouts(3),
+	)
+
+	// Wait long enough for at least one deadline to fire (50ms) but well
+	// short of three (150ms).
+	time.Sleep(75 * time.Millisecond)
+
+	snaps := cm.Consumers()
+	if len(snaps) != 1 {
+		t.Fatalf("expected 1 consumer, got %d", len(snaps))
+	}
+	s := snaps[0].Snapshot()
+
+	if s.ConsecutiveTimeouts < 1 {
+		t.Fatalf("expected ConsecutiveTimeouts >= 1 after a tick, got %d", s.ConsecutiveTimeouts)
+	}
+	if s.RecreateCount != 0 {
+		t.Fatalf("expected RecreateCount == 0 after a single tick, got %d", s.RecreateCount)
+	}
+	if s.LastError != "" {
+		t.Fatalf("expected LastError empty (idle is not an error), got %q", s.LastError)
+	}
+	if s.LastTimeoutAt.IsZero() {
+		t.Fatal("expected LastTimeoutAt to be set after a tick")
+	}
+
+	cancel()
+	wg.Wait()
+
+	if r1.Closes() != 1 {
+		t.Fatalf("expected reader closed exactly once on ctx-cancel, got %d", r1.Closes())
+	}
+}
+
+func TestFetchTimeoutEscalatesAfterMaxToWedge(t *testing.T) {
+	consumer.ResetInstance()
+
+	// Capture the logger hook so we can verify the Warn-level wedge log
+	// fired with the sentinel message. We can't observe LastError in a
+	// snapshot because both onReaderCreated (on the new reader) and
+	// recordFetch (on the new reader's first message) clear it before the
+	// test's handler-invocation sync point — by design (PRD §4.5).
+	l, hook := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	// r1: empty — every FetchMessage hits the deadline. After 3 ticks
+	// runFetchLoop returns errFetchWedged, the outer loop closes r1 and
+	// requests r2.
+	// r2: delivers one message. Handler invocation is the signal that the
+	// recreate path completed.
+	r1 := &scriptedReader{}
+	r2 := &scriptedReader{script: []scriptedFetch{{msg: kafka.Message{Value: []byte("after-wedge")}}}}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r1, r2))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	// Goroutine-leak guard (risks R2): capture before the consumer starts.
+	goroutinesBefore := runtime.NumGoroutine()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "wedge-consumer", "wedge-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetFetchTimeout(50*time.Millisecond),
+		consumer.SetMaxConsecutiveTimeouts(3),
+	)
+
+	handlerDone := make(chan struct{})
+	_, _ = cm.RegisterHandler("wedge-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		close(handlerDone)
+		return true, nil
+	})
+
+	select {
+	case <-handlerDone:
+	case <-time.After(2 * time.Second):
+		t.Fatal("handler was never invoked on recreated reader after wedge")
+	}
+
+	if r1.Closes() != 1 {
+		t.Fatalf("expected r1 closed exactly once after wedge, got %d", r1.Closes())
+	}
+
+	snaps := cm.Consumers()
+	if len(snaps) != 1 {
+		t.Fatalf("expected 1 consumer, got %d", len(snaps))
+	}
+	s := snaps[0].Snapshot()
+
+	if s.RecreateCount < 1 {
+		t.Fatalf("expected RecreateCount >= 1 after wedge recreate, got %d", s.RecreateCount)
+	}
+	// Counter must be reset by onReaderCreated for the new reader.
+	if s.ConsecutiveTimeouts != 0 {
+		t.Fatalf("expected ConsecutiveTimeouts reset to 0 on new reader, got %d", s.ConsecutiveTimeouts)
+	}
+
+	// Verify the Warn log fired with the wedge message (PRD §4.2). This
+	// is the durable signal that the sentinel was recorded; lastError
+	// would have been cleared by the time the test observes the snapshot.
+	foundWedgeWarn := false
+	for _, e := range hook.AllEntries() {
+		if e.Level == logrus.WarnLevel &&
+			strings.Contains(e.Message, "FetchMessage wedged") &&
+			strings.Contains(e.Message, "wedge-topic") &&
+			strings.Contains(e.Message, "test-group") {
+			foundWedgeWarn = true
+			break
+		}
+	}
+	if !foundWedgeWarn {
+		t.Fatalf("expected one Warn log containing 'FetchMessage wedged' with topic+group, got entries: %v", hook.AllEntries())
+	}
+
+	// Goroutine-leak guard: settle then compare. If FetchMessage on r1 did
+	// not honor ctx cancellation, leaked goroutines accumulate here.
+	time.Sleep(50 * time.Millisecond)
+	goroutinesAfter := runtime.NumGoroutine()
+	if delta := goroutinesAfter - goroutinesBefore; delta > 5 {
+		t.Fatalf("goroutine leak suspected: before=%d after=%d delta=%d (>5)",
+			goroutinesBefore, goroutinesAfter, delta)
+	}
+}
+
+// alternatingReader returns DeadlineExceeded on odd-numbered FetchMessage
+// calls (1st, 3rd, 5th, ...) and a scripted message on even-numbered calls.
+// Used to exercise the timeout-success-timeout-success cycle that should
+// keep consecutiveTimeouts pinned at 0 across many iterations.
+type alternatingReader struct {
+	mu        sync.Mutex
+	calls     int
+	committed []kafka.Message
+	closes    int
+}
+
+func (r *alternatingReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
+	r.mu.Lock()
+	r.calls++
+	n := r.calls
+	r.mu.Unlock()
+
+	if n%2 == 1 {
+		<-ctx.Done()
+		return kafka.Message{}, ctx.Err()
+	}
+	return kafka.Message{Value: []byte("ok")}, nil
+}
+
+func (r *alternatingReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.committed = append(r.committed, msgs...)
+	return nil
+}
+
+func (r *alternatingReader) Close() error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.closes++
+	return nil
+}
+
+func (r *alternatingReader) Closes() int {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.closes
+}
+
+func (r *alternatingReader) Committed() []kafka.Message {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]kafka.Message, len(r.committed))
+	copy(out, r.committed)
+	return out
+}
+
+func TestFetchTimeoutResetsOnSuccessfulFetch(t *testing.T) {
+	consumer.ResetInstance()
+
+	l, _ := test.NewNullLogger()
+	wg := &sync.WaitGroup{}
+	otel.SetTracerProvider(&MockTracerProvider{})
+
+	r := &alternatingReader{}
+	rp := consumer.ConfigReaderProducer(readerFactory(t, r))
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer func() {
+		cancel()
+		wg.Wait()
+	}()
+
+	cm := consumer.GetManager(rp)
+	c := consumer.NewConfig([]string{""}, "reset-consumer", "reset-topic", "test-group")
+	cm.AddConsumer(l, ctx, wg)(
+		c,
+		consumer.SetFetchTimeout(50*time.Millisecond),
+		consumer.SetMaxConsecutiveTimeouts(3),
+	)
+
+	handlerInvocations := atomic.Int32{}
+	gotThree := make(chan struct{})
+	_, _ = cm.RegisterHandler("reset-topic", func(_ logrus.FieldLogger, _ context.Context, _ kafka.Message) (bool, error) {
+		if handlerInvocations.Add(1) == 3 {
+			close(gotThree)
+		}
+		return true, nil
+	})
+
+	// 3 successes interleaved with 3 timeouts ≈ 200ms wall-clock.
+	select {
+	case <-gotThree:
+	case <-time.After(2 * time.Second):
+		t.Fatalf("expected 3 handler invocations, got %d", handlerInvocations.Load())
+	}
+
+	snaps := cm.Consumers()
+	s := snaps[0].Snapshot()
+
+	if s.RecreateCount != 0 {
+		t.Fatalf("expected RecreateCount == 0 (counter resets between successes), got %d", s.RecreateCount)
+	}
+	if s.ConsecutiveTimeouts != 0 {
+		t.Fatalf("expected ConsecutiveTimeouts == 0 after a success, got %d", s.ConsecutiveTimeouts)
+	}
+	if r.Closes() != 0 {
+		t.Fatalf("expected reader to remain open across timeout/success cycles, got Closes=%d", r.Closes())
+	}
+}
+

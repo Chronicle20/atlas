@@ -311,22 +311,7 @@ func (p *Processor) Create(mb *message.Buffer) func(transactionId uuid.UUID, cha
 					}
 					return err
 				}
-				b.SetStrength(getRandomStat(ea.Strength(), 5)).
-					SetDexterity(getRandomStat(ea.Dexterity(), 5)).
-					SetIntelligence(getRandomStat(ea.Intelligence(), 5)).
-					SetLuck(getRandomStat(ea.Luck(), 5)).
-					SetHp(getRandomStat(ea.Hp(), 10)).
-					SetMp(getRandomStat(ea.Mp(), 10)).
-					SetWeaponAttack(getRandomStat(ea.WeaponAttack(), 5)).
-					SetMagicAttack(getRandomStat(ea.MagicAttack(), 5)).
-					SetWeaponDefense(getRandomStat(ea.WeaponDefense(), 10)).
-					SetMagicDefense(getRandomStat(ea.MagicDefense(), 10)).
-					SetAccuracy(getRandomStat(ea.Accuracy(), 5)).
-					SetAvoidability(getRandomStat(ea.Avoidability(), 5)).
-					SetHands(getRandomStat(ea.Hands(), 5)).
-					SetSpeed(getRandomStat(ea.Speed(), 5)).
-					SetJump(getRandomStat(ea.Jump(), 5)).
-					SetSlots(ea.Slots())
+				applyEquipStats(b, ea, opts.UseAverageStats)
 			case inventory.TypeValueUse, inventory.TypeValueSetup, inventory.TypeValueETC:
 				b.SetQuantity(opts.Quantity).
 					SetOwnerId(opts.OwnerId).
@@ -432,6 +417,46 @@ func (p *Processor) Release(mb *message.Buffer) func(transactionId uuid.UUID, ch
 			return mb.Put(asset.EnvEventTopicStatus, ReleasedEventStatusProvider(transactionId, characterId, a))
 		}
 	}
+}
+
+// applyEquipStats writes equip stats onto the builder. When useAverageStats is true,
+// the atlas-data defaults are written verbatim; otherwise each stat is rolled with
+// variance via getRandomStat.
+func applyEquipStats(b *ModelBuilder, ea statistics.Model, useAverageStats bool) *ModelBuilder {
+	if useAverageStats {
+		return b.SetStrength(ea.Strength()).
+			SetDexterity(ea.Dexterity()).
+			SetIntelligence(ea.Intelligence()).
+			SetLuck(ea.Luck()).
+			SetHp(ea.Hp()).
+			SetMp(ea.Mp()).
+			SetWeaponAttack(ea.WeaponAttack()).
+			SetMagicAttack(ea.MagicAttack()).
+			SetWeaponDefense(ea.WeaponDefense()).
+			SetMagicDefense(ea.MagicDefense()).
+			SetAccuracy(ea.Accuracy()).
+			SetAvoidability(ea.Avoidability()).
+			SetHands(ea.Hands()).
+			SetSpeed(ea.Speed()).
+			SetJump(ea.Jump()).
+			SetSlots(ea.Slots())
+	}
+	return b.SetStrength(getRandomStat(ea.Strength(), 5)).
+		SetDexterity(getRandomStat(ea.Dexterity(), 5)).
+		SetIntelligence(getRandomStat(ea.Intelligence(), 5)).
+		SetLuck(getRandomStat(ea.Luck(), 5)).
+		SetHp(getRandomStat(ea.Hp(), 10)).
+		SetMp(getRandomStat(ea.Mp(), 10)).
+		SetWeaponAttack(getRandomStat(ea.WeaponAttack(), 5)).
+		SetMagicAttack(getRandomStat(ea.MagicAttack(), 5)).
+		SetWeaponDefense(getRandomStat(ea.WeaponDefense(), 10)).
+		SetMagicDefense(getRandomStat(ea.MagicDefense(), 10)).
+		SetAccuracy(getRandomStat(ea.Accuracy(), 5)).
+		SetAvoidability(getRandomStat(ea.Avoidability(), 5)).
+		SetHands(getRandomStat(ea.Hands(), 5)).
+		SetSpeed(getRandomStat(ea.Speed(), 5)).
+		SetJump(getRandomStat(ea.Jump(), 5)).
+		SetSlots(ea.Slots())
 }
 
 func getRandomStat(defaultValue uint16, max uint16) uint16 {

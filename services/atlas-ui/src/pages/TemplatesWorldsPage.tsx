@@ -1,8 +1,10 @@
-
-import {WorldsForm} from "@/pages/templates-worlds-form";
+import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
+import { WorldsForm } from "@/pages/templates-worlds-form";
 
 export function TemplatesWorldsPage() {
     return (
-        <WorldsForm/>
+        <TemplateDetailLayout>
+            <WorldsForm />
+        </TemplateDetailLayout>
     );
 }

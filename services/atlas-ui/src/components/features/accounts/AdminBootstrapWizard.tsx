@@ -20,6 +20,7 @@ import {
   initialState,
   type Row,
 } from "./AdminBootstrapWizard.types";
+import { createErrorFromUnknown } from "@/types/api/errors";
 
 // ---------------------------------------------------------------------------
 // Preset shape from tenant config (same casting pattern as ApplyPresetDialog)
@@ -266,7 +267,7 @@ function NameRow({ tenant, row, isDuplicate, onChangeName, onValidityUpdate }: N
           <span className="text-muted-foreground">Checking…</span>
         ) : effectiveValidity ? (
           effectiveValidity.valid ? (
-            <span className="text-green-600">Available</span>
+            <span className="text-primary">Available</span>
           ) : (
             <span className="text-destructive">
               {effectiveValidity.detail ?? effectiveValidity.reason ?? "Invalid"}
@@ -362,8 +363,8 @@ const STATUS_LABEL: Record<string, string> = {
 
 const STATUS_CLASS: Record<string, string> = {
   pending: "text-muted-foreground",
-  applying: "text-blue-600",
-  success: "text-green-600",
+  applying: "text-muted-foreground",
+  success: "text-primary",
   failed: "text-destructive",
 };
 
@@ -391,7 +392,7 @@ function Step4({ rows, accountId, accountName, error, onRetry, onDone }: Step4Pr
         </p>
       )}
       {accountId && (
-        <p className="text-sm text-green-600">
+        <p className="text-sm text-primary">
           Account <strong>{accountName}</strong> created (ID {accountId}).
         </p>
       )}
@@ -457,9 +458,12 @@ export function AdminBootstrapWizard({ tenant, open, onOpenChange }: AdminBootst
 
   // Fetch presets from tenant config
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
-  const allPresets = (
-    ((tenantConfigQuery.data?.attributes as any)?.characters as any)?.presets ?? []
-  ) as PresetItem[];
+  const allPresets: PresetItem[] = (tenantConfigQuery.data?.attributes?.characters?.presets ?? [])
+    .filter((p): p is typeof p & { id: string } => !!p.id)
+    .map((p) => ({
+      id: p.id,
+      attributes: { name: p.attributes.name, tags: p.attributes.tags },
+    }));
 
   // Reset wizard when dialog opens
   useEffect(() => {
@@ -484,7 +488,7 @@ export function AdminBootstrapWizard({ tenant, open, onOpenChange }: AdminBootst
       try {
         await accountsService.createAccount(tenant, state.account);
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Account creation failed";
+        const msg = createErrorFromUnknown(err).message;
         dispatch({ type: "SET_ERROR", error: msg });
         applyInProgress.current = false;
         return;
@@ -529,7 +533,7 @@ export function AdminBootstrapWizard({ tenant, open, onOpenChange }: AdminBootst
           });
           dispatch({ type: "SET_ROW_STATUS", presetId: row.presetId, status: "success" });
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Failed";
+          const msg = createErrorFromUnknown(err).message;
           dispatch({ type: "SET_ROW_STATUS", presetId: row.presetId, status: "failed", error: msg });
         }
       }
@@ -557,7 +561,7 @@ export function AdminBootstrapWizard({ tenant, open, onOpenChange }: AdminBootst
       });
       dispatch({ type: "SET_ROW_STATUS", presetId, status: "success" });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed";
+      const msg = createErrorFromUnknown(err).message;
       dispatch({ type: "SET_ROW_STATUS", presetId, status: "failed", error: msg });
     }
   };

@@ -8,8 +8,12 @@ export function useCreateCharacterFromPreset(
 ): UseMutationResult<CreateFromPresetResponse, Error, CreateFromPresetPayload> {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (payload: CreateFromPresetPayload) =>
-      factoryService.createFromPreset(tenant, payload),
+    mutationFn: (payload: CreateFromPresetPayload) => {
+      if (!tenant?.id) {
+        return Promise.reject(new Error("No active tenant"));
+      }
+      return factoryService.createFromPreset(tenant, payload);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: characterKeys.lists() });
     },

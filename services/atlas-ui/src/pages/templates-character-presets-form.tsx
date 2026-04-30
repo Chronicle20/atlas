@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm, useFieldArray, type SubmitHandler, type UseFormReturn } from "react-hook-form";
+import type { CharacterPreset } from "@/types/models/template";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -7,8 +8,9 @@ import { Button } from "@/components/ui/button";
 import { useParams } from "react-router-dom";
 import { useTemplate, useUpdateTemplate } from "@/lib/hooks/api/useTemplates";
 import { toast } from "sonner";
-import { LoadingSpinner, ErrorDisplay } from "@/components/common";
-import { presetsFormSchema, type PresetsFormValues } from "@/pages/character-presets-schema";
+import { ErrorDisplay } from "@/components/common";
+import { FormSkeleton } from "@/components/common/FormSkeleton";
+import { presetsFormSchema, type PresetsFormValues } from "@/lib/schemas/character-presets.schema";
 import { Plus, Trash, X } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -46,11 +48,9 @@ export function TemplatesPresetsForm() {
 
     useEffect(() => {
         if (template) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const presets = (template.attributes.characters as any).presets ?? [];
+            const presets = template.attributes.characters.presets ?? [];
             form.reset({
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                presets: presets.map((p: any) => ({
+                presets: presets.map((p) => ({
                     id: p.id,
                     attributes: { ...DEFAULT_PRESET_ATTRIBUTES, ...p.attributes },
                 })),
@@ -68,7 +68,7 @@ export function TemplatesPresetsForm() {
                 updates: {
                     characters: {
                         ...template.attributes.characters,
-                        presets: data.presets,
+                        presets: data.presets as CharacterPreset[],
                     },
                 },
             },
@@ -101,7 +101,7 @@ export function TemplatesPresetsForm() {
         );
     };
 
-    if (templateQuery.isLoading) return <LoadingSpinner />;
+    if (templateQuery.isLoading) return <FormSkeleton fields={6} showLabels showSubmitButton />;
     if (templateQuery.error) return <ErrorDisplay error={templateQuery.error.message} />;
 
     return (

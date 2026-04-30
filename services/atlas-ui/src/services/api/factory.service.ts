@@ -2,7 +2,7 @@ import { api } from "@/lib/api/client";
 import { tenantHeaders } from "@/lib/headers";
 import type { Tenant } from "@/types/models/tenant";
 
-const BASE_PATH = "/api/factory";
+const BASE_PATH = "/api/characters";
 
 export interface CreateFromPresetPayload {
   presetId: string;
@@ -33,12 +33,11 @@ interface CreateFromPresetEnvelope {
 
 export const factoryService = {
   /**
-   * POST /factory/characters/from-preset
+   * POST /api/characters/from-preset
    *
-   * Sends a plain-JSON body (presetId, accountId, worldId, name) and receives a
-   * 202 Accepted with a JSON:API envelope.  The api.post helper sends plain JSON,
-   * so no extra wrapping is needed on the request side.  The response is unwrapped
-   * from the JSON:API envelope before returning.
+   * Sends a JSON:API-encoded body and receives a 202 Accepted with a JSON:API
+   * envelope. The backend uses RegisterInputHandler[PresetCreateRestModel] which
+   * requires the request body to be wrapped in the standard JSON:API format.
    *
    * Tenant headers are injected via a direct fetch call so they are applied even
    * when the caller passes a tenant object that differs from the singleton's current
@@ -49,20 +48,32 @@ export const factoryService = {
     payload: CreateFromPresetPayload,
   ): Promise<CreateFromPresetResponse> {
     const headers = tenantHeaders(tenant);
-    headers.set("Content-Type", "application/json");
+    headers.set("Content-Type", "application/vnd.api+json");
 
-    const response = await fetch(`${BASE_PATH}/characters/from-preset`, {
+    const requestBody = {
+      data: {
+        type: "preset-create",
+        attributes: {
+          presetId: payload.presetId,
+          accountId: payload.accountId,
+          worldId: payload.worldId,
+          name: payload.name,
+        },
+      },
+    };
+
+    const response = await fetch(`${BASE_PATH}/from-preset`, {
       method: "POST",
       headers,
-      body: JSON.stringify(payload),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
       let message = `createFromPreset failed with status ${response.status}`;
       try {
-        const body = (await response.json()) as { error?: string; message?: string };
-        if (body.error) message = body.error;
-        else if (body.message) message = body.message;
+        const errBody = (await response.json()) as { error?: string; message?: string };
+        if (errBody.error) message = errBody.error;
+        else if (errBody.message) message = errBody.message;
       } catch {
         // non-JSON error body; keep the default message
       }
@@ -71,12 +82,12 @@ export const factoryService = {
       throw err;
     }
 
-    const body = (await response.json()) as CreateFromPresetEnvelope;
-    return { transactionId: body.data.attributes.transactionId };
+    const responseBody = (await response.json()) as CreateFromPresetEnvelope;
+    return { transactionId: responseBody.data.attributes.transactionId };
   },
 
   /**
-   * GET /factory/characters/name-validity?name=&worldId=
+   * GET /api/characters/name-validity?name=&worldId=
    *
    * Returns plain JSON {valid, reason?, detail?}.  api.get<T> returns the raw
    * parsed body as T (no JSON:API unwrapping), so it is used directly here.
@@ -91,7 +102,7 @@ export const factoryService = {
   ): Promise<NameValidityResponse> {
     const params = new URLSearchParams({ name, worldId: String(worldId) });
     return api.get<NameValidityResponse>(
-      `${BASE_PATH}/characters/name-validity?${params.toString()}`,
+      `${BASE_PATH}/name-validity?${params.toString()}`,
       { headers: tenantHeaders(tenant) },
     );
   },

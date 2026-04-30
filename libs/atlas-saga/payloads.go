@@ -608,6 +608,8 @@ type CharacterCreatePayload struct {
 	Shoes        uint32   `json:"shoes"`  // Shoes of the character
 	Weapon       uint32   `json:"weapon"` // Weapon of the character
 	MapId        _map.Id  `json:"mapId"`  // Starting map ID for the character
+	Gm           int      `json:"gm,omitempty"`
+	Meso         uint32   `json:"meso,omitempty"`
 }
 
 // AwaitCharacterCreatedPayload represents the payload required to await character creation completion.

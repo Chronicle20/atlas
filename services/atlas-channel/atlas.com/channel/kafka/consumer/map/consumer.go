@@ -223,13 +223,15 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			}()
 
 			go func() {
-				imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
-				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(party.NewProcessor(l, ctx).ByMemberIdProvider(s.CharacterId())))
-				err = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to announce character [%d] health to party members.", s.CharacterId())
+				cp := character.NewProcessor(l, ctx)
+				cd, err := cp.GetById(cp.PartyDecorator)(s.CharacterId())
+				if err != nil || !cd.InParty() {
+					return
 				}
-
+				pmp := model.FixedProvider(cd.Party())
+				imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
+				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
+				_ = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
 				_ = model.ForEachSlice(oip, func(oid uint32) error {
 					return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, cms[oid].Hp(), cms[oid].MaxHp()).Encode)(s)
 				}, model.ParallelExecute())

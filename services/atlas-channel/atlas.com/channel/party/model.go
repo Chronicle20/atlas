@@ -93,3 +93,34 @@ func (m MemberModel) MapId() _map.Id {
 func (m MemberModel) Instance() uuid.UUID {
 	return m.Field().Instance()
 }
+
+type modelBuilder struct {
+	id       uint32
+	leaderId uint32
+	members  []MemberModel
+}
+
+// NewBuilder returns a new party model builder. Used by tests and any
+// code path that needs to construct a party.Model in-process (the
+// production path uses Extract over the REST response).
+func NewBuilder() *modelBuilder {
+	return &modelBuilder{}
+}
+
+func (b *modelBuilder) SetId(v uint32) *modelBuilder           { b.id = v; return b }
+func (b *modelBuilder) SetLeaderId(v uint32) *modelBuilder     { b.leaderId = v; return b }
+func (b *modelBuilder) SetMembers(v []MemberModel) *modelBuilder { b.members = v; return b }
+
+func (b *modelBuilder) Build() Model {
+	return Model{
+		id:       b.id,
+		leaderId: b.leaderId,
+		members:  b.members,
+	}
+}
+
+// MustBuild returns a Model unconditionally. Kept symmetric with the
+// character package's MustBuild.
+func (b *modelBuilder) MustBuild() Model {
+	return b.Build()
+}

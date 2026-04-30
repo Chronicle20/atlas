@@ -16,6 +16,8 @@ After making changes across multiple services, always run builds and tests for A
 
 When refactoring shared types or creating common libraries, prefer straightforward moves over re-exporting type aliases. Keep abstractions clean — don't break service boundaries by having one layer call another's internals directly.
 
+Before defining a new domain type, alias, or numeric constant in a service, check `libs/atlas-constants/` (see its README package index) for an existing equivalent. The shared library already covers item ids/classifications, inventory/compartment types, weapon types, world/channel/map/character ids, jobs, skills, and monster ids — services should use those types directly rather than reinventing them. The `backend-guidelines-reviewer` agent enforces this as DOM-21.
+
 ## Development Workflow
 
 The canonical flow for any non-trivial change is four phases. Each phase is a separate slash command, each invoked from a fresh (`/clear`'d) session so the next phase consumes only the prior phase's documented artifacts:

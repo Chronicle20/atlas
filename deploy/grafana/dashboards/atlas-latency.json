@@ -1,0 +1,167 @@
+{
+  "uid": "atlas-latency",
+  "title": "Atlas Latency",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "tags": ["atlas", "latency", "spanmetrics"],
+  "timezone": "browser",
+  "time": { "from": "now-30m", "to": "now" },
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "tenant",
+        "label": "Tenant",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(traces_spanmetrics_calls_total, tenant_id)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "refresh": 2
+      },
+      {
+        "name": "writer",
+        "label": "Writer",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(traces_spanmetrics_calls_total{span_name=\"session.Announce\"}, writer_name)",
+        "multi": true,
+        "includeAll": true,
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "refresh": 2
+      }
+    ]
+  },
+  "annotations": {
+    "list": [
+      {
+        "name": "Sampling caveat",
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "iconColor": "rgba(255, 96, 96, 1)",
+        "type": "dashboard",
+        "tagsField": "",
+        "textFormat": "Rates and counts are subject to TRACE_SAMPLING_RATIO. Default 1.0; check cluster configmap."
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "session.Announce latency by writer (p50 / p95 / p99)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 0 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le, writer_name) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-channel\", span_name=\"session.Announce\", tenant_id=~\"$tenant\", writer_name=~\"$writer\"}[5m])))",
+          "legendFormat": "{{writer_name}} p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, writer_name) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-channel\", span_name=\"session.Announce\", tenant_id=~\"$tenant\", writer_name=~\"$writer\"}[5m])))",
+          "legendFormat": "{{writer_name}} p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, writer_name) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-channel\", span_name=\"session.Announce\", tenant_id=~\"$tenant\", writer_name=~\"$writer\"}[5m])))",
+          "legendFormat": "{{writer_name}} p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "session.Announce rate by writer",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 9, "w": 24, "x": 0, "y": 9 },
+      "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] },
+      "options": { "legend": { "displayMode": "table", "placement": "bottom" }, "tooltip": { "mode": "multi" } },
+      "targets": [
+        {
+          "expr": "sum by (writer_name) (rate(traces_spanmetrics_calls_total{service_name=\"atlas-channel\", span_name=\"session.Announce\", tenant_id=~\"$tenant\"}[1m]))",
+          "legendFormat": "{{writer_name}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "atlas-channel CharacterItemUseHandle latency (p95)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 18 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-channel\", span_name=\"CharacterItemUseHandle\", tenant_id=~\"$tenant\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "atlas-inventory compartment_command consumer latency (p95)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 18 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-inventory\", span_name=\"compartment_command\", tenant_id=~\"$tenant\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "atlas-consumables consumable_command consumer latency (p95)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 26 },
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name=\"atlas-consumables\", span_name=\"consumable_command\", tenant_id=~\"$tenant\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Saga skip rate by reason (Loki)",
+      "datasource": { "type": "loki", "uid": "loki" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 26 },
+      "targets": [
+        {
+          "expr": "sum by (reason) (rate({service=\"atlas-saga-orchestrator\"} |= \"reason=\" | logfmt | reason!=\"\" [5m]))",
+          "legendFormat": "{{reason}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Tempo metrics-generator throughput (self-health)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 34 },
+      "fieldConfig": { "defaults": { "unit": "ops" } },
+      "targets": [
+        {
+          "expr": "rate(tempo_metrics_generator_processed_spans_total[5m])",
+          "legendFormat": "spans/s",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

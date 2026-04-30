@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/propagation"
 	"go.opentelemetry.io/otel/sdk/resource"
-	"go.opentelemetry.io/otel/sdk/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
@@ -19,9 +19,9 @@ import (
 // service. It reads TRACE_ENDPOINT (OTLP gRPC target) and TRACE_SAMPLING_RATIO
 // from the environment.
 //
-// The returned *trace.TracerProvider must be passed to Teardown for clean
+// The returned *sdktrace.TracerProvider must be passed to Teardown for clean
 // shutdown.
-func InitTracer(serviceName string) (*trace.TracerProvider, error) {
+func InitTracer(serviceName string) (*sdktrace.TracerProvider, error) {
 	exporter, err := otlptrace.New(
 		context.Background(),
 		otlptracegrpc.NewClient(
@@ -35,15 +35,15 @@ func InitTracer(serviceName string) (*trace.TracerProvider, error) {
 
 	logger := logrus.New()
 	ratio := parseSamplingRatio(logger)
-	sampler := trace.ParentBased(trace.TraceIDRatioBased(ratio))
+	sampler := sdktrace.ParentBased(sdktrace.TraceIDRatioBased(ratio))
 
-	tp := trace.NewTracerProvider(
-		trace.WithBatcher(exporter),
-		trace.WithResource(resource.NewWithAttributes(
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
 			semconv.ServiceNameKey.String(serviceName),
 		)),
-		trace.WithSampler(sampler),
+		sdktrace.WithSampler(sampler),
 	)
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.TraceContext{})
@@ -54,8 +54,8 @@ func InitTracer(serviceName string) (*trace.TracerProvider, error) {
 // per-service main.go call sites:
 //
 //	tdm.TeardownFunc(tracing.Teardown(l)(tc))
-func Teardown(l logrus.FieldLogger) func(tp *trace.TracerProvider) func() {
-	return func(tp *trace.TracerProvider) func() {
+func Teardown(l logrus.FieldLogger) func(tp *sdktrace.TracerProvider) func() {
+	return func(tp *sdktrace.TracerProvider) func() {
 		return func() {
 			ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 			defer cancel()

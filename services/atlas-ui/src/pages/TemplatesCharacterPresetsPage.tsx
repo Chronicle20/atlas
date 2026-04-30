@@ -1,7 +1,10 @@
+import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
 import { TemplatesPresetsForm } from "@/pages/templates-character-presets-form";
 
 export function TemplatesCharacterPresetsPage() {
     return (
-        <TemplatesPresetsForm />
+        <TemplateDetailLayout>
+            <TemplatesPresetsForm />
+        </TemplateDetailLayout>
     );
 }

@@ -1,7 +1,10 @@
+import { TenantDetailLayout } from "@/components/features/tenants/TenantDetailLayout";
 import { TenantsPresetsForm } from "@/pages/tenants-character-presets-form";
 
 export function TenantsCharacterPresetsPage() {
     return (
-        <TenantsPresetsForm />
+        <TenantDetailLayout>
+            <TenantsPresetsForm />
+        </TenantDetailLayout>
     );
 }

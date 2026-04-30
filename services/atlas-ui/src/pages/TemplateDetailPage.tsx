@@ -1,8 +1,10 @@
-
-import {PropertiesForm} from "@/pages/templates-properties-form";
+import { TemplateDetailLayout } from "@/components/features/templates/TemplateDetailLayout";
+import { PropertiesForm } from "@/pages/templates-properties-form";
 
 export function TemplateDetailPage() {
     return (
-        <PropertiesForm/>
+        <TemplateDetailLayout>
+            <PropertiesForm />
+        </TemplateDetailLayout>
     );
 }

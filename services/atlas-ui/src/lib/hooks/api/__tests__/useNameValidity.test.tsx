@@ -2,15 +2,15 @@ import { vi, type Mocked } from 'vitest';
 
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { factoryService } from '@/services/api/factory.service';
-import type { NameValidityResponse } from '@/services/api/factory.service';
+import { charactersService } from '@/services/api/characters.service';
+import type { NameValidityResponse } from '@/services/api/characters.service';
 import { useNameValidity, nameValidityKeys } from '../useNameValidity';
 import type { Tenant } from '@/types/models/tenant';
 import type { ReactNode } from 'react';
 
 // Mock the factory service
-vi.mock('@/services/api/factory.service', () => ({
-  factoryService: {
+vi.mock('@/services/api/characters.service', () => ({
+  charactersService: {
     createFromPreset: vi.fn(),
     checkNameValidity: vi.fn(),
   },
@@ -22,7 +22,7 @@ vi.mock('@/lib/utils/debounce', () => ({
   useDebounce: (value: any, _delay: number) => value,
 }));
 
-const mockFactoryService = factoryService as Mocked<typeof factoryService>;
+const mockCharactersService = charactersService as Mocked<typeof charactersService>;
 
 const mockTenant: Tenant = {
   id: 'tenant-123',
@@ -74,7 +74,7 @@ describe('useNameValidity', () => {
       );
 
       expect(result.current.fetchStatus).toBe('idle');
-      expect(mockFactoryService.checkNameValidity).not.toHaveBeenCalled();
+      expect(mockCharactersService.checkNameValidity).not.toHaveBeenCalled();
     });
 
     it('should be disabled for empty name', () => {
@@ -84,14 +84,14 @@ describe('useNameValidity', () => {
       );
 
       expect(result.current.fetchStatus).toBe('idle');
-      expect(mockFactoryService.checkNameValidity).not.toHaveBeenCalled();
+      expect(mockCharactersService.checkNameValidity).not.toHaveBeenCalled();
     });
   });
 
   describe('when name is 3 or more characters', () => {
     it('should call checkNameValidity and return result', async () => {
       const mockResponse: NameValidityResponse = { valid: true };
-      mockFactoryService.checkNameValidity.mockResolvedValue(mockResponse);
+      mockCharactersService.checkNameValidity.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(
         () => useNameValidity(mockTenant, 'Hero', 0),
@@ -102,7 +102,7 @@ describe('useNameValidity', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockFactoryService.checkNameValidity).toHaveBeenCalledWith(mockTenant, 'Hero', 0);
+      expect(mockCharactersService.checkNameValidity).toHaveBeenCalledWith(mockTenant, 'Hero', 0);
       expect(result.current.data).toEqual(mockResponse);
     });
 
@@ -112,7 +112,7 @@ describe('useNameValidity', () => {
         reason: 'duplicate',
         detail: 'Name already taken',
       };
-      mockFactoryService.checkNameValidity.mockResolvedValue(mockResponse);
+      mockCharactersService.checkNameValidity.mockResolvedValue(mockResponse);
 
       const { result } = renderHook(
         () => useNameValidity(mockTenant, 'TakenName', 0),
@@ -135,7 +135,7 @@ describe('useNameValidity', () => {
       );
 
       expect(result.current.fetchStatus).toBe('idle');
-      expect(mockFactoryService.checkNameValidity).not.toHaveBeenCalled();
+      expect(mockCharactersService.checkNameValidity).not.toHaveBeenCalled();
     });
   });
 });

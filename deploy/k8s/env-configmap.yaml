@@ -6,11 +6,6 @@ metadata:
 data:
   # Infrastructure
   BASE_SERVICE_URL: "http://atlas-ingress.atlas.svc.cluster.local:80/api/"
-  # atlas-character-factory's name-validity passthrough must reach atlas-character
-  # directly. Without this override, RootUrl("CHARACTERS") falls back to
-  # BASE_SERVICE_URL — which routes /api/characters/name-validity back to the
-  # factory itself per the new ingress rule, causing an infinite loop.
-  CHARACTERS_SERVICE_URL: "http://atlas-character.atlas.svc.cluster.local:8080/api/"
   BOOTSTRAP_SERVERS: "kafka.home:9093"
   DB_HOST: "postgres.home"
   DB_PORT: "5432"

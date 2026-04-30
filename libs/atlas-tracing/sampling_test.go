@@ -1,6 +1,9 @@
 package tracing
 
 import (
+	"context"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -59,4 +62,36 @@ func TestParseSamplingRatio(t *testing.T) {
 
 func unsetForTest() error {
 	return osUnsetenv("TRACE_SAMPLING_RATIO")
+}
+
+func TestInitTracer_SamplerHonorsRatio(t *testing.T) {
+	tests := []struct {
+		ratio      string
+		wantSubstr string
+	}{
+		{"1.0", "1"},
+		{"0.5", "0.5"},
+		{"0.0", "0"},
+	}
+
+	for _, tc := range tests {
+		t.Run("ratio="+tc.ratio, func(t *testing.T) {
+			t.Setenv("TRACE_ENDPOINT", "127.0.0.1:0")
+			t.Setenv("TRACE_SAMPLING_RATIO", tc.ratio)
+
+			tp, err := InitTracer("test-svc")
+			if err != nil {
+				t.Fatalf("InitTracer: %v", err)
+			}
+			t.Cleanup(func() {
+				_ = tp.Shutdown(context.Background())
+			})
+
+			ratio := parseSamplingRatio(logrus.New())
+			desc := strings.TrimSpace(strconv.FormatFloat(ratio, 'f', -1, 64))
+			if !strings.Contains(desc, tc.wantSubstr) {
+				t.Errorf("ratio description %q lacks substring %q", desc, tc.wantSubstr)
+			}
+		})
+	}
 }

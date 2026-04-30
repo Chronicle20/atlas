@@ -36,7 +36,7 @@ func (r *MockReader) FetchMessage(ctx context.Context) (kafka.Message, error) {
 	}
 
 	<-ctx.Done()
-	return kafka.Message{}, context.Canceled
+	return kafka.Message{}, ctx.Err()
 }
 
 func (r *MockReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {
@@ -119,7 +119,7 @@ func (r *ChannelMockReader) FetchMessage(ctx context.Context) (kafka.Message, er
 	case m := <-r.msgCh:
 		return m, nil
 	case <-ctx.Done():
-		return kafka.Message{}, context.Canceled
+		return kafka.Message{}, ctx.Err()
 	}
 }
 
@@ -457,7 +457,7 @@ func (r *scriptedReader) FetchMessage(ctx context.Context) (kafka.Message, error
 	}
 	r.mu.Unlock()
 	<-ctx.Done()
-	return kafka.Message{}, context.Canceled
+	return kafka.Message{}, ctx.Err()
 }
 
 func (r *scriptedReader) CommitMessages(_ context.Context, msgs ...kafka.Message) error {

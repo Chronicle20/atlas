@@ -14,6 +14,7 @@ import (
 	"atlas-data/searchindex"
 
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -219,7 +220,7 @@ func TestItemStringStorage_Add_WritesCompartmentAndSubcategory(t *testing.T) {
 
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
-	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, uint8(inventory.TypeValueUse), row.Compartment)
 	assert.Equal(t, "scroll", row.Subcategory)
 	assert.Nil(t, row.JobMask)
 }
@@ -239,7 +240,7 @@ func TestItemStringStorage_Add_RefreshesCompartmentOnReingest(t *testing.T) {
 	var row testSearchIndexEntity
 	require.NoError(t, db.WithContext(ctx).First(&row, "tenant_id = ? AND item_id = ?", tn.Id(), 2049000).Error)
 	assert.Equal(t, "Clean Slate Scroll 1% (renamed)", row.Name)
-	assert.Equal(t, uint8(CompartmentUse), row.Compartment)
+	assert.Equal(t, uint8(inventory.TypeValueUse), row.Compartment)
 	assert.Equal(t, "scroll", row.Subcategory)
 }
 
@@ -248,7 +249,7 @@ func TestParseFilters_Compartment(t *testing.T) {
 	spec, errCode := parseFilters(q)
 	require.Equal(t, 0, errCode)
 	require.NotNil(t, spec.Compartment)
-	assert.Equal(t, CompartmentEquipment, *spec.Compartment)
+	assert.Equal(t, inventory.TypeValueEquip, *spec.Compartment)
 }
 
 func TestParseFilters_RejectsUnknownCompartment(t *testing.T) {
@@ -324,8 +325,8 @@ func TestSearchIndex_DefaultBrowse_ExcludesStaleAndOrders(t *testing.T) {
 	tn := tenant.MustFromContext(ctx)
 
 	seedIdxFull(t, db, ctx, tn.Id(), 1, "Stale Item", 0, "", nil)
-	seedIdxFull(t, db, ctx, tn.Id(), 2, "Banana", uint8(CompartmentUse), "potion", nil)
-	seedIdxFull(t, db, ctx, tn.Id(), 3, "Apple", uint8(CompartmentUse), "potion", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Banana", uint8(inventory.TypeValueUse), "potion", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 3, "Apple", uint8(inventory.TypeValueUse), "potion", nil)
 
 	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 		EntityIdColumn: "item_id",
@@ -345,15 +346,15 @@ func TestSearchIndex_FilterCompartmentOnly(t *testing.T) {
 	ctx := tenant.WithContext(context.Background(), newSearchTenant(t))
 	tn := tenant.MustFromContext(ctx)
 
-	seedIdxFull(t, db, ctx, tn.Id(), 1, "Hat", uint8(CompartmentEquipment), "hat", nil)
-	seedIdxFull(t, db, ctx, tn.Id(), 2, "Potion", uint8(CompartmentUse), "potion", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Hat", uint8(inventory.TypeValueEquip), "hat", nil)
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Potion", uint8(inventory.TypeValueUse), "potion", nil)
 
 	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
 		ExtraPredicate: "compartment = ?",
-		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
+		ExtraArgs:      []interface{}{int(inventory.TypeValueEquip)},
 	}
 	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
@@ -367,16 +368,16 @@ func TestSearchIndex_FilterClassIntersection(t *testing.T) {
 	tn := tenant.MustFromContext(ctx)
 
 	mask := func(v uint8) *uint8 { return &v }
-	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(CompartmentEquipment), "bow", mask(4))
-	seedIdxFull(t, db, ctx, tn.Id(), 2, "Sword", uint8(CompartmentEquipment), "one-handed-sword", mask(1))
-	seedIdxFull(t, db, ctx, tn.Id(), 3, "Hat", uint8(CompartmentEquipment), "hat", mask(0))
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(inventory.TypeValueEquip), "bow", mask(4))
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Sword", uint8(inventory.TypeValueEquip), "one-handed-sword", mask(1))
+	seedIdxFull(t, db, ctx, tn.Id(), 3, "Hat", uint8(inventory.TypeValueEquip), "hat", mask(0))
 
 	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
 		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND (job_mask = 0 OR (job_mask & ?) = ?))",
-		ExtraArgs:      []interface{}{int(CompartmentEquipment), uint8(1), uint8(1)},
+		ExtraArgs:      []interface{}{int(inventory.TypeValueEquip), uint8(1), uint8(1)},
 	}
 	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)
@@ -560,15 +561,15 @@ func TestSearchIndex_FilterClassAny(t *testing.T) {
 	tn := tenant.MustFromContext(ctx)
 
 	mask := func(v uint8) *uint8 { return &v }
-	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(CompartmentEquipment), "bow", mask(4))
-	seedIdxFull(t, db, ctx, tn.Id(), 2, "Hat", uint8(CompartmentEquipment), "hat", mask(0))
+	seedIdxFull(t, db, ctx, tn.Id(), 1, "Bow", uint8(inventory.TypeValueEquip), "bow", mask(4))
+	seedIdxFull(t, db, ctx, tn.Id(), 2, "Hat", uint8(inventory.TypeValueEquip), "hat", mask(0))
 
 	spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 		EntityIdColumn: "item_id",
 		NameColumns:    []string{"name"},
 		Order:          "name ASC, item_id ASC",
 		ExtraPredicate: "(compartment = ?) AND (job_mask IS NOT NULL AND job_mask = 0)",
-		ExtraArgs:      []interface{}{int(CompartmentEquipment)},
+		ExtraArgs:      []interface{}{int(inventory.TypeValueEquip)},
 	}
 	rows, err := searchindex.SearchWithFilter(db, ctx, tn.Id(), 0, 50, spec)
 	require.NoError(t, err)

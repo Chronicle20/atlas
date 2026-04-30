@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server/paginate"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -76,15 +77,13 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				return
 			}
 
-			hasFilter := fspec.Compartment != nil || fspec.Subcategory != "" || fspec.Class != ""
-
 			spec := searchindex.QuerySpec[StringSearchIndexEntity]{
 				EntityIdColumn: "item_id",
 				NameColumns:    []string{"name"},
 				Order:          "item_id ASC",
 			}
 
-			predicates, args := buildPredicates(fspec, !hasSearch && !hasFilter)
+			predicates, args := buildPredicates(fspec)
 			if len(predicates) > 0 {
 				spec.ExtraPredicate = strings.Join(predicates, " AND ")
 				spec.ExtraArgs = args
@@ -140,7 +139,7 @@ func handleGetItemStringsRequest(db *gorm.DB) func(d *rest.HandlerDependency, c 
 				rms = append(rms, StringSearchResultRestModel{
 					Id:          strconv.Itoa(int(row.ItemId)),
 					Name:        row.Name,
-					Compartment: Compartment(row.Compartment).String(),
+					Compartment: row.Compartment.Token(),
 					Subcategory: row.Subcategory,
 				})
 			}
@@ -182,9 +181,14 @@ func parsePagingParams(query url.Values) (int, int, int) {
 	return pageNumber, pageSize, 0
 }
 
-func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{}) {
+func buildPredicates(f filterSpec) ([]string, []interface{}) {
 	var preds []string
 	var args []interface{}
+
+	// Always exclude unknown-compartment items (faces, hairs, skins in the 0xxxx
+	// range): they live in the search index but have no equipment/use/etc role
+	// and would only be visible to clients that target them by id.
+	preds = append(preds, "compartment != 0")
 
 	if f.Compartment != nil {
 		preds = append(preds, "compartment = ?")
@@ -202,17 +206,14 @@ func buildPredicates(f filterSpec, isDefaultBrowse bool) ([]string, []interface{
 			args = append(args, f.JobMaskBits, f.JobMaskBits)
 		}
 	}
-	if isDefaultBrowse {
-		preds = append(preds, "compartment != 0")
-	}
 	return preds, args
 }
 
-func compartmentLogValue(c *Compartment) string {
+func compartmentLogValue(c *inventory.Type) string {
 	if c == nil {
 		return "any"
 	}
-	return c.String()
+	return c.Token()
 }
 
 func stringOrAny(s string) string {

@@ -12,12 +12,17 @@ export interface MonsterAttributes {
   boss: boolean;
   undead: boolean;
   remove_after: number;
+  hp_recovery: number;
+  mp_recovery: number;
   explosive_reward: boolean;
   ffa_loot: boolean;
   buff_to_give: number;
   cp: number;
   remove_on_miss: boolean;
   changeable: boolean;
+  flying: boolean;
+  swimming: boolean;
+  resistances: Record<string, string>;
   first_attack: boolean;
   drop_period: number;
   tag_color: number;

@@ -4,23 +4,30 @@ import (
 	"net/url"
 	"sort"
 	"strings"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 )
 
 type filterSpec struct {
-	Compartment *Compartment
+	Compartment *inventory.Type
 	Subcategory string
 	Class       string
 	ClassIsAny  bool
 	JobMaskBits uint8
 }
 
-var compartmentByToken = map[string]Compartment{
-	"equipment": CompartmentEquipment,
-	"use":       CompartmentUse,
-	"setup":     CompartmentSetup,
-	"etc":       CompartmentEtc,
-	"cash":      CompartmentCash,
+var compartmentByToken = map[string]inventory.Type{
+	"equipment": inventory.TypeValueEquip,
+	"use":       inventory.TypeValueUse,
+	"setup":     inventory.TypeValueSetup,
+	"etc":       inventory.TypeValueETC,
+	"cash":      inventory.TypeValueCash,
 }
+
+// Etc/setup-monster-drop and quest-item ranges expand to multiple subcategory
+// tokens that don't appear in the singleton classification maps; list them
+// explicitly so subcategory filter validation accepts them.
+var rangedEtcSubcategories = []string{"monster-drop", "quest-item"}
 
 var classBitByToken = map[string]uint8{
 	"warrior":  1,
@@ -32,19 +39,18 @@ var classBitByToken = map[string]uint8{
 
 var subcategoryCompartments = buildSubcategoryCompartments()
 
-func buildSubcategoryCompartments() map[string][]Compartment {
-	add := func(m map[string][]Compartment, compartment Compartment, tokens ...string) {
+func buildSubcategoryCompartments() map[string][]inventory.Type {
+	add := func(m map[string][]inventory.Type, compartment inventory.Type, tokens ...string) {
 		for _, tok := range tokens {
 			m[tok] = appendUnique(m[tok], compartment)
 		}
 	}
-	m := map[string][]Compartment{}
+	m := map[string][]inventory.Type{}
 
 	for _, sub := range equipmentArmorByClassification {
-		add(m, CompartmentEquipment, sub)
+		add(m, inventory.TypeValueEquip, sub)
 	}
-	add(m, CompartmentEquipment,
-		"top", "earring",
+	add(m, inventory.TypeValueEquip,
 		"one-handed-sword", "one-handed-axe", "one-handed-mace", "dagger",
 		"wand", "staff",
 		"two-handed-sword", "two-handed-axe", "two-handed-mace",
@@ -55,31 +61,33 @@ func buildSubcategoryCompartments() map[string][]Compartment {
 	)
 
 	for _, sub := range useByClassification {
-		add(m, CompartmentUse, sub)
+		add(m, inventory.TypeValueUse, sub)
 	}
+	add(m, inventory.TypeValueUse, "potion", "scroll")
 	for _, sub := range setupByClassification {
-		add(m, CompartmentSetup, sub)
+		add(m, inventory.TypeValueSetup, sub)
 	}
-	add(m, CompartmentSetup, "other-setup")
+	add(m, inventory.TypeValueSetup, "other-setup")
 	for _, sub := range etcByClassification {
-		add(m, CompartmentEtc, sub)
+		add(m, inventory.TypeValueETC, sub)
 	}
-	add(m, CompartmentEtc, "other-etc")
+	add(m, inventory.TypeValueETC, rangedEtcSubcategories...)
+	add(m, inventory.TypeValueETC, "other-etc")
 	for _, sub := range cashByClassification {
-		add(m, CompartmentCash, sub)
+		add(m, inventory.TypeValueCash, sub)
 	}
-	add(m, CompartmentCash, "other-cash")
+	add(m, inventory.TypeValueCash, "other-cash")
 
 	// Plain "other" is a fallback Classify only ever returns for Equipment and Use.
 	// Setup/Etc/Cash use "other-setup"/"other-etc"/"other-cash" instead, so accepting
 	// bare "other" under those compartments would surface zero rows on every query.
-	add(m, CompartmentEquipment, "other")
-	add(m, CompartmentUse, "other")
+	add(m, inventory.TypeValueEquip, "other")
+	add(m, inventory.TypeValueUse, "other")
 
 	return m
 }
 
-func appendUnique(xs []Compartment, c Compartment) []Compartment {
+func appendUnique(xs []inventory.Type, c inventory.Type) []inventory.Type {
 	for _, x := range xs {
 		if x == c {
 			return xs
@@ -123,7 +131,7 @@ func parseFilters(query url.Values) (filterSpec, int) {
 	}
 
 	if raw := query.Get("filter[class]"); raw != "" {
-		if spec.Compartment == nil || *spec.Compartment != CompartmentEquipment {
+		if spec.Compartment == nil || *spec.Compartment != inventory.TypeValueEquip {
 			return spec, 400
 		}
 		raw = strings.ToLower(raw)

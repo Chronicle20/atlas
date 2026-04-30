@@ -9,7 +9,7 @@ import (
 	"atlas-gachapons/reward"
 	"atlas-gachapons/seed"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-gachapons/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"

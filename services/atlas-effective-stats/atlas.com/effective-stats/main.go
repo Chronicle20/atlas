@@ -8,7 +8,7 @@ import (
 	session2 "atlas-effective-stats/kafka/consumer/session"
 	"atlas-effective-stats/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-effective-stats/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -10,7 +10,7 @@ import (
 	drop3 "atlas-drops-information/reactor/drop"
 	"atlas-drops-information/seed"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-drops-information/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"

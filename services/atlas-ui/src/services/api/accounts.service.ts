@@ -1,6 +1,8 @@
 import { api } from "@/lib/api/client";
 import { buildQueryString, type ServiceOptions, type QueryOptions } from "@/lib/api/query-params";
+import { tenantHeaders } from "@/lib/headers";
 import type { Account, AccountAttributes } from "@/types/models/account";
+import type { Tenant } from "@/types/models/tenant";
 
 const BASE_PATH = "/api/accounts";
 
@@ -112,6 +114,44 @@ export const accountsService = {
     };
   },
 
+  async createAccount(
+    tenant: Tenant,
+    payload: { name: string; password: string },
+  ): Promise<void> {
+    const headers = tenantHeaders(tenant);
+    headers.set("Content-Type", "application/json");
+
+    const body = {
+      data: {
+        type: "accounts",
+        attributes: {
+          name: payload.name,
+          password: payload.password,
+        },
+      },
+    };
+
+    const response = await fetch(`${BASE_PATH}/`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+
+    if (!response.ok) {
+      let message = `createAccount failed with status ${response.status}`;
+      try {
+        const errBody = (await response.json()) as { error?: string; message?: string };
+        if (errBody.error) message = errBody.error;
+        else if (errBody.message) message = errBody.message;
+      } catch {
+        // non-JSON error body; keep the default message
+      }
+      const err = new Error(message) as Error & { status?: number };
+      err.status = response.status;
+      throw err;
+    }
+  },
+
   async terminateMultipleSessions(
     accountIds: string[],
     options?: ServiceOptions,
@@ -147,4 +187,4 @@ export const accountsService = {
   },
 };
 
-export type { Account, AccountAttributes, AccountQueryOptions };
+export type { Account, AccountAttributes, AccountQueryOptions, Tenant };

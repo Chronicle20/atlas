@@ -41,7 +41,7 @@ type Processor interface {
 	ChangeFace(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId uint32) error
 	ChangeSkinAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
 	ChangeSkin(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, styleId byte) error
-	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error
+	RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error
 	RequestDeleteCharacter(transactionId uuid.UUID, characterId uint32, worldId world.Id) error
 	SetHPAndEmit(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
 	SetHP(mb *message.Buffer) func(transactionId uuid.UUID, ch channel.Model, characterId uint32, amount uint16) error
@@ -205,9 +205,9 @@ func (p *ProcessorImpl) ChangeSkin(mb *message.Buffer) func(transactionId uuid.U
 	}
 }
 
-func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id) error {
+func (p *ProcessorImpl) RequestCreateCharacter(transactionId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, hp uint16, mp uint16, jobId job.Id, gender byte, face uint32, hair uint32, skin byte, mapId _map.Id, gm int, meso uint32) error {
 	return message.Emit(p.p)(func(mb *message.Buffer) error {
-		return mb.Put(character2.EnvCommandTopic, RequestCreateCharacterProvider(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId))
+		return mb.Put(character2.EnvCommandTopic, RequestCreateCharacterProvider(transactionId, accountId, worldId, name, level, strength, dexterity, intelligence, luck, hp, mp, jobId, gender, face, hair, skin, mapId, gm, meso))
 	})
 }
 

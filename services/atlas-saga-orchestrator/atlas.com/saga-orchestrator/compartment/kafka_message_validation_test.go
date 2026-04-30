@@ -49,8 +49,9 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
-		
+
 		// Verify provider is created
 		require.NotNil(t, provider, "Provider should be created")
 		
@@ -100,8 +101,9 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
-		
+
 		// Generate messages multiple times to ensure consistency
 		messages1, err1 := provider()
 		require.NoError(t, err1)
@@ -132,11 +134,12 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
-		
+
 		messages, err := provider()
 		require.NoError(t, err)
-		
+
 		// Verify the message is compatible with Kafka transport
 		kafkaMessage := messages[0]
 		assert.IsType(t, kafka.Message{}, kafkaMessage, "Should be a valid Kafka message")
@@ -195,6 +198,7 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 						tc.templateId,
 						tc.quantity,
 						time.Time{},
+						false,
 					)
 					
 					messages, err := provider()
@@ -225,8 +229,9 @@ func TestRequestCreateAndEquipAssetKafkaMessageEmission(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
-		
+
 		// Record timing
 		startTime := time.Now()
 		messages, err := provider()
@@ -266,14 +271,15 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
-		
+
 		messages, err := provider()
 		require.NoError(t, err)
 		require.Len(t, messages, 1)
-		
+
 		message := messages[0]
-		
+
 		// Verify message structure matches what compartment service expects
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(message.Value, &command)
@@ -309,8 +315,8 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 		
 		inventoryType, _ := inventory.TypeFromItemId(item.Id(templateId))
 		
-		provider1 := RequestCreateAssetCommandProvider(transactionId, char1, inventoryType, templateId, quantity, time.Time{})
-		provider2 := RequestCreateAssetCommandProvider(transactionId, char2, inventoryType, templateId, quantity, time.Time{})
+		provider1 := RequestCreateAssetCommandProvider(transactionId, char1, inventoryType, templateId, quantity, time.Time{}, false)
+		provider2 := RequestCreateAssetCommandProvider(transactionId, char2, inventoryType, templateId, quantity, time.Time{}, false)
 		
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
@@ -323,7 +329,7 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 			"Different characters should have different partition keys")
 		
 		// Same character should have same partition key
-		provider3 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventoryType, templateId, quantity, time.Time{})
+		provider3 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventoryType, templateId, quantity, time.Time{}, false)
 		messages3, err3 := provider3()
 		require.NoError(t, err3)
 		
@@ -343,6 +349,7 @@ func TestRequestCreateAndEquipAssetMessageHandling(t *testing.T) {
 			templateId,
 			quantity,
 			time.Time{},
+			false,
 		)
 		
 		messages, err := provider()

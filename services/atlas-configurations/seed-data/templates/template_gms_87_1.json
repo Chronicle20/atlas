@@ -1171,7 +1171,8 @@
       "bottoms": [1061160],
       "shoes": [1072418],
       "weapons": [1302132]
-    }]
+    }],
+    "presets": []
   },
   "worlds": [{
       "name": "Scania",

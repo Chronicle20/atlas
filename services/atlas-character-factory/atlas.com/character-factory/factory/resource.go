@@ -3,7 +3,9 @@ package factory
 import (
 	"atlas-character-factory/rest"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -13,32 +15,97 @@ import (
 )
 
 const (
-	CreateCharacter = "create_character"
+	CreateCharacter  = "create_character"
+	CreateFromPreset = "create_from_preset"
+	GetNameValidity  = "get_name_validity"
 )
 
-// writeErrorResponse writes a JSON:API compliant error response
-func writeErrorResponse(w http.ResponseWriter, statusCode int, message string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
+func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
+	return func(router *mux.Router, l logrus.FieldLogger) {
+		r := router.PathPrefix("/characters/seed").Subrouter()
+		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
 
-	errorResponse := map[string]interface{}{
-		"error": map[string]interface{}{
-			"status": statusCode,
-			"title":  http.StatusText(statusCode),
-			"detail": message,
-		},
+		cr := router.PathPrefix("/characters").Subrouter()
+		// TODO(atlas-ui): factory.service.ts must wrap POST /characters/from-preset bodies as
+		// JSON:API: {"data":{"type":"preset-create","attributes":{...}}}. A separate UI agent
+		// is responsible for that change.
+		cr.HandleFunc("/from-preset", rest.RegisterInputHandler[PresetCreateRestModel](l)(si)(CreateFromPreset, handleCreateFromPreset)).Methods(http.MethodPost)
+		cr.HandleFunc("/name-validity", rest.RegisterHandler(l)(si)(GetNameValidity, handleNameValidity)).Methods(http.MethodGet)
 	}
+}
 
-	_ = json.NewEncoder(w).Encode(errorResponse)
+func categorizePresetError(err error) int {
+	var nie *NameInvalidError
+	switch {
+	case errors.Is(err, ErrInvalidPresetId):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrPresetNotFound):
+		return http.StatusNotFound
+	case errors.As(err, &nie):
+		return http.StatusBadRequest
+	case errors.Is(err, ErrNameDuplicate):
+		return http.StatusConflict
+	case errors.Is(err, ErrAtlasDataUnreachable):
+		return http.StatusBadGateway
+	case errors.Is(err, ErrPresetValidation):
+		return http.StatusBadRequest
+	default:
+		return http.StatusInternalServerError
+	}
+}
+
+// handleCreateFromPreset handles POST /characters/from-preset.
+// The request body must be JSON:API encoded with type "preset-create".
+func handleCreateFromPreset(d *rest.HandlerDependency, c *rest.HandlerContext, in PresetCreateRestModel) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		processor := NewProcessor(d.Logger())
+		transactionId, err := processor.CreateFromPreset(d.Context(), in)
+		if err != nil {
+			statusCode := categorizePresetError(err)
+			w.WriteHeader(statusCode)
+			return
+		}
+
+		response := CreateCharacterResponse{TransactionId: transactionId}
+		w.WriteHeader(http.StatusAccepted)
+		server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
+	}
+}
+
+func handleNameValidity(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		name := q.Get("name")
+		widRaw := q.Get("worldId")
+		if name == "" || widRaw == "" {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		wid, err := strconv.ParseUint(widRaw, 10, 8)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		processor := NewProcessor(d.Logger())
+		res, err := processor.CheckNameValidity(d.Context(), name, byte(wid))
+		if err != nil {
+			d.Logger().WithError(err).Error("name-validity passthrough failed")
+			w.WriteHeader(http.StatusBadGateway)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(res)
+	}
 }
 
 // categorizeError determines the appropriate HTTP status code for different error types
+// used by handleCreateCharacter.
 func categorizeError(err error) int {
 	if err == nil {
 		return http.StatusOK
 	}
-
-	errMsg := err.Error()
 
 	// Validation errors (user input problems)
 	validationErrors := []string{
@@ -55,33 +122,14 @@ func categorizeError(err error) int {
 		"chosen weapon is not valid for job",
 	}
 
-	for _, validationErr := range validationErrors {
-		if strings.Contains(errMsg, validationErr) {
+	errMsg := err.Error()
+	for _, ve := range validationErrors {
+		if strings.Contains(errMsg, ve) {
 			return http.StatusBadRequest
 		}
 	}
 
-	// Configuration/template errors (system issues)
-	if strings.Contains(errMsg, "unable to find template validation configuration") ||
-		strings.Contains(errMsg, "Unable to find template validation configuration") {
-		return http.StatusInternalServerError
-	}
-
-	// Saga creation errors (internal service errors)
-	if strings.Contains(errMsg, "unable to emit character creation saga") ||
-		strings.Contains(errMsg, "Unable to emit character creation saga") {
-		return http.StatusInternalServerError
-	}
-
-	// Default to internal server error for unknown errors
 	return http.StatusInternalServerError
-}
-
-func InitResource(si jsonapi.ServerInformation) server.RouteInitializer {
-	return func(router *mux.Router, l logrus.FieldLogger) {
-		r := router.PathPrefix("/characters/seed").Subrouter()
-		r.HandleFunc("", rest.RegisterInputHandler[RestModel](l)(si)(CreateCharacter, handleCreateCharacter)).Methods(http.MethodPost)
-	}
 }
 
 func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
@@ -90,19 +138,14 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 		transactionId, err := processor.Create(d.Context(), input)
 		if err != nil {
 			d.Logger().WithError(err).Error("Error creating character from seed.")
-
-			// Determine appropriate HTTP status code based on error type
-			statusCode := categorizeError(err)
-			writeErrorResponse(w, statusCode, err.Error())
+			w.WriteHeader(categorizeError(err))
 			return
 		}
 
-		// Create response with transaction ID
 		response := CreateCharacterResponse{
 			TransactionId: transactionId,
 		}
 
-		// Return 202 Accepted with transaction ID
 		w.WriteHeader(http.StatusAccepted)
 		server.MarshalResponse[CreateCharacterResponse](d.Logger())(w)(c.ServerInformation())(map[string][]string{})(response)
 	}

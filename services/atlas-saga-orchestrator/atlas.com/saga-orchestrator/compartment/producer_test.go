@@ -80,7 +80,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 	inventoryType := inventory.Type(1)
 
 	t.Run("creates valid Kafka message", func(t *testing.T) {
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{})
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, false)
 		require.NotNil(t, provider)
 
 		messages, err := provider()
@@ -110,7 +110,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 	})
 
 	t.Run("handles zero quantity", func(t *testing.T) {
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, 0, time.Time{})
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, 0, time.Time{}, false)
 		messages, err := provider()
 		require.NoError(t, err)
 		require.Len(t, messages, 1)
@@ -123,7 +123,7 @@ func TestRequestCreateAssetCommandProvider(t *testing.T) {
 
 	t.Run("handles maximum quantity", func(t *testing.T) {
 		maxQuantity := uint32(4294967295) // max uint32
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, maxQuantity, time.Time{})
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, maxQuantity, time.Time{}, false)
 		messages, err := provider()
 		require.NoError(t, err)
 		require.Len(t, messages, 1)
@@ -232,7 +232,7 @@ func TestMessageKeyGeneration(t *testing.T) {
 		characterId := uint32(12345)
 		
 		// Create multiple messages for same character
-		provider1 := RequestCreateAssetCommandProvider(uuid.New(), characterId, inventory.Type(1), 1302000, 1, time.Time{})
+		provider1 := RequestCreateAssetCommandProvider(uuid.New(), characterId, inventory.Type(1), 1302000, 1, time.Time{}, false)
 		provider2 := RequestEquipAssetCommandProvider(uuid.New(), characterId, 1, 5, -1)
 
 		messages1, err1 := provider1()
@@ -252,8 +252,8 @@ func TestMessageKeyGeneration(t *testing.T) {
 		char1 := uint32(12345)
 		char2 := uint32(67890)
 
-		provider1 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventory.Type(1), 1302000, 1, time.Time{})
-		provider2 := RequestCreateAssetCommandProvider(uuid.New(), char2, inventory.Type(1), 1302000, 1, time.Time{})
+		provider1 := RequestCreateAssetCommandProvider(uuid.New(), char1, inventory.Type(1), 1302000, 1, time.Time{}, false)
+		provider2 := RequestCreateAssetCommandProvider(uuid.New(), char2, inventory.Type(1), 1302000, 1, time.Time{}, false)
 
 		messages1, err1 := provider1()
 		require.NoError(t, err1)
@@ -274,7 +274,7 @@ func TestCommandTimestampValidation(t *testing.T) {
 		quantity := uint32(1)
 
 		beforeTime := time.Now()
-		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventory.Type(1), templateId, quantity, time.Time{})
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventory.Type(1), templateId, quantity, time.Time{}, false)
 		messages, err := provider()
 		afterTime := time.Now()
 
@@ -284,13 +284,53 @@ func TestCommandTimestampValidation(t *testing.T) {
 		var command compartment.Command[compartment.CreateAssetCommandBody]
 		err = json.Unmarshal(messages[0].Value, &command)
 		require.NoError(t, err)
-		
+
 		// Verify transaction ID is set
 		assert.Equal(t, transactionId, command.TransactionId)
-		
+
 		// Verify timestamp is reasonable (within test execution window)
 		// This is a basic sanity check - in real implementation, timestamp
 		// would be set by the producer infrastructure
 		assert.True(t, beforeTime.Before(afterTime) || beforeTime.Equal(afterTime))
+	})
+}
+
+func TestRequestCreateAssetCommandProvider_UseAverageStats(t *testing.T) {
+	transactionId := uuid.New()
+	characterId := uint32(12345)
+	templateId := uint32(1302000)
+	quantity := uint32(1)
+	inventoryType := inventory.Type(1)
+
+	t.Run("useAverageStats=true is serialised into kafka message body", func(t *testing.T) {
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, true)
+		require.NotNil(t, provider)
+
+		messages, err := provider()
+		require.NoError(t, err)
+		require.Len(t, messages, 1)
+
+		var command compartment.Command[compartment.CreateAssetCommandBody]
+		err = json.Unmarshal(messages[0].Value, &command)
+		require.NoError(t, err)
+
+		assert.True(t, command.Body.UseAverageStats, "expected UseAverageStats=true in kafka body")
+
+		// Also check raw JSON contains the field
+		raw := string(messages[0].Value)
+		assert.Contains(t, raw, `"useAverageStats":true`)
+	})
+
+	t.Run("useAverageStats=false is omitted from kafka message body (omitempty)", func(t *testing.T) {
+		provider := RequestCreateAssetCommandProvider(transactionId, characterId, inventoryType, templateId, quantity, time.Time{}, false)
+		messages, err := provider()
+		require.NoError(t, err)
+		require.Len(t, messages, 1)
+
+		var command compartment.Command[compartment.CreateAssetCommandBody]
+		err = json.Unmarshal(messages[0].Value, &command)
+		require.NoError(t, err)
+
+		assert.False(t, command.Body.UseAverageStats)
 	})
 }

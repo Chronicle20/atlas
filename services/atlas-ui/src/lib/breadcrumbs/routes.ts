@@ -221,6 +221,11 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
     label: 'Templates',
     parent: '/templates/[id]/character',
   },
+  {
+    pattern: '/templates/[id]/character/presets',
+    label: 'Character Presets',
+    parent: '/templates/[id]/character',
+  },
 
   // Tenant routes
   {
@@ -257,6 +262,11 @@ export const ROUTE_CONFIGS: RouteConfig[] = [
   {
     pattern: '/tenants/[id]/character/templates',
     label: 'Templates',
+    parent: '/tenants/[id]/character',
+  },
+  {
+    pattern: '/tenants/[id]/character/presets',
+    label: 'Character Presets',
     parent: '/tenants/[id]/character',
   },
 ];
@@ -443,6 +453,7 @@ export const ROUTE_PATTERNS = {
   TEMPLATE_WORLDS: '/templates/[id]/worlds',
   TEMPLATE_CHARACTER: '/templates/[id]/character',
   TEMPLATE_CHARACTER_TEMPLATES: '/templates/[id]/character/templates',
+  TEMPLATE_CHARACTER_PRESETS: '/templates/[id]/character/presets',
   MONSTERS: '/monsters',
   MONSTER_DETAIL: '/monsters/[id]',
   ITEMS: '/items',
@@ -461,4 +472,5 @@ export const ROUTE_PATTERNS = {
   TENANT_WORLDS: '/tenants/[id]/worlds',
   TENANT_CHARACTER: '/tenants/[id]/character',
   TENANT_CHARACTER_TEMPLATES: '/tenants/[id]/character/templates',
+  TENANT_CHARACTER_PRESETS: '/tenants/[id]/character/presets',
 } as const;

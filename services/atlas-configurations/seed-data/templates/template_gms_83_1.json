@@ -2685,6 +2685,388 @@
         ],
         "skills": []
       }
+    ],
+    "presets": [
+      {
+        "id": "1645f671-a3bd-4ef6-a2a5-a8714e661f74",
+        "attributes": {
+          "name": "Hero — 4th job",
+          "description": "Full 4th-job Hero with Combat Orders, Stance, etc.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 112,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminHero",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1402046, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1121008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "97784164-9ff9-4f0c-aef9-5a975c47d2ad",
+        "attributes": {
+          "name": "Paladin — 4th job",
+          "description": "Full 4th-job Paladin.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 122,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminPaladin",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1221012, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "5d3b41d2-4301-46f6-8b17-0d660dcf4961",
+        "attributes": {
+          "name": "Dark Knight — 4th job",
+          "description": "Full 4th-job Dark Knight.",
+          "tags": ["4th-job", "warrior", "explorer"],
+          "jobId": 132,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminDarkKnight",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 1321010, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "6f177876-36c1-4206-8935-455aa2f95d94",
+        "attributes": {
+          "name": "F/P ArchMage — 4th job",
+          "description": "Full 4th-job Fire/Poison ArchMage.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 212,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminFPMage",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1382008, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2121008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "6b11335d-536d-4184-bf69-8edee94a1f96",
+        "attributes": {
+          "name": "I/L ArchMage — 4th job",
+          "description": "Full 4th-job Ice/Lightning ArchMage.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 222,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminILMage",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1382008, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "928639cb-ba87-4e6b-b33b-e54520fbd910",
+        "attributes": {
+          "name": "Bishop — 4th job",
+          "description": "Full 4th-job Bishop.",
+          "tags": ["4th-job", "magician", "explorer"],
+          "jobId": 232,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBishop",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1382008, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 2321009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "3ab10755-5187-4493-9217-ebddc705067b",
+        "attributes": {
+          "name": "Bowmaster — 4th job",
+          "description": "Full 4th-job Bowmaster.",
+          "tags": ["4th-job", "bowman", "explorer"],
+          "jobId": 312,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBowmaster",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1452057, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 3121009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "aa6cbb45-1ef9-4bb0-9368-21297edad68c",
+        "attributes": {
+          "name": "Marksman — 4th job",
+          "description": "Full 4th-job Marksman.",
+          "tags": ["4th-job", "bowman", "explorer"],
+          "jobId": 322,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminMarksman",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1472063, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 3221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "ba0b2a82-1854-4ee0-8740-6cbfa86a65c0",
+        "attributes": {
+          "name": "Night Lord — 4th job",
+          "description": "Full 4th-job Night Lord.",
+          "tags": ["4th-job", "thief", "explorer"],
+          "jobId": 412,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 4, "int": 4, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminNightLord",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1492014, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 4121009, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "8e0d8b65-dff0-4696-a06d-b16317f6ced7",
+        "attributes": {
+          "name": "Shadower — 4th job",
+          "description": "Full 4th-job Shadower.",
+          "tags": ["4th-job", "thief", "explorer"],
+          "jobId": 422,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 4, "int": 4, "luk": 999, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminShadower",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1332071, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 4221008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "525dc913-5988-4599-b12a-a14eb68253e0",
+        "attributes": {
+          "name": "Buccaneer — 4th job",
+          "description": "Full 4th-job Buccaneer.",
+          "tags": ["4th-job", "pirate", "explorer"],
+          "jobId": 512,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminBuccaneer",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 5121008, "level": 5 }
+          ]
+        }
+      },
+      {
+        "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
+        "attributes": {
+          "name": "Corsair — 4th job",
+          "description": "Full 4th-job Corsair.",
+          "tags": ["4th-job", "pirate", "explorer"],
+          "jobId": 522,
+          "gender": 0,
+          "face": 20000,
+          "hair": 30030,
+          "hairColor": 0,
+          "skinColor": 0,
+          "mapId": 240000000,
+          "level": 200,
+          "meso": 100000000,
+          "gm": 0,
+          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "defaultName": "AdminCorsair",
+          "equipment": [
+            { "templateId": 1002357, "useAverageStats": true }
+          ],
+          "inventory": [
+            { "templateId": 2000004, "quantity": 200 },
+            { "templateId": 2000005, "quantity": 200 },
+            { "templateId": 2030019, "quantity": 50 }
+          ],
+          "skills": [
+            { "skillId": 5221010, "level": 5 }
+          ]
+        }
+      }
     ]
   },
   "npcs": [

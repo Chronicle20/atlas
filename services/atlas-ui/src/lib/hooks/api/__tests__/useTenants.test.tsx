@@ -67,7 +67,7 @@ const mockTenantConfig: TenantConfig = {
     majorVersion: 83,
     minorVersion: 1,
     usesPin: false,
-    characters: { templates: [] },
+    characters: { templates: [], presets: [] },
     npcs: [],
     socket: { handlers: [], writers: [] },
     worlds: [],

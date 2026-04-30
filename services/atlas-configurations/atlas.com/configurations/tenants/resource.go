@@ -1,7 +1,11 @@
 package tenants
 
 import (
+	"atlas-configurations/data"
 	"atlas-configurations/rest"
+	"atlas-configurations/tenants/characters/preset"
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -65,10 +69,20 @@ func handleUpdateConfigurationTenant(db *gorm.DB) rest.InputHandler[RestModel] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, input RestModel) http.HandlerFunc {
 		return rest.ParseTenantId(d.Logger(), func(tenantId uuid.UUID) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-				err := NewProcessor(d.Logger(), d.Context(), db).UpdateById(tenantId, input)
+				p := NewProcessor(d.Logger(), d.Context(), db).
+					WithValidator(preset.NewValidator(data.NewClient(d.Logger())))
+				err := p.UpdateById(tenantId, input)
 				if err != nil {
+					var ve *validationFailureError
+					if errors.As(err, &ve) {
+						w.Header().Set("Content-Type", "application/vnd.api+json")
+						w.WriteHeader(http.StatusBadRequest)
+						_ = json.NewEncoder(w).Encode(map[string]any{"errors": ve.AsJSONAPIErrors()})
+						return
+					}
 					d.Logger().WithError(err).Errorf("Unable to update configuration tenant.")
 					w.WriteHeader(http.StatusInternalServerError)
+					return
 				}
 			}
 		})

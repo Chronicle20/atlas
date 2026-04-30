@@ -12,6 +12,7 @@ type RestModel struct {
 	Action        bool               `json:"action"`
 	Element       string             `json:"element"`
 	AnimationTime uint32             `json:"animationTime"`
+	MaxLevel      uint8              `json:"maxLevel"`
 	Effects       []effect.RestModel `json:"effects"`
 }
 

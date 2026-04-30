@@ -49,6 +49,7 @@ const TemplatesWorldsPage = lazy(() => import("@/pages/TemplatesWorldsPage").the
 const TemplatesWritersPage = lazy(() => import("@/pages/TemplatesWritersPage").then(m => ({ default: m.TemplatesWritersPage })));
 const TemplatesPropertiesPage = lazy(() => import("@/pages/TemplatesPropertiesPage").then(m => ({ default: m.TemplatesPropertiesPage })));
 const TemplatesCharacterTemplatesPage = lazy(() => import("@/pages/TemplatesCharacterTemplatesPage").then(m => ({ default: m.TemplatesCharacterTemplatesPage })));
+const TemplatesCharacterPresetsPage = lazy(() => import("@/pages/TemplatesCharacterPresetsPage").then(m => ({ default: m.TemplatesCharacterPresetsPage })));
 const TenantsPage = lazy(() => import("@/pages/TenantsPage").then(m => ({ default: m.TenantsPage })));
 const TenantDetailPage = lazy(() => import("@/pages/TenantDetailPage").then(m => ({ default: m.TenantDetailPage })));
 const TenantsHandlersPage = lazy(() => import("@/pages/TenantsHandlersPage").then(m => ({ default: m.TenantsHandlersPage })));
@@ -56,6 +57,7 @@ const TenantsWorldsPage = lazy(() => import("@/pages/TenantsWorldsPage").then(m 
 const TenantsWritersPage = lazy(() => import("@/pages/TenantsWritersPage").then(m => ({ default: m.TenantsWritersPage })));
 const TenantsPropertiesPage = lazy(() => import("@/pages/TenantsPropertiesPage").then(m => ({ default: m.TenantsPropertiesPage })));
 const TenantsCharacterTemplatesPage = lazy(() => import("@/pages/TenantsCharacterTemplatesPage").then(m => ({ default: m.TenantsCharacterTemplatesPage })));
+const TenantsCharacterPresetsPage = lazy(() => import("@/pages/TenantsCharacterPresetsPage").then(m => ({ default: m.TenantsCharacterPresetsPage })));
 
 export function App() {
   return (
@@ -105,6 +107,7 @@ export function App() {
                     <Route path="/templates/:id/writers" element={<TemplatesWritersPage />} />
                     <Route path="/templates/:id/properties" element={<TemplatesPropertiesPage />} />
                     <Route path="/templates/:id/character/templates" element={<TemplatesCharacterTemplatesPage />} />
+                    <Route path="/templates/:id/character/presets" element={<TemplatesCharacterPresetsPage />} />
                     <Route path="/tenants" element={<TenantsPage />} />
                     <Route path="/tenants/:id" element={<TenantDetailPage />} />
                     <Route path="/tenants/:id/handlers" element={<TenantsHandlersPage />} />
@@ -112,6 +115,7 @@ export function App() {
                     <Route path="/tenants/:id/writers" element={<TenantsWritersPage />} />
                     <Route path="/tenants/:id/properties" element={<TenantsPropertiesPage />} />
                     <Route path="/tenants/:id/character/templates" element={<TenantsCharacterTemplatesPage />} />
+                    <Route path="/tenants/:id/character/presets" element={<TenantsCharacterPresetsPage />} />
                   </Route>
                   <Route path="*" element={<NotFoundPage />} />
                 </Routes>

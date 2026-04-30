@@ -1,8 +1,11 @@
 package factory
 
 import (
+	"atlas-character-factory/character"
 	"atlas-character-factory/configuration"
+	"atlas-character-factory/configuration/tenant/characters/preset"
 	"atlas-character-factory/configuration/tenant/characters/template"
+	"atlas-character-factory/data"
 	job2 "atlas-character-factory/job"
 	"atlas-character-factory/saga"
 	"context"
@@ -11,25 +14,59 @@ import (
 	"time"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
+var (
+	ErrInvalidPresetId      = errors.New("invalid preset id")
+	ErrPresetNotFound       = errors.New("preset not found")
+	ErrAtlasDataUnreachable = errors.New("atlas-data unreachable")
+	ErrPresetValidation     = errors.New("preset validation failed")
+	ErrNameDuplicate        = errors.New("name duplicate")
+)
+
+// NameInvalidError is returned when the name validity check rejects the name for a
+// reason other than duplication.
+type NameInvalidError struct {
+	Reason string
+	Detail string
+}
+
+func (e *NameInvalidError) Error() string { return "invalid name: " + e.Reason }
+
 // Processor defines the interface for character creation operations
 type Processor interface {
 	Create(ctx context.Context, input RestModel) (string, error)
+	CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error)
+	CheckNameValidity(ctx context.Context, name string, worldId byte) (character.NameValidityResult, error)
 }
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
-	l logrus.FieldLogger
+	l            logrus.FieldLogger
+	presetClient configuration.PresetClient
+	nameClient   character.NameValidityClient
+	dataClient   data.Client
 }
 
-// NewProcessor creates a new Processor instance
+// NewProcessor creates a new Processor instance with real HTTP clients.
 func NewProcessor(l logrus.FieldLogger) Processor {
-	return &ProcessorImpl{l: l}
+	return &ProcessorImpl{
+		l:            l,
+		presetClient: configuration.NewPresetClient(l),
+		nameClient:   character.NewNameValidityClient(l),
+		dataClient:   data.NewClient(l),
+	}
+}
+
+// NewProcessorWithClients is the test seam — allows injection of mocks.
+func NewProcessorWithClients(l logrus.FieldLogger, pc configuration.PresetClient, nc character.NameValidityClient, dc data.Client) Processor {
+	return &ProcessorImpl{l: l, presetClient: pc, nameClient: nc, dataClient: dc}
 }
 
 // Create validates and initiates character creation via saga
@@ -203,6 +240,165 @@ func buildCharacterCreationSaga(transactionId uuid.UUID, input RestModel, tmpl t
 			SkillId:     skillId,
 			Level:       1,
 			MasterLevel: 0,
+			Expiration:  time.Time{},
+		})
+	}
+
+	return builder.Build()
+}
+
+// CreateFromPreset resolves a named preset from configuration, validates the
+// character name, re-validates all item and skill ids against atlas-data, then
+// builds and emits a CharacterCreation saga.
+func (p *ProcessorImpl) CreateFromPreset(ctx context.Context, in PresetCreateRestModel) (string, error) {
+	presetId, err := uuid.Parse(in.PresetId)
+	if err != nil {
+		return "", ErrInvalidPresetId
+	}
+
+	t := tenant.MustFromContext(ctx)
+	pr, err := p.presetClient.GetById(ctx, t.Id(), presetId)
+	if err != nil {
+		if errors.Is(err, configuration.ErrPresetNotFound) {
+			return "", ErrPresetNotFound
+		}
+		return "", err
+	}
+
+	nv, err := p.nameClient.Check(ctx, in.Name, in.WorldId)
+	if err != nil {
+		return "", err
+	}
+	if !nv.Valid {
+		if nv.Reason == "duplicate" {
+			return "", ErrNameDuplicate
+		}
+		return "", &NameInvalidError{Reason: nv.Reason, Detail: nv.Detail}
+	}
+
+	// Re-validate equipment + inventory against atlas-data
+	seenSlots := map[uint32]bool{}
+	for _, eq := range pr.Attributes.Equipment {
+		info, err := p.dataClient.GetItemById(ctx, eq.TemplateId)
+		if err != nil {
+			return "", fmt.Errorf("%w: equipment %d", ErrPresetValidation, eq.TemplateId)
+		}
+		if !info.Equipable {
+			return "", fmt.Errorf("%w: not equippable: %d", ErrPresetValidation, eq.TemplateId)
+		}
+		bucket := eq.TemplateId / 10000
+		if seenSlots[bucket] {
+			return "", fmt.Errorf("%w: equipment slot collision: %d", ErrPresetValidation, eq.TemplateId)
+		}
+		seenSlots[bucket] = true
+	}
+	for _, inv := range pr.Attributes.Inventory {
+		if _, err := p.dataClient.GetItemById(ctx, inv.TemplateId); err != nil {
+			return "", fmt.Errorf("%w: inventory %d", ErrPresetValidation, inv.TemplateId)
+		}
+	}
+
+	// Batch-fetch skill MaxLevels.
+	skillsById := map[uint32]data.SkillInfo{}
+	if len(pr.Attributes.Skills) > 0 {
+		ids := make([]uint32, 0, len(pr.Attributes.Skills))
+		for _, sk := range pr.Attributes.Skills {
+			ids = append(ids, sk.SkillId)
+		}
+		got, err := p.dataClient.GetSkillsByIds(ctx, ids)
+		if err != nil {
+			return "", ErrAtlasDataUnreachable
+		}
+		for _, sk := range got {
+			skillsById[sk.Id] = sk
+		}
+		for _, sk := range pr.Attributes.Skills {
+			if _, ok := skillsById[sk.SkillId]; !ok {
+				return "", fmt.Errorf("%w: skill not found: %d", ErrPresetValidation, sk.SkillId)
+			}
+		}
+	}
+
+	transactionId := uuid.New()
+	sg := buildPresetCharacterCreationSaga(transactionId, in, pr, skillsById)
+	if err := saga.NewProcessor(p.l, ctx).Create(sg); err != nil {
+		return "", err
+	}
+	return transactionId.String(), nil
+}
+
+// CheckNameValidity delegates the name validity check to atlas-character via the injected client.
+func (p *ProcessorImpl) CheckNameValidity(ctx context.Context, name string, worldId byte) (character.NameValidityResult, error) {
+	return p.nameClient.Check(ctx, name, worldId)
+}
+
+// buildPresetCharacterCreationSaga constructs a CharacterCreation saga from a preset
+// configuration. Equipment goes through create_and_equip_asset steps; the legacy
+// top/bottom/shoes/weapon slots are set to 0.
+func buildPresetCharacterCreationSaga(
+	transactionId uuid.UUID,
+	in PresetCreateRestModel,
+	pr preset.RestModel,
+	skillsById map[uint32]data.SkillInfo,
+) saga.Saga {
+	a := pr.Attributes
+	builder := saga.NewBuilder().
+		SetTransactionId(transactionId).
+		SetSagaType(saga.CharacterCreation).
+		SetInitiatedBy(fmt.Sprintf("account_%d", in.AccountId)).
+		SetTimeout(10 * time.Second)
+
+	// Step 1: create_character
+	builder.AddStep("create_character", saga.Pending, saga.CreateCharacter, saga.CharacterCreatePayload{
+		AccountId:    in.AccountId,
+		WorldId:      world.Id(in.WorldId),
+		Name:         in.Name,
+		Gender:       a.Gender,
+		Level:        a.Level,
+		Strength:     a.Stats.Str,
+		Dexterity:    a.Stats.Dex,
+		Intelligence: a.Stats.Int,
+		Luck:         a.Stats.Luk,
+		JobId:        job.Id(a.JobId),
+		Hp:           a.Stats.Hp,
+		Mp:           a.Stats.Mp,
+		Face:         a.Face,
+		Hair:         a.Hair + a.HairColor,
+		Skin:         a.SkinColor,
+		Top:          0,
+		Bottom:       0,
+		Shoes:        0,
+		Weapon:       0,
+		MapId:        _map.Id(a.MapId),
+		Gm:           a.Gm,
+		Meso:         a.Meso,
+	})
+
+	// Steps 2..N+1: award_asset for each inventory item
+	for i, inv := range a.Inventory {
+		builder.AddStep(fmt.Sprintf("award_asset_%d", i), saga.Pending, saga.AwardAsset, saga.AwardItemActionPayload{
+			CharacterId: 0,
+			Item:        saga.ItemPayload{TemplateId: inv.TemplateId, Quantity: inv.Quantity},
+		})
+	}
+
+	// Steps N+2..N+M+1: create_and_equip_asset for each equipment entry
+	for i, eq := range a.Equipment {
+		builder.AddStep(fmt.Sprintf("create_and_equip_asset_%d", i), saga.Pending, saga.CreateAndEquipAsset, saga.CreateAndEquipAssetPayload{
+			CharacterId:     0,
+			Item:            saga.ItemPayload{TemplateId: eq.TemplateId, Quantity: 1},
+			UseAverageStats: eq.UseAverageStats,
+		})
+	}
+
+	// Steps N+M+2..end: create_skill for each skill entry
+	for i, sk := range a.Skills {
+		master := skillsById[sk.SkillId].MaxLevel
+		builder.AddStep(fmt.Sprintf("create_skill_%d", i), saga.Pending, saga.CreateSkill, saga.CreateSkillPayload{
+			CharacterId: 0,
+			SkillId:     sk.SkillId,
+			Level:       sk.Level,
+			MasterLevel: master,
 			Expiration:  time.Time{},
 		})
 	}

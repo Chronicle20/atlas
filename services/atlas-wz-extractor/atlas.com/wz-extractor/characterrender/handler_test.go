@@ -18,6 +18,7 @@ import (
 
 	"atlas-wz-extractor/characterimage"
 
+	atlasserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	atlastenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -87,36 +88,41 @@ func makeAssetsRoot(t *testing.T) (string, string) {
 	return root, tenantPath
 }
 
-// newRequestWithTenant constructs an httptest.Request and injects the tenant
-// model into its context so the handler's tenant-binding check passes.
-func newRequestWithTenant(method, url string, tm atlastenant.Model) *http.Request {
-	req := httptest.NewRequest(method, url, nil)
-	ctx := atlastenant.WithContext(context.Background(), tm)
-	return req.WithContext(ctx)
+// newHandlerFunc constructs a mux router that routes through handleRender,
+// with the tenant injected into d.Context() as the canonical pattern requires.
+// mux.Vars are populated normally because the mux router is used for dispatch.
+func newHandlerFunc(root string, comp *characterimage.Compositor, tm atlastenant.Model) *mux.Router {
+	l := logrus.New()
+	tenantCtx := atlastenant.WithContext(context.Background(), tm)
+	d := atlasserver.NewHandlerDependency(l, tenantCtx)
+	hc := atlasserver.NewHandlerContext(nil)
+	gh := handleRender(root, comp)
+	innerHF := gh(&d, &hc)
+
+	r := mux.NewRouter()
+	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
+		innerHF).Methods(http.MethodGet)
+	return r
 }
 
 func TestHandleRenderHappyPath(t *testing.T) {
 	root, _ := makeAssetsRoot(t)
 
+	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+
 	c := characterimage.NewCompositor()
-	h := NewHandler(root, c)
+	r := newHandlerFunc(root, c, tm)
 
 	tenantStr := testTenantId.String()
 	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 1, nil)
 	hash := LoadoutHash(canonical)
 
-	r := mux.NewRouter()
-	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
-		h.HandleRender(logrus.New())).Methods(http.MethodGet)
-
 	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=stand1&frame=0&resize=1&items="
 	rec := httptest.NewRecorder()
-
-	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("create tenant: %v", err)
-	}
-	req := newRequestWithTenant(http.MethodGet, url, tm)
+	req := httptest.NewRequest(http.MethodGet, url, nil)
 	r.ServeHTTP(rec, req)
 
 	if rec.Code != 200 {
@@ -141,22 +147,20 @@ func TestHandleRenderHappyPath(t *testing.T) {
 
 func TestHandleRenderHashMismatch(t *testing.T) {
 	root, _ := makeAssetsRoot(t)
-	c := characterimage.NewCompositor()
-	h := NewHandler(root, c)
-	r := mux.NewRouter()
-	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
-		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
-	tenantStr := testTenantId.String()
 	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
 	if err != nil {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	c := characterimage.NewCompositor()
+	r := newHandlerFunc(root, c, tm)
+
+	tenantStr := testTenantId.String()
 	wrong := hex.EncodeToString(sha256.New().Sum(nil))[:16]
 	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + wrong + ".png?skin=0&hair=30030&face=20000"
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
 
 	if rec.Code != 400 {
 		t.Fatalf("status = %d", rec.Code)
@@ -168,23 +172,21 @@ func TestHandleRenderHashMismatch(t *testing.T) {
 
 func TestHandleRenderInvalidStance(t *testing.T) {
 	root, _ := makeAssetsRoot(t)
-	c := characterimage.NewCompositor()
-	h := NewHandler(root, c)
-	r := mux.NewRouter()
-	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
-		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
-	tenantStr := testTenantId.String()
 	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
 	if err != nil {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	c := characterimage.NewCompositor()
+	r := newHandlerFunc(root, c, tm)
+
+	tenantStr := testTenantId.String()
 	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "warp", 0, 1, nil)
 	hash := LoadoutHash(canonical)
 	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=warp&frame=0&resize=1&items="
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
 	if rec.Code != 400 {
 		t.Fatalf("status = %d, body=%s", rec.Code, rec.Body.String())
 	}
@@ -196,24 +198,22 @@ func TestHandleRenderInvalidStance(t *testing.T) {
 
 func TestHandleRenderTenantMismatch(t *testing.T) {
 	root, _ := makeAssetsRoot(t)
-	c := characterimage.NewCompositor()
-	h := NewHandler(root, c)
-	r := mux.NewRouter()
-	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
-		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
-	tenantStr := testTenantId.String()
-	// Inject a context tenant with a *different* region.
+	// Inject a context tenant with a *different* region than the URL path.
 	tm, err := atlastenant.Create(testTenantId, "KMS", 83, 1)
 	if err != nil {
 		t.Fatalf("create tenant: %v", err)
 	}
 
+	c := characterimage.NewCompositor()
+	r := newHandlerFunc(root, c, tm)
+
+	tenantStr := testTenantId.String()
 	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 1, nil)
 	hash := LoadoutHash(canonical)
 	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=stand1&frame=0&resize=1&items="
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
+	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
 	if rec.Code != 400 {
 		t.Fatalf("status = %d, body=%s", rec.Code, rec.Body.String())
 	}

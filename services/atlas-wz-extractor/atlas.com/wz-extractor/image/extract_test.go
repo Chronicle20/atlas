@@ -159,6 +159,66 @@ func TestFindStandCanvasFallbackToAnySub(t *testing.T) {
 	}
 }
 
+func TestFindWorldIconCanvasesPresent(t *testing.T) {
+	loginProps := []property.Property{
+		property.NewSub("WorldSelect", []property.Property{}),
+		property.NewSub("ViewAllChar", []property.Property{
+			property.NewSub("Select", []property.Property{
+				property.NewCanvas("backgrnd", 100, 100, 2, 0, 0, nil),
+			}),
+			property.NewSub("WorldIcons", []property.Property{
+				property.NewCanvas("0", 20, 20, 2, 0, 0, nil),
+				property.NewCanvas("1", 20, 20, 2, 0, 0, nil),
+				property.NewCanvas("17", 20, 20, 2, 0, 0, nil),
+				property.NewInt("z", 0),
+			}),
+		}),
+	}
+	got := findWorldIconCanvases(loginProps)
+	if len(got) != 3 {
+		t.Fatalf("len(got) = %d, want 3", len(got))
+	}
+	if _, ok := got["0"]; !ok {
+		t.Errorf("missing world id %q", "0")
+	}
+	if _, ok := got["1"]; !ok {
+		t.Errorf("missing world id %q", "1")
+	}
+	if _, ok := got["17"]; !ok {
+		t.Errorf("missing world id %q", "17")
+	}
+	// Non-canvas siblings (the int) must not leak into the result.
+	if _, ok := got["z"]; ok {
+		t.Errorf("non-canvas sibling leaked into world icons: %q", "z")
+	}
+	// Canvases from sibling sub-properties must not leak either.
+	if _, ok := got["backgrnd"]; ok {
+		t.Errorf("ViewAllChar/Select canvas leaked into world icons: %q", "backgrnd")
+	}
+}
+
+func TestFindWorldIconCanvasesMissingViewAllChar(t *testing.T) {
+	loginProps := []property.Property{
+		property.NewSub("WorldSelect", []property.Property{}),
+	}
+	got := findWorldIconCanvases(loginProps)
+	if got != nil {
+		t.Errorf("expected nil when ViewAllChar missing, got %v", got)
+	}
+}
+
+func TestFindWorldIconCanvasesMissingWorldIcons(t *testing.T) {
+	loginProps := []property.Property{
+		property.NewSub("ViewAllChar", []property.Property{
+			property.NewSub("Select", []property.Property{}),
+		}),
+	}
+	got := findWorldIconCanvases(loginProps)
+	if got != nil {
+		t.Errorf("expected nil when WorldIcons missing, got %v", got)
+	}
+}
+
 func TestFindStandCanvasNone(t *testing.T) {
 	props := []property.Property{
 		property.NewInt("x", 10),

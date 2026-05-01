@@ -10,6 +10,16 @@ vi.mock("@/components/features/characters/CharacterRenderer", () => ({
   ),
 }));
 
+vi.mock("../FilledSlotTile", () => ({
+  FilledSlotTile: ({
+    character,
+  }: {
+    character: { id: string; attributes: { name: string } };
+  }) => (
+    <a href={`/characters/${character.id}`}>{character.attributes.name}</a>
+  ),
+}));
+
 const useCharactersMock = vi.fn();
 vi.mock("@/lib/hooks/api/useCharacters", () => ({
   useCharacters: (...a: unknown[]) => useCharactersMock(...a),

@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
@@ -37,6 +38,27 @@ func (h *Handler) HandleRender(l logrus.FieldLogger) http.HandlerFunc {
 			})
 			return
 		}
+		// Validate path components against the request-context tenant populated by ParseTenant.
+		ctxTenant, ctxErr := tenant.FromContext(r.Context())()
+		if ctxErr != nil {
+			IncrementError("tenant-mismatch")
+			WriteError(w, http.StatusBadRequest, ErrorBody{
+				Code: "tenant-mismatch", Title: "Tenant not present in request context",
+				Detail: ctxErr.Error(),
+			})
+			return
+		}
+		if path.Tenant != ctxTenant.Id().String() ||
+			path.Region != ctxTenant.Region() ||
+			path.MajorVersion != ctxTenant.MajorVersion() ||
+			path.MinorVersion != ctxTenant.MinorVersion() {
+			IncrementError("tenant-mismatch")
+			WriteError(w, http.StatusBadRequest, ErrorBody{
+				Code: "tenant-mismatch", Title: "Path tenant does not match request context",
+			})
+			return
+		}
+
 		query, err := ParseRenderQuery(r.URL.Query())
 		if err != nil {
 			IncrementError("invalid-input")

@@ -43,3 +43,21 @@ func TestParseRenderPathRejectsBadVersion(t *testing.T) {
 		t.Fatal("expected error on bad version")
 	}
 }
+
+func TestParseRenderPathRejectsTraversalTenant(t *testing.T) {
+	_, err := ParseRenderPath(map[string]string{
+		"tenant": "..", "region": "GMS", "version": "83.1", "hash": "abcdef1234567890",
+	})
+	if err == nil {
+		t.Fatal("expected error on traversal tenant")
+	}
+}
+
+func TestParseRenderPathRejectsBadRegion(t *testing.T) {
+	_, err := ParseRenderPath(map[string]string{
+		"tenant": "tenant-a", "region": "gms!", "version": "83.1", "hash": "abcdef1234567890",
+	})
+	if err == nil {
+		t.Fatal("expected error on bad region")
+	}
+}

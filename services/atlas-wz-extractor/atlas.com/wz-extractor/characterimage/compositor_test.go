@@ -125,6 +125,133 @@ func writeSyntheticHat(t *testing.T, root string, hatId int) {
 		[]byte(`{"islot":"Cp","vslot":"Cp","cash":0}`), 0o644)
 }
 
+// writeSyntheticDefaultHair creates a synthetic hair sprite at
+// <root>/character-parts/30030/default/0/hair.{png,json}.
+// This mirrors equipment that has no animated stances and only exists under
+// the `default` stance directory.
+func writeSyntheticDefaultHair(t *testing.T, root string) {
+	t.Helper()
+	templateId := "30030"
+	frameDir := filepath.Join(root, "character-parts", templateId, "default", "0")
+	if err := os.MkdirAll(frameDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 4, 4))
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			img.SetRGBA(x, y, color.RGBA{R: 50, G: 200, B: 50, A: 255})
+		}
+	}
+	f, err := os.Create(filepath.Join(frameDir, "hair.png"))
+	if err != nil {
+		t.Fatalf("create png: %v", err)
+	}
+	defer f.Close()
+	if err := png.Encode(f, img); err != nil {
+		t.Fatalf("encode: %v", err)
+	}
+	// hair anchors at neck joint; origin=(1,1), map.neck=(0,0) so the hair's
+	// neck joint coincides with the body's neck canvas point.
+	if err := os.WriteFile(filepath.Join(frameDir, "hair.json"),
+		[]byte(`{"origin":{"x":1,"y":1},"map":{"neck":{"x":0,"y":0}},"z":"hairOverHead"}`), 0o644); err != nil {
+		t.Fatalf("write sidecar: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(root, "character-parts", templateId, "info.json"),
+		[]byte(`{"islot":"Ha","vslot":"Ha","cash":0}`), 0o644); err != nil {
+		t.Fatalf("write info: %v", err)
+	}
+}
+
+// TestCompositeFallsBackToDefault verifies that when compositing a character
+// with a hair template that only has a `default/0` asset directory (not the
+// requested `stand1`), the compositor falls back gracefully and the hair pixel
+// appears in the output canvas.
+func TestCompositeFallsBackToDefault(t *testing.T) {
+	root := t.TempDir()
+	// zmap: hairOverHead sorts after body.
+	if err := os.MkdirAll(filepath.Join(root, "character-meta"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	_ = os.WriteFile(filepath.Join(root, "character-meta", "zmap.json"),
+		[]byte(`["body","arm","hairOverHead"]`), 0o644)
+	_ = os.WriteFile(filepath.Join(root, "character-meta", "smap.json"), []byte(`{}`), 0o644)
+
+	writeSyntheticBody(t, root)
+	writeSyntheticDefaultHair(t, root)
+
+	c := NewCompositor()
+	res, err := c.Composite(CompositeRequest{
+		AssetsRoot: root,
+		Skin:       0,
+		Hair:       30030,
+		Stance:     "stand1",
+		Frame:      0,
+		Resize:     1,
+		Equipment:  map[int]int{},
+	})
+	if err != nil {
+		t.Fatalf("Composite: %v", err)
+	}
+
+	// Body origin (2,3) lands at canvas (48,120).  body.neck = (48+0, 120-3) = (48,117).
+	// hair origin (1,1), map.neck=(0,0) → anchor = (48-0, 117-0) = (48,117).
+	// drawPart places top-left at (anchor.X - origin.X, anchor.Y - origin.Y) = (47,116).
+	// The 4x4 hair sprite occupies x:[47..50], y:[116..119].
+	hairPixel := res.Image.RGBAAt(47, 116)
+	if hairPixel.A == 0 || hairPixel.G == 0 {
+		t.Fatalf("expected hair (green) pixel at (47,116), got %+v", hairPixel)
+	}
+	if res.EquippedSlotCount != 0 {
+		t.Fatalf("hair is not counted as equipment slot; expected 0, got %d", res.EquippedSlotCount)
+	}
+}
+
+// TestResolveTemplateStanceFallback exercises the three cases in
+// resolveTemplateStance: present (no fallback), only default, and neither.
+func TestResolveTemplateStanceFallback(t *testing.T) {
+	root := t.TempDir()
+
+	// Case 1: body sprite at 2000/stand1/0 — should resolve to stand1/0.
+	bodyDir := filepath.Join(root, "character-parts", "2000", "stand1", "0")
+	if err := os.MkdirAll(bodyDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(bodyDir, "body.png"), []byte("fake"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	gotStance, gotFrame, err := resolveTemplateStance(root, "2000", "stand1", 0)
+	if err != nil {
+		t.Fatalf("case 1: unexpected error: %v", err)
+	}
+	if gotStance != "stand1" || gotFrame != 0 {
+		t.Fatalf("case 1: want stand1/0, got %s/%d", gotStance, gotFrame)
+	}
+
+	// Case 2: hair at 30030/default/0 only — should fall back to default/0.
+	hairDir := filepath.Join(root, "character-parts", "30030", "default", "0")
+	if err := os.MkdirAll(hairDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(hairDir, "hair.png"), []byte("fake"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	gotStance, gotFrame, err = resolveTemplateStance(root, "30030", "stand1", 0)
+	if err != nil {
+		t.Fatalf("case 2: unexpected error: %v", err)
+	}
+	if gotStance != "default" || gotFrame != 0 {
+		t.Fatalf("case 2: want default/0, got %s/%d", gotStance, gotFrame)
+	}
+
+	// Case 3: template 99999 has neither stand1/0 nor default/0 — should error.
+	_, _, err = resolveTemplateStance(root, "99999", "stand1", 0)
+	if err == nil {
+		t.Fatal("case 3: expected error for missing template, got nil")
+	}
+}
+
 func TestCompositeWithHatBlitsAboveBody(t *testing.T) {
 	root := t.TempDir()
 	// zmap places "cap" above "body".

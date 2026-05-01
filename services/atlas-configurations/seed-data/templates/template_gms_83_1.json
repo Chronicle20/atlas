@@ -2691,7 +2691,7 @@
         "id": "1645f671-a3bd-4ef6-a2a5-a8714e661f74",
         "attributes": {
           "name": "Hero — 4th job",
-          "description": "Full 4th-job Hero with Combat Orders, Stance, etc.",
+          "description": "Full 4th-job Hero — branch skills maxed; iconic Stonetooth Sword + Reverse Taragon set.",
           "tags": ["4th-job", "warrior", "explorer"],
           "jobId": 112,
           "gender": 0,
@@ -2703,11 +2703,18 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminHero",
           "equipment": [
+            { "templateId": 1402037, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1402046, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2715,7 +2722,39 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
-            { "skillId": 1121008, "level": 5 }
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1100000, "level": 20 },
+            { "skillId": 1100001, "level": 20 },
+            { "skillId": 1100002, "level": 30 },
+            { "skillId": 1100003, "level": 30 },
+            { "skillId": 1101004, "level": 20 },
+            { "skillId": 1101005, "level": 20 },
+            { "skillId": 1101006, "level": 20 },
+            { "skillId": 1101007, "level": 30 },
+            { "skillId": 1110000, "level": 20 },
+            { "skillId": 1110001, "level": 20 },
+            { "skillId": 1111002, "level": 30 },
+            { "skillId": 1111003, "level": 30 },
+            { "skillId": 1111004, "level": 30 },
+            { "skillId": 1111005, "level": 30 },
+            { "skillId": 1111006, "level": 30 },
+            { "skillId": 1111007, "level": 20 },
+            { "skillId": 1111008, "level": 30 },
+            { "skillId": 1120003, "level": 30 },
+            { "skillId": 1120004, "level": 30 },
+            { "skillId": 1120005, "level": 30 },
+            { "skillId": 1121000, "level": 30 },
+            { "skillId": 1121001, "level": 30 },
+            { "skillId": 1121002, "level": 30 },
+            { "skillId": 1121006, "level": 30 },
+            { "skillId": 1121008, "level": 30 },
+            { "skillId": 1121010, "level": 30 },
+            { "skillId": 1121011, "level": 5 }
           ]
         }
       },
@@ -2723,7 +2762,7 @@
         "id": "97784164-9ff9-4f0c-aef9-5a975c47d2ad",
         "attributes": {
           "name": "Paladin — 4th job",
-          "description": "Full 4th-job Paladin.",
+          "description": "Full 4th-job Paladin — branch skills maxed; iconic Crushed Skull + Maple Warrior Shield + Reverse Taragon set.",
           "tags": ["4th-job", "warrior", "explorer"],
           "jobId": 122,
           "gender": 0,
@@ -2735,10 +2774,19 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminPaladin",
           "equipment": [
-            { "templateId": 1002357, "useAverageStats": true }
+            { "templateId": 1322062, "useAverageStats": true },
+            { "templateId": 1092046, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2746,6 +2794,41 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1200000, "level": 20 },
+            { "skillId": 1200001, "level": 20 },
+            { "skillId": 1200002, "level": 30 },
+            { "skillId": 1200003, "level": 30 },
+            { "skillId": 1201004, "level": 20 },
+            { "skillId": 1201005, "level": 20 },
+            { "skillId": 1201006, "level": 20 },
+            { "skillId": 1201007, "level": 30 },
+            { "skillId": 1210000, "level": 20 },
+            { "skillId": 1210001, "level": 20 },
+            { "skillId": 1211002, "level": 30 },
+            { "skillId": 1211003, "level": 30 },
+            { "skillId": 1211004, "level": 30 },
+            { "skillId": 1211005, "level": 30 },
+            { "skillId": 1211006, "level": 30 },
+            { "skillId": 1211007, "level": 30 },
+            { "skillId": 1211008, "level": 30 },
+            { "skillId": 1211009, "level": 20 },
+            { "skillId": 1220005, "level": 30 },
+            { "skillId": 1220006, "level": 30 },
+            { "skillId": 1220010, "level": 10 },
+            { "skillId": 1221000, "level": 30 },
+            { "skillId": 1221001, "level": 30 },
+            { "skillId": 1221002, "level": 30 },
+            { "skillId": 1221003, "level": 20 },
+            { "skillId": 1221004, "level": 20 },
+            { "skillId": 1221007, "level": 30 },
+            { "skillId": 1221009, "level": 30 },
+            { "skillId": 1221011, "level": 30 },
             { "skillId": 1221012, "level": 5 }
           ]
         }
@@ -2754,7 +2837,7 @@
         "id": "5d3b41d2-4301-46f6-8b17-0d660dcf4961",
         "attributes": {
           "name": "Dark Knight — 4th job",
-          "description": "Full 4th-job Dark Knight.",
+          "description": "Full 4th-job Dark Knight — branch skills maxed; iconic Sky Ski + Reverse Taragon set.",
           "tags": ["4th-job", "warrior", "explorer"],
           "jobId": 132,
           "gender": 0,
@@ -2766,10 +2849,18 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminDarkKnight",
           "equipment": [
-            { "templateId": 1002357, "useAverageStats": true }
+            { "templateId": 1432018, "useAverageStats": true },
+            { "templateId": 1052160, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2777,6 +2868,38 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 1000000, "level": 16 },
+            { "skillId": 1000001, "level": 10 },
+            { "skillId": 1000002, "level": 8 },
+            { "skillId": 1001003, "level": 20 },
+            { "skillId": 1001004, "level": 20 },
+            { "skillId": 1001005, "level": 20 },
+            { "skillId": 1300000, "level": 20 },
+            { "skillId": 1300001, "level": 20 },
+            { "skillId": 1300002, "level": 30 },
+            { "skillId": 1300003, "level": 30 },
+            { "skillId": 1301004, "level": 20 },
+            { "skillId": 1301005, "level": 20 },
+            { "skillId": 1301006, "level": 20 },
+            { "skillId": 1301007, "level": 30 },
+            { "skillId": 1310000, "level": 20 },
+            { "skillId": 1311001, "level": 30 },
+            { "skillId": 1311002, "level": 30 },
+            { "skillId": 1311003, "level": 30 },
+            { "skillId": 1311004, "level": 30 },
+            { "skillId": 1311005, "level": 30 },
+            { "skillId": 1311006, "level": 30 },
+            { "skillId": 1311007, "level": 20 },
+            { "skillId": 1311008, "level": 20 },
+            { "skillId": 1320005, "level": 30 },
+            { "skillId": 1320006, "level": 30 },
+            { "skillId": 1320008, "level": 25 },
+            { "skillId": 1320009, "level": 25 },
+            { "skillId": 1321000, "level": 30 },
+            { "skillId": 1321001, "level": 30 },
+            { "skillId": 1321002, "level": 30 },
+            { "skillId": 1321003, "level": 30 },
+            { "skillId": 1321007, "level": 10 },
             { "skillId": 1321010, "level": 5 }
           ]
         }
@@ -2785,7 +2908,7 @@
         "id": "6f177876-36c1-4206-8935-455aa2f95d94",
         "attributes": {
           "name": "F/P ArchMage — 4th job",
-          "description": "Full 4th-job Fire/Poison ArchMage.",
+          "description": "Full 4th-job Fire/Poison ArchMage — branch skills maxed; Elemental Staff 5 (Fire) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": ["4th-job", "magician", "explorer"],
           "jobId": 212,
           "gender": 0,
@@ -2797,11 +2920,19 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminFPMage",
           "equipment": [
+            { "templateId": 1382049, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1382008, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2809,6 +2940,33 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2100000, "level": 20 },
+            { "skillId": 2101001, "level": 20 },
+            { "skillId": 2101002, "level": 20 },
+            { "skillId": 2101003, "level": 20 },
+            { "skillId": 2101004, "level": 30 },
+            { "skillId": 2101005, "level": 30 },
+            { "skillId": 2110000, "level": 20 },
+            { "skillId": 2110001, "level": 30 },
+            { "skillId": 2111002, "level": 30 },
+            { "skillId": 2111003, "level": 30 },
+            { "skillId": 2111004, "level": 20 },
+            { "skillId": 2111005, "level": 20 },
+            { "skillId": 2111006, "level": 30 },
+            { "skillId": 2121000, "level": 30 },
+            { "skillId": 2121001, "level": 30 },
+            { "skillId": 2121002, "level": 30 },
+            { "skillId": 2121003, "level": 30 },
+            { "skillId": 2121004, "level": 30 },
+            { "skillId": 2121005, "level": 30 },
+            { "skillId": 2121006, "level": 30 },
+            { "skillId": 2121007, "level": 30 },
             { "skillId": 2121008, "level": 5 }
           ]
         }
@@ -2817,7 +2975,7 @@
         "id": "6b11335d-536d-4184-bf69-8edee94a1f96",
         "attributes": {
           "name": "I/L ArchMage — 4th job",
-          "description": "Full 4th-job Ice/Lightning ArchMage.",
+          "description": "Full 4th-job Ice/Lightning ArchMage — branch skills maxed; Elemental Staff 8 (Lightning) + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": ["4th-job", "magician", "explorer"],
           "jobId": 222,
           "gender": 0,
@@ -2829,11 +2987,19 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminILMage",
           "equipment": [
+            { "templateId": 1382052, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1382008, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2841,6 +3007,33 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2200000, "level": 20 },
+            { "skillId": 2201001, "level": 20 },
+            { "skillId": 2201002, "level": 20 },
+            { "skillId": 2201003, "level": 20 },
+            { "skillId": 2201004, "level": 30 },
+            { "skillId": 2201005, "level": 30 },
+            { "skillId": 2210000, "level": 20 },
+            { "skillId": 2210001, "level": 30 },
+            { "skillId": 2211002, "level": 30 },
+            { "skillId": 2211003, "level": 30 },
+            { "skillId": 2211004, "level": 20 },
+            { "skillId": 2211005, "level": 20 },
+            { "skillId": 2211006, "level": 30 },
+            { "skillId": 2221000, "level": 30 },
+            { "skillId": 2221001, "level": 30 },
+            { "skillId": 2221002, "level": 30 },
+            { "skillId": 2221003, "level": 30 },
+            { "skillId": 2221004, "level": 30 },
+            { "skillId": 2221005, "level": 30 },
+            { "skillId": 2221006, "level": 30 },
+            { "skillId": 2221007, "level": 30 },
             { "skillId": 2221008, "level": 5 }
           ]
         }
@@ -2849,7 +3042,7 @@
         "id": "928639cb-ba87-4e6b-b33b-e54520fbd910",
         "attributes": {
           "name": "Bishop — 4th job",
-          "description": "Full 4th-job Bishop.",
+          "description": "Full 4th-job Bishop — branch skills maxed; Elemental Wand 5 + Maple Magician Shield + Reverse Myst Blue set.",
           "tags": ["4th-job", "magician", "explorer"],
           "jobId": 232,
           "gender": 0,
@@ -2861,11 +3054,19 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 4, "int": 999, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminBishop",
           "equipment": [
+            { "templateId": 1372039, "useAverageStats": true },
+            { "templateId": 1092045, "useAverageStats": true },
+            { "templateId": 1052161, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1382008, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -2873,6 +3074,34 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 2000000, "level": 16 },
+            { "skillId": 2000001, "level": 10 },
+            { "skillId": 2001002, "level": 20 },
+            { "skillId": 2001003, "level": 20 },
+            { "skillId": 2001004, "level": 20 },
+            { "skillId": 2001005, "level": 20 },
+            { "skillId": 2300000, "level": 20 },
+            { "skillId": 2301001, "level": 20 },
+            { "skillId": 2301002, "level": 30 },
+            { "skillId": 2301003, "level": 20 },
+            { "skillId": 2301004, "level": 20 },
+            { "skillId": 2301005, "level": 30 },
+            { "skillId": 2310000, "level": 20 },
+            { "skillId": 2311001, "level": 20 },
+            { "skillId": 2311002, "level": 20 },
+            { "skillId": 2311003, "level": 30 },
+            { "skillId": 2311004, "level": 30 },
+            { "skillId": 2311005, "level": 30 },
+            { "skillId": 2311006, "level": 30 },
+            { "skillId": 2321000, "level": 30 },
+            { "skillId": 2321001, "level": 30 },
+            { "skillId": 2321002, "level": 30 },
+            { "skillId": 2321003, "level": 30 },
+            { "skillId": 2321004, "level": 30 },
+            { "skillId": 2321005, "level": 30 },
+            { "skillId": 2321006, "level": 10 },
+            { "skillId": 2321007, "level": 30 },
+            { "skillId": 2321008, "level": 30 },
             { "skillId": 2321009, "level": 5 }
           ]
         }
@@ -2881,7 +3110,7 @@
         "id": "3ab10755-5187-4493-9217-ebddc705067b",
         "attributes": {
           "name": "Bowmaster — 4th job",
-          "description": "Full 4th-job Bowmaster.",
+          "description": "Full 4th-job Bowmaster — branch skills maxed; Reverse Engaw + Reverse Evernew set + Diamond Arrows.",
           "tags": ["4th-job", "bowman", "explorer"],
           "jobId": 312,
           "gender": 0,
@@ -2893,18 +3122,53 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminBowmaster",
           "equipment": [
+            { "templateId": 1452059, "useAverageStats": true },
+            { "templateId": 1052162, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1452057, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
             { "templateId": 2000005, "quantity": 200 },
-            { "templateId": 2030019, "quantity": 50 }
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2060004, "quantity": 200 }
           ],
           "skills": [
+            { "skillId": 3000000, "level": 16 },
+            { "skillId": 3000001, "level": 20 },
+            { "skillId": 3000002, "level": 8 },
+            { "skillId": 3001003, "level": 20 },
+            { "skillId": 3001004, "level": 20 },
+            { "skillId": 3001005, "level": 20 },
+            { "skillId": 3100000, "level": 20 },
+            { "skillId": 3100001, "level": 30 },
+            { "skillId": 3101002, "level": 20 },
+            { "skillId": 3101003, "level": 20 },
+            { "skillId": 3101004, "level": 20 },
+            { "skillId": 3101005, "level": 30 },
+            { "skillId": 3110000, "level": 20 },
+            { "skillId": 3110001, "level": 20 },
+            { "skillId": 3111002, "level": 20 },
+            { "skillId": 3111003, "level": 30 },
+            { "skillId": 3111004, "level": 30 },
+            { "skillId": 3111005, "level": 30 },
+            { "skillId": 3111006, "level": 30 },
+            { "skillId": 3120005, "level": 30 },
+            { "skillId": 3121000, "level": 30 },
+            { "skillId": 3121002, "level": 30 },
+            { "skillId": 3121003, "level": 30 },
+            { "skillId": 3121004, "level": 30 },
+            { "skillId": 3121006, "level": 30 },
+            { "skillId": 3121007, "level": 30 },
+            { "skillId": 3121008, "level": 30 },
             { "skillId": 3121009, "level": 5 }
           ]
         }
@@ -2913,7 +3177,7 @@
         "id": "aa6cbb45-1ef9-4bb0-9368-21297edad68c",
         "attributes": {
           "name": "Marksman — 4th job",
-          "description": "Full 4th-job Marksman.",
+          "description": "Full 4th-job Marksman — branch skills maxed; Reverse Black Beauty + Reverse Evernew set + Diamond Bolts.",
           "tags": ["4th-job", "bowman", "explorer"],
           "jobId": 322,
           "gender": 0,
@@ -2925,18 +3189,53 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminMarksman",
           "equipment": [
+            { "templateId": 1462051, "useAverageStats": true },
+            { "templateId": 1052162, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1472063, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
             { "templateId": 2000005, "quantity": 200 },
-            { "templateId": 2030019, "quantity": 50 }
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2061004, "quantity": 200 }
           ],
           "skills": [
+            { "skillId": 3000000, "level": 16 },
+            { "skillId": 3000001, "level": 20 },
+            { "skillId": 3000002, "level": 8 },
+            { "skillId": 3001003, "level": 20 },
+            { "skillId": 3001004, "level": 20 },
+            { "skillId": 3001005, "level": 20 },
+            { "skillId": 3200000, "level": 20 },
+            { "skillId": 3200001, "level": 30 },
+            { "skillId": 3201002, "level": 20 },
+            { "skillId": 3201003, "level": 20 },
+            { "skillId": 3201004, "level": 20 },
+            { "skillId": 3201005, "level": 30 },
+            { "skillId": 3210000, "level": 20 },
+            { "skillId": 3210001, "level": 20 },
+            { "skillId": 3211002, "level": 20 },
+            { "skillId": 3211003, "level": 30 },
+            { "skillId": 3211004, "level": 30 },
+            { "skillId": 3211005, "level": 30 },
+            { "skillId": 3211006, "level": 30 },
+            { "skillId": 3220004, "level": 30 },
+            { "skillId": 3221000, "level": 30 },
+            { "skillId": 3221001, "level": 30 },
+            { "skillId": 3221002, "level": 30 },
+            { "skillId": 3221003, "level": 30 },
+            { "skillId": 3221005, "level": 30 },
+            { "skillId": 3221006, "level": 30 },
+            { "skillId": 3221007, "level": 30 },
             { "skillId": 3221008, "level": 5 }
           ]
         }
@@ -2945,7 +3244,7 @@
         "id": "ba0b2a82-1854-4ee0-8740-6cbfa86a65c0",
         "attributes": {
           "name": "Night Lord — 4th job",
-          "description": "Full 4th-job Night Lord.",
+          "description": "Full 4th-job Night Lord — branch skills maxed; iconic Maple Kandayo + Reverse Prinsid set + Crystal Ilbi Throwing-Stars.",
           "tags": ["4th-job", "thief", "explorer"],
           "jobId": 412,
           "gender": 0,
@@ -2957,18 +3256,53 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 4, "int": 4, "luk": 999, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminNightLord",
           "equipment": [
+            { "templateId": 1472032, "useAverageStats": true },
+            { "templateId": 1052163, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1492014, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
             { "templateId": 2000005, "quantity": 200 },
-            { "templateId": 2030019, "quantity": 50 }
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2070016, "quantity": 200 }
           ],
           "skills": [
+            { "skillId": 4000000, "level": 20 },
+            { "skillId": 4000001, "level": 8 },
+            { "skillId": 4001002, "level": 20 },
+            { "skillId": 4001003, "level": 20 },
+            { "skillId": 4001334, "level": 20 },
+            { "skillId": 4001344, "level": 20 },
+            { "skillId": 4100000, "level": 20 },
+            { "skillId": 4100001, "level": 30 },
+            { "skillId": 4100002, "level": 20 },
+            { "skillId": 4101003, "level": 20 },
+            { "skillId": 4101004, "level": 20 },
+            { "skillId": 4101005, "level": 30 },
+            { "skillId": 4110000, "level": 20 },
+            { "skillId": 4111001, "level": 20 },
+            { "skillId": 4111002, "level": 30 },
+            { "skillId": 4111003, "level": 20 },
+            { "skillId": 4111004, "level": 30 },
+            { "skillId": 4111005, "level": 30 },
+            { "skillId": 4111006, "level": 20 },
+            { "skillId": 4120002, "level": 30 },
+            { "skillId": 4120005, "level": 30 },
+            { "skillId": 4121000, "level": 30 },
+            { "skillId": 4121003, "level": 30 },
+            { "skillId": 4121004, "level": 30 },
+            { "skillId": 4121006, "level": 30 },
+            { "skillId": 4121007, "level": 30 },
+            { "skillId": 4121008, "level": 30 },
             { "skillId": 4121009, "level": 5 }
           ]
         }
@@ -2977,7 +3311,7 @@
         "id": "8e0d8b65-dff0-4696-a06d-b16317f6ced7",
         "attributes": {
           "name": "Shadower — 4th job",
-          "description": "Full 4th-job Shadower.",
+          "description": "Full 4th-job Shadower — branch skills maxed; iconic Maple Asura Dagger + Maple Thief Shield + Reverse Prinsid set.",
           "tags": ["4th-job", "thief", "explorer"],
           "jobId": 422,
           "gender": 0,
@@ -2989,11 +3323,19 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 4, "int": 4, "luk": 999, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminShadower",
           "equipment": [
+            { "templateId": 1332056, "useAverageStats": true },
+            { "templateId": 1092047, "useAverageStats": true },
+            { "templateId": 1052163, "useAverageStats": true },
             { "templateId": 1002357, "useAverageStats": true },
-            { "templateId": 1332071, "useAverageStats": true }
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -3001,6 +3343,33 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
+            { "skillId": 4000000, "level": 20 },
+            { "skillId": 4000001, "level": 8 },
+            { "skillId": 4001002, "level": 20 },
+            { "skillId": 4001003, "level": 20 },
+            { "skillId": 4001334, "level": 20 },
+            { "skillId": 4001344, "level": 20 },
+            { "skillId": 4200000, "level": 20 },
+            { "skillId": 4200001, "level": 20 },
+            { "skillId": 4201002, "level": 20 },
+            { "skillId": 4201003, "level": 20 },
+            { "skillId": 4201004, "level": 30 },
+            { "skillId": 4201005, "level": 30 },
+            { "skillId": 4210000, "level": 20 },
+            { "skillId": 4211001, "level": 30 },
+            { "skillId": 4211002, "level": 30 },
+            { "skillId": 4211003, "level": 20 },
+            { "skillId": 4211004, "level": 30 },
+            { "skillId": 4211005, "level": 20 },
+            { "skillId": 4211006, "level": 30 },
+            { "skillId": 4220002, "level": 30 },
+            { "skillId": 4220005, "level": 30 },
+            { "skillId": 4221000, "level": 30 },
+            { "skillId": 4221001, "level": 30 },
+            { "skillId": 4221003, "level": 30 },
+            { "skillId": 4221004, "level": 30 },
+            { "skillId": 4221006, "level": 30 },
+            { "skillId": 4221007, "level": 30 },
             { "skillId": 4221008, "level": 5 }
           ]
         }
@@ -3009,7 +3378,7 @@
         "id": "525dc913-5988-4599-b12a-a14eb68253e0",
         "attributes": {
           "name": "Buccaneer — 4th job",
-          "description": "Full 4th-job Buccaneer.",
+          "description": "Full 4th-job Buccaneer — branch skills maxed; iconic Maple Golden Claw (knuckle) + Reverse Burgunt set.",
           "tags": ["4th-job", "pirate", "explorer"],
           "jobId": 512,
           "gender": 0,
@@ -3021,10 +3390,18 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 999, "dex": 4, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminBuccaneer",
           "equipment": [
-            { "templateId": 1002357, "useAverageStats": true }
+            { "templateId": 1482022, "useAverageStats": true },
+            { "templateId": 1052164, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
@@ -3032,7 +3409,35 @@
             { "templateId": 2030019, "quantity": 50 }
           ],
           "skills": [
-            { "skillId": 5121008, "level": 5 }
+            { "skillId": 5000000, "level": 20 },
+            { "skillId": 5001001, "level": 20 },
+            { "skillId": 5001002, "level": 20 },
+            { "skillId": 5001003, "level": 20 },
+            { "skillId": 5001005, "level": 10 },
+            { "skillId": 5100000, "level": 10 },
+            { "skillId": 5100001, "level": 20 },
+            { "skillId": 5101002, "level": 20 },
+            { "skillId": 5101003, "level": 20 },
+            { "skillId": 5101004, "level": 20 },
+            { "skillId": 5101005, "level": 10 },
+            { "skillId": 5101006, "level": 20 },
+            { "skillId": 5101007, "level": 10 },
+            { "skillId": 5110000, "level": 20 },
+            { "skillId": 5110001, "level": 40 },
+            { "skillId": 5111002, "level": 30 },
+            { "skillId": 5111004, "level": 20 },
+            { "skillId": 5111005, "level": 20 },
+            { "skillId": 5111006, "level": 30 },
+            { "skillId": 5121000, "level": 30 },
+            { "skillId": 5121001, "level": 30 },
+            { "skillId": 5121002, "level": 30 },
+            { "skillId": 5121003, "level": 20 },
+            { "skillId": 5121004, "level": 30 },
+            { "skillId": 5121005, "level": 30 },
+            { "skillId": 5121007, "level": 30 },
+            { "skillId": 5121008, "level": 5 },
+            { "skillId": 5121009, "level": 20 },
+            { "skillId": 5121010, "level": 30 }
           ]
         }
       },
@@ -3040,7 +3445,7 @@
         "id": "1c51eefc-47be-4352-bd75-5cde0200b141",
         "attributes": {
           "name": "Corsair — 4th job",
-          "description": "Full 4th-job Corsair.",
+          "description": "Full 4th-job Corsair — branch skills maxed; iconic Maple Storm Pistol + Reverse Burgunt set + Eternal Bullets.",
           "tags": ["4th-job", "pirate", "explorer"],
           "jobId": 522,
           "gender": 0,
@@ -3052,21 +3457,59 @@
           "level": 200,
           "meso": 100000000,
           "gm": 0,
-          "stats": { "str": 4, "dex": 999, "int": 4, "luk": 4, "hp": 30000, "mp": 6000 },
+          "stats": { "str": 999, "dex": 999, "int": 999, "luk": 999, "hp": 30000, "mp": 6000 },
           "defaultName": "AdminCorsair",
           "equipment": [
-            { "templateId": 1002357, "useAverageStats": true }
+            { "templateId": 1492021, "useAverageStats": true },
+            { "templateId": 1052164, "useAverageStats": true },
+            { "templateId": 1002357, "useAverageStats": true },
+            { "templateId": 1102041, "useAverageStats": true },
+            { "templateId": 1122059, "useAverageStats": true },
+            { "templateId": 1072344, "useAverageStats": true },
+            { "templateId": 1082223, "useAverageStats": true },
+            { "templateId": 1032031, "useAverageStats": true },
+            { "templateId": 1012098, "useAverageStats": true }
           ],
           "inventory": [
             { "templateId": 2000004, "quantity": 200 },
             { "templateId": 2000005, "quantity": 200 },
-            { "templateId": 2030019, "quantity": 50 }
+            { "templateId": 2030019, "quantity": 50 },
+            { "templateId": 2330005, "quantity": 200 }
           ],
           "skills": [
+            { "skillId": 5000000, "level": 20 },
+            { "skillId": 5001001, "level": 20 },
+            { "skillId": 5001002, "level": 20 },
+            { "skillId": 5001003, "level": 20 },
+            { "skillId": 5001005, "level": 10 },
+            { "skillId": 5200000, "level": 20 },
+            { "skillId": 5201001, "level": 20 },
+            { "skillId": 5201002, "level": 20 },
+            { "skillId": 5201003, "level": 20 },
+            { "skillId": 5201004, "level": 20 },
+            { "skillId": 5201005, "level": 10 },
+            { "skillId": 5201006, "level": 20 },
+            { "skillId": 5210000, "level": 20 },
+            { "skillId": 5211001, "level": 30 },
+            { "skillId": 5211002, "level": 30 },
+            { "skillId": 5211004, "level": 30 },
+            { "skillId": 5211005, "level": 30 },
+            { "skillId": 5211006, "level": 30 },
+            { "skillId": 5220001, "level": 30 },
+            { "skillId": 5220002, "level": 20 },
+            { "skillId": 5220011, "level": 20 },
+            { "skillId": 5221000, "level": 30 },
+            { "skillId": 5221003, "level": 30 },
+            { "skillId": 5221004, "level": 30 },
+            { "skillId": 5221006, "level": 10 },
+            { "skillId": 5221007, "level": 30 },
+            { "skillId": 5221008, "level": 30 },
+            { "skillId": 5221009, "level": 20 },
             { "skillId": 5221010, "level": 5 }
           ]
         }
       }
+
     ]
   },
   "npcs": [

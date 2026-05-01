@@ -26,6 +26,13 @@ func InitResource(h *Handler) func(si jsonapi.ServerInformation) server.RouteIni
 
 func (h *Handler) handleRenderBridge() rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return h.HandleRender(d.Logger())
+		inner := h.HandleRender(d.Logger())
+		// ParseTenant only puts the tenant on `d.Context()`; the inner handler
+		// reads `r.Context()` to populate observability fields and to verify the
+		// path tenant against the header tenant. Inject the tenant-aware ctx
+		// into the request before delegating.
+		return func(w http.ResponseWriter, r *http.Request) {
+			inner(w, r.WithContext(d.Context()))
+		}
 	}
 }

@@ -272,7 +272,9 @@ func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) e
 		if dir == nil {
 			continue
 		}
-		for _, img := range dir.Images() {
+		subStart := total
+		imgs := dir.Images()
+		for _, img := range imgs {
 			n, err := extractTemplateImg(l, f, img, tenantOut)
 			if err != nil {
 				l.WithError(err).Warnf("extract %s/%s", sub, img.Name())
@@ -280,6 +282,8 @@ func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) e
 			}
 			total += n
 		}
+		l.Infof("Character.wz/%s: %d imgs, %d canvases extracted (running total %d).",
+			sub, len(imgs), total-subStart, total)
 	}
 	l.Infof("Extracted [%d] character part canvases.", total)
 	return nil

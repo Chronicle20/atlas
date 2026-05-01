@@ -7,7 +7,7 @@ import type { Character } from "@/types/models/character";
 
 vi.mock("@/components/features/characters/CharacterRenderer", () => ({
   CharacterRenderer: ({ character }: { character: Character }) => (
-    <div data-testid="renderer">{character.attributes.name}</div>
+    <div data-testid="renderer" data-name={character.attributes.name} />
   ),
 }));
 
@@ -43,17 +43,13 @@ describe("FilledSlotTile", () => {
   });
 
   it("renders an <img> when the world flag is populated", () => {
-    render(
+    const { container } = render(
       <MemoryRouter>
         <FilledSlotTile character={character(0)} worlds={worldsWithFlag} />
       </MemoryRouter>
     );
-    const img = screen
-      .getAllByRole("img", { hidden: true })
-      .find((el) =>
-        (el.getAttribute("src") ?? "").includes("scania.png")
-      );
-    expect(img).toBeDefined();
+    const img = container.querySelector('img[src*="scania.png"]');
+    expect(img).not.toBeNull();
   });
 
   it("renders the Globe fallback when worldId is out of range", () => {

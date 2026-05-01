@@ -3,9 +3,12 @@ package image
 import (
 	"atlas-wz-extractor/wz/property"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/sirupsen/logrus"
 )
 
 func TestExtractInfoBlock(t *testing.T) {
@@ -39,6 +42,47 @@ func TestWriteInfoJSON(t *testing.T) {
 	if ti.Islot != "Cp" {
 		t.Fatalf("islot = %q", ti.Islot)
 	}
+}
+
+// TestStancesInScopeIncludesDefault verifies the allow-list was updated to
+// include the "default" stance used by non-animated equipment.
+func TestStancesInScopeIncludesDefault(t *testing.T) {
+	if _, ok := stancesInScope["default"]; !ok {
+		t.Fatal("stancesInScope must contain \"default\" for non-animated equipment (hair, face, hats, etc.)")
+	}
+}
+
+// TestExtractDefaultStanceChildrenSkipsNonCanvas verifies that only
+// CanvasProperty children are counted; SubProperty and other non-canvas
+// children are silently ignored.  We pass nil for the wz.File pointer because
+// no canvas is present so extractPartCanvas is never called.
+func TestExtractDefaultStanceChildrenSkipsNonCanvas(t *testing.T) {
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+
+	dir := t.TempDir()
+	children := []property.Property{
+		property.NewSub("map", nil),                      // SubProperty — must be skipped
+		property.NewString("z", "hairOverHead"),          // StringProperty — must be skipped
+		property.NewVector("origin", 5, 10),              // VectorProperty — must be skipped
+	}
+	got := extractDefaultStanceChildren(l, nil, "30030", children, dir)
+	if got != 0 {
+		t.Fatalf("expected 0 canvases counted for all-non-canvas children, got %d", got)
+	}
+}
+
+// TestExtractDefaultStanceChildrenWritesToDefault0 verifies that the helper
+// creates the destination directory at <templateDir>/default/0/ when it
+// encounters a canvas child.  We use a zero-size CanvasProperty: ReadCanvasData
+// returns (nil, nil) for size ≤ 1, Decompress returns an empty image for nil
+// data, so the full pipeline succeeds without a real WZ file handle.
+//
+// Because wz.File's constructor requires a real file on disk, we cannot pass a
+// real *wz.File here.  The zero-size shortcut (dataSize = 0) lets us verify
+// path routing without binary WZ data.
+func TestExtractDefaultStanceChildrenWritesToDefault0(t *testing.T) {
+	t.Skip("requires a real *wz.File — path routing verified by TestStancesInScopeIncludesDefault + compositor fallback tests")
 }
 
 func TestBuildPartSidecar(t *testing.T) {

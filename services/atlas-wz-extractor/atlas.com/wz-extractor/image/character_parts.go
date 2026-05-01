@@ -38,12 +38,16 @@ type templateInfo struct {
 
 // stancesInScope is the explicit allow-list of stances we extract. Skipping
 // fly/prone/swing/etc. keeps the on-disk footprint manageable.
+// "default" is included for equipment that doesn't animate (hair, face, hats,
+// gloves, glasses, earrings, etc.) — those have direct canvas children rather
+// than a frame SubProperty layer.
 var stancesInScope = map[string]struct{}{
-	"stand1": {},
-	"stand2": {},
-	"walk1":  {},
-	"alert":  {},
-	"jump":   {},
+	"stand1":  {},
+	"stand2":  {},
+	"walk1":   {},
+	"alert":   {},
+	"jump":    {},
+	"default": {},
 }
 
 // equipmentSubdirs are the Character.wz subdirectories whose .img files we
@@ -169,6 +173,27 @@ func buildPartSidecar(children []property.Property) partSidecar {
 	return out
 }
 
+// extractDefaultStanceChildren writes canvas parts from a `default` stance
+// directly into {templateDir}/default/0/. Unlike animated stances, `default`
+// has no frame sub-property layer — its children are CanvasProperties directly.
+// This helper is factored out so it can be unit-tested without a real WZ file.
+func extractDefaultStanceChildren(l logrus.FieldLogger, f *wz.File, templateId string, children []property.Property, templateDir string) int {
+	frameDir := filepath.Join(templateDir, "default", "0")
+	count := 0
+	for _, partProp := range children {
+		cp, ok := partProp.(*property.CanvasProperty)
+		if !ok {
+			continue
+		}
+		if err := extractPartCanvas(l, f, cp, frameDir, cp.Name()); err != nil {
+			l.WithError(err).Warnf("extract part %s/default/0/%s", templateId, cp.Name())
+			continue
+		}
+		count++
+	}
+	return count
+}
+
 // extractTemplateImg processes one Character.wz .img file. It writes
 // {outRoot}/{templateId}/info.json plus, for every supported stance/frame
 // canvas, {outRoot}/{templateId}/{stance}/{frame}/{part}.png + .json.
@@ -189,6 +214,12 @@ func extractTemplateImg(l logrus.FieldLogger, f *wz.File, img *wz.Image, outRoot
 		}
 		stance := stanceSub.Name()
 		if _, ok := stancesInScope[stance]; !ok {
+			continue
+		}
+		if stance == "default" {
+			// `default` has no frame sub-property layer; its children are
+			// CanvasProperties directly. Synthesise frame 0 on disk.
+			count += extractDefaultStanceChildren(l, f, templateId, stanceSub.Children(), templateDir)
 			continue
 		}
 		for _, fp := range stanceSub.Children() {

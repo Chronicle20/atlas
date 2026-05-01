@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // CanvasWidth and CanvasHeight are the native, pre-resize compositing canvas
@@ -35,34 +36,48 @@ type CompositeRequest struct {
 	IsMale     bool // if true, use 0001{wzSkin}.img; else 0000{wzSkin}.img
 }
 
-// Compositor holds the per-process zmap/smap and meta cache.
+// zmapEntry holds the per-assetsRoot zmap and smap.
+type zmapEntry struct {
+	zmap []string
+	smap map[string]string
+}
+
+// Compositor holds per-assetsRoot zmap/smap caches and a meta cache.
+// zmaps and smaps are keyed by assetsRoot so multi-tenant processes never
+// share zmap/smap data between tenants.
 type Compositor struct {
-	zmap  []string
-	smap  map[string]string
+	mu    sync.Mutex
+	zmaps map[string]zmapEntry // assetsRoot -> {zmap, smap}
 	cache *metaCache
 }
 
 // NewCompositor lazily loads zmap/smap from disk on first use.
 func NewCompositor() *Compositor {
-	return &Compositor{cache: newMetaCache()}
+	return &Compositor{
+		zmaps: make(map[string]zmapEntry),
+		cache: newMetaCache(),
+	}
 }
 
-func (c *Compositor) loadMaps(assetsRoot string) error {
-	if c.zmap == nil {
-		z, err := LoadZmap(assetsRoot)
-		if err != nil {
-			return err
-		}
-		c.zmap = z
+func (c *Compositor) loadMaps(assetsRoot string) (zmapEntry, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if e, ok := c.zmaps[assetsRoot]; ok {
+		return e, nil
 	}
-	if c.smap == nil {
-		s, err := LoadSmap(assetsRoot)
-		if err != nil {
-			return err
-		}
-		c.smap = s
+
+	z, err := LoadZmap(assetsRoot)
+	if err != nil {
+		return zmapEntry{}, err
 	}
-	return nil
+	s, err := LoadSmap(assetsRoot)
+	if err != nil {
+		return zmapEntry{}, err
+	}
+	e := zmapEntry{zmap: z, smap: s}
+	c.zmaps[assetsRoot] = e
+	return e, nil
 }
 
 // CompositeResult bundles the composited image and observability metadata.
@@ -83,7 +98,8 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	if req.Resize < 1 || req.Resize > 4 {
 		return nil, fmt.Errorf("resize out of range 1..4: %d", req.Resize)
 	}
-	if err := c.loadMaps(req.AssetsRoot); err != nil {
+	maps, err := c.loadMaps(req.AssetsRoot)
+	if err != nil {
 		return nil, err
 	}
 
@@ -101,10 +117,10 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	}
 
 	canvas := image.NewRGBA(image.Rect(0, 0, CanvasWidth, CanvasHeight))
-	if err := c.blitBody(canvas, req.AssetsRoot, bodyTemplate, stance, req.Frame); err != nil {
+	if err := c.blitBody(canvas, req.AssetsRoot, bodyTemplate, stance, req.Frame, maps.zmap); err != nil {
 		return nil, err
 	}
-	if err := c.blitEquipment(canvas, req, filtered, stance); err != nil {
+	if err := c.blitEquipment(canvas, req, filtered, stance, maps.zmap); err != nil {
 		return nil, err
 	}
 
@@ -136,7 +152,7 @@ func bodyTemplateId(isMale bool, wzSkin int) string {
 
 // blitBody anchors the body's `body` part at the canvas center and draws
 // every part canvas in the body img's frame in zmap order.
-func (c *Compositor) blitBody(canvas *image.RGBA, assetsRoot, templateId, stance string, frame int) error {
+func (c *Compositor) blitBody(canvas *image.RGBA, assetsRoot, templateId, stance string, frame int, zmap []string) error {
 	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
 
 	parts, err := listFrameParts(assetsRoot, templateId, stance, frame)
@@ -169,7 +185,7 @@ func (c *Compositor) blitBody(canvas *image.RGBA, assetsRoot, templateId, stance
 		entries = append(entries, entry{part, meta, anchor})
 	}
 	sort.SliceStable(entries, func(i, j int) bool {
-		return c.zIndex(entries[i].meta.Z) < c.zIndex(entries[j].meta.Z)
+		return zIndex(zmap, entries[i].meta.Z) < zIndex(zmap, entries[j].meta.Z)
 	})
 	for _, e := range entries {
 		if err := drawPart(canvas, assetsRoot, templateId, stance, frame, e.part, e.anchor); err != nil {
@@ -179,14 +195,16 @@ func (c *Compositor) blitBody(canvas *image.RGBA, assetsRoot, templateId, stance
 	return nil
 }
 
-func (c *Compositor) zIndex(z string) int {
-	for i, name := range c.zmap {
+// zIndex returns the position of z in the zmap slice. Unknown values sort to
+// the back so they appear on top of everything.
+func zIndex(zmap []string, z string) int {
+	for i, name := range zmap {
 		if strings.EqualFold(name, z) {
 			return i
 		}
 	}
 	// Unknown z values sort to the back.
-	return len(c.zmap)
+	return len(zmap)
 }
 
 func loadOrEmpty(assetsRoot, templateId, stance string, frame int, part string) (PartMeta, bool) {
@@ -252,7 +270,7 @@ var jointForSlot = map[int]string{
 
 // blitEquipment iterates equipment in zmap order, resolves each part's joint
 // anchor against the body, and blits the part canvases into `canvas`.
-func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equipment map[int]int, stance string) error {
+func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equipment map[int]int, stance string, zmap []string) error {
 	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
 	bodyTemplate := bodyTemplateId(req.IsMale, mustSkin(req.Skin))
 
@@ -285,7 +303,7 @@ func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equ
 			}
 			entries = append(entries, entry{
 				templateId: templateId, part: part, meta: meta, anchor: anchor,
-				zIdx: c.zIndex(meta.Z),
+				zIdx: zIndex(zmap, meta.Z),
 			})
 		}
 		return nil

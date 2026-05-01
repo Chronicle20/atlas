@@ -55,3 +55,31 @@ func TestCanonicalLoadoutStringMatchesFixture(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadoutHashMatchesFixture(t *testing.T) {
+	f := loadHashFixture(t)
+	for _, row := range f.Rows {
+		t.Run(row.Tenant+"-"+row.Stance, func(t *testing.T) {
+			canonical := CanonicalLoadoutString(
+				row.Tenant, row.Region, row.MajorVersion, row.MinorVersion,
+				row.Skin, row.Hair, row.Face, row.Stance, row.Frame, row.Resize,
+				row.Items,
+			)
+			got := LoadoutHash(canonical)
+			if got != row.ExpectedHash {
+				t.Fatalf("hash mismatch for %s: got %s, want %s",
+					row.Canonical, got, row.ExpectedHash)
+			}
+		})
+	}
+}
+
+func TestCanonicalLoadoutStringSortsItems(t *testing.T) {
+	a := CanonicalLoadoutString("t", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2,
+		[]int{1442024, 1002357, 1402024})
+	b := CanonicalLoadoutString("t", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 2,
+		[]int{1002357, 1402024, 1442024})
+	if a != b {
+		t.Fatalf("sort-invariance broken:\n a=%q\n b=%q", a, b)
+	}
+}

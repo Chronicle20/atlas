@@ -6,13 +6,22 @@ import type { Character } from "@/types/models/character";
 import type { TenantConfigAttributes } from "@/services/api";
 
 vi.mock("@/components/features/characters/CharacterRenderer", () => ({
-  CharacterRenderer: ({ character }: { character: Character }) => (
+  CharacterRenderer: ({
+    character,
+    inventory,
+  }: {
+    character: Character;
+    inventory?: { attributes: { templateId: number } }[];
+  }) => (
     <div
       data-testid="renderer"
       data-face={character.attributes.face}
       data-hair={character.attributes.hair}
       data-skin={character.attributes.skinColor}
       data-gender={character.attributes.gender}
+      data-equipment={
+        inventory?.map((a) => a.attributes.templateId).join(",") ?? ""
+      }
     />
   ),
 }));
@@ -28,10 +37,10 @@ const template: TenantConfigAttributes["characters"]["templates"][number] = {
   hairs: [30030],
   hairColors: [3],
   skinColors: [2],
-  tops: [],
-  bottoms: [],
-  shoes: [],
-  weapons: [],
+  tops: [1040002],
+  bottoms: [1060002],
+  shoes: [1072001],
+  weapons: [1302000],
   items: [],
   skills: [],
 };
@@ -45,6 +54,17 @@ describe("EmptySlotTile", () => {
     expect(renderer).toHaveAttribute("data-hair", "30033");
     expect(renderer).toHaveAttribute("data-skin", "2");
     expect(renderer).toHaveAttribute("data-gender", "0");
+  });
+
+  it("equips the silhouette with the first item from each starter equipment list", () => {
+    render(<EmptySlotTile onClick={vi.fn()} template={template} />);
+    const renderer = screen.getByTestId("renderer");
+    const equipment = (renderer.getAttribute("data-equipment") ?? "")
+      .split(",")
+      .filter(Boolean);
+    expect(equipment).toEqual(
+      expect.arrayContaining(["1040002", "1060002", "1072001", "1302000"]),
+    );
   });
 
   it("falls back to a plus glyph when no template is provided", () => {

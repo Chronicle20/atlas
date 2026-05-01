@@ -34,6 +34,8 @@ func ExtractIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 		return extractEquipmentIcons(l, f, outputDir)
 	case name == "ui":
 		return extractUIIcons(l, f, outputDir)
+	case name == "base":
+		return extractCharacterMaps(l, f, outputDir)
 	default:
 		return nil
 	}

@@ -38,9 +38,15 @@ type templateInfo struct {
 
 // stancesInScope is the explicit allow-list of stances we extract. Skipping
 // fly/prone/swing/etc. keeps the on-disk footprint manageable.
+//
 // "default" is included for equipment that doesn't animate (hair, face, hats,
 // gloves, glasses, earrings, etc.) — those have direct canvas children rather
 // than a frame SubProperty layer.
+//
+// "front" and "back" are included because the head template (0001{wzSkin}.img)
+// stores its head canvas under front/head and back/head — NOT under any of the
+// animated stances. Stance dirs (stand1, stand2, walk1, etc.) only contain
+// UOL aliases that point back to front/head.
 var stancesInScope = map[string]struct{}{
 	"stand1":  {},
 	"stand2":  {},
@@ -48,6 +54,17 @@ var stancesInScope = map[string]struct{}{
 	"alert":   {},
 	"jump":    {},
 	"default": {},
+	"front":   {},
+	"back":    {},
+}
+
+// directCanvasStances are stances whose children are CanvasProperty parts at
+// the top level (no frame SubProperty layer). Animated stances (stand1, etc.)
+// instead nest frame SubProperties under the stance.
+var directCanvasStances = map[string]struct{}{
+	"default": {},
+	"front":   {},
+	"back":    {},
 }
 
 // equipmentSubdirs are the Character.wz subdirectories whose .img files we
@@ -99,9 +116,13 @@ func writeInfoJSON(dir string, info templateInfo) error {
 	return os.WriteFile(filepath.Join(dir, "info.json"), b, 0o644)
 }
 
-// extractPartCanvas decodes a single part canvas, writes the PNG, and writes
-// the JSON sidecar. The destination dir is created if missing.
-func extractPartCanvas(l logrus.FieldLogger, f *wz.File, cp *property.CanvasProperty, dir, partName string) error {
+// canvasWriter is the function used to emit a single part canvas to disk.
+// It's a package-level variable so tests can stub it without a real *wz.File.
+var canvasWriter = defaultCanvasWriter
+
+// defaultCanvasWriter decodes a CanvasProperty against a real WZ file and
+// writes the PNG + sidecar.
+func defaultCanvasWriter(l logrus.FieldLogger, f *wz.File, cp *property.CanvasProperty, dir, partName string) error {
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", dir, err)
 	}
@@ -130,6 +151,11 @@ func extractPartCanvas(l logrus.FieldLogger, f *wz.File, cp *property.CanvasProp
 		return fmt.Errorf("marshal sidecar: %w", err)
 	}
 	return os.WriteFile(filepath.Join(dir, partName+".json"), b, 0o644)
+}
+
+// extractPartCanvas dispatches to the active canvasWriter (overridable in tests).
+func extractPartCanvas(l logrus.FieldLogger, f *wz.File, cp *property.CanvasProperty, dir, partName string) error {
+	return canvasWriter(l, f, cp, dir, partName)
 }
 
 // buildPartSidecar walks the children of a part canvas to produce the
@@ -173,23 +199,156 @@ func buildPartSidecar(children []property.Property) partSidecar {
 	return out
 }
 
-// extractDefaultStanceChildren writes canvas parts from a `default` stance
-// directly into {templateDir}/default/0/. Unlike animated stances, `default`
-// has no frame sub-property layer — its children are CanvasProperties directly.
-// This helper is factored out so it can be unit-tested without a real WZ file.
-func extractDefaultStanceChildren(l logrus.FieldLogger, f *wz.File, templateId string, children []property.Property, templateDir string) int {
-	frameDir := filepath.Join(templateDir, "default", "0")
+// pathLookup is a lower-cased path -> property map built once per .img to
+// resolve UOL references in O(1).
+type pathLookup map[string]property.Property
+
+// buildPathLookup walks every property under root (recursively, including
+// canvas children) and indexes them by their slash-joined absolute path. The
+// root itself is not included; its top-level children appear as "name".
+//
+// Names are lower-cased so case-insensitive lookups (matching MapleStory's
+// WZ behavior) work uniformly.
+func buildPathLookup(root []property.Property) pathLookup {
+	out := make(pathLookup)
+	var walk func(prefix string, props []property.Property)
+	walk = func(prefix string, props []property.Property) {
+		for _, p := range props {
+			path := strings.ToLower(p.Name())
+			if prefix != "" {
+				path = prefix + "/" + path
+			}
+			out[path] = p
+			if children := p.Children(); len(children) > 0 {
+				walk(path, children)
+			}
+		}
+	}
+	walk("", root)
+	return out
+}
+
+// canonicalizeUOLPath resolves a UOL value relative to its anchor (the
+// slash-joined absolute path of the property containing the UOL — e.g.
+// "stand1/0" for a UOLProperty at stand1/0/head). The result is the
+// slash-joined absolute path of the UOL target.
+//
+// `..` segments pop one component; named segments push.
+func canonicalizeUOLPath(anchorPath, uolValue string) string {
+	parts := strings.Split(anchorPath, "/")
+	if anchorPath == "" {
+		parts = nil
+	}
+	for _, seg := range strings.Split(uolValue, "/") {
+		if seg == "" || seg == "." {
+			continue
+		}
+		if seg == ".." {
+			if len(parts) > 0 {
+				parts = parts[:len(parts)-1]
+			}
+			continue
+		}
+		parts = append(parts, strings.ToLower(seg))
+	}
+	return strings.Join(parts, "/")
+}
+
+// resolveUOL dereferences a UOL property given the anchor path of its
+// containing SubProperty. The lookup is case-insensitive (paths in the
+// pathLookup map are lower-cased). Chains of UOLs are followed up to 5 hops.
+//
+// Returns nil if the path doesn't resolve or if the chain exceeds 5 hops.
+func resolveUOL(lookup pathLookup, anchorPath string, uol *property.UOLProperty) property.Property {
+	current := uol
+	currentAnchor := anchorPath
+	for depth := 0; depth < 5; depth++ {
+		target := canonicalizeUOLPath(currentAnchor, current.Value())
+		resolved, ok := lookup[target]
+		if !ok {
+			return nil
+		}
+		next, isUOL := resolved.(*property.UOLProperty)
+		if !isUOL {
+			return resolved
+		}
+		// Anchor for the next hop is the parent path of the resolved UOL.
+		currentAnchor = parentPath(target)
+		current = next
+	}
+	return nil
+}
+
+// parentPath returns the slash-joined path with the last segment removed.
+func parentPath(path string) string {
+	idx := strings.LastIndex(path, "/")
+	if idx < 0 {
+		return ""
+	}
+	return path[:idx]
+}
+
+// extractDefaultStanceChildren writes canvas parts from a stance whose
+// children are CanvasProperties directly (default, front, back) into
+// {templateDir}/{stance}/0/. Resolves UOL children against the .img-wide
+// pathLookup so aliases are materialized.
+//
+// `lookup` and `stancePath` may be nil/"" if no UOL children are expected.
+func extractDefaultStanceChildren(l logrus.FieldLogger, f *wz.File, templateId string, children []property.Property, templateDir, stance string, lookup pathLookup, stancePath string) int {
+	frameDir := filepath.Join(templateDir, stance, "0")
 	count := 0
 	for _, partProp := range children {
-		cp, ok := partProp.(*property.CanvasProperty)
-		if !ok {
-			continue
+		switch v := partProp.(type) {
+		case *property.CanvasProperty:
+			if err := extractPartCanvas(l, f, v, frameDir, v.Name()); err != nil {
+				l.WithError(err).Warnf("extract part %s/%s/0/%s", templateId, stance, v.Name())
+				continue
+			}
+			count++
+		case *property.UOLProperty:
+			if lookup == nil {
+				continue
+			}
+			target := resolveUOL(lookup, stancePath, v)
+			cp, ok := target.(*property.CanvasProperty)
+			if !ok {
+				continue
+			}
+			if err := extractPartCanvas(l, f, cp, frameDir, v.Name()); err != nil {
+				l.WithError(err).Warnf("extract uol part %s/%s/0/%s", templateId, stance, v.Name())
+				continue
+			}
+			count++
 		}
-		if err := extractPartCanvas(l, f, cp, frameDir, cp.Name()); err != nil {
-			l.WithError(err).Warnf("extract part %s/default/0/%s", templateId, cp.Name())
-			continue
+	}
+	return count
+}
+
+// extractAnimatedFrameChildren writes canvas parts from one frame of an
+// animated stance (e.g., stand1/0/...), resolving UOL aliases along the way.
+func extractAnimatedFrameChildren(l logrus.FieldLogger, f *wz.File, templateId, stance, frameName string, frameProps []property.Property, templateDir string, lookup pathLookup, framePath string) int {
+	frameDir := filepath.Join(templateDir, stance, frameName)
+	count := 0
+	for _, partProp := range frameProps {
+		switch v := partProp.(type) {
+		case *property.CanvasProperty:
+			if err := extractPartCanvas(l, f, v, frameDir, v.Name()); err != nil {
+				l.WithError(err).Warnf("extract part %s/%s/%s/%s", templateId, stance, frameName, v.Name())
+				continue
+			}
+			count++
+		case *property.UOLProperty:
+			target := resolveUOL(lookup, framePath, v)
+			cp, ok := target.(*property.CanvasProperty)
+			if !ok {
+				continue
+			}
+			if err := extractPartCanvas(l, f, cp, frameDir, v.Name()); err != nil {
+				l.WithError(err).Warnf("extract uol part %s/%s/%s/%s", templateId, stance, frameName, v.Name())
+				continue
+			}
+			count++
 		}
-		count++
 	}
 	return count
 }
@@ -197,17 +356,24 @@ func extractDefaultStanceChildren(l logrus.FieldLogger, f *wz.File, templateId s
 // extractTemplateImg processes one Character.wz .img file. It writes
 // {outRoot}/{templateId}/info.json plus, for every supported stance/frame
 // canvas, {outRoot}/{templateId}/{stance}/{frame}/{part}.png + .json.
+//
+// UOL aliases under any in-scope stance are dereferenced and the target
+// canvas is materialized at the alias's path so consumers don't need to
+// understand the WZ link semantics.
 func extractTemplateImg(l logrus.FieldLogger, f *wz.File, img *wz.Image, outRoot string) (int, error) {
 	templateId := normalizeId(img.Name())
 	templateDir := filepath.Join(outRoot, templateId)
 
-	info := extractInfoBlock(img.Properties())
+	props := img.Properties()
+	info := extractInfoBlock(props)
 	if err := writeInfoJSON(templateDir, info); err != nil {
 		return 0, fmt.Errorf("write info: %w", err)
 	}
 
+	lookup := buildPathLookup(props)
+
 	count := 0
-	for _, p := range img.Properties() {
+	for _, p := range props {
 		stanceSub, ok := p.(*property.SubProperty)
 		if !ok {
 			continue
@@ -216,30 +382,20 @@ func extractTemplateImg(l logrus.FieldLogger, f *wz.File, img *wz.Image, outRoot
 		if _, ok := stancesInScope[stance]; !ok {
 			continue
 		}
-		if stance == "default" {
-			// `default` has no frame sub-property layer; its children are
-			// CanvasProperties directly. Synthesise frame 0 on disk.
-			count += extractDefaultStanceChildren(l, f, templateId, stanceSub.Children(), templateDir)
+		stancePath := strings.ToLower(stance)
+		if _, direct := directCanvasStances[stance]; direct {
+			count += extractDefaultStanceChildren(l, f, templateId, stanceSub.Children(), templateDir, stance, lookup, stancePath)
 			continue
 		}
+		// Animated stance: each child is a frame SubProperty.
 		for _, fp := range stanceSub.Children() {
 			frameSub, ok := fp.(*property.SubProperty)
 			if !ok {
 				continue
 			}
 			frameName := frameSub.Name()
-			frameDir := filepath.Join(templateDir, stance, frameName)
-			for _, partProp := range frameSub.Children() {
-				cp, ok := partProp.(*property.CanvasProperty)
-				if !ok {
-					continue
-				}
-				if err := extractPartCanvas(l, f, cp, frameDir, cp.Name()); err != nil {
-					l.WithError(err).Warnf("extract part %s/%s/%s/%s", templateId, stance, frameName, cp.Name())
-					continue
-				}
-				count++
-			}
+			framePath := stancePath + "/" + strings.ToLower(frameName)
+			count += extractAnimatedFrameChildren(l, f, templateId, stance, frameName, frameSub.Children(), templateDir, lookup, framePath)
 		}
 	}
 	return count, nil

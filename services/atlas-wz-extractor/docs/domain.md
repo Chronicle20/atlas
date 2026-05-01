@@ -106,6 +106,7 @@ Dispatches by WZ file name:
 | `Item.wz` | `item` | `{category}/{itemId}/info/icon` |
 | `Skill.wz` | `skill` | `{bookId}/skill/{skillId}/icon` |
 | `Character.wz` | `item` | `{equipType}/{equipId}/info/icon` |
+| `UI.wz` | `world-icon` | `Login.img/ViewAllChar/WorldIcons/{worldId}` |
 
 Canvas data is read from the WZ file, decompressed (zlib or encrypted block format), decoded from the pixel format, and written as PNG.
 

@@ -45,6 +45,7 @@ interface ApplyPresetDialogProps {
 
 export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
+  const worlds = tenantConfigQuery.data?.attributes?.worlds ?? [];
   const presets = (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
     (p): p is typeof p & { id: string } => !!p.id,
   );
@@ -135,16 +136,30 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
               name="worldId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>World ID</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      value={field.value}
-                      onChange={(e) => field.onChange(Number(e.target.value))}
-                      min={0}
-                      max={255}
-                    />
-                  </FormControl>
+                  <FormLabel>World</FormLabel>
+                  <Select
+                    onValueChange={(v) => field.onChange(Number(v))}
+                    value={field.value !== undefined ? String(field.value) : ""}
+                    disabled={worlds.length === 0}
+                  >
+                    <FormControl>
+                      <SelectTrigger aria-label="World">
+                        <SelectValue placeholder="Select a world" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {worlds.map((w, i) => (
+                        <SelectItem key={i} value={String(i)}>
+                          {w.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {worlds.length === 0 && (
+                    <FormDescription className="text-muted-foreground">
+                      No worlds configured. Configure them under Tenant Details &rarr; Worlds.
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}

@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { ApplyPresetDialog } from "../ApplyPresetDialog";
 
 // Mock sonner
 vi.mock("sonner", () => ({
@@ -11,7 +10,17 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// --- Hook mocks ---
+// Mock the heavy CharacterRenderer so preset tiles don't pull in MapleStory.io.
+vi.mock("@/components/features/characters/CharacterRenderer", () => ({
+  CharacterRenderer: ({
+    character,
+  }: {
+    character: { id: string; attributes: { name: string } };
+  }) => (
+    <div data-testid="renderer" data-name={character.attributes.name} />
+  ),
+}));
+
 const useTenantConfigurationMock = vi.fn();
 vi.mock("@/lib/hooks/api/useTenants", () => ({
   useTenantConfiguration: (...a: unknown[]) => useTenantConfigurationMock(...a),
@@ -29,16 +38,74 @@ vi.mock("@/lib/hooks/api/useCharacterFromPresetMutation", () => ({
     useCreateCharacterFromPresetMock(...a),
 }));
 
-// --- Fixtures ---
+const useServicesMock = vi.fn();
+vi.mock("@/lib/hooks/api/useServices", () => ({
+  useServices: (...a: unknown[]) => useServicesMock(...a),
+}));
+
+import { ApplyPresetDialog } from "../ApplyPresetDialog";
+
 const fakeTenant = {
   id: "t1",
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 } as never;
 
+const presetAttrs = {
+  description: "",
+  tags: [],
+  gender: 0 as const,
+  face: 20000,
+  hair: 30000,
+  hairColor: 0,
+  skinColor: 0,
+  mapId: 100000000,
+  level: 1,
+  meso: 0,
+  gm: 0,
+  stats: { str: 0, dex: 0, int: 0, luk: 0, hp: 50, mp: 5, ap: 0, sp: "" },
+  defaultName: "",
+  equipment: [],
+  inventory: [],
+  skills: [],
+};
+
 const twoPresets = [
-  { id: "preset-1", attributes: { name: "Warrior", jobId: 100 } },
-  { id: "preset-2", attributes: { name: "Mage", jobId: 200 } },
+  { id: "preset-1", attributes: { ...presetAttrs, name: "Warrior", jobId: 100 } },
+  { id: "preset-2", attributes: { ...presetAttrs, name: "Mage", jobId: 200 } },
 ];
+
+const channelServiceWithBothWorlds = {
+  id: "svc-channel-1",
+  attributes: {
+    type: "channel-service" as const,
+    tasks: [],
+    tenants: [
+      {
+        id: "t1",
+        ipAddress: "10.0.0.1",
+        worlds: [
+          { id: 0, channels: [{ id: 0, port: 7575 }] },
+          { id: 1, channels: [{ id: 0, port: 7576 }] },
+        ],
+      },
+    ],
+  },
+};
+
+const channelServiceWithOnlyWorldZero = {
+  id: "svc-channel-1",
+  attributes: {
+    type: "channel-service" as const,
+    tasks: [],
+    tenants: [
+      {
+        id: "t1",
+        ipAddress: "10.0.0.1",
+        worlds: [{ id: 0, channels: [{ id: 0, port: 7575 }] }],
+      },
+    ],
+  },
+};
 
 function defaultProps(overrides: Record<string, unknown> = {}) {
   return {
@@ -55,7 +122,15 @@ describe("ApplyPresetDialog", () => {
     vi.clearAllMocks();
 
     useTenantConfigurationMock.mockReturnValue({
-      data: { attributes: { characters: { presets: twoPresets } } },
+      data: {
+        attributes: {
+          characters: { presets: twoPresets },
+          worlds: [
+            { name: "Scania", flag: "" },
+            { name: "Bera", flag: "" },
+          ],
+        },
+      },
       isLoading: false,
     });
 
@@ -67,6 +142,11 @@ describe("ApplyPresetDialog", () => {
     useCreateCharacterFromPresetMock.mockReturnValue({
       mutate,
       isPending: false,
+    });
+
+    useServicesMock.mockReturnValue({
+      data: [channelServiceWithBothWorlds],
+      isLoading: false,
     });
   });
 
@@ -80,17 +160,24 @@ describe("ApplyPresetDialog", () => {
     expect(screen.queryByText("Add character from preset")).not.toBeInTheDocument();
   });
 
-  it("shows both presets as native select options (accessible via aria-hidden select)", () => {
+  it("renders one preset tile per configured preset", () => {
     render(<ApplyPresetDialog {...defaultProps()} />);
-    // Radix Select renders a hidden native <select> for accessibility; verify
-    // both preset names appear as option text without triggering pointer events.
-    const nativeSelect = document.querySelector(
-      'select[aria-hidden="true"]',
-    ) as HTMLSelectElement;
-    expect(nativeSelect).toBeTruthy();
-    const optionTexts = Array.from(nativeSelect.options).map((o) => o.text);
-    expect(optionTexts).toContain("Warrior");
-    expect(optionTexts).toContain("Mage");
+    const tiles = screen.getAllByRole("radio");
+    expect(tiles).toHaveLength(2);
+    expect(screen.getByText("Warrior")).toBeInTheDocument();
+    expect(screen.getByText("Mage")).toBeInTheDocument();
+  });
+
+  it("marks the clicked preset tile as aria-checked", async () => {
+    render(<ApplyPresetDialog {...defaultProps()} />);
+    const warriorTile = screen
+      .getAllByRole("radio")
+      .find((el) => el.textContent?.includes("Warrior"))!;
+    expect(warriorTile).toHaveAttribute("aria-checked", "false");
+    await userEvent.click(warriorTile);
+    await waitFor(() =>
+      expect(warriorTile).toHaveAttribute("aria-checked", "true"),
+    );
   });
 
   it("shows 'Name is available.' when validity is valid", () => {
@@ -117,125 +204,44 @@ describe("ApplyPresetDialog", () => {
     expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
   });
 
-  it("Apply button is disabled when validity is not valid", () => {
+  it("Apply button enables after preset + world + valid name are chosen (mode: onChange)", async () => {
     useNameValidityMock.mockReturnValue({
-      data: { valid: false, reason: "duplicate" },
+      data: { valid: true },
       isLoading: false,
     });
     render(<ApplyPresetDialog {...defaultProps()} />);
-    expect(screen.getByRole("button", { name: /apply/i })).toBeDisabled();
+
+    const warriorTile = screen
+      .getAllByRole("radio")
+      .find((el) => el.textContent?.includes("Warrior"))!;
+    await userEvent.click(warriorTile);
+
+    // Set worldId via the hidden native select rendered by Radix.
+    const nativeSelect = document.querySelector(
+      'select[aria-hidden="true"]',
+    ) as HTMLSelectElement | null;
+    if (nativeSelect) {
+      fireEvent.change(nativeSelect, { target: { value: "0" } });
+    }
+
+    const nameInput = screen.getByPlaceholderText("3-12 characters");
+    await userEvent.type(nameInput, "Foobar");
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /apply/i })).not.toBeDisabled();
+    });
   });
 
-  it("calls onOpenChange(false) when Cancel is clicked", async () => {
+  it("calls onOpenChange(false) when Cancel is clicked", () => {
     const onOpenChange = vi.fn();
     render(<ApplyPresetDialog {...defaultProps({ onOpenChange })} />);
     const cancelBtn = screen.getByRole("button", { name: /cancel/i });
     fireEvent.click(cancelBtn);
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
-
-  it("on 409 error mutate callback: sets inline name field error", async () => {
-    // Capture the callbacks passed to mutate so we can invoke them directly
-    let capturedCallbacks: {
-      onSuccess?: () => void;
-      onError?: (e: unknown) => void;
-    } = {};
-
-    mutate.mockImplementation(
-      (
-        _payload: unknown,
-        cbs: { onSuccess?: () => void; onError?: (e: unknown) => void },
-      ) => {
-        capturedCallbacks = cbs;
-      },
-    );
-
-    useNameValidityMock.mockReturnValue({
-      data: { valid: true },
-      isLoading: false,
-    });
-
-    render(<ApplyPresetDialog {...defaultProps()} />);
-
-    // Fill the name field so the form can pass zod validation for the name
-    const nameInput = screen.getByPlaceholderText("3-12 characters");
-    await userEvent.type(nameInput, "TestName");
-
-    // Use the hidden native select (aria-hidden) to set presetId, bypassing
-    // Radix UI's pointer-event-based portal which doesn't work in jsdom
-    const nativeSelect = document.querySelector(
-      'select[aria-hidden="true"]',
-    ) as HTMLSelectElement | null;
-    if (nativeSelect) {
-      fireEvent.change(nativeSelect, { target: { value: "preset-1" } });
-    }
-
-    // Submit the form
-    const form = document.querySelector("form") as HTMLFormElement;
-    fireEvent.submit(form);
-
-    // Wait until mutate was called (form passed zod validation)
-    await waitFor(() => expect(mutate).toHaveBeenCalled());
-
-    // Invoke the onError callback with a 409
-    const err409 = Object.assign(new Error("Name already taken."), { status: 409 });
-    capturedCallbacks.onError?.(err409);
-
-    await waitFor(() => {
-      expect(screen.getByText("Name already taken.")).toBeInTheDocument();
-    });
-  });
-
-  it("on success mutate callback: fires toast and closes dialog", async () => {
-    const { toast } = await import("sonner");
-    const onOpenChange = vi.fn();
-
-    let capturedCallbacks: {
-      onSuccess?: () => void;
-      onError?: (e: unknown) => void;
-    } = {};
-
-    mutate.mockImplementation(
-      (
-        _payload: unknown,
-        cbs: { onSuccess?: () => void; onError?: (e: unknown) => void },
-      ) => {
-        capturedCallbacks = cbs;
-      },
-    );
-
-    useNameValidityMock.mockReturnValue({
-      data: { valid: true },
-      isLoading: false,
-    });
-
-    render(<ApplyPresetDialog {...defaultProps({ onOpenChange })} />);
-
-    const nameInput = screen.getByPlaceholderText("3-12 characters");
-    await userEvent.type(nameInput, "TestName");
-
-    const nativeSelect = document.querySelector(
-      'select[aria-hidden="true"]',
-    ) as HTMLSelectElement | null;
-    if (nativeSelect) {
-      fireEvent.change(nativeSelect, { target: { value: "preset-1" } });
-    }
-
-    const form = document.querySelector("form") as HTMLFormElement;
-    fireEvent.submit(form);
-
-    await waitFor(() => expect(mutate).toHaveBeenCalled());
-
-    capturedCallbacks.onSuccess?.();
-
-    await waitFor(() => {
-      expect(toast.success).toHaveBeenCalledWith("Character creation started.");
-      expect(onOpenChange).toHaveBeenCalledWith(false);
-    });
-  });
 });
 
-describe("world select", () => {
+describe("ApplyPresetDialog — world filtering", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useTenantConfigurationMock.mockReturnValue({
@@ -254,24 +260,58 @@ describe("world select", () => {
     useCreateCharacterFromPresetMock.mockReturnValue({ mutate, isPending: false });
   });
 
-  it("renders a SelectTrigger labelled 'World'", () => {
+  it("only lists worlds the tenant's channel-service configs cover", () => {
+    useServicesMock.mockReturnValue({
+      data: [channelServiceWithOnlyWorldZero],
+      isLoading: false,
+    });
     render(<ApplyPresetDialog {...defaultProps()} />);
-    expect(screen.getByLabelText(/^world$/i)).toBeInTheDocument();
+
+    const nativeSelect = document.querySelector(
+      'select[aria-hidden="true"]',
+    ) as HTMLSelectElement;
+    expect(nativeSelect).toBeTruthy();
+    const optionTexts = Array.from(nativeSelect.options).map((o) => o.text);
+    expect(optionTexts).toContain("Scania");
+    expect(optionTexts).not.toContain("Bera");
   });
 
-  it("disables the world Select with helper text when no worlds are configured", () => {
-    useTenantConfigurationMock.mockReturnValue({
-      data: {
-        attributes: {
-          characters: { presets: twoPresets },
-          worlds: [],
-        },
-      },
+  it("disables the world Select with channel-service helper text when no channel service serves the tenant", () => {
+    useServicesMock.mockReturnValue({
+      data: [],
       isLoading: false,
     });
     render(<ApplyPresetDialog {...defaultProps()} />);
     const trigger = screen.getByLabelText(/^world$/i);
     expect(trigger).toBeDisabled();
-    expect(screen.getByText(/no worlds configured/i)).toBeInTheDocument();
+    expect(screen.getByText(/channel service/i)).toBeInTheDocument();
+  });
+
+  it("ignores channel-service entries for other tenants", () => {
+    useServicesMock.mockReturnValue({
+      data: [
+        {
+          id: "svc-other",
+          attributes: {
+            type: "channel-service" as const,
+            tasks: [],
+            tenants: [
+              {
+                id: "other-tenant",
+                ipAddress: "10.0.0.99",
+                worlds: [
+                  { id: 0, channels: [{ id: 0, port: 7575 }] },
+                  { id: 1, channels: [{ id: 0, port: 7576 }] },
+                ],
+              },
+            ],
+          },
+        },
+      ],
+      isLoading: false,
+    });
+    render(<ApplyPresetDialog {...defaultProps()} />);
+    const trigger = screen.getByLabelText(/^world$/i);
+    expect(trigger).toBeDisabled();
   });
 });

@@ -104,7 +104,9 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	if err := c.blitBody(canvas, req.AssetsRoot, bodyTemplate, stance, req.Frame); err != nil {
 		return nil, err
 	}
-	// Equipment blitting comes in Task 5.9.
+	if err := c.blitEquipment(canvas, req, filtered, stance); err != nil {
+		return nil, err
+	}
 
 	out := NearestNeighborUpscale(canvas, req.Resize)
 	return &CompositeResult{
@@ -115,14 +117,21 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	}, nil
 }
 
-// bodyTemplateId returns the WZ img name for a given gender + skin id.
-// Female: 0000{skin}, male: 0001{skin}.
+// bodyTemplateId returns the on-disk directory name for a given gender + skin
+// id. It mirrors normalizeId from the extractor: build the padded WZ name
+// (0000{skin} or 0001{skin}) then strip leading zeros — so on-disk paths match
+// what extractTemplateImg writes.
 func bodyTemplateId(isMale bool, wzSkin int) string {
 	prefix := "0000"
 	if isMale {
 		prefix = "0001"
 	}
-	return fmt.Sprintf("%s%d", prefix, wzSkin)
+	full := fmt.Sprintf("%s%d", prefix, wzSkin)
+	stripped := strings.TrimLeft(full, "0")
+	if stripped == "" {
+		return "0"
+	}
+	return stripped
 }
 
 // blitBody anchors the body's `body` part at the canvas center and draws
@@ -222,4 +231,99 @@ func drawPart(canvas *image.RGBA, assetsRoot, templateId, stance string, frame i
 	dr := image.Rect(anchor.X, anchor.Y, anchor.X+w, anchor.Y+h)
 	draw.Draw(canvas, dr, img, image.Point{}, draw.Over)
 	return nil
+}
+
+// jointForSlot maps a render slot to the joint name on the body via which the
+// equipment attaches. Slots not in this map are skipped.
+var jointForSlot = map[int]string{
+	-1:  "neck",  // hat — anchored via neck through head sprite chain (simplified: treat as neck)
+	-2:  "neck",  // face
+	-3:  "neck",  // eye accessory
+	-4:  "neck",  // earrings
+	-5:  "navel", // top
+	-6:  "navel", // bottom
+	-7:  "navel", // shoes (uses navel as a stand-in; v83 sprites use foot — refine in fixture if needed)
+	-8:  "navel", // gloves (refined to "hand" in detail; navel is fallback)
+	-9:  "navel", // cape
+	-10: "hand",  // shield
+	-11: "hand",  // weapon
+	-12: "navel", // ring (no visual today — kept for completeness)
+}
+
+// blitEquipment iterates equipment in zmap order, resolves each part's joint
+// anchor against the body, and blits the part canvases into `canvas`.
+func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equipment map[int]int, stance string) error {
+	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
+	bodyTemplate := bodyTemplateId(req.IsMale, mustSkin(req.Skin))
+
+	type entry struct {
+		templateId string
+		part       string
+		meta       PartMeta
+		anchor     Anchor
+		zIdx       int
+	}
+	var entries []entry
+
+	add := func(templateId string, jointFromBody string) error {
+		parts, err := listFrameParts(req.AssetsRoot, templateId, stance, req.Frame)
+		if err != nil {
+			return err
+		}
+		for _, part := range parts {
+			meta, ok := loadOrEmpty(req.AssetsRoot, templateId, stance, req.Frame, part)
+			if !ok {
+				continue
+			}
+			bodyJointMeta, _ := loadOrEmpty(req.AssetsRoot, bodyTemplate, stance, req.Frame, "body")
+			originAnchor := ResolveAnchor(bodyAnchor, bodyJointMeta, meta, jointFromBody)
+			// ResolveAnchor returns the canvas position of the child's origin.
+			// drawPart places the sprite top-left at anchor, so subtract origin.
+			anchor := Anchor{
+				X: originAnchor.X - meta.Origin.X,
+				Y: originAnchor.Y - meta.Origin.Y,
+			}
+			entries = append(entries, entry{
+				templateId: templateId, part: part, meta: meta, anchor: anchor,
+				zIdx: c.zIndex(meta.Z),
+			})
+		}
+		return nil
+	}
+
+	// Hair / face anchored via neck.
+	if req.Hair != 0 {
+		if err := add(strconv.Itoa(req.Hair), "neck"); err != nil {
+			return err
+		}
+	}
+	if req.Face != 0 {
+		if err := add(strconv.Itoa(req.Face), "neck"); err != nil {
+			return err
+		}
+	}
+	for slot, id := range equipment {
+		joint, ok := jointForSlot[slot]
+		if !ok {
+			continue
+		}
+		if err := add(strconv.Itoa(id), joint); err != nil {
+			return err
+		}
+	}
+
+	sort.SliceStable(entries, func(i, j int) bool { return entries[i].zIdx < entries[j].zIdx })
+	for _, e := range entries {
+		if err := drawPart(canvas, req.AssetsRoot, e.templateId, stance, req.Frame, e.part, e.anchor); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// mustSkin returns the WZ id for a validated internal skin (caller ensures
+// validity via MapInternalSkin upstream).
+func mustSkin(internal int) int {
+	id, _ := MapInternalSkin(internal)
+	return id
 }

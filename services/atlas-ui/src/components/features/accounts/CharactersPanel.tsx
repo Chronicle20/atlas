@@ -25,6 +25,8 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
 
   const slots = account.attributes.characterSlots;
   const worlds = tenantConfigQuery.data?.attributes?.worlds ?? [];
+  const templates = tenantConfigQuery.data?.attributes?.characters?.templates ?? [];
+  const emptyTemplate = templates[0];
   const hasPresets =
     (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).length > 0;
 
@@ -65,6 +67,11 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
               key={`empty-${i}`}
               onClick={() => setAddOpen(true)}
               disabled={!hasPresets}
+              {...(emptyTemplate && { template: emptyTemplate })}
+              {...(tenant.attributes.region && { region: tenant.attributes.region })}
+              {...(tenant.attributes.majorVersion && {
+                majorVersion: tenant.attributes.majorVersion,
+              })}
             />
           ))}
         </div>

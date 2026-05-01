@@ -12,7 +12,7 @@ import (
 // writeSyntheticBody creates a 4x4 colored body sprite under the assets root.
 func writeSyntheticBody(t *testing.T, root string) string {
 	t.Helper()
-	templateId := "00002000"
+	templateId := "2000"
 	frameDir := filepath.Join(root, "character-parts", templateId, "stand1", "0")
 	if err := os.MkdirAll(frameDir, 0o755); err != nil {
 		t.Fatalf("mkdir: %v", err)
@@ -96,5 +96,65 @@ func checkColored(t *testing.T, img *image.RGBA, x, y int) {
 	c := img.RGBAAt(x, y)
 	if c.A == 0 || c.R == 0 {
 		t.Fatalf("pixel (%d,%d) = %+v — expected body color", x, y, c)
+	}
+}
+
+func writeSyntheticHat(t *testing.T, root string, hatId int) {
+	t.Helper()
+	tmpl := "10000" // matches request equipment id 10000 (stripped form per normalizeId)
+	if hatId != 0 {
+		// caller chose an explicit id — currently unused
+		_ = hatId
+	}
+	frameDir := filepath.Join(root, "character-parts", tmpl, "stand1", "0")
+	if err := os.MkdirAll(frameDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	img := image.NewRGBA(image.Rect(0, 0, 6, 4))
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 6; x++ {
+			img.SetRGBA(x, y, color.RGBA{B: 200, G: 50, A: 255})
+		}
+	}
+	f, _ := os.Create(filepath.Join(frameDir, "default.png"))
+	defer f.Close()
+	_ = png.Encode(f, img)
+	_ = os.WriteFile(filepath.Join(frameDir, "default.json"),
+		[]byte(`{"origin":{"x":3,"y":3},"map":{"neck":{"x":0,"y":0}},"z":"cap"}`), 0o644)
+	_ = os.WriteFile(filepath.Join(root, "character-parts", tmpl, "info.json"),
+		[]byte(`{"islot":"Cp","vslot":"Cp","cash":0}`), 0o644)
+}
+
+func TestCompositeWithHatBlitsAboveBody(t *testing.T) {
+	root := t.TempDir()
+	// zmap places "cap" above "body".
+	if err := os.MkdirAll(filepath.Join(root, "character-meta"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	_ = os.WriteFile(filepath.Join(root, "character-meta", "zmap.json"),
+		[]byte(`["body","arm","cap"]`), 0o644)
+	_ = os.WriteFile(filepath.Join(root, "character-meta", "smap.json"), []byte(`{}`), 0o644)
+
+	writeSyntheticBody(t, root)
+	writeSyntheticHat(t, root, 10000)
+
+	c := NewCompositor()
+	res, err := c.Composite(CompositeRequest{
+		AssetsRoot: root,
+		Skin:       0,
+		Stance:     "stand1",
+		Frame:      0,
+		Resize:     1,
+		Equipment:  map[int]int{-1: 10000},
+	})
+	if err != nil {
+		t.Fatalf("Composite: %v", err)
+	}
+	// The hat sprite should land near the body's neck on canvas. With body
+	// origin (2,3) at (48,120), body.neck = (48,117). Hat origin (3,3) over
+	// joint neck (0,0) means hat anchor = (45, 114). So pixel (45,114) is hat.
+	c1 := res.Image.RGBAAt(45, 114)
+	if c1.B == 0 {
+		t.Fatalf("hat pixel missing at (45,114): %+v", c1)
 	}
 }

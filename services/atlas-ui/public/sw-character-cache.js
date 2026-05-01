@@ -4,7 +4,7 @@
  */
 
 const CACHE_NAME = 'atlas-character-images-v1';
-const MAPLESTORY_API_ORIGIN = 'https://maplestory.io';
+const CHARACTER_API_PATH = '/api/assets/';
 const MAX_CACHE_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_CACHE_SIZE = 100; // Maximum number of cached images
 
@@ -39,8 +39,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Only handle character image requests
-  if (url.origin === MAPLESTORY_API_ORIGIN && url.pathname.includes('/character/')) {
+  // Only handle character image requests via the local asset proxy
+  if (url.pathname.startsWith(CHARACTER_API_PATH) && url.pathname.includes('/character/')) {
     event.respondWith(handleCharacterImageRequest(event.request));
   }
 });

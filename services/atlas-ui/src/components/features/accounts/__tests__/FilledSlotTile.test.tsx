@@ -11,15 +11,16 @@ vi.mock("@/components/features/characters/CharacterRenderer", () => ({
   ),
 }));
 
-const character = (worldId: number): Character => ({
-  id: "5",
-  type: "characters",
-  attributes: {
-    accountId: 1,
-    worldId,
-    name: "Foo",
-  } as Character["attributes"],
-});
+const character = (worldId: number): Character =>
+  ({
+    id: "5",
+    type: "characters",
+    attributes: {
+      accountId: 1,
+      worldId,
+      name: "Foo",
+    },
+  }) as unknown as Character;
 
 const worldsWithFlag = [
   { name: "Scania", flag: "https://example.com/scania.png", serverMessage: "", eventMessage: "", whyAmIRecommended: "" },

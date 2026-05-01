@@ -125,9 +125,10 @@ describe("CharactersPanel", () => {
     });
     renderPanel(2);
     expect(screen.queryByTestId("apply-preset-dialog")).toBeNull();
-    await userEvent.click(
-      screen.getAllByRole("button", { name: /add character to slot/i })[0]
-    );
+    const addButtons = screen.getAllByRole("button", {
+      name: /add character to slot/i,
+    });
+    await userEvent.click(addButtons[0]!);
     expect(screen.getByTestId("apply-preset-dialog")).toBeInTheDocument();
   });
 

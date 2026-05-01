@@ -54,7 +54,7 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
       <div
         className={cn(
           tileFrameClasses,
-          "flex items-center justify-center hover:bg-accent/50",
+          "flex items-end justify-center hover:bg-accent/50",
         )}
       >
         <CharacterRenderer
@@ -62,6 +62,7 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
           inventory={equippedAssets}
           size="medium"
           lazy
+          frameMode="platform"
           {...(tenant.attributes.region && { region: tenant.attributes.region })}
           {...(tenant.attributes.majorVersion && {
             majorVersion: tenant.attributes.majorVersion,

@@ -218,12 +218,13 @@ export function ApplyPresetDialog({
                               selected && "ring-2 ring-primary border-primary hover:bg-primary/10",
                             )}
                           >
-                            <div className="aspect-square w-full flex items-center justify-center bg-muted/30 rounded">
+                            <div className="aspect-square w-full flex items-end justify-center bg-muted/30 rounded overflow-hidden">
                               <CharacterRenderer
                                 character={character}
                                 inventory={inventory}
                                 size="small"
                                 lazy
+                                frameMode="platform"
                                 {...(tenant.attributes.region && {
                                   region: tenant.attributes.region,
                                 })}

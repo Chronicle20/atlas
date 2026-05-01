@@ -20,6 +20,14 @@ interface CharacterRendererComponentProps extends Omit<CharacterRendererProps, '
   prefetchVariants?: boolean;
   region?: string;
   majorVersion?: number;
+  /**
+   * Layout mode controlling how the rendered character fits its container.
+   * - `tight` (default): self-sized via `size`, `object-contain`, character centered. Best for hero/detail views.
+   * - `platform`: fills parent (`w-full h-full`), `object-cover` with feet anchored to the parent's bottom
+   *   edge via a pixel-scan that locates the bottom-most non-transparent row. Best for tile grids where
+   *   uniform foot alignment matters more than preserving headgear extents.
+   */
+  frameMode?: 'tight' | 'platform';
 }
 
 type ErrorType = 'api_error' | 'image_load_error' | 'network_error' | 'fallback_error' | 'unknown_error';
@@ -32,9 +40,53 @@ interface ErrorState {
 
 const sizeClasses = {
   small: 'w-32 h-32',
-  medium: 'w-48 h-48', 
+  medium: 'w-48 h-48',
   large: 'w-32 h-32'
 };
+
+/**
+ * Pixel-scan the loaded image, find the bottom-most non-transparent row, and
+ * compute an `objectPosition` that anchors that row to the container's bottom
+ * edge under `object-fit: cover`. Falls back silently on CORS-tainted canvas.
+ */
+function anchorPlatformFeet(
+  img: HTMLImageElement,
+  setObjectPosition: (p: string) => void,
+): void {
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  if (!W || !H) return;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  try {
+    ctx.drawImage(img, 0, 0);
+    const data = ctx.getImageData(0, 0, W, H).data;
+    let footRow = H - 1;
+    outer: for (let y = H - 1; y >= 0; y--) {
+      for (let x = 0; x < W; x++) {
+        if (data[(y * W + x) * 4 + 3]! > 0) {
+          footRow = y;
+          break outer;
+        }
+      }
+    }
+    const bottomMarginSrc = (H - 1) - footRow;
+    if (bottomMarginSrc <= 0) return;
+    const parent = img.parentElement;
+    if (!parent) return;
+    const cw = parent.clientWidth;
+    const ch = parent.clientHeight;
+    if (cw <= 0 || ch <= 0) return;
+    const coverScale = Math.max(cw / W, ch / H);
+    const shiftPx = bottomMarginSrc * coverScale;
+    setObjectPosition(`center calc(100% + ${shiftPx}px)`);
+  } catch {
+    // CORS-tainted canvas — leave default `object-position: bottom`.
+  }
+}
 
 const sizeDimensions = {
   small: { width: 128, height: 128 },
@@ -60,11 +112,14 @@ export function CharacterRenderer({
   prefetchVariants = false,
   region,
   majorVersion,
+  frameMode = 'tight',
 }: CharacterRendererComponentProps) {
   const [fallbackImageError, setFallbackImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [manualRetryCount, setManualRetryCount] = useState(0);
+  const [platformObjectPosition, setPlatformObjectPosition] = useState<string | undefined>(undefined);
   const mountedRef = useRef(true);
+  const imgElRef = useRef<HTMLImageElement | null>(null);
 
   // Lazy loading support with intersection observer
   const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
@@ -286,25 +341,43 @@ export function CharacterRenderer({
   }
   
   // Success state - show character image
+  const isPlatform = frameMode === 'platform';
   return (
-    <div 
+    <div
       ref={lazy && !priority ? lazyRef : undefined}
-      className={cn(sizeClasses[size], 'flex items-center justify-center', className)}
+      className={cn(
+        isPlatform ? 'w-full h-full' : sizeClasses[size],
+        'flex',
+        isPlatform ? 'items-end justify-center' : 'items-center justify-center',
+        className,
+      )}
     >
       <img
+        ref={imgElRef}
         src={imageUrl}
         alt={character.attributes.name}
         width={sizeDimensions[size].width}
         height={sizeDimensions[size].height}
         loading={lazy && !priority ? getImageLoadingStrategy() : 'eager'}
+        crossOrigin={isPlatform ? 'anonymous' : undefined}
         className={cn(
-          'object-contain rounded-lg transition-opacity duration-300',
-          'opacity-100'
+          isPlatform
+            ? 'w-full h-full object-cover'
+            : 'object-contain',
+          'rounded-lg transition-opacity duration-300 opacity-100',
         )}
-        onLoad={() => {
+        style={
+          isPlatform && platformObjectPosition
+            ? { objectPosition: platformObjectPosition }
+            : undefined
+        }
+        onLoad={(e) => {
           if (mountedRef.current) {
             setImageLoaded(true);
             onImageLoad?.();
+            if (isPlatform) {
+              anchorPlatformFeet(e.currentTarget, setPlatformObjectPosition);
+            }
           }
         }}
         onError={() => {

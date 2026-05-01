@@ -110,16 +110,17 @@ export function EmptySlotTile({
       <div
         className={cn(
           tileFrameClasses,
-          "flex items-center justify-center bg-muted/40 transition-colors group-hover:bg-accent/50 group-disabled:opacity-50",
+          "flex items-end justify-center bg-muted/40 transition-colors group-hover:bg-accent/50 group-disabled:opacity-50",
         )}
       >
         {character ? (
-          <div className="grayscale opacity-40 transition-opacity group-hover:opacity-60">
+          <div className="h-full w-full grayscale opacity-40 transition-opacity group-hover:opacity-60 flex items-end justify-center">
             <CharacterRenderer
               character={character}
               inventory={starterEquipment}
               size="medium"
               lazy
+              frameMode="platform"
               {...(region && { region })}
               {...(majorVersion && { majorVersion })}
             />

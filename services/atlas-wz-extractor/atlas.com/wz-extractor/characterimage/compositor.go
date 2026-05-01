@@ -309,6 +309,12 @@ func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equ
 	add := func(templateId string, jointFromBody string) error {
 		resolvedStance, resolvedFrame, err := resolveTemplateStance(req.AssetsRoot, templateId, stance, req.Frame)
 		if err != nil {
+			// Some equipment is purely informational (medals, badges, stat-only
+			// accessories) and has no renderable parts in any stance. Skip
+			// silently rather than failing the entire render.
+			if errors.Is(err, ErrAssetsMissing) {
+				return nil
+			}
 			return err
 		}
 		parts, err := listFrameParts(req.AssetsRoot, templateId, resolvedStance, resolvedFrame)

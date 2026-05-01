@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/Chronicle20/atlas/libs/atlas-constants v0.0.0 // indirect
 	go.opentelemetry.io/otel v1.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0 // indirect

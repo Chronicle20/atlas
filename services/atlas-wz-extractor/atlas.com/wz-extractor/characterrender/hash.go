@@ -1,6 +1,3 @@
-// Package characterrender exposes the HTTP handler that turns a character
-// loadout into a deterministic PNG. Hash and canonical-string helpers are
-// shared between the path-validation step and the cross-language fixture.
 package characterrender
 
 import (

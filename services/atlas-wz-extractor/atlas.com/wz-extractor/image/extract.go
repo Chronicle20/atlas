@@ -13,7 +13,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// ExtractIcons extracts domain imagery (NPC, mob, item, skill, reactor, equipment icons) to the output directory.
+// ExtractIcons extracts domain imagery (NPC, mob, item, skill, reactor, equipment icons,
+// UI world icons) to the output directory.
 // Output structure: {outputDir}/{category}/{id}/icon.png
 func ExtractIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	name := strings.ToLower(f.Name())
@@ -31,9 +32,74 @@ func ExtractIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 		return extractSkillIcons(l, f, outputDir)
 	case name == "character":
 		return extractEquipmentIcons(l, f, outputDir)
+	case name == "ui":
+		return extractUIIcons(l, f, outputDir)
 	default:
 		return nil
 	}
+}
+
+// extractUIIcons extracts world icons from UI.wz/Login.img/ViewAllChar/WorldIcons.
+// Each canvas under WorldIcons is keyed by world id (e.g. "0", "1", … "20") and is
+// the small (~20×20) icon shown next to a world name in the world list.
+// Output: {outputDir}/world-icon/{worldId}/icon.png
+func extractUIIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
+	root := f.Root()
+	if root == nil {
+		return nil
+	}
+
+	var loginProps []property.Property
+	for _, img := range root.Images() {
+		if strings.EqualFold(img.Name(), "Login") {
+			loginProps = img.Properties()
+			break
+		}
+	}
+	if loginProps == nil {
+		l.Debugf("UI.wz has no Login.img — skipping world icon extraction.")
+		return nil
+	}
+
+	canvases := findWorldIconCanvases(loginProps)
+	if len(canvases) == 0 {
+		l.Debugf("UI.wz Login.img/ViewAllChar/WorldIcons missing or empty — skipping world icon extraction.")
+		return nil
+	}
+
+	count := 0
+	for worldId, cp := range canvases {
+		if err := writeCanvasPng(l, f, cp, outputDir, "world-icon", worldId); err != nil {
+			l.WithError(err).Warnf("Unable to extract world icon [%s].", worldId)
+			continue
+		}
+		count++
+	}
+	l.Infof("Extracted [%d] world icons.", count)
+	return nil
+}
+
+// findWorldIconCanvases walks the Login.img property tree to find every
+// ViewAllChar/WorldIcons canvas, keyed by normalized world id. Exposed for
+// unit testing without a real WZ file backing.
+func findWorldIconCanvases(loginProps []property.Property) map[string]*property.CanvasProperty {
+	viewAllChar := findSub(loginProps, "ViewAllChar")
+	if viewAllChar == nil {
+		return nil
+	}
+	worldIcons := findSub(viewAllChar.Children(), "WorldIcons")
+	if worldIcons == nil {
+		return nil
+	}
+	out := make(map[string]*property.CanvasProperty)
+	for _, child := range worldIcons.Children() {
+		cp, ok := child.(*property.CanvasProperty)
+		if !ok {
+			continue
+		}
+		out[normalizeId(cp.Name())] = cp
+	}
+	return out
 }
 
 // canvasFinder is a function that finds the appropriate canvas from an image's properties.

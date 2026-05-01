@@ -5,6 +5,7 @@ import {
   loadoutHash,
   generateCharacterUrl,
   filterEquipment,
+  type Stance,
 } from '../characterRender.service';
 
 interface FixtureRow {
@@ -29,7 +30,7 @@ describe('characterRender canonical+hash parity', () => {
       const canonical = canonicalLoadoutString(
         row.tenant, row.region, row.majorVersion, row.minorVersion,
         row.skin, row.hair, row.face,
-        row.stance as any, row.frame, row.resize, row.items,
+        row.stance as Stance, row.frame, row.resize, row.items,
       );
       expect(canonical).toBe(row.canonical);
       expect(loadoutHash(canonical)).toBe(row.expectedHash);

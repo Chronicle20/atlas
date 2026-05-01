@@ -16,6 +16,22 @@ export function getAssetIconUrl(
 }
 
 /**
+ * Constructs a URL for a world icon extracted from UI.wz/Login.img/ViewAllChar/WorldIcons/{worldId}.
+ * The extractor writes these as 20×20 PNGs under the `world-icon` category.
+ */
+export function getWorldIconUrl(
+  tenantId: string,
+  region: string,
+  majorVersion: number,
+  minorVersion: number,
+  worldId: number,
+): string {
+  const baseUrl = import.meta.env.VITE_ASSET_BASE_URL || '/api/assets';
+  const version = `${majorVersion}.${minorVersion}`;
+  return `${baseUrl}/${tenantId}/${region}/${version}/world-icon/${worldId}/icon.png`;
+}
+
+/**
  * Constructs a deterministic map image URL from atlas-assets.
  * `kind` selects between the full-map composite render and the in-WZ minimap.
  */

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -26,12 +26,22 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { useNameValidity } from "@/lib/hooks/api/useNameValidity";
 import { useCreateCharacterFromPreset } from "@/lib/hooks/api/useCharacterFromPresetMutation";
+import { useServices } from "@/lib/hooks/api/useServices";
+import { isChannelService } from "@/services/api";
+import { synthesizeEquippedAssetsFromTemplateIds } from "@/lib/utils/maplestory";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import type { Tenant } from "@/types/models/tenant";
-import { applyPresetSchema, type ApplyPresetFormValues } from "@/lib/schemas/apply-preset.schema";
+import type { Character } from "@/types/models/character";
+import type { TenantConfigAttributes } from "@/services/api";
+import {
+  applyPresetSchema,
+  type ApplyPresetFormValues,
+} from "@/lib/schemas/apply-preset.schema";
 import { createErrorFromUnknown } from "@/types/api/errors";
 
 type FormValues = ApplyPresetFormValues;
@@ -43,16 +53,88 @@ interface ApplyPresetDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: ApplyPresetDialogProps) {
+type CharacterPreset =
+  TenantConfigAttributes["characters"]["presets"][number];
+
+type PresetWithId = CharacterPreset & { id: string };
+
+function presetToCharacter(preset: PresetWithId): Character {
+  return {
+    id: `preset-${preset.id}`,
+    attributes: {
+      accountId: 0,
+      worldId: 0,
+      name: preset.attributes.name,
+      level: preset.attributes.level,
+      experience: 0,
+      gachaponExperience: 0,
+      strength: 0,
+      dexterity: 0,
+      intelligence: 0,
+      luck: 0,
+      hp: 0,
+      maxHp: 0,
+      mp: 0,
+      maxMp: 0,
+      meso: 0,
+      hpMpUsed: 0,
+      jobId: preset.attributes.jobId,
+      skinColor: preset.attributes.skinColor,
+      gender: preset.attributes.gender,
+      fame: 0,
+      hair: preset.attributes.hair + preset.attributes.hairColor,
+      face: preset.attributes.face,
+      ap: 0,
+      sp: "",
+      mapId: preset.attributes.mapId,
+      spawnPoint: 0,
+      gm: 0,
+      x: 0,
+      y: 0,
+      stance: 0,
+    },
+  };
+}
+
+export function ApplyPresetDialog({
+  tenant,
+  accountId,
+  open,
+  onOpenChange,
+}: ApplyPresetDialogProps) {
   const tenantConfigQuery = useTenantConfiguration(tenant.id);
-  const worlds = tenantConfigQuery.data?.attributes?.worlds ?? [];
-  const presets = (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).filter(
-    (p): p is typeof p & { id: string } => !!p.id,
-  );
+  const servicesQuery = useServices();
+
+  const serviceableWorldIds = useMemo<Set<number>>(() => {
+    const ids = new Set<number>();
+    const services = servicesQuery.data ?? [];
+    for (const svc of services) {
+      if (!isChannelService(svc)) continue;
+      for (const channelTenant of svc.attributes.tenants) {
+        if (channelTenant.id !== tenant.id) continue;
+        for (const w of channelTenant.worlds) {
+          ids.add(w.id);
+        }
+      }
+    }
+    return ids;
+  }, [servicesQuery.data, tenant.id]);
+
+  const worlds = useMemo(() => {
+    const all = tenantConfigQuery.data?.attributes?.worlds ?? [];
+    return all
+      .map((w, i) => ({ world: w, worldId: i }))
+      .filter(({ worldId }) => serviceableWorldIds.has(worldId));
+  }, [tenantConfigQuery.data, serviceableWorldIds]);
+
+  const presets = (
+    tenantConfigQuery.data?.attributes?.characters?.presets ?? []
+  ).filter((p): p is PresetWithId => !!p.id);
   const mutation = useCreateCharacterFromPreset(tenant);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(applyPresetSchema),
+    mode: "onChange",
     defaultValues: { presetId: "", worldId: 0, name: "" },
   });
 
@@ -100,7 +182,7 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add character from preset</DialogTitle>
         </DialogHeader>
@@ -112,20 +194,57 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Preset</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a preset" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {presets.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.attributes.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormControl>
+                    <div
+                      role="radiogroup"
+                      aria-label="Preset"
+                      className="grid grid-cols-2 sm:grid-cols-3 gap-3"
+                    >
+                      {presets.map((p) => {
+                        const selected = field.value === p.id;
+                        const character = presetToCharacter(p);
+                        const inventory = synthesizeEquippedAssetsFromTemplateIds(
+                          p.attributes.equipment.map((e) => e.templateId),
+                        );
+                        return (
+                          <button
+                            key={p.id}
+                            type="button"
+                            role="radio"
+                            aria-checked={selected}
+                            onClick={() => field.onChange(p.id)}
+                            className={cn(
+                              "flex flex-col items-center gap-1 rounded-md border p-2 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              selected && "ring-2 ring-primary border-primary",
+                            )}
+                          >
+                            <div className="aspect-square w-full flex items-center justify-center bg-muted/30 rounded">
+                              <CharacterRenderer
+                                character={character}
+                                inventory={inventory}
+                                size="small"
+                                lazy
+                                {...(tenant.attributes.region && {
+                                  region: tenant.attributes.region,
+                                })}
+                                {...(tenant.attributes.majorVersion && {
+                                  majorVersion: tenant.attributes.majorVersion,
+                                })}
+                              />
+                            </div>
+                            <span className="text-xs font-medium text-center leading-tight">
+                              {p.attributes.name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </FormControl>
+                  {presets.length === 0 && (
+                    <FormDescription className="text-muted-foreground">
+                      No presets configured. Configure them under Tenant Details &rarr; Character Presets.
+                    </FormDescription>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -148,16 +267,17 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {worlds.map((w, i) => (
+                      {worlds.map(({ world, worldId: i }) => (
                         <SelectItem key={i} value={String(i)}>
-                          {w.name}
+                          {world.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   {worlds.length === 0 && (
                     <FormDescription className="text-muted-foreground">
-                      No worlds configured. Configure them under Tenant Details &rarr; Worlds.
+                      No worlds are serviced for this tenant. Configure a channel
+                      service for this tenant under Services to enable a world.
                     </FormDescription>
                   )}
                   <FormMessage />
@@ -201,3 +321,4 @@ export function ApplyPresetDialog({ tenant, accountId, open, onOpenChange }: App
     </Dialog>
   );
 }
+

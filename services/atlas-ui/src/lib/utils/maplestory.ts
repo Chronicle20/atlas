@@ -212,6 +212,69 @@ export const extractEquipmentFromInventory = (
 };
 
 /**
+ * Map an equipment template id to its canonical (negative) slot position.
+ *
+ * Mirrors libs/atlas-constants/item/constants.go (Classification = templateId/10000)
+ * and libs/atlas-constants/inventory/slot/constants.go (slot positions). Returns
+ * null for non-equipment item ids (use/setup/etc/cash) and for classifications
+ * that don't have a single canonical slot (e.g. rings have four — caller should
+ * pick a slot explicitly).
+ */
+export const getDefaultSlotForTemplateId = (
+  templateId: number,
+): number | null => {
+  const classification = Math.floor(templateId / 10000);
+  switch (classification) {
+    case 100: return -1;   // Hat
+    case 101: return -3;   // Face Accessory
+    case 102: return -2;   // Eye Accessory
+    case 103: return -4;   // Earring
+    case 104: return -5;   // Top
+    case 105: return -5;   // Overall
+    case 106: return -6;   // Bottom
+    case 107: return -7;   // Shoes
+    case 108: return -8;   // Gloves
+    case 109: return -10;  // Shield
+    case 110: return -9;   // Cape
+    case 111: return -12;  // Ring (slot 1)
+    case 112: return -17;  // Pendant
+    case 113: return -50;  // Belt
+    case 114: return -49;  // Medal
+    case 190: return -18;  // Tamed Mob
+    case 191: return -19;  // Saddle
+  }
+  // Weapons span classifications 130-159 in atlas-constants.
+  if (classification >= 130 && classification <= 159) return -11;
+  return null;
+};
+
+/**
+ * Build a synthetic equipped Asset[] from a list of equipment template ids,
+ * suitable for feeding to CharacterRenderer's `inventory` prop. Items whose
+ * classification can't be placed in a default slot are skipped. Later items
+ * with the same target slot overwrite earlier ones.
+ */
+export const synthesizeEquippedAssetsFromTemplateIds = (
+  templateIds: number[],
+): Asset[] => {
+  const bySlot = new Map<number, Asset>();
+  for (const templateId of templateIds) {
+    const slot = getDefaultSlotForTemplateId(templateId);
+    if (slot === null) continue;
+    bySlot.set(slot, {
+      type: "assets",
+      id: `synth-${templateId}-${slot}`,
+      attributes: {
+        templateId,
+        slot,
+        quantity: 1,
+      } as Asset["attributes"],
+    });
+  }
+  return Array.from(bySlot.values());
+};
+
+/**
  * Extract only equipped items from inventory (items with negative slot indexes)
  * This is a simplified version of extractEquipmentFromInventory that only returns the equipment data
  * @param inventory - Array of inventory assets

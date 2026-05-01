@@ -105,6 +105,14 @@ export interface MapleStoryCharacterData {
   skinColor: number;
   gender: number;
   equipment: EquipmentData;
+  /** Tenant UUID, sourced from useTenant().activeTenant.id */
+  tenant: string;
+  /** Tenant region string, e.g. "GMS" */
+  region: string;
+  /** Tenant major version */
+  majorVersion: number;
+  /** Tenant minor version */
+  minorVersion: number;
 }
 
 /**

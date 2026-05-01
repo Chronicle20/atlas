@@ -4,11 +4,17 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef, useEffect, useMemo } from 'react';
-import { mapleStoryService } from '@/services/api/maplestory.service';
-import type { 
-  MapleStoryCharacterData, 
-  CharacterRenderOptions, 
-  CharacterImageResult 
+import {
+  generateCharacterUrl,
+  filterEquipment,
+  canonicalLoadoutString,
+  loadoutHash,
+  type RenderOptions,
+} from '@/services/api/characterRender.service';
+import type {
+  MapleStoryCharacterData,
+  CharacterRenderOptions,
+  CharacterImageResult
 } from '@/types/models/maplestory';
 
 interface UseCharacterImageOptions {
@@ -40,31 +46,34 @@ const DEFAULT_OPTIONS: Required<Omit<UseCharacterImageOptions, 'onSuccess' | 'on
 };
 
 /**
- * Generate a stable query key for character image
+ * Generate a stable query key for character image using a loadout hash.
+ * The hash is derived from the canonical loadout string so different loadouts
+ * cache separately while the key remains short and stable.
  */
-function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>, region?: string, majorVersion?: number): string[] {
-  const baseKey = [
-    'character-image',
-    region || 'GMS',
-    majorVersion?.toString() || '214',
-    character.id.toString(),
-    character.hair.toString(),
-    character.face.toString(),
-    character.skinColor.toString(),
-    JSON.stringify(character.equipment),
-  ];
-
-  if (options) {
-    baseKey.push(
-      options.resize?.toString() || '2',
-      options.stance || 'auto',
-      options.renderMode || 'default',
-      options.frame?.toString() || '0',
-      options.flipX?.toString() || 'false'
-    );
-  }
-
-  return baseKey;
+function generateQueryKey(character: MapleStoryCharacterData, options?: Partial<CharacterRenderOptions>): string[] {
+  const stance = (options?.stance ?? 'stand1') as RenderOptions['stance'];
+  const frame = options?.frame ?? 0;
+  const resize = options?.resize ?? 2;
+  const filtered = filterEquipment(
+    Object.fromEntries(
+      Object.entries(character.equipment).map(([k, v]) => [k, v as number])
+    )
+  );
+  const items = Object.values(filtered) as number[];
+  const canonical = canonicalLoadoutString(
+    character.tenant,
+    character.region,
+    character.majorVersion,
+    character.minorVersion,
+    character.skinColor,
+    character.hair,
+    character.face,
+    stance ?? 'stand1',
+    frame,
+    resize,
+    items,
+  );
+  return ['character-image', loadoutHash(canonical)];
 }
 
 /**
@@ -109,19 +118,54 @@ export function useCharacterImage(
   const queryClient = useQueryClient();
   const preloadPromiseRef = useRef<Promise<ImagePreloadResult> | null>(null);
   
-  const queryKey = generateQueryKey(character, renderOptions, options.region, options.majorVersion);
-  
+  const queryKey = generateQueryKey(character, renderOptions);
+
   // Main query for character image generation
   const query = useQuery({
     queryKey,
     queryFn: async (): Promise<CharacterImageResult> => {
-      const result = await mapleStoryService.generateCharacterImage(character, renderOptions, options.region, options.majorVersion);
-      
+      const url = generateCharacterUrl(
+        character.tenant,
+        character.region,
+        character.majorVersion,
+        character.minorVersion,
+        {
+          skin: character.skinColor,
+          hair: character.hair,
+          face: character.face,
+          equipment: Object.fromEntries(
+            Object.entries(character.equipment).map(([k, v]) => [k, v as number])
+          ),
+        },
+        {
+          stance: renderOptions?.stance as RenderOptions['stance'],
+          frame: renderOptions?.frame,
+          resize: renderOptions?.resize,
+        },
+      );
+
+      const result: CharacterImageResult = {
+        url,
+        character,
+        options: {
+          hair: character.hair,
+          face: character.face,
+          skin: character.skinColor,
+          equipment: character.equipment,
+          stance: renderOptions?.stance,
+          frame: renderOptions?.frame,
+          resize: renderOptions?.resize,
+          renderMode: renderOptions?.renderMode,
+          flipX: renderOptions?.flipX,
+        },
+        cached: false,
+      };
+
       // If this is a priority image, preload it immediately
       if (options.priority) {
         preloadPromiseRef.current = preloadImage(result.url);
       }
-      
+
       return result;
     },
     enabled: options.enabled,
@@ -162,14 +206,48 @@ export function useCharacterImage(
   // Prefetch related images (e.g., different stances or scales)
   const prefetchVariants = useCallback((variants: Array<Partial<CharacterRenderOptions>>) => {
     variants.forEach((variant) => {
-      const variantKey = generateQueryKey(character, { ...renderOptions, ...variant }, options.region, options.majorVersion);
+      const merged = { ...renderOptions, ...variant };
+      const variantKey = generateQueryKey(character, merged);
       queryClient.prefetchQuery({
         queryKey: variantKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, { ...renderOptions, ...variant }, options.region, options.majorVersion),
+        queryFn: () => {
+          const url = generateCharacterUrl(
+            character.tenant,
+            character.region,
+            character.majorVersion,
+            character.minorVersion,
+            {
+              skin: character.skinColor,
+              hair: character.hair,
+              face: character.face,
+              equipment: Object.fromEntries(
+                Object.entries(character.equipment).map(([k, v]) => [k, v as number])
+              ),
+            },
+            {
+              stance: merged.stance as RenderOptions['stance'],
+              frame: merged.frame,
+              resize: merged.resize,
+            },
+          );
+          const result: CharacterImageResult = {
+            url,
+            character,
+            options: {
+              hair: character.hair,
+              face: character.face,
+              skin: character.skinColor,
+              equipment: character.equipment,
+              ...merged,
+            },
+            cached: false,
+          };
+          return Promise.resolve(result);
+        },
         staleTime: options.staleTime,
       });
     });
-  }, [character, renderOptions, queryClient, options.staleTime, options.region, options.majorVersion]);
+  }, [character, renderOptions, queryClient, options.staleTime]);
 
   // Invalidate cache for this character
   const invalidate = useCallback(() => {
@@ -207,16 +285,47 @@ export function useCharacterImagePreloader() {
     characters: Array<{
       character: MapleStoryCharacterData;
       options?: Partial<CharacterRenderOptions>;
-      region?: string;
-      majorVersion?: number;
     }>
   ) => {
-    const preloadPromises = characters.map(({ character, options, region, majorVersion }) => {
-      const queryKey = generateQueryKey(character, options, region, majorVersion);
-      
+    const preloadPromises = characters.map(({ character, options }) => {
+      const queryKey = generateQueryKey(character, options);
+
       return queryClient.prefetchQuery({
         queryKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, options, region, majorVersion),
+        queryFn: () => {
+          const url = generateCharacterUrl(
+            character.tenant,
+            character.region,
+            character.majorVersion,
+            character.minorVersion,
+            {
+              skin: character.skinColor,
+              hair: character.hair,
+              face: character.face,
+              equipment: Object.fromEntries(
+                Object.entries(character.equipment).map(([k, v]) => [k, v as number])
+              ),
+            },
+            {
+              stance: options?.stance as RenderOptions['stance'],
+              frame: options?.frame,
+              resize: options?.resize,
+            },
+          );
+          const result: CharacterImageResult = {
+            url,
+            character,
+            options: {
+              hair: character.hair,
+              face: character.face,
+              skin: character.skinColor,
+              equipment: character.equipment,
+              ...(options ?? {}),
+            },
+            cached: false,
+          };
+          return Promise.resolve(result);
+        },
         staleTime: DEFAULT_OPTIONS.staleTime,
       });
     });
@@ -268,15 +377,46 @@ export function useCharacterImageCache() {
   const warmCache = useCallback(async (
     characters: MapleStoryCharacterData[],
     options?: Partial<CharacterRenderOptions>,
-    region?: string,
-    majorVersion?: number
   ) => {
     const warmupPromises = characters.map(character => {
-      const queryKey = generateQueryKey(character, options, region, majorVersion);
-      
+      const queryKey = generateQueryKey(character, options);
+
       return queryClient.prefetchQuery({
         queryKey,
-        queryFn: () => mapleStoryService.generateCharacterImage(character, options, region, majorVersion),
+        queryFn: () => {
+          const url = generateCharacterUrl(
+            character.tenant,
+            character.region,
+            character.majorVersion,
+            character.minorVersion,
+            {
+              skin: character.skinColor,
+              hair: character.hair,
+              face: character.face,
+              equipment: Object.fromEntries(
+                Object.entries(character.equipment).map(([k, v]) => [k, v as number])
+              ),
+            },
+            {
+              stance: options?.stance as RenderOptions['stance'],
+              frame: options?.frame,
+              resize: options?.resize,
+            },
+          );
+          const result: CharacterImageResult = {
+            url,
+            character,
+            options: {
+              hair: character.hair,
+              face: character.face,
+              skin: character.skinColor,
+              equipment: character.equipment,
+              ...(options ?? {}),
+            },
+            cached: false,
+          };
+          return Promise.resolve(result);
+        },
         staleTime: DEFAULT_OPTIONS.staleTime,
       });
     });

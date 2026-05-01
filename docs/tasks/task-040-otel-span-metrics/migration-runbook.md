@@ -142,3 +142,11 @@ atlas-wz-extractor
 > Note: a `services/atlas-character/atlas.com/character/tracing/` exists today even though atlas-character is being deprecated; migrate it anyway for parity unless the team decides otherwise during Task 16 scoping.
 
 > Also note: not every Atlas service has its own `tracing/tracing.go`. Before migrating a service, run `find services/atlas-<svc> -name tracing.go -path '*/tracing/*'`. If the result is empty, that service did not call `tracing.InitTracer` to begin with — skip the source edit and the `tracing/` deletion, but still apply the Dockerfile edits so any future `tracing.InitTracer` call Just Works.
+
+## Deploy-config note: `.env` vs `.env.example`
+
+When this task introduced `TRACE_SAMPLING_RATIO`, only `deploy/compose/.env.example` and `deploy/k8s/env-configmap.yaml` were edited in-tree. `deploy/compose/.env` is gitignored by design (it holds local-developer overrides — Kafka ports, decoded credentials, etc.) and is **not** the canonical template. When adding a new env var:
+
+1. Edit `deploy/compose/.env.example` — the tracked template that ships with the repo.
+2. Edit `deploy/k8s/env-configmap.yaml` — the cluster-side configmap.
+3. **Do not** force-add `deploy/compose/.env`. Each developer is responsible for `cp deploy/compose/.env.example deploy/compose/.env` (or merging the new line into their existing local `.env`).

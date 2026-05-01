@@ -1,5 +1,5 @@
 // services/atlas-ui/src/components/features/accounts/FilledSlotTile.tsx
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import { useInventory } from "@/lib/hooks/api/useInventory";
@@ -8,6 +8,7 @@ import type { Character } from "@/types/models/character";
 import type { TenantConfigAttributes } from "@/services/api";
 import type { Tenant } from "@/types/models/tenant";
 import { cn } from "@/lib/utils";
+import { getWorldIconUrl } from "@/lib/utils/asset-url";
 import { tileFrameClasses } from "./tile-frame";
 
 interface FilledSlotTileProps {
@@ -18,6 +19,7 @@ interface FilledSlotTileProps {
 
 export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProps) {
   const inventoryQuery = useInventory(tenant, character.id);
+  const [iconLoadFailed, setIconLoadFailed] = useState(false);
 
   const equippedAssets = useMemo<Asset[]>(() => {
     return (
@@ -29,6 +31,19 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
   }, [inventoryQuery.data]);
 
   const worldName = worlds[character.attributes.worldId]?.name ?? "";
+  const worldIconUrl =
+    !iconLoadFailed &&
+    tenant.attributes.region &&
+    typeof tenant.attributes.majorVersion === "number" &&
+    typeof tenant.attributes.minorVersion === "number"
+      ? getWorldIconUrl(
+          tenant.id,
+          tenant.attributes.region,
+          tenant.attributes.majorVersion,
+          tenant.attributes.minorVersion,
+          character.attributes.worldId,
+        )
+      : "";
 
   return (
     <Link
@@ -58,7 +73,17 @@ export function FilledSlotTile({ character, tenant, worlds }: FilledSlotTileProp
           {character.attributes.name}
         </span>
         {worldName && (
-          <span className="text-xs text-muted-foreground leading-tight">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground leading-tight">
+            {worldIconUrl && (
+              <img
+                src={worldIconUrl}
+                width={16}
+                height={16}
+                alt=""
+                loading="lazy"
+                onError={() => setIconLoadFailed(true)}
+              />
+            )}
             {worldName}
           </span>
         )}

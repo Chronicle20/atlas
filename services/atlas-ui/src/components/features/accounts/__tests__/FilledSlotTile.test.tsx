@@ -1,5 +1,5 @@
 // services/atlas-ui/src/components/features/accounts/__tests__/FilledSlotTile.test.tsx
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -97,5 +97,27 @@ describe("FilledSlotTile", () => {
     inventoryMock.mockReturnValue({ data: undefined });
     renderTile({ character: character(7), worlds });
     expect(screen.queryByText("Scania")).toBeNull();
+  });
+
+  it("renders the extracted world icon next to the world name", () => {
+    inventoryMock.mockReturnValue({ data: undefined });
+    const { container } = renderTile({ character: character(0), worlds });
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    // URL shape comes from getWorldIconUrl(tenantId, region, major, minor, worldId).
+    expect(img!.getAttribute("src")).toContain(
+      "/t1/GMS/83.1/world-icon/0/icon.png",
+    );
+  });
+
+  it("hides the icon if the asset 404s (onError fallback)", () => {
+    inventoryMock.mockReturnValue({ data: undefined });
+    const { container } = renderTile({ character: character(0), worlds });
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    fireEvent.error(img!);
+    expect(container.querySelector("img")).toBeNull();
+    // World name still rendered.
+    expect(screen.getByText("Scania")).toBeInTheDocument();
   });
 });

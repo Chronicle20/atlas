@@ -6,6 +6,7 @@ import (
 	wzxml "atlas-wz-extractor/xml"
 	"context"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -50,6 +51,12 @@ func (p *processorImpl) runExtraction(ctx context.Context, l logrus.FieldLogger,
 
 	l.Infof("Found [%d] WZ files in [%s].", len(wzFiles), inputPath)
 
+	if !xmlOnly {
+		if err := wipeCharacterCache(imgOutPath); err != nil {
+			l.WithError(err).Warnf("Unable to wipe character cache.")
+		}
+	}
+
 	for _, wzPath := range wzFiles {
 		wzName := filepath.Base(wzPath)
 		l.Infof("Processing [%s].", wzName)
@@ -79,6 +86,18 @@ func (p *processorImpl) runExtraction(ctx context.Context, l logrus.FieldLogger,
 		}
 
 		f.Close()
+	}
+	return nil
+}
+
+// wipeCharacterCache removes the {imgOut}/character directory so a fresh
+// extraction does not serve stale renders against newly extracted assets.
+// Per the design, character-parts/ and character-meta/ are kept and
+// overwritten in place by the extraction itself.
+func wipeCharacterCache(imgOut string) error {
+	target := filepath.Join(imgOut, "character")
+	if err := os.RemoveAll(target); err != nil {
+		return fmt.Errorf("remove %s: %w", target, err)
 	}
 	return nil
 }

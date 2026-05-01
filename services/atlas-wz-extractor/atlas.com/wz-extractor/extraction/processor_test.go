@@ -105,6 +105,25 @@ func TestExtract_OutputPathConstruction(t *testing.T) {
 	}
 }
 
+func TestRunExtractionWipesCharacterCache(t *testing.T) {
+	tmp := t.TempDir()
+	imgOut := filepath.Join(tmp, "out", "img", "tenant-a", "GMS", "83.1")
+	cacheDir := filepath.Join(imgOut, "character")
+	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(cacheDir, "abcdef1234567890.png"), []byte("stale"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	if err := wipeCharacterCache(imgOut); err != nil {
+		t.Fatalf("wipe: %v", err)
+	}
+	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
+		t.Fatalf("expected cacheDir gone, stat err=%v", err)
+	}
+}
+
 func TestExtract_TenantPathFormat(t *testing.T) {
 	tests := []struct {
 		name    string

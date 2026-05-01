@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/sirupsen/logrus"
 )
@@ -166,4 +167,98 @@ func buildPartSidecar(children []property.Property) partSidecar {
 		out.Map = nil
 	}
 	return out
+}
+
+// extractTemplateImg processes one Character.wz .img file. It writes
+// {outRoot}/{templateId}/info.json plus, for every supported stance/frame
+// canvas, {outRoot}/{templateId}/{stance}/{frame}/{part}.png + .json.
+func extractTemplateImg(l logrus.FieldLogger, f *wz.File, img *wz.Image, outRoot string) (int, error) {
+	templateId := normalizeId(img.Name())
+	templateDir := filepath.Join(outRoot, templateId)
+
+	info := extractInfoBlock(img.Properties())
+	if err := writeInfoJSON(templateDir, info); err != nil {
+		return 0, fmt.Errorf("write info: %w", err)
+	}
+
+	count := 0
+	for _, p := range img.Properties() {
+		stanceSub, ok := p.(*property.SubProperty)
+		if !ok {
+			continue
+		}
+		stance := stanceSub.Name()
+		if _, ok := stancesInScope[stance]; !ok {
+			continue
+		}
+		for _, fp := range stanceSub.Children() {
+			frameSub, ok := fp.(*property.SubProperty)
+			if !ok {
+				continue
+			}
+			frameName := frameSub.Name()
+			frameDir := filepath.Join(templateDir, stance, frameName)
+			for _, partProp := range frameSub.Children() {
+				cp, ok := partProp.(*property.CanvasProperty)
+				if !ok {
+					continue
+				}
+				if err := extractPartCanvas(l, f, cp, frameDir, cp.Name()); err != nil {
+					l.WithError(err).Warnf("extract part %s/%s/%s/%s", templateId, stance, frameName, cp.Name())
+					continue
+				}
+				count++
+			}
+		}
+	}
+	return count, nil
+}
+
+// extractCharacterParts walks Character.wz: every .img at the root (body
+// skins) plus every .img in equipmentSubdirs, emitting per-template assets.
+func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) error {
+	root := f.Root()
+	if root == nil {
+		return nil
+	}
+	tenantOut := filepath.Join(outputDir, "character-parts")
+	total := 0
+
+	for _, img := range root.Images() {
+		// Only body skin imgs live at the root; their names start with "0000" or "0001".
+		if !strings.HasPrefix(img.Name(), "0000") && !strings.HasPrefix(img.Name(), "0001") {
+			continue
+		}
+		n, err := extractTemplateImg(l, f, img, tenantOut)
+		if err != nil {
+			l.WithError(err).Warnf("extract body skin %s", img.Name())
+			continue
+		}
+		total += n
+	}
+	for _, sub := range equipmentSubdirs {
+		dir := findCharSubdir(root.Directories(), sub)
+		if dir == nil {
+			continue
+		}
+		for _, img := range dir.Images() {
+			n, err := extractTemplateImg(l, f, img, tenantOut)
+			if err != nil {
+				l.WithError(err).Warnf("extract %s/%s", sub, img.Name())
+				continue
+			}
+			total += n
+		}
+	}
+	l.Infof("Extracted [%d] character part canvases.", total)
+	return nil
+}
+
+func findCharSubdir(dirs []*wz.Directory, name string) *wz.Directory {
+	for _, d := range dirs {
+		if strings.EqualFold(d.Name(), name) {
+			return d
+		}
+	}
+	return nil
 }

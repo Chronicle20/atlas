@@ -10,7 +10,20 @@ import {
   canonicalLoadoutString,
   loadoutHash,
   type RenderOptions,
+  type Stance,
 } from '@/services/api/characterRender.service';
+
+/**
+ * Build a RenderOptions object omitting any keys that are undefined,
+ * satisfying exactOptionalPropertyTypes.
+ */
+function compactRenderOptions(o: { stance?: Stance | undefined; frame?: number | undefined; resize?: number | undefined }): RenderOptions {
+  const out: RenderOptions = {};
+  if (o.stance !== undefined) out.stance = o.stance;
+  if (o.frame !== undefined) out.frame = o.frame;
+  if (o.resize !== undefined) out.resize = o.resize;
+  return out;
+}
 import type {
   MapleStoryCharacterData,
   CharacterRenderOptions,
@@ -137,27 +150,29 @@ export function useCharacterImage(
             Object.entries(character.equipment).map(([k, v]) => [k, v as number])
           ),
         },
-        {
-          stance: renderOptions?.stance as RenderOptions['stance'],
+        compactRenderOptions({
+          stance: renderOptions?.stance,
           frame: renderOptions?.frame,
           resize: renderOptions?.resize,
-        },
+        }),
       );
+
+      const mergedOptions: CharacterRenderOptions = {
+        hair: character.hair,
+        face: character.face,
+        skin: character.skinColor,
+        equipment: character.equipment,
+      };
+      if (renderOptions?.stance !== undefined) mergedOptions.stance = renderOptions.stance;
+      if (renderOptions?.frame !== undefined) mergedOptions.frame = renderOptions.frame;
+      if (renderOptions?.resize !== undefined) mergedOptions.resize = renderOptions.resize;
+      if (renderOptions?.renderMode !== undefined) mergedOptions.renderMode = renderOptions.renderMode;
+      if (renderOptions?.flipX !== undefined) mergedOptions.flipX = renderOptions.flipX;
 
       const result: CharacterImageResult = {
         url,
         character,
-        options: {
-          hair: character.hair,
-          face: character.face,
-          skin: character.skinColor,
-          equipment: character.equipment,
-          stance: renderOptions?.stance,
-          frame: renderOptions?.frame,
-          resize: renderOptions?.resize,
-          renderMode: renderOptions?.renderMode,
-          flipX: renderOptions?.flipX,
-        },
+        options: mergedOptions,
         cached: false,
       };
 
@@ -224,11 +239,11 @@ export function useCharacterImage(
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
             },
-            {
-              stance: merged.stance as RenderOptions['stance'],
+            compactRenderOptions({
+              stance: merged.stance,
               frame: merged.frame,
               resize: merged.resize,
-            },
+            }),
           );
           const result: CharacterImageResult = {
             url,
@@ -306,22 +321,27 @@ export function useCharacterImagePreloader() {
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
             },
-            {
-              stance: options?.stance as RenderOptions['stance'],
+            compactRenderOptions({
+              stance: options?.stance,
               frame: options?.frame,
               resize: options?.resize,
-            },
+            }),
           );
+          const preloadOpts: CharacterRenderOptions = {
+            hair: character.hair,
+            face: character.face,
+            skin: character.skinColor,
+            equipment: character.equipment,
+          };
+          if (options?.stance !== undefined) preloadOpts.stance = options.stance;
+          if (options?.frame !== undefined) preloadOpts.frame = options.frame;
+          if (options?.resize !== undefined) preloadOpts.resize = options.resize;
+          if (options?.renderMode !== undefined) preloadOpts.renderMode = options.renderMode;
+          if (options?.flipX !== undefined) preloadOpts.flipX = options.flipX;
           const result: CharacterImageResult = {
             url,
             character,
-            options: {
-              hair: character.hair,
-              face: character.face,
-              skin: character.skinColor,
-              equipment: character.equipment,
-              ...(options ?? {}),
-            },
+            options: preloadOpts,
             cached: false,
           };
           return Promise.resolve(result);
@@ -397,22 +417,27 @@ export function useCharacterImageCache() {
                 Object.entries(character.equipment).map(([k, v]) => [k, v as number])
               ),
             },
-            {
-              stance: options?.stance as RenderOptions['stance'],
+            compactRenderOptions({
+              stance: options?.stance,
               frame: options?.frame,
               resize: options?.resize,
-            },
+            }),
           );
+          const warmOpts: CharacterRenderOptions = {
+            hair: character.hair,
+            face: character.face,
+            skin: character.skinColor,
+            equipment: character.equipment,
+          };
+          if (options?.stance !== undefined) warmOpts.stance = options.stance;
+          if (options?.frame !== undefined) warmOpts.frame = options.frame;
+          if (options?.resize !== undefined) warmOpts.resize = options.resize;
+          if (options?.renderMode !== undefined) warmOpts.renderMode = options.renderMode;
+          if (options?.flipX !== undefined) warmOpts.flipX = options.flipX;
           const result: CharacterImageResult = {
             url,
             character,
-            options: {
-              hair: character.hair,
-              face: character.face,
-              skin: character.skinColor,
-              equipment: character.equipment,
-              ...(options ?? {}),
-            },
+            options: warmOpts,
             cached: false,
           };
           return Promise.resolve(result);

@@ -42,8 +42,12 @@ func writeZmap(l logrus.FieldLogger, images []*wz.Image, dir string) error {
 	if zmap == nil {
 		return fmt.Errorf("zmap.img not found in Base.wz")
 	}
-	out := make([]string, 0, len(zmap.Properties()))
-	for _, p := range zmap.Properties() {
+	return writeZmapFromProps(zmap.Properties(), dir)
+}
+
+func writeZmapFromProps(props []property.Property, dir string) error {
+	out := make([]string, 0, len(props))
+	for _, p := range props {
 		out = append(out, p.Name())
 	}
 	return writeJSON(filepath.Join(dir, "zmap.json"), out)
@@ -56,8 +60,12 @@ func writeSmap(l logrus.FieldLogger, images []*wz.Image, dir string) error {
 	if smap == nil {
 		return fmt.Errorf("smap.img not found in Base.wz")
 	}
+	return writeSmapFromProps(smap.Properties(), dir)
+}
+
+func writeSmapFromProps(props []property.Property, dir string) error {
 	out := map[string]string{}
-	for _, p := range smap.Properties() {
+	for _, p := range props {
 		if sp, ok := p.(*property.StringProperty); ok {
 			out[sp.Name()] = sp.Value()
 		}

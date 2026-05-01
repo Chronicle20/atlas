@@ -179,7 +179,9 @@ describe("useCreateAndPollAccount", () => {
     await waitFor(() => expect(result.current.status).toBe("polling"));
 
     // tenant swap mid-flight
-    rerender({ t: { ...initialTenant, id: "t2" } as never });
+    rerender({
+      t: { ...(initialTenant as object), id: "t2" } as never,
+    });
     await act(async () => {
       await vi.advanceTimersByTimeAsync(2000);
     });

@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { CharacterRendererDetailSkeleton } from '@/components/common/skeletons/CharacterDetailSkeleton';
 import { useCharacterImage } from '@/lib/hooks/useCharacterImage';
 import { useLazyLoad } from '@/lib/hooks/useIntersectionObserver';
-import { mapleStoryService } from '@/services/api/maplestory.service';
+import { characterToLoadout } from '@/services/api/characterRender.service';
+import { useTenant } from '@/context/tenant-context';
 import type { Asset } from '@/services/api/inventory.service';
 import type { CharacterRendererProps, MapleStoryCharacterData } from '@/types/models/maplestory';
 import { cn } from '@/lib/utils';
@@ -110,8 +111,8 @@ export function CharacterRenderer({
   lazy = true,
   enablePreload = true,
   prefetchVariants = false,
-  region,
-  majorVersion,
+  region: _region,
+  majorVersion: _majorVersion,
   frameMode = 'tight',
 }: CharacterRendererComponentProps) {
   const [fallbackImageError, setFallbackImageError] = useState(false);
@@ -121,17 +122,33 @@ export function CharacterRenderer({
   const mountedRef = useRef(true);
   const imgElRef = useRef<HTMLImageElement | null>(null);
 
+  const { activeTenant } = useTenant();
+
   // Lazy loading support with intersection observer
   const { shouldLoad, ref: lazyRef } = useLazyLoad<HTMLDivElement>({
     enabled: lazy && !priority,
     rootMargin: '200px', // Start loading 200px before entering viewport
   });
 
-  // Convert Character model to MapleStoryCharacterData
-  const mapleStoryData = useMemo((): MapleStoryCharacterData => 
-    mapleStoryService.characterToMapleStoryData(character, inventory),
-    [character, inventory]
-  );
+  // Convert Character model to MapleStoryCharacterData, including tenant context
+  const mapleStoryData = useMemo((): MapleStoryCharacterData => {
+    const loadout = characterToLoadout(character, inventory);
+    return {
+      id: character.id,
+      name: character.attributes.name,
+      level: character.attributes.level,
+      jobId: character.attributes.jobId,
+      hair: loadout.hair,
+      face: loadout.face,
+      skinColor: loadout.skin,
+      gender: character.attributes.gender,
+      equipment: loadout.equipment,
+      tenant: activeTenant?.id ?? '',
+      region: activeTenant?.attributes.region ?? '',
+      majorVersion: activeTenant?.attributes.majorVersion ?? 0,
+      minorVersion: activeTenant?.attributes.minorVersion ?? 0,
+    };
+  }, [character, inventory, activeTenant]);
 
   // Use optimized character image hook
   const {
@@ -150,9 +167,8 @@ export function CharacterRenderer({
       priority,
       lazy,
       retry: maxRetries,
-      ...(region && { region }),
-      ...(majorVersion && { majorVersion }),
-      enabled: priority || !lazy || shouldLoad, // Load immediately if priority or not lazy, otherwise wait for intersection
+      // Disable the query until a tenant is available
+      enabled: !!activeTenant && (priority || !lazy || shouldLoad),
       onSuccess: () => {
         setImageLoaded(false); // Reset for new image
         onImageLoad?.();
@@ -254,12 +270,24 @@ export function CharacterRenderer({
     };
   }, []);
   
+  // Skeleton while tenant context is still loading
+  if (!activeTenant) {
+    return (
+      <div ref={lazy && !priority ? lazyRef : undefined}>
+        <CharacterRendererDetailSkeleton
+          size={size}
+          className={className}
+        />
+      </div>
+    );
+  }
+
   // Loading state
   if (isLoading && showLoading) {
     return (
       <div ref={lazy && !priority ? lazyRef : undefined}>
-        <CharacterRendererDetailSkeleton 
-          size={size} 
+        <CharacterRendererDetailSkeleton
+          size={size}
           className={className}
         />
       </div>

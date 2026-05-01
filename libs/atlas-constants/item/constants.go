@@ -180,6 +180,26 @@ func IsRechargeable(itemId Id) bool {
 	return IsThrowingStar(itemId) || IsBullet(itemId)
 }
 
+// IsTwoHanded reports whether an equipped weapon templateId is a two-handed
+// weapon. Two-handed weapons force the character renderer's stand2 stance.
+// Returns false for non-weapon ids.
+func IsTwoHanded(id Id) bool {
+	switch GetWeaponType(id) {
+	case WeaponTypeTwoHandedSword,
+		WeaponTypeTwoHandedAxe,
+		WeaponTypeTwoHandedMace,
+		WeaponTypeSpear,
+		WeaponTypePolearm,
+		WeaponTypeBow,
+		WeaponTypeCrossbow,
+		WeaponTypeKnuckle,
+		WeaponTypeGun:
+		return true
+	default:
+		return false
+	}
+}
+
 func IsScrollCleanSlate(itemId Id) bool {
 	return Is(itemId, CleanSlateOnePercent, CleanSlateThreePercent, CleanSlateFivePercent, CleanSlateTwentyPercent)
 }

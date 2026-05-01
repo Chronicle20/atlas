@@ -1,6 +1,8 @@
 package main
 
 import (
+	"atlas-wz-extractor/characterimage"
+	"atlas-wz-extractor/characterrender"
 	"atlas-wz-extractor/extraction"
 	"atlas-wz-extractor/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
@@ -52,6 +54,7 @@ func main() {
 	}
 
 	p := extraction.NewProcessor(inputDir, outputXmlDir, outputImgDir)
+	cren := characterrender.NewHandler(outputImgDir, characterimage.NewCompositor())
 
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -61,6 +64,7 @@ func main() {
 		SetReadTimeout(60 * time.Minute).
 		SetWriteTimeout(60 * time.Minute).
 		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup(), extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir})(GetServer())).
+		AddRouteInitializer(characterrender.InitResource(cren)(GetServer())).
 		Run()
 
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

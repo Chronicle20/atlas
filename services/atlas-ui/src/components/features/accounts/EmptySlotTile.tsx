@@ -1,4 +1,5 @@
 // services/atlas-ui/src/components/features/accounts/EmptySlotTile.tsx
+import { cn } from "@/lib/utils";
 import { tileFrameClasses } from "./tile-frame";
 
 interface EmptySlotTileProps {
@@ -13,7 +14,10 @@ export function EmptySlotTile({ onClick, disabled }: EmptySlotTileProps) {
       onClick={onClick}
       disabled={disabled}
       aria-label="Add character to slot"
-      className={`${tileFrameClasses} flex flex-col items-center justify-center gap-2 hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed`}
+      className={cn(
+        tileFrameClasses,
+        "flex flex-col items-center justify-center gap-2 hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed",
+      )}
     >
       <img
         src="/default-character-avatar.svg"

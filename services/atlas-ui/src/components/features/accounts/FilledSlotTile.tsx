@@ -4,6 +4,7 @@ import { Globe } from "lucide-react";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
 import type { Character } from "@/types/models/character";
 import type { TenantConfigAttributes } from "@/services/api";
+import { cn } from "@/lib/utils";
 import { tileFrameClasses } from "./tile-frame";
 
 interface FilledSlotTileProps {
@@ -18,7 +19,10 @@ export function FilledSlotTile({ character, worlds }: FilledSlotTileProps) {
     <Link
       to={`/characters/${character.id}`}
       aria-label={character.attributes.name}
-      className={`${tileFrameClasses} flex flex-col items-center justify-center gap-2 hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring`}
+      className={cn(
+        tileFrameClasses,
+        "flex flex-col items-center justify-center gap-2 hover:bg-accent/50 focus-visible:ring-2 focus-visible:ring-ring",
+      )}
     >
       <CharacterRenderer character={character} size="medium" lazy />
       <div className="flex items-center justify-center gap-1.5">

@@ -32,6 +32,14 @@ func AtomicWritePNG(dst string, r io.Reader) error {
 		cleanup()
 		return fmt.Errorf("sync: %w", err)
 	}
+	// os.CreateTemp creates files with mode 0600 — atlas-assets nginx runs as
+	// a non-root user and serves the cached PNGs directly from the PVC, so
+	// the file must be world-readable.
+	if err := tmp.Chmod(0o644); err != nil {
+		_ = tmp.Close()
+		cleanup()
+		return fmt.Errorf("chmod: %w", err)
+	}
 	if err := tmp.Close(); err != nil {
 		cleanup()
 		return fmt.Errorf("close: %w", err)

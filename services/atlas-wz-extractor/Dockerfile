@@ -5,6 +5,7 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Copy library module definitions
+COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constants/
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
@@ -19,6 +20,7 @@ COPY services/atlas-wz-extractor/atlas.com/wz-extractor/go.mod services/atlas-wz
 RUN echo 'go 1.25.5' > go.work && \
     echo '' >> go.work && \
     echo 'use (' >> go.work && \
+    echo '    ./libs/atlas-constants' >> go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
@@ -32,6 +34,7 @@ RUN echo 'go 1.25.5' > go.work && \
 RUN go mod download -C services/atlas-wz-extractor/atlas.com/wz-extractor || true
 
 # Copy library source code
+COPY libs/atlas-constants libs/atlas-constants
 COPY libs/atlas-model libs/atlas-model
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-retry libs/atlas-retry
@@ -44,6 +47,7 @@ COPY services/atlas-wz-extractor/atlas.com/wz-extractor services/atlas-wz-extrac
 # Force local resolution of Chronicle20/atlas-* modules (bypasses unreachable github.com publishes).
 RUN cd services/atlas-wz-extractor/atlas.com/wz-extractor && \
     go mod edit \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-constants=/app/libs/atlas-constants \
       -replace=github.com/Chronicle20/atlas/libs/atlas-model=/app/libs/atlas-model \
       -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \

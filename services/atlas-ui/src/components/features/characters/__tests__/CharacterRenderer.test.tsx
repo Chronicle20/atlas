@@ -1,4 +1,3 @@
-import { vi, type Mocked } from 'vitest';
 /**
  * Comprehensive tests for CharacterRenderer component with various equipment combinations
  */
@@ -6,16 +5,36 @@ import { vi, type Mocked } from 'vitest';
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { TenantProvider } from '@/context/tenant-context';
 import { CharacterRenderer } from '../CharacterRenderer';
-import { mapleStoryService } from '@/services/api/maplestory.service';
 import type { Character } from '@/types/models/character';
 import type { Asset } from '@/services/api/inventory.service';
+import { vi } from 'vitest';
 
-// Mock the MapleStory service
-vi.mock('@/services/api/maplestory.service', () => ({
-  mapleStoryService: {
-    characterToMapleStoryData: vi.fn(),
-    generateCharacterImage: vi.fn(),
+// Mock the API client (required by TenantProvider)
+vi.mock('@/lib/api/client', () => ({
+  api: {
+    setTenant: vi.fn(),
+  },
+}));
+
+// Mock tenantsService so TenantProvider resolves with a real tenant
+vi.mock('@/services/api', () => ({
+  tenantsService: {
+    getAllTenants: () =>
+      Promise.resolve([
+        {
+          id: 'tenant',
+          type: 'tenants',
+          attributes: {
+            region: 'GMS',
+            majorVersion: 83,
+            minorVersion: 1,
+            name: 'Test Tenant',
+          },
+        },
+      ]),
+    getTenantConfigurationById: () => Promise.resolve({}),
   },
 }));
 
@@ -34,9 +53,7 @@ vi.mock('@/lib/hooks/useIntersectionObserver', () => ({
   })),
 }));
 
-const mockMapleStoryService = mapleStoryService as Mocked<typeof mapleStoryService>;
-
-// Test wrapper with QueryClient
+// Test wrapper with QueryClient + TenantProvider
 function TestWrapper({ children }: { children: React.ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -48,7 +65,9 @@ function TestWrapper({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <TenantProvider>
+        {children}
+      </TenantProvider>
     </QueryClientProvider>
   );
 }
@@ -58,11 +77,11 @@ describe('CharacterRenderer', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    
+
     // Default successful mock for useCharacterImage
     mockUseCharacterImage.mockReturnValue({
       data: {
-        url: 'https://maplestory.io/api/character/test.png',
+        url: '/api/assets/tenant/GMS/83.1/character/abcdef1234567890.png',
         character: {} as never,
         options: {} as never,
         cached: false,
@@ -72,22 +91,9 @@ describe('CharacterRenderer', () => {
       refetch: vi.fn(),
       preload: vi.fn(),
       prefetchVariants: vi.fn(),
-      imageUrl: 'https://maplestory.io/api/character/test.png',
+      imageUrl: '/api/assets/tenant/GMS/83.1/character/abcdef1234567890.png',
       cached: false,
     } as unknown as ReturnType<typeof useCharacterImage>);
-
-    // Mock the service methods
-    mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
-      id: 'char1',
-      name: 'TestWarrior',
-      level: 85,
-      jobId: 110,
-      hair: 30000,
-      face: 20000,
-      skinColor: 2,
-      gender: 0,
-      equipment: {},
-    });
   });
 
   const mockCharacter = {
@@ -138,47 +144,6 @@ describe('CharacterRenderer', () => {
     },
   } as unknown as Asset);
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    
-    // Default mock implementations
-    mockMapleStoryService.characterToMapleStoryData.mockReturnValue({
-      id: 'char1',
-      name: 'TestWarrior',
-      level: 85,
-      jobId: 110,
-      hair: 30000,
-      face: 20000,
-      skinColor: 2,
-      gender: 0,
-      equipment: {},
-    });
-    
-    mockMapleStoryService.generateCharacterImage.mockResolvedValue({
-      url: 'https://maplestory.io/api/GMS/214/character/center/2002/30000:0,20000:0/stand1/0?resize=2',
-      character: {
-        id: 'char1',
-        name: 'TestWarrior',
-        level: 85,
-        jobId: 110,
-        hair: 30000,
-        face: 20000,
-        skinColor: 2,
-        gender: 0,
-        equipment: {},
-      },
-      options: {
-        hair: 30000,
-        face: 20000,
-        skin: 2002,
-        equipment: {},
-        stance: 'stand1',
-        resize: 2,
-      },
-      cached: false,
-    });
-  });
-
   describe('Basic rendering', () => {
     it('should render character with no equipment', async () => {
       render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
@@ -189,7 +154,7 @@ describe('CharacterRenderer', () => {
 
       // Verify the image is rendered with the URL from the hook
       const image = screen.getByTestId('character-image');
-      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+      expect(image).toHaveAttribute('src', '/api/assets/tenant/GMS/83.1/character/abcdef1234567890.png');
       expect(image).toHaveAttribute('alt', 'TestWarrior');
     });
 
@@ -208,7 +173,7 @@ describe('CharacterRenderer', () => {
 
       // Verify the image is rendered
       const image = screen.getByTestId('character-image');
-      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+      expect(image).toHaveAttribute('src', '/api/assets/tenant/GMS/83.1/character/abcdef1234567890.png');
     });
   });
 
@@ -230,7 +195,7 @@ describe('CharacterRenderer', () => {
       });
 
       const image = screen.getByTestId('character-image');
-      expect(image).toHaveAttribute('src', 'https://maplestory.io/api/character/test.png');
+      expect(image).toHaveAttribute('src', '/api/assets/tenant/GMS/83.1/character/abcdef1234567890.png');
     });
 
     it('should render character with one-handed weapon and shield', async () => {
@@ -388,7 +353,7 @@ describe('CharacterRenderer', () => {
   });
 
   describe('Loading states', () => {
-    it('should show loading skeleton by default', () => {
+    it('should show loading skeleton by default', async () => {
       // Mock loading state
       mockUseCharacterImage.mockReturnValue({
         data: null,
@@ -403,11 +368,13 @@ describe('CharacterRenderer', () => {
 
       render(<CharacterRenderer character={mockCharacter as unknown as Character} />, { wrapper: TestWrapper });
 
-      // Should show skeleton loading
-      expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
+      // Wait for the tenant to load (skeleton shown while tenant loads first, then loading state)
+      await waitFor(() => {
+        expect(screen.queryByTestId('character-image')).not.toBeInTheDocument();
+      });
     });
 
-    it('should not show loading skeleton when showLoading is false', () => {
+    it('should not show loading skeleton when showLoading is false', async () => {
       // Mock loading state
       mockUseCharacterImage.mockReturnValue({
         data: null,
@@ -423,7 +390,9 @@ describe('CharacterRenderer', () => {
       render(<CharacterRenderer character={mockCharacter as unknown as Character} showLoading={false} />, { wrapper: TestWrapper });
 
       // Should not show loading indicator when showLoading is false
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      });
     });
   });
 

@@ -265,38 +265,11 @@ export function useCharacterCache(): UseCharacterCacheReturn {
 }
 
 /**
- * Utility function to generate character image URLs for preloading
+ * Utility function to generate character image URLs for preloading.
+ * Callers must resolve each URL via generateCharacterUrl from characterRender.service
+ * and pass the resulting URL strings here; this function accepts pre-built URLs.
  */
-export function generateCharacterImageUrls(
-  characters: Array<{
-    hair: number;
-    face: number;
-    skinColor: number;
-    equipment: Record<string, number>;
-  }>,
-  options: {
-    scales?: number[];
-    stances?: ('stand1' | 'stand2')[];
-  } = {}
-): string[] {
-  const { scales = [1, 2], stances = ['stand1'] } = options;
-  const urls: string[] = [];
-
-  for (const character of characters) {
-    for (const scale of scales) {
-      for (const stance of stances) {
-        // This would use the same URL generation logic as the MapleStory service
-        // Simplified version for example:
-        const equipmentString = Object.entries(character.equipment)
-          .map(([, itemId]) => `${itemId}:0`)
-          .join(',');
-        
-        const url = `https://maplestory.io/api/GMS/214/character/center/${character.skinColor}/${character.hair}:0,${character.face}:0,${equipmentString}/${stance}/0?resize=${scale}`;
-        urls.push(url);
-      }
-    }
-  }
-
+export function generateCharacterImageUrls(urls: string[]): string[] {
   return urls;
 }
 

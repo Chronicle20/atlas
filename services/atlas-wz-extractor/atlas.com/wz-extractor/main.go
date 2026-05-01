@@ -4,7 +4,7 @@ import (
 	"atlas-wz-extractor/extraction"
 	"atlas-wz-extractor/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-wz-extractor/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

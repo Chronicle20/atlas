@@ -8,7 +8,7 @@ import (
 	"atlas-messengers/logger"
 	"atlas-messengers/messenger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-messengers/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -10,7 +10,7 @@ import (
 	"atlas-inventory/kafka/consumer/drop"
 	"atlas-inventory/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-inventory/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

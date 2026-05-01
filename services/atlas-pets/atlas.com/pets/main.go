@@ -11,7 +11,7 @@ import (
 	"atlas-pets/pet/exclude"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-pets/tasks"
-	"atlas-pets/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

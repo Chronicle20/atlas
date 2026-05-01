@@ -7,7 +7,7 @@ import (
 	"atlas-account/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-account/tasks"
-	"atlas-account/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

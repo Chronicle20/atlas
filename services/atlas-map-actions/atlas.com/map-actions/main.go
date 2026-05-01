@@ -8,7 +8,7 @@ import (
 	"atlas-map-actions/logger"
 	"atlas-map-actions/script"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-map-actions/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"

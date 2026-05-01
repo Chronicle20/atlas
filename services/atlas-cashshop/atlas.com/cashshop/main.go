@@ -13,7 +13,7 @@ import (
 	walletConsumer "atlas-cashshop/kafka/consumer/wallet"
 	"atlas-cashshop/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-cashshop/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-cashshop/wallet"
 	"atlas-cashshop/wishlist"
 	"os"

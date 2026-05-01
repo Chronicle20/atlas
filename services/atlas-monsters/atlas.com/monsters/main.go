@@ -6,7 +6,7 @@ import (
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
 	"atlas-monsters/tasks"
-	"atlas-monsters/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-monsters/world"
 	"os"
 	"time"

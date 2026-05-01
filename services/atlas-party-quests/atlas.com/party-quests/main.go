@@ -10,7 +10,7 @@ import (
 	"atlas-party-quests/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-party-quests/tenant"
-	"atlas-party-quests/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 

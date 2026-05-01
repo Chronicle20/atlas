@@ -12,7 +12,7 @@ import (
 	"atlas-storage/service"
 	"atlas-storage/storage"
 	lifecycle "github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-storage/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

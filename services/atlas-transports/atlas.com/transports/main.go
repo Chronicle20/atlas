@@ -12,7 +12,7 @@ import (
 	"atlas-transports/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	tenant2 "atlas-transports/tenant"
-	"atlas-transports/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-transports/transport"
 	"atlas-transports/transport/config"
 	"os"

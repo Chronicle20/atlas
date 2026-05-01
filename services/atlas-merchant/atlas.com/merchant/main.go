@@ -11,7 +11,7 @@ import (
 	"atlas-merchant/service"
 	"atlas-merchant/shop"
 	"atlas-merchant/tasks"
-	"atlas-merchant/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-merchant/visitor"
 	"os"
 

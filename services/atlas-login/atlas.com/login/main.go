@@ -12,7 +12,7 @@ import (
 	"atlas-login/socket/handler"
 	"atlas-login/socket/writer"
 	"atlas-login/tasks"
-	"atlas-login/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"fmt"
 	"os"
 	"time"

@@ -4,7 +4,7 @@ import (
 	"atlas-monster-death/kafka/consumer/monster"
 	"atlas-monster-death/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-monster-death/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

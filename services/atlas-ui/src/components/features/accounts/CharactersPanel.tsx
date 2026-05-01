@@ -8,6 +8,7 @@ import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { ApplyPresetDialog } from "@/components/features/characters/ApplyPresetDialog";
 import type { Account } from "@/types/models/account";
 import type { Tenant } from "@/types/models/tenant";
+import { cn } from "@/lib/utils";
 import { FilledSlotTile } from "./FilledSlotTile";
 import { EmptySlotTile } from "./EmptySlotTile";
 import { tileFrameClasses } from "./tile-frame";
@@ -40,7 +41,7 @@ export function CharactersPanel({ tenant, account }: CharactersPanelProps) {
       return (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {Array.from({ length: slots }).map((_, i) => (
-            <Skeleton key={i} className={`${tileFrameClasses} animate-pulse`} />
+            <Skeleton key={i} className={cn(tileFrameClasses, "animate-pulse")} />
           ))}
         </div>
       );

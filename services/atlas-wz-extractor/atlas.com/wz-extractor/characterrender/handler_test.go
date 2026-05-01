@@ -2,6 +2,7 @@ package characterrender
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"image"
@@ -17,15 +18,21 @@ import (
 
 	"atlas-wz-extractor/characterimage"
 
+	atlastenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 )
 
+// testTenantId is the UUID used for all handler tests.
+var testTenantId = uuid.MustParse("ec876921-aaaa-bbbb-cccc-deadbeef0000")
+
 // makeAssetsRoot prepares a synthetic assets root with a body skin sprite.
+// Returns the root and the tenant-scoped assets path.
 func makeAssetsRoot(t *testing.T) (string, string) {
 	t.Helper()
 	root := t.TempDir()
-	tenantPath := filepath.Join(root, "tenant-a", "GMS", "83.1")
+	tenantPath := filepath.Join(root, testTenantId.String(), "GMS", "83.1")
 
 	// character-meta
 	if err := os.MkdirAll(filepath.Join(tenantPath, "character-meta"), 0o755); err != nil {
@@ -80,22 +87,36 @@ func makeAssetsRoot(t *testing.T) (string, string) {
 	return root, tenantPath
 }
 
+// newRequestWithTenant constructs an httptest.Request and injects the tenant
+// model into its context so the handler's tenant-binding check passes.
+func newRequestWithTenant(method, url string, tm atlastenant.Model) *http.Request {
+	req := httptest.NewRequest(method, url, nil)
+	ctx := atlastenant.WithContext(context.Background(), tm)
+	return req.WithContext(ctx)
+}
+
 func TestHandleRenderHappyPath(t *testing.T) {
 	root, _ := makeAssetsRoot(t)
 
 	c := characterimage.NewCompositor()
 	h := NewHandler(root, c)
 
-	canonical := CanonicalLoadoutString("tenant-a", "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 1, nil)
+	tenantStr := testTenantId.String()
+	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 1, nil)
 	hash := LoadoutHash(canonical)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
 		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
-	url := "/api/wz/character/render/tenant-a/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=stand1&frame=0&resize=1&items="
+	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=stand1&frame=0&resize=1&items="
 	rec := httptest.NewRecorder()
-	req := httptest.NewRequest(http.MethodGet, url, nil)
+
+	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+	req := newRequestWithTenant(http.MethodGet, url, tm)
 	r.ServeHTTP(rec, req)
 
 	if rec.Code != 200 {
@@ -112,7 +133,7 @@ func TestHandleRenderHappyPath(t *testing.T) {
 	}
 
 	// Verify the file landed on disk.
-	cached := filepath.Join(root, "tenant-a", "GMS", "83.1", "character", hash+".png")
+	cached := filepath.Join(root, tenantStr, "GMS", "83.1", "character", hash+".png")
 	if _, err := os.Stat(cached); err != nil {
 		t.Fatalf("cached file missing: %v", err)
 	}
@@ -126,10 +147,16 @@ func TestHandleRenderHashMismatch(t *testing.T) {
 	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
 		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
+	tenantStr := testTenantId.String()
+	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+
 	wrong := hex.EncodeToString(sha256.New().Sum(nil))[:16]
-	url := "/api/wz/character/render/tenant-a/GMS/83.1/" + wrong + ".png?skin=0&hair=30030&face=20000"
+	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + wrong + ".png?skin=0&hair=30030&face=20000"
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
+	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
 
 	if rec.Code != 400 {
 		t.Fatalf("status = %d", rec.Code)
@@ -147,11 +174,17 @@ func TestHandleRenderInvalidStance(t *testing.T) {
 	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
 		h.HandleRender(logrus.New())).Methods(http.MethodGet)
 
-	canonical := CanonicalLoadoutString("tenant-a", "GMS", 83, 1, 0, 30030, 20000, "warp", 0, 1, nil)
+	tenantStr := testTenantId.String()
+	tm, err := atlastenant.Create(testTenantId, "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+
+	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "warp", 0, 1, nil)
 	hash := LoadoutHash(canonical)
-	url := "/api/wz/character/render/tenant-a/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=warp&frame=0&resize=1&items="
+	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=warp&frame=0&resize=1&items="
 	rec := httptest.NewRecorder()
-	r.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, url, nil))
+	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
 	if rec.Code != 400 {
 		t.Fatalf("status = %d, body=%s", rec.Code, rec.Body.String())
 	}
@@ -159,4 +192,32 @@ func TestHandleRenderInvalidStance(t *testing.T) {
 		t.Fatalf("body = %s", rec.Body.String())
 	}
 	_ = strconv.IntSize // pacify import
+}
+
+func TestHandleRenderTenantMismatch(t *testing.T) {
+	root, _ := makeAssetsRoot(t)
+	c := characterimage.NewCompositor()
+	h := NewHandler(root, c)
+	r := mux.NewRouter()
+	r.HandleFunc("/api/wz/character/render/{tenant}/{region}/{version}/{hash}.png",
+		h.HandleRender(logrus.New())).Methods(http.MethodGet)
+
+	tenantStr := testTenantId.String()
+	// Inject a context tenant with a *different* region.
+	tm, err := atlastenant.Create(testTenantId, "KMS", 83, 1)
+	if err != nil {
+		t.Fatalf("create tenant: %v", err)
+	}
+
+	canonical := CanonicalLoadoutString(tenantStr, "GMS", 83, 1, 0, 30030, 20000, "stand1", 0, 1, nil)
+	hash := LoadoutHash(canonical)
+	url := "/api/wz/character/render/" + tenantStr + "/GMS/83.1/" + hash + ".png?skin=0&hair=30030&face=20000&stance=stand1&frame=0&resize=1&items="
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, newRequestWithTenant(http.MethodGet, url, tm))
+	if rec.Code != 400 {
+		t.Fatalf("status = %d, body=%s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte(`"tenant-mismatch"`)) {
+		t.Fatalf("body = %s", rec.Body.String())
+	}
 }

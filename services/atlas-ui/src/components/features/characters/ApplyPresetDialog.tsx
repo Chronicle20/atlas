@@ -214,8 +214,8 @@ export function ApplyPresetDialog({
                             aria-checked={selected}
                             onClick={() => field.onChange(p.id)}
                             className={cn(
-                              "flex flex-col items-center gap-1 rounded-md border p-2 hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                              selected && "ring-2 ring-primary border-primary",
+                              "flex cursor-pointer flex-col items-center gap-1 rounded-md border p-2 transition-colors hover:bg-accent/50 hover:border-accent-foreground/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                              selected && "ring-2 ring-primary border-primary hover:bg-primary/10",
                             )}
                           >
                             <div className="aspect-square w-full flex items-center justify-center bg-muted/30 rounded">

@@ -1,9 +1,11 @@
 // services/atlas-ui/src/components/features/accounts/EmptySlotTile.tsx
 import { useMemo } from "react";
 import { CharacterRenderer } from "@/components/features/characters/CharacterRenderer";
+import type { Asset } from "@/services/api/inventory.service";
 import type { Character } from "@/types/models/character";
 import type { TenantConfigAttributes } from "@/services/api";
 import { cn } from "@/lib/utils";
+import { synthesizeEquippedAssetsFromTemplateIds } from "@/lib/utils/maplestory";
 import { tileFrameClasses } from "./tile-frame";
 
 type CharacterTemplate =
@@ -59,6 +61,25 @@ function synthesizeCharacter(template: CharacterTemplate): Character {
   };
 }
 
+function synthesizeStarterEquipment(template: CharacterTemplate): Asset[] {
+  // Pick the first available item from each starter equipment array so the
+  // silhouette wears a top, bottom, shoes, and a weapon if the template
+  // configures them. Misc "items" act as a catch-all (gloves, capes, etc.).
+  const candidates: number[] = [];
+  for (const list of [
+    template.tops,
+    template.bottoms,
+    template.shoes,
+    template.weapons,
+    template.items,
+  ]) {
+    if (list && list.length > 0 && typeof list[0] === "number") {
+      candidates.push(list[0] as number);
+    }
+  }
+  return synthesizeEquippedAssetsFromTemplateIds(candidates);
+}
+
 export function EmptySlotTile({
   onClick,
   disabled,
@@ -70,6 +91,10 @@ export function EmptySlotTile({
     () => (template ? synthesizeCharacter(template) : null),
     [template],
   );
+  const starterEquipment = useMemo(
+    () => (template ? synthesizeStarterEquipment(template) : []),
+    [template],
+  );
 
   return (
     <button
@@ -77,18 +102,22 @@ export function EmptySlotTile({
       onClick={onClick}
       disabled={disabled}
       aria-label="Add character to slot"
-      className="group flex flex-col items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md disabled:cursor-not-allowed"
+      className={cn(
+        "group flex flex-col items-center gap-2 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
+      )}
     >
       <div
         className={cn(
           tileFrameClasses,
-          "flex items-center justify-center bg-muted/40 group-hover:bg-accent/50 group-disabled:opacity-50",
+          "flex items-center justify-center bg-muted/40 transition-colors group-hover:bg-accent/50 group-disabled:opacity-50",
         )}
       >
         {character ? (
-          <div className="grayscale opacity-40 group-hover:opacity-60 transition-opacity">
+          <div className="grayscale opacity-40 transition-opacity group-hover:opacity-60">
             <CharacterRenderer
               character={character}
+              inventory={starterEquipment}
               size="medium"
               lazy
               {...(region && { region })}

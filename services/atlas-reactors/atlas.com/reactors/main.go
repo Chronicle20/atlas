@@ -7,7 +7,7 @@ import (
 	"atlas-reactors/reactor"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-reactors/tasks"
-	"atlas-reactors/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

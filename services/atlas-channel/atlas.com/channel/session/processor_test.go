@@ -2,14 +2,23 @@ package session_test
 
 import (
 	"atlas-channel/session"
+	"atlas-channel/socket/writer"
 	"atlas-channel/test"
+	"context"
+	"errors"
 	"testing"
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
+	socketwriter "github.com/Chronicle20/atlas/libs/atlas-socket/writer"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+	"go.opentelemetry.io/otel"
+	otelattribute "go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 // testSetup creates common test fixtures
@@ -607,5 +616,105 @@ func TestSetMapId_NonExistent(t *testing.T) {
 
 	if result.SessionId() != uuid.Nil {
 		t.Errorf("SetMapId() for non-existent session returned non-nil SessionId")
+	}
+}
+
+// --- mock tracer scaffolding (mirrors libs/atlas-kafka/consumer/manager_test.go) ---
+
+type announceMockSpan struct {
+	oteltrace.Span
+	name       string
+	attributes []otelattribute.KeyValue
+	ended      bool
+}
+
+func (s *announceMockSpan) SetAttributes(kv ...otelattribute.KeyValue)      { s.attributes = append(s.attributes, kv...) }
+func (s *announceMockSpan) End(_ ...oteltrace.SpanEndOption)                { s.ended = true }
+func (s *announceMockSpan) RecordError(_ error, _ ...oteltrace.EventOption) {}
+func (s *announceMockSpan) SetStatus(_ codes.Code, _ string)               {}
+func (s *announceMockSpan) IsRecording() bool                               { return true }
+func (s *announceMockSpan) SpanContext() oteltrace.SpanContext               { return oteltrace.SpanContext{} }
+
+type announceMockTracer struct {
+	oteltrace.Tracer
+	started []*announceMockSpan
+}
+
+func (t *announceMockTracer) Start(ctx context.Context, name string, _ ...oteltrace.SpanStartOption) (context.Context, oteltrace.Span) {
+	s := &announceMockSpan{name: name}
+	t.started = append(t.started, s)
+	return ctx, s
+}
+
+type announceMockProvider struct {
+	oteltrace.TracerProvider
+	tracer *announceMockTracer
+}
+
+func (p *announceMockProvider) Tracer(_ string, _ ...oteltrace.TracerOption) oteltrace.Tracer {
+	if p.tracer == nil {
+		p.tracer = &announceMockTracer{}
+	}
+	return p.tracer
+}
+
+// --- test ---
+
+func TestAnnounce_StartsSpan(t *testing.T) {
+	logger, cleanup := testSetup()
+	defer cleanup()
+
+	ctx := test.CreateTestContext()
+	sessionId := uuid.New()
+	s := createTestSession(sessionId)
+
+	prev := otel.GetTracerProvider()
+	mp := &announceMockProvider{}
+	otel.SetTracerProvider(mp)
+	t.Cleanup(func() { otel.SetTracerProvider(prev) })
+
+	// A writer.Producer that errors out — we never reach announceEncrypted
+	// (which needs a live net.Conn). The encoder we pass is a no-op stub.
+	wantErr := errors.New("test-noop")
+	wp := writer.Producer(func(_ string) (socketwriter.BodyFunc, error) {
+		return nil, wantErr
+	})
+	encoder := packet.Encode(func(_ logrus.FieldLogger, _ context.Context) func(map[string]interface{}) []byte {
+		return func(_ map[string]interface{}) []byte { return nil }
+	})
+
+	op := session.Announce(logger)(ctx)(wp)("InventoryChangeWriter")(encoder)
+	_ = op(s)
+
+	if mp.tracer == nil || len(mp.tracer.started) != 1 {
+		count := 0
+		if mp.tracer != nil {
+			count = len(mp.tracer.started)
+		}
+		t.Fatalf("expected exactly one span started, got %d", count)
+	}
+	span := mp.tracer.started[0]
+	if span.name != "session.Announce" {
+		t.Errorf("span name = %q, want %q", span.name, "session.Announce")
+	}
+	if !span.ended {
+		t.Error("span was not ended")
+	}
+
+	gotWriter := ""
+	gotTenant := ""
+	for _, kv := range span.attributes {
+		switch string(kv.Key) {
+		case "writer.name":
+			gotWriter = kv.Value.AsString()
+		case "tenant.id":
+			gotTenant = kv.Value.AsString()
+		}
+	}
+	if gotWriter != "InventoryChangeWriter" {
+		t.Errorf("writer.name attr = %q, want %q", gotWriter, "InventoryChangeWriter")
+	}
+	if gotTenant == "" {
+		t.Error("tenant.id attr was not set")
 	}
 }

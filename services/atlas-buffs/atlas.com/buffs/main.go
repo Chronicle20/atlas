@@ -6,7 +6,7 @@ import (
 	"atlas-buffs/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-buffs/tasks"
-	"atlas-buffs/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

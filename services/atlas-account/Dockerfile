@@ -16,6 +16,7 @@ COPY libs/atlas-tenant/go.mod libs/atlas-tenant/go.sum libs/atlas-tenant/
 COPY libs/atlas-database/go.mod libs/atlas-database/go.sum libs/atlas-database/
 COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
+COPY libs/atlas-tracing/go.mod libs/atlas-tracing/go.sum libs/atlas-tracing/
 COPY libs/atlas-service/go.mod libs/atlas-service/
 # Copy service module definitions
 COPY services/atlas-account/atlas.com/account/go.mod services/atlas-account/atlas.com/account/go.sum services/atlas-account/atlas.com/account/
@@ -29,6 +30,7 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-tenant' >> go.work && \
+    echo '    ./libs/atlas-tracing' >> go.work && \
     echo '    ./libs/atlas-database' >> go.work && \
     echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
@@ -50,6 +52,7 @@ COPY libs/atlas-database libs/atlas-database
 COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
+COPY libs/atlas-tracing libs/atlas-tracing
 # Copy service source code
 COPY services/atlas-account/atlas.com/account services/atlas-account/atlas.com/account
 
@@ -65,6 +68,7 @@ RUN cd services/atlas-account/atlas.com/account && \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \
       -replace=github.com/Chronicle20/atlas/libs/atlas-tenant=/app/libs/atlas-tenant \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-tracing=/app/libs/atlas-tracing \
     && go mod tidy
 
 # Build

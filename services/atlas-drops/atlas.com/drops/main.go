@@ -8,7 +8,7 @@ import (
 	_map "atlas-drops/map"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-drops/tasks"
-	"atlas-drops/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"context"
 	"os"
 	"time"

@@ -26,7 +26,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-data/setup"
 	"atlas-data/skill"
-	"atlas-data/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

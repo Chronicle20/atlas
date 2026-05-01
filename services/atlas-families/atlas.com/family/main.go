@@ -8,7 +8,7 @@ import (
 	"atlas-family/logger"
 	"atlas-family/scheduler"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-family/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

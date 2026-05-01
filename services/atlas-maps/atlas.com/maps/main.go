@@ -14,7 +14,7 @@ import (
 	"atlas-maps/map/weather"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-maps/tasks"
-	"atlas-maps/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-maps/visit"
 	"context"
 	"os"

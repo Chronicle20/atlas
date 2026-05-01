@@ -19,7 +19,7 @@ import (
 	"atlas-saga-orchestrator/logger"
 	"atlas-saga-orchestrator/saga"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-saga-orchestrator/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
 	"time"

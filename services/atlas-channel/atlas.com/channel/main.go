@@ -54,7 +54,7 @@ import (
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"atlas-channel/tasks"
-	"atlas-channel/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"fmt"
 	"os"
 	"time"

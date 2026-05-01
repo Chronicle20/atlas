@@ -5,7 +5,7 @@ import (
 	"atlas-character-factory/factory"
 	"atlas-character-factory/kafka/consumer/saga"
 	"atlas-character-factory/logger"
-	"atlas-character-factory/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

@@ -7,6 +7,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-kafka v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-model v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-redis v0.0.0-00010101000000-000000000000
+	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
 	github.com/alicebob/miniredis/v2 v2.37.0
@@ -17,17 +18,24 @@ require (
 	github.com/stretchr/testify v1.11.1
 	go.elastic.co/ecslogrus v1.0.0
 	go.opentelemetry.io/otel v1.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0
-	go.opentelemetry.io/otel/sdk v1.43.0
+)
+
+require (
+	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
+	github.com/gorilla/mux v1.8.1 // indirect
+	github.com/jtumidanski/api2go v1.0.4 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.43.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.43.0 // indirect
+	golang.org/x/sync v0.20.0 // indirect
 )
 
 require (
 	github.com/Chronicle20/atlas/libs/atlas-retry v0.0.0 // indirect
+	github.com/Chronicle20/atlas/libs/atlas-tracing v0.0.0
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.28.0 // indirect
@@ -78,3 +86,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-saga => ../../../../libs/atlas-s
 replace github.com/Chronicle20/atlas/libs/atlas-script-core => ../../../../libs/atlas-script-core
 
 replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas-socket
+
+replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing

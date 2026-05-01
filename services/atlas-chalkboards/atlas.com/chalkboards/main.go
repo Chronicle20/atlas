@@ -7,7 +7,7 @@ import (
 	"atlas-chalkboards/kafka/consumer/character"
 	"atlas-chalkboards/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
-	"atlas-chalkboards/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"

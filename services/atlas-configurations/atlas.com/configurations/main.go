@@ -8,7 +8,7 @@ import (
 	"atlas-configurations/services"
 	"atlas-configurations/templates"
 	"atlas-configurations/tenants"
-	"atlas-configurations/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"

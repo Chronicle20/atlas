@@ -5,7 +5,7 @@ import (
 	"atlas-asset-expiration/logger"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
 	"atlas-asset-expiration/task"
-	"atlas-asset-expiration/tracing"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"strconv"
 	"time"

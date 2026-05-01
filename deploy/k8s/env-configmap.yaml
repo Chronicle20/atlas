@@ -11,6 +11,7 @@ data:
   DB_PORT: "5432"
   REDIS_URL: "redis.home:6379"
   TRACE_ENDPOINT: "tempo.home:4317"
+  TRACE_SAMPLING_RATIO: "1.0"
   REST_PORT: "8080"
   # Command Topics
   COMMAND_TOPIC_ACCOUNT: "COMMAND_TOPIC_ACCOUNT"

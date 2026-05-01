@@ -5,7 +5,8 @@
 import { memo, useMemo, Suspense, lazy, Component, type ErrorInfo, type ReactNode } from 'react';
 import { CharacterRenderer, CharacterRendererSkeleton } from './CharacterRenderer';
 import { useCharacterImagePreloader } from '@/lib/hooks/useCharacterImage';
-import { mapleStoryService } from '@/services/api/maplestory.service';
+import { characterToLoadout } from '@/services/api/characterRender.service';
+import { useTenant } from '@/context/tenant-context';
 import type { Character } from '@/types/models/character';
 import type { Asset } from '@/services/api/inventory.service';
 
@@ -142,7 +143,8 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
   preloadSiblings = [],
 }) => {
   const { preloadImages } = useCharacterImagePreloader();
-  
+  const { activeTenant } = useTenant();
+
   // Memoize character data to prevent unnecessary re-renders
   const characterData = useMemo(() => ({
     character,
@@ -152,25 +154,34 @@ const OptimizedCharacterRendererComponent = memo<OptimizedCharacterRendererProps
 
   // Preload sibling characters for better UX
   useMemo(() => {
-    if (preloadSiblings.length > 0) {
+    if (preloadSiblings.length > 0 && activeTenant) {
       // Convert Character to MapleStoryCharacterData first, then preload
       const siblingData = preloadSiblings.map(sibling => {
-        const mapleStoryData = mapleStoryService.characterToMapleStoryData(
-          sibling.character,
-          sibling.inventory || []
-        );
+        const loadout = characterToLoadout(sibling.character, sibling.inventory || []);
         return {
-          character: mapleStoryData,
+          character: {
+            id: sibling.character.id,
+            name: sibling.character.attributes.name,
+            level: sibling.character.attributes.level,
+            jobId: sibling.character.attributes.jobId,
+            hair: loadout.hair,
+            face: loadout.face,
+            skinColor: loadout.skin,
+            gender: sibling.character.attributes.gender,
+            equipment: loadout.equipment,
+            tenant: activeTenant.id,
+            region: activeTenant.attributes.region,
+            majorVersion: activeTenant.attributes.majorVersion,
+            minorVersion: activeTenant.attributes.minorVersion,
+          },
           options: { resize: sibling.scale || scale },
-          ...(region && { region }),
-          ...(majorVersion && { majorVersion }),
         };
       });
-      
+
       // Fire and forget - don't await
       preloadImages(siblingData);
     }
-  }, [preloadSiblings, preloadImages, scale, region, majorVersion]);
+  }, [preloadSiblings, preloadImages, scale, activeTenant]);
   
   const rendererComponent = (
     <CharacterRenderer
@@ -272,21 +283,34 @@ export function CharacterGallery({
 }: CharacterGalleryProps) {
   // Preload all character images in batch
   const { preloadImages } = useCharacterImagePreloader();
-  
+  const { activeTenant } = useTenant();
+
   useMemo(() => {
-    if (priority && characters.length > 0) {
+    if (priority && characters.length > 0 && activeTenant) {
       const characterData = characters.map(({ character, inventory = [], scale = 2 }) => {
-        const mapleStoryData = mapleStoryService.characterToMapleStoryData(character, inventory);
+        const loadout = characterToLoadout(character, inventory);
         return {
-          character: mapleStoryData,
+          character: {
+            id: character.id,
+            name: character.attributes.name,
+            level: character.attributes.level,
+            jobId: character.attributes.jobId,
+            hair: loadout.hair,
+            face: loadout.face,
+            skinColor: loadout.skin,
+            gender: character.attributes.gender,
+            equipment: loadout.equipment,
+            tenant: activeTenant.id,
+            region: activeTenant.attributes.region,
+            majorVersion: activeTenant.attributes.majorVersion,
+            minorVersion: activeTenant.attributes.minorVersion,
+          },
           options: { resize: scale },
-          ...(region && { region }),
-          ...(majorVersion && { majorVersion }),
         };
       });
       preloadImages(characterData);
     }
-  }, [characters, priority, preloadImages, region, majorVersion]);
+  }, [characters, priority, preloadImages, activeTenant]);
 
   return (
     <div className={`grid gap-4 ${className}`}>

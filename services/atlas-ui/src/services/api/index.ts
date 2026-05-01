@@ -96,7 +96,7 @@ export { guildsService } from './guilds.service';
 export { npcsService } from './npcs.service';
 export { conversationsService } from './conversations.service';
 export { templatesService } from './templates.service';
-export { MapleStoryService, mapleStoryService, mapSkinColor, getEquipmentSlotName, isTwoHandedWeapon } from './maplestory.service';
+export * from './characterRender.service';
 export { onboardingService, TemplateNotFoundError, TenantCreationError, ConfigurationCreationError } from './onboarding.service';
 export type { OnboardResult } from './onboarding.service';
 

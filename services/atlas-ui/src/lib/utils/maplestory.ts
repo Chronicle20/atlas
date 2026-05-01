@@ -342,14 +342,22 @@ export const getRegularEquipment = (equipment: EquipmentData): EquipmentData => 
  * Combines character attributes with extracted equipment data
  * @param character - Character model from API
  * @param inventory - Character's inventory assets
+ * @param tenant - Tenant UUID (defaults to empty string if not yet available)
+ * @param region - Tenant region string (defaults to empty string if not yet available)
+ * @param majorVersion - Tenant major version (defaults to 0)
+ * @param minorVersion - Tenant minor version (defaults to 0)
  * @returns MapleStory character data ready for rendering
  */
 export const characterToMapleStoryData = (
-  character: Character, 
-  inventory: Asset[]
+  character: Character,
+  inventory: Asset[],
+  tenant = '',
+  region = '',
+  majorVersion = 0,
+  minorVersion = 0,
 ): MapleStoryCharacterData => {
   const equipment = extractEquippedItems(inventory);
-  
+
   return {
     id: character.id,
     name: character.attributes.name,
@@ -360,6 +368,10 @@ export const characterToMapleStoryData = (
     skinColor: character.attributes.skinColor,
     gender: character.attributes.gender,
     equipment,
+    tenant,
+    region,
+    majorVersion,
+    minorVersion,
   };
 };
 

@@ -301,7 +301,7 @@ describe('MapleStory Utilities', () => {
 
     it('should convert character data correctly', () => {
       const result = characterToMapleStoryData(mockCharacter as unknown as Character, mockInventory as unknown as Asset[]);
-      
+
       expect(result).toEqual({
         id: 'char1',
         name: 'TestChar',
@@ -312,7 +312,27 @@ describe('MapleStory Utilities', () => {
         skinColor: 0,
         gender: 0,
         equipment: { '-1': 1001 },
+        tenant: '',
+        region: '',
+        majorVersion: 0,
+        minorVersion: 0,
       });
+    });
+
+    it('should include tenant fields when provided', () => {
+      const result = characterToMapleStoryData(
+        mockCharacter as unknown as Character,
+        mockInventory as unknown as Asset[],
+        'tenant-uuid',
+        'GMS',
+        83,
+        1,
+      );
+
+      expect(result.tenant).toBe('tenant-uuid');
+      expect(result.region).toBe('GMS');
+      expect(result.majorVersion).toBe(83);
+      expect(result.minorVersion).toBe(1);
     });
   });
 

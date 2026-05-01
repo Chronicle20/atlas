@@ -234,3 +234,44 @@ describe("ApplyPresetDialog", () => {
     });
   });
 });
+
+describe("world select", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useTenantConfigurationMock.mockReturnValue({
+      data: {
+        attributes: {
+          characters: { presets: twoPresets },
+          worlds: [
+            { name: "Scania", flag: "" },
+            { name: "Bera", flag: "" },
+          ],
+        },
+      },
+      isLoading: false,
+    });
+    useNameValidityMock.mockReturnValue({ data: undefined, isLoading: false });
+    useCreateCharacterFromPresetMock.mockReturnValue({ mutate, isPending: false });
+  });
+
+  it("renders a SelectTrigger labelled 'World'", () => {
+    render(<ApplyPresetDialog {...defaultProps()} />);
+    expect(screen.getByLabelText(/^world$/i)).toBeInTheDocument();
+  });
+
+  it("disables the world Select with helper text when no worlds are configured", () => {
+    useTenantConfigurationMock.mockReturnValue({
+      data: {
+        attributes: {
+          characters: { presets: twoPresets },
+          worlds: [],
+        },
+      },
+      isLoading: false,
+    });
+    render(<ApplyPresetDialog {...defaultProps()} />);
+    const trigger = screen.getByLabelText(/^world$/i);
+    expect(trigger).toBeDisabled();
+    expect(screen.getByText(/no worlds configured/i)).toBeInTheDocument();
+  });
+});

@@ -1,6 +1,7 @@
 package characterimage
 
 import (
+	"errors"
 	"fmt"
 	"image"
 	"image/draw"
@@ -251,6 +252,26 @@ func drawPart(canvas *image.RGBA, assetsRoot, templateId, stance string, frame i
 	return nil
 }
 
+// resolveTemplateStance returns the stance and frame to use when looking up
+// assets for an equipment template. Equipment that doesn't animate (hair,
+// face, hats, glasses, etc.) only has assets under default/0. When the
+// requested stance/frame is missing we fall back to default/0 so those items
+// still render.
+//
+// Body skins always have proper stance dirs and should NOT use this helper.
+func resolveTemplateStance(assetsRoot, templateId, stance string, frame int) (string, int, error) {
+	if _, err := listFrameParts(assetsRoot, templateId, stance, frame); err == nil {
+		return stance, frame, nil
+	} else if !errors.Is(err, ErrAssetsMissing) {
+		return "", 0, err
+	}
+	// Fall back to default/0.
+	if _, err := listFrameParts(assetsRoot, templateId, "default", 0); err != nil {
+		return "", 0, err
+	}
+	return "default", 0, nil
+}
+
 // jointForSlot maps a render slot to the joint name on the body via which the
 // equipment attaches. Slots not in this map are skipped.
 var jointForSlot = map[int]string{
@@ -275,24 +296,32 @@ func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equ
 	bodyTemplate := bodyTemplateId(req.IsMale, mustSkin(req.Skin))
 
 	type entry struct {
-		templateId string
-		part       string
-		meta       PartMeta
-		anchor     Anchor
-		zIdx       int
+		templateId     string
+		part           string
+		meta           PartMeta
+		anchor         Anchor
+		zIdx           int
+		resolvedStance string
+		resolvedFrame  int
 	}
 	var entries []entry
 
 	add := func(templateId string, jointFromBody string) error {
-		parts, err := listFrameParts(req.AssetsRoot, templateId, stance, req.Frame)
+		resolvedStance, resolvedFrame, err := resolveTemplateStance(req.AssetsRoot, templateId, stance, req.Frame)
+		if err != nil {
+			return err
+		}
+		parts, err := listFrameParts(req.AssetsRoot, templateId, resolvedStance, resolvedFrame)
 		if err != nil {
 			return err
 		}
 		for _, part := range parts {
-			meta, ok := loadOrEmpty(req.AssetsRoot, templateId, stance, req.Frame, part)
+			meta, ok := loadOrEmpty(req.AssetsRoot, templateId, resolvedStance, resolvedFrame, part)
 			if !ok {
 				continue
 			}
+			// The body-joint lookup always uses the body's actual stance, not
+			// the equipment's resolved stance.
 			bodyJointMeta, _ := loadOrEmpty(req.AssetsRoot, bodyTemplate, stance, req.Frame, "body")
 			originAnchor := ResolveAnchor(bodyAnchor, bodyJointMeta, meta, jointFromBody)
 			// ResolveAnchor returns the canvas position of the child's origin.
@@ -302,8 +331,13 @@ func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equ
 				Y: originAnchor.Y - meta.Origin.Y,
 			}
 			entries = append(entries, entry{
-				templateId: templateId, part: part, meta: meta, anchor: anchor,
-				zIdx: zIndex(zmap, meta.Z),
+				templateId:     templateId,
+				part:           part,
+				meta:           meta,
+				anchor:         anchor,
+				zIdx:           zIndex(zmap, meta.Z),
+				resolvedStance: resolvedStance,
+				resolvedFrame:  resolvedFrame,
 			})
 		}
 		return nil
@@ -332,7 +366,7 @@ func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equ
 
 	sort.SliceStable(entries, func(i, j int) bool { return entries[i].zIdx < entries[j].zIdx })
 	for _, e := range entries {
-		if err := drawPart(canvas, req.AssetsRoot, e.templateId, stance, req.Frame, e.part, e.anchor); err != nil {
+		if err := drawPart(canvas, req.AssetsRoot, e.templateId, e.resolvedStance, e.resolvedFrame, e.part, e.anchor); err != nil {
 			return err
 		}
 	}

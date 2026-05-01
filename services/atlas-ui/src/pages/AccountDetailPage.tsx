@@ -1,19 +1,15 @@
-import { useState } from "react";
 import { useParams } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { useTenant } from "@/context/tenant-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAccount } from "@/lib/hooks/api/useAccounts";
 import { useWallet } from "@/lib/hooks/api/useWallet";
-import { useTenantConfiguration } from "@/lib/hooks/api/useTenants";
 import { ErrorDisplay } from "@/components/common";
 import { AccountDetailSkeleton } from "@/components/common/skeletons/AccountDetailSkeleton";
 import { WalletPanel } from "@/components/features/accounts/WalletPanel";
-import { ApplyPresetDialog } from "@/components/features/characters/ApplyPresetDialog";
-import { BootstrapCharactersDialog } from "@/components/features/characters/BootstrapCharactersDialog";
+import { CopyableIdHeader } from "@/components/common/CopyableIdHeader";
+import { CharactersPanel } from "@/components/features/accounts/CharactersPanel";
 
 function getLoginStateName(state: number): string {
   if (state === 0) return "Logged Out";
@@ -30,14 +26,9 @@ function getLoginStateBadgeVariant(state: number): "secondary" | "default" | "ou
 export function AccountDetailPage() {
   const { id } = useParams();
   const { activeTenant } = useTenant();
-  const [applyOpen, setApplyOpen] = useState(false);
-  const [bootstrapOpen, setBootstrapOpen] = useState(false);
 
   const accountQuery = useAccount(activeTenant!, id ?? "");
   const walletQuery = useWallet(activeTenant!, id ?? "");
-  const tenantConfigQuery = useTenantConfiguration(activeTenant?.id ?? "");
-  const hasPresets =
-    (tenantConfigQuery.data?.attributes?.characters?.presets ?? []).length > 0;
 
   const account = accountQuery.data ?? null;
   const wallet = walletQuery.data ?? null;
@@ -54,67 +45,7 @@ export function AccountDetailPage() {
 
   return (
     <div className="flex flex-col flex-1 space-y-6 p-10 pb-16 h-screen overflow-auto">
-      <div className="flex items-center justify-between space-y-2">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">{account.attributes.name}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          {activeTenant && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={hasPresets ? -1 : 0}>
-                    <Button
-                      variant="outline"
-                      onClick={() => setBootstrapOpen(true)}
-                      disabled={!hasPresets}
-                    >
-                      Bootstrap characters
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!hasPresets && (
-                  <TooltipContent>
-                    No presets configured for this tenant. Configure them under
-                    Tenant Details &rarr; Character Presets.
-                  </TooltipContent>
-                )}
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span tabIndex={hasPresets ? -1 : 0}>
-                    <Button onClick={() => setApplyOpen(true)} disabled={!hasPresets}>
-                      Add character from preset
-                    </Button>
-                  </span>
-                </TooltipTrigger>
-                {!hasPresets && (
-                  <TooltipContent>
-                    No presets configured for this tenant. Configure them under
-                    Tenant Details &rarr; Character Presets.
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          )}
-        </div>
-      </div>
-      {activeTenant && (
-        <ApplyPresetDialog
-          tenant={activeTenant}
-          accountId={Number(account.id)}
-          open={applyOpen}
-          onOpenChange={setApplyOpen}
-        />
-      )}
-      {activeTenant && (
-        <BootstrapCharactersDialog
-          tenant={activeTenant}
-          accountId={Number(account.id)}
-          open={bootstrapOpen}
-          onOpenChange={setBootstrapOpen}
-        />
-      )}
+      <CopyableIdHeader title={account.attributes.name} id={account.id} />
 
       <div className="flex flex-row gap-6">
         <Card className="flex-1">
@@ -122,14 +53,6 @@ export function AccountDetailPage() {
             <CardTitle>Account Information</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground">Account ID</p>
-              <p className="font-medium">{account.id}</p>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Name</p>
-              <p className="font-medium">{account.attributes.name}</p>
-            </div>
             <div>
               <p className="text-muted-foreground">Gender</p>
               <p className="font-medium">{account.attributes.gender === 0 ? "Male" : "Female"}</p>
@@ -139,10 +62,6 @@ export function AccountDetailPage() {
               <Badge variant={getLoginStateBadgeVariant(account.attributes.loggedIn)}>
                 {getLoginStateName(account.attributes.loggedIn)}
               </Badge>
-            </div>
-            <div>
-              <p className="text-muted-foreground">Character Slots</p>
-              <p className="font-medium">{account.attributes.characterSlots}</p>
             </div>
             <div>
               <p className="text-muted-foreground">Terms of Service</p>
@@ -178,6 +97,8 @@ export function AccountDetailPage() {
           </Card>
         )}
       </div>
+
+      {activeTenant && <CharactersPanel tenant={activeTenant} account={account} />}
 
       <Toaster richColors />
     </div>

@@ -74,7 +74,13 @@ func applyDiseaseCommandProvider(m mist.Mist, characterId uint32) model.Provider
 			FromId:   m.OwnerId(),
 			SourceId: int32(m.SourceSkillId()),
 			Level:    byte(m.SourceSkillLevel()),
-			Duration: int32(m.DiseaseDuration() / time.Millisecond),
+			// atlas-buffs treats Duration as SECONDS (buff.NewBuff multiplies
+			// by time.Second). Sending milliseconds here turned a 15s mist
+			// poison into a 15000-second buff (~4h10m), so the DoT never
+			// stopped ticking. Match atlas-monsters' convention (executeDebuff
+			// passes int32(sd.Duration()) — i.e. raw seconds from mob skill
+			// data).
+			Duration: int32(m.DiseaseDuration() / time.Second),
 			Changes:  []statChange{{Type: m.Disease(), Amount: m.DiseaseValue()}},
 		},
 	}

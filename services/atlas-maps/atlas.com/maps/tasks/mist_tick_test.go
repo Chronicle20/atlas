@@ -159,7 +159,11 @@ func TestMistTick_LiveMist_AppliesDiseaseToContainedCharacters(t *testing.T) {
 	require.Equal(t, insideId, cmd.CharacterId)
 	require.Equal(t, int32(100020), cmd.Body.SourceId)
 	require.Equal(t, byte(5), cmd.Body.Level)
-	require.Equal(t, int32(30000), cmd.Body.Duration)
+	// Duration is in SECONDS (atlas-buffs' buff.NewBuff multiplies by
+	// time.Second). 30s mist disease -> 30, not 30000ms. The previous
+	// 30000 expectation pinned a bug where AREA_POISON DoTs persisted
+	// for hours instead of the configured mist disease duration.
+	require.Equal(t, int32(30), cmd.Body.Duration)
 	require.Len(t, cmd.Body.Changes, 1)
 	require.Equal(t, "POISON", cmd.Body.Changes[0].Type)
 	require.Equal(t, int32(80), cmd.Body.Changes[0].Amount)

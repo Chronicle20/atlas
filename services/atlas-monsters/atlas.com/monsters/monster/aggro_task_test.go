@@ -32,7 +32,7 @@ func newAggroTaskWithRecorder(t *testing.T, bossIds map[uint32]bool) (*MonsterAg
 		l:        logrus.New(),
 		ctx:      context.Background(),
 		interval: AggroSweepInterval,
-		bossLookupFn: func(monsterId uint32) bool {
+		bossLookupFn: func(_ tenant.Model, monsterId uint32) bool {
 			bossCalls++
 			return bossIds[monsterId]
 		},

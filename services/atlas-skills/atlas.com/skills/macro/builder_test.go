@@ -2,7 +2,6 @@ package macro_test
 
 import (
 	"atlas-skills/macro"
-	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -48,13 +47,20 @@ func TestBuild_AllFieldsSet(t *testing.T) {
 	}
 }
 
-func TestBuild_MissingName(t *testing.T) {
-	_, err := macro.NewModelBuilder().
+func TestBuild_EmptyNameAllowed(t *testing.T) {
+	model, err := macro.NewModelBuilder().
 		SetId(1).
+		SetSkillId1(skill.Id(2301004)).
 		Build()
 
-	if !errors.Is(err, macro.ErrMissingName) {
-		t.Errorf("Build() error = %v, want ErrMissingName", err)
+	if err != nil {
+		t.Fatalf("Build() unexpected error: %v", err)
+	}
+	if model.Name() != "" {
+		t.Errorf("model.Name() = %q, want empty string", model.Name())
+	}
+	if model.SkillId1() != skill.Id(2301004) {
+		t.Errorf("model.SkillId1() = %d, want 2301004", model.SkillId1())
 	}
 }
 

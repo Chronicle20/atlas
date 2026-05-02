@@ -1,8 +1,6 @@
 package macro
 
 import (
-	"errors"
-
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
@@ -61,9 +59,6 @@ func (b *modelBuilder) SetSkillId3(skillId skill.Id) *modelBuilder {
 }
 
 func (b *modelBuilder) Build() (Model, error) {
-	if b.name == "" {
-		return Model{}, ErrMissingName
-	}
 	return Model{
 		id:       b.id,
 		name:     b.name,
@@ -73,7 +68,3 @@ func (b *modelBuilder) Build() (Model, error) {
 		skillId3: b.skillId3,
 	}, nil
 }
-
-var (
-	ErrMissingName = errors.New("macro name is required")
-)

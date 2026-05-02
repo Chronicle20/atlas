@@ -8,6 +8,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -16,11 +17,16 @@ import (
 // Injected for tests.
 type taskEmitter func(t tenant.Model, topic string, provider model.Provider[[]kafka.Message]) error
 
+// bossLookupFn fetches whether a template is a boss for a given tenant.
+// The tenant is required because atlas-data is tenant-scoped — the upstream
+// REST middleware rejects requests without a TENANT_ID header.
+type bossLookupFn func(t tenant.Model, monsterTemplateId uint32) bool
+
 type MonsterAggroDecayTask struct {
 	l            logrus.FieldLogger
 	ctx          context.Context
 	interval     time.Duration
-	bossLookupFn func(monsterTemplateId uint32) bool
+	bossLookupFn bossLookupFn
 	emit         taskEmitter
 	nowFn        func() int64
 }
@@ -33,8 +39,9 @@ func NewMonsterAggroDecayTask(l logrus.FieldLogger, ctx context.Context, interva
 		interval: interval,
 		nowFn:    func() int64 { return time.Now().UnixMilli() },
 	}
-	tk.bossLookupFn = func(monsterTemplateId uint32) bool {
-		ma, err := information.GetById(tk.l)(tk.ctx)(monsterTemplateId)
+	tk.bossLookupFn = func(t tenant.Model, monsterTemplateId uint32) bool {
+		tctx := tenant.WithContext(tk.ctx, t)
+		ma, err := information.GetById(tk.l)(tctx)(monsterTemplateId)
 		if err != nil {
 			// Best-effort: treat as non-boss so decay proceeds.
 			return false
@@ -54,16 +61,20 @@ func (tk *MonsterAggroDecayTask) SleepTime() time.Duration {
 
 func (tk *MonsterAggroDecayTask) Run() {
 	monsters := GetMonsterRegistry().GetMonsters()
-	bossCache := make(map[uint32]bool)
+	bossCache := make(map[uuid.UUID]map[uint32]bool)
 	nowMs := tk.nowFn()
 
 	for ten, mons := range monsters {
+		tenantId := ten.Id()
+		if bossCache[tenantId] == nil {
+			bossCache[tenantId] = make(map[uint32]bool)
+		}
 		for _, m := range mons {
 			templateId := m.MonsterId()
-			isBoss, ok := bossCache[templateId]
+			isBoss, ok := bossCache[tenantId][templateId]
 			if !ok {
-				isBoss = tk.bossLookupFn(templateId)
-				bossCache[templateId] = isBoss
+				isBoss = tk.bossLookupFn(ten, templateId)
+				bossCache[tenantId][templateId] = isBoss
 			}
 			if isBoss {
 				continue

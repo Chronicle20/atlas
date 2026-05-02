@@ -182,7 +182,10 @@ data:
     }
 
     location ~ ^/api/assets(/.*)?$ {
-      proxy_pass http://atlas-assets.atlas.svc.cluster.local:8080$1;
+      # When proxy_pass contains a URI (anything after the host), nginx does
+      # not automatically forward the original query string — character render
+      # URLs depend on ?skin=&hair=&items=... so we must re-append it.
+      proxy_pass http://atlas-assets.atlas.svc.cluster.local:8080$1$is_args$args;
     }
 
     location ~ ^/api/accounts(/.*)?$ {

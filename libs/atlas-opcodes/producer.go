@@ -26,6 +26,11 @@ func BuildWriterProducer(l logrus.FieldLogger, writers []WriterConfig, available
 			}
 		}
 	}
+	for _, wn := range availableWriters {
+		if _, ok := rwm[wn]; !ok {
+			l.Warnf("Service declares writer [%s] but tenant config has no opcode mapping for it.", wn)
+		}
+	}
 	return sw.ProducerGetter(rwm)
 }
 
@@ -47,6 +52,7 @@ func BuildHandlerMap(l logrus.FieldLogger, handlers []HandlerConfig, validatorMa
 
 		h, ok := handlerMap[hc.Handler]
 		if !ok {
+			l.Warnf("Tenant config references handler [%s] for opcode [%s], but no handler is registered.", hc.Handler, hc.OpCode)
 			continue
 		}
 

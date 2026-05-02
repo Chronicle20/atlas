@@ -10,7 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CharacterChatMultiHandle = "CharacterChatMultiHandle"
+const CharacterChatMultiHandle = "CharacterMultiChatHandle"
 
 type Multi struct {
 	chatType   byte

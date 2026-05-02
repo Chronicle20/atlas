@@ -461,6 +461,51 @@ func typesOnly(es []emittedBody) []string {
 	return out
 }
 
+// TestStartControl_AggroTrue_StillRepicks pins the positive direction of the
+// control-change aggro gate: when the new controller does have aggro (e.g. a
+// DPS-lead switch hands off control to a player who already damaged the mob),
+// the post-StartControl repick must still fire. Without this assertion a
+// future tightening of the gate could silently disable casting after a
+// hand-off.
+func TestStartControl_AggroTrue_StillRepicks(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	// Seed: prior controller (1) damaged the mob, flipping controllerHasAggro.
+	if _, err := r.ControlMonster(ten, uniqueId, 1); err != nil {
+		t.Fatalf("ControlMonster: %v", err)
+	}
+	if _, err := r.ApplyDamage(ten, 1, 50, uniqueId, time.Now().UnixMilli()); err != nil {
+		t.Fatalf("seed damage: %v", err)
+	}
+	got, err := r.GetMonster(ten, uniqueId)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.ControllerHasAggro() {
+		t.Fatalf("precondition: seeded monster must have ControllerHasAggro=true")
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	if _, err := p.StartControl(uniqueId, 2); err != nil {
+		t.Fatalf("StartControl: %v", err)
+	}
+
+	var sawDecided bool
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusNextSkillDecided {
+			sawDecided = true
+		}
+	}
+	if !sawDecided {
+		t.Fatalf("NEXT_SKILL_DECIDED must be emitted when new controller has aggro; got events=%v", typesOnly(*events))
+	}
+}
+
 // TestDamageFR10OutOfFieldSkipsSwitch — attacker not in field: damage applies,
 // controller is NOT switched.
 func TestDamageFR10OutOfFieldSkipsSwitch(t *testing.T) {

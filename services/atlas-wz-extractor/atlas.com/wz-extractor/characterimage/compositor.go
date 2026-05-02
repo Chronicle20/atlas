@@ -106,7 +106,7 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	}
 
 	filtered := FilterEquipment(req.Equipment)
-	stance, override := ResolveStance(req.Stance, filtered)
+	stance, override := ResolveStance(req.AssetsRoot, req.Stance, filtered)
 
 	wzSkin, err := MapInternalSkin(req.Skin)
 	if err != nil {

@@ -183,17 +183,21 @@ func (c *Compositor) placeAndDraw(canvas *image.RGBA, zmap []string, req Composi
 	wzSkin := mustSkin(req.Skin)
 	filtered := FilterEquipment(req.Equipment)
 	placed := make([]placement, 0, 32)
+	owners := make([]vslotOwner, 0, 8)
 
 	// 1. Body skin parts under the resolved stance.
 	if err := c.appendBodyParts(&placed, req.AssetsRoot, bodyTemplate, stance, req.Frame); err != nil {
 		return err
 	}
+	owners = appendOwner(owners, c, req.AssetsRoot, bodyTemplate, ownerBody)
 
 	// 2. Head template — head canvas always lives under front/0 (we extract
 	//    front/head as a direct-canvas stance into front/0/head.{png,json}).
-	if err := c.appendTemplateParts(&placed, req.AssetsRoot, headTemplateId(wzSkin), "front", 0, true); err != nil {
+	headTmpl := headTemplateId(wzSkin)
+	if err := c.appendTemplateParts(&placed, req.AssetsRoot, headTmpl, "front", 0, true); err != nil {
 		return err
 	}
+	owners = appendOwner(owners, c, req.AssetsRoot, headTmpl, ownerHead)
 
 	// 3. Equipment in iteration order. Slot order isn't meaningful here —
 	//    z-ordering happens at draw time. The graph chain naturally lets each
@@ -205,6 +209,7 @@ func (c *Compositor) placeAndDraw(canvas *image.RGBA, zmap []string, req Composi
 		if err := c.appendEquipmentParts(&placed, req, id, stance); err != nil {
 			return err
 		}
+		owners = appendOwner(owners, c, req.AssetsRoot, strconv.Itoa(id), ownerEquipment)
 	}
 
 	// 4. Hair + face are sourced like equipment (their assets typically live
@@ -214,14 +219,22 @@ func (c *Compositor) placeAndDraw(canvas *image.RGBA, zmap []string, req Composi
 		if err := c.appendEquipmentParts(&placed, req, req.Hair, stance); err != nil {
 			return err
 		}
+		owners = appendOwner(owners, c, req.AssetsRoot, strconv.Itoa(req.Hair), ownerHair)
 	}
 	if req.Face != 0 {
 		if err := c.appendEquipmentParts(&placed, req, req.Face, stance); err != nil {
 			return err
 		}
+		owners = appendOwner(owners, c, req.AssetsRoot, strconv.Itoa(req.Face), ownerFace)
 	}
 
-	// 5. Sort by zmap order and blit. The zmap is ordered front-to-back —
+	// 5. Apply vslot/smap occlusion so equipment claims (e.g. a full helmet's
+	//    "CpH1H2H3H4H5HfHsHbAe") suppress hair parts in the slots it covers.
+	smap, _ := c.loadMaps(req.AssetsRoot) // already loaded above; ignore err
+	sort.SliceStable(owners, func(i, j int) bool { return owners[i].kind < owners[j].kind })
+	placed = applyVslotOcclusion(placed, smap.smap, owners)
+
+	// 6. Sort by zmap order and blit. The zmap is ordered front-to-back —
 	// lower index = more frontward. Drawing iterates placed in order, so
 	// back-most must come first. Sort descending: highest zIndex (back-most)
 	// drawn first, lowest zIndex (front-most) drawn last.

@@ -45,10 +45,19 @@ const sizeClasses = {
   large: 'w-32 h-32'
 };
 
+// Compositor canvas convention from atlas-wz-extractor characterimage:
+// CanvasHeight=128, body feet land at canvas y=119 regardless of items. Capes,
+// weapons, and other accessories may extend BELOW the feet (down to y=127), so
+// the bottom-most opaque pixel is not a reliable foot indicator. Compute the
+// foot row deterministically from the image height instead.
+const COMPOSITOR_CANVAS_HEIGHT = 128;
+const COMPOSITOR_FEET_Y = 119;
+
 /**
- * Pixel-scan the loaded image, find the bottom-most non-transparent row, and
- * compute an `objectPosition` that anchors that row to the container's bottom
- * edge under `object-fit: cover`. Falls back silently on CORS-tainted canvas.
+ * Anchor the character's feet to the container's bottom edge under
+ * `object-fit: cover`. The feet position is fixed by the compositor convention
+ * (constant fraction of the image height), so capes and trailing weapons that
+ * dangle below the body don't shift the perceived baseline.
  */
 function anchorPlatformFeet(
   img: HTMLImageElement,
@@ -57,36 +66,17 @@ function anchorPlatformFeet(
   const W = img.naturalWidth;
   const H = img.naturalHeight;
   if (!W || !H) return;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-  try {
-    ctx.drawImage(img, 0, 0);
-    const data = ctx.getImageData(0, 0, W, H).data;
-    let footRow = H - 1;
-    outer: for (let y = H - 1; y >= 0; y--) {
-      for (let x = 0; x < W; x++) {
-        if (data[(y * W + x) * 4 + 3]! > 0) {
-          footRow = y;
-          break outer;
-        }
-      }
-    }
-    const bottomMarginSrc = (H - 1) - footRow;
-    if (bottomMarginSrc <= 0) return;
-    const parent = img.parentElement;
-    if (!parent) return;
-    const cw = parent.clientWidth;
-    const ch = parent.clientHeight;
-    if (cw <= 0 || ch <= 0) return;
-    const coverScale = Math.max(cw / W, ch / H);
-    const shiftPx = bottomMarginSrc * coverScale;
-    setObjectPosition(`center calc(100% + ${shiftPx}px)`);
-  } catch {
-    // CORS-tainted canvas — leave default `object-position: bottom`.
-  }
+  const footRow = Math.round((H * COMPOSITOR_FEET_Y) / COMPOSITOR_CANVAS_HEIGHT);
+  const bottomMarginSrc = (H - 1) - footRow;
+  if (bottomMarginSrc <= 0) return;
+  const parent = img.parentElement;
+  if (!parent) return;
+  const cw = parent.clientWidth;
+  const ch = parent.clientHeight;
+  if (cw <= 0 || ch <= 0) return;
+  const coverScale = Math.max(cw / W, ch / H);
+  const shiftPx = bottomMarginSrc * coverScale;
+  setObjectPosition(`center calc(100% + ${shiftPx}px)`);
 }
 
 const sizeDimensions = {

@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CompartmentMergeRequestHandle = "CompartmentMerge"
+const CompartmentMergeRequestHandle = "CompartmentMergeHandle"
 
 // CompartmentMergeRequest - CField::SendCompartmentMergeRequest
 type CompartmentMergeRequest struct {

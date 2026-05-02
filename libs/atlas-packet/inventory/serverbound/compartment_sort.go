@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const CompartmentSortRequestHandle = "CompartmentSort"
+const CompartmentSortRequestHandle = "CompartmentSortHandle"
 
 // CompartmentSortRequest - CField::SendCompartmentSortRequest
 type CompartmentSortRequest struct {

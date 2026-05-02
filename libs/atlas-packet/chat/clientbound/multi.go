@@ -9,7 +9,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-const MultiChatWriter = "CharacterChatMulti"
+const MultiChatWriter = "CharacterMultiChat"
 
 type MultiChat struct {
 	mode    byte

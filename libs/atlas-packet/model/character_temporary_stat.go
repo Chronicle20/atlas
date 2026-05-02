@@ -502,18 +502,22 @@ func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Mod
 func (m *CharacterTemporaryStat) EncodeMask(l logrus.FieldLogger, t tenant.Model, options map[string]interface{}) func(w *response.Writer) {
 	return func(w *response.Writer) {
 		mask := tool.Uint128{}
-		applyMask := func(name character.TemporaryStatType) {
-			if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
-				mask = mask.Or(val.mask)
-			}
-		}
-		applyMask(character.TemporaryStatTypeEnergyCharge)
-		applyMask(character.TemporaryStatTypeDashSpeed)
-		applyMask(character.TemporaryStatTypeDashJump)
-		applyMask(character.TemporaryStatTypeMonsterRiding)
-		applyMask(character.TemporaryStatTypeSpeedInfusion)
-		applyMask(character.TemporaryStatTypeHomingBeacon)
-		applyMask(character.TemporaryStatTypeUndead)
+		_ = t
+		// DIAGNOSTIC: temporarily skip base temp stat bits to test whether
+		// they are what's preventing the v83 client from rendering the
+		// disease icon. Revert before merging.
+		// applyMask := func(name character.TemporaryStatType) {
+		// 	if val, err := CharacterTemporaryStatTypeByName(t)(name); err == nil {
+		// 		mask = mask.Or(val.mask)
+		// 	}
+		// }
+		// applyMask(character.TemporaryStatTypeEnergyCharge)
+		// applyMask(character.TemporaryStatTypeDashSpeed)
+		// applyMask(character.TemporaryStatTypeDashJump)
+		// applyMask(character.TemporaryStatTypeMonsterRiding)
+		// applyMask(character.TemporaryStatTypeSpeedInfusion)
+		// applyMask(character.TemporaryStatTypeHomingBeacon)
+		// applyMask(character.TemporaryStatTypeUndead)
 
 		for _, v := range m.stats {
 			mask = mask.Or(v.statType.mask)
@@ -564,10 +568,13 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 		w.WriteByte(0) // nDefenseAtt
 		w.WriteByte(0) // nDefenseState
 
-		var baseTemporaryStats = m.getBaseTemporaryStats()
-		for _, bts := range baseTemporaryStats {
-			w.WriteByteArray(bts.Encode(l, ctx)(options))
-		}
+		// DIAGNOSTIC: temporarily skip base temp stat encodings, see Encode
+		// EncodeMask above. Revert before merging.
+		// var baseTemporaryStats = m.getBaseTemporaryStats()
+		// for _, bts := range baseTemporaryStats {
+		// 	w.WriteByteArray(bts.Encode(l, ctx)(options))
+		// }
+		_ = options
 		return w.Bytes()
 	}
 }

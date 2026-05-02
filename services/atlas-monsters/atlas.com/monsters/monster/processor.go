@@ -235,7 +235,16 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	if err == nil {
 		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
-		if rerr := p.RepickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
+		// FR-2.3 parity: a controller-change must not start a fresh skill
+		// decision when the new controller has no aggro. Without this guard
+		// every mob in a map picks a skill the moment a player walks in (e.g.
+		// 12 freshly-spawned Wyverns all decide skill 126 on entry, then the
+		// channel inbox serves the prediction into MoveMonsterAck and the
+		// client animates 12 simultaneous casts). Mirrors postExecute's
+		// ControllerHasAggro gate in UseSkill.
+		if !m.ControllerHasAggro() {
+			p.l.Debugf("Controller-change picker: monster [%d] new controller [%d] has no aggro; skipping re-pick.", uniqueId, controllerId)
+		} else if rerr := p.RepickAndEmit(uniqueId, RepickReasonControlChange); rerr != nil {
 			p.l.WithError(rerr).Warnf("Controller-change picker: monster [%d] re-pick failed.", uniqueId)
 		}
 	}

@@ -414,6 +414,53 @@ func TestDamageFR9NoStopWhenControllerZero(t *testing.T) {
 	}
 }
 
+// TestStartControl_NoAggro_SkipsRepick — assigning a controller to a freshly
+// spawned monster (controllerHasAggro=false, e.g. on map entry) must NOT emit
+// a NEXT_SKILL_DECIDED. The control-change repick must mirror the post-UseSkill
+// repick's aggro guard; otherwise every nearby mob picks a skill the moment a
+// player walks in, the channel inbox serves the prediction back into
+// MoveMonsterAck, and the client sees N simultaneous skill casts.
+func TestStartControl_NoAggro_SkipsRepick(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 5, 0, 1000, 50)
+	uniqueId := m.UniqueId()
+	if m.ControllerHasAggro() {
+		t.Fatalf("precondition: fresh monster must have ControllerHasAggro=false")
+	}
+
+	p, events := newRecordingProcessorWithBodies(t, ten)
+	if _, err := p.StartControl(uniqueId, 1); err != nil {
+		t.Fatalf("StartControl: %v", err)
+	}
+
+	var sawStart bool
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusNextSkillDecided {
+			t.Fatalf("NEXT_SKILL_DECIDED must NOT be emitted when new controller has no aggro; got events=%v", typesOnly(*events))
+		}
+		if e.Type == EventMonsterStatusStartControl {
+			sawStart = true
+		}
+	}
+	if !sawStart {
+		t.Fatalf("expected START_CONTROL to be emitted, got events=%v", typesOnly(*events))
+	}
+}
+
+// typesOnly extracts the Type field from a slice of emittedBody for diagnostic
+// messages.
+func typesOnly(es []emittedBody) []string {
+	out := make([]string, 0, len(es))
+	for _, e := range es {
+		out = append(out, e.Type)
+	}
+	return out
+}
+
 // TestDamageFR10OutOfFieldSkipsSwitch — attacker not in field: damage applies,
 // controller is NOT switched.
 func TestDamageFR10OutOfFieldSkipsSwitch(t *testing.T) {

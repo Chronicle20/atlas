@@ -56,7 +56,6 @@ func TestCTSForeignSingleStatRoundTrip(t *testing.T) {
 // MobSkill(126, 0) lookup. This test asserts the corrected per-stat 10 bytes
 // match the Cosmic v83 reference.
 func TestCTSEncodeSlowDiseasePerStatLayout(t *testing.T) {
-	t.Skip("DIAGNOSTIC: base-stat bits temporarily disabled in EncodeMask; restore when reverting")
 	ctx := pt.CreateContext("GMS", 83, 1)
 	tn, _ := tenant.Create([16]byte{}, "GMS", 83, 1)
 	input := NewCharacterTemporaryStat()

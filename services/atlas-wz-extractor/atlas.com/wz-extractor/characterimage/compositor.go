@@ -15,7 +15,7 @@ import (
 )
 
 // CanvasWidth and CanvasHeight are the native, pre-resize compositing canvas
-// dimensions. The body origin lands at (CanvasWidth/2, FootRow - 4).
+// dimensions. The body's `body` part origin lands at (CanvasWidth/2, FootRow-4).
 const (
 	CanvasWidth  = 96
 	CanvasHeight = 128
@@ -91,7 +91,8 @@ type CompositeResult struct {
 
 // Composite runs the algorithm:
 //  1. filter equipment, 2. resolve stance, 3. map skin, 4. validate stance/frame,
-//  5. blit body skin, 6. blit equipment by zmap order, 7. scale.
+//  5. seed body skin, 6. add head + equipment + hair/face via shared joints,
+//  7. zmap-sort + draw.
 func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	if err := ValidateStance(req.Stance); err != nil {
 		return nil, err
@@ -118,10 +119,7 @@ func (c *Compositor) Composite(req CompositeRequest) (*CompositeResult, error) {
 	}
 
 	canvas := image.NewRGBA(image.Rect(0, 0, CanvasWidth, CanvasHeight))
-	if err := c.blitBody(canvas, req.AssetsRoot, bodyTemplate, stance, req.Frame, maps.zmap); err != nil {
-		return nil, err
-	}
-	if err := c.blitEquipment(canvas, req, filtered, stance, maps.zmap); err != nil {
+	if err := c.placeAndDraw(canvas, maps.zmap, req, bodyTemplate, stance); err != nil {
 		return nil, err
 	}
 
@@ -151,49 +149,231 @@ func bodyTemplateId(isMale bool, wzSkin int) string {
 	return stripped
 }
 
-// blitBody anchors the body's `body` part at the canvas center and draws
-// every part canvas in the body img's frame in zmap order.
-func (c *Compositor) blitBody(canvas *image.RGBA, assetsRoot, templateId, stance string, frame int, zmap []string) error {
-	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
+// headTemplateId returns the on-disk directory name for the head template
+// associated with a given WZ skin id. Heads are named 0001{wzSkin}.img in
+// Character.wz (note: this is also the male body skin pattern — but heads
+// store their canvas under front/head and back/head, never under stand1).
+// After normalizeId strips leading zeros, the on-disk dir matches.
+func headTemplateId(wzSkin int) string {
+	full := fmt.Sprintf("0001%d", wzSkin)
+	stripped := strings.TrimLeft(full, "0")
+	if stripped == "" {
+		return "0"
+	}
+	return stripped
+}
 
-	parts, err := listFrameParts(assetsRoot, templateId, stance, frame)
-	if err != nil {
+// placement is a positioned, ready-to-draw part: source coords plus the
+// metadata needed for joint chaining and z-ordering.
+type placement struct {
+	templateId string
+	stance     string
+	frame      int
+	partName   string
+	meta       PartMeta
+	// anchor is the canvas position where this part's `origin` lands.
+	// drawPart blits sprite top-left at (anchor - origin).
+	anchor Anchor
+}
+
+// placeAndDraw seeds the joint graph with the body skin, attaches the head
+// template, every equipped slot, plus optional hair and face, then renders
+// every placement in zmap z-order.
+func (c *Compositor) placeAndDraw(canvas *image.RGBA, zmap []string, req CompositeRequest, bodyTemplate, stance string) error {
+	wzSkin := mustSkin(req.Skin)
+	filtered := FilterEquipment(req.Equipment)
+	placed := make([]placement, 0, 32)
+
+	// 1. Body skin parts under the resolved stance.
+	if err := c.appendBodyParts(&placed, req.AssetsRoot, bodyTemplate, stance, req.Frame); err != nil {
 		return err
 	}
-	bodyMeta, hasBody := loadOrEmpty(assetsRoot, templateId, stance, frame, "body")
-	if !hasBody {
-		// Some sprites use "neck" or other names; fall back to first part.
-		if len(parts) == 0 {
-			return fmt.Errorf("%w: body sprite has no parts", ErrAssetsMissing)
-		}
-		bodyMeta, _ = loadOrEmpty(assetsRoot, templateId, stance, frame, parts[0])
+
+	// 2. Head template — head canvas always lives under front/0 (we extract
+	//    front/head as a direct-canvas stance into front/0/head.{png,json}).
+	if err := c.appendTemplateParts(&placed, req.AssetsRoot, headTemplateId(wzSkin), "front", 0, true); err != nil {
+		return err
 	}
 
-	type entry struct {
-		part   string
-		meta   PartMeta
-		anchor Anchor
-	}
-	var entries []entry
-	for _, part := range parts {
-		meta, _ := loadOrEmpty(assetsRoot, templateId, stance, frame, part)
-		anchor := Anchor{
-			X: bodyAnchor.X - meta.Origin.X,
-			Y: bodyAnchor.Y - meta.Origin.Y,
+	// 3. Equipment in iteration order. Slot order isn't meaningful here —
+	//    z-ordering happens at draw time. The graph chain naturally lets each
+	//    new piece find the most-recent compatible parent.
+	for _, id := range filtered {
+		if id == 0 {
+			continue
 		}
-		// All body parts share the body's origin frame — skip joint walk.
-		_ = bodyMeta
-		entries = append(entries, entry{part, meta, anchor})
+		if err := c.appendEquipmentParts(&placed, req, id, stance); err != nil {
+			return err
+		}
 	}
-	sort.SliceStable(entries, func(i, j int) bool {
-		return zIndex(zmap, entries[i].meta.Z) < zIndex(zmap, entries[j].meta.Z)
+
+	// 4. Hair + face are sourced like equipment (their assets typically live
+	//    under default/0). They attach to the head via shared joints (brow,
+	//    earOverHead, etc.) — no special-casing required.
+	if req.Hair != 0 {
+		if err := c.appendEquipmentParts(&placed, req, req.Hair, stance); err != nil {
+			return err
+		}
+	}
+	if req.Face != 0 {
+		if err := c.appendEquipmentParts(&placed, req, req.Face, stance); err != nil {
+			return err
+		}
+	}
+
+	// 5. Sort by zmap order and blit. The zmap is ordered front-to-back —
+	// lower index = more frontward. Drawing iterates placed in order, so
+	// back-most must come first. Sort descending: highest zIndex (back-most)
+	// drawn first, lowest zIndex (front-most) drawn last.
+	sort.SliceStable(placed, func(i, j int) bool {
+		return zIndex(zmap, placed[i].meta.Z) > zIndex(zmap, placed[j].meta.Z)
 	})
-	for _, e := range entries {
-		if err := drawPart(canvas, assetsRoot, templateId, stance, frame, e.part, e.anchor); err != nil {
+	for _, p := range placed {
+		blitTopLeft := Anchor{
+			X: p.anchor.X - p.meta.Origin.X,
+			Y: p.anchor.Y - p.meta.Origin.Y,
+		}
+		if err := drawPart(canvas, p.assetsPath(req.AssetsRoot), blitTopLeft); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// assetsPath returns the absolute on-disk path to this placement's PNG.
+func (p placement) assetsPath(assetsRoot string) string {
+	return filepath.Join(
+		assetsRoot, "character-parts", p.templateId,
+		p.stance, strconv.Itoa(p.frame), p.partName+".png",
+	)
+}
+
+// appendBodyParts seeds the placement list with the body skin's parts. The
+// `body` part anchors at (CW/2, FootRow-4); every other part of the body img
+// joins via a shared joint (typically `arm` joins via `navel`).
+func (c *Compositor) appendBodyParts(placed *[]placement, assetsRoot, templateId, stance string, frame int) error {
+	parts, err := listFrameParts(assetsRoot, templateId, stance, frame)
+	if err != nil {
+		return err
+	}
+	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
+
+	// Place body first if present — it seeds the chain.
+	bodyMeta, hasBody := loadOrEmpty(assetsRoot, templateId, stance, frame, "body")
+	if hasBody {
+		*placed = append(*placed, placement{
+			templateId: templateId,
+			stance:     stance,
+			frame:      frame,
+			partName:   "body",
+			meta:       bodyMeta,
+			anchor:     bodyAnchor,
+		})
+	}
+
+	for _, name := range parts {
+		if name == "body" {
+			continue
+		}
+		meta, ok := loadOrEmpty(assetsRoot, templateId, stance, frame, name)
+		if !ok {
+			continue
+		}
+		anchor, found := solveViaSharedJoint(*placed, meta)
+		if !found {
+			// First non-body part with no body match: fall back to body anchor
+			// so the body img still renders in synthetic fixtures that omit
+			// joint metadata.
+			if !hasBody {
+				anchor = bodyAnchor
+			} else {
+				continue
+			}
+		}
+		*placed = append(*placed, placement{
+			templateId: templateId,
+			stance:     stance,
+			frame:      frame,
+			partName:   name,
+			meta:       meta,
+			anchor:     anchor,
+		})
+	}
+	return nil
+}
+
+// appendTemplateParts adds every part of a non-equipment template (today: the
+// head template) to the placement list, anchoring each via shared joints
+// against parts already placed.
+//
+// `requireParent` — when true, skip parts that fail to find a parent joint
+// (orphan) instead of failing. The head template parts must all match to
+// the body's `neck` joint, so requireParent=true is fine here.
+func (c *Compositor) appendTemplateParts(placed *[]placement, assetsRoot, templateId, stance string, frame int, requireParent bool) error {
+	resolvedStance, resolvedFrame, err := resolveTemplateStance(assetsRoot, templateId, stance, frame)
+	if err != nil {
+		if errors.Is(err, ErrAssetsMissing) {
+			// Head template missing is unusual but not fatal — just skip and
+			// let the body render alone (some fixtures don't include heads).
+			return nil
+		}
+		return err
+	}
+	parts, err := listFrameParts(assetsRoot, templateId, resolvedStance, resolvedFrame)
+	if err != nil {
+		return err
+	}
+	for _, name := range parts {
+		meta, ok := loadOrEmpty(assetsRoot, templateId, resolvedStance, resolvedFrame, name)
+		if !ok {
+			continue
+		}
+		anchor, found := solveViaSharedJoint(*placed, meta)
+		if !found {
+			if requireParent {
+				continue
+			}
+			anchor = Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
+		}
+		*placed = append(*placed, placement{
+			templateId: templateId,
+			stance:     resolvedStance,
+			frame:      resolvedFrame,
+			partName:   name,
+			meta:       meta,
+			anchor:     anchor,
+		})
+	}
+	return nil
+}
+
+// appendEquipmentParts is a thin wrapper for equipment slot ids that resolves
+// the on-disk template directory name and reuses appendTemplateParts.
+func (c *Compositor) appendEquipmentParts(placed *[]placement, req CompositeRequest, templateNumeric int, stance string) error {
+	return c.appendTemplateParts(placed, req.AssetsRoot, strconv.Itoa(templateNumeric), stance, req.Frame, true)
+}
+
+// solveViaSharedJoint walks the placed parts in reverse (most-recent first)
+// looking for any joint name that exists in both `part.Map` and a placed
+// part's map. Reverse iteration handles the chain naturally — for example a
+// weapon (with `hand`) will find arm (most-recent placement with `hand`)
+// before falling back to body.
+//
+// Returns (anchor, true) on a match, (zero, false) for orphans.
+func solveViaSharedJoint(placed []placement, part PartMeta) (Anchor, bool) {
+	for jointName, childJoint := range part.Map {
+		for i := len(placed) - 1; i >= 0; i-- {
+			parentJoint, ok := placed[i].meta.Map[jointName]
+			if !ok {
+				continue
+			}
+			return Anchor{
+				X: placed[i].anchor.X + parentJoint.X - childJoint.X,
+				Y: placed[i].anchor.Y + parentJoint.Y - childJoint.Y,
+			}, true
+		}
+	}
+	return Anchor{}, false
 }
 
 // zIndex returns the position of z in the zmap slice. Unknown values sort to
@@ -204,7 +384,6 @@ func zIndex(zmap []string, z string) int {
 			return i
 		}
 	}
-	// Unknown z values sort to the back.
 	return len(zmap)
 }
 
@@ -235,8 +414,9 @@ func listFrameParts(assetsRoot, templateId, stance string, frame int) ([]string,
 	return out, nil
 }
 
-func drawPart(canvas *image.RGBA, assetsRoot, templateId, stance string, frame int, part string, anchor Anchor) error {
-	path := filepath.Join(assetsRoot, "character-parts", templateId, stance, strconv.Itoa(frame), part+".png")
+// drawPart blits the PNG at `path` onto the canvas with its top-left at
+// `topLeft`.
+func drawPart(canvas *image.RGBA, path string, topLeft Anchor) error {
 	f, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("open part %s: %w", path, err)
@@ -247,7 +427,7 @@ func drawPart(canvas *image.RGBA, assetsRoot, templateId, stance string, frame i
 		return fmt.Errorf("decode part %s: %w", path, err)
 	}
 	w, h := img.Bounds().Dx(), img.Bounds().Dy()
-	dr := image.Rect(anchor.X, anchor.Y, anchor.X+w, anchor.Y+h)
+	dr := image.Rect(topLeft.X, topLeft.Y, topLeft.X+w, topLeft.Y+h)
 	draw.Draw(canvas, dr, img, image.Point{}, draw.Over)
 	return nil
 }
@@ -265,118 +445,10 @@ func resolveTemplateStance(assetsRoot, templateId, stance string, frame int) (st
 	} else if !errors.Is(err, ErrAssetsMissing) {
 		return "", 0, err
 	}
-	// Fall back to default/0.
 	if _, err := listFrameParts(assetsRoot, templateId, "default", 0); err != nil {
 		return "", 0, err
 	}
 	return "default", 0, nil
-}
-
-// jointForSlot maps a render slot to the joint name on the body via which the
-// equipment attaches. Slots not in this map are skipped.
-var jointForSlot = map[int]string{
-	-1:  "neck",  // hat — anchored via neck through head sprite chain (simplified: treat as neck)
-	-2:  "neck",  // face
-	-3:  "neck",  // eye accessory
-	-4:  "neck",  // earrings
-	-5:  "navel", // top
-	-6:  "navel", // bottom
-	-7:  "navel", // shoes (uses navel as a stand-in; v83 sprites use foot — refine in fixture if needed)
-	-8:  "navel", // gloves (refined to "hand" in detail; navel is fallback)
-	-9:  "navel", // cape
-	-10: "hand",  // shield
-	-11: "hand",  // weapon
-	-12: "navel", // ring (no visual today — kept for completeness)
-}
-
-// blitEquipment iterates equipment in zmap order, resolves each part's joint
-// anchor against the body, and blits the part canvases into `canvas`.
-func (c *Compositor) blitEquipment(canvas *image.RGBA, req CompositeRequest, equipment map[int]int, stance string, zmap []string) error {
-	bodyAnchor := Anchor{X: CanvasWidth / 2, Y: FootRow - 4}
-	bodyTemplate := bodyTemplateId(req.IsMale, mustSkin(req.Skin))
-
-	type entry struct {
-		templateId     string
-		part           string
-		meta           PartMeta
-		anchor         Anchor
-		zIdx           int
-		resolvedStance string
-		resolvedFrame  int
-	}
-	var entries []entry
-
-	add := func(templateId string, jointFromBody string) error {
-		resolvedStance, resolvedFrame, err := resolveTemplateStance(req.AssetsRoot, templateId, stance, req.Frame)
-		if err != nil {
-			// Some equipment is purely informational (medals, badges, stat-only
-			// accessories) and has no renderable parts in any stance. Skip
-			// silently rather than failing the entire render.
-			if errors.Is(err, ErrAssetsMissing) {
-				return nil
-			}
-			return err
-		}
-		parts, err := listFrameParts(req.AssetsRoot, templateId, resolvedStance, resolvedFrame)
-		if err != nil {
-			return err
-		}
-		for _, part := range parts {
-			meta, ok := loadOrEmpty(req.AssetsRoot, templateId, resolvedStance, resolvedFrame, part)
-			if !ok {
-				continue
-			}
-			// The body-joint lookup always uses the body's actual stance, not
-			// the equipment's resolved stance.
-			bodyJointMeta, _ := loadOrEmpty(req.AssetsRoot, bodyTemplate, stance, req.Frame, "body")
-			originAnchor := ResolveAnchor(bodyAnchor, bodyJointMeta, meta, jointFromBody)
-			// ResolveAnchor returns the canvas position of the child's origin.
-			// drawPart places the sprite top-left at anchor, so subtract origin.
-			anchor := Anchor{
-				X: originAnchor.X - meta.Origin.X,
-				Y: originAnchor.Y - meta.Origin.Y,
-			}
-			entries = append(entries, entry{
-				templateId:     templateId,
-				part:           part,
-				meta:           meta,
-				anchor:         anchor,
-				zIdx:           zIndex(zmap, meta.Z),
-				resolvedStance: resolvedStance,
-				resolvedFrame:  resolvedFrame,
-			})
-		}
-		return nil
-	}
-
-	// Hair / face anchored via neck.
-	if req.Hair != 0 {
-		if err := add(strconv.Itoa(req.Hair), "neck"); err != nil {
-			return err
-		}
-	}
-	if req.Face != 0 {
-		if err := add(strconv.Itoa(req.Face), "neck"); err != nil {
-			return err
-		}
-	}
-	for slot, id := range equipment {
-		joint, ok := jointForSlot[slot]
-		if !ok {
-			continue
-		}
-		if err := add(strconv.Itoa(id), joint); err != nil {
-			return err
-		}
-	}
-
-	sort.SliceStable(entries, func(i, j int) bool { return entries[i].zIdx < entries[j].zIdx })
-	for _, e := range entries {
-		if err := drawPart(canvas, req.AssetsRoot, e.templateId, e.resolvedStance, e.resolvedFrame, e.part, e.anchor); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 // mustSkin returns the WZ id for a validated internal skin (caller ensures

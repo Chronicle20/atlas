@@ -285,3 +285,97 @@ func TestCompositeWithHatBlitsAboveBody(t *testing.T) {
 		t.Fatalf("hat pixel missing at (45,114): %+v", c1)
 	}
 }
+
+// TestSolveViaSharedJointMultiStep verifies that a part with only a `brow`
+// joint anchors via the head (whose map has `brow`), not via the body
+// (whose map only has `neck`). This proves the algorithm walks placed
+// parts most-recent-first and picks the closest matching joint owner.
+func TestSolveViaSharedJointMultiStep(t *testing.T) {
+	bodyAnchor := Anchor{X: 48, Y: 96}
+	body := PartMeta{Map: map[string]Vec{"neck": {X: 0, Y: -30}}}
+	headAnchor := Anchor{X: 48, Y: 51} // (48,96)+(0,-30)-(0,15)
+	head := PartMeta{Map: map[string]Vec{"neck": {X: 0, Y: 15}, "brow": {X: 0, Y: -10}}}
+	hair := PartMeta{Map: map[string]Vec{"brow": {X: 0, Y: 0}}}
+
+	placed := []placement{
+		{partName: "body", meta: body, anchor: bodyAnchor},
+		{partName: "head", meta: head, anchor: headAnchor},
+	}
+	got, ok := solveViaSharedJoint(placed, hair)
+	if !ok {
+		t.Fatal("hair should attach via head.brow")
+	}
+	want := Anchor{X: 48, Y: 41} // (48,51)+(0,-10)-(0,0)
+	if got != want {
+		t.Fatalf("hair anchor = %+v, want %+v", got, want)
+	}
+}
+
+// TestSolveViaSharedJointWeaponViaArm verifies that a weapon (with `hand`
+// joint) attaches to the arm part — not to body — because arm is the most
+// recent placement that exposes `hand`. Body has only `navel`.
+func TestSolveViaSharedJointWeaponViaArm(t *testing.T) {
+	bodyAnchor := Anchor{X: 50, Y: 100}
+	body := PartMeta{Map: map[string]Vec{"navel": {X: -8, Y: -21}}}
+	armAnchor := Anchor{X: 45, Y: 80}
+	arm := PartMeta{Map: map[string]Vec{
+		"navel": {X: -13, Y: -1},
+		"hand":  {X: -1, Y: 5},
+	}}
+	weapon := PartMeta{Map: map[string]Vec{"hand": {X: -20, Y: -2}}}
+
+	placed := []placement{
+		{partName: "body", meta: body, anchor: bodyAnchor},
+		{partName: "arm", meta: arm, anchor: armAnchor},
+	}
+	got, ok := solveViaSharedJoint(placed, weapon)
+	if !ok {
+		t.Fatal("weapon should attach via arm.hand")
+	}
+	// arm anchor (45,80) + arm.hand (-1,5) - weapon.hand (-20,-2) = (64, 87)
+	want := Anchor{X: 64, Y: 87}
+	if got != want {
+		t.Fatalf("weapon anchor = %+v, want %+v", got, want)
+	}
+}
+
+// TestSolveViaSharedJointOrphanReturnsFalse verifies that a part with no
+// shared joint with any placed part returns ok=false (the caller skips).
+func TestSolveViaSharedJointOrphanReturnsFalse(t *testing.T) {
+	body := PartMeta{Map: map[string]Vec{"neck": {X: 0, Y: -30}}}
+	orphan := PartMeta{Map: map[string]Vec{"weirdJoint": {X: 0, Y: 0}}}
+	placed := []placement{
+		{partName: "body", meta: body, anchor: Anchor{X: 48, Y: 96}},
+	}
+	if _, ok := solveViaSharedJoint(placed, orphan); ok {
+		t.Fatal("expected orphan part to return ok=false")
+	}
+}
+
+// TestSolveViaSharedJointEmptyPlaced returns false (no parents to match).
+func TestSolveViaSharedJointEmptyPlaced(t *testing.T) {
+	part := PartMeta{Map: map[string]Vec{"neck": {X: 0, Y: 0}}}
+	if _, ok := solveViaSharedJoint(nil, part); ok {
+		t.Fatal("expected empty placed list to return ok=false")
+	}
+}
+
+// TestHeadTemplateId verifies the head template name calculation: skin 0
+// should map to "12000" (after stripping the leading zero from "00012000"),
+// matching the on-disk dir for 0001{wzSkin}.img.
+func TestHeadTemplateId(t *testing.T) {
+	cases := []struct {
+		wzSkin int
+		want   string
+	}{
+		{2000, "12000"},
+		{2005, "12005"},
+		{2009, "12009"},
+	}
+	for _, c := range cases {
+		got := headTemplateId(c.wzSkin)
+		if got != c.want {
+			t.Errorf("headTemplateId(%d) = %q, want %q", c.wzSkin, got, c.want)
+		}
+	}
+}

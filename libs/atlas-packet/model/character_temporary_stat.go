@@ -32,6 +32,15 @@ func (t CharacterTemporaryStatType) Name() character.TemporaryStatType {
 	return t.name
 }
 
+// Disease reports whether this stat is a mob-applied disease (SLOW, STUN,
+// POISON, SEAL, DARKNESS, WEAKEN, CURSE, SEDUCE, CONFUSE). Diseases share
+// the GIVE_BUFF opcode with regular buffs but use a different per-stat wire
+// shape — the 4 bytes that buffs spend on a 32-bit player skill id are
+// instead split into two shorts carrying mobSkillId + mobSkillLevel.
+func (t CharacterTemporaryStatType) Disease() bool {
+	return t.disease
+}
+
 func NewCharacterTemporaryStatType(name character.TemporaryStatType, shift uint, disease bool, foreignValueWriter ForeignValueWriter, foreignValueReader ForeignValueReader) CharacterTemporaryStatType {
 	mask := tool.Uint128{L: 1}.ShiftLeft(shift)
 	return CharacterTemporaryStatType{
@@ -103,7 +112,7 @@ func buildCharacterTemporaryStatRegistry(t tenant.Model) characterTemporaryStatR
 	newAndIncNonDiseased(character.TemporaryStatTypeThaw)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncDiseased(character.TemporaryStatTypeWeaken)(ValueAsIntForeignValueWriter, IntForeignValueReader)
 	newAndIncDiseased(character.TemporaryStatTypeCurse)(ValueAsIntForeignValueWriter, IntForeignValueReader)
-	newAndIncNonDiseased(character.TemporaryStatTypeSlow)(NoOpForeignValueWriter, NoOpForeignValueReader)
+	newAndIncDiseased(character.TemporaryStatTypeSlow)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMorph)(ValueAsShortForeignValueWriter, ShortForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeRecovery)(NoOpForeignValueWriter, NoOpForeignValueReader)
 	newAndIncNonDiseased(character.TemporaryStatTypeMapleWarrior)(NoOpForeignValueWriter, NoOpForeignValueReader)
@@ -449,6 +458,20 @@ func NewCharacterTemporaryStat() *CharacterTemporaryStat {
 	}
 }
 
+// HasDisease reports whether any stat held by this CTS is a mob-applied
+// disease. Used by BuffGive to pick the correct trailer bytes — diseases
+// require Cosmic's giveDebuff trailer (Short delay=900, Byte apply=1) for
+// the v83 client to actually render the debuff icon and apply
+// flag-gated effects (e.g. WEAKEN's jump-block).
+func (m *CharacterTemporaryStat) HasDisease() bool {
+	for _, v := range m.stats {
+		if v.statType.Disease() {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *CharacterTemporaryStat) AddStat(l logrus.FieldLogger) func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 	return func(t tenant.Model) func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
 		return func(n string, sourceId int32, amount int32, level byte, expiresAt time.Time) {
@@ -525,7 +548,15 @@ func (m *CharacterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Contex
 
 		for _, v := range sortedValues {
 			w.WriteInt16(int16(v.Value()))
-			w.WriteInt32(v.SourceId())
+			if v.statType.Disease() {
+				// Mob-applied disease: bytes 4-5 carry mobSkillLevel, not the
+				// high half of sourceId. The v83 client otherwise looks up
+				// MobSkill(skill, 0), gets nothing, and crashes the render path.
+				w.WriteInt16(int16(v.SourceId()))
+				w.WriteInt16(int16(v.Level()))
+			} else {
+				w.WriteInt32(v.SourceId())
+			}
 			et := int32(v.ExpiresAt().Sub(time.Now()).Milliseconds())
 			w.WriteInt32(et)
 		}
@@ -608,11 +639,19 @@ func (m *CharacterTemporaryStat) Decode(l logrus.FieldLogger, ctx context.Contex
 				continue
 			}
 			value := r.ReadInt16()
-			sourceId := r.ReadInt32()
+			var sourceId int32
+			var level byte
+			if st.Disease() {
+				sourceId = int32(r.ReadInt16())
+				level = byte(r.ReadInt16())
+			} else {
+				sourceId = r.ReadInt32()
+			}
 			_ = r.ReadInt32() // expiresAt (relative ms)
 			m.stats[st.name] = CharacterTemporaryStatValue{
 				statType: st,
 				sourceId: sourceId,
+				level:    level,
 				value:    int32(value),
 			}
 		}

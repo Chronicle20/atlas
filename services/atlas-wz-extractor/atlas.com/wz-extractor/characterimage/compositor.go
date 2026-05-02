@@ -221,9 +221,12 @@ func (c *Compositor) placeAndDraw(canvas *image.RGBA, zmap []string, req Composi
 		}
 	}
 
-	// 5. Sort by zmap order and blit.
+	// 5. Sort by zmap order and blit. The zmap is ordered front-to-back —
+	// lower index = more frontward. Drawing iterates placed in order, so
+	// back-most must come first. Sort descending: highest zIndex (back-most)
+	// drawn first, lowest zIndex (front-most) drawn last.
 	sort.SliceStable(placed, func(i, j int) bool {
-		return zIndex(zmap, placed[i].meta.Z) < zIndex(zmap, placed[j].meta.Z)
+		return zIndex(zmap, placed[i].meta.Z) > zIndex(zmap, placed[j].meta.Z)
 	})
 	for _, p := range placed {
 		blitTopLeft := Anchor{

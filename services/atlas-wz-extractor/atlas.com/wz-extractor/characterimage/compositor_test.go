@@ -250,6 +250,26 @@ func TestResolveTemplateStanceFallback(t *testing.T) {
 	if err == nil {
 		t.Fatal("case 3: expected error for missing template, got nil")
 	}
+
+	// Case 4: weapon at 1452000/stand1/0 only (typical of crossbows / guns /
+	// knuckles whose WZ source omits stand2). Two-handed override forces
+	// stand2 lookup; we should fall back to stand1 instead of skipping the
+	// part outright, otherwise Bowmasters / Marksmen / Buccaneers / Corsairs
+	// render without their weapons.
+	xbowDir := filepath.Join(root, "character-parts", "1452000", "stand1", "0")
+	if err := os.MkdirAll(xbowDir, 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(xbowDir, "weapon.png"), []byte("fake"), 0o644); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	gotStance, gotFrame, err = resolveTemplateStance(root, "1452000", "stand2", 0)
+	if err != nil {
+		t.Fatalf("case 4: unexpected error: %v", err)
+	}
+	if gotStance != "stand1" || gotFrame != 0 {
+		t.Fatalf("case 4: want stand1/0 fallback, got %s/%d", gotStance, gotFrame)
+	}
 }
 
 func TestCompositeWithHatBlitsAboveBody(t *testing.T) {

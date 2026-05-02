@@ -448,8 +448,12 @@ func drawPart(canvas *image.RGBA, path string, topLeft Anchor) error {
 // resolveTemplateStance returns the stance and frame to use when looking up
 // assets for an equipment template. Equipment that doesn't animate (hair,
 // face, hats, glasses, etc.) only has assets under default/0. When the
-// requested stance/frame is missing we fall back to default/0 so those items
-// still render.
+// requested stance/frame is missing we fall back through default/0 then any
+// available "stand" stance so items still render even when the WZ source
+// only ships one stance variant — most commonly crossbows, knuckles, and
+// guns whose stand2 frames are missing from the extract even though their
+// owners (Bowmaster/Marksman, Buccaneer, Corsair) get forced to stand2 by
+// the two-handed override.
 //
 // Body skins always have proper stance dirs and should NOT use this helper.
 func resolveTemplateStance(assetsRoot, templateId, stance string, frame int) (string, int, error) {
@@ -458,10 +462,34 @@ func resolveTemplateStance(assetsRoot, templateId, stance string, frame int) (st
 	} else if !errors.Is(err, ErrAssetsMissing) {
 		return "", 0, err
 	}
-	if _, err := listFrameParts(assetsRoot, templateId, "default", 0); err != nil {
-		return "", 0, err
+	if _, err := listFrameParts(assetsRoot, templateId, "default", 0); err == nil {
+		return "default", 0, nil
 	}
-	return "default", 0, nil
+	// Last-chance fallback: try the other "stand" stance. Joint maps for
+	// stand1/stand2 share names (hand, navel, etc.) so the part still
+	// anchors via solveViaSharedJoint, even if the pose is slightly off.
+	for _, alt := range stanceFallbacks(stance) {
+		if _, err := listFrameParts(assetsRoot, templateId, alt, frame); err == nil {
+			return alt, frame, nil
+		}
+	}
+	return "", 0, fmt.Errorf("%w: %s/%s/%d (no default, no stand fallback)", ErrAssetsMissing, templateId, stance, frame)
+}
+
+// stanceFallbacks returns alternate stance directories to probe when the
+// requested stance is missing from an equipment template. Order matters:
+// stand2 → stand1 first (the common bow/gun/knuckle case), with walk1 and
+// alert as further degradations to keep weapons rendering even on partial
+// extracts.
+func stanceFallbacks(stance string) []string {
+	switch stance {
+	case "stand2":
+		return []string{"stand1", "walk1", "alert"}
+	case "stand1":
+		return []string{"stand2", "walk1", "alert"}
+	default:
+		return []string{"stand1", "stand2"}
+	}
 }
 
 // mustSkin returns the WZ id for a validated internal skin (caller ensures

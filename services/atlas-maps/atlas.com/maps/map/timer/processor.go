@@ -19,6 +19,7 @@ import (
 
 type Processor interface {
 	Register(transactionId uuid.UUID, characterId uint32, f field.Model, forcedReturnMapId _map.Id, seconds uint32) error
+	CancelIfTracked(characterId uint32) bool
 }
 
 type ProcessorImpl struct {
@@ -95,4 +96,23 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 // handleExpire is the time.Timer callback. Stub for now — real impl in Task 13.
 func (p *ProcessorImpl) handleExpire(t tenant.Model, characterId uint32, token uuid.UUID) {
 	_, _ = p.r.Claim(t, characterId, token)
+}
+
+func (p *ProcessorImpl) CancelIfTracked(characterId uint32) bool {
+	prior, ok := p.r.Cancel(p.t, characterId)
+	if !ok {
+		return false
+	}
+	_, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(p.ctx, "MapTimer.Cancel")
+	span.SetAttributes(
+		attribute.String("tenant.id", p.t.Id().String()),
+		attribute.Int("world.id", int(prior.Field().WorldId())),
+		attribute.Int("map.id", int(prior.Field().MapId())),
+	)
+	defer span.End()
+	if prior.Timer() != nil {
+		prior.Timer().Stop()
+	}
+	p.l.Infof("MapTimer.Cancel: tenant=[%s] character=[%d] map=[%d].", p.t.Id(), characterId, prior.Field().MapId())
+	return true
 }

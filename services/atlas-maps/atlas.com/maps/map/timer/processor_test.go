@@ -110,3 +110,27 @@ func TestProcessor_Register_ReplacesPriorEntry(t *testing.T) {
 	require.NotEqual(t, first.Token(), second.Token(), "second Register must mint a new token")
 	require.Equal(t, _map.Id(200000201), second.ForcedReturnMapId(), "second Register replaces forcedReturnMapId")
 }
+
+func TestProcessor_CancelIfTracked_RemovesAndStops(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(600)))
+
+	cancelled := p.CancelIfTracked(uint32(42))
+	require.True(t, cancelled)
+
+	_, ok := reg.Get(tt, 42)
+	require.False(t, ok, "CancelIfTracked must remove entry")
+}
+
+func TestProcessor_CancelIfTracked_AbsentReturnsFalse(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+	require.False(t, p.CancelIfTracked(uint32(999)))
+}

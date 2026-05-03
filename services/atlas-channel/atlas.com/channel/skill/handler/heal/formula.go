@@ -37,25 +37,36 @@ func HealAmount(skillHpPct uint16, magicAttack, intelligence, partyTargets int, 
 	return int16(perTarget)
 }
 
+// appliedPerRecipient returns the actual HP delta a Heal cast lands
+// on one recipient: never more than what's missing, never below zero.
+// Shared between the apply path (so we don't push HP past MaxHp and
+// risk an overflow / DIED in atlas-character's enforceBounds) and the
+// HealXp accumulator (so XP credit matches the HP that actually
+// landed).
+func appliedPerRecipient(perTarget int16, r recipient) int16 {
+	missing := int32(r.MaxHp) - int32(r.Hp)
+	if missing < 0 {
+		missing = 0
+	}
+	applied := int32(perTarget)
+	if applied > missing {
+		applied = missing
+	}
+	if applied < 0 {
+		applied = 0
+	}
+	return int16(applied)
+}
+
 // HealXp computes the experience awarded to the caster from the heal
-// portion of the cast. Per recipient, the contribution is
-// min(perTarget, MaxHp - Hp); the sum is divided by 10 and multiplied
-// by the skill level. Returns 0 on any pathological negative result.
+// portion of the cast. Per recipient, the contribution is the amount
+// actually applied (see appliedPerRecipient); the sum is divided by 10
+// and multiplied by the skill level. Returns 0 on any pathological
+// negative result.
 func HealXp(perTarget int16, recipients []recipient, skillLevel byte) uint32 {
 	var total int64
 	for _, r := range recipients {
-		missing := int32(r.MaxHp) - int32(r.Hp)
-		if missing < 0 {
-			missing = 0
-		}
-		applied := int32(perTarget)
-		if applied > missing {
-			applied = missing
-		}
-		if applied < 0 {
-			applied = 0
-		}
-		total += int64(applied)
+		total += int64(appliedPerRecipient(perTarget, r))
 	}
 	xp := total / 10 * int64(skillLevel)
 	if xp < 0 {

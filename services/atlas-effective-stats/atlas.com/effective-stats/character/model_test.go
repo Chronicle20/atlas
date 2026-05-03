@@ -380,3 +380,65 @@ func TestModelRecompute(t *testing.T) {
 		t.Error("Recompute() should update LastUpdated()")
 	}
 }
+
+func TestModelComputeEffectiveStats_MaxHpCappedAt30k(t *testing.T) {
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	// Base 25000 + 10000 flat bonus would compute to 35000 — must clamp to 30000.
+	base := stat.NewBase(50, 40, 30, 25, 25000, 20000)
+	bHp := stat.NewBonus("equipment:1", stat.TypeMaxHp, 10000)
+	bMp := stat.NewBonus("equipment:2", stat.TypeMaxMp, 15000)
+	m = m.WithBaseStats(base).WithBonus(bHp).WithBonus(bMp)
+
+	computed := m.ComputeEffectiveStats()
+
+	if computed.MaxHp() != MaxHpMpCap {
+		t.Errorf("MaxHp() = %v, want %v (cap)", computed.MaxHp(), MaxHpMpCap)
+	}
+	if computed.MaxMp() != MaxHpMpCap {
+		t.Errorf("MaxMp() = %v, want %v (cap)", computed.MaxMp(), MaxHpMpCap)
+	}
+}
+
+func TestModelComputeEffectiveStats_MaxHpUnderCapNotClamped(t *testing.T) {
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	// Base 5000 + 1000 = 6000 — well under cap, must pass through unchanged.
+	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
+	bHp := stat.NewBonus("equipment:1", stat.TypeMaxHp, 1000)
+	m = m.WithBaseStats(base).WithBonus(bHp)
+
+	computed := m.ComputeEffectiveStats()
+
+	if computed.MaxHp() != 6000 {
+		t.Errorf("MaxHp() = %v, want 6000 (no clamp applied)", computed.MaxHp())
+	}
+	if computed.MaxMp() != 3000 {
+		t.Errorf("MaxMp() = %v, want 3000 (no clamp applied)", computed.MaxMp())
+	}
+}
+
+func TestModelComputeEffectiveStats_MaxHpCappedWithMultiplier(t *testing.T) {
+	ten := createTestTenant()
+	ch := channel.NewModel(1, 2)
+	m := NewModel(ten, ch, 12345)
+
+	// 25000 * 2.0 = 50000 → clamp to 30000.
+	base := stat.NewBase(50, 40, 30, 25, 25000, 25000)
+	bHp := stat.NewMultiplierBonus("buff:hyper-body", stat.TypeMaxHp, 1.0)
+	bMp := stat.NewMultiplierBonus("buff:hyper-body", stat.TypeMaxMp, 1.0)
+	m = m.WithBaseStats(base).WithBonus(bHp).WithBonus(bMp)
+
+	computed := m.ComputeEffectiveStats()
+
+	if computed.MaxHp() != MaxHpMpCap {
+		t.Errorf("MaxHp() = %v, want %v (cap)", computed.MaxHp(), MaxHpMpCap)
+	}
+	if computed.MaxMp() != MaxHpMpCap {
+		t.Errorf("MaxMp() = %v, want %v (cap)", computed.MaxMp(), MaxHpMpCap)
+	}
+}

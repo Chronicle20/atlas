@@ -1,12 +1,14 @@
 package information
 
 // ModelBuilder provides a minimal fluent interface for constructing Model
-// instances in tests. Only the fields that the picker reads are settable.
+// instances in tests. Only the fields tests need are settable.
 type ModelBuilder struct {
-	skills     []Skill
-	attacks    []AttackInfo
-	hpRecovery uint32
-	mpRecovery uint32
+	skills      []Skill
+	attacks     []AttackInfo
+	hpRecovery  uint32
+	mpRecovery  uint32
+	boss        bool
+	resistances map[string]string
 }
 
 // NewModelBuilder returns a new ModelBuilder with zero values.
@@ -36,6 +38,22 @@ func (b *ModelBuilder) SetMpRecovery(v uint32) *ModelBuilder {
 	return b
 }
 
+// SetBoss sets the boss flag on the builder. Used by tests that drive
+// boss-immunity branches in ApplyStatusEffect.
+func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
+	b.boss = boss
+	return b
+}
+
+// SetResistances sets the elemental resistance map on the builder. Keys are
+// element letters ("P", "I", "F", "S", "L"); value "1" means immune (per
+// Model.IsImmuneToElement). Used by tests that drive elemental-immunity
+// branches in ApplyStatusEffect.
+func (b *ModelBuilder) SetResistances(r map[string]string) *ModelBuilder {
+	b.resistances = r
+	return b
+}
+
 // Build constructs an immutable Model from the builder state.
 func (b *ModelBuilder) Build() Model {
 	skills := b.skills
@@ -47,9 +65,11 @@ func (b *ModelBuilder) Build() Model {
 		attacks = []AttackInfo{}
 	}
 	return Model{
-		skills:     skills,
-		attacks:    attacks,
-		hpRecovery: b.hpRecovery,
-		mpRecovery: b.mpRecovery,
+		skills:      skills,
+		attacks:     attacks,
+		hpRecovery:  b.hpRecovery,
+		mpRecovery:  b.mpRecovery,
+		boss:        b.boss,
+		resistances: b.resistances,
 	}
 }

@@ -1092,9 +1092,19 @@ func (p *ProcessorImpl) getMaxMpGrowth(c Model) (uint16, error) {
 	return resMax, nil
 }
 
+// enforceBounds adds change to current and clamps the result into
+// [lowerBound, upperBound]. The intermediate sum is computed in int32
+// so that uint16 saturation (e.g. current=30000 + change=+5000) cannot
+// overflow into negative space and clamp to the lower bound.
 func enforceBounds(change int16, current uint16, upperBound uint16, lowerBound uint16) uint16 {
-	var adjusted = int16(current) + change
-	return uint16(math.Min(math.Max(float64(adjusted), float64(lowerBound)), float64(upperBound)))
+	adjusted := int32(current) + int32(change)
+	if adjusted < int32(lowerBound) {
+		return lowerBound
+	}
+	if adjusted > int32(upperBound) {
+		return upperBound
+	}
+	return uint16(adjusted)
 }
 
 // resolveEffectiveMax picks the max value to use for bounding HP/MP adjustments.
@@ -1111,6 +1121,12 @@ func resolveEffectiveMax(l logrus.FieldLogger, base uint16, effective uint32, fe
 	if effective == 0 {
 		l.Warnf("Effective stats for character [%d] reported %s=0; falling back to base %s=[%d] to avoid clamp-to-zero death", characterId, statName, statName, base)
 		return base
+	}
+	// Defensive: even though atlas-effective-stats caps MaxHp/MaxMp at
+	// 30000, a stale or untrusted upstream could return a value larger
+	// than uint16 max which would silently wrap on cast. Clamp instead.
+	if effective > math.MaxUint16 {
+		return math.MaxUint16
 	}
 	return uint16(effective)
 }

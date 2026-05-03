@@ -87,3 +87,40 @@ func TestHealXp_SkillLevelZeroReturnsZero(t *testing.T) {
 		t.Fatalf("HealXp skillLevel=0 = %d, want 0", got)
 	}
 }
+
+func TestAppliedPerRecipient_ClampsToMissing(t *testing.T) {
+	got := appliedPerRecipient(380, recipient{Hp: 850, MaxHp: 1000})
+	if got != 150 {
+		t.Fatalf("appliedPerRecipient(380, missing=150) = %d, want 150", got)
+	}
+}
+
+func TestAppliedPerRecipient_FullHpReturnsZero(t *testing.T) {
+	got := appliedPerRecipient(380, recipient{Hp: 1000, MaxHp: 1000})
+	if got != 0 {
+		t.Fatalf("appliedPerRecipient(380, full hp) = %d, want 0", got)
+	}
+}
+
+func TestAppliedPerRecipient_PerTargetSmallerThanMissing(t *testing.T) {
+	got := appliedPerRecipient(100, recipient{Hp: 500, MaxHp: 1000})
+	if got != 100 {
+		t.Fatalf("appliedPerRecipient(100, missing=500) = %d, want 100", got)
+	}
+}
+
+func TestAppliedPerRecipient_NegativePerTargetReturnsZero(t *testing.T) {
+	got := appliedPerRecipient(-10, recipient{Hp: 500, MaxHp: 1000})
+	if got != 0 {
+		t.Fatalf("appliedPerRecipient(-10, ...) = %d, want 0", got)
+	}
+}
+
+func TestAppliedPerRecipient_HpAboveMaxReturnsZero(t *testing.T) {
+	// Defensive: Hp > MaxHp (stale snapshot, e.g. MaxHp dropped) yields
+	// missing<0 → applied=0.
+	got := appliedPerRecipient(380, recipient{Hp: 2000, MaxHp: 1000})
+	if got != 0 {
+		t.Fatalf("appliedPerRecipient(380, hp>max) = %d, want 0", got)
+	}
+}

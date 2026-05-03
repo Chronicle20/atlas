@@ -87,9 +87,9 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 // skills on other job lines, so the formula's `Skills[id]` filter
 // cannot rule out non-mage jobs reliably.
 var mpEaterSkillIds = map[job.Id]skill3.Id{
-	job.FirePoisonWizardId:         skill3.FirePoisionWizardMpEaterId,
-	job.FirePoisonMagicianId:       skill3.FirePoisionWizardMpEaterId,
-	job.FirePoisonArchMagicianId:   skill3.FirePoisionWizardMpEaterId,
+	job.FirePoisonWizardId:         skill3.FirePoisonWizardMpEaterId,
+	job.FirePoisonMagicianId:       skill3.FirePoisonWizardMpEaterId,
+	job.FirePoisonArchMagicianId:   skill3.FirePoisonWizardMpEaterId,
 	job.IceLightningWizardId:       skill3.IceLightningWizardMpEaterId,
 	job.IceLightningMagicianId:     skill3.IceLightningWizardMpEaterId,
 	job.IceLightningArchMagicianId: skill3.IceLightningWizardMpEaterId,

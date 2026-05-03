@@ -54,7 +54,7 @@ type Processor interface {
 	CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
-	DrainMp(uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
+	DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -1393,54 +1393,81 @@ func destroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 	}
 }
 
-// DrainMp deducts MP from a monster as the result of a player passive
-// (currently MP Eater). It re-checks Boss / MaxMp / current Mp guards
-// against atlas-monsters' authoritative state, clamps the deduction at
-// zero via DeductMp, and emits a MP_CHANGED status event with the
-// supplied reason and the actual amount removed. Bosses, dry monsters,
-// and missing/dead monsters short-circuit to nil with no event so the
-// channel never plays a misleading visual.
+// DrainMp emits a MP_CHANGED status event in response to a player MP
+// Eater proc. The channel is the authority for the proc decision; this
+// method exists to (a) keep the monster's MP in sync when possible and
+// (b) re-check the boss flag, which is the only piece of state the
+// channel cannot safely cache. Boss procs and MaxMp=0 monsters are
+// silently dropped (defense-in-depth — the channel pre-screens both,
+// so they should not arrive here in practice). Every other call emits
+// MP_CHANGED so the channel can refund the caster and play the
+// SKILL_SPECIAL visual.
+//
+// The function is permissive on missing/dead/dry monsters: by the time
+// the DRAIN_MP command lands, the monster may already have been
+// one-shot killed by the same player attack (DAMAGE and DRAIN_MP are
+// emitted in the same processAttack call and partitioned by uniqueId,
+// so DAMAGE processes first). In that case Cosmic still plays the
+// visual and refunds the caster — the post-mortem deduction is purely
+// cosmetic.
+//
+// The body.Amount on the emitted event is requestedAmount (the
+// channel-computed MaxMp * X / 100), not the clamped actual delta:
+// Cosmic refunds the caster the full computed amount regardless of how
+// much MP the monster had left to give.
 //
 // The boss check uses testInformationLookup when non-nil so that unit
 // tests can stub the lookup without an HTTP round-trip to atlas-data.
-func (p *ProcessorImpl) DrainMp(uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error {
-	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
-	if err != nil {
-		p.l.WithError(err).Debugf("DRAIN_MP: monster [%d] not found.", uniqueId)
-		return nil
-	}
-	if !m.Alive() {
+func (p *ProcessorImpl) DrainMp(f field.Model, uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error {
+	if requestedAmount == 0 {
 		return nil
 	}
 
-	if m.MaxMp() == 0 || m.Mp() == 0 || requestedAmount == 0 {
-		return nil
-	}
+	m, mErr := GetMonsterRegistry().GetMonster(p.t, uniqueId)
 
-	// Boss check — use the test hook when available (mirrors UseBasicAttack).
-	var infoModel information.Model
-	var infoErr error
-	if testInformationLookup != nil {
-		infoModel, infoErr = testInformationLookup(m.MonsterId())
+	// Authoritative skips that require seeing the monster: boss flag and
+	// MaxMp=0. If the monster is gone from the registry we cannot verify
+	// either, so we trust the channel's pre-screen and emit the event.
+	if mErr == nil {
+		if m.MaxMp() == 0 {
+			return nil
+		}
+		var infoModel information.Model
+		var infoErr error
+		if testInformationLookup != nil {
+			infoModel, infoErr = testInformationLookup(m.MonsterId())
+		} else {
+			infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+		}
+		if infoErr == nil && infoModel.Boss() {
+			return nil
+		}
 	} else {
-		infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
-	}
-	if infoErr == nil && infoModel.Boss() {
-		return nil
+		p.l.WithError(mErr).Debugf("DRAIN_MP: monster [%d] not found in registry; emitting MP_CHANGED with synthetic post-mortem snapshot for visual+refund.", uniqueId)
 	}
 
-	preMp := m.Mp()
-	post, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, requestedAmount)
-	if err != nil {
-		return err
+	// Decide whether to mutate the registry. We only deduct when the
+	// monster is alive AND has MP to drain; otherwise the deduct is a
+	// no-op and we emit a synthetic event purely for the cosmetic
+	// visual+refund.
+	post := m
+	if mErr == nil && m.Alive() && m.Mp() > 0 {
+		var dErr error
+		post, dErr = GetMonsterRegistry().DeductMp(p.t, uniqueId, requestedAmount)
+		if dErr != nil {
+			return dErr
+		}
+	} else if mErr != nil {
+		// Synthesize a post-mortem snapshot for the event provider.
+		// The channel's MP_EATER handler reads field +
+		// CharacterId/SkillId/Amount from the body; UniqueId/MonsterId
+		// on the envelope are not consulted for this Reason. Build via
+		// NewMonster so the Model carries the kafka envelope's field —
+		// the only piece the provider needs.
+		post = NewMonster(f, uniqueId, 0, 0, 0, 0, 0, 0, 0, 0)
 	}
 
-	actual := preMp - post.Mp()
-	if actual == 0 {
-		return nil
-	}
-
-	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, actual))
+	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, requestedAmount))
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

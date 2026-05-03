@@ -35,7 +35,7 @@ func TestDrainMp_HappyPath_EmitsMpChanged(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 42, 2300000, 100)
+	err := p.DrainMp(f, uniqueId, 42, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
 	}
@@ -83,8 +83,10 @@ func TestDrainMp_HappyPath_EmitsMpChanged(t *testing.T) {
 }
 
 // TestDrainMp_ClampsAtZero verifies that when the monster has Mp=50 and the
-// request is 200, the drain clamps at 0 (actual drain = 50) and the event
-// Amount=50 with MonsterMpAfter=0.
+// request is 200, the registry mutation clamps at 0 (Mp→0) but the emitted
+// event still reports Amount=requestedAmount=200 — the channel refunds the
+// caster the channel-computed amount regardless of the monster's actual
+// MP loss.
 func TestDrainMp_ClampsAtZero(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -106,7 +108,7 @@ func TestDrainMp_ClampsAtZero(t *testing.T) {
 	}
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 1, 2300000, 200)
+	err := p.DrainMp(f, uniqueId, 1, 2300000, 200)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
 	}
@@ -122,8 +124,8 @@ func TestDrainMp_ClampsAtZero(t *testing.T) {
 	if err := json.Unmarshal((*events)[0].Body, &body); err != nil {
 		t.Fatalf("decode body: %v", err)
 	}
-	if body.Amount != 50 {
-		t.Errorf("body.Amount = %d, want 50", body.Amount)
+	if body.Amount != 200 {
+		t.Errorf("body.Amount = %d, want 200 (requested amount; not the clamped actual)", body.Amount)
 	}
 	if body.MonsterMpAfter != 0 {
 		t.Errorf("body.MonsterMpAfter = %d, want 0", body.MonsterMpAfter)
@@ -150,7 +152,7 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 1, 2300000, 100)
+	err := p.DrainMp(f, uniqueId, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
 	}
@@ -159,9 +161,12 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 	}
 }
 
-// TestDrainMp_SkipsZeroCurrentMp verifies that DrainMp emits nothing when the
-// monster's current Mp == 0 (already drained).
-func TestDrainMp_SkipsZeroCurrentMp(t *testing.T) {
+// TestDrainMp_DryMonsterStillEmits verifies that DrainMp emits MP_CHANGED
+// even when the monster's current Mp is already 0 (e.g., a prior drain
+// emptied it). The channel still refunds the caster and plays the visual
+// — Cosmic does not gate the proc effect on the monster's remaining MP.
+// The registry remains at Mp=0 (no further deduct).
+func TestDrainMp_DryMonsterStillEmits(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := context.Background()
@@ -182,12 +187,26 @@ func TestDrainMp_SkipsZeroCurrentMp(t *testing.T) {
 	}
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 1, 2300000, 100)
+	err := p.DrainMp(f, uniqueId, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
 	}
-	if len(*events) != 0 {
-		t.Fatalf("expected 0 events for Mp=0 monster, got %d", len(*events))
+	if len(*events) != 1 {
+		t.Fatalf("expected 1 event (cosmetic emit), got %d", len(*events))
+	}
+	var body statusEventMpChangedBody
+	if err := json.Unmarshal((*events)[0].Body, &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Amount != 100 {
+		t.Errorf("body.Amount = %d, want 100", body.Amount)
+	}
+	if body.MonsterMpAfter != 0 {
+		t.Errorf("body.MonsterMpAfter = %d, want 0", body.MonsterMpAfter)
+	}
+	got, _ := r.GetMonster(ten, uniqueId)
+	if got.Mp() != 0 {
+		t.Errorf("Mp should remain 0; got %d", got.Mp())
 	}
 }
 
@@ -210,7 +229,7 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 1, 2300000, 0)
+	err := p.DrainMp(f, uniqueId, 1, 2300000, 0)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
 	}
@@ -223,21 +242,46 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 	}
 }
 
-// TestDrainMp_MissingMonster verifies that DrainMp returns nil and emits no
-// event when the uniqueId is not present in the registry.
+// TestDrainMp_MissingMonster verifies that DrainMp emits MP_CHANGED with a
+// synthetic post-mortem snapshot when the uniqueId is not present in the
+// registry. Real-world cause: the monster was one-shot killed by the same
+// player attack — DAMAGE and DRAIN_MP are produced from a single
+// processAttack and partitioned by uniqueId, so DAMAGE processes (and
+// destroys) before DRAIN_MP arrives. Cosmic still plays the visual and
+// refunds the caster on kill shots.
 func TestDrainMp_MissingMonster(t *testing.T) {
 	r := GetMonsterRegistry()
 	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
 	ctx := context.Background()
 	r.Clear(ctx)
 
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(99999999, 1, 2300000, 100)
+	err := p.DrainMp(f, 99999999, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error for missing monster: %v", err)
 	}
-	if len(*events) != 0 {
-		t.Fatalf("expected 0 events for missing monster, got %d", len(*events))
+	if len(*events) != 1 {
+		t.Fatalf("expected 1 event (post-mortem cosmetic emit), got %d", len(*events))
+	}
+	var body statusEventMpChangedBody
+	if err := json.Unmarshal((*events)[0].Body, &body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Reason != MpChangeReasonMpEater {
+		t.Errorf("body.Reason = %q, want %q", body.Reason, MpChangeReasonMpEater)
+	}
+	if body.Amount != 100 {
+		t.Errorf("body.Amount = %d, want 100 (channel-computed refund amount)", body.Amount)
+	}
+	if body.MonsterMpAfter != 0 {
+		t.Errorf("body.MonsterMpAfter = %d, want 0 (post-mortem)", body.MonsterMpAfter)
+	}
+	if body.CharacterId != 1 {
+		t.Errorf("body.CharacterId = %d, want 1", body.CharacterId)
+	}
+	if body.SkillId != 2300000 {
+		t.Errorf("body.SkillId = %d, want 2300000", body.SkillId)
 	}
 }
 
@@ -260,7 +304,7 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 	uniqueId := m.UniqueId()
 
 	p, events := newRecordingProcessorWithBodies(t, ten)
-	err := p.DrainMp(uniqueId, 1, 2300000, 500)
+	err := p.DrainMp(f, uniqueId, 1, 2300000, 500)
 	if err != nil {
 		t.Fatalf("DrainMp returned error for boss: %v", err)
 	}

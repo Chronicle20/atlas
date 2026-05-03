@@ -34,6 +34,13 @@ func SpawnMonsterWithEffectBody(m monster.Model, newSpawn bool, effect byte) pac
 				appearType = packetmodel.MonsterAppearTypeRegen
 			}
 
+			// Debug: capture exactly what the wire spawn packet carries.
+			// Useful when investigating fall-through reports — lets us
+			// correlate the (x, y, fh) the client received against what the
+			// client subsequently does with the mob (drop, walk, etc.).
+			l.Debugf("Spawn monster wire: uniqueId=[%d] monsterId=[%d] x=[%d] y=[%d] fh=[%d] stance=[%d] newSpawn=[%t] controlled=[%t]",
+				m.UniqueId(), m.MonsterId(), m.X(), m.Y(), m.Fh(), m.Stance(), newSpawn, m.Controlled())
+
 			mem := packetmodel.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), appearType, m.Team())
 			stat := buildMonsterTemporaryStat(l, t, m)
 			mem.SetTemporaryStat(stat)

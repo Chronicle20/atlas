@@ -55,7 +55,7 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -99,7 +99,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(f, uint64(petId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(f, uint64(petId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -167,7 +167,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -198,6 +198,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 type summary struct {
 	X      int16
 	Y      int16
+	Fh     int16
 	Stance byte
 }
 
@@ -216,19 +217,30 @@ func folder(s summary, e model.MovementCodec) (summary, error) {
 }
 
 func foldMovementSummary(s summary, e interface{}) (summary, error) {
-	ms := summary{X: s.X, Y: s.Y, Stance: s.Stance}
+	ms := summary{X: s.X, Y: s.Y, Fh: s.Fh, Stance: s.Stance}
 
+	// Fh is preserved across mid-air frames (Jump, StartFallDown, etc.) — those
+	// frames carry no resting foothold. Only NormalElement and TeleportElement
+	// land the mob on a foothold; we copy v.Fh from those, but only when
+	// non-zero so we don't trample the spawn-time fh during a fall sequence
+	// where the client transmits Fh=0 for "no anchor yet".
 	switch v := e.(type) {
 	case *model.NormalElement:
 		ms.X = v.X
 		ms.Y = v.Y
 		ms.Stance = v.BMoveAction
+		if v.Fh != 0 {
+			ms.Fh = v.Fh
+		}
 		return ms, nil
 	case model.JumpElement:
 		ms.Stance = v.BMoveAction
 		return ms, nil
 	case model.TeleportElement:
 		ms.Stance = v.BMoveAction
+		if v.Fh != 0 {
+			ms.Fh = v.Fh
+		}
 		return ms, nil
 	case model.StartFallDownElement:
 		ms.Stance = v.BMoveAction

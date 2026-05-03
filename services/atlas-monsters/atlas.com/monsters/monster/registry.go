@@ -411,9 +411,9 @@ func (r *Registry) GetMonstersInMap(tenant tenant.Model, f field.Model) []Model 
 	return result
 }
 
-func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16, endY int16, stance byte) Model {
+func (r *Registry) MoveMonster(tenant tenant.Model, uniqueId uint32, endX int16, endY int16, endFh int16, stance byte) Model {
 	m, err := r.atomicUpdate(context.Background(), tenant, uniqueId, func(m Model) Model {
-		return m.Move(endX, endY, stance)
+		return m.Move(endX, endY, endFh, stance)
 	})
 	if err != nil {
 		return Model{}

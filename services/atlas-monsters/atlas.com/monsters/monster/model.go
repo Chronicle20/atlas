@@ -154,12 +154,18 @@ func (m Model) DamageSummary() []entry {
 	return m.damageEntries
 }
 
-func (m Model) Move(x int16, y int16, stance byte) Model {
-	return Clone(m).
+func (m Model) Move(x int16, y int16, fh int16, stance byte) Model {
+	b := Clone(m).
 		SetX(x).
 		SetY(y).
-		SetStance(stance).
-		Build()
+		SetStance(stance)
+	// fh==0 from the client means "mid-air, no resting foothold yet" — keep
+	// the prior fh in that case so we don't trash the spawn-time anchor
+	// during a fall sequence.
+	if fh != 0 {
+		b = b.SetFh(fh)
+	}
+	return b.Build()
 }
 
 func (m Model) Control(characterId uint32) Model {

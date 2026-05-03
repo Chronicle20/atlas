@@ -103,6 +103,21 @@ func handleStatusEventCreated(sc server.Model, wp writer.Producer) message.Handl
 		if err != nil {
 			l.WithError(err).Errorf("Unable to spawn monster [%d] for characters in map [%d].", m.UniqueId(), e.MapId)
 		}
+
+		// Send the initial Control packet in the same goroutine, immediately
+		// after Spawn, so the v83 client always sees Spawn-then-Control for
+		// fresh mobs. atlas-monsters' Create() now assigns the controller in
+		// Redis without emitting a StartControl event, deferring the wire
+		// notification to here. This eliminates the parallel-handler race
+		// (atlas-kafka manager.go:437 spawns one goroutine per registered
+		// handler) that previously let Control land before Spawn and caused
+		// slope-spawn fall-throughs.
+		if m.ControlCharacterId() != 0 {
+			sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, m.ControllerHasAggro()))
+			if cerr := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(m.ControlCharacterId(), sf); cerr != nil {
+				l.WithError(cerr).Errorf("Unable to send initial control of monster [%d] to character [%d].", m.UniqueId(), m.ControlCharacterId())
+			}
+		}
 	}
 }
 

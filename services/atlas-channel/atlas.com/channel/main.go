@@ -50,6 +50,7 @@ import (
 	"atlas-channel/logger"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	_ "atlas-channel/skill/handler/registrations"
 	"atlas-channel/socket"
 	"atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"

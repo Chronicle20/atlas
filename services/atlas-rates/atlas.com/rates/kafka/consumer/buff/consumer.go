@@ -39,13 +39,15 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 }
 
 func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusEvent[buff.AppliedStatusEventBody]) {
+	handleBuffAppliedFor(character.NewProcessor(l, ctx), l, e)
+}
+
+func handleBuffAppliedFor(p character.Processor, l logrus.FieldLogger, e buff.StatusEvent[buff.AppliedStatusEventBody]) {
 	if e.Type != buff.EventStatusTypeBuffApplied {
 		return
 	}
 
 	l.Debugf("Processing buff applied event for character [%d], buff source [%d].", e.CharacterId, e.Body.SourceId)
-
-	p := character.NewProcessor(l, ctx)
 
 	// Process each stat change and add rate factors for rate-affecting changes
 	for _, change := range e.Body.Changes {
@@ -62,6 +64,7 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 		// Convert stat amount to multiplier using the appropriate conversion method
 		// HOLY_SYMBOL (additive): amount=50 -> 1.50x (50% bonus)
 		// MESO_UP (direct): amount=103 -> 1.03x (103% of base)
+		// CURSE (fixed): amount ignored -> mapping.Multiplier
 		multiplier := buff.CalculateMultiplier(change.Amount, mapping)
 
 		l.Debugf("Adding buff factor: stat type [%s] -> rate type [%s], amount [%d] -> multiplier [%.2f].",
@@ -75,13 +78,15 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 }
 
 func handleBuffExpired(l logrus.FieldLogger, ctx context.Context, e buff.StatusEvent[buff.ExpiredStatusEventBody]) {
+	handleBuffExpiredFor(character.NewProcessor(l, ctx), l, e)
+}
+
+func handleBuffExpiredFor(p character.Processor, l logrus.FieldLogger, e buff.StatusEvent[buff.ExpiredStatusEventBody]) {
 	if e.Type != buff.EventStatusTypeBuffExpired {
 		return
 	}
 
 	l.Debugf("Processing buff expired event for character [%d], buff source [%d].", e.CharacterId, e.Body.SourceId)
-
-	p := character.NewProcessor(l, ctx)
 
 	// Remove all rate factors from this buff
 	if err := p.RemoveAllBuffFactors(e.CharacterId, e.Body.SourceId); err != nil {

@@ -42,10 +42,7 @@ func TestProcessAttack_RegisteredSkill_GateUsesLookup(t *testing.T) {
 		}
 	})
 	t.Cleanup(func() {
-		// Best-effort cleanup. If a future refactor exposes Unregister we should
-		// switch to it; for now, leaving the entry is safe because the test id
-		// is unused in production.
-		_ = id
+		channelhandler.Unregister(id)
 	})
 
 	if _, ok := channelhandler.Lookup(id); !ok {

@@ -45,17 +45,20 @@ func TestSnapToGround(t *testing.T) {
 		useTolerant bool
 	}{
 		{
+			// snap places the mob 1px ABOVE the foothold surface (matches
+			// Cosmic's MapleMap.addMonsterSpawn `newpos.y -= 1`), so a
+			// flat foothold at y=100 yields y=99.
 			name:       "fh_set_flat_corrects_y",
 			sp:         monster.RestModel{Template: 100100, X: 0, Y: 80, FH: 10},
 			lookup:     groundLookup,
-			wantYExact: ptrInt16(100),
+			wantYExact: ptrInt16(99),
 		},
 		{
 			name:        "fh_set_slope_corrects_y",
 			sp:          monster.RestModel{Template: 100100, X: 300, Y: 80, FH: 11},
 			lookup:      groundLookup,
-			wantYMin:    145,
-			wantYMax:    155,
+			wantYMin:    144,
+			wantYMax:    154,
 			useTolerant: true,
 		},
 		{

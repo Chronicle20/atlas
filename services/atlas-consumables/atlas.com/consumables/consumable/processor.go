@@ -187,6 +187,15 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 		itemConsumer = ConsumeCashPetFood(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableSummoningSack {
 		itemConsumer = ConsumeSummoningSack(transactionId, c, characterId, slot, itemId)
+	} else {
+		// Fallback: items requested via REQUEST_ITEM_CONSUME that do not
+		// fit any classification-specific branch (e.g., Magic Rock for
+		// Priest Doom / Mystic Door, summon items used as skill
+		// prerequisites). The cast/effect side has already produced its
+		// game-state change; we just need to commit the reservation so
+		// the item count decrements. ConsumeBare emits CONSUME with no
+		// further side-effects.
+		itemConsumer = ConsumeBare(transactionId, characterId, slot, itemId, it)
 	}
 
 	handler := compartment.Consume(itemConsumer)
@@ -217,6 +226,26 @@ func (p *Processor) ConsumeError(characterId uint32, transactionId uuid.UUID, in
 		p.l.WithError(cErr).Errorf("Unable to issue consumption error [%v] on event topic. Character [%d] likely going to be stuck.", err, characterId)
 	}
 	return err
+}
+
+// ConsumeBare commits the reserved item with no further side-effects.
+// Used as the fallback for REQUEST_ITEM_CONSUME calls where no
+// classification-specific branch matches — typically items burned as
+// skill costs (Priest Doom's Magic Rock, summon items for Mystic Door,
+// etc.) where the cast itself produced the side-effect and the only
+// remaining work is to commit the reservation. inventoryType is passed
+// in by the caller so the bare consumer doesn't have to re-derive it.
+func ConsumeBare(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id, inventoryType inventory2.Type) ItemConsumer {
+	return func(l logrus.FieldLogger) func(ctx context.Context) error {
+		return func(ctx context.Context) error {
+			p := NewProcessor(l, ctx)
+			if err := compartment.NewProcessor(l, ctx).ConsumeItem(characterId, inventoryType, transactionId, slot); err != nil {
+				return p.ConsumeError(characterId, transactionId, inventoryType, slot, err)
+			}
+			l.Debugf("Character [%d] bare-consumed item [%d] from slot [%d] (transaction [%s]).", characterId, itemId, slot, transactionId.String())
+			return nil
+		}
+	}
 }
 
 func ConsumeStandard(transactionId uuid.UUID, characterId uint32, slot int16, itemId item2.Id) ItemConsumer {

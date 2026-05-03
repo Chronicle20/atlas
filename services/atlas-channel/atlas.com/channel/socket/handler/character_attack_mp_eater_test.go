@@ -36,7 +36,7 @@ func TestResolveMpEaterSkillId(t *testing.T) {
 	cases := []struct {
 		name   string
 		jobId  job.Id
-		wantId skill3.Id
+		wantId skill3.Id // only meaningful when wantOk == true; skill3.Id(0) is the zero-value placeholder for negative cases
 		wantOk bool
 	}{
 		{"Magician (200)", job.MagicianId, skill3.Id(0), false},
@@ -54,11 +54,11 @@ func TestResolveMpEaterSkillId(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			gotId, gotOk := resolveMpEaterSkillId(tc.jobId)
-			if gotId != tc.wantId {
-				t.Fatalf("resolveMpEaterSkillId(%v) id = %v; want %v", tc.jobId, gotId, tc.wantId)
-			}
 			if gotOk != tc.wantOk {
 				t.Fatalf("resolveMpEaterSkillId(%v) ok = %v; want %v", tc.jobId, gotOk, tc.wantOk)
+			}
+			if tc.wantOk && gotId != tc.wantId {
+				t.Fatalf("resolveMpEaterSkillId(%v) id = %v; want %v", tc.jobId, gotId, tc.wantId)
 			}
 		})
 	}

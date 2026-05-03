@@ -121,6 +121,22 @@ func damageReflectedEventProvider(m Model, characterId uint32, reflectDamage uin
 	})
 }
 
+// mpChangedStatusEventProvider builds a MP_CHANGED status event for any
+// monster MP mutation that the channel must react to. Reason
+// disambiguates the source (e.g., MP_EATER) so future passives can share
+// the channel without expanding the consumer surface. Amount is the
+// actual amount drained (post-clamp); MonsterMpAfter is the monster's
+// MP after the deduction.
+func mpChangedStatusEventProvider(m Model, characterId uint32, skillId uint32, reason string, amount uint32) model.Provider[[]kafka.Message] {
+	return statusEventProvider(m.Field(), m.UniqueId(), m.MonsterId(), EventMonsterStatusMpChanged, statusEventMpChangedBody{
+		CharacterId:    characterId,
+		SkillId:        skillId,
+		Reason:         reason,
+		Amount:         amount,
+		MonsterMpAfter: m.Mp(),
+	})
+}
+
 func friendlyDropStatusEventProvider(f field.Model, uniqueId uint32, monsterId uint32, itemCount uint32) model.Provider[[]kafka.Message] {
 	return statusEventProvider(f, uniqueId, monsterId, EventMonsterStatusFriendlyDrop, statusEventFriendlyDropBody{ItemCount: itemCount})
 }

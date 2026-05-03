@@ -135,3 +135,42 @@ func TestCharacterExit_JSONFields(t *testing.T) {
 		t.Error("Expected 'characterId' field in JSON output")
 	}
 }
+
+func TestStatusEvent_MapTimerStarted_Serialization(t *testing.T) {
+	event := StatusEvent[MapTimerStarted]{
+		TransactionId: uuid.MustParse("12345678-1234-5678-1234-567812345678"),
+		WorldId:       world.Id(1),
+		ChannelId:     channel.Id(2),
+		MapId:         _map.Id(100000000),
+		Type:          EventTopicMapStatusTypeMapTimerStarted,
+		Body: MapTimerStarted{
+			CharacterId: 12345,
+			Seconds:     600,
+		},
+	}
+
+	data, err := json.Marshal(event)
+	if err != nil {
+		t.Fatalf("Failed to marshal event: %v", err)
+	}
+
+	var decoded StatusEvent[MapTimerStarted]
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("Failed to unmarshal event: %v", err)
+	}
+	if decoded.Type != EventTopicMapStatusTypeMapTimerStarted {
+		t.Errorf("Expected Type %s, got %s", EventTopicMapStatusTypeMapTimerStarted, decoded.Type)
+	}
+	if decoded.Body.CharacterId != 12345 {
+		t.Errorf("Expected CharacterId 12345, got %d", decoded.Body.CharacterId)
+	}
+	if decoded.Body.Seconds != 600 {
+		t.Errorf("Expected Seconds 600, got %d", decoded.Body.Seconds)
+	}
+}
+
+func TestEventTypeConstant_MapTimerStarted(t *testing.T) {
+	if EventTopicMapStatusTypeMapTimerStarted != "MAP_TIMER_STARTED" {
+		t.Errorf("Expected EventTopicMapStatusTypeMapTimerStarted to be 'MAP_TIMER_STARTED', got '%s'", EventTopicMapStatusTypeMapTimerStarted)
+	}
+}

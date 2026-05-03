@@ -1,14 +1,24 @@
 package handler
 
 import (
+	"atlas-channel/data/skill/effect"
+	"atlas-channel/effective_stats"
 	"atlas-channel/monster"
+	"errors"
+	"io"
 	"testing"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 // TestComputeReflect_InsideRange_ReturnsClampedReflectedDamage exercises the
@@ -330,5 +340,229 @@ func TestAttackKindFromAttackType(t *testing.T) {
 				t.Fatalf("attackKindFromAttackType(%v) = %q, want %q", tc.at, got, tc.want)
 			}
 		})
+	}
+}
+
+// applyStatusCall captures one invocation of the applyStatus closure so tests
+// can assert on (monsterId, statuses, duration) without inspecting Kafka.
+type applyStatusCall struct {
+	monsterId   uint32
+	characterId uint32
+	skillId     uint32
+	skillLevel  uint32
+	statuses    map[string]int32
+	duration    uint32
+}
+
+// damageEntryFakes is a minimal in-memory recorder used by Doom helper tests.
+// Only Doom-relevant interactions are tracked.
+type damageEntryFakes struct {
+	applyStatusCalls       []applyStatusCall
+	applyDamageCalls       int
+	emitReflectDamageCalls int
+	reflects               map[uint32]monster.ReflectInfo
+	monsters               map[uint32]monster.Model
+}
+
+func (df *damageEntryFakes) deps() damageInfoEntryDeps {
+	return damageInfoEntryDeps{
+		getReflect: func(_ tenant.Model, monsterId uint32, _ string) (monster.ReflectInfo, bool) {
+			ri, ok := df.reflects[monsterId]
+			return ri, ok
+		},
+		getMonster: func(monsterId uint32) (monster.Model, error) {
+			m, ok := df.monsters[monsterId]
+			if !ok {
+				return monster.Model{}, errors.New("not found")
+			}
+			return m, nil
+		},
+		applyDamage: func(_ field.Model, _ uint32, _ uint32, _ []uint32, _ byte) error {
+			df.applyDamageCalls++
+			return nil
+		},
+		emitReflectDamage: func(_ field.Model, _ uint32, _ uint32, _ uint32, _ uint32, _ string) error {
+			df.emitReflectDamageCalls++
+			return nil
+		},
+		applyStatus: func(_ field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
+			df.applyStatusCalls = append(df.applyStatusCalls, applyStatusCall{
+				monsterId:   monsterId,
+				characterId: characterId,
+				skillId:     skillId,
+				skillLevel:  skillLevel,
+				statuses:    statuses,
+				duration:    duration,
+			})
+			return nil
+		},
+		loadVenomStats: func() effective_stats.RestModel { return effective_stats.RestModel{} },
+	}
+}
+
+func newDoomEffect() effect.Model {
+	se, _ := effect.Extract(effect.RestModel{
+		Duration:      20000,
+		MonsterStatus: map[string]uint32{monster2.StatusDoom: 1},
+	})
+	return se
+}
+
+func newDoomAttackInfo(monsterIds ...uint32) packetmodel.AttackInfo {
+	aip := packetmodel.NewAttackInfo(packetmodel.AttackTypeMagic).SetSkillId(uint32(skillconst.PriestDoomId))
+	for _, mid := range monsterIds {
+		dip := packetmodel.NewDamageInfo(0).SetMonsterId(mid).SetDamages(nil)
+		aip.AddDamageInfo(*dip)
+	}
+	return *aip
+}
+
+// TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus verifies the
+// happy path: an empty-damage DOOM-bearing attack lands on a target with no
+// reflect, producing exactly one applyStatus call with the DOOM map and the
+// effect's duration.
+func TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus(t *testing.T) {
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	l := logrus.New()
+	l.Out = io.Discard
+
+	ai := newDoomAttackInfo(1)
+	di := ai.DamageInfo()[0]
+	se := newDoomEffect()
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	df := &damageEntryFakes{}
+	processDamageInfoEntry(l, di, ai, se, 30, /*casterId*/ 1001, 0, 0, f, tm, "MAGICAL", df.deps())
+
+	if len(df.applyStatusCalls) != 1 {
+		t.Fatalf("applyStatus calls = %d, want 1 (%v)", len(df.applyStatusCalls), df.applyStatusCalls)
+	}
+	got := df.applyStatusCalls[0]
+	if got.monsterId != 1 || got.skillId != uint32(skillconst.PriestDoomId) || got.skillLevel != 30 {
+		t.Errorf("applyStatus args = %+v, want monsterId=1 skillId=%d skillLevel=30", got, uint32(skillconst.PriestDoomId))
+	}
+	if got.statuses[monster2.StatusDoom] != 1 {
+		t.Errorf("statuses[DOOM] = %d, want 1", got.statuses[monster2.StatusDoom])
+	}
+	if got.duration != 20000 {
+		t.Errorf("duration = %d, want 20000", got.duration)
+	}
+	if df.applyDamageCalls != 0 {
+		t.Errorf("applyDamage called %d times, want 0", df.applyDamageCalls)
+	}
+	if df.emitReflectDamageCalls != 0 {
+		t.Errorf("emitReflectDamage called %d times, want 0", df.emitReflectDamageCalls)
+	}
+}
+
+// TestProcessDamageInfoEntry_Doom_BlockedByReflect verifies the new
+// Doom-gated probe: when the target has a magic-reflect window and the
+// inbound status set is DOOM-bearing, the apply is skipped (no reflect
+// damage is emitted because Doom does no damage).
+func TestProcessDamageInfoEntry_Doom_BlockedByReflect(t *testing.T) {
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	l := logrus.New()
+	l.Out = io.Discard
+
+	ai := newDoomAttackInfo(1)
+	di := ai.DamageInfo()[0]
+	se := newDoomEffect()
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	df := &damageEntryFakes{
+		reflects: map[uint32]monster.ReflectInfo{
+			1: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999, ExpiresAt: time.Now().Add(time.Minute)},
+		},
+	}
+	processDamageInfoEntry(l, di, ai, se, 30, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, df.deps())
+
+	if len(df.applyStatusCalls) != 0 {
+		t.Errorf("applyStatus calls = %d, want 0 (Doom blocked by reflect)", len(df.applyStatusCalls))
+	}
+	if df.emitReflectDamageCalls != 0 {
+		t.Errorf("emitReflectDamage calls = %d, want 0 (Doom does no damage to reflect)", df.emitReflectDamageCalls)
+	}
+	if df.applyDamageCalls != 0 {
+		t.Errorf("applyDamage calls = %d, want 0 (no damage path)", df.applyDamageCalls)
+	}
+}
+
+// TestProcessDamageInfoEntry_Doom_MultiTargetSpread verifies the spread case:
+// three Doom targets, the middle one carries a magic-reflect window, the
+// other two are clean. Helper invoked once per DamageInfo. Result: exactly
+// two applyStatus calls (monsters 1 and 3); none for monster 2.
+func TestProcessDamageInfoEntry_Doom_MultiTargetSpread(t *testing.T) {
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	l := logrus.New()
+	l.Out = io.Discard
+
+	ai := newDoomAttackInfo(1, 2, 3)
+	se := newDoomEffect()
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	df := &damageEntryFakes{
+		reflects: map[uint32]monster.ReflectInfo{
+			2: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999, ExpiresAt: time.Now().Add(time.Minute)},
+		},
+	}
+	for _, di := range ai.DamageInfo() {
+		processDamageInfoEntry(l, di, ai, se, 30, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, df.deps())
+	}
+
+	if len(df.applyStatusCalls) != 2 {
+		t.Fatalf("applyStatus calls = %d, want 2 (%v)", len(df.applyStatusCalls), df.applyStatusCalls)
+	}
+	gotIds := []uint32{df.applyStatusCalls[0].monsterId, df.applyStatusCalls[1].monsterId}
+	if !(gotIds[0] == 1 && gotIds[1] == 3) {
+		t.Errorf("applyStatus monster ids = %v, want [1 3] (monster 2 reflect-blocked)", gotIds)
+	}
+	if df.emitReflectDamageCalls != 0 {
+		t.Errorf("emitReflectDamage calls = %d, want 0", df.emitReflectDamageCalls)
+	}
+	if df.applyDamageCalls != 0 {
+		t.Errorf("applyDamage calls = %d, want 0", df.applyDamageCalls)
+	}
+}
+
+// TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe pins
+// that the new probe is Doom-gated. A hypothetical empty-damage status that
+// is not DOOM should still apply through a magic-reflect window.
+func TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe(t *testing.T) {
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	l := logrus.New()
+	l.Out = io.Discard
+
+	se, _ := effect.Extract(effect.RestModel{
+		Duration:      5000,
+		MonsterStatus: map[string]uint32{"FREEZE": 1},
+	})
+	aip := packetmodel.NewAttackInfo(packetmodel.AttackTypeMagic).SetSkillId(0)
+	dip := packetmodel.NewDamageInfo(0).SetMonsterId(7).SetDamages(nil)
+	aip.AddDamageInfo(*dip)
+	ai := *aip
+	di := ai.DamageInfo()[0]
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+
+	df := &damageEntryFakes{
+		reflects: map[uint32]monster.ReflectInfo{
+			7: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999, ExpiresAt: time.Now().Add(time.Minute)},
+		},
+	}
+	processDamageInfoEntry(l, di, ai, se, 1, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, df.deps())
+
+	if len(df.applyStatusCalls) != 1 {
+		t.Errorf("non-Doom empty-damage status should apply through reflect; applyStatus calls = %d, want 1", len(df.applyStatusCalls))
 	}
 }

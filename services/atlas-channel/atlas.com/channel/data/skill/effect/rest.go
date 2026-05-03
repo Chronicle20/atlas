@@ -53,8 +53,8 @@ type RestModel struct {
 	Damage            uint32  `json:"damage"`
 	AttackCount       uint32  `json:"attackCount"`
 	FixDamage         int32   `json:"fixDamage"`
-	//LT Point
-	//RB Point
+	LT                   *PointRestModel    `json:"lt,omitempty"`
+	RB                   *PointRestModel    `json:"rb,omitempty"`
 	BulletCount          uint16             `json:"bulletCount"`
 	BulletConsume        uint16             `json:"bulletConsume"`
 	MapProtection        byte               `json:"mapProtection"`
@@ -68,6 +68,15 @@ func Extract(rm RestModel) (Model, error) {
 	su, err := model.SliceMap(statup.Extract)(model.FixedProvider(rm.Statups))()()
 	if err != nil {
 		return Model{}, err
+	}
+
+	var lt Point
+	if rm.LT != nil {
+		lt = Point{X: rm.LT.X, Y: rm.LT.Y}
+	}
+	var rb Point
+	if rm.RB != nil {
+		rb = Point{X: rm.RB.X, Y: rm.RB.Y}
 	}
 
 	return Model{
@@ -119,6 +128,8 @@ func Extract(rm RestModel) (Model, error) {
 		fixDamage:            rm.FixDamage,
 		bulletCount:          rm.BulletCount,
 		bulletConsume:        rm.BulletConsume,
+		lt:                   lt,
+		rb:                   rb,
 		mapProtection:        rm.MapProtection,
 		cureAbnormalStatuses: rm.CureAbnormalStatuses,
 		statups:              su,

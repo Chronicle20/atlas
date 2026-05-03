@@ -17,12 +17,32 @@ import (
 // handlers (heal: HP / MaxHp; buff: just Id is enough) without forcing
 // each call site to refetch.
 type PartyRecipient struct {
-	Id    uint32
-	X     int16
-	Y     int16
-	Hp    uint16
-	MaxHp uint16
+	id    uint32
+	x     int16
+	y     int16
+	hp    uint16
+	maxHp uint16
 }
+
+func (r PartyRecipient) Id() uint32    { return r.id }
+func (r PartyRecipient) X() int16      { return r.x }
+func (r PartyRecipient) Y() int16      { return r.y }
+func (r PartyRecipient) Hp() uint16    { return r.hp }
+func (r PartyRecipient) MaxHp() uint16 { return r.maxHp }
+
+// PartyRecipientBuilder is the canonical constructor for PartyRecipient.
+type PartyRecipientBuilder struct {
+	r PartyRecipient
+}
+
+func NewPartyRecipientBuilder() *PartyRecipientBuilder { return &PartyRecipientBuilder{} }
+
+func (b *PartyRecipientBuilder) SetId(v uint32) *PartyRecipientBuilder    { b.r.id = v; return b }
+func (b *PartyRecipientBuilder) SetX(v int16) *PartyRecipientBuilder      { b.r.x = v; return b }
+func (b *PartyRecipientBuilder) SetY(v int16) *PartyRecipientBuilder      { b.r.y = v; return b }
+func (b *PartyRecipientBuilder) SetHp(v uint16) *PartyRecipientBuilder    { b.r.hp = v; return b }
+func (b *PartyRecipientBuilder) SetMaxHp(v uint16) *PartyRecipientBuilder { b.r.maxHp = v; return b }
+func (b *PartyRecipientBuilder) Build() PartyRecipient                    { return b.r }
 
 // SelectInRangePartyMembers returns party members other than the
 // caster that satisfy all of:
@@ -101,13 +121,13 @@ func SelectInRangePartyMembers(
 		if dx < int16(lt.X()) || dx > int16(rb.X()) || dy < int16(lt.Y()) || dy > int16(rb.Y()) {
 			continue
 		}
-		out = append(out, PartyRecipient{
-			Id:    mc.Id(),
-			X:     mc.X(),
-			Y:     mc.Y(),
-			Hp:    mc.Hp(),
-			MaxHp: mc.MaxHp(),
-		})
+		out = append(out, NewPartyRecipientBuilder().
+			SetId(mc.Id()).
+			SetX(mc.X()).
+			SetY(mc.Y()).
+			SetHp(mc.Hp()).
+			SetMaxHp(mc.MaxHp()).
+			Build())
 	}
 	return out
 }

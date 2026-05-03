@@ -26,11 +26,14 @@ const (
 	EventMonsterStatusFriendlyDrop     = "FRIENDLY_DROP"
 	EventMonsterStatusAggroChanged     = "AGGRO_CHANGED"
 	EventMonsterStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
+	EventMonsterStatusMpChanged        = "MP_CHANGED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
 	DamageSourceDamageOverTime  = "DAMAGE_OVER_TIME"
 	DamageSourceHeal            = "HEAL"
+
+	MpChangeReasonMpEater = "MP_EATER"
 )
 
 type statusEvent[E any] struct {
@@ -149,6 +152,14 @@ type statusEventNextSkillDecidedBody struct {
 	SkillLevel             byte  `json:"skillLevel"`
 	DecidedAtMs            int64 `json:"decidedAtMs"`
 	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
+}
+
+type statusEventMpChangedBody struct {
+	CharacterId    uint32 `json:"characterId"`
+	SkillId        uint32 `json:"skillId"`
+	Reason         string `json:"reason"`
+	Amount         uint32 `json:"amount"`
+	MonsterMpAfter uint32 `json:"monsterMpAfter"`
 }
 
 // MarshalJSON ensures DamageEntries marshals as `[]` rather than `null` when nil.

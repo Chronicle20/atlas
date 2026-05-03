@@ -48,6 +48,22 @@ func UseSkillCommandProvider(f field.Model, monsterId uint32, characterId uint32
 	return producer.SingleMessageProvider(key, value)
 }
 
+func UseBasicAttackCommandProvider(f field.Model, monsterId uint32, attackPos uint8) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.UseBasicAttackCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeUseBasicAttack,
+		Body: monster2.UseBasicAttackCommandBody{
+			AttackPos: attackPos,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
 func CancelStatusCommandProvider(f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId uint32, sourceSkillId uint32, sourceSkillClass string) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(monsterId))
 	value := &monster2.Command[monster2.CancelStatusCommandBody]{

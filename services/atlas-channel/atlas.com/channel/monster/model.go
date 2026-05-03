@@ -47,6 +47,12 @@ func (m Model) Controlled() bool {
 	return m.controlCharacterId != 0
 }
 
+// ControlCharacterId returns the id of the character currently controlling
+// this monster, or 0 if uncontrolled.
+func (m Model) ControlCharacterId() uint32 {
+	return m.controlCharacterId
+}
+
 // ControllerHasAggro reports whether the controlling character currently has
 // aggro on this monster. v83 protocol compat: this bool is what the client
 // reads from MoveMonsterAck (the field is wire-named "useSkills") to decide

@@ -30,6 +30,7 @@ type Model struct {
 	mp                 uint32
 	monsterId          uint32
 	controlCharacterId uint32
+	controllerHasAggro bool
 	x                  int16
 	y                  int16
 	fh                 int16
@@ -44,6 +45,16 @@ func (m Model) UniqueId() uint32 {
 
 func (m Model) Controlled() bool {
 	return m.controlCharacterId != 0
+}
+
+// ControllerHasAggro reports whether the controlling character currently has
+// aggro on this monster. v83 protocol compat: this bool is what the client
+// reads from MoveMonsterAck (the field is wire-named "useSkills") to decide
+// whether to autonomously trigger mob AI (basic attacks and skill casts).
+// Without this true, the client renders the mob as idle even when a server
+// prediction is present.
+func (m Model) ControllerHasAggro() bool {
+	return m.controllerHasAggro
 }
 
 func (m Model) MonsterId() uint32 {

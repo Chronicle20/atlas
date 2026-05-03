@@ -60,7 +60,8 @@ type Processor interface {
 type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
 
 // testInformationLookup is a test-only override for information.GetById. When
-// nil (production), UseBasicAttack calls information.GetById normally.
+// nil (production), UseBasicAttack and ApplyStatusEffect call information.GetById
+// normally.
 var testInformationLookup func(monsterId uint32) (information.Model, error)
 
 // ProcessorImpl implements the Processor interface
@@ -1066,8 +1067,14 @@ func (p *ProcessorImpl) ApplyStatusEffect(uniqueId uint32, effect StatusEffect) 
 
 	// Only check immunities for player-sourced effects
 	if effect.SourceType() == SourceTypePlayerSkill {
-		info, err := information.GetById(p.l)(p.ctx)(m.MonsterId())
-		if err == nil {
+		var info information.Model
+		var infoErr error
+		if testInformationLookup != nil {
+			info, infoErr = testInformationLookup(m.MonsterId())
+		} else {
+			info, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+		}
+		if infoErr == nil {
 			// Elemental immunity check
 			if blocked, element := isElementallyImmune(info, effect); blocked {
 				p.l.Debugf("Monster [%d] is immune to element [%s]. Status rejected.", uniqueId, element)

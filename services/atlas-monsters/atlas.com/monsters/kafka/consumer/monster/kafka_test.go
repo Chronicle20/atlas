@@ -46,3 +46,14 @@ func TestDamageCommandBody_OldDamageFieldIgnored(t *testing.T) {
 		t.Fatalf("Damages = %v, want nil when only legacy 'damage' field present", body.Damages)
 	}
 }
+
+func TestUseBasicAttackCommandBody_Decode(t *testing.T) {
+	raw := []byte(`{"attackPos":1}`)
+	var body useBasicAttackCommandBody
+	if err := json.Unmarshal(raw, &body); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if body.AttackPos != 1 {
+		t.Fatalf("AttackPos = %d, want 1", body.AttackPos)
+	}
+}

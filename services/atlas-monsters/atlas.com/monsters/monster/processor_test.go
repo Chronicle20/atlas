@@ -2,6 +2,7 @@ package monster
 
 import (
 	mistKafka "atlas-monsters/kafka/message/mist"
+	"atlas-monsters/monster/information"
 	"atlas-monsters/monster/mobskill"
 	"context"
 	"encoding/json"
@@ -16,7 +17,9 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
@@ -1455,5 +1458,245 @@ func TestStatusCancel_TargetingReflectItself_AllowedRegardlessOfClass(t *testing
 	}
 	if got.HasStatusEffect("WEAPON_COUNTER") {
 		t.Errorf("WEAPON_COUNTER should have been cancelled — targeting the reflect itself is always allowed")
+	}
+}
+
+// stubInformationLookup forces processor.UseBasicAttack to use a fixed Model
+// instead of going through information.GetById (which would hit atlas-data
+// over HTTP). The processor uses information.GetById directly, so we accept
+// this is integration-shaped: in this test we lean on builder + a thin
+// override hook. If the existing processor test suite has a similar
+// pattern, follow it; otherwise this test is structured around the
+// behaviors we can drive purely via the registry + builder.
+//
+// For UseBasicAttack we test the gates (cooldown, MP, dead, missing info)
+// by constructing pre-state in the registry and the cooldown registry and
+// asserting post-state. Since UseBasicAttack calls information.GetById,
+// we accept that the test environment must wire a stub. The simplest
+// stub: declare a package-level testHook var read by UseBasicAttack when
+// non-nil. See implementation step.
+
+func TestUseBasicAttack_HappyPath_DeductsMpAndRegistersCooldown(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	// Wire test-only attack-cooldown registry
+	mr, err := miniredis.Run()
+	if err != nil {
+		t.Fatalf("miniredis: %v", err)
+	}
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	monsterId := uint32(5100004)
+	m := r.CreateMonster(ctx, ten, f, monsterId, 0, 0, 0, 5, 0, 3000, 100)
+	uniqueId := m.UniqueId()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+
+	// pos=2 corresponds to AttackInfo.Pos=1 internally? No — we normalize
+	// the wire/zero-indexed attackPos to the 1-indexed information.Pos by
+	// adding 1 inside UseBasicAttack. Caller passes 0-indexed attackPos.
+	p.UseBasicAttack(uniqueId, uint8(1)) // 0-indexed, matches Pos=2 (1+1)
+
+	got, err := r.GetMonster(ten, uniqueId)
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if got.Mp() != 95 {
+		t.Errorf("Mp after UseBasicAttack = %d, want 95 (100-5)", got.Mp())
+	}
+	if !attackCooldownReg.IsOnCooldown(ctx, ten, uniqueId, uint8(1)) {
+		t.Errorf("expected attack pos 1 to be on cooldown after happy-path UseBasicAttack")
+	}
+}
+
+func TestUseBasicAttack_OnCooldown_Skips(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, _ := miniredis.Run()
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 100)
+	uniqueId := m.UniqueId()
+
+	// Pre-register a cooldown
+	attackCooldownReg.SetCooldown(ctx, ten, uniqueId, uint8(1), time.Second)
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p.UseBasicAttack(uniqueId, uint8(1))
+
+	got, _ := r.GetMonster(ten, uniqueId)
+	if got.Mp() != 100 {
+		t.Errorf("Mp after on-cooldown UseBasicAttack = %d, want 100 (untouched)", got.Mp())
+	}
+}
+
+func TestUseBasicAttack_InsufficientMp_Skips(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, _ := miniredis.Run()
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 50, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 5100004, 0, 0, 0, 5, 0, 3000, 10)
+	uniqueId := m.UniqueId()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p.UseBasicAttack(uniqueId, uint8(1))
+
+	got, _ := r.GetMonster(ten, uniqueId)
+	if got.Mp() != 10 {
+		t.Errorf("Mp after insufficient-mp UseBasicAttack = %d, want 10 (untouched)", got.Mp())
+	}
+	if attackCooldownReg.IsOnCooldown(ctx, ten, uniqueId, uint8(1)) {
+		t.Errorf("did not expect cooldown after insufficient-mp reject")
+	}
+}
+
+func TestUseBasicAttack_NoAttackInfo_Skips(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, _ := miniredis.Run()
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		// Beetle: no attacks at all.
+		return information.NewModelBuilder().Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 7130003, 0, 0, 0, 5, 0, 500, 0)
+	uniqueId := m.UniqueId()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p.UseBasicAttack(uniqueId, uint8(0))
+
+	if attackCooldownReg.IsOnCooldown(ctx, ten, uniqueId, uint8(0)) {
+		t.Errorf("did not expect cooldown when monster has no attack info")
+	}
+}
+
+func TestUseBasicAttack_ZeroConMpAndZeroAttackAfter_NoOp(t *testing.T) {
+	// Melee parity: pos exists but conMP=0 and attackAfter=0 → no MP
+	// decrement, no cooldown register, but also no error and no skip log.
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, _ := miniredis.Run()
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 1, ConMP: 0, AttackAfter: 0}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 6090003, 0, 0, 0, 5, 0, 500, 0)
+	uniqueId := m.UniqueId()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	p.UseBasicAttack(uniqueId, uint8(0)) // 0-indexed; Pos=1 = (0+1)
+
+	got, _ := r.GetMonster(ten, uniqueId)
+	if got.Mp() != 0 {
+		t.Errorf("Mp = %d, want 0 (untouched)", got.Mp())
+	}
+	if attackCooldownReg.IsOnCooldown(ctx, ten, uniqueId, uint8(0)) {
+		t.Errorf("did not expect cooldown for zero-attackAfter")
+	}
+}
+
+func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	mr, _ := miniredis.Run()
+	defer mr.Close()
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	prevAttackReg := attackCooldownReg
+	attackCooldownReg = &attackCooldownRegistry{client: rc}
+	defer func() { attackCooldownReg = prevAttackReg }()
+
+	prevHook := testInformationLookup
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetAttacks([]information.AttackInfo{{Pos: 2, ConMP: 5, AttackAfter: 1500}}).
+			Build(), nil
+	}
+	defer func() { testInformationLookup = prevHook }()
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	// Use a uniqueId that doesn't exist in the registry. The path:
+	// GetMonster → not found → return.
+	p.UseBasicAttack(uint32(99999), uint8(1))
+
+	if attackCooldownReg.IsOnCooldown(ctx, ten, uint32(99999), uint8(1)) {
+		t.Errorf("did not expect cooldown for missing monster")
 	}
 }

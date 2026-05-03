@@ -27,6 +27,7 @@ type RestModel struct {
 	Resistances        map[string]string `json:"resistances"`
 	LoseItems          []loseItem        `json:"lose_items"`
 	Skills             []skill           `json:"skills"`
+	Attacks            []AttackInfoRestModel `json:"attacks"`
 	Revives            []uint32          `json:"revives"`
 	TagColor           byte              `json:"tag_color"`
 	TagBackgroundColor byte              `json:"tag_background_color"`
@@ -66,6 +67,12 @@ type banish struct {
 	PortalName string `json:"portal_name"`
 }
 
+type AttackInfoRestModel struct {
+	Pos         uint8 `json:"pos"`
+	ConMP       int32 `json:"conMP"`
+	AttackAfter int32 `json:"attackAfter"`
+}
+
 func (r RestModel) GetName() string {
 	return "monsters"
 }
@@ -84,6 +91,10 @@ func Extract(rm RestModel) (Model, error) {
 	for _, s := range rm.Skills {
 		skills = append(skills, Skill{Id: s.Id, Level: s.Level})
 	}
+	attacks := make([]AttackInfo, 0, len(rm.Attacks))
+	for _, a := range rm.Attacks {
+		attacks = append(attacks, AttackInfo{Pos: a.Pos, ConMP: a.ConMP, AttackAfter: a.AttackAfter})
+	}
 	return Model{
 		hp:             rm.Hp,
 		mp:             rm.Mp,
@@ -95,6 +106,7 @@ func Extract(rm RestModel) (Model, error) {
 		resistances:    rm.Resistances,
 		animationTimes: rm.AnimationTimes,
 		skills:         skills,
+		attacks:        attacks,
 		revives:        rm.Revives,
 		banish:         Banish{Message: rm.Banish.Message, MapId: rm.Banish.MapId, PortalName: rm.Banish.PortalName},
 		hpRecovery:     rm.HpRecovery,

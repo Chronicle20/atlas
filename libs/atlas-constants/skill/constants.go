@@ -482,30 +482,30 @@ var MagicianMagicClaw = Skill{
 	id: MagicianMagicClawId,
 }
 
-var FirePoisionWizardMpEater = Skill{
-	id: FirePoisionWizardMpEaterId,
+var FirePoisonWizardMpEater = Skill{
+	id: FirePoisonWizardMpEaterId,
 }
 
-var FirePoisionWizardMeditation = Skill{
-	id:   FirePoisionWizardMeditationId,
+var FirePoisonWizardMeditation = Skill{
+	id:   FirePoisonWizardMeditationId,
 	buff: true,
 }
 
-var FirePoisionWizardTeleport = Skill{
-	id: FirePoisionWizardTeleportId,
+var FirePoisonWizardTeleport = Skill{
+	id: FirePoisonWizardTeleportId,
 }
 
-var FirePoisionWizardSlow = Skill{
-	id:   FirePoisionWizardSlowId,
+var FirePoisonWizardSlow = Skill{
+	id:   FirePoisonWizardSlowId,
 	buff: true,
 }
 
-var FirePoisionWizardFireArrow = Skill{
-	id: FirePoisionWizardFireArrowId,
+var FirePoisonWizardFireArrow = Skill{
+	id: FirePoisonWizardFireArrowId,
 }
 
-var FirePoisionWizardPoisonBreath = Skill{
-	id: FirePoisionWizardPoisonBreathId,
+var FirePoisonWizardPoisonBreath = Skill{
+	id: FirePoisonWizardPoisonBreathId,
 }
 
 var FirePoisonMagicianPartialResistance = Skill{
@@ -2465,12 +2465,12 @@ var Skills = map[Id]Skill{
 	MagicianMagicArmorId:                        MagicianMagicArmor,
 	MagicianEnergyBoltId:                        MagicianEnergyBolt,
 	MagicianMagicClawId:                         MagicianMagicClaw,
-	FirePoisionWizardMpEaterId:                  FirePoisionWizardMpEater,
-	FirePoisionWizardMeditationId:               FirePoisionWizardMeditation,
-	FirePoisionWizardTeleportId:                 FirePoisionWizardTeleport,
-	FirePoisionWizardSlowId:                     FirePoisionWizardSlow,
-	FirePoisionWizardFireArrowId:                FirePoisionWizardFireArrow,
-	FirePoisionWizardPoisonBreathId:             FirePoisionWizardPoisonBreath,
+	FirePoisonWizardMpEaterId:                  FirePoisonWizardMpEater,
+	FirePoisonWizardMeditationId:               FirePoisonWizardMeditation,
+	FirePoisonWizardTeleportId:                 FirePoisonWizardTeleport,
+	FirePoisonWizardSlowId:                     FirePoisonWizardSlow,
+	FirePoisonWizardFireArrowId:                FirePoisonWizardFireArrow,
+	FirePoisonWizardPoisonBreathId:             FirePoisonWizardPoisonBreath,
 	FirePoisonMagicianPartialResistanceId:       FirePoisonMagicianPartialResistance,
 	FirePoisonMagicianElementAmplificationId:    FirePoisonMagicianElementAmplification,
 	FirePoisonMagicianExplosionId:               FirePoisonMagicianExplosion,
@@ -3009,12 +3009,12 @@ const (
 	MagicianMagicArmorId                        = Id(2001003)
 	MagicianEnergyBoltId                        = Id(2001004)
 	MagicianMagicClawId                         = Id(2001005)
-	FirePoisionWizardMpEaterId                  = Id(2100000)
-	FirePoisionWizardMeditationId               = Id(2101001)
-	FirePoisionWizardTeleportId                 = Id(2101002)
-	FirePoisionWizardSlowId                     = Id(2101003)
-	FirePoisionWizardFireArrowId                = Id(2101004)
-	FirePoisionWizardPoisonBreathId             = Id(2101005)
+	FirePoisonWizardMpEaterId                  = Id(2100000)
+	FirePoisonWizardMeditationId               = Id(2101001)
+	FirePoisonWizardTeleportId                 = Id(2101002)
+	FirePoisonWizardSlowId                     = Id(2101003)
+	FirePoisonWizardFireArrowId                = Id(2101004)
+	FirePoisonWizardPoisonBreathId             = Id(2101005)
 	FirePoisonMagicianPartialResistanceId       = Id(2110000)
 	FirePoisonMagicianElementAmplificationId    = Id(2110001)
 	FirePoisonMagicianExplosionId               = Id(2111002)

@@ -40,9 +40,9 @@ func TestResolveMpEaterSkillId(t *testing.T) {
 		wantOk bool
 	}{
 		{"Magician (200)", job.MagicianId, skill3.Id(0), false},
-		{"FPWizard (210)", job.FirePoisonWizardId, skill3.FirePoisionWizardMpEaterId, true},
-		{"FPMage (211)", job.FirePoisonMagicianId, skill3.FirePoisionWizardMpEaterId, true},
-		{"FPArchMage (212)", job.FirePoisonArchMagicianId, skill3.FirePoisionWizardMpEaterId, true},
+		{"FPWizard (210)", job.FirePoisonWizardId, skill3.FirePoisonWizardMpEaterId, true},
+		{"FPMage (211)", job.FirePoisonMagicianId, skill3.FirePoisonWizardMpEaterId, true},
+		{"FPArchMage (212)", job.FirePoisonArchMagicianId, skill3.FirePoisonWizardMpEaterId, true},
 		{"ILWizard (220)", job.IceLightningWizardId, skill3.IceLightningWizardMpEaterId, true},
 		{"ILMage (221)", job.IceLightningMagicianId, skill3.IceLightningWizardMpEaterId, true},
 		{"ILArchMage (222)", job.IceLightningArchMagicianId, skill3.IceLightningWizardMpEaterId, true},

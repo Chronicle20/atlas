@@ -80,23 +80,21 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
-// findItemSlotInInventory returns the slot of the first asset in the
-// compartment matching the item's inventory type whose template id equals
-// itemId. Returns false if the inventory has no such item. Used by
-// processAttack to translate an effect.ItemConsume() id into a slot
+// findItemSlotInInventory returns the slot of the first asset whose template
+// id equals itemId, looked up in the compartment that itemId's inventory
+// type resolves to. Returns false if the inventory has no such item. Used
+// by processAttack to translate an effect.ItemConsume() id into a slot
 // position before emitting RequestItemConsume.
 func findItemSlotInInventory(inv channelinv.Model, itemId uint32) (slot.Position, bool) {
 	invType, ok := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
 	if !ok {
 		return 0, false
 	}
-	comp := inv.CompartmentByType(invType)
-	for _, a := range comp.Assets() {
-		if a.TemplateId() == itemId {
-			return slot.Position(a.Slot()), true
-		}
+	a, found := inv.CompartmentByType(invType).FindFirstByItemId(itemId)
+	if !found {
+		return 0, false
 	}
-	return 0, false
+	return slot.Position(a.Slot()), true
 }
 
 // damageInfoEntryDeps groups the per-attack closures and lookups that

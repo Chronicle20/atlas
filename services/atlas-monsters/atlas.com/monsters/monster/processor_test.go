@@ -1700,3 +1700,155 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 		t.Errorf("did not expect cooldown for missing monster")
 	}
 }
+
+// applyDoomEffectFromPlayer constructs a player-sourced DOOM status effect
+// suitable for driving ApplyStatusEffect's immunity and boss branches.
+func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
+	return NewStatusEffect(
+		SourceTypePlayerSkill,
+		1001,    // sourceCharacterId
+		2311005, // sourceSkillId (Priest Doom)
+		30,      // sourceSkillLevel
+		map[string]int32{"DOOM": 1},
+		time.Duration(durationMs)*time.Millisecond,
+		0,
+	)
+}
+
+// TestApplyStatusEffect_Doom_BypassesElementalImmunity verifies that DOOM is
+// applied to a monster with full elemental resistance (the case Cosmic
+// source treats as the skill's intended counter-niche). Pins the explicit
+// short-circuit at the top of isElementallyImmune.
+func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	// Resist every element including poison and ice, which would otherwise
+	// fall through the existing POISON/FREEZE gates.
+	resistances := map[string]string{"P": "1", "I": "1", "F": "1", "S": "1", "L": "1"}
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetBoss(false).
+			SetResistances(resistances).
+			Build(), nil
+	}
+	t.Cleanup(func() { testInformationLookup = nil })
+
+	p, events := newRecordingProcessor(t, ten)
+	p.ctx = ctx
+	if err := p.ApplyStatusEffect(m.UniqueId(), applyDoomEffectFromPlayer(60000)); err != nil {
+		t.Fatalf("ApplyStatusEffect(DOOM): %v", err)
+	}
+
+	got, err := r.GetMonster(ten, m.UniqueId())
+	if err != nil {
+		t.Fatalf("GetMonster: %v", err)
+	}
+	if !got.HasStatusEffect("DOOM") {
+		t.Errorf("expected DOOM to be active on monster after apply")
+	}
+	// NOTE: ApplyStatusEffect emits STATUS_APPLIED via producer.ProviderImpl
+	// directly (processor.go:1098), not via p.emit, so the recorder cannot
+	// observe it. The state assertion above is what actually pins the
+	// elemental-immunity short-circuit.
+	_ = events
+}
+
+// TestApplyStatusEffect_Doom_RejectedOnBoss verifies the boss-immunity branch
+// rejects DOOM. DOOM is not in isBossAllowedStatus's allow list so the
+// rejection is automatic; this test pins it explicitly.
+func TestApplyStatusEffect_Doom_RejectedOnBoss(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 0, 0, 1000, 50)
+
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().
+			SetBoss(true).
+			Build(), nil
+	}
+	t.Cleanup(func() { testInformationLookup = nil })
+
+	p, events := newRecordingProcessor(t, ten)
+	p.ctx = ctx
+	err := p.ApplyStatusEffect(m.UniqueId(), applyDoomEffectFromPlayer(60000))
+	if err == nil || err.Error() != "boss immunity" {
+		t.Fatalf("ApplyStatusEffect(DOOM, boss): err=%v, want \"boss immunity\"", err)
+	}
+	got, gerr := r.GetMonster(ten, m.UniqueId())
+	if gerr != nil {
+		t.Fatalf("GetMonster: %v", gerr)
+	}
+	if got.HasStatusEffect("DOOM") {
+		t.Errorf("expected DOOM not to be applied to boss")
+	}
+	for _, e := range *events {
+		if e.Type == EventMonsterStatusEffectApplied {
+			t.Errorf("did not expect STATUS_APPLIED event for boss reject; got %v", *events)
+		}
+	}
+}
+
+// TestApplyStatusEffect_Doom_ReapplyReplacesExisting pins the realized
+// re-apply behavior: per builder.AddStatusEffect, a non-VENOM status replaces
+// the existing same-type entry rather than no-op-ing.
+func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), ten)
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	m := r.CreateMonster(ctx, ten, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
+
+	testInformationLookup = func(monsterId uint32) (information.Model, error) {
+		return information.NewModelBuilder().Build(), nil
+	}
+	t.Cleanup(func() { testInformationLookup = nil })
+
+	p, events := newRecordingProcessor(t, ten)
+	p.ctx = ctx
+
+	first := applyDoomEffectFromPlayer(60000)
+	if err := p.ApplyStatusEffect(m.UniqueId(), first); err != nil {
+		t.Fatalf("first ApplyStatusEffect(DOOM): %v", err)
+	}
+	second := applyDoomEffectFromPlayer(60000)
+	if err := p.ApplyStatusEffect(m.UniqueId(), second); err != nil {
+		t.Fatalf("second ApplyStatusEffect(DOOM): %v", err)
+	}
+
+	got, gerr := r.GetMonster(ten, m.UniqueId())
+	if gerr != nil {
+		t.Fatalf("GetMonster: %v", gerr)
+	}
+
+	doomEffects := 0
+	var stored StatusEffect
+	for _, se := range got.StatusEffects() {
+		if se.HasStatus("DOOM") {
+			doomEffects++
+			stored = se
+		}
+	}
+	if doomEffects != 1 {
+		t.Errorf("expected exactly 1 DOOM status effect after refresh, got %d", doomEffects)
+	}
+	if stored.EffectId() != second.EffectId() {
+		t.Errorf("expected stored DOOM effect to be the second apply; got effectId=%s want=%s", stored.EffectId(), second.EffectId())
+	}
+	// NOTE: see TestApplyStatusEffect_Doom_BypassesElementalImmunity — the
+	// STATUS_APPLIED emission bypasses p.emit so the recorder cannot count
+	// re-apply events. The EffectId comparison above is the load-bearing
+	// pin for the replace-not-noop behavior.
+	_ = events
+}

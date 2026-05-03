@@ -3,7 +3,6 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
-	"atlas-channel/consumable"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
@@ -17,11 +16,7 @@ import (
 	"math"
 	"math/rand"
 
-	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
-	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -129,17 +124,6 @@ func processDamageInfoEntry(
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
-
-		// Doom: respect magic-reflect. Doom does no damage, so on reflect we
-		// simply skip the apply (nothing to bounce back). Gated on DOOM so
-		// no other empty-damage status flow changes behavior.
-		if _, isDoom := ms[monster2.StatusDoom]; isDoom && attackKind != "" {
-			if _, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
-				l.Debugf("Doom: monster [%d] has %s reflect; status apply skipped.", di.MonsterId(), attackKind)
-				return
-			}
-		}
-
 		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
 		return
 	}
@@ -322,14 +306,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							}
 							if se.MPConsume() > 0 {
 								_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
-							}
-							if itemId := se.ItemConsume(); itemId > 0 {
-								invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
-								if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); typeOk && found {
-									_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), charcon.Id(s.CharacterId()), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
-								} else {
-									l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), itemId)
-								}
 							}
 						}
 					}

@@ -4,12 +4,17 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
+	"atlas-channel/consumable"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/monster"
 	"atlas-channel/socket/writer"
 	"context"
 
+	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -24,6 +29,20 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 			}
 			if e.MPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeMP(f, characterId, -int16(e.MPConsume()))
+			}
+			if itemId := e.ItemConsume(); itemId > 0 {
+				cp := character.NewProcessor(l, ctx)
+				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
+					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
+						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
+							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+						} else {
+							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
+						}
+					}
+				} else {
+					l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, info.SkillId(), itemId)
+				}
 			}
 			if e.Cooldown() > 0 {
 				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)

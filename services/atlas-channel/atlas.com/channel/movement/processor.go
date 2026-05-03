@@ -6,6 +6,7 @@ import (
 	"atlas-channel/kafka/producer"
 	_map2 "atlas-channel/map"
 	"atlas-channel/monster"
+	monsterinfo "atlas-channel/monster/information"
 	"atlas-channel/pet"
 	"atlas-channel/session"
 	"atlas-channel/socket/writer"
@@ -117,6 +118,19 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		p.l.Errorf("Monster [%d] movement issued by [%d] does not have consistent map data.", objectId, characterId)
 		return err
 	}
+	// Forecast the post-decrement MP for basic attacks (Cosmic compat — the
+	// v83 client gates on the ack carrying decremented MP). For melee /
+	// non-basic-attack actions, ackMp passes through unchanged.
+	ackMp := uint16(mo.Mp())
+	pos0, isBasicAttack := basicAttackPos(skill)
+	if isBasicAttack {
+		info, ierr := monsterinfo.NewProcessor(p.l, p.ctx).GetById(mo.MonsterId())
+		if ierr != nil {
+			p.l.WithError(ierr).Debugf("Unable to fetch attack info for monster template [%d]; ack uses unchanged MP.", mo.MonsterId())
+		} else {
+			ackMp = computeAckMp(ackMp, pos0, info.Attacks())
+		}
+	}
 	go func() {
 		useSkills := false
 		var skillIdByte, skillLevelByte byte
@@ -126,7 +140,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 			skillLevelByte = d.SkillLevel
 			p.l.Debugf("Inbox: serving predicted skill (%d,%d) into MoveMonsterAck for monster [%d].", skillIdByte, skillLevelByte, objectId)
 		}
-		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, uint16(mo.Mp()), useSkills, skillIdByte, skillLevelByte).Encode)
+		op := session.Announce(p.l)(p.ctx)(p.wp)(monsterpkt.MonsterMovementAckWriter)(monsterpkt.NewMonsterMovementAck(objectId, moveId, ackMp, useSkills, skillIdByte, skillLevelByte).Encode)
 		err = p.sp.IfPresentByCharacterId(f.Channel())(characterId, op)
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to ack monster [%d] movement for character [%d].", objectId, characterId)
@@ -162,6 +176,13 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 				}
 			}()
 		}
+	}
+	if isBasicAttack {
+		go func() {
+			if err := monster.NewProcessor(p.l, p.ctx).UseBasicAttack(f, objectId, pos0); err != nil {
+				p.l.WithError(err).Errorf("Unable to issue basic-attack command for monster [%d].", objectId)
+			}
+		}()
 	}
 	return nil
 }
@@ -217,4 +238,28 @@ func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
 		return 0, 0, false
 	}
 	return byte(skillId), byte(skillLevel), true
+}
+
+// computeAckMp returns the MP value to advertise in MoveMonsterAck for a
+// basic-attack action. It looks up the attack-position's conMP in atks
+// (matching the 1-indexed information.AttackInfo.Pos by adding 1 to the
+// 0-indexed wire attackPos) and subtracts it from currentMp, clamping to
+// zero on underflow. When no matching attack info is present (or atks is
+// nil), currentMp passes through unchanged — that matches melee mobs that
+// have no info subdir.
+func computeAckMp(currentMp uint16, attackPos uint8, atks []monsterinfo.AttackInfo) uint16 {
+	wantPos := attackPos + 1
+	for _, a := range atks {
+		if a.Pos != wantPos {
+			continue
+		}
+		if a.ConMP <= 0 {
+			return currentMp
+		}
+		if uint16(a.ConMP) >= currentMp {
+			return 0
+		}
+		return currentMp - uint16(a.ConMP)
+	}
+	return currentMp
 }

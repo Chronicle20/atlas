@@ -1,1366 +1,787 @@
 # Priest Doom (Skill 2311005) Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+Version: v2 (revised after wrong-channel discovery)
+Status: Draft
+Predecessor: see `postmortem.md`. v1 plan (Tasks 0–10 targeting the
+magic-attack handler) is superseded; the previously-merged commits on
+this branch are addressed in Task R (Revert) below.
 
-**Goal:** Close the remaining gaps so a Priest casting Doom (skill `2311005`) reliably polymorphs every legal target — including element-resistant mobs — into snails for the skill's duration, while bosses stay immune. Also pin the cast → status → packet path with unit tests and add a grep-friendly Doom log line.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use
+> `superpowers:subagent-driven-development` (recommended) or
+> `superpowers:executing-plans` to implement this plan task-by-task.
+> Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Architecture:** All wiring already exists end-to-end. Four targeted touches: (1) explicit DOOM short-circuit in atlas-monsters' elemental-immunity gate, (2) Doom-gated magic-reflect probe in atlas-channel's empty-damage attack branch via a freshly extracted per-`DamageInfo` helper, (3) Doom-specific Debugf in atlas-channel's monster wrapper, (4) unit tests in atlas-data, atlas-monsters, atlas-channel. No new Kafka topics, REST routes, or constants.
+**Goal**: Make Priest Doom (skill `2311005`) work in-game on the v83
+client. Each cast applies the DOOM monster status to up to `mobCount`
+mobs in the caster's facing rectangle, consumes one Magic Rock, and
+respects the existing elemental, boss, and magic-reflect immunities.
 
-**Tech Stack:** Go (Go modules per service); `atlas-monsters/.../monster/processor.go` registry/processor pattern; atlas-channel socket handler + monster wrapper; atlas-data XML reader (`atlas-data/xml`).
+**Architecture**: per-skill handler under
+`services/atlas-channel/atlas.com/channel/skill/handler/doom/`, registered
+for `PriestDoomId`. Server-authoritative target selection via a new
+atlas-monsters rect query. Generic `itemConsume` plumbing in
+`handler.UseSkill`'s cost block (covers Doom + every other `itemConsume`
+skill).
 
-**Source design:** `docs/tasks/task-047-priest-doom/design.md`
-**Source PRD:** `docs/tasks/task-047-priest-doom/prd.md`
-**Quick context:** `docs/tasks/task-047-priest-doom/context.md`
+**Tech Stack**: Go (Go modules per service); existing patterns
+(`skill/handler/heal/heal.go` for the per-skill handler shape, JSON:API
+REST for the new rect endpoint, Kafka commands for status apply).
+
+**Source design**: `docs/tasks/task-047-priest-doom/design.md`
+**Source PRD**: `docs/tasks/task-047-priest-doom/prd.md`
+**Postmortem**: `docs/tasks/task-047-priest-doom/postmortem.md`
 
 ---
 
-## File Map
+## Task ordering rationale
+
+1. **Task R (Revert)** runs first to delete the wrong-path code that
+   merged on this branch. Subsequent tasks build on a clean baseline.
+2. **Task A (atlas-monsters rect query)** is leaf-most: it adds new code
+   that no atlas-channel code yet calls, so it can land independently
+   and be tested in isolation.
+3. **Task B (atlas-channel rect-query client)** wraps Task A; runs after
+   it to avoid introducing a build-broken stub on atlas-channel.
+4. **Task C (atlas-channel itemConsume in UseSkill cost block)** is
+   independent of Tasks A/B; can run in parallel but is sequenced here
+   for review simplicity.
+5. **Task D (atlas-channel doom handler)** depends on B; builds the
+   per-skill handler that consumes the rect query.
+6. **Task E (effect.Model accessors)** is a small dependency Task D
+   needs (`MobCount`, `Prop`); land it just-in-time before D.
+7. **Task F (final cross-service build/test + manual verification handoff)**.
+
+---
+
+## File map
 
 | File | Action | Responsibility |
 |---|---|---|
-| `services/atlas-data/atlas.com/data/skill/reader_test.go` | Modify | Add reader test pinning Doom effect mapping (`MonsterStatus[DOOM]=1`, `Duration>0`). Pure additive append at EOF; no production change. |
-| `services/atlas-monsters/atlas.com/monsters/monster/information/builder.go` | Modify | Extend `ModelBuilder` with `SetBoss(bool)` and `SetResistances(map[string]string)` so tests can construct an `information.Model` with the resistance/boss flags `ApplyStatusEffect` reads. |
-| `services/atlas-monsters/atlas.com/monsters/monster/processor.go` | Modify | Add explicit DOOM short-circuit at top of `isElementallyImmune` (lines 1116-1131). Extend the existing `testInformationLookup` package var hook (lines 62-64) to also intercept the lookup inside `ApplyStatusEffect` (lines 1085). |
-| `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go` | Modify | Append three test cases: DOOM bypasses elemental immunity, DOOM rejected on bosses, DOOM re-apply replaces the existing entry (refreshing semantics — see context.md "Realized behavior" note). |
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | Modify | Extract the per-`DamageInfo` body of `processAttack` (currently lines 151-216) into a top-level helper `processDamageInfoEntry` that takes its dependencies as explicit closures. Add a Doom-gated magic-reflect probe inside the helper's empty-damage branch in a separate task. |
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | Modify | Append three (or four) helper tests: empty-damage Doom triggers `applyStatus`; magic-reflect blocks Doom; multi-target spread routes correctly; (optional) non-Doom empty-damage status is unaffected by the new reflect probe. |
-| `services/atlas-channel/atlas.com/channel/monster/processor.go` | Modify | In `Processor.ApplyStatus` (line 70), after the existing generic Debugf, emit a Doom-targeted Debugf when the inbound `statuses` map contains `"DOOM"`. |
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | Modify (Task 10) | Add `findItemSlotInInventory` helper; in `processAttack`'s `if !registered` cost block, when `se.ItemConsume() > 0`, locate the slot and emit `RequestItemConsume`. Generic — fixes Magic Rock for Doom and every other `itemCon` skill. |
-| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | Modify (Task 10) | Append two helper tests for `findItemSlotInInventory` (found / not-found). |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | Modify (revert) | Remove Doom-gated reflect probe and `itemConsume` cost-gate addition. Keep `processDamageInfoEntry` extraction. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | Modify (revert) | Remove 4 `TestProcessDamageInfoEntry_Doom_*` tests + helpers. |
+| `services/atlas-monsters/atlas.com/monsters/monster/processor.go` | Modify (add) | New `GetInFieldRect` method on monster processor. |
+| `services/atlas-monsters/atlas.com/monsters/monster/registry.go` | Modify (add) | New `GetMonstersInFieldRect` walk on the registry. |
+| `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go` | Modify (add) | Tests for `GetInFieldRect`. |
+| `services/atlas-monsters/atlas.com/monsters/monster/resource.go` (or equivalent) | Modify (add) | New REST endpoint for the rect query. |
+| `services/atlas-channel/atlas.com/channel/monster/processor.go` | Modify (add) | New `GetInFieldRect` client method (REST call wrapper). |
+| `services/atlas-channel/atlas.com/channel/data/skill/effect/model.go` | Modify (add) | New `MobCount() uint32` and `Prop() float64` accessors if missing; populate from REST. |
+| `services/atlas-channel/atlas.com/channel/data/skill/effect/rest.go` | Modify (add) | Wire `MobCount` and `Prop` from `RestModel` into `Model`. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/common.go` | Modify (add) | Generic `itemConsume` charge in the existing cost block. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/common_test.go` | Add (new) | Tests for the new `itemConsume` charge path. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/doom/doom.go` | Add (new) | Per-skill Doom handler + registration in `init()`. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/doom/bbox.go` | Add (new) | Pure `calculateBoundingBox` helper. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/doom/doom_test.go` | Add (new) | Handler tests (apply, reflect skip, prop, left-facing). |
+| `services/atlas-channel/atlas.com/channel/skill/handler/doom/bbox_test.go` | Add (new) | Pure-function bbox tests. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/registrations/registrations.go` (or wherever heal is imported for side effects) | Modify (add) | Add a blank import for the new `doom` package so its `init()` registers the handler. |
 
-No changes to `libs/atlas-packet`, `libs/atlas-constants`, `services/atlas-configurations`, or any Kafka topic/event schema.
-
----
-
-## Task 0: Pre-flight — verify shared constants and entry points
-
-Smoke-check that the wiring the design assumes still exists. If anything below has shifted in a recent refactor, raise it before writing code.
-
-**Files:**
-- Inspect: `libs/atlas-constants/skill/constants.go` (around line 3067 for `PriestDoomId`)
-- Inspect: `libs/atlas-constants/monster/status.go:16` (`StatusDoom`)
-- Inspect: `services/atlas-data/atlas.com/data/skill/reader.go:351-352` (Doom effect branch)
-- Inspect: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go:151-216` (per-`DamageInfo` body)
-- Inspect: `services/atlas-monsters/atlas.com/monsters/monster/processor.go:1116-1131` (`isElementallyImmune`) and `1083-1098` (caller)
-
-- [ ] **Step 1: Confirm constants and entry points**
-
-Run, from repo root:
-
-```bash
-grep -n "PriestDoomId\s*=" libs/atlas-constants/skill/constants.go
-grep -n "StatusDoom\s*=" libs/atlas-constants/monster/status.go
-grep -n "skill.PriestDoomId" services/atlas-data/atlas.com/data/skill/reader.go
-grep -n "isElementallyImmune\b" services/atlas-monsters/atlas.com/monsters/monster/processor.go
-grep -n "for _, di := range ai.DamageInfo()" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
-```
-
-Expected: each grep returns at least one hit. If any miss, stop and surface to the user — the design rests on these being present.
-
-- [ ] **Step 2: Run baseline tests on the three affected services**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./... )
-( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
-( cd services/atlas-data/atlas.com/data && go build ./... && go test ./... )
-```
-
-Expected: all three pass on `main`-equivalent. If any fail before this branch's changes, surface to the user — fixing pre-existing red is out of scope.
+No changes to `libs/atlas-packet`, `libs/atlas-constants`, atlas-data,
+atlas-monsters' `ApplyStatusEffect` / `isElementallyImmune` /
+`isBossAllowedStatus` / `information.ModelBuilder` (all of those are
+already correct from the previous tasks on this branch and stay).
 
 ---
 
-## Task 1: atlas-data — pin Doom effect mapping with a reader test
+## Task R: Revert wrong-path Doom code
 
-The first wiring fact every later step depends on: `getEffect(2311005, …)` populates `MonsterStatus[DOOM] = 1` and a non-zero `Duration`. Test it via the existing `Read(...)` provider pattern (mirrors `TestReader_LT_RB_Present` at `reader_test.go:2905`) so the test stays well within how the rest of the suite exercises this code.
+Remove the channel-side Doom production changes that target
+`processAttack` / `processDamageInfoEntry`. They are unreachable for the
+v83 Doom packet and would only confuse a reviewer of the corrected
+implementation.
 
-**Files:**
-- Test: `services/atlas-data/atlas.com/data/skill/reader_test.go` (append at EOF, line 2993)
-
-- [ ] **Step 1: Append the failing test**
-
-Add at the end of `services/atlas-data/atlas.com/data/skill/reader_test.go`:
-
-```go
-// TestReader_PriestDoom_MapsDoomStatus pins the atlas-data effect mapping for
-// Priest skill 2311005 (Doom): the produced effect must carry MonsterStatus
-// {"DOOM": 1} and a non-zero Duration so atlas-channel's empty-damage status
-// branch and atlas-monsters' apply path both see what they expect.
-func TestReader_PriestDoom_MapsDoomStatus(t *testing.T) {
-	l, _ := test.NewNullLogger()
-	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx := tenant.WithContext(context.Background(), tn)
-
-	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<imgdir name="231.img">
-  <imgdir name="skill">
-    <imgdir name="2311005">
-      <imgdir name="level">
-        <imgdir name="30">
-          <int name="time" value="60"/>
-          <int name="mpCon" value="35"/>
-          <int name="prop" value="100"/>
-          <int name="mobCount" value="6"/>
-          <vector name="lt" x="-200" y="-100"/>
-          <vector name="rb" x="200" y="100"/>
-        </imgdir>
-      </imgdir>
-    </imgdir>
-  </imgdir>
-</imgdir>`
-
-	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
-	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
-	if err != nil {
-		t.Fatal(err)
-	}
-	rm, ok := rmm["2311005"]
-	if !ok {
-		t.Fatal("rmm[2311005] does not exist.")
-	}
-	if len(rm.Effects) != 1 {
-		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
-	}
-	ef := rm.Effects[0]
-	if got := ef.MonsterStatus["DOOM"]; got != 1 {
-		t.Fatalf("MonsterStatus[DOOM] = %d, want 1", got)
-	}
-	if ef.Duration <= 0 {
-		t.Fatalf("Duration = %d, want > 0", ef.Duration)
-	}
-}
-```
-
-- [ ] **Step 2: Run the new test to verify it passes**
-
-```bash
-( cd services/atlas-data/atlas.com/data && go test ./skill -run TestReader_PriestDoom_MapsDoomStatus -v )
-```
-
-Expected: PASS. (Production code is unchanged; the Doom branch at `reader.go:351-352` already populates the map. The test pins it.)
-
-If it fails because `Duration` is zero, investigate `reader.go:140-170` — the `time` field is multiplied by 1000 only when the initial `Duration() == -1` branch is reached. The fixture's `<int name="time" value="60"/>` should yield 60000ms; if not, surface to the user before changing the test.
-
-- [ ] **Step 3: Run the full atlas-data suite to confirm no regression**
-
-```bash
-( cd services/atlas-data/atlas.com/data && go build ./... && go test ./... )
-```
-
-Expected: all pass.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add services/atlas-data/atlas.com/data/skill/reader_test.go
-git commit -m "test(atlas-data): pin Priest Doom effect mapping (DOOM=1, Duration>0)"
-```
-
----
-
-## Task 2: atlas-monsters — extend `information.ModelBuilder` for tests
-
-`isElementallyImmune` and `isBossAllowedStatus` both run inside `ApplyStatusEffect` and consume `information.Model`'s `Boss()` / `IsImmuneToElement()`. The current `information.ModelBuilder` only exposes skill/attack/recovery setters (see `builder.go:1-55`), so tests cannot construct a Model with `boss=true` or a custom resistance table. Extend the builder with two setters; the production code path is unchanged.
-
-**Files:**
-- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/builder.go`
-
-- [ ] **Step 1: Add `SetBoss` and `SetResistances` to `ModelBuilder`**
-
-Apply the following patch (showing the full file after the change):
-
-```go
-package information
-
-// ModelBuilder provides a minimal fluent interface for constructing Model
-// instances in tests. Only the fields tests need are settable.
-type ModelBuilder struct {
-	skills      []Skill
-	attacks     []AttackInfo
-	hpRecovery  uint32
-	mpRecovery  uint32
-	boss        bool
-	resistances map[string]string
-}
-
-// NewModelBuilder returns a new ModelBuilder with zero values.
-func NewModelBuilder() *ModelBuilder {
-	return &ModelBuilder{}
-}
-
-// SetSkills sets the skill list on the builder.
-func (b *ModelBuilder) SetSkills(skills []Skill) *ModelBuilder {
-	b.skills = skills
-	return b
-}
-
-// SetAttacks sets the attacks list on the builder.
-func (b *ModelBuilder) SetAttacks(attacks []AttackInfo) *ModelBuilder {
-	b.attacks = attacks
-	return b
-}
-
-func (b *ModelBuilder) SetHpRecovery(v uint32) *ModelBuilder {
-	b.hpRecovery = v
-	return b
-}
-
-func (b *ModelBuilder) SetMpRecovery(v uint32) *ModelBuilder {
-	b.mpRecovery = v
-	return b
-}
-
-// SetBoss sets the boss flag on the builder. Used by tests that drive
-// boss-immunity branches in ApplyStatusEffect.
-func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
-	b.boss = boss
-	return b
-}
-
-// SetResistances sets the elemental resistance map on the builder. Keys are
-// element letters ("P", "I", "F", "S", "L"); value "1" means immune (per
-// Model.IsImmuneToElement). Used by tests that drive elemental-immunity
-// branches in ApplyStatusEffect.
-func (b *ModelBuilder) SetResistances(r map[string]string) *ModelBuilder {
-	b.resistances = r
-	return b
-}
-
-// Build constructs an immutable Model from the builder state.
-func (b *ModelBuilder) Build() Model {
-	skills := b.skills
-	if skills == nil {
-		skills = []Skill{}
-	}
-	attacks := b.attacks
-	if attacks == nil {
-		attacks = []AttackInfo{}
-	}
-	return Model{
-		skills:      skills,
-		attacks:     attacks,
-		hpRecovery:  b.hpRecovery,
-		mpRecovery:  b.mpRecovery,
-		boss:        b.boss,
-		resistances: b.resistances,
-	}
-}
-```
-
-- [ ] **Step 2: Build the package**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go build ./monster/information/... )
-```
-
-Expected: success.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add services/atlas-monsters/atlas.com/monsters/monster/information/builder.go
-git commit -m "test(atlas-monsters): expose SetBoss/SetResistances on information.ModelBuilder"
-```
-
----
-
-## Task 3: atlas-monsters — extend `testInformationLookup` hook to `ApplyStatusEffect`
-
-`testInformationLookup` (processor.go:62-64) is a package-level hook used today only inside `UseBasicAttack` (line 715). To drive `ApplyStatusEffect`'s elemental-immunity and boss branches without standing up a real REST fake, extend the same indirection to the `information.GetById` call at line 1085.
-
-**Files:**
-- Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go`
-
-- [ ] **Step 1: Update `ApplyStatusEffect` to consult the hook**
-
-Replace the lookup at lines 1083-1099 with the hook-aware variant:
-
-```go
-	// Only check immunities for player-sourced effects
-	if effect.SourceType() == SourceTypePlayerSkill {
-		var info information.Model
-		var infoErr error
-		if testInformationLookup != nil {
-			info, infoErr = testInformationLookup(m.MonsterId())
-		} else {
-			info, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
-		}
-		if infoErr == nil {
-			// Elemental immunity check
-			if blocked, element := isElementallyImmune(info, effect); blocked {
-				p.l.Debugf("Monster [%d] is immune to element [%s]. Status rejected.", uniqueId, element)
-				return errors.New("elemental immunity")
-			}
-
-			// Boss immunity check
-			if info.Boss() && !isBossAllowedStatus(effect) {
-				p.l.Debugf("Monster [%d] is a boss. Status rejected.", uniqueId)
-				return errors.New("boss immunity")
-			}
-		}
-	}
-```
-
-Also update the docstring on the package-level `var testInformationLookup` (lines 62-64) so it does not lie:
-
-```go
-// testInformationLookup is a test-only override for information.GetById. When
-// nil (production), UseBasicAttack and ApplyStatusEffect call information.GetById
-// normally.
-var testInformationLookup func(monsterId uint32) (information.Model, error)
-```
-
-- [ ] **Step 2: Build the service**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go build ./... )
-```
-
-Expected: success.
-
-- [ ] **Step 3: Run the existing monster test suite to confirm no regression**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go test ./monster/... )
-```
-
-Expected: all pass. (No prior test sets `testInformationLookup` before invoking `ApplyStatusEffect`, so production behavior is unchanged.)
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add services/atlas-monsters/atlas.com/monsters/monster/processor.go
-git commit -m "refactor(atlas-monsters): route ApplyStatusEffect info lookup through testInformationLookup hook"
-```
-
----
-
-## Task 4: atlas-monsters — explicit DOOM short-circuit in `isElementallyImmune`
-
-Today the gate at `processor.go:1117-1131` only switches on `POISON` / `FREEZE`, so a DOOM-only effect already falls through. The change pins intent next to the cases it overrides so a future maintainer adding `case "DOOM":` for symmetry — or shipping a multi-status combo carrying DOOM and POISON — cannot silently regress.
-
-**Files:**
-- Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go`
-
-- [ ] **Step 1: Write the failing tests first (TDD)**
-
-Append to `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go`. Each test resets `testInformationLookup` via `t.Cleanup` so it cannot leak into the suite.
-
-```go
-// applyDoomEffectFromPlayer constructs a player-sourced DOOM status effect
-// suitable for driving ApplyStatusEffect's immunity and boss branches.
-func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
-	return NewStatusEffect(
-		SourceTypePlayerSkill,
-		1001, // sourceCharacterId
-		2311005, // sourceSkillId (Priest Doom)
-		30, // sourceSkillLevel
-		map[string]int32{"DOOM": 1},
-		time.Duration(durationMs)*time.Millisecond,
-		0,
-	)
-}
-
-// TestApplyStatusEffect_Doom_BypassesElementalImmunity verifies that DOOM is
-// applied to a monster with full elemental resistance (the case Cosmic
-// source treats as the skill's intended counter-niche). Pins the explicit
-// short-circuit at the top of isElementallyImmune.
-func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
-	r := GetMonsterRegistry()
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	r.Clear(ctx)
-
-	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
-
-	// Resist every element including poison and ice, which would otherwise
-	// fall through the existing POISON/FREEZE gates.
-	resistances := map[string]string{"P": "1", "I": "1", "F": "1", "S": "1", "L": "1"}
-	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
-			SetBoss(false).
-			SetResistances(resistances).
-			Build(), nil
-	}
-	t.Cleanup(func() { testInformationLookup = nil })
-
-	p, events := newRecordingProcessor(t, tm)
-	p.ctx = ctx
-	if err := p.ApplyStatusEffect(m.UniqueId(), applyDoomEffectFromPlayer(60000)); err != nil {
-		t.Fatalf("ApplyStatusEffect(DOOM): %v", err)
-	}
-
-	got, err := r.GetMonster(tm, m.UniqueId())
-	if err != nil {
-		t.Fatalf("GetMonster: %v", err)
-	}
-	if !got.HasStatusEffect("DOOM") {
-		t.Errorf("expected DOOM to be active on monster after apply")
-	}
-	statusApplied := 0
-	for _, e := range *events {
-		if e.Type == EventMonsterStatusEffectApplied {
-			statusApplied++
-		}
-	}
-	if statusApplied != 1 {
-		t.Errorf("expected 1 STATUS_APPLIED event, got %d (%v)", statusApplied, *events)
-	}
-}
-
-// TestApplyStatusEffect_Doom_RejectedOnBoss verifies the boss-immunity branch
-// rejects DOOM. DOOM is not in isBossAllowedStatus's allow list so the
-// rejection is automatic; this test pins it explicitly.
-func TestApplyStatusEffect_Doom_RejectedOnBoss(t *testing.T) {
-	r := GetMonsterRegistry()
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	r.Clear(ctx)
-
-	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 8800000, 0, 0, 0, 0, 0, 1000, 50)
-
-	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().
-			SetBoss(true).
-			Build(), nil
-	}
-	t.Cleanup(func() { testInformationLookup = nil })
-
-	p, events := newRecordingProcessor(t, tm)
-	p.ctx = ctx
-	err := p.ApplyStatusEffect(m.UniqueId(), applyDoomEffectFromPlayer(60000))
-	if err == nil || err.Error() != "boss immunity" {
-		t.Fatalf("ApplyStatusEffect(DOOM, boss): err=%v, want \"boss immunity\"", err)
-	}
-	got, gerr := r.GetMonster(tm, m.UniqueId())
-	if gerr != nil {
-		t.Fatalf("GetMonster: %v", gerr)
-	}
-	if got.HasStatusEffect("DOOM") {
-		t.Errorf("expected DOOM not to be applied to boss")
-	}
-	for _, e := range *events {
-		if e.Type == EventMonsterStatusEffectApplied {
-			t.Errorf("did not expect STATUS_APPLIED event for boss reject; got %v", *events)
-		}
-	}
-}
-
-// TestApplyStatusEffect_Doom_ReapplyReplacesExisting pins the realized
-// re-apply behavior: per builder.AddStatusEffect (builder.go:140-163), a
-// non-VENOM status replaces the existing same-type entry rather than
-// no-op-ing. The PRD's "no-op while already active" assumption is therefore
-// inaccurate; we assert the actual behavior so any future change to that
-// semantics surfaces here. (See design.md §6 "Re-apply semantics for DOOM.")
-func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
-	r := GetMonsterRegistry()
-	tm := newTestTenant(t)
-	ctx := tenant.WithContext(context.Background(), tm)
-	r.Clear(ctx)
-
-	f := testField()
-	m := r.CreateMonster(ctx, tm, f, 9300018, 0, 0, 0, 0, 0, 1000, 50)
-
-	testInformationLookup = func(monsterId uint32) (information.Model, error) {
-		return information.NewModelBuilder().Build()
-	}
-	t.Cleanup(func() { testInformationLookup = nil })
-
-	p, events := newRecordingProcessor(t, tm)
-	p.ctx = ctx
-
-	first := applyDoomEffectFromPlayer(60000)
-	if err := p.ApplyStatusEffect(m.UniqueId(), first); err != nil {
-		t.Fatalf("first ApplyStatusEffect(DOOM): %v", err)
-	}
-	second := applyDoomEffectFromPlayer(60000)
-	if err := p.ApplyStatusEffect(m.UniqueId(), second); err != nil {
-		t.Fatalf("second ApplyStatusEffect(DOOM): %v", err)
-	}
-
-	got, gerr := r.GetMonster(tm, m.UniqueId())
-	if gerr != nil {
-		t.Fatalf("GetMonster: %v", gerr)
-	}
-
-	doomEffects := 0
-	var stored StatusEffect
-	for _, se := range got.StatusEffects() {
-		if se.HasStatus("DOOM") {
-			doomEffects++
-			stored = se
-		}
-	}
-	if doomEffects != 1 {
-		t.Errorf("expected exactly 1 DOOM status effect after refresh, got %d", doomEffects)
-	}
-	if stored.EffectId() != second.EffectId() {
-		t.Errorf("expected stored DOOM effect to be the second apply; got effectId=%s want=%s", stored.EffectId(), second.EffectId())
-	}
-
-	statusApplied := 0
-	for _, e := range *events {
-		if e.Type == EventMonsterStatusEffectApplied {
-			statusApplied++
-		}
-	}
-	if statusApplied != 2 {
-		t.Errorf("expected 2 STATUS_APPLIED events (refresh emits a second), got %d (%v)", statusApplied, *events)
-	}
-}
-```
-
-If `EventMonsterStatusEffectApplied` is not the exact constant name in this package, run `grep -n 'EventMonsterStatus' services/atlas-monsters/atlas.com/monsters/monster/*.go` and use the constant the codebase actually emits for the apply event. Update all three tests in lockstep.
-
-If `newTestTenant` and `testField` are not defined in `processor_test.go`, search the file for the existing helpers (`grep -n 'func newTestTenant\|func testField' services/atlas-monsters/atlas.com/monsters/monster/processor_test.go`) and use the realized helper names. The patterns above mirror existing tests in the same file.
-
-- [ ] **Step 2: Run the new tests; verify they fail with the current `isElementallyImmune`**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go test ./monster -run 'TestApplyStatusEffect_Doom_' -v )
-```
-
-Expected: `TestApplyStatusEffect_Doom_BypassesElementalImmunity` PASSES (current code already lets DOOM through), `TestApplyStatusEffect_Doom_RejectedOnBoss` PASSES (DOOM is not in `isBossAllowedStatus`'s allow list), `TestApplyStatusEffect_Doom_ReapplyReplacesExisting` PASSES (existing AddStatusEffect refresh semantics).
-
-In other words: all three tests pass before the production change. That is intentional — these are pinning tests. The next step still adds the explicit DOOM short-circuit, then the tests must keep passing.
-
-- [ ] **Step 3: Add the explicit DOOM short-circuit to `isElementallyImmune`**
-
-Replace `isElementallyImmune` (processor.go:1116-1131) with:
-
-```go
-// isElementallyImmune checks if a monster's resistances block the given status effect.
-// DOOM (Priest, 2311005) intentionally bypasses elemental immunity: the
-// polymorph-to-snail effect overrides resistance — a fire-immune mob still
-// becomes a snail. Source parity with Cosmic (server/StatEffect.java:1531).
-func isElementallyImmune(info information.Model, effect StatusEffect) (bool, string) {
-	if _, ok := effect.Statuses()[monster2.StatusDoom]; ok {
-		return false, ""
-	}
-	for statusType := range effect.Statuses() {
-		switch statusType {
-		case "POISON":
-			if info.IsImmuneToElement("P") {
-				return true, "poison"
-			}
-		case "FREEZE":
-			if info.IsImmuneToElement("I") {
-				return true, "ice"
-			}
-		}
-	}
-	return false, ""
-}
-```
-
-If `monster2` is not the import alias used at the top of `processor.go`, check the import block (around lines 14-22) and use whatever alias is bound to `github.com/Chronicle20/atlas/libs/atlas-constants/monster`. The file already aliases it as `monster2` per `processor.go:16`, so the snippet above should compile as written.
-
-- [ ] **Step 4: Re-run the new tests to confirm the short-circuit didn't regress them**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go test ./monster -run 'TestApplyStatusEffect_Doom_' -v )
-```
-
-Expected: all three PASS.
-
-- [ ] **Step 5: Run the full atlas-monsters suite**
-
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./... )
-```
-
-Expected: all pass.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add services/atlas-monsters/atlas.com/monsters/monster/processor.go services/atlas-monsters/atlas.com/monsters/monster/processor_test.go
-git commit -m "feat(atlas-monsters): explicit DOOM short-circuit in isElementallyImmune; pin DOOM apply path"
-```
-
----
-
-## Task 5: atlas-channel — extract `processDamageInfoEntry` (no behavior change)
-
-The channel-side handler interleaves character lookup (once per packet) with per-target work (N times per packet). Extract the per-`DamageInfo` body of `processAttack` (currently `character_attack_common.go:151-216`) into a top-level helper with explicit dependencies. This is a pure refactor: every existing test must still pass.
-
-**Files:**
+**Files**:
 - Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`
 
-- [ ] **Step 1: Add the helper above `processAttack`**
+- [ ] **Step 1**: Remove the Doom-gated reflect probe in
+  `processDamageInfoEntry`'s empty-damage branch.
 
-Insert the following just before `func processAttack(...)` (around line 76 of the current file). The signature uses function-typed parameters so the helper can be exercised with closures from tests.
+  Locate the block currently between the `loadVenomStats` /
+  `snapshotVenomDamagePerTick` recomputation and the
+  `_ = deps.applyStatus(...)` call in the `if len(damages) == 0` branch.
+  Delete the entire `if _, isDoom := ms[monster2.StatusDoom]; isDoom && attackKind != "" { ... }`
+  guard plus its inner reflect probe and the trailing blank line.
 
-```go
-// damageInfoEntryDeps groups the per-attack closures and lookups that
-// processDamageInfoEntry needs. Wrapping them keeps the helper signature
-// readable and lets tests construct fakes with a single struct.
-type damageInfoEntryDeps struct {
-	getReflect        func(t tenant.Model, monsterId uint32, kind string) (monster.ReflectInfo, bool)
-	getMonster        func(monsterId uint32) (monster.Model, error)
-	applyDamage       func(f field.Model, monsterId, characterId uint32, damages []uint32, attackType byte) error
-	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
-	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
-	loadVenomStats    func() effective_stats.RestModel
-}
+  Verify with:
+  ```bash
+  grep -n "isDoom\|StatusDoom" services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
+  ```
+  Expected: no hit (the symbol is no longer used in this file).
 
-// processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
-// attack packet: damage application or reflect emission, then optional
-// monster status apply. It returns the reflected flag so the caller (kept
-// for now to preserve broadcast semantics) does not need to introspect the
-// helper's internal state.
-//
-// All side-effecting calls go through deps so tests can drive each branch
-// without constructing a real monster.Processor or session.
-func processDamageInfoEntry(
-	l logrus.FieldLogger,
-	di packetmodel.DamageInfo,
-	ai packetmodel.AttackInfo,
-	se effect.Model,
-	skillLevel uint32,
-	casterId uint32,
-	casterX, casterY int16,
-	f field.Model,
-	t tenant.Model,
-	attackKind string,
-	deps damageInfoEntryDeps,
-) {
-	damages := di.Damages()
+- [ ] **Step 2**: Remove the `itemConsume` charge in `processAttack`'s
+  HP/MP cost gate.
 
-	if len(damages) == 0 {
-		if len(se.MonsterStatus()) == 0 {
-			return
-		}
-		ms := make(map[string]int32)
-		for k, v := range se.MonsterStatus() {
-			ms[k] = int32(v)
-		}
-		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
-			coef := 0.1 + rand.Float64()*0.1
-			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
-		}
-		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
-		return
-	}
+  In `processAttack`, find the `if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered { ... }`
+  block. Delete the entire `if itemId := se.ItemConsume(); itemId > 0 { ... }`
+  branch (and its missing-item warning). Keep the surrounding HP and MP
+  charges intact.
 
-	reflected := false
-	if attackKind != "" {
-		if info, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
-			mon, mErr := deps.getMonster(di.MonsterId())
-			if mErr == nil {
-				entry := make([]int32, 0, len(damages))
-				for _, d := range damages {
-					entry = append(entry, int32(d))
-				}
-				r, within := computeReflect(entry, info, casterX, casterY, mon.X(), mon.Y())
-				if within {
-					l.Debugf("reflect: char [%d] hit monster [%d] for %d reflected damage.", casterId, di.MonsterId(), r)
-					if eErr := deps.emitReflectDamage(f, di.MonsterId(), mon.MonsterId(), casterId, uint32(r), info.Kind); eErr != nil {
-						l.WithError(eErr).Errorf("Unable to emit DAMAGE_REFLECTED for monster [%d] / character [%d].", di.MonsterId(), casterId)
-					}
-					reflected = true
-				}
-			}
-		}
-	}
+- [ ] **Step 3**: Drop now-unused imports.
 
-	if reflected {
-		// On reflect: monster takes no damage AND no monster status is applied
-		// for this entry (FREEZE/STUN/etc. would let the player slip through
-		// the reflect's intent).
-		return
-	}
+  Run `goimports -w services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
+  if available. Otherwise, edit the import block to drop:
+  - `atlas-channel/consumable`
+  - `inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"`
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"`
+  - `itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"`
+  - `charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"`
 
-	if err := deps.applyDamage(f, di.MonsterId(), casterId, damages, byte(ai.AttackType())); err != nil {
-		l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), casterId)
-	}
+  Keep:
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/field"` (used by
+    the helper extraction)
+  - `monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"`
+    (used elsewhere in the file by `attackKindFromAttackType`)
 
-	// Apply monster status effects from skill (e.g., freeze, poison, stun).
-	if len(se.MonsterStatus()) > 0 {
-		ms := make(map[string]int32)
-		for k, v := range se.MonsterStatus() {
-			ms[k] = int32(v)
-		}
-		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
-			coef := 0.1 + rand.Float64()*0.1
-			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
-		}
-		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
-	}
-}
-```
+  Verify with:
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./socket/handler/... )
+  ```
+  Expected: success.
 
-- [ ] **Step 2: Replace the inline loop body in `processAttack` with a call to the helper**
+- [ ] **Step 4**: Remove the four `TestProcessDamageInfoEntry_Doom_*`
+  tests + supporting helpers.
 
-In `processAttack`, replace the entire `for _, di := range ai.DamageInfo() { ... }` block (lines 151-216) with:
+  In `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`,
+  delete:
+  - `applyStatusCall` struct
+  - `damageEntryFakes` struct + its `deps()` method
+  - `newDoomEffect` function
+  - `newDoomAttackInfo` function
+  - `TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus`
+  - `TestProcessDamageInfoEntry_Doom_BlockedByReflect`
+  - `TestProcessDamageInfoEntry_Doom_MultiTargetSpread`
+  - `TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe`
 
-```go
-deps := damageInfoEntryDeps{
-	getReflect:        mirror.GetReflect,
-	getMonster:        mp.GetById,
-	applyDamage:       mp.Damage,
-	emitReflectDamage: mp.EmitDamageReflected,
-	applyStatus:       mp.ApplyStatus,
-	loadVenomStats:    loadVenomStats,
-}
-for _, di := range ai.DamageInfo() {
-	processDamageInfoEntry(
-		l, di, ai, se, uint32(sk.Level()),
-		s.CharacterId(), c.X(), c.Y(),
-		s.Field(), t, attackKind,
-		deps,
-	)
-}
-```
+- [ ] **Step 5**: Drop test imports orphaned by Step 4.
 
-- [ ] **Step 3: Build atlas-channel**
+  After the deletions, the test file should still need `monster`,
+  `monster2`, `packetmodel`, `tenant`, `uuid`, `time` (the
+  `TestComputeReflect_*` and `TestReflectFlow_*` tests use them).
+  Drop:
+  - `"atlas-channel/data/skill/effect"`
+  - `"atlas-channel/effective_stats"`
+  - `"errors"`
+  - `"io"`
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/channel"`
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/field"`
+  - `_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"`
+  - `skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"`
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/world"`
+  - `"github.com/sirupsen/logrus"`
 
-```bash
-( cd services/atlas-channel/atlas.com/channel && go build ./... )
-```
+  (Verify each is unused after the test deletion before removing — some
+  may still be referenced by the kept tests.)
 
-Expected: success. If a method signature mismatch surfaces (e.g. `mp.GetById` returns `(monster.Model, error)` but the helper expects something different), fix the helper's `damageInfoEntryDeps` types to match the actual `monster.Processor` method signatures rather than coercing the call sites. Report any deviation in the commit message.
+- [ ] **Step 6**: Build and test atlas-channel; confirm no regressions.
 
-- [ ] **Step 4: Run the existing atlas-channel test suite to confirm no regression**
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
+  ```
+  Expected: green.
 
-```bash
-( cd services/atlas-channel/atlas.com/channel && go test ./... )
-```
+- [ ] **Step 7**: Commit.
 
-Expected: all pass — particularly the existing `TestComputeReflect_*`, `TestReflectFlow_*`, and `TestSnapshotVenomDamagePerTick_*` cases, which still target their respective pure helpers (unaffected by this extraction).
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
-git commit -m "refactor(atlas-channel): extract processDamageInfoEntry helper from processAttack"
-```
+  ```bash
+  git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go \
+          services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go
+  git commit -m "revert(atlas-channel): drop wrong-path Doom probe and itemCon charge from processAttack"
+  ```
 
 ---
 
-## Task 6: atlas-channel — Doom-gated magic-reflect probe in the empty-damage branch
+## Task A: atlas-monsters — `GetInFieldRect` query
 
-Per design §2.2 / §3.4: the existing reflect path only runs when `len(damages) > 0`. Doom carries empty damages, so today an empty-damage Doom apply would land on a magic-reflect mob unchallenged. Add a narrow probe inside `processDamageInfoEntry`'s empty-damage branch that runs only when the inbound status set contains `"DOOM"`. Doom does no damage, so on reflect we simply skip the apply (no reflect damage to emit).
+Add a registry walk + processor method that returns monsters in a field
+within a rectangle, capped to a limit. The rectangle is given as
+`(x1, y1, x2, y2)` and is normalized (any ordering of the corners is
+accepted). Inclusive on all four edges.
 
-**Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
+**Files**:
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/registry.go`
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor.go`
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go`
 
-- [ ] **Step 1: Insert the Doom-gated probe inside the empty-damage branch**
+- [ ] **Step 1**: Add the registry walk.
 
-In `processDamageInfoEntry`, replace the empty-damage branch (the `if len(damages) == 0 { ... }` block added in Task 5) with:
+  In `registry.go`, add:
 
-```go
-	if len(damages) == 0 {
-		if len(se.MonsterStatus()) == 0 {
-			return
-		}
-		ms := make(map[string]int32)
-		for k, v := range se.MonsterStatus() {
-			ms[k] = int32(v)
-		}
-		if _, isVenom := ms["VENOM"]; isVenom {
-			stats := deps.loadVenomStats()
-			coef := 0.1 + rand.Float64()*0.1
-			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
-		}
+  ```go
+  // GetMonstersInFieldRect returns monsters in the given field whose (x, y)
+  // is inside the inclusive rectangle bounded by (x1, y1, x2, y2). The
+  // corners may be passed in any order. The result is sorted by distance
+  // from the rectangle center (ascending) and truncated to limit when
+  // limit > 0; limit == 0 means "no cap".
+  func (r *Registry) GetMonstersInFieldRect(t tenant.Model, f field.Model, x1, y1, x2, y2 int16, limit uint32) []Model {
+      r.mu.RLock()
+      defer r.mu.RUnlock()
 
-		// Doom: respect magic-reflect. Doom does no damage, so on reflect we
-		// simply skip the apply (nothing to bounce back). Gated on DOOM so
-		// no other empty-damage status flow changes behavior.
-		if _, isDoom := ms["DOOM"]; isDoom && attackKind != "" {
-			if _, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
-				l.Debugf("Doom: monster [%d] has %s reflect; status apply skipped.", di.MonsterId(), attackKind)
-				return
-			}
-		}
+      lx, hx := minInt16(x1, x2), maxInt16(x1, x2)
+      ly, hy := minInt16(y1, y2), maxInt16(y1, y2)
+      cx := (int32(lx) + int32(hx)) / 2
+      cy := (int32(ly) + int32(hy)) / 2
 
-		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
-		return
-	}
-```
+      type scored struct {
+          m   Model
+          d2  int64
+      }
+      scoredAll := make([]scored, 0, 16)
+      for _, m := range r.fieldMonsters(t, f) {
+          if m.X() < lx || m.X() > hx || m.Y() < ly || m.Y() > hy {
+              continue
+          }
+          dx := int64(int32(m.X()) - cx)
+          dy := int64(int32(m.Y()) - cy)
+          scoredAll = append(scoredAll, scored{m: m, d2: dx*dx + dy*dy})
+      }
+      sort.Slice(scoredAll, func(i, j int) bool { return scoredAll[i].d2 < scoredAll[j].d2 })
+      if limit > 0 && uint32(len(scoredAll)) > limit {
+          scoredAll = scoredAll[:limit]
+      }
+      out := make([]Model, len(scoredAll))
+      for i, s := range scoredAll {
+          out[i] = s.m
+      }
+      return out
+  }
+  ```
 
-- [ ] **Step 2: Build atlas-channel**
+  `fieldMonsters(t, f)` is the existing internal accessor used by
+  `GetMonstersInField` (look it up; if the existing method is named
+  differently, mirror its accessor pattern). If `min`/`max` helpers for
+  `int16` don't exist in the package, add them next to the new method.
 
-```bash
-( cd services/atlas-channel/atlas.com/channel && go build ./... )
-```
+- [ ] **Step 2**: Add the processor wrapper.
 
-Expected: success.
+  In `processor.go`, add to `Processor` interface:
 
-- [ ] **Step 3: Run the existing atlas-channel test suite**
+  ```go
+  GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error)
+  ```
 
-```bash
-( cd services/atlas-channel/atlas.com/channel && go test ./... )
-```
+  And to `ProcessorImpl`:
 
-Expected: all pass. (No existing test exercises the empty-damage Doom-on-reflect path; the new tests in Task 7 will.)
+  ```go
+  func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error) {
+      return GetMonsterRegistry().GetMonstersInFieldRect(p.t, f, x1, y1, x2, y2, limit), nil
+  }
+  ```
 
-- [ ] **Step 4: Commit**
+  Returns no error today (the registry walk cannot fail). The error
+  return is reserved for the case where this becomes a remote call —
+  matches the `GetById(uniqueId uint32) (Model, error)` shape.
 
-```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go
-git commit -m "feat(atlas-channel): Doom-gated magic-reflect probe on empty-damage status apply"
-```
+- [ ] **Step 3**: Tests.
 
----
+  Append to `processor_test.go`:
 
-## Task 7: atlas-channel — helper tests for Doom cast / reflect / spread
+  ```go
+  func TestGetInFieldRect_Inside(t *testing.T) {
+      r := GetMonsterRegistry()
+      ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+      ctx := context.Background()
+      r.Clear(ctx)
 
-Pin the cast-to-ApplyStatus, reflect-blocks-Doom, and multi-target-spread paths against the extracted helper. Tests inject closures-as-fakes; no real monster processor or session is constructed.
+      f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+      r.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 50)
+      r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50)
+      r.CreateMonster(ctx, ten, f, 9300018, 200, 200, 0, 0, 0, 100, 50)
 
-**Files:**
-- Test: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`
+      got := r.GetMonstersInFieldRect(ten, f, -100, -100, 100, 100, 0)
+      if len(got) != 2 {
+          t.Fatalf("len(got) = %d, want 2", len(got))
+      }
+  }
 
-- [ ] **Step 1: Append a fakes harness and the new tests**
+  func TestGetInFieldRect_LimitTruncates(t *testing.T) {
+      r := GetMonsterRegistry()
+      ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+      ctx := context.Background()
+      r.Clear(ctx)
 
-Append to `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`. Each test uses a fresh `damageInfoEntryDeps` so state cannot leak between cases.
+      f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+      for i := int16(0); i < 10; i++ {
+          r.CreateMonster(ctx, ten, f, 9300018, i*10, 0, 0, 0, 0, 100, 50)
+      }
 
-```go
-// applyStatusCall captures one invocation of the applyStatus closure so tests
-// can assert on (monsterId, statuses, duration) without inspecting Kafka.
-type applyStatusCall struct {
-	monsterId   uint32
-	characterId uint32
-	skillId     uint32
-	skillLevel  uint32
-	statuses    map[string]int32
-	duration    uint32
-}
+      got := r.GetMonstersInFieldRect(ten, f, -50, -50, 200, 50, 3)
+      if len(got) != 3 {
+          t.Fatalf("len(got) = %d, want 3", len(got))
+      }
+  }
 
-// damageEntryFakes is a minimal in-memory recorder used by Doom helper tests.
-// Only Doom-relevant interactions are tracked.
-type damageEntryFakes struct {
-	applyStatusCalls       []applyStatusCall
-	applyDamageCalls       int
-	emitReflectDamageCalls int
-	reflects               map[uint32]monster.ReflectInfo
-	monsters               map[uint32]monster.Model
-}
+  func TestGetInFieldRect_BoundsInclusive(t *testing.T) {
+      r := GetMonsterRegistry()
+      ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+      ctx := context.Background()
+      r.Clear(ctx)
 
-func (f *damageEntryFakes) deps() damageInfoEntryDeps {
-	return damageInfoEntryDeps{
-		getReflect: func(_ tenant.Model, monsterId uint32, _ string) (monster.ReflectInfo, bool) {
-			ri, ok := f.reflects[monsterId]
-			return ri, ok
-		},
-		getMonster: func(monsterId uint32) (monster.Model, error) {
-			m, ok := f.monsters[monsterId]
-			if !ok {
-				return monster.Model{}, errors.New("not found")
-			}
-			return m, nil
-		},
-		applyDamage: func(_ field.Model, _ uint32, _ uint32, _ []uint32, _ byte) error {
-			f.applyDamageCalls++
-			return nil
-		},
-		emitReflectDamage: func(_ field.Model, _ uint32, _ uint32, _ uint32, _ uint32, _ string) error {
-			f.emitReflectDamageCalls++
-			return nil
-		},
-		applyStatus: func(_ field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
-			f.applyStatusCalls = append(f.applyStatusCalls, applyStatusCall{
-				monsterId:   monsterId,
-				characterId: characterId,
-				skillId:     skillId,
-				skillLevel:  skillLevel,
-				statuses:    statuses,
-				duration:    duration,
-			})
-			return nil
-		},
-		loadVenomStats: func() effective_stats.RestModel { return effective_stats.RestModel{} },
-	}
-}
+      f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+      r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 50)
 
-func newDoomEffect() effect.Model {
-	return effect.NewModelBuilder().
-		SetDuration(20000).
-		SetMonsterStatus(map[string]uint32{"DOOM": 1}).
-		Build()
-}
+      got := r.GetMonstersInFieldRect(ten, f, -100, -100, 100, 100, 0)
+      if len(got) != 1 {
+          t.Errorf("expected the corner-aligned monster to be included; got %d", len(got))
+      }
+  }
 
-func newDoomAttackInfo(monsterIds ...uint32) packetmodel.AttackInfo {
-	dis := make([]packetmodel.DamageInfo, 0, len(monsterIds))
-	for _, mid := range monsterIds {
-		dis = append(dis, packetmodel.NewDamageInfoBuilder().
-			SetMonsterId(mid).
-			SetDamages(nil). // Doom carries empty damages
-			Build())
-	}
-	return packetmodel.NewAttackInfoBuilder().
-		SetSkillId(2311005).
-		SetAttackType(packetmodel.AttackTypeMagic).
-		SetDamageInfo(dis).
-		Build()
-}
+  func TestGetInFieldRect_OtherFieldsExcluded(t *testing.T) {
+      r := GetMonsterRegistry()
+      ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+      ctx := context.Background()
+      r.Clear(ctx)
 
-// TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus verifies the
-// happy path: an empty-damage DOOM-bearing attack lands on a target with no
-// reflect, producing exactly one applyStatus call with the DOOM map and the
-// effect's duration. Pins the empty-damage branch the Cosmic source treats
-// as Doom's normal path.
-func TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	l, _ := test.NewNullLogger()
+      f1 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+      f2 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40001)).Build()
+      r.CreateMonster(ctx, ten, f1, 9300018, 0, 0, 0, 0, 0, 100, 50)
+      r.CreateMonster(ctx, ten, f2, 9300018, 0, 0, 0, 0, 0, 100, 50)
 
-	ai := newDoomAttackInfo(1)
-	di := ai.DamageInfo()[0]
-	se := newDoomEffect()
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+      got := r.GetMonstersInFieldRect(ten, f1, -100, -100, 100, 100, 0)
+      if len(got) != 1 {
+          t.Errorf("expected only field 40000's monster; got %d", len(got))
+      }
+  }
+  ```
 
-	fk := &damageEntryFakes{}
-	processDamageInfoEntry(l, di, ai, se, 30, /*casterId*/ 1001, 0, 0, f, tm, "MAGICAL", fk.deps())
+  Run:
+  ```bash
+  ( cd services/atlas-monsters/atlas.com/monsters && go test ./monster -run 'TestGetInFieldRect_' -count=1 -v )
+  ```
+  Expected: all PASS.
 
-	if len(fk.applyStatusCalls) != 1 {
-		t.Fatalf("applyStatus calls = %d, want 1 (%v)", len(fk.applyStatusCalls), fk.applyStatusCalls)
-	}
-	got := fk.applyStatusCalls[0]
-	if got.monsterId != 1 || got.skillId != 2311005 || got.skillLevel != 30 {
-		t.Errorf("applyStatus args = %+v, want monsterId=1 skillId=2311005 skillLevel=30", got)
-	}
-	if got.statuses["DOOM"] != 1 {
-		t.Errorf("statuses[DOOM] = %d, want 1", got.statuses["DOOM"])
-	}
-	if got.duration != 20000 {
-		t.Errorf("duration = %d, want 20000", got.duration)
-	}
-	if fk.applyDamageCalls != 0 {
-		t.Errorf("applyDamage called %d times, want 0", fk.applyDamageCalls)
-	}
-	if fk.emitReflectDamageCalls != 0 {
-		t.Errorf("emitReflectDamage called %d times, want 0", fk.emitReflectDamageCalls)
-	}
-}
+- [ ] **Step 4**: Add the REST endpoint.
 
-// TestProcessDamageInfoEntry_Doom_BlockedByReflect verifies the new
-// Doom-gated probe: when the target has a magic-reflect window and the
-// inbound status set is DOOM-bearing, the apply is skipped (no reflect
-// damage is emitted because Doom does no damage).
-func TestProcessDamageInfoEntry_Doom_BlockedByReflect(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	l, _ := test.NewNullLogger()
+  Locate the existing monster REST handler (likely
+  `services/atlas-monsters/atlas.com/monsters/monster/resource.go` or
+  similar). Mirror the existing `GET .../monsters` (in-field listing)
+  shape. Add query parameter parsing for `x1`, `y1`, `x2`, `y2`,
+  `limit`. Emit JSON:API list using the existing transform.
 
-	ai := newDoomAttackInfo(1)
-	di := ai.DamageInfo()[0]
-	se := newDoomEffect()
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+  If the route registration is in a separate router file, add a route
+  for the new query-string endpoint there.
 
-	fk := &damageEntryFakes{
-		reflects: map[uint32]monster.ReflectInfo{
-			1: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999},
-		},
-	}
-	processDamageInfoEntry(l, di, ai, se, 30, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, fk.deps())
+- [ ] **Step 5**: Build and test the service.
 
-	if len(fk.applyStatusCalls) != 0 {
-		t.Errorf("applyStatus calls = %d, want 0 (Doom blocked by reflect)", len(fk.applyStatusCalls))
-	}
-	if fk.emitReflectDamageCalls != 0 {
-		t.Errorf("emitReflectDamage calls = %d, want 0 (Doom does no damage to reflect)", fk.emitReflectDamageCalls)
-	}
-	if fk.applyDamageCalls != 0 {
-		t.Errorf("applyDamage calls = %d, want 0 (no damage path)", fk.applyDamageCalls)
-	}
-}
+  ```bash
+  ( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./... )
+  ```
+  Expected: green.
 
-// TestProcessDamageInfoEntry_Doom_MultiTargetSpread verifies the spread case:
-// three Doom targets, the middle one carries a magic-reflect window, the
-// other two are clean. Helper invoked once per DamageInfo. Result: exactly
-// two applyStatus calls (monsters 1 and 3); none for monster 2.
-func TestProcessDamageInfoEntry_Doom_MultiTargetSpread(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	l, _ := test.NewNullLogger()
+- [ ] **Step 6**: Commit.
 
-	ai := newDoomAttackInfo(1, 2, 3)
-	se := newDoomEffect()
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-
-	fk := &damageEntryFakes{
-		reflects: map[uint32]monster.ReflectInfo{
-			2: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999},
-		},
-	}
-	for _, di := range ai.DamageInfo() {
-		processDamageInfoEntry(l, di, ai, se, 30, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, fk.deps())
-	}
-
-	if len(fk.applyStatusCalls) != 2 {
-		t.Fatalf("applyStatus calls = %d, want 2 (%v)", len(fk.applyStatusCalls), fk.applyStatusCalls)
-	}
-	gotIds := []uint32{fk.applyStatusCalls[0].monsterId, fk.applyStatusCalls[1].monsterId}
-	if !(gotIds[0] == 1 && gotIds[1] == 3) {
-		t.Errorf("applyStatus monster ids = %v, want [1 3] (monster 2 reflect-blocked)", gotIds)
-	}
-	if fk.emitReflectDamageCalls != 0 {
-		t.Errorf("emitReflectDamage calls = %d, want 0", fk.emitReflectDamageCalls)
-	}
-	if fk.applyDamageCalls != 0 {
-		t.Errorf("applyDamage calls = %d, want 0", fk.applyDamageCalls)
-	}
-}
-
-// TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe pins
-// that the new probe is Doom-gated. A hypothetical empty-damage status that
-// is not DOOM should still apply through a magic-reflect window. (No such
-// status exists in atlas-data today; the test guards against future drift.)
-func TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe(t *testing.T) {
-	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
-	if err != nil {
-		t.Fatalf("tenant: %v", err)
-	}
-	l, _ := test.NewNullLogger()
-
-	se := effect.NewModelBuilder().
-		SetDuration(5000).
-		SetMonsterStatus(map[string]uint32{"FREEZE": 1}).
-		Build()
-	ai := packetmodel.NewAttackInfoBuilder().
-		SetSkillId(0).
-		SetAttackType(packetmodel.AttackTypeMagic).
-		SetDamageInfo([]packetmodel.DamageInfo{
-			packetmodel.NewDamageInfoBuilder().SetMonsterId(7).SetDamages(nil).Build(),
-		}).
-		Build()
-	di := ai.DamageInfo()[0]
-	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
-
-	fk := &damageEntryFakes{
-		reflects: map[uint32]monster.ReflectInfo{
-			7: {Kind: monster2.ReflectKindMagical, Percent: 30, LtX: -100, LtY: -100, RbX: 100, RbY: 100, MaxDamage: 9999},
-		},
-	}
-	processDamageInfoEntry(l, di, ai, se, 1, 1001, 0, 0, f, tm, monster2.ReflectKindMagical, fk.deps())
-
-	if len(fk.applyStatusCalls) != 1 {
-		t.Errorf("non-Doom empty-damage status should apply through reflect; applyStatus calls = %d, want 1", len(fk.applyStatusCalls))
-	}
-}
-```
-
-The test file already imports `monster`, `packetmodel`, `tenant`, and `uuid` (see existing tests). New imports needed: `errors`, `field` / `world` / `channel` / `_map` constants from `libs/atlas-constants`, `effect` (`atlas-channel/data/skill/effect`), `effective_stats` (`atlas-channel/effective_stats`), and `test` from `github.com/sirupsen/logrus/hooks/test`. Add to the import block at the top of the file. Run `goimports -w` afterward if available; otherwise edit the import block by hand.
-
-If `packetmodel.NewAttackInfoBuilder` / `NewDamageInfoBuilder` / `SetDamages` / `SetMonsterId` / `SetSkillId` / `SetAttackType` / `SetDamageInfo` do not exist with those exact names, find the realized constructor pattern with:
-
-```bash
-grep -n "func NewAttackInfo\|func NewDamageInfo\|func .* AttackInfo\b\|func .* DamageInfo\b" libs/atlas-packet/model/*.go
-```
-
-and adjust the helpers in lockstep.
-
-If `effect.NewModelBuilder` / `SetMonsterStatus` are not the method names in `services/atlas-channel/atlas.com/channel/data/skill/effect`, mirror the constructor pattern that exists there. The Setter for the monster status map is required because otherwise the empty-damage branch short-circuits on `len(se.MonsterStatus()) == 0`.
-
-- [ ] **Step 2: Run the new tests**
-
-```bash
-( cd services/atlas-channel/atlas.com/channel && go test ./socket/handler -run 'TestProcessDamageInfoEntry_' -v )
-```
-
-Expected: all four PASS. If any fail because a builder/constructor name does not exist, adjust the helpers to match the realized API and re-run.
-
-- [ ] **Step 3: Run the full atlas-channel suite**
-
-```bash
-( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
-```
-
-Expected: all pass.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go
-git commit -m "test(atlas-channel): pin Doom cast/reflect/spread paths via processDamageInfoEntry"
-```
+  ```bash
+  git add services/atlas-monsters/atlas.com/monsters/monster/registry.go \
+          services/atlas-monsters/atlas.com/monsters/monster/processor.go \
+          services/atlas-monsters/atlas.com/monsters/monster/processor_test.go \
+          services/atlas-monsters/atlas.com/monsters/monster/resource.go
+  git commit -m "feat(atlas-monsters): GetInFieldRect query for AoE skill targeting"
+  ```
 
 ---
 
-## Task 8: atlas-channel — Doom-specific Debugf in `monster.Processor.ApplyStatus`
+## Task B: atlas-channel — rect-query client
 
-Add a single grep-friendly log line inside `Processor.ApplyStatus` so production diagnoses can pivot on `"Doom:"`. The generic `Applying status to monster [...]` Debugf already on that line stays.
+Wrap the new atlas-monsters endpoint in a channel-side client method so
+the Doom handler (Task D) can call it without knowing the REST URL.
 
-**Files:**
+**Files**:
 - Modify: `services/atlas-channel/atlas.com/channel/monster/processor.go`
+- (Possibly) Modify: `services/atlas-channel/atlas.com/channel/monster/requests.go` if there's a separate file for HTTP client wrappers.
 
-- [ ] **Step 1: Insert the conditional Debugf**
+- [ ] **Step 1**: Find the existing `GetById` and `GetInField` (if it
+  exists) methods on `monster.Processor` to mirror their style:
 
-Replace `func (p *Processor) ApplyStatus(...)` (currently `processor.go:70-73`) with:
+  ```bash
+  grep -n "func (p \*Processor) GetById\|func (p \*Processor) GetInField" services/atlas-channel/atlas.com/channel/monster/processor.go
+  ```
 
-```go
-func (p *Processor) ApplyStatus(f field.Model, monsterId uint32, characterId uint32, skillId uint32, skillLevel uint32, statuses map[string]int32, duration uint32) error {
-	p.l.Debugf("Applying status to monster [%d]. Character [%d]. Skill [%d].", monsterId, characterId, skillId)
-	if _, isDoom := statuses["DOOM"]; isDoom {
-		p.l.Debugf("Doom: caster=[%d] monster=[%d] skill=[%d] level=[%d] duration=[%d]ms.", characterId, monsterId, skillId, skillLevel, duration)
-	}
-	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ApplyStatusCommandProvider(f, monsterId, characterId, skillId, skillLevel, statuses, duration))
-}
-```
+- [ ] **Step 2**: Add the new client method. Signature:
 
-- [ ] **Step 2: Build and test atlas-channel**
+  ```go
+  func (p *Processor) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error)
+  ```
 
-```bash
-( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
-```
+  Body: build the URL by formatting the existing monster-listing path
+  with the rect query string; issue the GET; transform the response.
+  Use the existing JSON:API decoding helper that `GetById` uses.
 
-Expected: success. (No new test for the log line itself — it is observability, not behavior. Manual verification in Task 9 covers it.)
+- [ ] **Step 3**: Build atlas-channel.
 
-- [ ] **Step 3: Commit**
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./... )
+  ```
+  Expected: success.
 
-```bash
-git add services/atlas-channel/atlas.com/channel/monster/processor.go
-git commit -m "feat(atlas-channel): emit Doom-targeted Debugf alongside generic ApplyStatus log"
-```
+- [ ] **Step 4**: Commit.
 
----
-
-## Task 10: atlas-channel — consume `itemCon` items on skill cast (generic)
-
-> Added 2026-05-03 mid-execution. Out of original PRD scope but in-scope for this branch per user direction: every `itemCon` skill (Mystic Door, summons, Doom, Hyper Body sub-cases, etc.) currently fails to burn its required item because the cast path never reads `effect.Model.ItemConsume()`. The plumbing exists end-to-end (REST → effect.Model → consumable.Processor → Kafka REQUEST_ITEM_CONSUME), only the call site is missing.
-
-**Goal:** When a skill cast resolves an effect with `ItemConsume() > 0`, locate the first asset in the appropriate compartment whose template id matches and emit `RequestItemConsume` for that slot. Generic — any current or future `itemCon` skill is covered. No item-id allowlist; no Doom-specific branch.
-
-**Architecture decision:** Place the call inside the same `if !registered` gate as HP/MP consume in `processAttack` (`character_attack_common.go:113-120`). This means skills with their own per-skill dispatcher entry (heal, summons that bypass `processAttack`) are responsible for their own item consumption. None of the currently-registered handlers consume items, so behavior is unchanged for them; if and when one does, it owns the call. This mirrors the existing rationale for the HP/MP gate and avoids double-consumption on dual-packet skills.
-
-**Failure mode:** If the character does not have the required item, log a warning and proceed with the cast. (Cosmic-parity: the v83 client gates the cast UI on item availability; server-side enforcement is defense-in-depth, not authoritative.) A future task can promote this to a hard reject if needed.
-
-**Files:**
-- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
-
-- [ ] **Step 1: Add a helper that finds the slot of the consumable item**
-
-Insert above `processAttack` (near the other helpers, ~line 75):
-
-```go
-// findItemSlotInInventory returns the slot of the first asset in the
-// compartment matching the item's inventory type whose template id equals
-// itemId. Returns false if the inventory has no such item. Used by
-// processAttack to translate an effect.ItemConsume() id into a slot
-// position before emitting RequestItemConsume.
-func findItemSlotInInventory(inv inventory.Model, itemId uint32) (slot.Position, bool) {
-	invType, ok := inventory2.TypeFromItemId(item.Id(itemId))
-	if !ok {
-		return 0, false
-	}
-	comp := inv.CompartmentByType(invType)
-	for _, a := range comp.Assets() {
-		if a.TemplateId() == itemId {
-			return slot.Position(a.Slot()), true
-		}
-	}
-	return 0, false
-}
-```
-
-Required imports (add to the existing import block if not present):
-- `"atlas-channel/inventory"`
-- `inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"` (alias to avoid collision with the channel-local `inventory` package)
-- `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"`
-- `"github.com/Chronicle20/atlas/libs/atlas-constants/item"`
-- `"atlas-channel/consumable"` (likely already imported elsewhere in the package; if not, add it)
-
-If the existing import block already binds `inventory` to the local package or `inventory2` to the constants package under a different alias, reuse the existing alias. The atlas-channel package conventionally binds the constants alias as `inventory2` (see `character_item_use.go` for the pattern).
-
-- [ ] **Step 2: Insert the consume call inside the existing `if !registered` block**
-
-In `processAttack` (`character_attack_common.go`), the current block at lines 113-120 reads HP/MP consume. Extend it to also consume `itemCon`:
-
-```go
-if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered {
-	if se.HPConsume() > 0 {
-		_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
-	}
-	if se.MPConsume() > 0 {
-		_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
-	}
-	if se.ItemConsume() > 0 {
-		if pos, found := findItemSlotInInventory(c.Inventory(), se.ItemConsume()); found {
-			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(se.ItemConsume()), pos, 0)
-		} else {
-			l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), se.ItemConsume())
-		}
-	}
-}
-```
-
-Notes:
-- `updateTime` of `0` mirrors the lack of a client-supplied timestamp on the cast packet (the existing item-use handlers receive it from the packet; we don't have one here). The atlas-consumables service treats `updateTime` as informational, not authoritative.
-- `se.ItemConsumeAmount()` is intentionally ignored; `RequestItemConsume` consumes exactly 1 (see `consumable/producer.go:24` — the body sets quantity=1). No current `itemCon` skill consumes more than one item per cast in v83. If that changes, extend `RequestItemConsume`'s signature to take a count, then call once per item or pass the count. Out of scope for this task.
-- The character ID type cast (`character.Id(s.CharacterId())`) and item ID type cast (`item.Id(se.ItemConsume())`) match the pattern used elsewhere in the package (see `character_item_use.go:22`).
-
-- [ ] **Step 3: Build atlas-channel**
-
-```bash
-( cd services/atlas-channel/atlas.com/channel && go build ./... )
-```
-
-Expected: success. If an import cycle surfaces (e.g., `consumable` already pulls something from `socket/handler`), surface to the user.
-
-- [ ] **Step 4: Add a unit test for `findItemSlotInInventory`**
-
-Append to `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`:
-
-```go
-// TestFindItemSlotInInventory_Found verifies the helper returns the slot of
-// the first asset whose template id equals the queried item id.
-func TestFindItemSlotInInventory_Found(t *testing.T) {
-	const magicRockId = uint32(4006000)
-	a := asset.NewBuilder(uuid.New(), uuid.New(), 1, magicRockId, asset.ReferenceIdConsumable).
-		SetSlot(3).
-		SetQuantity(5).
-		MustBuild()
-	useComp := compartment.NewBuilder(uuid.New(), uuid.New(), inventory2.TypeValueUse, 24).
-		SetAssets([]asset.Model{a}).
-		Build()
-	inv := inventory.NewBuilder(1).
-		SetCompartment(inventory2.TypeValueUse, useComp).
-		Build()
-
-	pos, found := findItemSlotInInventory(inv, magicRockId)
-	if !found {
-		t.Fatalf("expected to find item [%d]", magicRockId)
-	}
-	if pos != slot.Position(3) {
-		t.Errorf("pos = %d, want 3", pos)
-	}
-}
-
-// TestFindItemSlotInInventory_NotFound pins the absent-item branch: if the
-// inventory has no matching template id in the resolved compartment, the
-// helper returns (0, false). The caller logs a warning and the cast is still
-// permitted (defense-in-depth, not authoritative).
-func TestFindItemSlotInInventory_NotFound(t *testing.T) {
-	const magicRockId = uint32(4006000)
-	useComp := compartment.NewBuilder(uuid.New(), uuid.New(), inventory2.TypeValueUse, 24).
-		Build()
-	inv := inventory.NewBuilder(1).
-		SetCompartment(inventory2.TypeValueUse, useComp).
-		Build()
-
-	if _, found := findItemSlotInInventory(inv, magicRockId); found {
-		t.Errorf("expected not-found for empty Use compartment")
-	}
-}
-```
-
-If `asset.NewBuilder`, `compartment.NewBuilder`, or `inventory.NewBuilder` are not the exact constructors in this package, run:
-
-```bash
-grep -rn "func NewBuilder\|func NewModelBuilder" services/atlas-channel/atlas.com/channel/asset/ services/atlas-channel/atlas.com/channel/compartment/ services/atlas-channel/atlas.com/channel/inventory/
-```
-
-and adapt the test in lockstep. Same for the `SetCompartment`/`SetAssets`/`SetSlot`/`SetQuantity` setters — use whatever the realized API exposes. If a builder pattern is too constrained to construct minimal test fixtures, use the package-internal struct literals; the goal is two passing tests, not a particular construction style.
-
-- [ ] **Step 5: Run the new tests and the full atlas-channel suite**
-
-```bash
-( cd services/atlas-channel/atlas.com/channel && go test ./socket/handler -run 'TestFindItemSlotInInventory_' -v )
-( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
-```
-
-Expected: both new tests PASS, full suite green.
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go \
-        services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go
-git commit -m "fix(atlas-channel): consume itemCon items on skill cast (Magic Rock, summon items, etc.)"
-```
-
-After commit, `git branch --show-current` must print `task-047-priest-doom`.
+  ```bash
+  git add services/atlas-channel/atlas.com/channel/monster/processor.go
+  git commit -m "feat(atlas-channel): GetInFieldRect client wrapper for atlas-monsters rect query"
+  ```
 
 ---
 
-## Task 9: Cross-service build, full test, and manual verification handoff
+## Task C: atlas-channel — generic `itemConsume` charge in `UseSkill`
 
-Final gate. Confirm every affected service still builds and tests cleanly. Then surface a manual-verification checklist for the user — the wire-level snail render and expiry sprite restore are client-side and cannot be unit-tested.
+Plumb `e.ItemConsume()` consumption into the existing `UseSkill` cost
+block. Generic across all `itemConsume` skills (Doom, Mystic Door,
+summons, mists). The previous Doom-specific placement in
+`processAttack`'s cost gate was reverted in Task R.
 
-**Files:** None modified.
+**Files**:
+- Modify: `services/atlas-channel/atlas.com/channel/skill/handler/common.go`
+- Add: `services/atlas-channel/atlas.com/channel/skill/handler/common_test.go`
 
-- [ ] **Step 1: Build and test all three affected services**
+- [ ] **Step 1**: Extend the cost block.
 
-Run sequentially — they share types only via go.work-level libs that this task does not touch.
+  In `common.go`, after the existing `if e.MPConsume() > 0 { ... }`
+  block (around lines 25-27), add:
 
-```bash
-( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./... )
-( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
-( cd services/atlas-data/atlas.com/data && go build ./... && go test ./... )
-```
+  ```go
+  if itemId := e.ItemConsume(); itemId > 0 {
+      invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
+      if a, found := character.NewProcessor(l, ctx).GetById(character.NewProcessor(l, ctx).InventoryDecorator)(characterId).Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); typeOk && found {
+          _ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+      } else {
+          l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
+      }
+  }
+  ```
 
-Expected: all green.
+  Important: the inline `character.NewProcessor(l, ctx).GetById(...)`
+  invocation above is illustrative shorthand. The realized form should
+  match how the file already loads characters (look near
+  `applyToParty` or the per-skill handlers in this package for the
+  canonical loader pattern). If the existing code uses a single-line
+  loader like `cp.GetById()(characterId)`, mirror it. Don't double-call
+  `NewProcessor`.
 
-- [ ] **Step 2: Verify the in-repo grep for the Doom log line is unique**
+  Required imports (add if missing):
+  - `"atlas-channel/character"` (likely already present)
+  - `"atlas-channel/consumable"` (new)
+  - `inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"`
+  - `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"`
+  - `itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"`
+  - `charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"`
 
-```bash
-grep -rn '"Doom: caster=\[' services/
-```
+- [ ] **Step 2**: Build atlas-channel.
 
-Expected: exactly one hit, in `services/atlas-channel/atlas.com/channel/monster/processor.go`.
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./... )
+  ```
+  Expected: success.
 
-- [ ] **Step 3: Surface the manual end-to-end checklist to the user**
+- [ ] **Step 3**: Add tests.
 
-The PRD §10 acceptance criteria require a live cast against a regular mob and a boss. These cannot be unit-tested. Tell the user:
+  Create `services/atlas-channel/atlas.com/channel/skill/handler/common_test.go`
+  with three tests (per design §5.3):
+  - `TestUseSkill_ItemConsume_BurnsItem`
+  - `TestUseSkill_ItemConsume_LogsWarningOnMissingItem`
+  - `TestUseSkill_ItemConsume_ZeroItemConsume_Noop`
 
-> Code changes complete. Manual verification needed against a running channel + monsters + data stack:
->
-> 1. Spawn a regular mob with elemental resistance (e.g., a fire-immune mob if available; any non-boss mob is sufficient for the basic snail render).
-> 2. Cast Priest Doom (skill 2311005) on it.
-> 3. Confirm the v83 client renders it as a snail for the duration and restores the original sprite at expiry.
-> 4. In atlas-channel logs, confirm the line `Doom: caster=[..] monster=[..] skill=[2311005] level=[..] duration=[..]ms.` appears.
-> 5. Cast Doom on a boss; confirm in atlas-monsters logs the line `Monster [..] is a boss. Status rejected.` appears, and the client does not render the snail.
-> 6. (Optional but valuable) Cast Doom against a mob standing on a magic-reflect window; confirm in atlas-channel logs the line `Doom: monster [..] has MAGICAL reflect; status apply skipped.` appears, and the mob is unaffected.
-> 7. **Item consumption (Task 10):** Before casting Doom, note the count of Magic Rock (or whatever item `itemCon` resolves to for skill 2311005) in the player's Use inventory. Cast Doom once and confirm the count decremented by exactly one. Repeat for at least one other `itemCon` skill the test character can cast (e.g., a summon) to verify the change is generic. If the inventory has zero of the required item before casting, confirm the warning line `Character [..] cast skill [..] requiring item [..] but no such item found in inventory; cast permitted (defense-in-depth gate only).` appears in atlas-channel logs.
+  Use a logrus test hook (`logrus/hooks/test.NewNullLogger`) for the
+  warning capture. Use the asset / compartment / inventory builders the
+  same way the previous (now-removed) `TestFindItemSlotInInventory_*`
+  tests did before they were deleted in Task R; the asset builder
+  requires a non-zero ID.
 
-If observability MCPs are available, follow `reference_observability.md` to pull the relevant log lines from Loki rather than tailing a local pod.
+  Capturing `RequestItemConsume` calls cleanly requires the consumable
+  processor to be testable. The simplest approach is to inject a fake
+  for the duration of the test via a package-private hook variable, or
+  to verify the Kafka-message-emit side via the existing producer
+  fake harness if one exists in this package. If neither is feasible
+  with reasonable effort, defer the assertion of the consume call to
+  Task F's manual verification and keep the unit test focused on the
+  inventory lookup (slot resolution).
 
-- [ ] **Step 4: No commit needed for this step**
+- [ ] **Step 4**: Run tests.
 
-This step is a verification gate. Once the user confirms the manual checks, the branch is ready for `superpowers:requesting-code-review` and PR.
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go test ./skill/handler -count=1 -v )
+  ```
+  Expected: green.
+
+- [ ] **Step 5**: Commit.
+
+  ```bash
+  git add services/atlas-channel/atlas.com/channel/skill/handler/common.go \
+          services/atlas-channel/atlas.com/channel/skill/handler/common_test.go
+  git commit -m "feat(atlas-channel): generic itemConsume charge in UseSkill cost block"
+  ```
+
+---
+
+## Task E: atlas-channel — `effect.Model.MobCount()` and `Prop()` accessors
+
+The Doom handler reads `e.MobCount()` and `e.Prop()`. Verify they exist
+and add getters if missing.
+
+**Files**:
+- Modify: `services/atlas-channel/atlas.com/channel/data/skill/effect/model.go`
+- Modify: `services/atlas-channel/atlas.com/channel/data/skill/effect/rest.go` (only if `mobCount` or `prop` is not already wired into `Extract`)
+
+- [ ] **Step 1**: Confirm whether the accessors exist.
+
+  ```bash
+  grep -n "func (m Model) MobCount\|func (m Model) Prop\|mobCount\b\|\bprop\b" services/atlas-channel/atlas.com/channel/data/skill/effect/model.go
+  ```
+
+  The struct already has `mobCount uint32` and `prop float64` fields
+  (per the v1 read of the file). If the public getters are missing,
+  add them:
+
+  ```go
+  // MobCount returns the cap on monsters affected by an AoE monster-buff
+  // skill (e.g., Priest Doom's 6-mob target ceiling). Zero means "no cap".
+  func (m Model) MobCount() uint32 { return m.mobCount }
+
+  // Prop returns the per-target probability gate (0.0 - 1.0) used by
+  // monster-buff skills like Doom. Zero means "never apply"; values
+  // ≥ 1 mean "always apply".
+  func (m Model) Prop() float64 { return m.prop }
+  ```
+
+- [ ] **Step 2**: Confirm `rest.go` populates both from `RestModel`.
+
+  The `Extract` function already wires `mobCount: rm.MobCount` (line
+  ~117 in rest.go) and `prop: rm.Prop` (line ~125). If either is
+  missing, add the assignment.
+
+- [ ] **Step 3**: Build atlas-channel.
+
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./data/skill/effect/... )
+  ```
+  Expected: success.
+
+- [ ] **Step 4**: Commit (if any change was made).
+
+  ```bash
+  git add services/atlas-channel/atlas.com/channel/data/skill/effect/model.go \
+          services/atlas-channel/atlas.com/channel/data/skill/effect/rest.go
+  git commit -m "feat(atlas-channel): expose effect.Model MobCount/Prop for AoE handlers"
+  ```
+
+---
+
+## Task D: atlas-channel — Doom per-skill handler
+
+Add the new Doom handler package and register it in the per-skill
+registry.
+
+**Files**:
+- Add: `services/atlas-channel/atlas.com/channel/skill/handler/doom/bbox.go`
+- Add: `services/atlas-channel/atlas.com/channel/skill/handler/doom/bbox_test.go`
+- Add: `services/atlas-channel/atlas.com/channel/skill/handler/doom/doom.go`
+- Add: `services/atlas-channel/atlas.com/channel/skill/handler/doom/doom_test.go`
+- Modify: the file that imports the per-skill packages for side effects (registrations file or `main.go`); see design §2.4.
+
+- [ ] **Step 1**: Pure `calculateBoundingBox` + tests (TDD).
+
+  Write `bbox_test.go` first per design §5.1 (4 cases). Then implement
+  `bbox.go`:
+
+  ```go
+  package doom
+
+  import (
+      "github.com/Chronicle20/atlas/libs/atlas-constants/point"
+  )
+
+  // calculateBoundingBox derives the inclusive (x1, y1, x2, y2) target
+  // rectangle for a monster-buff skill cast. Mirrors Cosmic
+  // StatEffect.calculateBoundingBox at server/StatEffect.java:1206-1218.
+  // The returned tuple is not normalized — callers (or downstream
+  // queries) must handle either ordering of the corners.
+  func calculateBoundingBox(casterX, casterY int16, facingLeft bool, lt, rb point.Model) (x1, y1, x2, y2 int16) {
+      if facingLeft {
+          x1 = casterX + int16(lt.X())
+          y1 = casterY + int16(lt.Y())
+          x2 = casterX + int16(rb.X())
+          y2 = casterY + int16(rb.Y())
+      } else {
+          x1 = casterX - int16(rb.X())
+          y1 = casterY + int16(lt.Y())
+          x2 = casterX - int16(lt.X())
+          y2 = casterY + int16(rb.Y())
+      }
+      return
+  }
+  ```
+
+  Adjust the `int16(lt.X())` cast to match `point.Model`'s actual
+  accessor return type (it may already return `int16`).
+
+  Run:
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/doom -count=1 -v )
+  ```
+  Expected: 4 tests PASS.
+
+- [ ] **Step 2**: Doom handler scaffold.
+
+  Create `doom.go`. Use the design §2.4 sketch as a starting point.
+  Two important details:
+  - The package-private `propRollFunc` variable lets tests inject
+    deterministic behavior. Do not export it.
+  - `c.Stance() & 1 == 1` for facing-left. If atlas-channel's character
+    model has a higher-level accessor (e.g., `c.IsFacingLeft()`), prefer
+    it. Search:
+    ```bash
+    grep -n "FacingLeft\|isFacingLeft\|stance" services/atlas-channel/atlas.com/channel/character/model.go
+    ```
+
+- [ ] **Step 3**: Doom handler tests.
+
+  Create `doom_test.go` per design §5.2. Each test injects its own
+  `propRollFunc` (via the package-private variable, restored via
+  `t.Cleanup`) and a fake `monster.Processor` (for `GetInFieldRect`,
+  `GetStatusMirror`, `ApplyStatus`). Mirror the fake-injection pattern
+  used in the (now-removed) `damageEntryFakes` if it makes sense; or,
+  if the per-skill-handler package convention is different, follow that.
+
+  Run:
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go test ./skill/handler/doom -count=1 -v )
+  ```
+  Expected: all PASS.
+
+- [ ] **Step 4**: Wire the package's `init()` to register the handler
+  by adding a blank import in the registrations file. Find it:
+
+  ```bash
+  grep -rln "_ \"atlas-channel/skill/handler/heal\"\|skill/handler/heal\"" services/atlas-channel/atlas.com/channel/
+  ```
+
+  Add the equivalent line for `_ "atlas-channel/skill/handler/doom"`
+  in the same file.
+
+- [ ] **Step 5**: Build and test full atlas-channel.
+
+  ```bash
+  ( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
+  ```
+  Expected: green.
+
+- [ ] **Step 6**: Commit.
+
+  ```bash
+  git add services/atlas-channel/atlas.com/channel/skill/handler/doom/ \
+          services/atlas-channel/atlas.com/channel/skill/handler/registrations/  # or wherever the blank import lives
+  git commit -m "feat(atlas-channel): per-skill Doom handler with server-side bbox mob selection"
+  ```
+
+---
+
+## Task F: Cross-service build, full test, manual verification handoff
+
+**Files**: None modified.
+
+- [ ] **Step 1**: Build and test all three affected services.
+
+  ```bash
+  ( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test ./... )
+  ( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
+  ( cd services/atlas-data/atlas.com/data && go build ./... && go test ./... )
+  ```
+
+  Expected: all green.
+
+- [ ] **Step 2**: Verify the in-repo grep for the per-apply Doom log
+  line is unique (it should still hit
+  `services/atlas-channel/atlas.com/channel/monster/processor.go:73`):
+
+  ```bash
+  grep -rn '"Doom: caster=\[' services/
+  ```
+
+  Expected: one hit.
+
+  And the per-cast summary log line is unique to the new handler:
+
+  ```bash
+  grep -rn '"Doom: caster=\[%d\] level=' services/
+  ```
+
+  Expected: one hit, in `services/atlas-channel/atlas.com/channel/skill/handler/doom/doom.go`.
+
+- [ ] **Step 3**: Surface the manual end-to-end checklist (PRD §10).
+
+  Tell the user:
+
+  > Code changes complete. Manual verification needed against a
+  > running channel + monsters + data stack:
+  >
+  > 1. Cast Doom on a regular mob in range. Confirm it renders as a
+  >    snail in the v83 client for the duration and resumes its
+  >    original sprite at expiry. Confirm one Magic Rock was consumed.
+  > 2. Cast Doom on a fire-immune mob. Confirm DOOM still applies.
+  > 3. Cast Doom on a boss. Confirm DOOM does not apply, and that
+  >    atlas-monsters logs `Monster [..] is a boss. Status rejected.`.
+  >    Confirm one Magic Rock was still consumed (the cast itself
+  >    succeeded; only the per-target apply was rejected).
+  > 4. Cast Doom on a group of mobs spread across the map. Confirm
+  >    only mobs in the rectangle (≤ 6 of them) receive DOOM.
+  > 5. Cast Doom against a magic-reflect mob. Confirm it is excluded
+  >    from the apply and atlas-channel logs
+  >    `Doom: monster [..] has MAGICAL reflect; status apply skipped.`.
+  > 6. With zero Magic Rock, cast Doom (via a third-party client or
+  >    by manipulating inventory). Confirm the warning
+  >    `Character [..] cast skill [..] requiring item [..] but no
+  >    such item found in inventory; cast permitted (defense-in-depth
+  >    gate only).` appears, and the cast still runs.
+  > 7. Confirm the per-cast summary line appears once per cast
+  >    (`Doom: caster=[..] level=[..] mobsInRect=[..] applied=[..] reflectSkipped=[..] propSkipped=[..]`).
+  > 8. Spot-check a non-Doom `itemConsume` skill (e.g., a summon).
+  >    Confirm the required item is consumed once per cast.
+
+  If observability MCPs are available, follow `reference_observability.md`
+  to pull the relevant log lines from Loki rather than tailing pods.
+
+- [ ] **Step 4**: No commit needed for this step.
 
 ---
 
 ## Self-review (run by writer; results inline)
 
-**Spec coverage** (PRD §4.1–§4.7, §7, §10):
+**Spec coverage** (PRD §10 acceptance criteria):
 
-- §4.1 cast intake — covered by Task 0 verification + Task 5/6 helper extraction (no production change to intake; we re-route the per-DamageInfo body without altering routing or cost). ✓
-- §4.2 target resolution + reflect — covered by Task 6 (Doom-gated reflect probe). ✓
-- §4.3 status apply — covered by Task 4 (DOOM short-circuit) + Task 1 (effect mapping pin). ✓
-- §4.4 status broadcast — no code change required (existing wire mask handles DOOM bit); Task 9 manual verification confirms. ✓
-- §4.5 status expiry — no code change required; Task 9 manual verification confirms. ✓
-- §4.6 cast logging — covered by Task 8. ✓
-- §4.7 tests — atlas-data (Task 1), atlas-monsters (Task 4), atlas-channel (Task 7). ✓
-- §7 service impact rows — atlas-monsters (Tasks 2-4), atlas-channel (Tasks 5-8), atlas-data (Task 1), libs/* unchanged. ✓
-- §10 acceptance criteria — covered across the eight implementation tasks plus Task 9 manual checklist. ✓
+- AC 1–3 (single mob, group, fire-immune): covered by Task D handler +
+  Task A rect query + atlas-monsters' existing immunity short-circuit.
+- AC 5 (boss): covered by atlas-monsters' existing
+  `isBossAllowedStatus`. The cast itself charges Magic Rock; only the
+  per-target apply is rejected. PRD §10 AC 5 was updated to reflect
+  this realized behavior.
+- AC 6 (magic-reflect): covered by the per-mob reflect probe in the
+  Doom handler.
+- AC 7 (no Magic Rock): covered by Task C's `itemConsume` cost block
+  with the missing-item warning.
+- AC 8 (per-apply log): the existing Debugf at
+  `monster/processor.go:73` (kept from v1) plus the new per-cast
+  summary line.
 
-**Placeholder scan:** searched the plan for `TBD`, `TODO`, `implement later`, `Add appropriate error handling`, `similar to Task`, `implement minimal`, `etc.`. All occurrences are inside cited file paths or test bodies that show the actual code, not stand-ins.
+**Type consistency**:
 
-**Type consistency:**
+- `e.ItemConsume() uint32`, `itemconst.Id(uint32)`, `slot.Position(int16)`,
+  `charcon.Id(uint32)` — same casts used in `character_item_use.go:22`.
+- `field.Model` is the same type used everywhere.
+- `monster.GetStatusMirror().GetReflect(t, uniqueId, kind string) (ReflectInfo, bool)` —
+  same signature used by `processDamageInfoEntry`.
 
-- `damageInfoEntryDeps` defined in Task 5 with field names `getReflect`, `getMonster`, `applyDamage`, `emitReflectDamage`, `applyStatus`, `loadVenomStats`. Same names used in Task 6 (probe) and Task 7 (test fakes builder). ✓
-- `applyStatusCall` fields used in Task 7 assertions match the closure-recorded args one-for-one. ✓
-- `processDamageInfoEntry` signature in Task 5 declared once; Task 6 modifies the function body only; Task 7 calls with the same parameter order. ✓
-- `applyDoomEffectFromPlayer(durationMs int)` returns `StatusEffect` in Task 4; both call sites pass `60000`. ✓
-- `isElementallyImmune` short-circuit references `monster2.StatusDoom`; the existing import alias in `services/atlas-monsters/atlas.com/monsters/monster/processor.go:16` is `monster2`. ✓
+**Notable design deviations called out inline**:
 
-**Notable design deviations called out inline:**
+- AC 5 (boss): per-target rejection vs. cast-level rejection. The
+  cast charges its `itemConsume` cost regardless of how many per-target
+  applies succeed (matches Cosmic and matches HP/MP semantics for
+  resisted casts in general). The PRD acceptance criterion 5 reflects
+  this.
+- `mobCount` ordering: atlas-monsters returns the N-closest in-rect
+  mobs to the rect center; Cosmic returns the first N in registry
+  iteration order. Functionally equivalent; ours is more deterministic.
+- The `prop` per-mob probability is honored. The PRD goals section
+  enumerates this; the design and tests reflect the deterministic
+  injection seam.
 
-- The PRD's "DOOM no-op while already active" assumption is rewritten in Task 4 step 1 as "DOOM re-apply replaces existing entry" because that is the realized `AddStatusEffect` semantics in `builder.go:140-163`. The design itself flagged this as a risk (design.md §6); the plan asserts the realized behavior rather than silently changing code to match a faulty PRD assumption. The PRD/design should be amended in the same commit — flagged in Task 4 step 1's commentary (and in `context.md` "Realized behavior").
-- The PRD's `damageInfoEntryArgs` struct option is taken (Task 5 uses `damageInfoEntryDeps`) over a 12-positional-parameter signature for readability. Both forms were sanctioned by design §3.3.
-
-If the implementer hits a realized-API mismatch (e.g., a builder method renamed, an event constant spelled differently), the surrounding step text directs them to grep for the actual name and adjust in lockstep. No silent renames.
+If the implementer hits a realized-API mismatch (e.g., a `point.Model`
+accessor returns a different type than expected, or the per-skill
+registrations file isn't where the design assumes), the surrounding
+step text directs them to grep for the actual symbol and adjust in
+lockstep. No silent renames.

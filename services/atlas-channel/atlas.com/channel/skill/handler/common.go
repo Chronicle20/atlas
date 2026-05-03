@@ -7,6 +7,7 @@ import (
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/monster"
 	"atlas-channel/party"
+	"atlas-channel/socket/writer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,9 +17,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
-		return func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -36,6 +37,13 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)
 			applyToMobs(l, ctx, f, characterId, info, e)
+
+			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...).
+			if h, ok := Lookup(skill2.Id(info.SkillId())); ok {
+				if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
+					l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+				}
+			}
 
 			return nil
 		}

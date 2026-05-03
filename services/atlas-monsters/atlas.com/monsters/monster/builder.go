@@ -80,6 +80,12 @@ func (b *ModelBuilder) SetStance(stance byte) *ModelBuilder {
 	return b
 }
 
+// SetFh sets the foothold the monster is anchored to.
+func (b *ModelBuilder) SetFh(fh int16) *ModelBuilder {
+	b.fh = fh
+	return b
+}
+
 // SetHp sets the current hit points.
 func (b *ModelBuilder) SetHp(hp uint32) *ModelBuilder {
 	b.hp = hp

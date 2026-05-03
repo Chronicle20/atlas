@@ -90,6 +90,7 @@ type movementCommand struct {
 	ObserverId uint32     `json:"observerId"`
 	X          int16      `json:"x"`
 	Y          int16      `json:"y"`
+	Fh         int16      `json:"fh"`
 	Stance     byte       `json:"stance"`
 }
 

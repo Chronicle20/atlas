@@ -15,6 +15,7 @@ const (
 	CommandRequestDropMeso     = "REQUEST_DROP_MESO"
 	CommandChangeHP            = "CHANGE_HP"
 	CommandChangeMP            = "CHANGE_MP"
+	CommandAwardExperience     = "AWARD_EXPERIENCE"
 
 	CommandDistributeApAbilityStrength     = "STRENGTH"
 	CommandDistributeApAbilityDexterity    = "DEXTERITY"
@@ -59,6 +60,12 @@ type ChangeHPCommandBody struct {
 type ChangeMPCommandBody struct {
 	ChannelId channel.Id `json:"channelId"`
 	Amount    int16      `json:"amount"`
+}
+
+type AwardExperienceCommandBody struct {
+	ChannelId     channel.Id                `json:"channelId"`
+	Distributions []ExperienceDistributions `json:"distributions"`
+	ShowEffect    bool                      `json:"showEffect"`
 }
 
 const (

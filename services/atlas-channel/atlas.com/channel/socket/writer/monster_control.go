@@ -1,6 +1,7 @@
 package writer
 
 import (
+	dmap "atlas-channel/data/map"
 	"atlas-channel/monster"
 	"context"
 
@@ -39,7 +40,11 @@ func ControlMonsterBody(m monster.Model, controlType ControlMonsterType) packet.
 		return func(options map[string]interface{}) []byte {
 			var mem packetmodel.MonsterModel
 			if controlType > ControlMonsterTypeReset {
-				mem = packetmodel.NewMonster(m.X(), m.Y(), m.Stance(), m.Fh(), packetmodel.MonsterAppearTypeRegen, m.Team())
+				// Snap mob position before encoding so the v83 client doesn't
+				// drop the mob through the floor on control assignment. See
+				// data/map.SnapMobPosition for the rationale.
+				x, y := dmap.SnapMobPosition(l, ctx, m.MapId(), m.X(), m.Y(), m.Fh())
+				mem = packetmodel.NewMonster(x, y, m.Stance(), m.Fh(), packetmodel.MonsterAppearTypeRegen, m.Team())
 				stat := buildMonsterTemporaryStat(l, t, m)
 				mem.SetTemporaryStat(stat)
 			}

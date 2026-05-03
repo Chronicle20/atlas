@@ -59,6 +59,7 @@ None.
 |-----------|-----------|------------|
 | HOLY_SYMBOL | exp | Additive: `1.0 + (amount / 100.0)` |
 | MESO_UP | meso | Direct: `amount / 100.0` |
+| CURSE | exp | Fixed: `0.5` (amount ignored) |
 
 ### World Rate Events
 

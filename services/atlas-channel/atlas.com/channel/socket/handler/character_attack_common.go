@@ -9,6 +9,7 @@ import (
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
+	"atlas-channel/skill/handler"
 	"atlas-channel/socket/writer"
 	"context"
 	"errors"
@@ -102,11 +103,20 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						if err != nil {
 							return err
 						}
-						if se.HPConsume() > 0 {
-							_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
-						}
-						if se.MPConsume() > 0 {
-							_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
+
+						// Skip the generic cost block when a per-skill
+						// dispatcher entry exists — that handler owns
+						// HP/MP cost (and any cooldown) on the buff-side
+						// CharacterUseSkill packet. Without this gate,
+						// dual-packet skills like Heal would
+						// double-deduct MP.
+						if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered {
+							if se.HPConsume() > 0 {
+								_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
+							}
+							if se.MPConsume() > 0 {
+								_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
+							}
 						}
 					}
 

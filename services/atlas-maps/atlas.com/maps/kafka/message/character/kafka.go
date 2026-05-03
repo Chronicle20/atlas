@@ -53,3 +53,23 @@ type ChangeChannelEventLoginBody struct {
 }
 
 type StatusEventDeletedBody struct{}
+
+const (
+	EnvCommandTopic  = "COMMAND_TOPIC_CHARACTER"
+	CommandChangeMap = "CHANGE_MAP"
+)
+
+type Command[E any] struct {
+	TransactionId uuid.UUID `json:"transactionId"`
+	WorldId       world.Id  `json:"worldId"`
+	CharacterId   uint32    `json:"characterId"`
+	Type          string    `json:"type"`
+	Body          E         `json:"body"`
+}
+
+type ChangeMapBody struct {
+	ChannelId channel.Id `json:"channelId"`
+	MapId     _map.Id    `json:"mapId"`
+	Instance  uuid.UUID  `json:"instance"`
+	PortalId  uint32     `json:"portalId"`
+}

@@ -112,6 +112,31 @@ Character map visit record. Immutable.
 | mapId | map.Id | Map identifier |
 | firstVisitedAt | time.Time | Timestamp of first visit |
 
+### Data Map Info Model
+
+Map information from atlas-data service.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| id | map.Id | Map identifier |
+| timeLimit | int32 | Map stay duration in seconds |
+| forcedReturnMapId | map.Id | Map to which a character is returned when the time limit elapses |
+
+### Map Timer Entry
+
+Per-character map-stay timer record. Immutable, constructed via Builder.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| tenant | tenant.Model | Tenant identifier |
+| characterId | uint32 | Character identifier |
+| field | field.Model | Field where the character is currently tracked |
+| forcedReturnMapId | map.Id | Map id used when the timer expires or is force-returned |
+| seconds | uint32 | Configured map stay duration |
+| token | UUID | Per-registration token used to detect stale timer callbacks |
+| expiresAt | time.Time | Wall clock time at which the timer is scheduled to fire |
+| timer | *time.Timer | Per-entry Go timer handle |
+
 ## Invariants
 
 - SpawnPoints with MobTime < 0 are not spawnable
@@ -126,6 +151,20 @@ Character map visit record. Immutable.
 - Weather entries are keyed by FieldKey (tenant + field)
 - Weather duration is capped at 20 seconds
 - Weather entries are automatically removed after ExpiresAt
+- A Map Info Model is time-limited when timeLimit > 0 and forcedReturnMapId is not the sentinel 999999999
+- Map info is cached per (tenant, mapId)
+- Map timer entries are keyed by (tenant, characterId); registering a new entry replaces and stops any prior entry for the same key
+- Timer callbacks act on an entry only when their token matches the entry's current token
+- ForceReturnIfTracked removes the entry unconditionally (token is not checked)
+
+## State Transitions
+
+### Map Timer Lifecycle
+
+- On MAP_CHANGED, any prior timer for the character is cancelled. If the target map is time-limited, a new timer is registered for the configured seconds and MAP_TIMER_STARTED is emitted.
+- On CHANNEL_CHANGED, any tracked timer for the character is force-returned (entry is removed and CHANGE_MAP is emitted to the forced-return map).
+- On SESSION_DESTROYED for a character, any tracked timer is force-returned (entry is removed and CHANGE_MAP is emitted to the forced-return map).
+- On timer expiry, the entry is claimed (only when the token matches) and CHANGE_MAP is emitted to the forced-return map.
 
 ## Processors
 
@@ -220,3 +259,18 @@ Retrieves reactor data from atlas-data service.
 Retrieves map script data from atlas-data service.
 
 - GetScripts: Gets script names (onFirstUserEnter, onUserEnter) for a map
+
+#### Data Map Info Processor
+
+Retrieves map info from atlas-data service.
+
+- GetById: Returns the Map Info Model for a map id, cached per (tenant, mapId)
+
+### Map Timer Processor
+
+Manages per-character map-stay timers.
+
+- Register: Inserts (or replaces) the timer entry for a character, schedules a per-entry time.Timer for the configured seconds, and emits MAP_TIMER_STARTED. Replaces and stops any prior entry for the same (tenant, characterId).
+- CancelIfTracked: Atomically removes any tracked entry for the character and stops its timer. Returns whether an entry was removed.
+- ForceReturnIfTracked: Atomically removes any tracked entry for the character regardless of token, stops its timer, and emits CHANGE_MAP to the entry's forcedReturnMapId.
+- handleExpire (timer callback): Atomically claims the entry only if its current token matches; on match emits CHANGE_MAP to the forcedReturnMapId.

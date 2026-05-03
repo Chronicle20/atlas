@@ -136,10 +136,10 @@
 
 ### EVENT_TOPIC_MAP_STATUS
 - Direction: Event
-- Message Type: `StatusEvent[CharacterEnter]`, `StatusEvent[CharacterExit]`, `StatusEvent[WeatherStartBody]`, `StatusEvent[WeatherEndBody]`
+- Message Type: `StatusEvent[CharacterEnter]`, `StatusEvent[CharacterExit]`, `StatusEvent[WeatherStart]`, `StatusEvent[WeatherEnd]`, `StatusEvent[MapTimerStarted]`
 - Envelope Fields: transactionId, worldId, channelId, mapId, instance
-- Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`
-- Purpose: Receives character map entry/exit and weather start/end events
+- Type Discriminators: `CHARACTER_ENTER`, `CHARACTER_EXIT`, `WEATHER_START`, `WEATHER_END`, `MAP_TIMER_STARTED`
+- Purpose: Receives character map entry/exit, weather start/end, and map timer started events. MAP_TIMER_STARTED body contains CharacterId (uint32) and Seconds (uint32); the handler targets the single character via `IfPresentByCharacterId` and sends a `ClockWriter` packet built from `NewTimerClock(seconds)`.
 
 ### EVENT_TOPIC_MESSENGER_STATUS
 - Direction: Event

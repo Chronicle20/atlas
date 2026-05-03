@@ -75,6 +75,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventWeatherEnd(sc, wp)))); err != nil {
 					return err
 				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMapTimerStarted(sc, wp)))); err != nil {
+					return err
+				}
 				return nil
 			}
 		}
@@ -525,6 +528,21 @@ func applyConsumableEffectSaga(l logrus.FieldLogger, sp saga.Processor, characte
 	err := sp.Create(s)
 	if err != nil {
 		l.WithError(err).Errorf("Unable to create apply consumable effect saga for character [%d] item [%d].", characterId, itemId)
+	}
+}
+
+func handleStatusEventMapTimerStarted(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.MapTimerStarted]) {
+	return func(l logrus.FieldLogger, ctx context.Context, e _map3.StatusEvent[_map3.MapTimerStarted]) {
+		if e.Type != _map3.EventTopicMapStatusTypeMapTimerStarted {
+			return
+		}
+
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		l.Debugf("MAP_TIMER_STARTED for character [%d] map [%d] seconds [%d].", e.Body.CharacterId, e.MapId, e.Body.Seconds)
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.CharacterId, session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(e.Body.Seconds).Encode))
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/google/uuid"
 )
 
 func TestNewModelBuilder(t *testing.T) {
@@ -100,5 +101,34 @@ func TestCloneModel(t *testing.T) {
 	// Cloned should preserve other fields
 	if cloned.MaxHp() != 1000 {
 		t.Errorf("cloned.MaxHp() = %d, want 1000", cloned.MaxHp())
+	}
+}
+
+func TestModelBuilder_SetMaxMp(t *testing.T) {
+	f := field.NewBuilder(1, 1, 100000000).SetInstance(uuid.Nil).Build()
+	m, err := monster.NewModelBuilder(42, f, 9300000).SetMaxMp(500).SetMp(200).Build()
+	if err != nil {
+		t.Fatalf("Build() returned error: %v", err)
+	}
+	if m.MaxMp() != 500 {
+		t.Fatalf("MaxMp() = %d; want 500", m.MaxMp())
+	}
+	if m.Mp() != 200 {
+		t.Fatalf("Mp() = %d; want 200", m.Mp())
+	}
+}
+
+func TestCloneModel_PreservesMaxMp(t *testing.T) {
+	f := field.NewBuilder(1, 1, 100000000).SetInstance(uuid.Nil).Build()
+	original, err := monster.NewModelBuilder(42, f, 9300000).SetMaxMp(500).Build()
+	if err != nil {
+		t.Fatalf("Build() returned error: %v", err)
+	}
+	cloned, err := monster.CloneModel(original).Build()
+	if err != nil {
+		t.Fatalf("Clone Build() returned error: %v", err)
+	}
+	if cloned.MaxMp() != 500 {
+		t.Fatalf("Cloned MaxMp() = %d; want 500", cloned.MaxMp())
 	}
 }

@@ -28,6 +28,7 @@ type Model struct {
 	maxHp              uint32
 	hp                 uint32
 	mp                 uint32
+	maxMp              uint32
 	monsterId          uint32
 	controlCharacterId uint32
 	controllerHasAggro bool
@@ -117,6 +118,10 @@ func (m Model) Hp() uint32 {
 
 func (m Model) MaxHp() uint32 {
 	return m.maxHp
+}
+
+func (m Model) MaxMp() uint32 {
+	return m.maxMp
 }
 
 func (m Model) StatusEffects() []StatusEffectEntry {

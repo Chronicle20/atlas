@@ -2,6 +2,7 @@ package heal
 
 import (
 	"context"
+	"math"
 	"math/rand"
 
 	"atlas-channel/character"
@@ -20,6 +21,21 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// effectiveMaxHpOrBase narrows the effective MaxHp from
+// atlas-effective-stats into the uint16 range used by the recipient
+// snapshot, falling back to the recipient's base MaxHp when the
+// upstream returned zero or out-of-range. Mirrors the defensive
+// strategy in atlas-character's resolveEffectiveMax.
+func effectiveMaxHpOrBase(effective uint32, base uint16) uint16 {
+	if effective == 0 {
+		return base
+	}
+	if effective > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(effective)
+}
+
 func init() {
 	channelhandler.Register(skill2.ClericHealId, Apply)
 }
@@ -28,15 +44,21 @@ func init() {
 //
 // Lifecycle:
 //  1. Load caster character (X, Y, Hp, MaxHp, Level).
-//  2. Load caster effective stats (INT, MagicAttack).
+//  2. Load caster effective stats (INT, MagicAttack, MaxHp).
 //  3. Resolve recipients: caster + in-range party members on the same
 //     channel + map per the LT/RB rectangle and the affected-party
 //     bitmap.
-//  4. Compute the heal amount with a fresh [0.9, 1.1] variance roll.
-//  5. Apply the HP delta to each recipient via character.ChangeHP.
-//  6. Compute and award XP, gated by OQ-1 (skip when sole recipient
-//     and no AffectedMobIds).
-//  7. Broadcast CharacterEffect to caster + CharacterEffectForeign to
+//  4. Hydrate each recipient's MaxHp from atlas-effective-stats so the
+//     subsequent clamp uses the player's actual cap, not the base
+//     character record (which omits gear / buff bonuses).
+//  5. Compute the heal amount with a fresh [0.9, 1.1] variance roll.
+//  6. Per recipient: clamp delta to (effective MaxHp - current Hp) via
+//     appliedPerRecipient, then call character.ChangeHP with the
+//     clamped value. This prevents pushing Hp past MaxHp and tripping
+//     atlas-character's enforceBounds saturation logic.
+//  7. Compute and award XP from the same applied amounts (gated by
+//     OQ-1: skip when sole recipient and no AffectedMobIds).
+//  8. Broadcast CharacterEffect to caster + CharacterEffectForeign to
 //     same-map sessions.
 //
 // Per-step failures are logged but do not abort the cast.
@@ -62,7 +84,8 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				return nil
 			}
 
-			stats, sErr := effective_stats.NewProcessor(l, ctx).GetByCharacterId(f.WorldId(), f.ChannelId(), characterId)
+			esp := effective_stats.NewProcessor(l, ctx)
+			stats, sErr := esp.GetByCharacterId(f.WorldId(), f.ChannelId(), characterId)
 			if sErr != nil {
 				l.WithError(sErr).Warnf("Heal: failed to load effective stats for caster [%d]; falling back to base character INT.", characterId)
 				stats = effective_stats.RestModel{Intelligence: uint32(c.Intelligence())}
@@ -78,10 +101,25 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				X:        c.X(),
 				Y:        c.Y(),
 				Hp:       c.Hp(),
-				MaxHp:    c.MaxHp(),
+				MaxHp:    effectiveMaxHpOrBase(stats.MaxHp, c.MaxHp()),
 				IsCaster: true,
 			}
 			recipients := selectRecipients(caster, party)
+
+			// Hydrate each non-caster recipient's MaxHp with their effective
+			// stats so the per-recipient clamp uses the player's true cap.
+			// Caster's MaxHp is already populated from the stats fetch above.
+			for i := range recipients {
+				if recipients[i].IsCaster {
+					continue
+				}
+				rs, rErr := esp.GetByCharacterId(f.WorldId(), f.ChannelId(), recipients[i].Id)
+				if rErr != nil {
+					l.WithError(rErr).Debugf("Heal: effective stats fetch failed for recipient [%d]; using base MaxHp [%d].", recipients[i].Id, recipients[i].MaxHp)
+					continue
+				}
+				recipients[i].MaxHp = effectiveMaxHpOrBase(rs.MaxHp, recipients[i].MaxHp)
+			}
 
 			variance := 0.9 + rand.Float64()*0.2
 			perTarget := HealAmount(
@@ -93,7 +131,11 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 			)
 
 			for _, r := range recipients {
-				if hpErr := cp.ChangeHP(f, r.Id, perTarget); hpErr != nil {
+				delta := appliedPerRecipient(perTarget, r)
+				if delta == 0 {
+					continue
+				}
+				if hpErr := cp.ChangeHP(f, r.Id, delta); hpErr != nil {
 					l.WithError(hpErr).Errorf("Heal: ChangeHP failed for recipient [%d] from caster [%d].", r.Id, characterId)
 				}
 			}

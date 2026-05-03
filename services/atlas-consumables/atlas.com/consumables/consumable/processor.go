@@ -66,6 +66,19 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+// usesStandardConsumer reports whether an item routes through ConsumeStandard
+// (which invokes ApplyItemEffects for HP/MP recovery, status buffs, and status
+// cure). Anything not matched here falls through to ConsumeBare and silently
+// skips effect application. Cure pots (classification 205) belong here because
+// their disease cure flags are read inside ApplyItemEffects.
+func usesStandardConsumer(itemId item2.Id) bool {
+	switch item2.GetClassification(itemId) {
+	case item2.Classification(200), item2.Classification(201), item2.Classification(202), item2.Classification(205):
+		return true
+	}
+	return false
+}
+
 // collectCureTypes returns the TemporaryStatType strings whose matching
 // consumable cure spec is non-zero. Order is fixed
 // (POISON, DARKNESS, WEAKEN, SEAL, CURSE) for deterministic Kafka payloads
@@ -177,7 +190,7 @@ func (p *Processor) RequestItemConsume(c channel.Model, characterId uint32, slot
 	}
 
 	var itemConsumer ItemConsumer
-	if item2.GetClassification(itemId) == item2.Classification(200) || item2.GetClassification(itemId) == item2.Classification(201) || item2.GetClassification(itemId) == item2.Classification(202) {
+	if usesStandardConsumer(itemId) {
 		itemConsumer = ConsumeStandard(transactionId, characterId, slot, itemId)
 	} else if item2.GetClassification(itemId) == item2.ClassificationConsumableTownWarp {
 		itemConsumer = ConsumeTownScroll(transactionId, characterId, slot, itemId)

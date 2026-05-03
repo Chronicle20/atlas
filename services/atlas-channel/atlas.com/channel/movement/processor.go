@@ -1,6 +1,7 @@
 package movement
 
 import (
+	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/kafka/producer"
@@ -14,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
@@ -167,6 +169,21 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		if err != nil {
 			return
 		}
+		// Snap y to (foothold surface - 1) so the stored mob position is
+		// always 1 px ABOVE the foothold surface. The controller's client
+		// occasionally reports y at-or-below the slope surface (int16
+		// truncation in its float→short conversion); when another client
+		// (or the same client at map re-entry) receives the spawn packet
+		// for this mob, the v83 client validates (x, y) against the
+		// foothold and treats at-or-below positions as embedded-in-terrain,
+		// dropping the mob through the foothold. Pre-snapping at the
+		// channel boundary keeps the stored position above-surface so
+		// spawn-packet validation always passes.
+		//
+		// Mirrors atlas-data/map/processor.go::snapToGround which does the
+		// same -1 adjustment for fresh spawn-point positions; this covers
+		// the post-movement path that snapToGround does not.
+		ms.X, ms.Y = snapMonsterPositionToFoothold(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
 		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
@@ -258,6 +275,36 @@ func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
 		return 0, 0, false
 	}
 	return byte(skillId), byte(skillLevel), true
+}
+
+// snapMonsterPositionToFoothold ensures the (x, y) reported by the
+// controller's client sits at most 1 px above the foothold's surface (in MS
+// terms, surface_y - 1). When the client reports y at-or-below the slope
+// surface (a common int16 truncation outcome on slope footholds), the
+// returned y is clamped to surface - 1 so subsequent spawn-packet recipients
+// don't classify the position as embedded-in-terrain and drop the mob.
+//
+// On lookup failure (foothold missing, x out of foothold's range, fh==0
+// "mid-air") the input is returned unchanged so we don't mis-snap mobs that
+// are legitimately off-foothold (jumping, in fall sequence, etc.).
+func snapMonsterPositionToFoothold(l logrus.FieldLogger, ctx context.Context, mapId _map.Id, x, y, fh int16) (int16, int16) {
+	if fh == 0 {
+		return x, y
+	}
+	m, err := dmap.NewProcessor(l, ctx).GetById(mapId)
+	if err != nil {
+		l.WithError(err).Debugf("Unable to load map [%d] for foothold snap; passing through (x=%d, y=%d, fh=%d).", mapId, x, y, fh)
+		return x, y
+	}
+	surfaceY, ok := m.SurfaceYOnFoothold(uint32(fh), x)
+	if !ok {
+		return x, y
+	}
+	target := surfaceY - 1
+	if y > target {
+		return x, target
+	}
+	return x, y
 }
 
 // computeAckMp returns the MP value to advertise in MoveMonsterAck for a

@@ -35,7 +35,7 @@ var warnedRectangles sync.Map // key: uint64 (skillId<<8 | level)
 
 func warnIfMissingRectangle(skillId skill2.Id, skillLevel byte, e effect.Model, logf func()) {
 	lt, rb := e.LT(), e.RB()
-	if lt.X != 0 || lt.Y != 0 || rb.X != 0 || rb.Y != 0 {
+	if lt.X() != 0 || lt.Y() != 0 || rb.X() != 0 || rb.Y() != 0 {
 		return
 	}
 	key := uint64(skillId)<<8 | uint64(skillLevel)

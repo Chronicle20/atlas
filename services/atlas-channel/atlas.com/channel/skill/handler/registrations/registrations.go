@@ -4,5 +4,6 @@
 package registrations
 
 import (
+	_ "atlas-channel/skill/handler/doom" // Priest Doom — task 047
 	_ "atlas-channel/skill/handler/heal" // Cleric Heal — task 045
 )

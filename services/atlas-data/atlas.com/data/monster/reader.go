@@ -263,7 +263,6 @@ func getAttacks(node xml.Node) []AttackInfo {
 	// First pass: collect present attack nodes and check if any has info.
 	type atkEntry struct {
 		pos  uint8
-		node *xml.Node
 		info *xml.Node
 	}
 	var entries []atkEntry
@@ -273,7 +272,7 @@ func getAttacks(node xml.Node) []AttackInfo {
 		if err != nil {
 			continue
 		}
-		e := atkEntry{pos: pos, node: atk}
+		e := atkEntry{pos: pos}
 		info, err := atk.ChildByName("info")
 		if err == nil {
 			e.info = info

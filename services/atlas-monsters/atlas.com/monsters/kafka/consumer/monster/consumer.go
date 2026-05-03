@@ -153,8 +153,9 @@ func handleDrainMpCommand(l logrus.FieldLogger, ctx context.Context, c command[d
 		return
 	}
 
+	f := field.NewBuilder(c.WorldId, c.ChannelId, c.MapId).SetInstance(c.Instance).Build()
 	p := monster.NewProcessor(l, ctx)
-	if err := p.DrainMp(c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
+	if err := p.DrainMp(f, c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
 		l.WithError(err).Errorf("DRAIN_MP failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
 	}
 }

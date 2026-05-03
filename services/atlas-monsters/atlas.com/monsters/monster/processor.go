@@ -952,7 +952,7 @@ func (p *ProcessorImpl) executeDebuff(m Model, sd mobskill.Model, skillId byte, 
 		return
 	}
 
-	value := sd.X()
+	value := debuffWireValue(uint16(skillId), sd.X())
 	duration := int32(sd.Duration())
 	targets := p.getDiseaseTargets(m, sd)
 

@@ -19,6 +19,7 @@ const (
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
 	CommandTypeDestroyField      = "DESTROY_FIELD"
+	CommandTypeDrainMp           = "DRAIN_MP"
 
 	EnvCommandTopicMovement = "COMMAND_TOPIC_MONSTER_MOVEMENT"
 )
@@ -80,6 +81,12 @@ type useBasicAttackCommandBody struct {
 }
 
 type destroyFieldCommandBody struct{}
+
+type drainMpCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	SkillId     uint32 `json:"skillId"`
+	Amount      uint32 `json:"amount"`
+}
 
 type movementCommand struct {
 	WorldId    world.Id   `json:"worldId"`

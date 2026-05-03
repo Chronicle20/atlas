@@ -139,7 +139,15 @@ func snapToGround(tree FootholdTreeRestModel, sp monster.RestModel, lookup templ
 			return sp
 		}
 		if y, ok := calcYOnFoothold(fh, sp.X); ok {
-			sp.Y = y
+			// Place mob 1 px ABOVE the foothold surface, matching Cosmic's
+			// MapleMap.addMonsterSpawn: `newpos.y -= 1`. The v83 client treats
+			// y == surface as "in the air, snap onto foothold" and drops the
+			// mob cleanly, but treats y > surface (mob below surface, which
+			// happens on slopes due to int16 truncation in calcYOnFoothold —
+			// e.g. 98.33 → 99 → 0.67 px embedded) as "this foothold does not
+			// apply" and lets the mob fall forever. The -1 puts the mob
+			// definitively above the surface so the client always snaps it.
+			sp.Y = y - 1
 		}
 		return sp
 	}

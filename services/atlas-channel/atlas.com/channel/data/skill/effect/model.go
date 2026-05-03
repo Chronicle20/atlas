@@ -122,8 +122,16 @@ func (m Model) RB() point.Model {
 	return m.rb
 }
 
+// MobCount returns the cap on monsters affected by an AoE monster-buff
+// skill (e.g., Priest Doom's 6-mob target ceiling). Zero means "no cap".
+func (m Model) MobCount() uint32 {
+	return m.mobCount
+}
+
 // Prop returns the proc-chance attribute (0.0–1.0). Used by passives like
-// MP Eater to roll on each affected monster.
+// MP Eater to roll on each affected monster, and by monster-buff skills
+// like Priest Doom as a per-target probability gate. Zero means "never
+// apply"; values at or above 1 mean "always apply".
 func (m Model) Prop() float64 {
 	return m.prop
 }

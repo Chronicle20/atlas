@@ -18,8 +18,8 @@ func TestSelectRecipients_CasterAlwaysIncluded(t *testing.T) {
 func TestSelectRecipients_PrependsCasterToParty(t *testing.T) {
 	caster := recipient{Id: 1, Hp: 500, MaxHp: 1000, IsCaster: true}
 	party := []handler.PartyRecipient{
-		{Id: 2, Hp: 100, MaxHp: 500},
-		{Id: 3, Hp: 700, MaxHp: 700},
+		handler.NewPartyRecipientBuilder().SetId(2).SetHp(100).SetMaxHp(500).Build(),
+		handler.NewPartyRecipientBuilder().SetId(3).SetHp(700).SetMaxHp(700).Build(),
 	}
 	got := selectRecipients(caster, party)
 	if len(got) != 3 {

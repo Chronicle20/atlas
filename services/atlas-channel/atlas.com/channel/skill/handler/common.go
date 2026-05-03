@@ -118,7 +118,7 @@ func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.M
 			return func(idOperator model2.Operator[uint32]) error {
 				recipients := SelectInRangePartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap)
 				for _, r := range recipients {
-					_ = idOperator(r.Id)
+					_ = idOperator(r.Id())
 				}
 				return nil
 			}

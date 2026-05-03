@@ -18,11 +18,11 @@ func selectRecipients(caster recipient, party []handler.PartyRecipient) []recipi
 	out = append(out, caster)
 	for _, p := range party {
 		out = append(out, recipient{
-			Id:    p.Id,
-			X:     p.X,
-			Y:     p.Y,
-			Hp:    p.Hp,
-			MaxHp: p.MaxHp,
+			Id:    p.Id(),
+			X:     p.X(),
+			Y:     p.Y(),
+			Hp:    p.Hp(),
+			MaxHp: p.MaxHp(),
 		})
 	}
 	return out

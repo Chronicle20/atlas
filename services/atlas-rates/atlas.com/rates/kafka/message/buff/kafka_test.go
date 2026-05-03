@@ -3,6 +3,8 @@ package buff
 import (
 	"math"
 	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 )
 
 func TestCalculateMultiplier_Additive(t *testing.T) {
@@ -56,9 +58,9 @@ func TestCalculateMultiplier_UnknownConversion(t *testing.T) {
 }
 
 func TestBuffToRateMappings_Curse(t *testing.T) {
-	mapping, exists := GetRateMapping(StatTypeCurse)
+	mapping, exists := GetRateMapping(character.TemporaryStatTypeCurse)
 	if !exists {
-		t.Fatalf("GetRateMapping(%q) returned exists=false, want true", StatTypeCurse)
+		t.Fatalf("GetRateMapping(%q) returned exists=false, want true", character.TemporaryStatTypeCurse)
 	}
 	if mapping.RateType != "exp" {
 		t.Errorf("RateType = %q, want %q", mapping.RateType, "exp")
@@ -72,15 +74,15 @@ func TestBuffToRateMappings_Curse(t *testing.T) {
 }
 
 func TestIsRateStatType_Curse(t *testing.T) {
-	if !IsRateStatType(StatTypeCurse) {
-		t.Errorf("IsRateStatType(%q) = false, want true", StatTypeCurse)
+	if !IsRateStatType(character.TemporaryStatTypeCurse) {
+		t.Errorf("IsRateStatType(%q) = false, want true", character.TemporaryStatTypeCurse)
 	}
 }
 
 func TestBuffToRateMappings_HolySymbolUnchanged(t *testing.T) {
-	mapping, exists := GetRateMapping(StatTypeHolySymbol)
+	mapping, exists := GetRateMapping(character.TemporaryStatTypeHolySymbol)
 	if !exists {
-		t.Fatalf("GetRateMapping(%q) returned exists=false", StatTypeHolySymbol)
+		t.Fatalf("GetRateMapping(%q) returned exists=false", character.TemporaryStatTypeHolySymbol)
 	}
 	if mapping.RateType != "exp" {
 		t.Errorf("RateType = %q, want %q", mapping.RateType, "exp")
@@ -91,9 +93,9 @@ func TestBuffToRateMappings_HolySymbolUnchanged(t *testing.T) {
 }
 
 func TestBuffToRateMappings_MesoUpUnchanged(t *testing.T) {
-	mapping, exists := GetRateMapping(StatTypeMesoUp)
+	mapping, exists := GetRateMapping(character.TemporaryStatTypeMesoUp)
 	if !exists {
-		t.Fatalf("GetRateMapping(%q) returned exists=false", StatTypeMesoUp)
+		t.Fatalf("GetRateMapping(%q) returned exists=false", character.TemporaryStatTypeMesoUp)
 	}
 	if mapping.RateType != "meso" {
 		t.Errorf("RateType = %q, want %q", mapping.RateType, "meso")
@@ -106,7 +108,7 @@ func TestBuffToRateMappings_MesoUpUnchanged(t *testing.T) {
 func TestIsRateStatType_PoisonNotMapped(t *testing.T) {
 	// POISON is a stat-flag disease but is intentionally not in the rate mapping table
 	// per PRD non-goals. Locking this in protects against accidental future expansion.
-	if IsRateStatType("POISON") {
-		t.Errorf("IsRateStatType(\"POISON\") = true, want false")
+	if IsRateStatType(character.TemporaryStatTypePoison) {
+		t.Errorf("IsRateStatType(%q) = true, want false", character.TemporaryStatTypePoison)
 	}
 }

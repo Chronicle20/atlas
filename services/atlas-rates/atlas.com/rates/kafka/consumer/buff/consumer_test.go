@@ -10,6 +10,7 @@ import (
 	"atlas-rates/rate"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
@@ -96,7 +97,7 @@ func expiredEvent(sourceId int32) buff.StatusEvent[buff.ExpiredStatusEventBody] 
 
 func TestHandleBuffApplied_CurseRegistersHalfExpFactor(t *testing.T) {
 	p := &fakeProcessor{}
-	e := appliedEvent([]buff.StatChange{{Type: buff.StatTypeCurse, Amount: 0}})
+	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
@@ -120,7 +121,7 @@ func TestHandleBuffApplied_CurseRegistersHalfExpFactor(t *testing.T) {
 
 func TestHandleBuffApplied_HolySymbolStillProducesAdditive(t *testing.T) {
 	p := &fakeProcessor{}
-	e := appliedEvent([]buff.StatChange{{Type: buff.StatTypeHolySymbol, Amount: 50}})
+	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeHolySymbol), Amount: 50}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
@@ -139,8 +140,8 @@ func TestHandleBuffApplied_HolySymbolStillProducesAdditive(t *testing.T) {
 func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
 	p := &fakeProcessor{}
 	e := appliedEvent([]buff.StatChange{
-		{Type: buff.StatTypeCurse, Amount: 0},
-		{Type: buff.StatTypeHolySymbol, Amount: 50},
+		{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0},
+		{Type: string(charconst.TemporaryStatTypeHolySymbol), Amount: 50},
 	})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
@@ -171,7 +172,7 @@ func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
 
 func TestHandleBuffApplied_NonRateStatIsNoOp(t *testing.T) {
 	p := &fakeProcessor{}
-	e := appliedEvent([]buff.StatChange{{Type: "WEAPON_ATTACK", Amount: 30}})
+	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeWeaponAttack), Amount: 30}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
@@ -182,7 +183,7 @@ func TestHandleBuffApplied_NonRateStatIsNoOp(t *testing.T) {
 
 func TestHandleBuffApplied_WrongTypeIsNoOp(t *testing.T) {
 	p := &fakeProcessor{}
-	e := appliedEvent([]buff.StatChange{{Type: buff.StatTypeCurse, Amount: 0}})
+	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0}})
 	e.Type = "EXPIRED" // wrong type — guard should skip
 
 	handleBuffAppliedFor(p, discardLogger(), e)
@@ -199,8 +200,8 @@ func TestHandleBuffApplied_CurseNeverTouchesMesoOrItemOrQuest(t *testing.T) {
 	// emissions.
 	p := &fakeProcessor{}
 	e := appliedEvent([]buff.StatChange{
-		{Type: buff.StatTypeCurse, Amount: 0},
-		{Type: "WEAPON_ATTACK", Amount: 30},
+		{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0},
+		{Type: string(charconst.TemporaryStatTypeWeaponAttack), Amount: 30},
 	})
 
 	handleBuffAppliedFor(p, discardLogger(), e)

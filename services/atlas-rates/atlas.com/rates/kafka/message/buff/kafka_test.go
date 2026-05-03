@@ -76,3 +76,37 @@ func TestIsRateStatType_Curse(t *testing.T) {
 		t.Errorf("IsRateStatType(%q) = false, want true", StatTypeCurse)
 	}
 }
+
+func TestBuffToRateMappings_HolySymbolUnchanged(t *testing.T) {
+	mapping, exists := GetRateMapping(StatTypeHolySymbol)
+	if !exists {
+		t.Fatalf("GetRateMapping(%q) returned exists=false", StatTypeHolySymbol)
+	}
+	if mapping.RateType != "exp" {
+		t.Errorf("RateType = %q, want %q", mapping.RateType, "exp")
+	}
+	if mapping.Conversion != ConversionAdditive {
+		t.Errorf("Conversion = %v, want ConversionAdditive", mapping.Conversion)
+	}
+}
+
+func TestBuffToRateMappings_MesoUpUnchanged(t *testing.T) {
+	mapping, exists := GetRateMapping(StatTypeMesoUp)
+	if !exists {
+		t.Fatalf("GetRateMapping(%q) returned exists=false", StatTypeMesoUp)
+	}
+	if mapping.RateType != "meso" {
+		t.Errorf("RateType = %q, want %q", mapping.RateType, "meso")
+	}
+	if mapping.Conversion != ConversionDirect {
+		t.Errorf("Conversion = %v, want ConversionDirect", mapping.Conversion)
+	}
+}
+
+func TestIsRateStatType_PoisonNotMapped(t *testing.T) {
+	// POISON is a stat-flag disease but is intentionally not in the rate mapping table
+	// per PRD non-goals. Locking this in protects against accidental future expansion.
+	if IsRateStatType("POISON") {
+		t.Errorf("IsRateStatType(\"POISON\") = true, want false")
+	}
+}

@@ -45,20 +45,22 @@ func TestSnapToGround(t *testing.T) {
 		useTolerant bool
 	}{
 		{
-			// snap places the mob 1px ABOVE the foothold surface (matches
-			// Cosmic's MapleMap.addMonsterSpawn `newpos.y -= 1`), so a
-			// flat foothold at y=100 yields y=99.
+			// FH-set branch snaps to the foothold surface y exactly. The
+			// 1-px-above-surface adjustment that prevents v83 client
+			// fall-through happens in atlas-channel's wire-packet snap
+			// (data/map.SnapMobPosition); atlas-data returns the raw surface
+			// here so there's a single source of truth for the snap invariant.
 			name:       "fh_set_flat_corrects_y",
 			sp:         monster.RestModel{Template: 100100, X: 0, Y: 80, FH: 10},
 			lookup:     groundLookup,
-			wantYExact: ptrInt16(99),
+			wantYExact: ptrInt16(100),
 		},
 		{
 			name:        "fh_set_slope_corrects_y",
 			sp:          monster.RestModel{Template: 100100, X: 300, Y: 80, FH: 11},
 			lookup:      groundLookup,
-			wantYMin:    144,
-			wantYMax:    154,
+			wantYMin:    145,
+			wantYMax:    155,
 			useTolerant: true,
 		},
 		{

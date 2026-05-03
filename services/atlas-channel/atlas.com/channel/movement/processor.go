@@ -15,7 +15,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-packet/model"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	monsterpkt "github.com/Chronicle20/atlas/libs/atlas-packet/monster/clientbound"
@@ -183,7 +182,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		// Mirrors atlas-data/map/processor.go::snapToGround which does the
 		// same -1 adjustment for fresh spawn-point positions; this covers
 		// the post-movement path that snapToGround does not.
-		ms.X, ms.Y = snapMonsterPositionToFoothold(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
+		ms.X, ms.Y = dmap.SnapMobPosition(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
 		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
@@ -277,35 +276,6 @@ func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
 	return byte(skillId), byte(skillLevel), true
 }
 
-// snapMonsterPositionToFoothold ensures the (x, y) reported by the
-// controller's client sits at most 1 px above the foothold's surface (in MS
-// terms, surface_y - 1). When the client reports y at-or-below the slope
-// surface (a common int16 truncation outcome on slope footholds), the
-// returned y is clamped to surface - 1 so subsequent spawn-packet recipients
-// don't classify the position as embedded-in-terrain and drop the mob.
-//
-// On lookup failure (foothold missing, x out of foothold's range, fh==0
-// "mid-air") the input is returned unchanged so we don't mis-snap mobs that
-// are legitimately off-foothold (jumping, in fall sequence, etc.).
-func snapMonsterPositionToFoothold(l logrus.FieldLogger, ctx context.Context, mapId _map.Id, x, y, fh int16) (int16, int16) {
-	if fh == 0 {
-		return x, y
-	}
-	m, err := dmap.NewProcessor(l, ctx).GetById(mapId)
-	if err != nil {
-		l.WithError(err).Debugf("Unable to load map [%d] for foothold snap; passing through (x=%d, y=%d, fh=%d).", mapId, x, y, fh)
-		return x, y
-	}
-	surfaceY, ok := m.SurfaceYOnFoothold(uint32(fh), x)
-	if !ok {
-		return x, y
-	}
-	target := surfaceY - 1
-	if y > target {
-		return x, target
-	}
-	return x, y
-}
 
 // computeAckMp returns the MP value to advertise in MoveMonsterAck for a
 // basic-attack action. It looks up the attack-position's conMP in atks

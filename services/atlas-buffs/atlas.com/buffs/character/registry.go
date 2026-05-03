@@ -189,6 +189,52 @@ func (r *Registry) CancelAll(ctx context.Context, characterId uint32) []buff.Mod
 	return all
 }
 
+// CancelByStatTypes removes any buff whose Changes() intersects typeSet.
+// Returns the cancelled buffs (caller emits EXPIRED events).
+// Empty typeSet returns (nil, nil) without touching Redis.
+func (r *Registry) CancelByStatTypes(ctx context.Context, characterId uint32, typeSet map[string]bool) ([]buff.Model, error) {
+	if len(typeSet) == 0 {
+		return nil, nil
+	}
+
+	t := tenant.MustFromContext(ctx)
+
+	m, err := r.characters.Get(ctx, t, characterId)
+	if errors.Is(err, atlas.ErrNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	cancelled := make([]buff.Model, 0)
+	keep := make(map[int32]buff.Model)
+	for id, b := range m.buffs {
+		matched := false
+		for _, c := range b.Changes() {
+			if typeSet[c.Type()] {
+				matched = true
+				break
+			}
+		}
+		if matched {
+			cancelled = append(cancelled, b)
+		} else {
+			keep[id] = b
+		}
+	}
+
+	if len(cancelled) == 0 {
+		return nil, nil
+	}
+
+	m.buffs = keep
+	if err := r.characters.Put(ctx, t, characterId, m); err != nil {
+		return nil, err
+	}
+	return cancelled, nil
+}
+
 func (r *Registry) HasImmunity(ctx context.Context, characterId uint32) bool {
 	t := tenant.MustFromContext(ctx)
 	m, err := r.characters.Get(ctx, t, characterId)

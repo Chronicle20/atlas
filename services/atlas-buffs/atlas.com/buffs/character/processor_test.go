@@ -7,15 +7,33 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
+	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 )
 
+// noopWriter is a kafka.Writer stub that discards all messages. Used in tests
+// to prevent real Kafka connections.
+type noopWriter struct{ topic string }
+
+func (w *noopWriter) Topic() string                                          { return w.topic }
+func (w *noopWriter) WriteMessages(_ context.Context, _ ...kafka.Message) error { return nil }
+func (w *noopWriter) Close() error                                           { return nil }
+
 func setupProcessorTest(t *testing.T) (Processor, tenant.Model, context.Context) {
 	t.Helper()
 	setupTestRegistry(t)
+
+	// Inject a noop Kafka writer so message.Emit does not attempt a real TCP
+	// connection during unit tests.
+	kafkaProducer.ResetInstance()
+	kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(func(topicName string) kafkaProducer.Writer {
+		return &noopWriter{topic: topicName}
+	}))
+	t.Cleanup(kafkaProducer.ResetInstance)
 
 	logger := logrus.New()
 	logger.SetLevel(logrus.ErrorLevel)
@@ -159,6 +177,67 @@ func TestProcessor_ExpireBuffs_NoBuffs(t *testing.T) {
 
 	err := processor.ExpireBuffs()
 	assert.NoError(t, err)
+}
+
+func TestProcessor_CancelByStatTypes_EmptyTypes(t *testing.T) {
+	processor, _, _ := setupProcessorTest(t)
+
+	err := processor.CancelByStatTypes(world.Id(0), uint32(1000), nil)
+	assert.NoError(t, err)
+}
+
+func TestProcessor_CancelByStatTypes_NoMatch(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	worldId := world.Id(0)
+	characterId := uint32(1000)
+	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(2311003), byte(1), int32(60), holy)
+
+	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
+	assert.NoError(t, err)
+
+	m, _ := GetRegistry().Get(ctx, characterId)
+	assert.Len(t, m.Buffs(), 1)
+}
+
+func TestProcessor_CancelByStatTypes_MultiMatch(t *testing.T) {
+	processor, _, ctx := setupProcessorTest(t)
+
+	worldId := world.Id(0)
+	characterId := uint32(1000)
+
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)})
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(125), byte(1), int32(60), []stat.Model{stat.NewStat("CURSE", -50)})
+	_ = processor.Apply(worldId, channel.Id(0), characterId, uint32(2000), int32(126), byte(1), int32(60), []stat.Model{stat.NewStat("WEAKEN", -20)})
+
+	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON", "CURSE", "WEAKEN", "DARKNESS", "SEAL"})
+	assert.NoError(t, err)
+
+	m, _ := GetRegistry().Get(ctx, characterId)
+	assert.Len(t, m.Buffs(), 0)
+}
+
+func TestProcessor_CancelByStatTypes_HolyShieldDoesNotBlockRemoval(t *testing.T) {
+	// D5: Holy Shield gates application, not cure. A character with HOLY_SHIELD
+	// who somehow has a debuff must still be curable.
+	processor, _, ctx := setupProcessorTest(t)
+
+	worldId := world.Id(0)
+	characterId := uint32(1000)
+
+	// Insert a POISON buff via the registry directly so the immunity check on
+	// Apply can't refuse it once HOLY_SHIELD is present.
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(124), byte(1), int32(60), []stat.Model{stat.NewStat("POISON", -10)})
+	_, _ = GetRegistry().Apply(ctx, worldId, channel.Id(0), characterId, int32(2311005), byte(1), int32(60), []stat.Model{stat.NewStat("HOLY_SHIELD", 1)})
+
+	err := processor.CancelByStatTypes(worldId, characterId, []string{"POISON"})
+	assert.NoError(t, err)
+
+	m, _ := GetRegistry().Get(ctx, characterId)
+	assert.Len(t, m.Buffs(), 1)
+	_, stillHasHolyShield := m.Buffs()[int32(2311005)]
+	assert.True(t, stillHasHolyShield)
 }
 
 func TestProcessor_TenantContext(t *testing.T) {

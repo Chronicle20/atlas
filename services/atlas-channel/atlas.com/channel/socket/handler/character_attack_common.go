@@ -74,9 +74,17 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
-// mpEaterSkillIds maps each mage job line to its MP Eater skill. Jobs that
-// do not have MP Eater (e.g. base Magician 200) are absent from the map.
-// F/P, I/L, and Cleric lines each share a single skill id across all tiers.
+// resolveMpEaterSkillId returns the MP Eater skill id for the given job
+// using an explicit allow-list. Returns ok=false for jobs that have no
+// MP Eater (non-mage jobs, base Magician 200, etc.).
+//
+// An explicit map is used rather than the Cosmic formula
+// (jobId - jobId%10) * 10000 because that formula produces false
+// positives against the registered skill set: e.g.,
+// MagicianId 200 → 2000000 = MagicianImprovedMpRecoveryId, and
+// FighterId 110 → 1100000 = FighterSwordMasteryId. Both are real
+// skills on other job lines, so the formula's `Skills[id]` filter
+// cannot rule out non-mage jobs reliably.
 var mpEaterSkillIds = map[job.Id]skill3.Id{
 	job.FirePoisonWizardId:         skill3.FirePoisionWizardMpEaterId,
 	job.FirePoisonMagicianId:       skill3.FirePoisionWizardMpEaterId,
@@ -89,9 +97,6 @@ var mpEaterSkillIds = map[job.Id]skill3.Id{
 	job.BishopId:                   skill3.ClericMpEaterId,
 }
 
-// resolveMpEaterSkillId returns the MP Eater skill id for the given job.
-// Returns ok=false for jobs that have no MP Eater (non-mage jobs, base
-// Magician 200, etc.).
 func resolveMpEaterSkillId(jobId job.Id) (skill3.Id, bool) {
 	id, ok := mpEaterSkillIds[jobId]
 	return id, ok

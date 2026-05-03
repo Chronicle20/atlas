@@ -22,6 +22,7 @@ import (
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -89,6 +90,10 @@ type damageInfoEntryDeps struct {
 	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
 	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
 	loadVenomStats    func() effective_stats.RestModel
+	// onDamageApplied is invoked once per non-reflected DamageInfo after
+	// damage and status apply. Optional; nil-safe. Used by passives that
+	// fire per damaged monster (e.g., MP Eater).
+	onDamageApplied func(monsterId uint32)
 }
 
 // processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
@@ -184,6 +189,94 @@ func processDamageInfoEntry(
 		}
 		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
 	}
+
+	if deps.onDamageApplied != nil {
+		deps.onDamageApplied(di.MonsterId())
+	}
+}
+
+// mpEaterShouldProc returns true when MP Eater should fire given the
+// skill's prop and a single uniform roll in [0,1). Mirrors Cosmic's
+// `prop == 1.0 || rand() < prop`. Defensive against negative props.
+func mpEaterShouldProc(prop float64, roll float64) bool {
+	if prop <= 0 {
+		return false
+	}
+	return prop >= 1.0 || roll < prop
+}
+
+// mpEaterAbsorbAmount computes the requested drain from monster MaxMp
+// and the skill's X (absorb percent). Returns 0 when MaxMp is 0 or X is
+// non-positive. atlas-monsters re-clamps to the monster's current MP.
+func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
+	if maxMp == 0 || x <= 0 {
+		return 0
+	}
+	return uint32(uint64(maxMp) * uint64(x) / 100)
+}
+
+// mpEaterTryProc evaluates and (on success) emits MP Eater for one
+// damaged monster. Called once per damaged monster after status apply.
+// Errors are logged at Debugf/Errorf and swallowed — never abort the
+// surrounding attack pipeline.
+func mpEaterTryProc(
+	l logrus.FieldLogger,
+	ctx context.Context,
+	mp *monster.Processor,
+	c character.Model,
+	monsterId uint32,
+	f field.Model,
+	characterId uint32,
+) {
+	eaterId, ok := job.MpEaterSkillId(c.JobId())
+	if !ok {
+		return
+	}
+
+	var ownedLevel byte
+	for _, owned := range c.Skills() {
+		if owned.Id() == eaterId {
+			ownedLevel = owned.Level()
+			break
+		}
+	}
+	if ownedLevel == 0 {
+		return
+	}
+
+	eaterEffect, err := skill2.NewProcessor(l, ctx).GetEffect(uint32(eaterId), ownedLevel)
+	if err != nil {
+		l.WithError(err).Errorf("MP Eater: skill effect lookup failed for skill [%d] level [%d].", eaterId, ownedLevel)
+		return
+	}
+	if eaterEffect.Prop() <= 0 {
+		return
+	}
+
+	mon, err := mp.GetById(monsterId)
+	if err != nil {
+		l.WithError(err).Debugf("MP Eater: monster [%d] snapshot fetch failed.", monsterId)
+		return
+	}
+	if mon.MaxMp() == 0 || mon.Mp() == 0 {
+		return
+	}
+
+	if !mpEaterShouldProc(eaterEffect.Prop(), rand.Float64()) {
+		return
+	}
+
+	amount := mpEaterAbsorbAmount(mon.MaxMp(), eaterEffect.X())
+	if amount == 0 {
+		return
+	}
+
+	l.Debugf("MP Eater proc: caster=[%d] skill=[%d] monster=[%d] amount=[%d] (monster MaxMp=%d Mp=%d).",
+		characterId, eaterId, monsterId, amount, mon.MaxMp(), mon.Mp())
+
+	if err := mp.DrainMp(f, monsterId, characterId, uint32(eaterId), amount); err != nil {
+		l.WithError(err).Errorf("MP Eater: DRAIN_MP emit failed for monster [%d] caster [%d].", monsterId, characterId)
+	}
 }
 
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -276,6 +369,14 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						emitReflectDamage: mp.EmitDamageReflected,
 						applyStatus:       mp.ApplyStatus,
 						loadVenomStats:    loadVenomStats,
+						// MP Eater proc: per-monster, after status apply,
+						// magic attacks only. Failures are swallowed so the
+						// rest of the attack pipeline is unaffected.
+						onDamageApplied: func(monsterId uint32) {
+							if ai.AttackType() == packetmodel.AttackTypeMagic && ai.SkillId() > 0 {
+								mpEaterTryProc(l, ctx, mp, c, monsterId, s.Field(), s.CharacterId())
+							}
+						},
 					}
 					for _, di := range ai.DamageInfo() {
 						processDamageInfoEntry(
@@ -346,7 +447,6 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					// TODO Heavens Hammer
 					// TODO ComboTempest
 					// TODO BodyPressure
-					// TODO Apply MPEater
 
 					return nil
 				}

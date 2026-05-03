@@ -81,6 +81,37 @@ func GetSkillBook(jobId Id) int {
 	return 0
 }
 
+// mpEaterSkillIds is the explicit allow-list of jobs that have an MP Eater
+// passive and the skill id they should use for it. Bishops fall under the
+// Cleric branch, Arch Mages under their respective Wizard lines, and so on.
+var mpEaterSkillIds = map[Id]skill.Id{
+	FirePoisonWizardId:         skill.FirePoisonWizardMpEaterId,
+	FirePoisonMagicianId:       skill.FirePoisonWizardMpEaterId,
+	FirePoisonArchMagicianId:   skill.FirePoisonWizardMpEaterId,
+	IceLightningWizardId:       skill.IceLightningWizardMpEaterId,
+	IceLightningMagicianId:     skill.IceLightningWizardMpEaterId,
+	IceLightningArchMagicianId: skill.IceLightningWizardMpEaterId,
+	ClericId:                   skill.ClericMpEaterId,
+	PriestId:                   skill.ClericMpEaterId,
+	BishopId:                   skill.ClericMpEaterId,
+}
+
+// MpEaterSkillId returns the MP Eater skill id for the given job id.
+// Returns ok=false for jobs that have no MP Eater (non-mage jobs, base
+// Magician 200, etc.).
+//
+// An explicit map is used rather than the Cosmic formula
+// (jobId - jobId%10) * 10000 because that formula produces false
+// positives against the registered skill set: e.g.,
+// MagicianId 200 → 2000000 = MagicianImprovedMpRecoveryId, and
+// FighterId 110 → 1100000 = FighterSwordMasteryId. Both are real
+// skills on other job lines, so the formula's `Skills[id]` filter
+// cannot rule out non-mage jobs reliably.
+func MpEaterSkillId(jobId Id) (skill.Id, bool) {
+	id, ok := mpEaterSkillIds[jobId]
+	return id, ok
+}
+
 func FromIndex(jobIndex uint32, subJobIndex uint32) Id {
 	jobId := BeginnerId
 	if jobIndex == 0 {

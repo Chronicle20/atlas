@@ -85,3 +85,13 @@ func (p *Processor) CancelStatus(f field.Model, monsterId uint32, statusTypes []
 	p.l.Debugf("Cancelling status from monster [%d]. Types [%v]. Source character [%d] skill [%d] class [%s].", monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(CancelStatusCommandProvider(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass))
 }
+
+// DrainMp emits a DRAIN_MP command instructing atlas-monsters to deduct
+// MP from a monster as the result of a player passive. The channel
+// pre-screens cheap guards (MaxMp/Mp non-zero); atlas-monsters does the
+// authoritative boss check and final clamp. The actual proc visual and
+// caster MP refund are deferred to the MP_CHANGED return event.
+func (p *Processor) DrainMp(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) error {
+	p.l.Debugf("Draining MP from monster [%d] for character [%d] via skill [%d]. Amount [%d].", monsterId, characterId, skillId, amount)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DrainMpCommandProvider(f, monsterId, characterId, skillId, amount))
+}

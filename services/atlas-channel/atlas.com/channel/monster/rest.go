@@ -80,6 +80,7 @@ func Extract(m RestModel) (Model, error) {
 		maxHp:              m.MaxHp,
 		hp:                 m.Hp,
 		mp:                 m.Mp,
+		maxMp:              m.MaxMp,
 		monsterId:          m.MonsterId,
 		controlCharacterId: m.ControlCharacterId,
 		controllerHasAggro: m.ControllerHasAggro,

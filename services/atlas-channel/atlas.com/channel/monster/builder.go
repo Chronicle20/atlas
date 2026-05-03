@@ -16,6 +16,7 @@ type modelBuilder struct {
 	maxHp              uint32
 	hp                 uint32
 	mp                 uint32
+	maxMp              uint32
 	monsterId          uint32
 	controlCharacterId uint32
 	x                  int16
@@ -43,6 +44,7 @@ func CloneModel(m Model) *modelBuilder {
 		maxHp:              m.maxHp,
 		hp:                 m.hp,
 		mp:                 m.mp,
+		maxMp:              m.maxMp,
 		monsterId:          m.monsterId,
 		controlCharacterId: m.controlCharacterId,
 		x:                  m.x,
@@ -66,6 +68,11 @@ func (b *modelBuilder) SetHp(hp uint32) *modelBuilder {
 
 func (b *modelBuilder) SetMp(mp uint32) *modelBuilder {
 	b.mp = mp
+	return b
+}
+
+func (b *modelBuilder) SetMaxMp(maxMp uint32) *modelBuilder {
+	b.maxMp = maxMp
 	return b
 }
 
@@ -110,6 +117,7 @@ func (b *modelBuilder) Build() (Model, error) {
 		maxHp:              b.maxHp,
 		hp:                 b.hp,
 		mp:                 b.mp,
+		maxMp:              b.maxMp,
 		monsterId:          b.monsterId,
 		controlCharacterId: b.controlCharacterId,
 		x:                  b.x,

@@ -193,12 +193,12 @@ var Magician = Job{
 var FirePoisonWizard = Job{
 	id: FirePoisonWizardId,
 	skills: []skill.Skill{
-		skill.FirePoisionWizardMpEater,
-		skill.FirePoisionWizardMeditation,
-		skill.FirePoisionWizardTeleport,
-		skill.FirePoisionWizardSlow,
-		skill.FirePoisionWizardFireArrow,
-		skill.FirePoisionWizardPoisonBreath,
+		skill.FirePoisonWizardMpEater,
+		skill.FirePoisonWizardMeditation,
+		skill.FirePoisonWizardTeleport,
+		skill.FirePoisonWizardSlow,
+		skill.FirePoisonWizardFireArrow,
+		skill.FirePoisonWizardPoisonBreath,
 	},
 }
 

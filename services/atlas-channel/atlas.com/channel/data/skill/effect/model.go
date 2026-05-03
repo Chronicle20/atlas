@@ -121,3 +121,15 @@ func (m Model) LT() point.Model {
 func (m Model) RB() point.Model {
 	return m.rb
 }
+
+// Prop returns the proc-chance attribute (0.0–1.0). Used by passives like
+// MP Eater to roll on each affected monster.
+func (m Model) Prop() float64 {
+	return m.prop
+}
+
+// X returns the integer X attribute (often used as a percent or
+// multiplier; for MP Eater it is the absorb percent of monster MaxMp).
+func (m Model) X() int16 {
+	return m.x
+}

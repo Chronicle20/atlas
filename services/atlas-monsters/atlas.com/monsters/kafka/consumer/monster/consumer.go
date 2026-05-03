@@ -46,6 +46,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUseBasicAttackCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleDrainMpCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -143,6 +146,17 @@ func handleUseBasicAttackCommand(l logrus.FieldLogger, ctx context.Context, c co
 
 	p := monster.NewProcessor(l, ctx)
 	p.UseBasicAttack(c.MonsterId, c.Body.AttackPos)
+}
+
+func handleDrainMpCommand(l logrus.FieldLogger, ctx context.Context, c command[drainMpCommandBody]) {
+	if c.Type != CommandTypeDrainMp {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	if err := p.DrainMp(c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.Amount); err != nil {
+		l.WithError(err).Errorf("DRAIN_MP failed for monster [%d] character [%d].", c.MonsterId, c.Body.CharacterId)
+	}
 }
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

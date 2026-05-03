@@ -15,6 +15,7 @@ const (
 	CommandTypeCancelStatus   = "CANCEL_STATUS"
 	CommandTypeUseSkill       = "USE_SKILL"
 	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
+	CommandTypeDrainMp        = "DRAIN_MP"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -70,6 +71,17 @@ type UseBasicAttackCommandBody struct {
 	AttackPos uint8 `json:"attackPos"`
 }
 
+// DrainMpCommandBody asks atlas-monsters to deduct MP from a monster
+// because of a player passive. atlas-monsters re-checks Boss / MaxMp /
+// current Mp guards and clamps the deduction at zero. On a non-zero
+// drain it emits a MP_CHANGED status event with Reason set so the
+// channel can refund the caster's MP and play the visual.
+type DrainMpCommandBody struct {
+	CharacterId uint32 `json:"characterId"`
+	SkillId     uint32 `json:"skillId"`
+	Amount      uint32 `json:"amount"`
+}
+
 const (
 	EnvEventTopicStatus = "EVENT_TOPIC_MONSTER_STATUS"
 
@@ -85,11 +97,14 @@ const (
 	EventStatusDamageReflected  = "DAMAGE_REFLECTED"
 	EventStatusAggroChanged     = "AGGRO_CHANGED"
 	EventStatusNextSkillDecided = "NEXT_SKILL_DECIDED"
+	EventStatusMpChanged        = "MP_CHANGED"
 
 	DamageSourceCharacterAttack = "CHARACTER_ATTACK"
 	DamageSourceMonsterAttack   = "MONSTER_ATTACK"
 	DamageSourceDamageOverTime  = "DAMAGE_OVER_TIME"
 	DamageSourceHeal            = "HEAL"
+
+	MpChangeReasonMpEater = "MP_EATER"
 )
 
 type StatusEvent[E any] struct {
@@ -191,4 +206,16 @@ type StatusEventNextSkillDecidedBody struct {
 	SkillLevel             byte  `json:"skillLevel"`
 	DecidedAtMs            int64 `json:"decidedAtMs"`
 	NextEligibleRepickAtMs int64 `json:"nextEligibleRepickAtMs"`
+}
+
+// StatusEventMpChangedBody is the return event for any monster MP
+// mutation whose Reason atlas-channel needs to react to. v1 only emits
+// Reason = MpChangeReasonMpEater; future passives (e.g., Magic Guard
+// refund, Drain MP) will share the channel by setting a new Reason.
+type StatusEventMpChangedBody struct {
+	CharacterId    uint32 `json:"characterId"`
+	SkillId        uint32 `json:"skillId"`
+	Reason         string `json:"reason"`
+	Amount         uint32 `json:"amount"`
+	MonsterMpAfter uint32 `json:"monsterMpAfter"`
 }

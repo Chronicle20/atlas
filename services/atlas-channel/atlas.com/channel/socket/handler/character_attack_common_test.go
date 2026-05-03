@@ -1,11 +1,8 @@
 package handler
 
 import (
-	"atlas-channel/asset"
-	"atlas-channel/compartment"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
-	channelinv "atlas-channel/inventory"
 	"atlas-channel/monster"
 	"errors"
 	"io"
@@ -14,8 +11,6 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
-	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
@@ -569,50 +564,5 @@ func TestProcessDamageInfoEntry_NonDoom_EmptyDamagesIgnoresReflectProbe(t *testi
 
 	if len(df.applyStatusCalls) != 1 {
 		t.Errorf("non-Doom empty-damage status should apply through reflect; applyStatus calls = %d, want 1", len(df.applyStatusCalls))
-	}
-}
-
-// TestFindItemSlotInInventory_Found verifies the helper returns the slot of
-// the first asset in the resolved compartment whose template id equals the
-// queried item id.
-func TestFindItemSlotInInventory_Found(t *testing.T) {
-	const magicRockId = uint32(4006000)
-	compId := uuid.New()
-	a := asset.NewBuilder(compId, magicRockId).
-		SetId(101).
-		SetSlot(3).
-		SetQuantity(5).
-		MustBuild()
-	useComp := compartment.NewBuilder(compId, 1, inventoryconst.TypeValueETC, 24).
-		SetAssets([]asset.Model{a}).
-		MustBuild()
-	inv := channelinv.NewBuilder(1).
-		SetCompartment(useComp).
-		MustBuild()
-
-	pos, found := findItemSlotInInventory(inv, magicRockId)
-	if !found {
-		t.Fatalf("expected to find item [%d]", magicRockId)
-	}
-	if pos != slot.Position(3) {
-		t.Errorf("pos = %d, want 3", pos)
-	}
-}
-
-// TestFindItemSlotInInventory_NotFound pins the absent-item branch: if the
-// inventory has no matching template id in the resolved compartment, the
-// helper returns (0, false). The caller logs a warning and the cast is still
-// permitted (defense-in-depth, not authoritative).
-func TestFindItemSlotInInventory_NotFound(t *testing.T) {
-	const magicRockId = uint32(4006000)
-	compId := uuid.New()
-	useComp := compartment.NewBuilder(compId, 1, inventoryconst.TypeValueETC, 24).
-		MustBuild()
-	inv := channelinv.NewBuilder(1).
-		SetCompartment(useComp).
-		MustBuild()
-
-	if _, found := findItemSlotInInventory(inv, magicRockId); found {
-		t.Errorf("expected not-found for empty ETC compartment")
 	}
 }

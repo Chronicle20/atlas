@@ -6,6 +6,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	monsterconst "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -69,6 +70,9 @@ func (p *Processor) UseBasicAttack(f field.Model, monsterId uint32, attackPos ui
 
 func (p *Processor) ApplyStatus(f field.Model, monsterId uint32, characterId uint32, skillId uint32, skillLevel uint32, statuses map[string]int32, duration uint32) error {
 	p.l.Debugf("Applying status to monster [%d]. Character [%d]. Skill [%d].", monsterId, characterId, skillId)
+	if _, isDoom := statuses[monsterconst.StatusDoom]; isDoom {
+		p.l.Debugf("Doom: caster=[%d] monster=[%d] skill=[%d] level=[%d] duration=[%d]ms.", characterId, monsterId, skillId, skillLevel, duration)
+	}
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ApplyStatusCommandProvider(f, monsterId, characterId, skillId, skillLevel, statuses, duration))
 }
 

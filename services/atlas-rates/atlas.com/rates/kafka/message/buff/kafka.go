@@ -67,6 +67,7 @@ const (
 type RateMapping struct {
 	RateType   string           // The rate type (e.g., "exp", "meso")
 	Conversion ConversionMethod // How to convert amount to multiplier
+	Multiplier float64          // Used only when Conversion == ConversionFixed; ignored otherwise
 }
 
 // buffToRateMappings maps game client stat types to rate types with conversion methods
@@ -87,9 +88,11 @@ func GetRateMapping(statType string) (RateMapping, bool) {
 	return mapping, exists
 }
 
-// CalculateMultiplier converts a stat amount to a rate multiplier using the specified conversion method
-func CalculateMultiplier(amount int32, conversion ConversionMethod) float64 {
-	switch conversion {
+// CalculateMultiplier converts a stat amount to a rate multiplier using the mapping's conversion method.
+// For Amount-derived modes (Additive, Direct), `amount` is consumed.
+// For Fixed mode, `mapping.Multiplier` is returned verbatim and `amount` is ignored.
+func CalculateMultiplier(amount int32, mapping RateMapping) float64 {
+	switch mapping.Conversion {
 	case ConversionAdditive:
 		return 1.0 + (float64(amount) / 100.0)
 	case ConversionDirect:

@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-channel/character"
+	"atlas-channel/effective_stats"
 	consumer2 "atlas-channel/kafka/consumer"
 	character2 "atlas-channel/kafka/message/character"
 	_map "atlas-channel/map"
@@ -116,6 +117,24 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 		return func(wp writer.Producer) func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 			return func(c character.Model, exclRequestSent bool, updates []stat.Type) model.Operator[session.Model] {
 				return func(s session.Model) error {
+					// Resolve effective MaxHp / MaxMp once per call when this
+					// stat-changed batch carries TypeMaxHp or TypeMaxMp, so the
+					// v83 client UI cap reflects gear / buff / passive bonuses
+					// instead of the persisted base. Lazy: skip the
+					// effective-stats fetch when neither cap is in the batch.
+					maxHp := c.MaxHp()
+					maxMp := c.MaxMp()
+					capsInUpdates := false
+					for _, u := range updates {
+						if u == stat.TypeMaxHp || u == stat.TypeMaxMp {
+							capsInUpdates = true
+							break
+						}
+					}
+					if capsInUpdates {
+						maxHp, maxMp = effective_stats.ResolveCharacterMaxes(l, ctx, c.WorldId(), s.ChannelId(), c.Id(), c.MaxHp(), c.MaxMp())
+					}
+
 					var su = make([]model2.StatUpdate, 0)
 					for _, update := range updates {
 						value := int64(0)
@@ -146,11 +165,11 @@ func statChanged(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.
 						} else if update == stat.TypeHp {
 							value = int64(c.Hp())
 						} else if update == stat.TypeMaxHp {
-							value = int64(c.MaxHp())
+							value = int64(maxHp)
 						} else if update == stat.TypeMp {
 							value = int64(c.Mp())
 						} else if update == stat.TypeMaxMp {
-							value = int64(c.MaxMp())
+							value = int64(maxMp)
 						} else if update == stat.TypeAvailableAP {
 							value = int64(c.Ap())
 						} else if update == stat.TypeAvailableSP {

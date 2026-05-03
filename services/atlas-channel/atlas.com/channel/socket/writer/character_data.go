@@ -12,7 +12,13 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 )
 
-func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.CharacterData {
+// BuildCharacterData assembles the per-character snapshot sent to the v83
+// client (CharacterData / CashShopOpen / SetField). The caller supplies
+// effectiveMaxHp / effectiveMaxMp resolved from atlas-effective-stats so the
+// client UI cap reflects gear / buff / passive bonuses; if the caller cannot
+// reach the stats service it should pass c.MaxHp() / c.MaxMp() to fall back
+// to the persisted base.
+func BuildCharacterData(c character.Model, bl buddylist.Model, effectiveMaxHp, effectiveMaxMp uint16) charpkt.CharacterData {
 	cd := charpkt.CharacterData{
 		Stats: charpkt.CharacterStats{
 			Id:        c.Id(),
@@ -28,9 +34,9 @@ func BuildCharacterData(c character.Model, bl buddylist.Model) charpkt.Character
 			Int:       c.Intelligence(),
 			Luk:       c.Luck(),
 			Hp:        c.Hp(),
-			MaxHp:     c.MaxHp(),
+			MaxHp:     effectiveMaxHp,
 			Mp:        c.Mp(),
-			MaxMp:     c.MaxMp(),
+			MaxMp:     effectiveMaxMp,
 			Ap:        c.Ap(),
 			Sp:        c.RemainingSp(),
 			Exp:       c.Experience(),

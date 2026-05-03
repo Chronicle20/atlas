@@ -4,8 +4,6 @@ import (
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 )
 
-const noForcedReturnMapId = _map.Id(999999999)
-
 type Model struct {
 	id                _map.Id
 	timeLimit         int32
@@ -25,5 +23,5 @@ func (m Model) ForcedReturnMapId() _map.Id {
 }
 
 func (m Model) IsTimeLimited() bool {
-	return m.timeLimit > 0 && m.forcedReturnMapId != noForcedReturnMapId
+	return m.timeLimit > 0 && m.forcedReturnMapId != _map.EmptyMapId
 }

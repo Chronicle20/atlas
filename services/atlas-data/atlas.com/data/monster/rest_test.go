@@ -3,6 +3,7 @@ package monster
 import (
 	"atlas-data/xml"
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -72,4 +73,26 @@ func TestRest(t *testing.T) {
 
 func compare(m1 RestModel, m2 RestModel) bool {
 	return reflect.DeepEqual(m1, m2)
+}
+
+func TestRestModel_AttacksRoundTrip(t *testing.T) {
+	in := RestModel{
+		Id:   5100004,
+		Name: "Samiho",
+		Attacks: []AttackInfo{
+			{Pos: 1, ConMP: 0, AttackAfter: 0},
+			{Pos: 2, ConMP: 5, AttackAfter: 1500},
+		},
+	}
+	data, err := json.Marshal(in)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var out RestModel
+	if err := json.Unmarshal(data, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if !reflect.DeepEqual(in.Attacks, out.Attacks) {
+		t.Fatalf("Attacks round-trip mismatch:\n want %+v\n  got %+v", in.Attacks, out.Attacks)
+	}
 }

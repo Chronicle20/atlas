@@ -3,6 +3,7 @@ package information
 // ModelBuilder provides a minimal fluent interface for constructing Model
 // instances in tests. Only the fields that the picker reads are settable.
 type ModelBuilder struct {
+	boss       bool
 	skills     []Skill
 	attacks    []AttackInfo
 	hpRecovery uint32
@@ -12,6 +13,12 @@ type ModelBuilder struct {
 // NewModelBuilder returns a new ModelBuilder with zero values.
 func NewModelBuilder() *ModelBuilder {
 	return &ModelBuilder{}
+}
+
+// SetBoss sets the boss flag on the builder.
+func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
+	b.boss = boss
+	return b
 }
 
 // SetSkills sets the skill list on the builder.
@@ -47,6 +54,7 @@ func (b *ModelBuilder) Build() Model {
 		attacks = []AttackInfo{}
 	}
 	return Model{
+		boss:       b.boss,
 		skills:     skills,
 		attacks:    attacks,
 		hpRecovery: b.hpRecovery,

@@ -344,9 +344,9 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		skill.OutlawIceSplitterId, skill.FirePoisonArchMagicianParalyzeId, skill.AranStage4ComboTempestId, skill.EvanStage4IceBreathId) {
 		ms[monster.StatusFreeze] = 1
 		e.SetDuration(e.Duration() * 2)
-	} else if skill.Is(skillId, skill.FirePoisionWizardSlowId, skill.IceLightningWizardSlowId, skill.BlazeWizardStage2SlowId) {
+	} else if skill.Is(skillId, skill.FirePoisonWizardSlowId, skill.IceLightningWizardSlowId, skill.BlazeWizardStage2SlowId) {
 		ms[monster.StatusSpeed] = uint32(e.X())
-	} else if skill.Is(skillId, skill.FirePoisionWizardPoisonBreathId, skill.FirePoisonMagicianElementCompositionId) {
+	} else if skill.Is(skillId, skill.FirePoisonWizardPoisonBreathId, skill.FirePoisonMagicianElementCompositionId) {
 		ms[monster.StatusPoison] = 1
 	} else if skill.Is(skillId, skill.PriestDoomId) {
 		ms[monster.StatusDoom] = 1

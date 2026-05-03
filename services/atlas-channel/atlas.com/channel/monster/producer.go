@@ -142,3 +142,26 @@ func DamageCommandProvider(f field.Model, monsterId uint32, characterId uint32, 
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// DrainMpCommandProvider builds the DRAIN_MP command for atlas-monsters
+// to deduct MP from a monster as the result of a player passive (e.g.,
+// MP Eater). atlas-monsters re-checks all guards (Boss / MaxMp / Mp) and
+// clamps the deduction; on a non-zero drain it emits MP_CHANGED back to
+// the channel so the caster's MP is refunded and the visual is played.
+func DrainMpCommandProvider(f field.Model, monsterId uint32, characterId uint32, skillId uint32, amount uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(monsterId))
+	value := &monster2.Command[monster2.DrainMpCommandBody]{
+		WorldId:   f.WorldId(),
+		ChannelId: f.ChannelId(),
+		MapId:     f.MapId(),
+		Instance:  f.Instance(),
+		MonsterId: monsterId,
+		Type:      monster2.CommandTypeDrainMp,
+		Body: monster2.DrainMpCommandBody{
+			CharacterId: characterId,
+			SkillId:     skillId,
+			Amount:      amount,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -39,7 +39,8 @@ func (b *ModelBuilder) SetMpRecovery(v uint32) *ModelBuilder {
 }
 
 // SetBoss sets the boss flag on the builder. Used by tests that drive
-// boss-immunity branches in ApplyStatusEffect.
+// boss-immunity branches in ApplyStatusEffect and the boss-skip branch
+// in DrainMp.
 func (b *ModelBuilder) SetBoss(boss bool) *ModelBuilder {
 	b.boss = boss
 	return b

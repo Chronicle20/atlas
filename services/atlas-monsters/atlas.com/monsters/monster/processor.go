@@ -41,7 +41,7 @@ type Processor interface {
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
-	Move(id uint32, x int16, y int16, stance byte) error
+	Move(id uint32, x int16, y int16, fh int16, stance byte) error
 	Destroy(uniqueId uint32) error
 	DestroyInField(f field.Model) error
 	UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte)
@@ -148,14 +148,32 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		}
 	}
 
+	// Assign the initial controller IN-PLACE (Redis only) without emitting
+	// a StartControl event. The control packet for this initial assignment
+	// is sent by the channel's Created handler, AFTER the Spawn packet,
+	// in the same goroutine — guaranteeing Spawn-then-Control ordering for
+	// the new mob.
+	//
+	// If we instead emitted StartControl here (or via p.StartControl), the
+	// channel would race the Spawn and Control handlers in parallel
+	// goroutines (atlas-kafka manager.go:437). The v83 client occasionally
+	// gets Control before Spawn, materializes the mob from the Control
+	// payload alone, and on slope footholds the resulting placement is
+	// 0.67 px below the surface — client physics then falls it through.
+	//
+	// StartControl as a public API is preserved for genuine control
+	// transfers (controller leaves, DPS-leader switch, FindNextController).
 	cid, err := p.getControllerCandidate(f, _map.CharacterIdsInFieldProvider(p.l)(p.ctx)(f))
 	if err == nil {
 		p.l.Debugf("Created monster [%d] with id [%d] will be controlled by [%d].", m.MonsterId(), m.UniqueId(), cid)
-		m, err = p.StartControl(m.UniqueId(), cid)
+		m, err = GetMonsterRegistry().ControlMonster(p.t, m.UniqueId(), cid)
 		if err != nil {
-			p.l.WithError(err).Errorf("Unable to start [%d] controlling [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
+			p.l.WithError(err).Errorf("Unable to assign initial controller [%d] for [%d] in field [%s].", cid, m.UniqueId(), m.Field().Id())
 		}
 	}
+
+	p.l.Debugf("Created monster [%d] in field [%s]. Emitting Monster Status.", input.MonsterId, f.Id())
+	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(createdStatusEventProvider(m))
 
 	if ma.Friendly() && ma.DropPeriod() > 0 {
 		interval := time.Duration(ma.DropPeriod()/3) * time.Millisecond
@@ -172,8 +190,6 @@ func (p *ProcessorImpl) Create(f field.Model, input RestModel) (Model, error) {
 		})
 	}
 
-	p.l.Debugf("Created monster [%d] in field [%s]. Emitting Monster Status.", input.MonsterId, f.Id())
-	_ = producer.ProviderImpl(p.l)(p.ctx)(EnvEventTopicMonsterStatus)(createdStatusEventProvider(m))
 	return m, nil
 }
 
@@ -490,8 +506,8 @@ func (p *ProcessorImpl) spawnRevives(m Model, revives []uint32) {
 }
 
 // Move moves a monster to a new position
-func (p *ProcessorImpl) Move(id uint32, x int16, y int16, stance byte) error {
-	GetMonsterRegistry().MoveMonster(p.t, id, x, y, stance)
+func (p *ProcessorImpl) Move(id uint32, x int16, y int16, fh int16, stance byte) error {
+	GetMonsterRegistry().MoveMonster(p.t, id, x, y, fh, stance)
 	return nil
 }
 

@@ -1,6 +1,7 @@
 package movement
 
 import (
+	dmap "atlas-channel/data/map"
 	"atlas-channel/data/npc"
 	movement2 "atlas-channel/kafka/message/movement"
 	"atlas-channel/kafka/producer"
@@ -55,7 +56,7 @@ func (p *Processor) ForCharacter(f field.Model, characterId uint32, movement mod
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandCharacterMovement)(CommandProducer(f, uint64(characterId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -99,7 +100,7 @@ func (p *Processor) ForPet(f field.Model, characterId uint32, petId uint32, move
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(f, uint64(petId), characterId, ms.X, ms.Y, ms.Stance))
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandPetMovement)(CommandProducer(f, uint64(petId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -167,7 +168,22 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		if err != nil {
 			return
 		}
-		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Stance))
+		// Snap y to (foothold surface - 1) so the stored mob position is
+		// always 1 px ABOVE the foothold surface. The controller's client
+		// occasionally reports y at-or-below the slope surface (int16
+		// truncation in its float→short conversion); when another client
+		// (or the same client at map re-entry) receives the spawn packet
+		// for this mob, the v83 client validates (x, y) against the
+		// foothold and treats at-or-below positions as embedded-in-terrain,
+		// dropping the mob through the foothold. Pre-snapping at the
+		// channel boundary keeps the stored position above-surface so
+		// spawn-packet validation always passes.
+		//
+		// Mirrors atlas-data/map/processor.go::snapToGround which does the
+		// same -1 adjustment for fresh spawn-point positions; this covers
+		// the post-movement path that snapToGround does not.
+		ms.X, ms.Y = dmap.SnapMobPosition(p.l, p.ctx, f.MapId(), ms.X, ms.Y, ms.Fh)
+		err = producer.ProviderImpl(p.l)(p.ctx)(movement2.EnvCommandMonsterMovement)(CommandProducer(f, uint64(objectId), characterId, ms.X, ms.Y, ms.Fh, ms.Stance))
 		if err != nil {
 			p.l.WithError(err).Errorf("Unable to issue movement command [%d].", characterId)
 		}
@@ -198,6 +214,7 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 type summary struct {
 	X      int16
 	Y      int16
+	Fh     int16
 	Stance byte
 }
 
@@ -216,19 +233,30 @@ func folder(s summary, e model.MovementCodec) (summary, error) {
 }
 
 func foldMovementSummary(s summary, e interface{}) (summary, error) {
-	ms := summary{X: s.X, Y: s.Y, Stance: s.Stance}
+	ms := summary{X: s.X, Y: s.Y, Fh: s.Fh, Stance: s.Stance}
 
+	// Fh is preserved across mid-air frames (Jump, StartFallDown, etc.) — those
+	// frames carry no resting foothold. Only NormalElement and TeleportElement
+	// land the mob on a foothold; we copy v.Fh from those, but only when
+	// non-zero so we don't trample the spawn-time fh during a fall sequence
+	// where the client transmits Fh=0 for "no anchor yet".
 	switch v := e.(type) {
 	case *model.NormalElement:
 		ms.X = v.X
 		ms.Y = v.Y
 		ms.Stance = v.BMoveAction
+		if v.Fh != 0 {
+			ms.Fh = v.Fh
+		}
 		return ms, nil
 	case model.JumpElement:
 		ms.Stance = v.BMoveAction
 		return ms, nil
 	case model.TeleportElement:
 		ms.Stance = v.BMoveAction
+		if v.Fh != 0 {
+			ms.Fh = v.Fh
+		}
 		return ms, nil
 	case model.StartFallDownElement:
 		ms.Stance = v.BMoveAction
@@ -247,6 +275,7 @@ func narrowSkillBytes(skillId int16, skillLevel int16) (byte, byte, bool) {
 	}
 	return byte(skillId), byte(skillLevel), true
 }
+
 
 // computeAckMp returns the MP value to advertise in MoveMonsterAck for a
 // basic-attack action. It looks up the attack-position's conMP in atks

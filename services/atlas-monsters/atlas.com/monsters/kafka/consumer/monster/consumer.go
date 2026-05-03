@@ -147,7 +147,7 @@ func handleUseBasicAttackCommand(l logrus.FieldLogger, ctx context.Context, c co
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {
 	p := monster.NewProcessor(l, ctx)
-	_ = p.Move(uint32(c.ObjectId), c.X, c.Y, c.Stance)
+	_ = p.Move(uint32(c.ObjectId), c.X, c.Y, c.Fh, c.Stance)
 }
 
 func handleApplyStatusFieldCommand(l logrus.FieldLogger, ctx context.Context, c fieldCommand[applyStatusCommandBody]) {

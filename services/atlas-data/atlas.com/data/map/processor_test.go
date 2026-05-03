@@ -45,6 +45,11 @@ func TestSnapToGround(t *testing.T) {
 		useTolerant bool
 	}{
 		{
+			// FH-set branch snaps to the foothold surface y exactly. The
+			// 1-px-above-surface adjustment that prevents v83 client
+			// fall-through happens in atlas-channel's wire-packet snap
+			// (data/map.SnapMobPosition); atlas-data returns the raw surface
+			// here so there's a single source of truth for the snap invariant.
 			name:       "fh_set_flat_corrects_y",
 			sp:         monster.RestModel{Template: 100100, X: 0, Y: 80, FH: 10},
 			lookup:     groundLookup,

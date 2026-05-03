@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	EnvCommandTopic      = "COMMAND_TOPIC_CHARACTER_BUFF"
-	CommandTypeApply     = "APPLY"
-	CommandTypeCancel    = "CANCEL"
-	CommandTypeCancelAll = "CANCEL_ALL"
+	EnvCommandTopic          = "COMMAND_TOPIC_CHARACTER_BUFF"
+	CommandTypeApply         = "APPLY"
+	CommandTypeCancel        = "CANCEL"
+	CommandTypeCancelAll     = "CANCEL_ALL"
+	CommandTypeCancelByTypes = "CANCEL_BY_TYPES"
 )
 
 type Command[E any] struct {
@@ -44,6 +45,10 @@ type CancelCommandBody struct {
 }
 
 type CancelAllCommandBody struct {
+}
+
+type CancelByTypesCommandBody struct {
+	Types []string `json:"types"`
 }
 
 const (

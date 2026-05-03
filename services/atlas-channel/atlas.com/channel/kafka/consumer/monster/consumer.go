@@ -2,6 +2,7 @@ package monster
 
 import (
 	"atlas-channel/character"
+	skill2 "atlas-channel/character/skill"
 	consumer2 "atlas-channel/kafka/consumer"
 	monster2 "atlas-channel/kafka/message/monster"
 	_map "atlas-channel/map"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -536,21 +538,38 @@ func handleStatusEventMpChanged(sc server.Model, wp writer.Producer) message.Han
 			return
 		}
 
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.Body.CharacterId)
+		if err != nil {
+			return
+		}
+
 		switch e.Body.Reason {
 		case monster2.MpChangeReasonMpEater:
+			var c character.Model
+			cp := character.NewProcessor(l, ctx)
+			c, err = cp.GetById(cp.SkillModelDecorator)(e.Body.CharacterId)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate character [%d] causing MP change via skill.", e.Body.CharacterId)
+				return
+			}
+			var sk skill2.Model
+			sk, err = c.SkillById(skill.Id(e.Body.SkillId))
+			if err != nil {
+				l.WithError(err).Errorf("Unable to locate skill [%d]", e.Body.SkillId)
+				return
+			}
+
 			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
-			if err := character.NewProcessor(l, ctx).ChangeMP(f, e.Body.CharacterId, int16(e.Body.Amount)); err != nil {
+			if err = cp.ChangeMP(f, e.Body.CharacterId, int16(e.Body.Amount)); err != nil {
 				l.WithError(err).Errorf("MP_CHANGED MP_EATER: ChangeMP failed for character [%d].", e.Body.CharacterId)
 			}
 
-			sp := session.NewProcessor(l, ctx)
-			_ = sp.IfPresentByCharacterId(sc.Channel())(
-				e.Body.CharacterId,
-				socketHandler.AnnounceSkillSpecial(l)(ctx)(wp)(e.Body.SkillId),
-			)
-			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(
-				f, e.Body.CharacterId,
-				socketHandler.AnnounceForeignSkillSpecial(l)(ctx)(wp)(e.Body.CharacterId, e.Body.SkillId),
+			err = socketHandler.AnnounceSkillUse(l)(ctx)(wp)(e.Body.SkillId, c.Level(), sk.Level())(s)
+			if err != nil {
+				l.WithError(err).Errorf("Unable to announce Skill Use: [%d].", e.Body.CharacterId)
+			}
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(f, e.Body.CharacterId,
+				socketHandler.AnnounceForeignSkillUse(l)(ctx)(wp)(e.Body.CharacterId, e.Body.SkillId, c.Level(), sk.Level()),
 			)
 		default:
 			l.Debugf("MP_CHANGED: ignoring unknown reason [%s] for monster [%d].", e.Body.Reason, e.UniqueId)

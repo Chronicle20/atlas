@@ -31,6 +31,14 @@ Monster status events from monster service.
 |------|-------------|-------------|
 | KILLED | StatusEventKilledBody | Monster was killed |
 
+### EVENT_TOPIC_SESSION_STATUS
+
+Session status events.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| DESTROYED | StatusEvent | Session destroyed for a character |
+
 ### COMMAND_TOPIC_MAP
 
 Map commands consumed by the service.
@@ -43,7 +51,7 @@ Map commands consumed by the service.
 
 ### EVENT_TOPIC_MAP_STATUS
 
-Map status events emitted when characters enter or exit maps, and when weather effects start or end.
+Map status events emitted when characters enter or exit maps, when weather effects start or end, and when a map-stay timer is started.
 
 | Type | Body Struct | Description |
 |------|-------------|-------------|
@@ -51,6 +59,15 @@ Map status events emitted when characters enter or exit maps, and when weather e
 | CHARACTER_EXIT | CharacterExit | Character exited map |
 | WEATHER_START | WeatherStart | Weather effect started in map |
 | WEATHER_END | WeatherEnd | Weather effect ended in map |
+| MAP_TIMER_STARTED | MapTimerStarted | Map-stay timer started for a character |
+
+### COMMAND_TOPIC_CHARACTER
+
+Commands to character service.
+
+| Type | Body Struct | Description |
+|------|-------------|-------------|
+| CHANGE_MAP | ChangeMapBody | Move a character to a different map |
 
 ### COMMAND_TOPIC_REACTOR
 
@@ -188,6 +205,20 @@ StatusEvent[E] {
 }
 ```
 
+### Session Status Event (Consumed)
+
+```
+StatusEvent {
+    sessionId: UUID
+    accountId: uint32
+    characterId: uint32
+    worldId: world.Id
+    channelId: channel.Id
+    issuer: string
+    type: string
+}
+```
+
 ### Map Command (Consumed)
 
 ```
@@ -259,6 +290,38 @@ StatusEvent[E] {
 }
 ```
 
+#### MapTimerStarted
+
+```
+{
+    characterId: uint32
+    seconds: uint32
+}
+```
+
+### Character Command (Produced)
+
+```
+Command[E] {
+    transactionId: UUID
+    worldId: world.Id
+    characterId: uint32
+    type: string
+    body: E
+}
+```
+
+#### ChangeMapBody
+
+```
+{
+    channelId: channel.Id
+    mapId: map.Id
+    instance: UUID
+    portalId: uint32
+}
+```
+
 ### Reactor Command (Produced)
 
 ```
@@ -316,5 +379,6 @@ Command[E] {
 - All messages include transactionId (UUID) for tracing
 - Character status consumers generate new transactionId for downstream operations
 - Messages are keyed by mapId for partition ordering
+- MAP_TIMER_STARTED and CHANGE_MAP messages are keyed by characterId
 - Headers include span and tenant information for distributed tracing and multi-tenancy
 - Map command consumer starts from last offset (does not replay historical commands)

@@ -57,7 +57,6 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] Buddy operation shop flag (`socket/writer/buddy_operation.go:118`)
 - [ ] Multiple services have different cash shop message implementations (`kafka/message/cashshop/kafka.go:72`)
 - [ ] Field migration bug not using instance (`kafka/consumer/character/consumer.go:79`)
-- [ ] Audit remaining client-bound MaxHp/MaxMp surfaces for the same base-vs-effective drift fixed for `BuildCharacterData` and stat-changed updates. Known candidates: party-member HP broadcast in `kafka/consumer/character/consumer.go::handleStatusEventStatChanged` uses `cd.MaxHp()` (base) when announcing `partycb.PartyMemberHP`; any other writer that pulls `c.MaxHp()` / `c.MaxMp()` directly should be reviewed against `effective_stats.ResolveCharacterMaxes`.
 
 #### Character Attack System (26 unimplemented effects)
 Location: `socket/handler/character_attack_common.go`

@@ -148,7 +148,7 @@ func processDamageInfoEntry(
 		// Doom: respect magic-reflect. Doom does no damage, so on reflect we
 		// simply skip the apply (nothing to bounce back). Gated on DOOM so
 		// no other empty-damage status flow changes behavior.
-		if _, isDoom := ms["DOOM"]; isDoom && attackKind != "" {
+		if _, isDoom := ms[monster2.StatusDoom]; isDoom && attackKind != "" {
 			if _, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
 				l.Debugf("Doom: monster [%d] has %s reflect; status apply skipped.", di.MonsterId(), attackKind)
 				return

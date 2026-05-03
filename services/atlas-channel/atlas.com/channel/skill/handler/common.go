@@ -4,20 +4,24 @@ import (
 	"atlas-channel/character"
 	"atlas-channel/character/buff"
 	"atlas-channel/character/skill"
-	"atlas-channel/consumable"
+	"atlas-channel/compartment"
 	"atlas-channel/data/skill/effect"
+	compartmentMsg "atlas-channel/kafka/message/compartment"
+	once "atlas-channel/kafka/once/compartment"
 	"atlas-channel/monster"
 	"atlas-channel/socket/writer"
 	"context"
 
-	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
+	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,18 +35,7 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Pro
 				_ = character.NewProcessor(l, ctx).ChangeMP(f, characterId, -int16(e.MPConsume()))
 			}
 			if itemId := e.ItemConsume(); itemId > 0 {
-				cp := character.NewProcessor(l, ctx)
-				if c, cErr := cp.GetById(cp.InventoryDecorator)(characterId); cErr == nil {
-					if invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId)); typeOk {
-						if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); found {
-							_ = consumable.NewProcessor(l, ctx).RequestItemConsume(f, charcon.Id(characterId), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
-						} else {
-							l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, info.SkillId(), itemId)
-						}
-					}
-				} else {
-					l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, info.SkillId(), itemId)
-				}
+				consumeSkillItem(l, ctx, characterId, info.SkillId(), itemId)
 			}
 			if e.Cooldown() > 0 {
 				_ = skill.NewProcessor(l, ctx).ApplyCooldown(f, skill2.Id(info.SkillId()), e.Cooldown())(characterId)
@@ -128,6 +121,60 @@ func dispelSkillClass(skillId skill2.Id) string {
 		return "MAGICAL"
 	default:
 		return ""
+	}
+}
+
+// consumeSkillItem charges one of itemId from the caster's inventory using
+// the compartment Reserve→OneTime→Consume saga (mirrors the projectile
+// emission pattern in character_attack_projectile.go). Generic across every
+// itemConsume skill (Priest Doom's Magic Rock, summons, Mystic Door, etc.).
+//
+// Why not consumable.RequestItemConsume: that path starts a saga whose
+// completion is gated on a downstream side-effect emit (HP/MP change, scroll
+// result) that skill casts don't produce. The reservation would never commit
+// and the inventory count would not decrement.
+//
+// Missing item is logged at WARN and the cast still proceeds (defense-in-depth;
+// the v83 client gates the cast UI on item availability).
+func consumeSkillItem(l logrus.FieldLogger, ctx context.Context, characterId uint32, skillId uint32, itemId uint32) {
+	cp := character.NewProcessor(l, ctx)
+	c, cErr := cp.GetById(cp.InventoryDecorator)(characterId)
+	if cErr != nil {
+		l.WithError(cErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to load inventory; cast permitted.", characterId, skillId, itemId)
+		return
+	}
+	invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
+	if !typeOk {
+		l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but item id has no inventory type; cast permitted.", characterId, skillId, itemId)
+		return
+	}
+	a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId)
+	if !found {
+		l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", characterId, skillId, itemId)
+		return
+	}
+
+	cpp := compartment.NewProcessor(l, ctx)
+	t, tErr := topic.EnvProvider(l)(compartmentMsg.EnvEventTopicStatus)()
+	if tErr != nil {
+		l.WithError(tErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but compartment status topic unavailable; cast permitted.", characterId, skillId, itemId)
+		return
+	}
+	txId := uuid.New()
+	slot := a.Slot()
+	validator := once.ReservationValidator(txId, itemId)
+	handler := func(_ logrus.FieldLogger, _ context.Context, _ compartmentMsg.StatusEvent[compartmentMsg.ReservedEventBody]) {
+		if cErr := cpp.Consume(txId, characterId, invType, slot); cErr != nil {
+			l.WithError(cErr).Errorf("Character [%d] skill [%d] item [%d]: failed to emit CONSUME for reservation [%s].", characterId, skillId, itemId, txId)
+		}
+	}
+	if _, rErr := consumer.GetManager().RegisterHandler(t, message.AdaptHandler(message.OneTimeConfig(validator, handler))); rErr != nil {
+		l.WithError(rErr).Warnf("Character [%d] cast skill [%d] requiring item [%d] but failed to register one-time consume handler; cast permitted.", characterId, skillId, itemId)
+		return
+	}
+	reserves := []compartmentMsg.ItemBody{{Source: slot, ItemId: itemId, Quantity: 1}}
+	if rErr := cpp.RequestReserve(txId, characterId, invType, reserves); rErr != nil {
+		l.WithError(rErr).Errorf("Character [%d] cast skill [%d] item [%d]: failed to emit REQUEST_RESERVE.", characterId, skillId, itemId)
 	}
 }
 

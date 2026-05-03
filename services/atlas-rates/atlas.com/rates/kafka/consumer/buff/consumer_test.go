@@ -193,16 +193,27 @@ func TestHandleBuffApplied_WrongTypeIsNoOp(t *testing.T) {
 }
 
 func TestHandleBuffApplied_CurseNeverTouchesMesoOrItemOrQuest(t *testing.T) {
-	// Acceptance criterion #4: CURSE only registers against exp.
+	// Acceptance criterion #4: CURSE only registers against exp. Send CURSE
+	// alongside an unrelated non-rate stat and verify CURSE still produces
+	// exactly one factor, against "exp", with no incidental meso/item/quest
+	// emissions.
 	p := &fakeProcessor{}
-	e := appliedEvent([]buff.StatChange{{Type: buff.StatTypeCurse, Amount: 0}})
+	e := appliedEvent([]buff.StatChange{
+		{Type: buff.StatTypeCurse, Amount: 0},
+		{Type: "WEAPON_ATTACK", Amount: 30},
+	})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	for _, c := range p.addBuffFactorCalls {
-		if c.rateType != rate.Type("exp") {
-			t.Errorf("CURSE registered against rateType %q; only \"exp\" is allowed", c.rateType)
-		}
+	if len(p.addBuffFactorCalls) != 1 {
+		t.Fatalf("AddBuffFactor calls = %d, want 1 (only CURSE; WEAPON_ATTACK is non-rate)", len(p.addBuffFactorCalls))
+	}
+	c := p.addBuffFactorCalls[0]
+	if c.rateType != rate.Type("exp") {
+		t.Errorf("rateType = %q, want \"exp\"", c.rateType)
+	}
+	if c.multiplier != 0.5 {
+		t.Errorf("multiplier = %v, want 0.5", c.multiplier)
 	}
 }
 

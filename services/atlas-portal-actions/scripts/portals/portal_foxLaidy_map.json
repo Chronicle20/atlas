@@ -7,7 +7,7 @@
       "id": "has_silver_fur_and_quest_started",
       "conditions": [
         {
-          "type": "quest_status",
+          "type": "questStatus",
           "operator": "=",
           "value": "1",
           "referenceId": "3647"

@@ -41,7 +41,7 @@ type Processor interface {
 	FindNextController(idp model.Provider[[]uint32]) model.Operator[Model]
 	Damage(id uint32, characterId uint32, damages []uint32, attackType byte)
 	DamageFriendly(uniqueId uint32, attackerUniqueId uint32, observerUniqueId uint32)
-	Move(id uint32, x int16, y int16, stance byte) error
+	Move(id uint32, x int16, y int16, fh int16, stance byte) error
 	Destroy(uniqueId uint32) error
 	DestroyInField(f field.Model) error
 	UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte)
@@ -490,8 +490,8 @@ func (p *ProcessorImpl) spawnRevives(m Model, revives []uint32) {
 }
 
 // Move moves a monster to a new position
-func (p *ProcessorImpl) Move(id uint32, x int16, y int16, stance byte) error {
-	GetMonsterRegistry().MoveMonster(p.t, id, x, y, stance)
+func (p *ProcessorImpl) Move(id uint32, x int16, y int16, fh int16, stance byte) error {
+	GetMonsterRegistry().MoveMonster(p.t, id, x, y, fh, stance)
 	return nil
 }
 

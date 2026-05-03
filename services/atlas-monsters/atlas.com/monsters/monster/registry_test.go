@@ -450,14 +450,19 @@ func TestCreateMoveDamageKill(t *testing.T) {
 	}
 
 	// Move
-	moved := r.MoveMonster(ten, m.UniqueId(), 50, 75, 3)
-	if moved.X() != 50 || moved.Y() != 75 || moved.Stance() != 3 {
-		t.Fatalf("Move failed: X=%d Y=%d Stance=%d", moved.X(), moved.Y(), moved.Stance())
+	moved := r.MoveMonster(ten, m.UniqueId(), 50, 75, 10, 3)
+	if moved.X() != 50 || moved.Y() != 75 || moved.Fh() != 10 || moved.Stance() != 3 {
+		t.Fatalf("Move failed: X=%d Y=%d Fh=%d Stance=%d", moved.X(), moved.Y(), moved.Fh(), moved.Stance())
 	}
 	// Verify persisted
 	got, _ := r.GetMonster(ten, m.UniqueId())
-	if got.X() != 50 || got.Y() != 75 {
+	if got.X() != 50 || got.Y() != 75 || got.Fh() != 10 {
 		t.Fatal("Move not persisted in Redis")
+	}
+	// fh==0 means "mid-air" — must not overwrite the prior fh.
+	moved = r.MoveMonster(ten, m.UniqueId(), 60, 80, 0, 3)
+	if moved.Fh() != 10 {
+		t.Fatalf("Expected fh to be preserved on zero-fh move, got %d", moved.Fh())
 	}
 
 	// Damage (30 HP)

@@ -9,7 +9,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func CommandProducer(f field.Model, objectId uint64, observerId uint32, x int16, y int16, stance byte) model.Provider[[]kafka.Message] {
+func CommandProducer(f field.Model, objectId uint64, observerId uint32, x int16, y int16, fh int16, stance byte) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(objectId))
 
 	value := &movement.Command[any]{
@@ -21,6 +21,7 @@ func CommandProducer(f field.Model, objectId uint64, observerId uint32, x int16,
 		ObserverId: observerId,
 		X:          x,
 		Y:          y,
+		Fh:         fh,
 		Stance:     stance,
 	}
 	return producer.SingleMessageProvider(key, value)

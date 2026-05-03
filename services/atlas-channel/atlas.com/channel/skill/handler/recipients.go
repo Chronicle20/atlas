@@ -33,9 +33,9 @@ type PartyRecipient struct {
 //   - their Hp() > 0
 //
 // LT/RB are taken from e. If both LT and RB are zero-valued
-// (Point{0,0}), the function returns an empty slice — the caster-only
-// fallback. Callers wanting "caster + in-range party" prepend the
-// caster themselves.
+// (point.Model with X=0, Y=0), the function returns an empty slice —
+// the caster-only fallback. Callers wanting "caster + in-range party"
+// prepend the caster themselves.
 //
 // Errors loading the party return an empty slice (the cast continues
 // caster-only). Errors enumerating sessions or fetching individual
@@ -49,7 +49,7 @@ func SelectInRangePartyMembers(
 		return nil
 	}
 	lt, rb := e.LT(), e.RB()
-	if lt.X == 0 && lt.Y == 0 && rb.X == 0 && rb.Y == 0 {
+	if lt.X() == 0 && lt.Y() == 0 && rb.X() == 0 && rb.Y() == 0 {
 		// Missing rectangle — caster-only fallback.
 		return nil
 	}
@@ -98,7 +98,7 @@ func SelectInRangePartyMembers(
 		}
 		dx := mc.X() - casterX
 		dy := mc.Y() - casterY
-		if dx < lt.X || dx > rb.X || dy < lt.Y || dy > rb.Y {
+		if dx < int16(lt.X()) || dx > int16(rb.X()) || dy < int16(lt.Y()) || dy > int16(rb.Y()) {
 			continue
 		}
 		out = append(out, PartyRecipient{

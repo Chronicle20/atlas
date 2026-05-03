@@ -2,6 +2,8 @@ package effect
 
 import (
 	"atlas-channel/data/skill/effect/statup"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 )
 
 type Model struct {
@@ -51,8 +53,8 @@ type Model struct {
 	damage        uint32
 	attackCount   uint32
 	fixDamage     int32
-	lt                   Point
-	rb                   Point
+	lt                   point.Model
+	rb                   point.Model
 	bulletCount          uint16
 	bulletConsume        uint16
 	mapProtection        byte
@@ -108,14 +110,14 @@ func (m Model) HP() uint16 {
 }
 
 // LT returns the skill effect's left-top rectangle corner relative to
-// the caster's position. A zero-valued Point indicates the source data
-// did not provide a rectangle; callers should treat that as a
+// the caster's position. A zero-valued point.Model indicates the source
+// data did not provide a rectangle; callers should treat that as a
 // caster-only sentinel rather than infinite range.
-func (m Model) LT() Point {
+func (m Model) LT() point.Model {
 	return m.lt
 }
 
 // RB returns the skill effect's right-bottom rectangle corner.
-func (m Model) RB() Point {
+func (m Model) RB() point.Model {
 	return m.rb
 }

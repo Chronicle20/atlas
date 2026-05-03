@@ -3,6 +3,7 @@ package effect
 import (
 	"atlas-channel/data/skill/effect/statup"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 )
 
@@ -70,13 +71,13 @@ func Extract(rm RestModel) (Model, error) {
 		return Model{}, err
 	}
 
-	var lt Point
+	var lt point.Model
 	if rm.LT != nil {
-		lt = Point{X: rm.LT.X, Y: rm.LT.Y}
+		lt = point.NewModel(point.X(rm.LT.X), point.Y(rm.LT.Y))
 	}
-	var rb Point
+	var rb point.Model
 	if rm.RB != nil {
-		rb = Point{X: rm.RB.X, Y: rm.RB.Y}
+		rb = point.NewModel(point.X(rm.RB.X), point.Y(rm.RB.Y))
 	}
 
 	return Model{

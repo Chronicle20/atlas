@@ -43,6 +43,7 @@ Portal scripts are **simpler than NPC conversations**. They:
 | `show_hint` | `pi.showInstruction(msg, width, height)` | `hint`, `width`, `height` |
 | `show_info` | `pi.showInfo(path)` | `path` (e.g., "UI/tutorial.img/25") |
 | `start_instance_transport` | `pi.getEventManager().startInstance()` | `routeName`, `failureMessage` (optional) |
+| `start_quest` | `pi.forceStartQuest(questId)` | `questId` (required), `npcId` (optional, defaults to 0) |
 
 ### Instance Transport Pattern
 Scripts using `getEventManager("SomeTrain").startInstance(pi.getPlayer())` are **instance transport portals**.
@@ -79,6 +80,7 @@ Identify the key patterns:
 - `pi.showInstruction(msg, width, height)` → `show_hint` operation (params: `hint`, `width`, `height`)
 - `pi.showInfo(path)` → `show_info` operation (params: `path`)
 - `pi.getEventManager("X").startInstance()` → `start_instance_transport` operation (params: `routeName`, `failureMessage`)
+- `pi.forceStartQuest(questId)` → `start_quest` operation (params: `questId`, optional `npcId`)
 
 ### 2. Convert to Rules Format
 
@@ -139,6 +141,28 @@ function enter(pi) {
 }
 ```
 → Single rule with empty conditions, always allows
+
+**Pattern E: Quest-Gated Quest Start**
+```javascript
+function enter(pi) {
+    if (!(pi.isQuestStarted(3647) && pi.haveItem(4031793, 1))) {
+        pi.playPortalSound();
+        pi.warp(222010200, "east00");
+    } else {
+        if (!pi.isQuestStarted(23647)) {
+            pi.forceStartQuest(23647);
+        }
+        pi.playPortalSound();
+        pi.warp(922220000, "east00");
+    }
+    return true;
+}
+```
+→ Two rules. Inner `if (!pi.isQuestStarted(23647))` collapses away because `start_quest` is dispatched as an independent saga and atlas-quests handles "already started" idempotently. The matching rule fires `start_quest` plus the warp; the default rule warps elsewhere.
+
+Resulting rules (first match wins):
+- Rule 1: `quest_status` quest 3647 = started AND `item` 4031793 owned → `play_portal_sound`, `start_quest` (questId=23647), `warp` to 922220000 portalName "east00"
+- Rule 2: default (empty conditions) → `play_portal_sound`, `warp` to 222010200 portalName "east00"
 
 ### 4. Validation Checklist
 

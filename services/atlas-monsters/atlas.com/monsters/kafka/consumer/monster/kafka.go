@@ -14,6 +14,7 @@ const (
 	CommandTypeApplyStatus       = "APPLY_STATUS"
 	CommandTypeCancelStatus      = "CANCEL_STATUS"
 	CommandTypeUseSkill          = "USE_SKILL"
+	CommandTypeUseBasicAttack    = "USE_BASIC_ATTACK"
 	CommandTypeApplyStatusField  = "APPLY_STATUS_FIELD"
 	CommandTypeCancelStatusField = "CANCEL_STATUS_FIELD"
 	CommandTypeUseSkillField     = "USE_SKILL_FIELD"
@@ -72,6 +73,10 @@ type useSkillCommandBody struct {
 type useSkillFieldCommandBody struct {
 	SkillId    byte `json:"skillId"`
 	SkillLevel byte `json:"skillLevel"`
+}
+
+type useBasicAttackCommandBody struct {
+	AttackPos uint8 `json:"attackPos"`
 }
 
 type destroyFieldCommandBody struct{}

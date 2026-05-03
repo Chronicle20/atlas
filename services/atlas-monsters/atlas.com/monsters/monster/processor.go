@@ -9,6 +9,7 @@ import (
 	"context"
 	"errors"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -33,6 +34,7 @@ type Processor interface {
 	// Queries
 	GetById(monsterId uint32) (Model, error)
 	GetInField(f field.Model) ([]Model, error)
+	GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error)
 
 	// Commands
 	Create(f field.Model, input RestModel) (Model, error)
@@ -127,6 +129,52 @@ func (p *ProcessorImpl) GetById(monsterId uint32) (Model, error) {
 // GetInField gets all monsters in a field
 func (p *ProcessorImpl) GetInField(f field.Model) ([]Model, error) {
 	return p.ByFieldProvider(f)()
+}
+
+// GetInFieldRect returns monsters in the given field whose (x, y) lies inside
+// the inclusive rectangle bounded by (x1, y1, x2, y2). The corners may be
+// passed in any order. The result is sorted by squared distance from the
+// rectangle center (ascending) and truncated to limit when limit > 0;
+// limit == 0 means "no cap". Used by AoE skill handlers (e.g., Priest Doom)
+// for server-authoritative target selection.
+func (p *ProcessorImpl) GetInFieldRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error) {
+	ms, err := p.GetInField(f)
+	if err != nil {
+		return nil, err
+	}
+	lx, hx := x1, x2
+	if lx > hx {
+		lx, hx = hx, lx
+	}
+	ly, hy := y1, y2
+	if ly > hy {
+		ly, hy = hy, ly
+	}
+	cx := (int32(lx) + int32(hx)) / 2
+	cy := (int32(ly) + int32(hy)) / 2
+
+	type scored struct {
+		m  Model
+		d2 int64
+	}
+	in := make([]scored, 0, len(ms))
+	for _, m := range ms {
+		if m.X() < lx || m.X() > hx || m.Y() < ly || m.Y() > hy {
+			continue
+		}
+		dx := int64(int32(m.X()) - cx)
+		dy := int64(int32(m.Y()) - cy)
+		in = append(in, scored{m: m, d2: dx*dx + dy*dy})
+	}
+	sort.Slice(in, func(i, j int) bool { return in[i].d2 < in[j].d2 })
+	if limit > 0 && uint32(len(in)) > limit {
+		in = in[:limit]
+	}
+	out := make([]Model, len(in))
+	for i, s := range in {
+		out[i] = s.m
+	}
+	return out, nil
 }
 
 // Create creates a new monster in a field

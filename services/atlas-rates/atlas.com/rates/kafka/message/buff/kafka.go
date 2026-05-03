@@ -48,6 +48,7 @@ type ExpiredStatusEventBody struct {
 const (
 	StatTypeHolySymbol = "HOLY_SYMBOL" // EXP rate buff (additive: amount is bonus percentage)
 	StatTypeMesoUp     = "MESO_UP"     // Meso rate buff (direct: amount is total percentage)
+	StatTypeCurse      = "CURSE"       // EXP rate debuff (fixed: amount ignored, canonical v83 multiplier 0.5)
 )
 
 // ConversionMethod defines how to convert a stat amount to a rate multiplier
@@ -61,6 +62,10 @@ const (
 	// ConversionDirect: multiplier = amount / 100.0
 	// Example: amount=103 -> 1.03x (103% of base)
 	ConversionDirect
+
+	// ConversionFixed: multiplier = mapping.Multiplier (amount ignored)
+	// Example: CURSE -> 0.5x flat
+	ConversionFixed
 )
 
 // RateMapping defines how a buff stat type maps to a rate type
@@ -74,6 +79,7 @@ type RateMapping struct {
 var buffToRateMappings = map[string]RateMapping{
 	StatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
 	StatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
+	StatTypeCurse:      {RateType: "exp", Conversion: ConversionFixed, Multiplier: 0.5},
 }
 
 // IsRateStatType checks if a stat change type affects rates
@@ -97,6 +103,8 @@ func CalculateMultiplier(amount int32, mapping RateMapping) float64 {
 		return 1.0 + (float64(amount) / 100.0)
 	case ConversionDirect:
 		return float64(amount) / 100.0
+	case ConversionFixed:
+		return mapping.Multiplier
 	default:
 		return 1.0
 	}

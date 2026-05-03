@@ -4,52 +4,15 @@ import (
 	"atlas-monsters/monster/information"
 	"context"
 	"encoding/json"
-	"errors"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
-	"github.com/segmentio/kafka-go"
-	"github.com/sirupsen/logrus"
 )
-
-// newDrainMpProcessor creates a ProcessorImpl with a recording emitter that
-// captures the full envelope (type + body) for each emitted Kafka message.
-func newDrainMpProcessor(t *testing.T, ten tenant.Model) (*ProcessorImpl, *[]emittedBody) {
-	t.Helper()
-	var events []emittedBody
-	p := &ProcessorImpl{
-		l:   logrus.New(),
-		ctx: context.Background(),
-		t:   ten,
-		emit: func(topic string, provider model.Provider[[]kafka.Message]) error {
-			msgs, err := provider()
-			if err != nil {
-				t.Fatalf("provider error in DrainMp test: %v", err)
-			}
-			for _, m := range msgs {
-				var env struct {
-					Type string          `json:"type"`
-					Body json.RawMessage `json:"body"`
-				}
-				if err := json.Unmarshal(m.Value, &env); err != nil {
-					t.Fatalf("decode emitted DrainMp message: %v", err)
-				}
-				events = append(events, emittedBody{Topic: topic, Type: env.Type, Body: env.Body})
-			}
-			return nil
-		},
-		inFieldFn: func(_ field.Model) ([]uint32, error) {
-			return nil, nil
-		},
-	}
-	return p, &events
-}
 
 // TestDrainMp_HappyPath_EmitsMpChanged verifies that DrainMp on a non-boss
 // monster with MaxMp=1000, Mp=1000 deducts 100 MP and emits a single
@@ -71,7 +34,7 @@ func TestDrainMp_HappyPath_EmitsMpChanged(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
 	uniqueId := m.UniqueId()
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 42, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
@@ -142,7 +105,7 @@ func TestDrainMp_ClampsAtZero(t *testing.T) {
 		t.Fatalf("seed DeductMp: %v", err)
 	}
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 1, 2300000, 200)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
@@ -186,7 +149,7 @@ func TestDrainMp_SkipsZeroMaxMp(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 0)
 	uniqueId := m.UniqueId()
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
@@ -218,7 +181,7 @@ func TestDrainMp_SkipsZeroCurrentMp(t *testing.T) {
 		t.Fatalf("seed DeductMp: %v", err)
 	}
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
@@ -246,7 +209,7 @@ func TestDrainMp_SkipsZeroRequest(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 1000000, 0, 0, 0, 5, 0, 5000, 1000)
 	uniqueId := m.UniqueId()
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 1, 2300000, 0)
 	if err != nil {
 		t.Fatalf("DrainMp returned error: %v", err)
@@ -268,7 +231,7 @@ func TestDrainMp_MissingMonster(t *testing.T) {
 	ctx := context.Background()
 	r.Clear(ctx)
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(99999999, 1, 2300000, 100)
 	if err != nil {
 		t.Fatalf("DrainMp returned error for missing monster: %v", err)
@@ -296,7 +259,7 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 	m := r.CreateMonster(ctx, ten, f, 8800000, 0, 0, 0, 5, 0, 50000, 3000)
 	uniqueId := m.UniqueId()
 
-	p, events := newDrainMpProcessor(t, ten)
+	p, events := newRecordingProcessorWithBodies(t, ten)
 	err := p.DrainMp(uniqueId, 1, 2300000, 500)
 	if err != nil {
 		t.Fatalf("DrainMp returned error for boss: %v", err)
@@ -310,6 +273,3 @@ func TestDrainMp_SkipsBoss(t *testing.T) {
 	}
 }
 
-// Compile-time sentinel — keeps the unused-import error from appearing while
-// the test file exists without all referenced packages being used.
-var _ = errors.New

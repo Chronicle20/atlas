@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"atlas-maps/kafka/message"
+	characterKafka "atlas-maps/kafka/message/character"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/producer"
 
@@ -20,6 +21,7 @@ import (
 type Processor interface {
 	Register(transactionId uuid.UUID, characterId uint32, f field.Model, forcedReturnMapId _map.Id, seconds uint32) error
 	CancelIfTracked(characterId uint32) bool
+	ForceReturnIfTracked(characterId uint32) bool
 }
 
 type ProcessorImpl struct {
@@ -93,9 +95,27 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 	return nil
 }
 
-// handleExpire is the time.Timer callback. Stub for now — real impl in Task 13.
-func (p *ProcessorImpl) handleExpire(t tenant.Model, characterId uint32, token uuid.UUID) {
-	_, _ = p.r.Claim(t, characterId, token)
+// handleExpire is the time.Timer callback fired when the per-entry timer
+// elapses. It atomically claims the entry (no-op when the token is stale due
+// to a Register/Cancel race) and emits CHANGE_MAP to the forced-return map.
+func (p *ProcessorImpl) handleExpire(tt tenant.Model, characterId uint32, token uuid.UUID) {
+	entry, claimed := p.r.Claim(tt, characterId, token)
+	if !claimed {
+		return
+	}
+	_, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(context.Background(), "MapTimer.Expire")
+	span.SetAttributes(
+		attribute.String("tenant.id", tt.Id().String()),
+		attribute.Int("world.id", int(entry.Field().WorldId())),
+		attribute.Int("map.id", int(entry.Field().MapId())),
+		attribute.Int("forced.return.map.id", int(entry.ForcedReturnMapId())),
+	)
+	defer span.End()
+	if err := p.emitChangeMap(entry); err != nil {
+		p.l.WithError(err).Errorf("MapTimer.Expire: failed to emit CHANGE_MAP for character [%d].", characterId)
+		return
+	}
+	p.l.Warnf("MapTimer.Expire: tenant=[%s] character=[%d] map=[%d] forcedReturn=[%d].", tt.Id(), characterId, entry.Field().MapId(), entry.ForcedReturnMapId())
 }
 
 func (p *ProcessorImpl) CancelIfTracked(characterId uint32) bool {
@@ -115,4 +135,36 @@ func (p *ProcessorImpl) CancelIfTracked(characterId uint32) bool {
 	}
 	p.l.Infof("MapTimer.Cancel: tenant=[%s] character=[%d] map=[%d].", p.t.Id(), characterId, prior.Field().MapId())
 	return true
+}
+
+// ForceReturnIfTracked is invoked on disconnect: if the character has a
+// tracked entry it is removed unconditionally and CHANGE_MAP is emitted so
+// they reappear at the forced-return map on next login.
+func (p *ProcessorImpl) ForceReturnIfTracked(characterId uint32) bool {
+	entry, ok := p.r.ClaimAny(p.t, characterId)
+	if !ok {
+		return false
+	}
+	_, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(p.ctx, "MapTimer.Disconnect")
+	span.SetAttributes(
+		attribute.String("tenant.id", p.t.Id().String()),
+		attribute.Int("world.id", int(entry.Field().WorldId())),
+		attribute.Int("map.id", int(entry.Field().MapId())),
+		attribute.Int("forced.return.map.id", int(entry.ForcedReturnMapId())),
+	)
+	defer span.End()
+	if entry.Timer() != nil {
+		entry.Timer().Stop()
+	}
+	if err := p.emitChangeMap(entry); err != nil {
+		p.l.WithError(err).Errorf("MapTimer.Disconnect: failed to emit CHANGE_MAP for character [%d].", characterId)
+	}
+	p.l.Warnf("MapTimer.Disconnect: tenant=[%s] character=[%d] map=[%d] forcedReturn=[%d].", p.t.Id(), characterId, entry.Field().MapId(), entry.ForcedReturnMapId())
+	return true
+}
+
+func (p *ProcessorImpl) emitChangeMap(entry Entry) error {
+	return message.Emit(p.p)(func(buf *message.Buffer) error {
+		return buf.Put(characterKafka.EnvCommandTopic, changeMapProvider(uuid.New(), entry.CharacterId(), entry.Field().WorldId(), entry.Field().ChannelId(), entry.ForcedReturnMapId()))
+	})
 }

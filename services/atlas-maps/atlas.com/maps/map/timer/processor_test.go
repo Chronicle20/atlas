@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"sync"
 	"testing"
+	"time"
 
+	characterKafka "atlas-maps/kafka/message/character"
 	mapKafka "atlas-maps/kafka/message/map"
 	"atlas-maps/kafka/producer"
 
@@ -133,4 +135,90 @@ func TestProcessor_CancelIfTracked_AbsentReturnsFalse(t *testing.T) {
 	rec := newRecordingProducer()
 	p := newTestProcessor(t, reg, rec, tt)
 	require.False(t, p.CancelIfTracked(uint32(999)))
+}
+
+func TestProcessor_ForceReturnIfTracked_EmitsChangeMap(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(600)))
+
+	forced := p.ForceReturnIfTracked(uint32(42))
+	require.True(t, forced)
+
+	_, ok := reg.Get(tt, 42)
+	require.False(t, ok)
+
+	msgs := rec.Messages(characterKafka.EnvCommandTopic)
+	require.Len(t, msgs, 1)
+	var cmd characterKafka.Command[characterKafka.ChangeMapBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+	require.Equal(t, characterKafka.CommandChangeMap, cmd.Type)
+	require.Equal(t, world.Id(1), cmd.WorldId)
+	require.Equal(t, channel.Id(2), cmd.Body.ChannelId)
+	require.Equal(t, _map.Id(100000201), cmd.Body.MapId)
+	require.Equal(t, uuid.Nil, cmd.Body.Instance)
+	require.Equal(t, uint32(0), cmd.Body.PortalId)
+}
+
+func TestProcessor_ForceReturnIfTracked_AbsentIsNoOp(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+	require.False(t, p.ForceReturnIfTracked(uint32(999)))
+	require.Empty(t, rec.Messages(characterKafka.EnvCommandTopic))
+}
+
+func TestProcessor_TimerFires_EmitsChangeMap(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+
+	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(0)))
+
+	time.Sleep(150 * time.Millisecond)
+
+	_, ok := reg.Get(tt, 42)
+	require.False(t, ok, "expired entry must be removed by handleExpire")
+
+	msgs := rec.Messages(characterKafka.EnvCommandTopic)
+	require.Len(t, msgs, 1)
+	var cmd characterKafka.Command[characterKafka.ChangeMapBody]
+	require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
+	require.Equal(t, _map.Id(100000201), cmd.Body.MapId)
+}
+
+func TestProcessor_TimerFires_StaleTokenNoOp(t *testing.T) {
+	tt := mkProcTenant(t)
+	reg := NewTestRegistry()
+	rec := newRecordingProducer()
+	p := newTestProcessor(t, reg, rec, tt)
+
+	f := field.NewBuilder(0, 0, _map.Id(100000000)).SetInstance(uuid.Nil).Build()
+	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(60)))
+
+	// Capture token for the first entry, then directly invoke handleExpire
+	// with the captured (stale) token after replacement. This deterministically
+	// simulates a 0-second timer goroutine firing AFTER replacement, which the
+	// AfterFunc(0) variant cannot guarantee due to scheduling races.
+	first, ok := reg.Get(tt, 42)
+	require.True(t, ok)
+	staleToken := first.Token()
+
+	f2 := field.NewBuilder(0, 0, _map.Id(200000000)).SetInstance(uuid.Nil).Build()
+	require.NoError(t, p.Register(uuid.New(), uint32(42), f2, _map.Id(200000201), uint32(60)))
+
+	impl := p.(*ProcessorImpl)
+	impl.handleExpire(tt, 42, staleToken)
+
+	got, ok := reg.Get(tt, 42)
+	require.True(t, ok, "second entry must still be present")
+	require.Equal(t, _map.Id(200000201), got.ForcedReturnMapId(), "second entry survived")
+	require.Empty(t, rec.Messages(characterKafka.EnvCommandTopic), "stale token must not emit CHANGE_MAP")
 }

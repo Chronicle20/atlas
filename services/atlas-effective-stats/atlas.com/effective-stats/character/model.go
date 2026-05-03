@@ -11,6 +11,14 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
+// MaxHpMpCap is the per-character ceiling on effective MaxHp / MaxMp.
+// The classic v83 client and the legacy serializers cap these stats at
+// 30000; bonuses are still summed but the published effective value is
+// clamped here so downstream services (atlas-character HP/MP clamps,
+// stat-changed broadcasts, heal handlers) operate on a value the wire
+// protocol can represent.
+const MaxHpMpCap uint32 = 30000
+
 // Model holds all stat bonuses and computed effective stats for a character
 type Model struct {
 	tenant      tenant.Model
@@ -236,6 +244,8 @@ func (m Model) ComputeEffectiveStats() stat.Computed {
 
 	// Calculate effective values
 	// effective = floor((base + flat) * (1.0 + multiplier))
+	// MaxHp / MaxMp are clamped to MaxHpMpCap (30000) — see the
+	// MaxHpMpCap doc comment for the rationale.
 	computeEffective := func(statType stat.Type) uint32 {
 		base := baseValues[statType]
 		flat := flatBonuses[statType]
@@ -245,7 +255,13 @@ func (m Model) ComputeEffectiveStats() stat.Computed {
 		if effective < 0 {
 			return 0
 		}
-		return uint32(math.Floor(effective))
+		v := uint32(math.Floor(effective))
+		if statType == stat.TypeMaxHp || statType == stat.TypeMaxMp {
+			if v > MaxHpMpCap {
+				v = MaxHpMpCap
+			}
+		}
+		return v
 	}
 
 	return stat.NewComputed(

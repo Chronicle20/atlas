@@ -18,6 +18,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -407,13 +408,13 @@ func (df *damageEntryFakes) deps() damageInfoEntryDeps {
 func newDoomEffect() effect.Model {
 	se, _ := effect.Extract(effect.RestModel{
 		Duration:      20000,
-		MonsterStatus: map[string]uint32{"DOOM": 1},
+		MonsterStatus: map[string]uint32{monster2.StatusDoom: 1},
 	})
 	return se
 }
 
 func newDoomAttackInfo(monsterIds ...uint32) packetmodel.AttackInfo {
-	aip := packetmodel.NewAttackInfo(packetmodel.AttackTypeMagic).SetSkillId(2311005)
+	aip := packetmodel.NewAttackInfo(packetmodel.AttackTypeMagic).SetSkillId(uint32(skillconst.PriestDoomId))
 	for _, mid := range monsterIds {
 		dip := packetmodel.NewDamageInfo(0).SetMonsterId(mid).SetDamages(nil)
 		aip.AddDamageInfo(*dip)
@@ -445,11 +446,11 @@ func TestProcessDamageInfoEntry_Doom_EmptyDamagesAppliesStatus(t *testing.T) {
 		t.Fatalf("applyStatus calls = %d, want 1 (%v)", len(df.applyStatusCalls), df.applyStatusCalls)
 	}
 	got := df.applyStatusCalls[0]
-	if got.monsterId != 1 || got.skillId != 2311005 || got.skillLevel != 30 {
-		t.Errorf("applyStatus args = %+v, want monsterId=1 skillId=2311005 skillLevel=30", got)
+	if got.monsterId != 1 || got.skillId != uint32(skillconst.PriestDoomId) || got.skillLevel != 30 {
+		t.Errorf("applyStatus args = %+v, want monsterId=1 skillId=%d skillLevel=30", got, uint32(skillconst.PriestDoomId))
 	}
-	if got.statuses["DOOM"] != 1 {
-		t.Errorf("statuses[DOOM] = %d, want 1", got.statuses["DOOM"])
+	if got.statuses[monster2.StatusDoom] != 1 {
+		t.Errorf("statuses[DOOM] = %d, want 1", got.statuses[monster2.StatusDoom])
 	}
 	if got.duration != 20000 {
 		t.Errorf("duration = %d, want 20000", got.duration)

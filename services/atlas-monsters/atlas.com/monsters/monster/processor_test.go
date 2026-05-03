@@ -14,6 +14,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	skillconst "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -1706,10 +1707,10 @@ func TestUseBasicAttack_DeadMonster_Skips(t *testing.T) {
 func applyDoomEffectFromPlayer(durationMs int) StatusEffect {
 	return NewStatusEffect(
 		SourceTypePlayerSkill,
-		1001,    // sourceCharacterId
-		2311005, // sourceSkillId (Priest Doom)
-		30,      // sourceSkillLevel
-		map[string]int32{"DOOM": 1},
+		1001,                          // sourceCharacterId
+		uint32(skillconst.PriestDoomId), // sourceSkillId
+		30,                            // sourceSkillLevel
+		map[string]int32{monster2.StatusDoom: 1},
 		time.Duration(durationMs)*time.Millisecond,
 		0,
 	)
@@ -1749,7 +1750,7 @@ func TestApplyStatusEffect_Doom_BypassesElementalImmunity(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetMonster: %v", err)
 	}
-	if !got.HasStatusEffect("DOOM") {
+	if !got.HasStatusEffect(monster2.StatusDoom) {
 		t.Errorf("expected DOOM to be active on monster after apply")
 	}
 	// NOTE: ApplyStatusEffect emits STATUS_APPLIED via producer.ProviderImpl
@@ -1788,7 +1789,7 @@ func TestApplyStatusEffect_Doom_RejectedOnBoss(t *testing.T) {
 	if gerr != nil {
 		t.Fatalf("GetMonster: %v", gerr)
 	}
-	if got.HasStatusEffect("DOOM") {
+	if got.HasStatusEffect(monster2.StatusDoom) {
 		t.Errorf("expected DOOM not to be applied to boss")
 	}
 	for _, e := range *events {
@@ -1835,7 +1836,7 @@ func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
 	doomEffects := 0
 	var stored StatusEffect
 	for _, se := range got.StatusEffects() {
-		if se.HasStatus("DOOM") {
+		if se.HasStatus(monster2.StatusDoom) {
 			doomEffects++
 			stored = se
 		}

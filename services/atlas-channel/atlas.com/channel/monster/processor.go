@@ -41,6 +41,18 @@ func (p *Processor) GetInMap(f field.Model) ([]Model, error) {
 	return p.InMapModelProvider(f)()
 }
 
+// InMapRectModelProvider issues the atlas-monsters rect query and returns a
+// provider over the resulting monsters. Used by AoE skill handlers (e.g.,
+// Priest Doom) that need server-side bounding-box mob selection.
+func (p *Processor) InMapRectModelProvider(f field.Model, x1, y1, x2, y2 int16, limit uint32) model.Provider[[]Model] {
+	return requests.SliceProvider[RestModel, Model](p.l, p.ctx)(requestInMapRect(f, x1, y1, x2, y2, limit), Extract, model.Filters[Model]())
+}
+
+// GetInMapRect resolves the rect query into a slice of monsters.
+func (p *Processor) GetInMapRect(f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]Model, error) {
+	return p.InMapRectModelProvider(f, x1, y1, x2, y2, limit)()
+}
+
 func (p *Processor) Damage(f field.Model, monsterId uint32, characterId uint32, damages []uint32, attackType byte) error {
 	p.l.Debugf("Applying damage to monster [%d]. Character [%d]. Lines [%d].", monsterId, characterId, len(damages))
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(DamageCommandProvider(f, monsterId, characterId, damages, attackType))

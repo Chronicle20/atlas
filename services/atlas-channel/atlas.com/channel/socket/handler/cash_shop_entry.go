@@ -51,7 +51,7 @@ func CashShopEntryHandleFunc(l logrus.FieldLogger, ctx context.Context, wp write
 			return
 		}
 
-		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOpenWriter)(writer.CashShopOpenBody(a, c, bl))(s)
+		err = session.Announce(l)(ctx)(wp)(cashcb.CashShopOpenWriter)(writer.CashShopOpenBody(s.ChannelId(), a, c, bl))(s)
 		if err != nil {
 			return
 		}

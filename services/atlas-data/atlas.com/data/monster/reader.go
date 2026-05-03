@@ -88,6 +88,7 @@ func Read(l logrus.FieldLogger) func(ctx context.Context) func(np model.Provider
 				m.TagBackgroundColor = 0
 			}
 			m.AnimationTimes = getAnimationTimes(exml)
+			m.Attacks = getAttacks(exml)
 			_, hasFly := m.AnimationTimes["fly"]
 			_, hasHover := m.AnimationTimes["hover"]
 			_, hasSwim := m.AnimationTimes["swim"]
@@ -250,4 +251,48 @@ func getCoolDamage(node *xml.Node) coolDamage {
 	damage := uint32(c.GetIntegerWithDefault("coolDamage", 0))
 	probability := uint32(c.GetIntegerWithDefault("coolDamageProb", 0))
 	return coolDamage{Damage: damage, Probability: probability}
+}
+
+// getAttacks parses attack{1,2,3}/info subnodes. If any attackN slot has an
+// info subdirectory, ALL present attackN slots produce an AttackInfo entry
+// (using zero defaults for slots that lack an info block). If no attackN slot
+// has an info subdirectory at all the mob is treated as purely melee and an
+// empty slice is returned — that matches mobs like Beetle which only carry
+// animation frames under attackN.
+func getAttacks(node xml.Node) []AttackInfo {
+	// First pass: collect present attack nodes and check if any has info.
+	type atkEntry struct {
+		pos  uint8
+		node *xml.Node
+		info *xml.Node
+	}
+	var entries []atkEntry
+	hasInfo := false
+	for pos := uint8(1); pos <= 3; pos++ {
+		atk, err := node.ChildByName(fmt.Sprintf("attack%d", pos))
+		if err != nil {
+			continue
+		}
+		e := atkEntry{pos: pos, node: atk}
+		info, err := atk.ChildByName("info")
+		if err == nil {
+			e.info = info
+			hasInfo = true
+		}
+		entries = append(entries, e)
+	}
+	if !hasInfo {
+		return make([]AttackInfo, 0)
+	}
+	// Second pass: emit an AttackInfo for every present slot.
+	results := make([]AttackInfo, 0, len(entries))
+	for _, e := range entries {
+		ai := AttackInfo{Pos: e.pos}
+		if e.info != nil {
+			ai.ConMP = e.info.GetIntegerWithDefault("conMP", 0)
+			ai.AttackAfter = e.info.GetIntegerWithDefault("attackAfter", 0)
+		}
+		results = append(results, ai)
+	}
+	return results
 }

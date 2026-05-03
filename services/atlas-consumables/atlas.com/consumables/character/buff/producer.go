@@ -53,3 +53,20 @@ func cancelCommandProvider(f field.Model, characterId uint32, sourceId int32) mo
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func cancelByTypesCommandProvider(f field.Model, characterId uint32, types []string) model.Provider[[]kafka.Message] {
+	body := buff2.CancelByTypesCommandBody{
+		Types: append([]string(nil), types...),
+	}
+	key := producer.CreateKey(int(characterId))
+	value := &buff2.Command[buff2.CancelByTypesCommandBody]{
+		WorldId:     f.WorldId(),
+		ChannelId:   f.ChannelId(),
+		MapId:       f.MapId(),
+		Instance:    f.Instance(),
+		CharacterId: characterId,
+		Type:        buff2.CommandTypeCancelByTypes,
+		Body:        body,
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -3,6 +3,7 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
+	"atlas-channel/consumable"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
@@ -16,14 +17,19 @@ import (
 	"math"
 	"math/rand"
 
+	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 // computeReflect computes the damage that should be reflected back to the
@@ -73,6 +79,113 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
+// damageInfoEntryDeps groups the per-attack closures and lookups that
+// processDamageInfoEntry needs. Wrapping them keeps the helper signature
+// readable and lets tests construct fakes with a single struct.
+type damageInfoEntryDeps struct {
+	getReflect        func(t tenant.Model, monsterId uint32, kind string) (monster.ReflectInfo, bool)
+	getMonster        func(monsterId uint32) (monster.Model, error)
+	applyDamage       func(f field.Model, monsterId, characterId uint32, damages []uint32, attackType byte) error
+	emitReflectDamage func(f field.Model, uniqueId, templateId, characterId uint32, reflectDamage uint32, reflectType string) error
+	applyStatus       func(f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error
+	loadVenomStats    func() effective_stats.RestModel
+}
+
+// processDamageInfoEntry handles one DamageInfo from a magic/melee/ranged
+// attack packet: damage application or reflect emission, then optional
+// monster status apply. All side-effecting calls go through deps so tests
+// can drive each branch without constructing a real monster.Processor or
+// session.
+func processDamageInfoEntry(
+	l logrus.FieldLogger,
+	di packetmodel.DamageInfo,
+	ai packetmodel.AttackInfo,
+	se effect.Model,
+	skillLevel uint32,
+	casterId uint32,
+	casterX, casterY int16,
+	f field.Model,
+	t tenant.Model,
+	attackKind string,
+	deps damageInfoEntryDeps,
+) {
+	damages := di.Damages()
+
+	if len(damages) == 0 {
+		if len(se.MonsterStatus()) == 0 {
+			return
+		}
+		ms := make(map[string]int32)
+		for k, v := range se.MonsterStatus() {
+			ms[k] = int32(v)
+		}
+		if _, isVenom := ms["VENOM"]; isVenom {
+			stats := deps.loadVenomStats()
+			coef := 0.1 + rand.Float64()*0.1
+			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
+		}
+
+		// Doom: respect magic-reflect. Doom does no damage, so on reflect we
+		// simply skip the apply (nothing to bounce back). Gated on DOOM so
+		// no other empty-damage status flow changes behavior.
+		if _, isDoom := ms[monster2.StatusDoom]; isDoom && attackKind != "" {
+			if _, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
+				l.Debugf("Doom: monster [%d] has %s reflect; status apply skipped.", di.MonsterId(), attackKind)
+				return
+			}
+		}
+
+		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
+		return
+	}
+
+	reflected := false
+	if attackKind != "" {
+		if info, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
+			mon, mErr := deps.getMonster(di.MonsterId())
+			if mErr == nil {
+				entry := make([]int32, 0, len(damages))
+				for _, d := range damages {
+					entry = append(entry, int32(d))
+				}
+				r, within := computeReflect(entry, info, casterX, casterY, mon.X(), mon.Y())
+				if within {
+					l.Debugf("reflect: char [%d] hit monster [%d] for %d reflected damage.", casterId, di.MonsterId(), r)
+					if eErr := deps.emitReflectDamage(f, di.MonsterId(), mon.MonsterId(), casterId, uint32(r), info.Kind); eErr != nil {
+						l.WithError(eErr).Errorf("Unable to emit DAMAGE_REFLECTED for monster [%d] / character [%d].", di.MonsterId(), casterId)
+					}
+					reflected = true
+				}
+			}
+		}
+	}
+
+	if reflected {
+		// On reflect: monster takes no damage AND no monster status is applied
+		// for this entry (FREEZE/STUN/etc. would let the player slip through
+		// the reflect's intent).
+		return
+	}
+
+	if err := deps.applyDamage(f, di.MonsterId(), casterId, damages, byte(ai.AttackType())); err != nil {
+		l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), casterId)
+	}
+
+	// Apply monster status effects from skill (e.g., freeze, poison, stun).
+	if len(se.MonsterStatus()) > 0 {
+		ms := make(map[string]int32)
+		for k, v := range se.MonsterStatus() {
+			ms[k] = int32(v)
+		}
+		if _, isVenom := ms["VENOM"]; isVenom {
+			stats := deps.loadVenomStats()
+			coef := 0.1 + rand.Float64()*0.1
+			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
+		}
+		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
+	}
+}
+
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
 		return func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {
@@ -117,6 +230,14 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							if se.MPConsume() > 0 {
 								_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
 							}
+							if itemId := se.ItemConsume(); itemId > 0 {
+								invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
+								if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); typeOk && found {
+									_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), charcon.Id(s.CharacterId()), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
+								} else {
+									l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), itemId)
+								}
+							}
 						}
 					}
 
@@ -148,71 +269,21 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 						return venomStats
 					}
 
+					deps := damageInfoEntryDeps{
+						getReflect:        mirror.GetReflect,
+						getMonster:        mp.GetById,
+						applyDamage:       mp.Damage,
+						emitReflectDamage: mp.EmitDamageReflected,
+						applyStatus:       mp.ApplyStatus,
+						loadVenomStats:    loadVenomStats,
+					}
 					for _, di := range ai.DamageInfo() {
-						damages := di.Damages()
-						if len(damages) == 0 {
-							// Still allow status apply path (matches prior behaviour
-							// of looping into the apply block on empty damage).
-							if len(se.MonsterStatus()) > 0 {
-								ms := make(map[string]int32)
-								for k, v := range se.MonsterStatus() {
-									ms[k] = int32(v)
-								}
-								if _, isVenom := ms["VENOM"]; isVenom {
-									stats := loadVenomStats()
-									coef := 0.1 + rand.Float64()*0.1
-									ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
-								}
-								_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
-							}
-							continue
-						}
-
-						reflected := false
-						if attackKind != "" {
-							if info, ok := mirror.GetReflect(t, di.MonsterId(), attackKind); ok {
-								mon, mErr := mp.GetById(di.MonsterId())
-								if mErr == nil {
-									entry := make([]int32, 0, len(damages))
-									for _, d := range damages {
-										entry = append(entry, int32(d))
-									}
-									r, within := computeReflect(entry, info, c.X(), c.Y(), mon.X(), mon.Y())
-									if within {
-										l.Debugf("reflect: char [%d] hit monster [%d] for %d reflected damage.", s.CharacterId(), di.MonsterId(), r)
-										if eErr := mp.EmitDamageReflected(s.Field(), di.MonsterId(), mon.MonsterId(), s.CharacterId(), uint32(r), info.Kind); eErr != nil {
-											l.WithError(eErr).Errorf("Unable to emit DAMAGE_REFLECTED for monster [%d] / character [%d].", di.MonsterId(), s.CharacterId())
-										}
-										reflected = true
-									}
-								}
-							}
-						}
-
-						if reflected {
-							// On reflect: monster takes no damage AND no monster status
-							// is applied for this entry (FREEZE/STUN/etc. would let the
-							// player slip through the reflect's intent).
-							continue
-						}
-
-						if err := mp.Damage(s.Field(), di.MonsterId(), s.CharacterId(), damages, byte(ai.AttackType())); err != nil {
-							l.WithError(err).Errorf("Unable to apply damage to monster [%d] from character [%d].", di.MonsterId(), s.CharacterId())
-						}
-
-						// Apply monster status effects from skill (e.g., freeze, poison, stun)
-						if len(se.MonsterStatus()) > 0 {
-							ms := make(map[string]int32)
-							for k, v := range se.MonsterStatus() {
-								ms[k] = int32(v)
-							}
-							if _, isVenom := ms["VENOM"]; isVenom {
-								stats := loadVenomStats()
-								coef := 0.1 + rand.Float64()*0.1
-								ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
-							}
-							_ = mp.ApplyStatus(s.Field(), di.MonsterId(), s.CharacterId(), uint32(ai.SkillId()), uint32(sk.Level()), ms, uint32(se.Duration()))
-						}
+						processDamageInfoEntry(
+							l, di, ai, se, uint32(sk.Level()),
+							s.CharacterId(), c.X(), c.Y(),
+							s.Field(), t, attackKind,
+							deps,
+						)
 					}
 
 					_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), func(os session.Model) error {

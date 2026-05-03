@@ -261,3 +261,27 @@ func TestComputeFromFactors_FractionalMultipliers(t *testing.T) {
 		t.Errorf("MesoRate() = %v, want approximately 1.236", c.MesoRate())
 	}
 }
+
+func TestComputeFromFactors_WorldHolyCurse(t *testing.T) {
+	// Acceptance criterion #3: world(2.0) x HolySymbol(1.5) x Curse(0.5) = 1.5
+	factors := []Factor{
+		NewFactor("world", TypeExp, 2.0),
+		NewFactor("buff:2311003", TypeExp, 1.5), // Holy Symbol
+		NewFactor("buff:4120002", TypeExp, 0.5), // Curse
+	}
+
+	c := ComputeFromFactors(factors)
+
+	if !floatEquals(c.ExpRate(), 1.5, 0.0001) {
+		t.Errorf("ExpRate() = %v, want approximately 1.5", c.ExpRate())
+	}
+	if c.MesoRate() != 1.0 {
+		t.Errorf("MesoRate() = %v, want 1.0 (curse only affects exp)", c.MesoRate())
+	}
+	if c.ItemDropRate() != 1.0 {
+		t.Errorf("ItemDropRate() = %v, want 1.0 (curse only affects exp)", c.ItemDropRate())
+	}
+	if c.QuestExpRate() != 1.0 {
+		t.Errorf("QuestExpRate() = %v, want 1.0 (curse only affects exp)", c.QuestExpRate())
+	}
+}

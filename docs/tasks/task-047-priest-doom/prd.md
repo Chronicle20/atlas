@@ -1,304 +1,388 @@
 # Priest Doom (Skill 2311005) — Product Requirements Document
 
-Version: v1
+Version: v2 (revised after wrong-channel discovery)
 Status: Draft
-Created: 2026-05-03
+Created: 2026-05-03 (v1), revised 2026-05-03 (v2)
+Predecessor: see `postmortem.md` for the v1 → v2 discovery story.
+
 ---
 
 ## 1. Overview
 
-The Priest job skill **Doom** (id `2311005`, master level 30) is a non-damaging area
-magic skill that polymorphs affected monsters into snails for the skill's
-duration. In v83 the snail visual and the elemental-resistance normalization
-are entirely client-side — they trigger off the `MORPH`/`DOOM` mask bit on the
-server-broadcast `MonsterStatSet` packet. The server's responsibilities are
-limited to: routing the cast, applying the `DOOM` monster-status entry,
-broadcasting the status packet, and removing the status when its duration
-expires. Reference behaviour comes from the Cosmic source tree
-(`server/StatEffect.java:823-825`, `server/StatEffect.java:1531`,
-`server/life/Monster.java:1087-1095`).
+The Priest job skill **Doom** (id `2311005`, master level 30) is a
+non-damaging area magic skill that polymorphs affected monsters into snails
+for the skill's duration. In v83 the snail visual and the elemental-resistance
+normalization are entirely client-side — they trigger off the
+`MORPH`/`DOOM` mask bit on the server-broadcast `MonsterStatSet` packet.
+The server's responsibilities are limited to: routing the cast,
+selecting the affected monsters, applying the `DOOM` monster-status entry
+to each, broadcasting the status packet, charging the skill's
+`itemConsume` cost (Magic Rock), and removing the status when its duration
+expires. Reference behaviour comes from the Cosmic source tree:
 
-A reconnaissance pass (recorded in this task's design phase) found that the
-plumbing for this skill is already largely assembled in the Atlas codebase:
-the skill id, job grant, monster-status constant, atlas-data effect mapping,
-magic-attack handler's empty-damage status-apply branch, the
-`MonsterStatus.DOOM` mask bit on the wire, the `STATUS_APPLIED` Kafka event,
-and the channel-side `MonsterStatSet` broadcast all exist today. The work
-remaining for this task is therefore focused on (a) closing one specific
-elemental-immunity gap that prevents Doom from sticking on element-resistant
-mobs the way the source material intends, (b) confirming bosses are immune,
-(c) producing a minimal end-to-end test that pins the cast → status →
-packet path against regressions, and (d) wiring an explicit
-ApplyStatus debug log that is searchable in production.
+- `client/SkillFactory.java:250` — Doom is registered as a Priest skill.
+- `server/StatEffect.java:823-825` — Doom maps to `MonsterStatus.DOOM` in
+  the effect builder.
+- `server/StatEffect.java:1531` — Doom is in `isMonsterBuff`.
+- `server/StatEffect.java:1180-1204` — `applyMonsterBuff` does
+  server-authoritative bounding-box selection from the caster's position
+  + the skill's `lt`/`rb` rectangle, applies the status to up to
+  `mobCount` monsters in that rectangle.
+- `net/server/channel/handlers/SpecialMoveHandler.java:138` — the buff
+  (SPECIAL_MOVE) packet handler is what invokes `effect.applyTo`, which
+  dispatches into `applyMonsterBuff` for monster-buff skills.
+
+The cast does **not** flow through the magic-attack opcode. The v83 client
+sends Doom over the SPECIAL_MOVE opcode only; the packet body carries
+cast position, not a list of affected monster ids. (See `postmortem.md`
+for the empirical confirmation.)
+
+The atlas wiring that already exists end-to-end:
+
+- atlas-data effect mapping for skill 2311005 (`reader.go:351-352`),
+  populating `MonsterStatus["DOOM"] = 1` and a non-zero duration.
+- atlas-monsters command consumer for `APPLY_STATUS`
+  (`kafka/consumer/monster/consumer.go:91-119`), and
+  `ApplyStatusEffect` with the elemental / boss immunity gates.
+- atlas-channel `monster.Processor.ApplyStatus` that emits the Kafka
+  command and the `MonsterStatSet` broadcast wiring with the DOOM
+  mask bit.
+- atlas-channel `CharacterUseSkillHandle` (the SPECIAL_MOVE handler)
+  that dispatches into `handler.UseSkill` and applies HP/MP/cooldown
+  costs and party buffs.
+
+What does **not** exist today: any code path that turns a Doom cast
+(arriving via the buff packet, with no client-supplied mob list) into
+`ApplyStatus` calls per affected mob. `handler.UseSkill`'s `applyToMobs`
+short-circuits because `info.AffectedMobIds()` is empty. There is also no
+generic `itemConsume` charge anywhere in the skill cast pipeline.
+
+This PRD scopes the work to add server-authoritative monster selection
+for Doom and to plumb generic `itemConsume` charging into the buff-path
+cost block — both of which mirror canonical Cosmic v83 behavior.
 
 ## 2. Goals
 
-Primary goals:
+Primary goals (unchanged from v1):
 
-- A Priest with skill `2311005` learned can cast Doom in a magic attack
-  packet (no damage entries, monster ids in the affected list) and cause
-  every legal target in the LT/RB area to receive the `DOOM` monster status
-  for the skill's duration.
+- A Priest with skill `2311005` learned can cast Doom and cause every
+  legal target in the LT/RB area to receive the `DOOM` monster status
+  for the skill's duration. Targets are selected server-side from the
+  caster's current position and facing.
 - The v83 client renders affected mobs as snails for the duration and
   resumes the original sprite at expiry without the player having to
-  rejoin the map. (This is verified by the wire-level evidence: a
-  `MonsterStatSet` with the DOOM bit, followed by `MonsterStatReset` with
-  the same bit at expiry. Snail rendering itself is client-side.)
-- Doom's status-apply path is exempt from the existing
-  poison/freeze elemental-immunity gate so that an element-resistant mob
-  (e.g., a fire-immune mob) does not silently reject the DOOM status.
-- Bosses do not receive the DOOM status. The existing boss immunity
-  rejects it; this PRD pins that with a test rather than adding new logic.
-- Magic-reflect targets, per the existing handler short-circuit, do not
-  receive Doom. This is the chosen behaviour and is pinned by a test.
-- A grep-friendly debug log line is emitted at cast time identifying the
-  caster, the affected monster ids, and the duration, so production
-  diagnoses do not have to reconstruct the chain from the generic
-  ApplyStatus log.
+  rejoin the map. (Verified by wire-level evidence: `MonsterStatSet`
+  with the DOOM bit, followed by `MonsterStatReset` with the same bit
+  at expiry.)
+- Doom's status-apply path is exempt from the existing poison/freeze
+  elemental-immunity gate so an element-resistant mob does not silently
+  reject the DOOM status. (Already implemented in atlas-monsters at
+  `processor.go:1107-1111`. Stays.)
+- Bosses do not receive the DOOM status. The existing
+  `isBossAllowedStatus` allow-list rejects DOOM. (Already pinned by an
+  atlas-monsters test. Stays.)
+- Magic-reflect targets do not receive Doom. The new buff-path handler
+  consults the reflect mirror per affected mob and skips reflect mobs.
+  Doom does no damage, so no reflect damage is emitted.
+- A grep-friendly debug log line is emitted at status-apply time
+  identifying the caster, the affected monster id, the skill, the
+  level, and the duration. (Already implemented at
+  `services/atlas-channel/atlas.com/channel/monster/processor.go:73`.
+  Stays.)
+- The Magic Rock (`itemConsume = 4006000`, `itemConsumeAmount = 1` per
+  the v83 effect data) is consumed once per cast. Generic across every
+  current and future `itemConsume` skill (Mystic Door, summons, mists,
+  …).
 
-Non-goals:
+Non-goals (mostly unchanged from v1):
 
-- No other Priest skills (Mystic Door, Holy Symbol, Summon Dragon,
-  Dispel) are in scope.
-- No refactor of the magic-attack handler beyond what this skill needs.
-- No server-side polymorph entity swap. Polymorph-to-snail is a v83
-  client-side effect of the `DOOM` mask bit; the server does not change
-  the spawned monster id.
-- No server-side elemental damage recomputation while a mob is Doomed.
-  Atlas-channel does not compute attack damage; the v83 client computes
-  damage and sends it. The client interprets DOOM as snail-elemental and
-  produces normal-element damage on its own.
-- No XP award for the cast itself. Doom does no damage; XP from kills
-  flows through the existing damage-attribution path when an unrelated
-  attack finishes the mob.
-- No new Kafka topic or event type. All wiring uses existing
-  `APPLY_STATUS`, `STATUS_APPLIED`, `STATUS_EXPIRED`, and `STATUS_CANCELLED`.
-- No work on the Solution test framework (task-042); per direction,
-  tests use the existing per-package unit-test pattern that
-  `services/atlas-channel/atlas.com/channel/skill/handler/heal/` follows.
+- No other Priest skills are in scope.
+- No server-side polymorph entity swap. Polymorph-to-snail is a
+  v83 client-side effect of the DOOM mask bit; the server does not
+  change the spawned monster id.
+- No server-side elemental damage recomputation while a mob is
+  Doomed.
+- No XP award for the cast itself.
+- No new Kafka topic or event type.
+- No work on the Solution test framework (task-042); per-package unit
+  tests in atlas-channel mirror the `skill/handler/heal/` style.
+- No work in `libs/atlas-packet`. The buff packet for Doom carries
+  cast position + skill id/level + trailing byte; no list-of-mobs
+  bytes are exchanged. atlas-channel does not need cast-position
+  decoding because the bounding box uses caster position (Cosmic
+  parity, `StatEffect.java:1181`).
 
 ## 3. User Stories
 
+(Unchanged from v1.)
+
 - As a Priest player, I want to cast Doom on a group of regular mobs so
-  that they visibly turn into snails and become harmless for the duration.
-- As a Priest player, I want Doom to land on element-resistant mobs (fire
-  imps, ice mobs) so the skill is useful for its intended counter-niche.
+  they visibly turn into snails and become harmless for the duration.
+- As a Priest player, I want Doom to land on element-resistant mobs
+  (fire imps, ice mobs) so the skill is useful for its intended
+  counter-niche.
 - As a Priest player, I want Doom to *not* affect bosses so I do not
-  waste MP and a cast on a target that the source material treats as
-  immune.
+  waste MP and a Magic Rock on an immune target.
+- As a Priest player, I want each Doom cast to consume one Magic Rock
+  (per the skill's `itemConsume` data), and the cast to fail
+  client-side if I have none.
 - As a server operator diagnosing a stuck mob report, I want a single
-  log line per Doom cast that names the caster, the targets, and the
+  log line per Doom apply that names the caster, the target, and the
   duration so I can reconstruct the timeline quickly.
-- As a developer adding a future Priest skill or refactoring the magic
-  attack path, I want the Doom test suite to flag any regression that
-  silently breaks the cast → status → packet flow.
 
 ## 4. Functional Requirements
 
-### 4.1 Cast intake
+### 4.1 Cast intake (corrected from v1)
 
-- The magic-attack packet handler
-  (`services/atlas-channel/atlas.com/channel/socket/handler/character_attack_magic.go`)
-  routes a packet whose `SkillId() == 2311005` through
-  `processAttack` (the existing common path). No new dispatch table
-  entry is required, and no entry is added to the per-skill
-  `skill/handler/registry.go` registry — the empty-damage
-  monster-status apply branch in `character_attack_common.go` already
-  covers Doom's behaviour.
-- The cast verifies the caster owns skill `2311005` and consumes MP and,
-  if defined for the skill effect, HP. The existing
-  `character_attack_common.go` cost block (lines 113-120) handles this
-  because Doom is not registered in the per-skill
-  `handler.Lookup` table; the generic path applies.
+- The buff (SPECIAL_MOVE) packet handler
+  (`services/atlas-channel/atlas.com/channel/socket/handler/character_skill_use.go`)
+  routes a packet whose `SkillId() == 2311005` through `handler.UseSkill`
+  (the existing common buff path).
+- A new per-skill handler is registered for `PriestDoomId` in
+  `services/atlas-channel/atlas.com/channel/skill/handler/doom/`. The
+  registration uses the same `channelhandler.Register(skill2.PriestDoomId, Apply)`
+  pattern as `skill/handler/heal/heal.go:40`.
+- HP / MP cost: charged by the existing `UseSkill` cost block
+  (`skill/handler/common.go:22-27`). For skill 2311005 level 30, the
+  effect data carries `MPConsume = 88, HPConsume = 0`.
+- Item cost: a new `itemCon` consume call is added to the same `UseSkill`
+  cost block, after the MP charge. It is generic — runs for any
+  `e.ItemConsume() > 0`. For Doom, this charges one Magic Rock
+  (`item.Id(4006000)`) from the caster's ETC compartment.
+- Cooldown: handled by the existing `UseSkill` cooldown block
+  (`common.go:28-30`). For Doom, `e.Cooldown()` is 0 in the v83 data,
+  so no cooldown is recorded.
 
-### 4.2 Target resolution
+### 4.2 Target resolution (corrected from v1)
 
-- For each `DamageInfo` entry in the magic attack packet (Doom carries
-  one entry per affected monster id with an empty `Damages()` slice),
-  the handler attempts a status apply.
-- The reflect short-circuit
-  (`character_attack_common.go:172-197`) continues to apply: if a
-  magic-reflect mob is in the target list and within reflect range,
-  Doom does not stick to that mob. The reflect short-circuit emits the
-  reflect damage path and skips the status apply for that entry.
-  No special exemption for Doom.
+- The new Doom handler computes the target rectangle from the caster's
+  current position + facing direction + the skill effect's `LT()`/`RB()`
+  rectangle, mirroring Cosmic's `calculateBoundingBox`
+  (`StatEffect.java:1206-1218`):
+  - facing right: `[caster.x - rb.x, caster.y + lt.y, caster.x - lt.x, caster.y + rb.y]`
+  - facing left:  `[caster.x + lt.x, caster.y + lt.y, caster.x + rb.x, caster.y + rb.y]`
+- The handler queries atlas-monsters for monsters in that rectangle on
+  the caster's field, capped to `e.MobCount()` (per the v83 data, 6
+  for Doom). Result type: `[]monster.Model` (the channel-side view).
+- For each returned mob:
+  - Magic-reflect probe: if the mob has an active magic-reflect window
+    via `monster.GetStatusMirror().GetReflect(t, mob.UniqueId(), "MAGICAL")`,
+    skip the apply for that mob. Doom does no damage, so no reflect
+    damage is emitted.
+  - Otherwise: emit `mp.ApplyStatus(field, mob.UniqueId(), characterId,
+    PriestDoomId, skillLevel, {"DOOM": 1}, e.Duration())`.
+- Cosmic's `applyMonsterBuff` also runs `makeChanceResult()` (a `prop`
+  RNG) per mob. The atlas-data effect data for Doom carries
+  `prop = 0.52` per the v83 data. Mirror this: skip a mob with
+  probability `(1 - prop)`. (Implementation: a `rand.Float64() <= prop`
+  guard around the apply.)
 
-### 4.3 Status apply
+### 4.3 Status apply (unchanged from v1)
 
-- For each non-reflected target, the handler calls
-  `monster.ApplyStatus(field, monsterId, characterId, 2311005, skillLevel,
-  {"DOOM": 1}, duration)`. The status map and duration come from
-  `effect.Model` populated by atlas-data's
-  `services/atlas-data/atlas.com/data/skill/reader.go:351-352` mapping.
-- The atlas-monsters consumer
-  (`services/atlas-monsters/atlas.com/monsters/kafka/consumer/monster/consumer.go:91`)
-  calls `ProcessorImpl.ApplyStatusEffect`, which:
-  - Rejects the apply if the target is a boss
-    (`processor.go:1093-1097`). DOOM is not in `isBossAllowedStatus`'s
-    allow list, so this rejection is automatic and is pinned by a new
-    test.
-  - **NEW:** When the inbound status set contains `DOOM`, the
-    elemental-immunity gate (`isElementallyImmune`,
-    `processor.go:1116-1131`) returns `false, ""` for that effect
-    regardless of the monster's resistance table. This lets Doom land
-    on fire-/ice-/poison-/lightning-immune mobs.
-  - Persists the effect to the registry, emits `STATUS_APPLIED`, and
-    triggers a picker re-pick if the effect touches the picker.
+- atlas-monsters' `ApplyStatusEffect` (`processor.go:1060-1098`) accepts
+  the player-sourced DOOM effect and:
+  - Bypasses the elemental-immunity gate via the explicit DOOM
+    short-circuit in `isElementallyImmune` (`processor.go:1107-1111`,
+    Cosmic parity at `StatEffect.java:1531`).
+  - Rejects the apply if the target is a boss (`isBossAllowedStatus`
+    does not include DOOM, so the default-reject branch returns
+    `boss immunity`).
+- The status is added to the monster's effect list (refresh semantics
+  documented in `processor_test.go:TestApplyStatusEffect_Doom_ReapplyReplacesExisting`).
+- A `STATUS_APPLIED` Kafka event is emitted; atlas-channel's broadcast
+  pipeline turns it into a `MonsterStatSet` packet with the DOOM mask
+  bit.
 
-### 4.4 Status broadcast
+### 4.4 Status broadcast (unchanged from v1)
 
-- The atlas-channel monster status consumer
-  (`services/atlas-channel/atlas.com/channel/kafka/consumer/monster/consumer.go`)
-  receives `STATUS_APPLIED`, builds a `MonsterStatSet` packet whose
-  `MonsterTemporaryStat` mask includes the `TemporaryStatTypeDoom` bit
-  and whose payload encodes one stat value (`value=1`,
-  `sourceId=2311005`, `sourceLevel=skillLevel`, `expiresAt=now+duration`),
-  and broadcasts it to all sessions in the field. No code change is
-  required here — `libs/atlas-packet/model/monster.go:108` already wires
-  the bit in the mask order.
+- The `STATUS_APPLIED` event flows through atlas-channel's existing
+  monster status consumer; no new code is required.
+- The `MonsterStatSet` packet carries the DOOM bit
+  (`libs/atlas-packet/model/monster.go:108` —
+  `TemporaryStatTypeDoom`). v83 clients render the snail and normalize
+  the mob's elemental table.
 
-### 4.5 Status expiry
+### 4.5 Status expiry (unchanged from v1)
 
-- The atlas-monsters status task expires the effect after `duration`
-  ms and emits `STATUS_EXPIRED`. The atlas-channel consumer translates
-  that into a `MonsterStatReset` packet whose mask includes the DOOM
-  bit. The v83 client restores the original mob sprite. No code change
-  required; the test suite in 4.7 verifies the round-trip.
+- The existing status-expiry timer in atlas-monsters fires
+  `STATUS_EXPIRED`, which atlas-channel turns into `MonsterStatReset`
+  with the DOOM bit. v83 clients restore the original sprite.
 
 ### 4.6 Cast logging
 
-- A `Debugf` line is emitted from
-  `services/atlas-channel/atlas.com/channel/monster/processor.go`
-  inside `Processor.ApplyStatus` (or a small wrapper) when the inbound
-  `statuses` map contains `DOOM`. The line names the caster id, the
-  monster id, the skill id, the skill level, and the duration. The
-  generic ApplyStatus debug remains in place — this is an additional,
-  Doom-targeted line. Format:
+- Per-apply log line at
+  `services/atlas-channel/atlas.com/channel/monster/processor.go:73`:
   `Doom: caster=[%d] monster=[%d] skill=[%d] level=[%d] duration=[%d]ms.`
+  (Already implemented; fires on the corrected path because the new
+  handler calls `mp.ApplyStatus`.)
+- The new Doom handler also emits one summary line per cast at the end:
+  `Doom: caster=[%d] level=[%d] mobsInRect=[%d] applied=[%d] reflectSkipped=[%d] propSkipped=[%d].`
+  for diagnosis at the cast level (mirrors the heal handler's summary
+  log at `skill/handler/heal/heal.go:166`).
 
-### 4.7 Tests (unit-test pattern, not Solution)
+### 4.7 Tests
 
-- `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go`
-  - **DOOM bypasses elemental immunity:** monster with
-    `resistances={"P": "1", "I": "1", "F": "1", "S": "1", "L": "1"}`,
-    apply `{"DOOM": 1}` from a player skill, assert apply succeeds and
-    `STATUS_APPLIED` is emitted.
-  - **DOOM rejected on bosses:** monster with `boss=true`, apply
-    `{"DOOM": 1}`, assert `boss immunity` error and no
-    `STATUS_APPLIED` event.
-  - **DOOM re-apply replaces the existing entry (refresh):**
-    re-applying `{"DOOM": 1}` while DOOM is already active replaces the
-    prior `StatusEffect` with the new one and emits a second
-    `STATUS_APPLIED` event. This is the realized behaviour of
-    `Model.AddStatusEffect`
-    (`services/atlas-monsters/atlas.com/monsters/monster/builder.go:140-163`),
-    which removes any same-type entry before appending the new one for
-    every status except VENOM. The test pins this refresh semantics for
-    DOOM specifically; the prior assumption that re-apply is a no-op was
-    incorrect (see `design.md` §6 risk note).
-- `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`
-  - **Doom magic attack with empty damages applies status:** an
-    `AttackInfo` with `SkillId=2311005`, one `DamageInfo` whose
-    `Damages()` is empty, runs through `processAttack`, and produces
-    one `monster.ApplyStatus` call with `{"DOOM": 1}` and the effect's
-    duration. Verified against an existing-style fake monster
-    processor.
-  - **Doom blocked by reflect:** target has a magical-reflect window
-    that contains the caster; `processAttack` does not call
-    `ApplyStatus` for that target and does emit the reflect path.
-  - **Doom on multi-target spread:** three `DamageInfo` entries, one
-    reflect-blocked, two clean — exactly two `ApplyStatus` calls.
-- `services/atlas-data/atlas.com/data/skill/reader_test.go` (or the
-  equivalent existing test file)
-  - **Doom effect maps DOOM=1 with non-zero duration:** load the
-    effect for skill `2311005` level 30 and assert
-    `MonsterStatus()["DOOM"] == 1` and `Duration() > 0`. If a fixture
-    is needed, add a minimal hand-crafted skill XML node rather than
-    pulling the full WZ data.
+Reuse what stays from v1:
 
-## 5. API Surface
+- atlas-data: `TestReader_PriestDoom_MapsDoomStatus`. (Stays.)
+- atlas-monsters: `TestApplyStatusEffect_Doom_BypassesElementalImmunity`,
+  `TestApplyStatusEffect_Doom_RejectedOnBoss`,
+  `TestApplyStatusEffect_Doom_ReapplyReplacesExisting`. (Stay.)
 
-No new HTTP endpoints, no Kafka topic or event type changes, no command
-schema changes. All wiring uses:
+Add for the new handler:
 
-- `APPLY_STATUS` command on the existing monster command topic.
-- `STATUS_APPLIED` and `STATUS_EXPIRED` events on the existing monster
-  status event topic.
-- `MonsterStatSet` and `MonsterStatReset` socket packets, encoded by
-  the existing `MonsterTemporaryStat` mask machinery in
-  `libs/atlas-packet/model/monster.go`.
+- atlas-channel `skill/handler/doom/doom_test.go`:
+  - `TestDoom_Apply_AppliesToMobsInRect` — given a caster + 3 mobs (2
+    in rect, 1 outside), the handler emits exactly 2 `ApplyStatus`
+    calls, with the right monster ids, skill id, level, and duration.
+  - `TestDoom_Apply_RespectsMobCount` — given 8 mobs in rect and
+    `e.MobCount() = 6`, exactly 6 `ApplyStatus` calls are emitted.
+  - `TestDoom_Apply_SkipsMagicReflectMobs` — a mob with a magic-reflect
+    window is excluded from the apply; no reflect damage is emitted.
+  - `TestDoom_Apply_RespectsProp` — with `prop = 0.0`, no apply
+    fires; with `prop = 1.0`, every in-rect mob receives the apply.
+    (Implementation note: tests inject a deterministic RNG via a
+    package-private hook to avoid flakiness.)
+  - `TestDoom_Apply_LeftFacingRectMirror` — caster facing left,
+    target only in the left-mirrored rectangle, applies.
+- atlas-channel `skill/handler/common_test.go` (new or extended):
+  - `TestUseSkill_ItemConsume_BurnsItem` — given an effect with
+    `ItemConsume() > 0`, the cost block emits exactly one
+    `RequestItemConsume` call with the slot of the matching asset.
+  - `TestUseSkill_ItemConsume_LogsWarningOnMissingItem` — given a
+    caster with no Magic Rock and an effect requiring it, the cost
+    block logs the warning and proceeds with the cast.
 
-## 6. Data Model
+## 5. Non-Functional Requirements
 
-No schema changes. The `DOOM` status entry rides in the existing
-`storedStatusEffect.Statuses` map persisted to Redis by
-`services/atlas-monsters/atlas.com/monsters/monster/registry.go:85-101`.
+(Same as v1 — preserved here for completeness.)
 
-## 7. Service Impact
+- Backward compat: no Kafka schema or REST contract changes for existing
+  endpoints. The new "monsters in rect" endpoint is additive.
+- Multi-tenancy: every new query and command propagates the tenant via
+  the existing context plumbing.
+- Observability: Debugf log lines on the cast and apply paths; INFO/WARN
+  for failure / item-missing edge cases.
+- Performance: the rect query runs once per Doom cast. atlas-monsters
+  already keeps an in-memory monster registry per tenant; the rect
+  filter is an O(N) walk over field monsters, which is acceptable
+  (typical map populations are well under 100 mobs).
 
-| Service / Library | Change |
-|---|---|
-| `services/atlas-monsters` | `processor.go` — change `isElementallyImmune` (or its caller in `ApplyStatusEffect`) so that an effect containing `DOOM` returns `false, ""`. Add unit tests covering the bypass and the boss rejection. No interface changes. |
-| `services/atlas-channel` | `monster/processor.go` — add a `Doom`-specific Debugf line when the inbound status set contains `DOOM`. `socket/handler/character_attack_common_test.go` — add tests for cast-to-ApplyStatus, reflect blocking, and multi-target spread. No production handler logic changes. |
-| `services/atlas-data` | Add a unit test pinning the effect mapping for `2311005` (no production change). |
-| `libs/atlas-packet` | None. The DOOM mask bit is already wired. |
-| `libs/atlas-constants` | None. `PriestDoomId`, `StatusDoom`, and `TemporaryStatTypeDoom` are present. |
-| `services/atlas-configurations` | None. Skill grant and level cap (30) are already in `seed-data/templates/template_gms_83_1.json:3094`. |
+## 6. Constraints
 
-## 8. Non-Functional Requirements
+- Keep the bounding-box semantics aligned with Cosmic
+  (`StatEffect.java:1206-1218`). Atlas's coordinate system uses the
+  same axis convention (y increases downward, x increases right).
+  Server-side facing-direction handling matters: the new handler must
+  ask atlas-character (or read from the channel-side character model)
+  for the caster's `Stance() & 1` parity to derive `isFacingLeft`.
+- Generic `itemConsume` plumbing: must not double-charge for skills
+  that have a per-skill handler (the handler is invoked by `UseSkill`
+  *after* the cost block, so the cost block is the single source of
+  truth for `itemConsume`).
+- Do not require a server-side inventory/cap pre-check before the cast.
+  The v83 client gates the cast UI on item availability; if the player
+  somehow casts without the item, the warning is logged and the cast
+  proceeds (matching today's HP/MP semantics, where cost is debited
+  even if the resulting value would go negative — the existing
+  `cp.ChangeHP` / `ChangeMP` paths handle the clamp).
 
-- **Performance:** Doom adds at most one ApplyStatus emit per affected
-  target (typically <=15 mobs in a single cast). No new poll, no new
-  cache entry, no new map iteration beyond what the generic magic
-  attack handler already does.
-- **Multi-tenancy:** `ApplyStatusEffect` already takes the tenant via
-  the processor context; no tenant-scope work is required.
-- **Observability:** the new Doom Debugf line is the only added
-  emission. No new metric, no new trace span — the generic
-  ApplyStatus span and the existing per-monster status counter
-  already cover this skill.
-- **Security:** the cast verification path
-  (`character_attack_common.go:97-100`) already disconnects a session
-  whose `Skills()` does not include `2311005`. No new client-trust
-  surface is introduced.
-- **Backwards compatibility:** because the elemental-immunity bypass
-  is gated on the inbound status set containing `DOOM`, no existing
-  POISON/FREEZE-bearing skill flow is altered.
+## 7. Service / package impact
 
-## 9. Open Questions
+| Service / package | Action | Notes |
+|---|---|---|
+| `services/atlas-data/atlas.com/data/skill/reader.go` | None | Existing Doom mapping at line 351-352 stays. |
+| `services/atlas-data/atlas.com/data/skill/reader_test.go` | None | Existing v1 reader test stays. |
+| `services/atlas-monsters/atlas.com/monsters/monster/processor.go` | None | DOOM short-circuit in `isElementallyImmune` and `testInformationLookup` extension stay. |
+| `services/atlas-monsters/atlas.com/monsters/monster/processor_test.go` | None | Three Doom apply tests stay. |
+| `services/atlas-monsters/atlas.com/monsters/monster/information/builder.go` | None | `SetBoss`/`SetResistances` stay. |
+| `services/atlas-monsters` REST/processor | **Add** | New "monsters in field within rectangle" query. Endpoint, handler, processor method, REST model. |
+| `services/atlas-channel/atlas.com/channel/monster/` | **Add** | Thin client wrapper for the new rect query. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/common.go` | **Modify** | Add generic `itemConsume` charge after the MP block. |
+| `services/atlas-channel/atlas.com/channel/skill/handler/doom/` | **Add (new package)** | New per-skill Doom handler. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | **Revert** | Remove the Doom-gated reflect probe (e05a1983a) and the `itemCon` consume in the cost gate (4a3312d6d / 9f1b14a00). Keep the helper extraction (03c84901c) and the imports it needs. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | **Revert** | Remove the four `TestProcessDamageInfoEntry_Doom_*` tests, the supporting helpers, and any imports left orphaned. |
+| `services/atlas-channel/atlas.com/channel/monster/processor.go` | None | `Doom: caster=…` Debugf stays. |
+| `libs/atlas-packet` | None | No decoder changes. |
+| `libs/atlas-constants` | None | All constants exist (`PriestDoomId`, `StatusDoom`, `TemporaryStatTypeDoom`). |
 
-None. All scope/behaviour questions raised in the spec interview were
-resolved before generating this document; the answers are folded into
-sections 2 and 4. The `task-047-priest-doom/design.md` produced in the
-next phase may surface further questions about the implementation
-strategy (e.g., whether to add a third arm to `isElementallyImmune` or
-to short-circuit before calling it); those are deferred to the design
-phase by intent.
+## 8. Open Questions
+
+1. **`prop` (cast probability) handling**: Cosmic applies a per-mob
+   `makeChanceResult()` gate inside `applyMonsterBuff`. The v83 Doom
+   data has `prop = 0.52`. **Decision needed**: do we honor `prop`
+   per-mob (Cosmic parity) or always apply when in rect? The PRD
+   currently mirrors Cosmic. Tests will need RNG injection to be
+   deterministic.
+2. **Field instance**: the rect query needs the caster's field
+   (world + channel + map + instance). The new handler has the field
+   in scope from `UseSkill`'s signature. The atlas-monsters processor
+   already takes a `field.Model` for related queries.
+3. **Facing derivation**: `Stance() & 1` is the OdinMS / Cosmic
+   convention for "facing left" (odd stance). Confirm by reading
+   atlas-channel's character model accessor for stance.
+
+## 9. Risks
+
+- **v83 packet structure variance**: if a future Priest skill is added
+  on the buff path with a different packet shape, the new Doom handler
+  is independent and unaffected. The `libs/atlas-packet`
+  `SkillUsageInfo` decoder is unchanged, so existing buff-path skills
+  are untouched.
+- **Per-mob reflect probe cost**: each Doom cast triggers up to
+  `mobCount` reflect lookups in the in-memory mirror. The existing
+  mirror is per-tenant in-memory and O(stack-depth) per query (per the
+  comment at `monster/status_mirror.go:63`). Negligible for
+  `mobCount = 6`.
+- **prop RNG flakiness**: the `prop = 0.52` gate means a Doom cast can
+  apply to between 0 and 6 mobs even with 6 in rect. Tests inject a
+  deterministic RNG. Production accepts the variance — Cosmic parity.
+- **Duration unit**: atlas-data effect `Duration()` is in milliseconds
+  (the reader's `time * 1000` multiplier when `Duration() == -1`). For
+  Doom, the v83 data carries `time = 60` seconds → `Duration() = 60000`
+  ms. atlas-channel's `mp.ApplyStatus` and atlas-monsters'
+  consumer both treat `duration` as milliseconds (`time.Duration(c.Body.Duration) * time.Millisecond`).
+  Consistent across the chain.
 
 ## 10. Acceptance Criteria
 
-A reviewer accepts this task as done when, in the worktree branch:
+In-game (manual verification):
 
-- [ ] Casting Doom in a manual end-to-end (live channel, live monster)
-  applies the DOOM mask bit on the wire, the v83 client renders the
-  affected mob as a snail, and the original sprite returns at expiry —
-  verified by packet capture or by visual inspection.
-- [ ] The new `processor_test.go` cases in atlas-monsters pass:
-  DOOM bypasses elemental immunity; DOOM is rejected on bosses; DOOM
-  no-ops while already active.
-- [ ] The new `character_attack_common_test.go` cases in atlas-channel
-  pass: empty-damage Doom triggers ApplyStatus, reflect blocks Doom,
-  multi-target spread routes correctly.
-- [ ] The new atlas-data reader test pins
-  `effect.MonsterStatus()["DOOM"] == 1` and `effect.Duration() > 0`
-  for skill `2311005` level 30.
-- [ ] `go build ./...` and `go test ./...` succeed in atlas-monsters,
-  atlas-channel, and atlas-data.
-- [ ] The Doom-specific Debugf log line appears in atlas-channel logs
-  on a real cast and contains the caster id, monster id, skill id,
-  level, and duration.
-- [ ] No regression in adjacent skill flows: Heal still pays its MP
-  cost exactly once; Cleric Bless and Cure paths are unchanged; the
-  generic ApplyStatus debug log continues to appear for non-Doom
-  status applies.
-- [ ] No new Kafka topic, no new event type, no new HTTP route.
+1. A Priest casts Doom on an empty area. No mobs receive the status; no
+   Magic Rock is consumed. (Cosmic parity: `applyMonsterBuff` finds an
+   empty list and returns silently.)
+2. A Priest casts Doom on a single regular mob in range. The mob renders
+   as a snail in the v83 client for the skill duration and resumes its
+   original sprite at expiry. One Magic Rock is consumed.
+3. A Priest casts Doom on a group of 3+ regular mobs in range, all on
+   one side of the player. All in-rect mobs that pass the `prop`
+   chance render as snails. One Magic Rock is consumed (per cast, not
+   per mob).
+4. A Priest casts Doom on a group containing a fire-immune mob. The
+   fire-immune mob still receives DOOM (the elemental-immunity
+   short-circuit is engaged).
+5. A Priest casts Doom on a boss. The boss does not receive DOOM. The
+   atlas-monsters log shows `Monster [..] is a boss. Status rejected.`.
+   One Magic Rock is consumed (the cast itself succeeded; only the
+   per-target status apply was rejected).
+6. A Priest casts Doom on a mob standing on a magic-reflect window.
+   That mob is excluded from the apply. No reflect damage is emitted
+   (Doom does no damage). atlas-channel logs include the
+   `Doom: monster [..] has MAGICAL reflect; status apply skipped.`
+   line emitted by the new handler.
+7. A Priest with zero Magic Rock attempts to cast Doom (e.g., via a
+   third-party client that bypasses the UI gate). The cast proceeds
+   per Cosmic / existing HP/MP semantics; the warning
+   `Character [..] cast skill [..] requiring item [..] but no such item
+   found in inventory; cast permitted (defense-in-depth gate only).`
+   appears in the atlas-channel logs.
+8. The grep `Doom: caster=\[` returns one line per Doom apply (i.e.,
+   per affected mob).
+
+Code (automated):
+
+- All atlas-data, atlas-monsters, and atlas-channel test suites pass.
+- The new `skill/handler/doom/doom_test.go` covers the apply, mob-count
+  cap, reflect-skip, prop-gate, and left-facing branches.
+- The new `skill/handler/common_test.go` extension covers the
+  `itemConsume` charge and the missing-item warning.

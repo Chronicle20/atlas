@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -43,13 +44,6 @@ type ExpiredStatusEventBody struct {
 	ExpiresAt time.Time    `json:"expiresAt"`
 }
 
-// Game client stat types that affect rates
-// These are TemporaryStatType constants from the game client, not rate-specific types
-const (
-	StatTypeHolySymbol = "HOLY_SYMBOL" // EXP rate buff (additive: amount is bonus percentage)
-	StatTypeMesoUp     = "MESO_UP"     // Meso rate buff (direct: amount is total percentage)
-)
-
 // ConversionMethod defines how to convert a stat amount to a rate multiplier
 type ConversionMethod int
 
@@ -61,39 +55,49 @@ const (
 	// ConversionDirect: multiplier = amount / 100.0
 	// Example: amount=103 -> 1.03x (103% of base)
 	ConversionDirect
+
+	// ConversionFixed: multiplier = mapping.Multiplier (amount ignored)
+	// Example: CURSE -> 0.5x flat
+	ConversionFixed
 )
 
 // RateMapping defines how a buff stat type maps to a rate type
 type RateMapping struct {
 	RateType   string           // The rate type (e.g., "exp", "meso")
 	Conversion ConversionMethod // How to convert amount to multiplier
+	Multiplier float64          // Used only when Conversion == ConversionFixed; ignored otherwise
 }
 
 // buffToRateMappings maps game client stat types to rate types with conversion methods
-var buffToRateMappings = map[string]RateMapping{
-	StatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
-	StatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
+var buffToRateMappings = map[character.TemporaryStatType]RateMapping{
+	character.TemporaryStatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
+	character.TemporaryStatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
+	character.TemporaryStatTypeCurse:      {RateType: "exp", Conversion: ConversionFixed, Multiplier: 0.5},
 }
 
 // IsRateStatType checks if a stat change type affects rates
-func IsRateStatType(statType string) bool {
+func IsRateStatType(statType character.TemporaryStatType) bool {
 	_, exists := buffToRateMappings[statType]
 	return exists
 }
 
 // GetRateMapping returns the rate mapping for a stat type, if it exists
-func GetRateMapping(statType string) (RateMapping, bool) {
+func GetRateMapping(statType character.TemporaryStatType) (RateMapping, bool) {
 	mapping, exists := buffToRateMappings[statType]
 	return mapping, exists
 }
 
-// CalculateMultiplier converts a stat amount to a rate multiplier using the specified conversion method
-func CalculateMultiplier(amount int32, conversion ConversionMethod) float64 {
-	switch conversion {
+// CalculateMultiplier converts a stat amount to a rate multiplier using the mapping's conversion method.
+// For Amount-derived modes (Additive, Direct), `amount` is consumed.
+// For Fixed mode, `mapping.Multiplier` is returned verbatim and `amount` is ignored.
+func CalculateMultiplier(amount int32, mapping RateMapping) float64 {
+	switch mapping.Conversion {
 	case ConversionAdditive:
 		return 1.0 + (float64(amount) / 100.0)
 	case ConversionDirect:
 		return float64(amount) / 100.0
+	case ConversionFixed:
+		return mapping.Multiplier
 	default:
 		return 1.0
 	}

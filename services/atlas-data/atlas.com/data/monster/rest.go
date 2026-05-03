@@ -31,6 +31,7 @@ type RestModel struct {
 	Resistances        map[string]string `json:"resistances"`
 	LoseItems          []loseItem        `json:"lose_items"`
 	Skills             []skill           `json:"skills"`
+	Attacks            []AttackInfo      `json:"attacks"`
 	Revives            []uint32          `json:"revives"`
 	TagColor           byte              `json:"tag_color"`
 	TagBackgroundColor byte              `json:"tag_background_color"`
@@ -85,6 +86,12 @@ type selfDestruction struct {
 type coolDamage struct {
 	Damage      uint32 `json:"damage"`
 	Probability uint32 `json:"probability"`
+}
+
+type AttackInfo struct {
+	Pos         uint8 `json:"pos"`         // 1, 2, or 3 (matches WZ attackN naming)
+	ConMP       int32 `json:"conMP"`
+	AttackAfter int32 `json:"attackAfter"` // milliseconds
 }
 
 type LoseItemRestModel struct {

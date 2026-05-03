@@ -1,10 +1,12 @@
 package character
 
 import (
+	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
+	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
 
@@ -83,6 +85,18 @@ func handleStatusEventMapChangedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx
 			oldField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.OldMapId).SetInstance(event.Body.OldInstance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionMapAndEmit(transactionId, newField, event.CharacterId, oldField)
+
+			// --- map-time-limit timer hooks (task-050) ---
+			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
+			tp.CancelIfTracked(event.CharacterId)
+			md, err := info.NewProcessor(l, ctx).GetById(event.Body.TargetMapId)
+			if err != nil {
+				l.WithError(err).Debugf("MapTimer: skipping registration for character [%d] target map [%d]; map info unavailable.", event.CharacterId, event.Body.TargetMapId)
+			} else if md.IsTimeLimited() {
+				if err := tp.Register(transactionId, event.CharacterId, newField, md.ForcedReturnMapId(), uint32(md.TimeLimit())); err != nil {
+					l.WithError(err).Warnf("MapTimer: failed to register timer for character [%d] map [%d].", event.CharacterId, event.Body.TargetMapId)
+				}
+			}
 		}
 	}
 }
@@ -95,6 +109,10 @@ func handleStatusEventChannelChangedFunc(db *gorm.DB) func(l logrus.FieldLogger,
 			newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionChannelAndEmit(transactionId, newField, event.Body.OldChannelId, event.CharacterId)
+
+			// --- map-time-limit timer hooks (task-050) ---
+			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
+			_ = tp.ForceReturnIfTracked(event.CharacterId)
 		}
 	}
 }

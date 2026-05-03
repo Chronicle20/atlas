@@ -8,6 +8,7 @@ import (
 	mapConsumer "atlas-maps/kafka/consumer/map"
 	mistConsumer "atlas-maps/kafka/consumer/mist"
 	"atlas-maps/kafka/consumer/monster"
+	sessionConsumer "atlas-maps/kafka/consumer/session"
 	"atlas-maps/logger"
 	_map "atlas-maps/map"
 	spawnMonster "atlas-maps/map/monster"
@@ -71,6 +72,7 @@ func main() {
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
 	mapConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
+	sessionConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	if err := character.InitHandlers(l, db)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
@@ -85,6 +87,9 @@ func main() {
 	}
 	if err := mistConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register mist kafka handlers.")
+	}
+	if err := sessionConsumer.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register session-status kafka handlers.")
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })

@@ -55,3 +55,19 @@ Singleton registry tracking active weather effects per map instance. State is no
 | Key | Value |
 |-----|-------|
 | FieldKey | WeatherEntry |
+
+### Map Timer Registry
+
+Singleton registry tracking per-character map-stay timer entries. State is not persisted and is rebuilt as characters change maps after a service restart.
+
+| Key | Value |
+|-----|-------|
+| (tenant, characterId) | Map Timer Entry |
+
+### Map Info Cache
+
+Process-local cache holding Map Info Models retrieved from atlas-data. State is not persisted.
+
+| Key | Value |
+|-----|-------|
+| (tenant, mapId) | Data Map Info Model |

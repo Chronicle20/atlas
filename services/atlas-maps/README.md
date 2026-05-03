@@ -11,7 +11,7 @@ A service that tracks character presence in maps, manages spawning of monsters a
 - PostgreSQL: Persistent storage for character map visit records
 - Redis: Spawn point cooldown registry storage
 - Kafka: Message consumption and production for character status events, map status events, cash shop events, monster status events, map commands, map action commands, and reactor commands
-- atlas-data service: REST API for map spawn point, reactor, and script data
+- atlas-data service: REST API for map spawn point, reactor, script, and map info data
 - atlas-monsters service: REST API for monster counts and creation
 - atlas-reactors service: REST API for reactor queries
 
@@ -34,7 +34,9 @@ A service that tracks character presence in maps, manages spawning of monsters a
 | EVENT_TOPIC_MAP_STATUS | Topic for map status events (produced) |
 | EVENT_TOPIC_CASH_SHOP_STATUS | Topic for cash shop status events (consumed) |
 | EVENT_TOPIC_MONSTER_STATUS | Topic for monster status events (consumed) |
+| EVENT_TOPIC_SESSION_STATUS | Topic for session status events (consumed) |
 | COMMAND_TOPIC_MAP | Topic for map commands (consumed) |
+| COMMAND_TOPIC_CHARACTER | Topic for character commands (produced) |
 | COMMAND_TOPIC_REACTOR | Topic for reactor commands (produced) |
 | COMMAND_TOPIC_MAP_ACTIONS | Topic for map action commands (produced) |
 | DATA | Root URL for atlas-data service |

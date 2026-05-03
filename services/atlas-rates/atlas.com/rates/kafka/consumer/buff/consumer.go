@@ -62,7 +62,7 @@ func handleBuffApplied(l logrus.FieldLogger, ctx context.Context, e buff.StatusE
 		// Convert stat amount to multiplier using the appropriate conversion method
 		// HOLY_SYMBOL (additive): amount=50 -> 1.50x (50% bonus)
 		// MESO_UP (direct): amount=103 -> 1.03x (103% of base)
-		multiplier := buff.CalculateMultiplier(change.Amount, mapping.Conversion)
+		multiplier := buff.CalculateMultiplier(change.Amount, mapping)
 
 		l.Debugf("Adding buff factor: stat type [%s] -> rate type [%s], amount [%d] -> multiplier [%.2f].",
 			change.Type, rateType, change.Amount, multiplier)

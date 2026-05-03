@@ -224,7 +224,7 @@ func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterI
 			}
 
 			// Calculate multiplier using the appropriate conversion method
-			multiplier := buff.CalculateMultiplier(change.Amount, mapping.Conversion)
+			multiplier := buff.CalculateMultiplier(change.Amount, mapping)
 
 			source := fmt.Sprintf("buff:%d", b.SourceId)
 

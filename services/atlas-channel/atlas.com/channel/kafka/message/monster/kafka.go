@@ -14,6 +14,7 @@ const (
 	CommandTypeApplyStatus    = "APPLY_STATUS"
 	CommandTypeCancelStatus   = "CANCEL_STATUS"
 	CommandTypeUseSkill       = "USE_SKILL"
+	CommandTypeUseBasicAttack = "USE_BASIC_ATTACK"
 )
 
 type DamageFriendlyCommandBody struct {
@@ -63,6 +64,10 @@ type UseSkillCommandBody struct {
 	CharacterId uint32 `json:"characterId"`
 	SkillId     byte   `json:"skillId"`
 	SkillLevel  byte   `json:"skillLevel"`
+}
+
+type UseBasicAttackCommandBody struct {
+	AttackPos uint8 `json:"attackPos"`
 }
 
 const (

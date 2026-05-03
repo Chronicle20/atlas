@@ -45,3 +45,28 @@ func TestDamageCommandProvider_EncodesDamagesSlice(t *testing.T) {
 		t.Fatalf("Body.AttackType = %d, want 1", cmd.Body.AttackType)
 	}
 }
+
+func TestUseBasicAttackCommandProvider(t *testing.T) {
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).SetInstance(uuid.Nil).Build()
+	prov := UseBasicAttackCommandProvider(f, uint32(5001), uint8(1))
+	msgs, err := prov()
+	if err != nil {
+		t.Fatalf("provider: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("messages = %d, want 1", len(msgs))
+	}
+	var cmd monster2.Command[monster2.UseBasicAttackCommandBody]
+	if err := json.Unmarshal(msgs[0].Value, &cmd); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if cmd.Type != monster2.CommandTypeUseBasicAttack {
+		t.Errorf("Type = %q, want %q", cmd.Type, monster2.CommandTypeUseBasicAttack)
+	}
+	if cmd.MonsterId != 5001 {
+		t.Errorf("MonsterId = %d, want 5001", cmd.MonsterId)
+	}
+	if cmd.Body.AttackPos != 1 {
+		t.Errorf("AttackPos = %d, want 1", cmd.Body.AttackPos)
+	}
+}

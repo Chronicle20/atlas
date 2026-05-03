@@ -1,4 +1,3 @@
-// services/atlas-channel/atlas.com/channel/skill/handler/registry.go
 package handler
 
 import (
@@ -36,4 +35,11 @@ func Register(id skill2.Id, h Handler) {
 func Lookup(id skill2.Id) (Handler, bool) {
 	h, ok := registry[id]
 	return h, ok
+}
+
+// Unregister removes a Handler from the registry. Exposed for tests
+// that register a stub handler under a synthetic id; production code
+// should never call this.
+func Unregister(id skill2.Id) {
+	delete(registry, id)
 }

@@ -317,3 +317,34 @@ func TestCollectCureTypes_ZeroFlagsIgnored(t *testing.T) {
 	got := collectCureTypes(ci)
 	assert.Equal(t, []string{"CURSE"}, got)
 }
+
+func TestUsesStandardConsumer(t *testing.T) {
+	// Standard-consumer routing for items that need ApplyItemEffects (HP/MP
+	// recovery, status buffs, status cure). Anything not matching here falls
+	// through to ConsumeBare and silently skips effect application.
+	cases := []struct {
+		name   string
+		itemId item.Id
+		want   bool
+	}{
+		{"red potion (200)", item.Id(2000001), true},
+		{"white potion (200)", item.Id(2000020), true},
+		{"food/apple (201)", item.Id(2010000), true},
+		{"hp food (202)", item.Id(2020000), true},
+		{"return scroll (203)", item.Id(2030000), false},
+		{"equip scroll (204)", item.Id(2040727), false},
+		{"antidote — cure pot (205)", item.Id(2050001), true},
+		{"all cure potion (205)", item.Id(2050004), true},
+		{"arrow (206)", item.Id(2060000), false},
+		{"throwing star (207)", item.Id(2070000), false},
+		{"summoning sack (210)", item.Id(2100000), false},
+		{"pet food (212)", item.Id(2120000), false},
+		{"weapon (130)", item.Id(1302000), false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			got := usesStandardConsumer(tc.itemId)
+			assert.Equal(t, tc.want, got, "itemId %d (classification %d)", tc.itemId, item.GetClassification(tc.itemId))
+		})
+	}
+}

@@ -2,6 +2,7 @@ package heal
 
 import (
 	"context"
+	"math"
 	"math/rand"
 
 	"atlas-channel/character"
@@ -19,6 +20,21 @@ import (
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/sirupsen/logrus"
 )
+
+// effectiveMaxHpOrBase narrows the effective MaxHp from
+// atlas-effective-stats into the uint16 range used by the recipient
+// snapshot, falling back to the recipient's base MaxHp when the
+// upstream returned zero or out-of-range. Mirrors the defensive
+// strategy in atlas-character's resolveEffectiveMax.
+func effectiveMaxHpOrBase(effective uint32, base uint16) uint16 {
+	if effective == 0 {
+		return base
+	}
+	if effective > math.MaxUint16 {
+		return math.MaxUint16
+	}
+	return uint16(effective)
+}
 
 func init() {
 	channelhandler.Register(skill2.ClericHealId, Apply)
@@ -85,7 +101,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 				X:        c.X(),
 				Y:        c.Y(),
 				Hp:       c.Hp(),
-				MaxHp:    effective_stats.MaxHpOrBase(stats.MaxHp, c.MaxHp()),
+				MaxHp:    effectiveMaxHpOrBase(stats.MaxHp, c.MaxHp()),
 				IsCaster: true,
 			}
 			recipients := selectRecipients(caster, party)
@@ -102,7 +118,7 @@ func Apply(l logrus.FieldLogger) func(ctx context.Context) func(
 					l.WithError(rErr).Debugf("Heal: effective stats fetch failed for recipient [%d]; using base MaxHp [%d].", recipients[i].Id, recipients[i].MaxHp)
 					continue
 				}
-				recipients[i].MaxHp = effective_stats.MaxHpOrBase(rs.MaxHp, recipients[i].MaxHp)
+				recipients[i].MaxHp = effectiveMaxHpOrBase(rs.MaxHp, recipients[i].MaxHp)
 			}
 
 			variance := 0.9 + rand.Float64()*0.2

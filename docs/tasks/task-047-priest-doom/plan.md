@@ -25,6 +25,8 @@
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | Modify | Extract the per-`DamageInfo` body of `processAttack` (currently lines 151-216) into a top-level helper `processDamageInfoEntry` that takes its dependencies as explicit closures. Add a Doom-gated magic-reflect probe inside the helper's empty-damage branch in a separate task. |
 | `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | Modify | Append three (or four) helper tests: empty-damage Doom triggers `applyStatus`; magic-reflect blocks Doom; multi-target spread routes correctly; (optional) non-Doom empty-damage status is unaffected by the new reflect probe. |
 | `services/atlas-channel/atlas.com/channel/monster/processor.go` | Modify | In `Processor.ApplyStatus` (line 70), after the existing generic Debugf, emit a Doom-targeted Debugf when the inbound `statuses` map contains `"DOOM"`. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go` | Modify (Task 10) | Add `findItemSlotInInventory` helper; in `processAttack`'s `if !registered` cost block, when `se.ItemConsume() > 0`, locate the slot and emit `RequestItemConsume`. Generic — fixes Magic Rock for Doom and every other `itemCon` skill. |
+| `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go` | Modify (Task 10) | Append two helper tests for `findItemSlotInInventory` (found / not-found). |
 
 No changes to `libs/atlas-packet`, `libs/atlas-constants`, `services/atlas-configurations`, or any Kafka topic/event schema.
 
@@ -1126,6 +1128,164 @@ git commit -m "feat(atlas-channel): emit Doom-targeted Debugf alongside generic 
 
 ---
 
+## Task 10: atlas-channel — consume `itemCon` items on skill cast (generic)
+
+> Added 2026-05-03 mid-execution. Out of original PRD scope but in-scope for this branch per user direction: every `itemCon` skill (Mystic Door, summons, Doom, Hyper Body sub-cases, etc.) currently fails to burn its required item because the cast path never reads `effect.Model.ItemConsume()`. The plumbing exists end-to-end (REST → effect.Model → consumable.Processor → Kafka REQUEST_ITEM_CONSUME), only the call site is missing.
+
+**Goal:** When a skill cast resolves an effect with `ItemConsume() > 0`, locate the first asset in the appropriate compartment whose template id matches and emit `RequestItemConsume` for that slot. Generic — any current or future `itemCon` skill is covered. No item-id allowlist; no Doom-specific branch.
+
+**Architecture decision:** Place the call inside the same `if !registered` gate as HP/MP consume in `processAttack` (`character_attack_common.go:113-120`). This means skills with their own per-skill dispatcher entry (heal, summons that bypass `processAttack`) are responsible for their own item consumption. None of the currently-registered handlers consume items, so behavior is unchanged for them; if and when one does, it owns the call. This mirrors the existing rationale for the HP/MP gate and avoids double-consumption on dual-packet skills.
+
+**Failure mode:** If the character does not have the required item, log a warning and proceed with the cast. (Cosmic-parity: the v83 client gates the cast UI on item availability; server-side enforcement is defense-in-depth, not authoritative.) A future task can promote this to a hard reject if needed.
+
+**Files:**
+- Modify: `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go`
+
+- [ ] **Step 1: Add a helper that finds the slot of the consumable item**
+
+Insert above `processAttack` (near the other helpers, ~line 75):
+
+```go
+// findItemSlotInInventory returns the slot of the first asset in the
+// compartment matching the item's inventory type whose template id equals
+// itemId. Returns false if the inventory has no such item. Used by
+// processAttack to translate an effect.ItemConsume() id into a slot
+// position before emitting RequestItemConsume.
+func findItemSlotInInventory(inv inventory.Model, itemId uint32) (slot.Position, bool) {
+	invType, ok := inventory2.TypeFromItemId(item.Id(itemId))
+	if !ok {
+		return 0, false
+	}
+	comp := inv.CompartmentByType(invType)
+	for _, a := range comp.Assets() {
+		if a.TemplateId() == itemId {
+			return slot.Position(a.Slot()), true
+		}
+	}
+	return 0, false
+}
+```
+
+Required imports (add to the existing import block if not present):
+- `"atlas-channel/inventory"`
+- `inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"` (alias to avoid collision with the channel-local `inventory` package)
+- `"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"`
+- `"github.com/Chronicle20/atlas/libs/atlas-constants/item"`
+- `"atlas-channel/consumable"` (likely already imported elsewhere in the package; if not, add it)
+
+If the existing import block already binds `inventory` to the local package or `inventory2` to the constants package under a different alias, reuse the existing alias. The atlas-channel package conventionally binds the constants alias as `inventory2` (see `character_item_use.go` for the pattern).
+
+- [ ] **Step 2: Insert the consume call inside the existing `if !registered` block**
+
+In `processAttack` (`character_attack_common.go`), the current block at lines 113-120 reads HP/MP consume. Extend it to also consume `itemCon`:
+
+```go
+if _, registered := handler.Lookup(skill3.Id(ai.SkillId())); !registered {
+	if se.HPConsume() > 0 {
+		_ = cp.ChangeHP(s.Field(), s.CharacterId(), -int16(se.HPConsume()))
+	}
+	if se.MPConsume() > 0 {
+		_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
+	}
+	if se.ItemConsume() > 0 {
+		if pos, found := findItemSlotInInventory(c.Inventory(), se.ItemConsume()); found {
+			_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), character.Id(s.CharacterId()), item.Id(se.ItemConsume()), pos, 0)
+		} else {
+			l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), se.ItemConsume())
+		}
+	}
+}
+```
+
+Notes:
+- `updateTime` of `0` mirrors the lack of a client-supplied timestamp on the cast packet (the existing item-use handlers receive it from the packet; we don't have one here). The atlas-consumables service treats `updateTime` as informational, not authoritative.
+- `se.ItemConsumeAmount()` is intentionally ignored; `RequestItemConsume` consumes exactly 1 (see `consumable/producer.go:24` — the body sets quantity=1). No current `itemCon` skill consumes more than one item per cast in v83. If that changes, extend `RequestItemConsume`'s signature to take a count, then call once per item or pass the count. Out of scope for this task.
+- The character ID type cast (`character.Id(s.CharacterId())`) and item ID type cast (`item.Id(se.ItemConsume())`) match the pattern used elsewhere in the package (see `character_item_use.go:22`).
+
+- [ ] **Step 3: Build atlas-channel**
+
+```bash
+( cd services/atlas-channel/atlas.com/channel && go build ./... )
+```
+
+Expected: success. If an import cycle surfaces (e.g., `consumable` already pulls something from `socket/handler`), surface to the user.
+
+- [ ] **Step 4: Add a unit test for `findItemSlotInInventory`**
+
+Append to `services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go`:
+
+```go
+// TestFindItemSlotInInventory_Found verifies the helper returns the slot of
+// the first asset whose template id equals the queried item id.
+func TestFindItemSlotInInventory_Found(t *testing.T) {
+	const magicRockId = uint32(4006000)
+	a := asset.NewBuilder(uuid.New(), uuid.New(), 1, magicRockId, asset.ReferenceIdConsumable).
+		SetSlot(3).
+		SetQuantity(5).
+		MustBuild()
+	useComp := compartment.NewBuilder(uuid.New(), uuid.New(), inventory2.TypeValueUse, 24).
+		SetAssets([]asset.Model{a}).
+		Build()
+	inv := inventory.NewBuilder(1).
+		SetCompartment(inventory2.TypeValueUse, useComp).
+		Build()
+
+	pos, found := findItemSlotInInventory(inv, magicRockId)
+	if !found {
+		t.Fatalf("expected to find item [%d]", magicRockId)
+	}
+	if pos != slot.Position(3) {
+		t.Errorf("pos = %d, want 3", pos)
+	}
+}
+
+// TestFindItemSlotInInventory_NotFound pins the absent-item branch: if the
+// inventory has no matching template id in the resolved compartment, the
+// helper returns (0, false). The caller logs a warning and the cast is still
+// permitted (defense-in-depth, not authoritative).
+func TestFindItemSlotInInventory_NotFound(t *testing.T) {
+	const magicRockId = uint32(4006000)
+	useComp := compartment.NewBuilder(uuid.New(), uuid.New(), inventory2.TypeValueUse, 24).
+		Build()
+	inv := inventory.NewBuilder(1).
+		SetCompartment(inventory2.TypeValueUse, useComp).
+		Build()
+
+	if _, found := findItemSlotInInventory(inv, magicRockId); found {
+		t.Errorf("expected not-found for empty Use compartment")
+	}
+}
+```
+
+If `asset.NewBuilder`, `compartment.NewBuilder`, or `inventory.NewBuilder` are not the exact constructors in this package, run:
+
+```bash
+grep -rn "func NewBuilder\|func NewModelBuilder" services/atlas-channel/atlas.com/channel/asset/ services/atlas-channel/atlas.com/channel/compartment/ services/atlas-channel/atlas.com/channel/inventory/
+```
+
+and adapt the test in lockstep. Same for the `SetCompartment`/`SetAssets`/`SetSlot`/`SetQuantity` setters — use whatever the realized API exposes. If a builder pattern is too constrained to construct minimal test fixtures, use the package-internal struct literals; the goal is two passing tests, not a particular construction style.
+
+- [ ] **Step 5: Run the new tests and the full atlas-channel suite**
+
+```bash
+( cd services/atlas-channel/atlas.com/channel && go test ./socket/handler -run 'TestFindItemSlotInInventory_' -v )
+( cd services/atlas-channel/atlas.com/channel && go build ./... && go test ./... )
+```
+
+Expected: both new tests PASS, full suite green.
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common.go \
+        services/atlas-channel/atlas.com/channel/socket/handler/character_attack_common_test.go
+git commit -m "fix(atlas-channel): consume itemCon items on skill cast (Magic Rock, summon items, etc.)"
+```
+
+After commit, `git branch --show-current` must print `task-047-priest-doom`.
+
+---
+
 ## Task 9: Cross-service build, full test, and manual verification handoff
 
 Final gate. Confirm every affected service still builds and tests cleanly. Then surface a manual-verification checklist for the user — the wire-level snail render and expiry sprite restore are client-side and cannot be unit-tested.
@@ -1164,6 +1324,7 @@ The PRD §10 acceptance criteria require a live cast against a regular mob and a
 > 4. In atlas-channel logs, confirm the line `Doom: caster=[..] monster=[..] skill=[2311005] level=[..] duration=[..]ms.` appears.
 > 5. Cast Doom on a boss; confirm in atlas-monsters logs the line `Monster [..] is a boss. Status rejected.` appears, and the client does not render the snail.
 > 6. (Optional but valuable) Cast Doom against a mob standing on a magic-reflect window; confirm in atlas-channel logs the line `Doom: monster [..] has MAGICAL reflect; status apply skipped.` appears, and the mob is unaffected.
+> 7. **Item consumption (Task 10):** Before casting Doom, note the count of Magic Rock (or whatever item `itemCon` resolves to for skill 2311005) in the player's Use inventory. Cast Doom once and confirm the count decremented by exactly one. Repeat for at least one other `itemCon` skill the test character can cast (e.g., a summon) to verify the change is generic. If the inventory has zero of the required item before casting, confirm the warning line `Character [..] cast skill [..] requiring item [..] but no such item found in inventory; cast permitted (defense-in-depth gate only).` appears in atlas-channel logs.
 
 If observability MCPs are available, follow `reference_observability.md` to pull the relevant log lines from Loki rather than tailing a local pod.
 

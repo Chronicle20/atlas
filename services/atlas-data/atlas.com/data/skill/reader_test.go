@@ -2991,3 +2991,54 @@ func TestReader_LT_RB_Absent(t *testing.T) {
 		t.Fatalf("ef.RB = %#v, want nil", *ef.RB)
 	}
 }
+
+// TestReader_PriestDoom_MapsDoomStatus pins the atlas-data effect mapping for
+// Priest skill 2311005 (Doom): the produced effect must carry MonsterStatus
+// {"DOOM": 1} and a non-zero Duration so atlas-channel's empty-damage status
+// branch and atlas-monsters' apply path both see what they expect.
+func TestReader_PriestDoom_MapsDoomStatus(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="231.img">
+  <imgdir name="skill">
+    <imgdir name="2311005">
+      <imgdir name="level">
+        <imgdir name="30">
+          <int name="time" value="60"/>
+          <int name="mpCon" value="35"/>
+          <int name="prop" value="100"/>
+          <int name="mobCount" value="6"/>
+          <vector name="lt" x="-200" y="-100"/>
+          <vector name="rb" x="200" y="100"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2311005"]
+	if !ok {
+		t.Fatal("rmm[2311005] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	ef := rm.Effects[0]
+	if got := ef.MonsterStatus["DOOM"]; got != 1 {
+		t.Fatalf("MonsterStatus[DOOM] = %d, want 1", got)
+	}
+	if ef.Duration <= 0 {
+		t.Fatalf("Duration = %d, want > 0", ef.Duration)
+	}
+}

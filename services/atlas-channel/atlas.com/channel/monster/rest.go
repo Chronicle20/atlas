@@ -19,6 +19,7 @@ type RestModel struct {
 	Instance           uuid.UUID               `json:"instance"`
 	MonsterId          uint32                  `json:"monsterId"`
 	ControlCharacterId uint32                  `json:"controlCharacterId"`
+	ControllerHasAggro bool                    `json:"controllerHasAggro"`
 	X                  int16                   `json:"x"`
 	Y                  int16                   `json:"y"`
 	Fh                 int16                   `json:"fh"`
@@ -81,6 +82,7 @@ func Extract(m RestModel) (Model, error) {
 		mp:                 m.Mp,
 		monsterId:          m.MonsterId,
 		controlCharacterId: m.ControlCharacterId,
+		controllerHasAggro: m.ControllerHasAggro,
 		x:                  m.X,
 		y:                  m.Y,
 		fh:                 m.Fh,

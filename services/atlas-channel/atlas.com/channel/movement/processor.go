@@ -132,7 +132,15 @@ func (p *Processor) ForMonster(f field.Model, characterId uint32, objectId uint3
 		}
 	}
 	go func() {
-		useSkills := false
+		// v83 protocol compat (per Cosmic MoveLifeHandler:144 +
+		// PacketCreator.moveMonsterResponse): the wire-level "useSkills" bool
+		// is actually the controller's aggro flag. The client uses it to
+		// decide whether mob AI is active — without it, the client renders
+		// the mob as idle, never sends rawActivity ∈ [24,41] (basic attack)
+		// or [42,59] (skill confirm), and our authoritative-side handlers
+		// never fire. Send aggro by default; OR-in the inbox prediction so a
+		// queued skill cast still propagates if aggro is somehow false.
+		useSkills := mo.ControllerHasAggro()
 		var skillIdByte, skillLevelByte byte
 		if d, hit := monster.GetNextSkillInbox().TakeAndClear(p.t, objectId); hit && !d.IsSentinel() {
 			useSkills = true

@@ -87,7 +87,7 @@ Location: `socket/handler/character_attack_common.go`
 - [ ] BodyPressure
 - [ ] Monster Weapon Atk Reflect
 - [ ] Monster Magic Atk Reflect
-- [ ] Apply MPEater
+- [x] Apply MPEater
 - [ ] Passive no-consume for projectiles: Expert Marksmanship, Claw Mastery roll-to-preserve (planner stub in `socket/handler/character_attack_projectile.go`; Mortal Blow already listed above covers its passive-skip too)
 - [ ] Characterize `AttackInfo.javlin` flag semantics and revisit projectile-consumption bailout (TODO cross-refs at `libs/atlas-packet/model/attack_info.go:153` ↔ `socket/handler/character_attack_projectile.go` planner javlin gate)
 

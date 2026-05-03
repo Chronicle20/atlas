@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"atlas-rates/character"
 	"atlas-rates/kafka/message/buff"
+	charmock "atlas-rates/character/mock"
 	"atlas-rates/rate"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -14,47 +14,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/sirupsen/logrus"
 )
-
-// fakeProcessor captures calls to the rate-relevant Processor methods. All
-// other interface methods are stubs that satisfy the interface but are unused
-// by the consumer.
-type fakeProcessor struct {
-	character.Processor // embed so unused methods compile (will panic if called)
-	addBuffFactorCalls     []addBuffFactorCall
-	removeAllBuffFactorIds []removeAllBuffFactorCall
-}
-
-type addBuffFactorCall struct {
-	channel      channel.Model
-	characterId  uint32
-	buffSourceId int32
-	rateType     rate.Type
-	multiplier   float64
-}
-
-type removeAllBuffFactorCall struct {
-	characterId  uint32
-	buffSourceId int32
-}
-
-func (f *fakeProcessor) AddBuffFactor(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
-	f.addBuffFactorCalls = append(f.addBuffFactorCalls, addBuffFactorCall{
-		channel:      ch,
-		characterId:  characterId,
-		buffSourceId: buffSourceId,
-		rateType:     rateType,
-		multiplier:   multiplier,
-	})
-	return nil
-}
-
-func (f *fakeProcessor) RemoveAllBuffFactors(characterId uint32, buffSourceId int32) error {
-	f.removeAllBuffFactorIds = append(f.removeAllBuffFactorIds, removeAllBuffFactorCall{
-		characterId:  characterId,
-		buffSourceId: buffSourceId,
-	})
-	return nil
-}
 
 func discardLogger() logrus.FieldLogger {
 	l := logrus.New()
@@ -96,15 +55,28 @@ func expiredEvent(sourceId int32) buff.StatusEvent[buff.ExpiredStatusEventBody] 
 }
 
 func TestHandleBuffApplied_CurseRegistersHalfExpFactor(t *testing.T) {
-	p := &fakeProcessor{}
+	type call struct {
+		ch           channel.Model
+		characterId  uint32
+		buffSourceId int32
+		rateType     rate.Type
+		multiplier   float64
+	}
+	var calls []call
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			calls = append(calls, call{ch, characterId, buffSourceId, rateType, multiplier})
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 1 {
-		t.Fatalf("AddBuffFactor calls = %d, want 1", len(p.addBuffFactorCalls))
+	if len(calls) != 1 {
+		t.Fatalf("AddBuffFactor calls = %d, want 1", len(calls))
 	}
-	c := p.addBuffFactorCalls[0]
+	c := calls[0]
 	if c.characterId != 1234 {
 		t.Errorf("characterId = %d, want 1234", c.characterId)
 	}
@@ -120,15 +92,25 @@ func TestHandleBuffApplied_CurseRegistersHalfExpFactor(t *testing.T) {
 }
 
 func TestHandleBuffApplied_HolySymbolStillProducesAdditive(t *testing.T) {
-	p := &fakeProcessor{}
+	type call struct {
+		rateType   rate.Type
+		multiplier float64
+	}
+	var calls []call
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			calls = append(calls, call{rateType, multiplier})
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeHolySymbol), Amount: 50}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 1 {
-		t.Fatalf("AddBuffFactor calls = %d, want 1", len(p.addBuffFactorCalls))
+	if len(calls) != 1 {
+		t.Fatalf("AddBuffFactor calls = %d, want 1", len(calls))
 	}
-	c := p.addBuffFactorCalls[0]
+	c := calls[0]
 	if c.rateType != rate.Type("exp") {
 		t.Errorf("rateType = %q, want \"exp\"", c.rateType)
 	}
@@ -138,7 +120,17 @@ func TestHandleBuffApplied_HolySymbolStillProducesAdditive(t *testing.T) {
 }
 
 func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
-	p := &fakeProcessor{}
+	type call struct {
+		rateType   rate.Type
+		multiplier float64
+	}
+	var calls []call
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			calls = append(calls, call{rateType, multiplier})
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{
 		{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0},
 		{Type: string(charconst.TemporaryStatTypeHolySymbol), Amount: 50},
@@ -146,10 +138,10 @@ func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 2 {
-		t.Fatalf("AddBuffFactor calls = %d, want 2", len(p.addBuffFactorCalls))
+	if len(calls) != 2 {
+		t.Fatalf("AddBuffFactor calls = %d, want 2", len(calls))
 	}
-	multipliers := []float64{p.addBuffFactorCalls[0].multiplier, p.addBuffFactorCalls[1].multiplier}
+	multipliers := []float64{calls[0].multiplier, calls[1].multiplier}
 	hasCurse := false
 	hasHoly := false
 	for _, m := range multipliers {
@@ -163,7 +155,7 @@ func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
 	if !hasCurse || !hasHoly {
 		t.Errorf("missing factor: multipliers = %v, want both 0.5 and 1.5", multipliers)
 	}
-	for _, c := range p.addBuffFactorCalls {
+	for _, c := range calls {
 		if c.rateType != rate.Type("exp") {
 			t.Errorf("unexpected rateType %q on factor with multiplier %v", c.rateType, c.multiplier)
 		}
@@ -171,25 +163,37 @@ func TestHandleBuffApplied_CurseAndHolySymbolBothRegister(t *testing.T) {
 }
 
 func TestHandleBuffApplied_NonRateStatIsNoOp(t *testing.T) {
-	p := &fakeProcessor{}
+	var callCount int
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			callCount++
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeWeaponAttack), Amount: 30}})
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 0 {
-		t.Errorf("AddBuffFactor calls = %d, want 0 (non-rate stat)", len(p.addBuffFactorCalls))
+	if callCount != 0 {
+		t.Errorf("AddBuffFactor calls = %d, want 0 (non-rate stat)", callCount)
 	}
 }
 
 func TestHandleBuffApplied_WrongTypeIsNoOp(t *testing.T) {
-	p := &fakeProcessor{}
+	var callCount int
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			callCount++
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0}})
 	e.Type = "EXPIRED" // wrong type — guard should skip
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 0 {
-		t.Errorf("AddBuffFactor calls = %d, want 0 (type guard)", len(p.addBuffFactorCalls))
+	if callCount != 0 {
+		t.Errorf("AddBuffFactor calls = %d, want 0 (type guard)", callCount)
 	}
 }
 
@@ -198,7 +202,17 @@ func TestHandleBuffApplied_CurseNeverTouchesMesoOrItemOrQuest(t *testing.T) {
 	// alongside an unrelated non-rate stat and verify CURSE still produces
 	// exactly one factor, against "exp", with no incidental meso/item/quest
 	// emissions.
-	p := &fakeProcessor{}
+	type call struct {
+		rateType   rate.Type
+		multiplier float64
+	}
+	var calls []call
+	p := &charmock.ProcessorMock{
+		AddBuffFactorFunc: func(ch channel.Model, characterId uint32, buffSourceId int32, rateType rate.Type, multiplier float64) error {
+			calls = append(calls, call{rateType, multiplier})
+			return nil
+		},
+	}
 	e := appliedEvent([]buff.StatChange{
 		{Type: string(charconst.TemporaryStatTypeCurse), Amount: 0},
 		{Type: string(charconst.TemporaryStatTypeWeaponAttack), Amount: 30},
@@ -206,10 +220,10 @@ func TestHandleBuffApplied_CurseNeverTouchesMesoOrItemOrQuest(t *testing.T) {
 
 	handleBuffAppliedFor(p, discardLogger(), e)
 
-	if len(p.addBuffFactorCalls) != 1 {
-		t.Fatalf("AddBuffFactor calls = %d, want 1 (only CURSE; WEAPON_ATTACK is non-rate)", len(p.addBuffFactorCalls))
+	if len(calls) != 1 {
+		t.Fatalf("AddBuffFactor calls = %d, want 1 (only CURSE; WEAPON_ATTACK is non-rate)", len(calls))
 	}
-	c := p.addBuffFactorCalls[0]
+	c := calls[0]
 	if c.rateType != rate.Type("exp") {
 		t.Errorf("rateType = %q, want \"exp\"", c.rateType)
 	}
@@ -219,15 +233,25 @@ func TestHandleBuffApplied_CurseNeverTouchesMesoOrItemOrQuest(t *testing.T) {
 }
 
 func TestHandleBuffExpired_CallsRemoveAllBuffFactors(t *testing.T) {
-	p := &fakeProcessor{}
+	type call struct {
+		characterId  uint32
+		buffSourceId int32
+	}
+	var calls []call
+	p := &charmock.ProcessorMock{
+		RemoveAllBuffFactorsFunc: func(characterId uint32, buffSourceId int32) error {
+			calls = append(calls, call{characterId, buffSourceId})
+			return nil
+		},
+	}
 	e := expiredEvent(4120002)
 
 	handleBuffExpiredFor(p, discardLogger(), e)
 
-	if len(p.removeAllBuffFactorIds) != 1 {
-		t.Fatalf("RemoveAllBuffFactors calls = %d, want 1", len(p.removeAllBuffFactorIds))
+	if len(calls) != 1 {
+		t.Fatalf("RemoveAllBuffFactors calls = %d, want 1", len(calls))
 	}
-	c := p.removeAllBuffFactorIds[0]
+	c := calls[0]
 	if c.characterId != 1234 {
 		t.Errorf("characterId = %d, want 1234", c.characterId)
 	}
@@ -237,13 +261,19 @@ func TestHandleBuffExpired_CallsRemoveAllBuffFactors(t *testing.T) {
 }
 
 func TestHandleBuffExpired_WrongTypeIsNoOp(t *testing.T) {
-	p := &fakeProcessor{}
+	var callCount int
+	p := &charmock.ProcessorMock{
+		RemoveAllBuffFactorsFunc: func(characterId uint32, buffSourceId int32) error {
+			callCount++
+			return nil
+		},
+	}
 	e := expiredEvent(4120002)
 	e.Type = "APPLIED" // wrong type
 
 	handleBuffExpiredFor(p, discardLogger(), e)
 
-	if len(p.removeAllBuffFactorIds) != 0 {
-		t.Errorf("RemoveAllBuffFactors calls = %d, want 0 (type guard)", len(p.removeAllBuffFactorIds))
+	if callCount != 0 {
+		t.Errorf("RemoveAllBuffFactors calls = %d, want 0 (type guard)", callCount)
 	}
 }

@@ -6,7 +6,7 @@ import (
 	"atlas-channel/character/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/monster"
-	"atlas-channel/party"
+	"atlas-channel/socket/writer"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -16,9 +16,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
-		return func(f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
+		return func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 			if e.HPConsume() > 0 {
 				_ = character.NewProcessor(l, ctx).ChangeHP(f, characterId, -int16(e.HPConsume()))
 			}
@@ -31,11 +31,22 @@ func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model
 			if e.Duration() > 0 && len(e.StatUps()) > 0 {
 				applyBuffFunc := buff.NewProcessor(l, ctx).Apply(f, characterId, int32(info.SkillId()), info.SkillLevel(), e.Duration(), e.StatUps())
 				_ = applyBuffFunc(characterId)
-				_ = applyToParty(l)(ctx)(f, characterId, info.AffectedPartyMemberBitmap())(applyBuffFunc)
+				casterX, casterY := int16(0), int16(0)
+				if c, cErr := character.NewProcessor(l, ctx).GetById()(characterId); cErr == nil {
+					casterX, casterY = c.X(), c.Y()
+				}
+				_ = applyToParty(l)(ctx)(f, characterId, casterX, casterY, e, info.AffectedPartyMemberBitmap())(applyBuffFunc)
 			}
 
 			// Handle mob-affecting buffs (crash, dispel, etc.)
 			applyToMobs(l, ctx, f, characterId, info, e)
+
+			// Per-skill dispatcher (Heal, Dispel, Cure, MPEater, Drain, ...).
+			if h, ok := Lookup(skill2.Id(info.SkillId())); ok {
+				if err := h(l)(ctx)(wp, f, characterId, info, e); err != nil {
+					l.WithError(err).Errorf("Skill handler for [%d] failed for character [%d].", info.SkillId(), characterId)
+				}
+			}
 
 			return nil
 		}
@@ -101,20 +112,13 @@ func dispelSkillClass(skillId skill2.Id) string {
 	}
 }
 
-func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, characterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-	return func(ctx context.Context) func(f field.Model, characterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
-		return func(f field.Model, characterId uint32, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+func applyToParty(l logrus.FieldLogger) func(ctx context.Context) func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+	return func(ctx context.Context) func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
+		return func(f field.Model, casterId uint32, casterX, casterY int16, e effect.Model, memberBitmap byte) func(idOperator model2.Operator[uint32]) error {
 			return func(idOperator model2.Operator[uint32]) error {
-				if memberBitmap > 0 && memberBitmap < 128 {
-					p, err := party.NewProcessor(l, ctx).GetByMemberId(characterId)
-					if err == nil {
-						for _, m := range p.Members() {
-							// TODO restrict to those in range, based on bitmap
-							if m.Id() != characterId && m.ChannelId() == f.ChannelId() && m.MapId() == f.MapId() {
-								_ = idOperator(m.Id())
-							}
-						}
-					}
+				recipients := SelectInRangePartyMembers(l, ctx, f, casterId, casterX, casterY, e, memberBitmap)
+				for _, r := range recipients {
+					_ = idOperator(r.Id())
 				}
 				return nil
 			}

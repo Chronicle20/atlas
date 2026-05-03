@@ -1,6 +1,10 @@
 package effect
 
-import "atlas-data/skill/effect/statup"
+import (
+	"atlas-data/skill/effect/statup"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+)
 
 func NewModelBuilder() *ModelBuilder {
 	return &ModelBuilder{}
@@ -53,8 +57,8 @@ type ModelBuilder struct {
 	damage        uint32
 	attackCount   uint32
 	fixDamage     int32
-	//LT Point
-	//RB Point
+	lt                   point.Model
+	rb                   point.Model
 	bulletCount          uint16
 	bulletConsume        uint16
 	mapProtection        byte
@@ -271,6 +275,24 @@ func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetLT(p point.Model) *ModelBuilder {
+	b.lt = p
+	return b
+}
+
+func (b *ModelBuilder) SetRB(p point.Model) *ModelBuilder {
+	b.rb = p
+	return b
+}
+
+func (b *ModelBuilder) LT() point.Model {
+	return b.lt
+}
+
+func (b *ModelBuilder) RB() point.Model {
+	return b.rb
+}
+
 func (b *ModelBuilder) SetDamage(damage uint32) *ModelBuilder {
 	b.damage = damage
 	return b
@@ -346,6 +368,14 @@ func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
 	return b
 }
 func (b *ModelBuilder) Build() RestModel {
+	var ltPtr *PointRestModel
+	if b.lt.X() != 0 || b.lt.Y() != 0 {
+		ltPtr = &PointRestModel{X: int16(b.lt.X()), Y: int16(b.lt.Y())}
+	}
+	var rbPtr *PointRestModel
+	if b.rb.X() != 0 || b.rb.Y() != 0 {
+		rbPtr = &PointRestModel{X: int16(b.rb.X()), Y: int16(b.rb.Y())}
+	}
 	return RestModel{
 		WeaponAttack:         b.weaponAttack,
 		MagicAttack:          b.magicAttack,
@@ -399,6 +429,8 @@ func (b *ModelBuilder) Build() RestModel {
 		CureAbnormalStatuses: b.cureAbnormalStatuses,
 		Statups:              b.statups,
 		MonsterStatus:        b.monsterStatus,
+		LT:                   ltPtr,
+		RB:                   rbPtr,
 	}
 }
 

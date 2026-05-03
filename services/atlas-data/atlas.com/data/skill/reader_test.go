@@ -2901,3 +2901,93 @@ func TestReader(t *testing.T) {
 		t.Fatalf("rm.Effects[2].Cooldown = %d, want 60", ef.Cooldown)
 	}
 }
+
+func TestReader_LT_RB_Present(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2301002">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="hp" value="200"/>
+          <int name="mpCon" value="6"/>
+          <vector name="lt" x="-300" y="-150"/>
+          <vector name="rb" x="300" y="150"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2301002"]
+	if !ok {
+		t.Fatal("rmm[2301002] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	ef := rm.Effects[0]
+	if ef.LT == nil {
+		t.Fatal("ef.LT is nil; want non-nil")
+	}
+	if *ef.LT != (effect.PointRestModel{X: -300, Y: -150}) {
+		t.Fatalf("ef.LT = %#v, want {-300,-150}", *ef.LT)
+	}
+	if ef.RB == nil {
+		t.Fatal("ef.RB is nil; want non-nil")
+	}
+	if *ef.RB != (effect.PointRestModel{X: 300, Y: 150}) {
+		t.Fatalf("ef.RB = %#v, want {300,150}", *ef.RB)
+	}
+}
+
+func TestReader_LT_RB_Absent(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="200.img">
+  <imgdir name="skill">
+    <imgdir name="2301002">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="hp" value="200"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2301002"]
+	if !ok {
+		t.Fatal("rmm[2301002] does not exist.")
+	}
+	ef := rm.Effects[0]
+	if ef.LT != nil {
+		t.Fatalf("ef.LT = %#v, want nil", *ef.LT)
+	}
+	if ef.RB != nil {
+		t.Fatalf("ef.RB = %#v, want nil", *ef.RB)
+	}
+}

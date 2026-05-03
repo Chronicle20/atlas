@@ -338,6 +338,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	if killed {
 		// Clear cooldowns and drop timer on death
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
 		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
 
 		// Emit cancellation events for any active status effects before death
@@ -445,6 +446,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 
 	if s.Killed {
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 		GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 
 		for _, se := range s.Monster.StatusEffects() {
@@ -968,6 +970,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
+	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)
 	if err != nil {
 		return err

@@ -48,6 +48,7 @@ func main() {
 	rc := atlas.Connect(l)
 	monster.InitIdAllocator(rc)
 	monster.InitCooldownRegistry(rc)
+	monster.InitAttackCooldownRegistry(rc)
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
 

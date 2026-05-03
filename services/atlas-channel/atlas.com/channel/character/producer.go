@@ -78,3 +78,18 @@ func ChangeMPCommandProvider(f field.Model, characterId uint32, amount int16) mo
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+func AwardExperienceCommandProvider(f field.Model, characterId uint32, distributions []character.ExperienceDistributions, showEffect bool) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := &character.Command[character.AwardExperienceCommandBody]{
+		CharacterId: characterId,
+		WorldId:     f.WorldId(),
+		Type:        character.CommandAwardExperience,
+		Body: character.AwardExperienceCommandBody{
+			ChannelId:     f.ChannelId(),
+			Distributions: distributions,
+			ShowEffect:    showEffect,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

@@ -15,6 +15,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/monster"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -196,7 +197,10 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeJump, int32(e.Jump()))
 	}
 
-	//TODO LT
+	ltX, ltY := node.GetPoint("lt", 0, 0)
+	rbX, rbY := node.GetPoint("rb", 0, 0)
+	e.SetLT(point.NewModel(point.X(int16(ltX)), point.Y(int16(ltY)))).
+		SetRB(point.NewModel(point.X(int16(rbX)), point.Y(int16(rbY))))
 
 	e.SetX(int16(node.GetIntegerWithDefault("x", 0))).
 		SetY(int16(node.GetIntegerWithDefault("y", 0))).

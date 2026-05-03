@@ -3,6 +3,7 @@ package mock
 import (
 	"atlas-channel/asset"
 	"atlas-channel/character"
+	character2 "atlas-channel/kafka/message/character"
 	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -120,5 +121,9 @@ func (m *MockProcessor) ChangeMP(_ field.Model, _ uint32, _ int16) error {
 }
 
 func (m *MockProcessor) RequestDistributeSp(_ field.Model, _ uint32, _ uint32, _ uint32, _ int8) error {
+	return nil
+}
+
+func (m *MockProcessor) AwardExperience(_ field.Model, _ uint32, _ []character2.ExperienceDistributions, _ bool) error {
 	return nil
 }

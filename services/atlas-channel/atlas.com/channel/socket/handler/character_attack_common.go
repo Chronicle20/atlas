@@ -75,34 +75,6 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 	return ""
 }
 
-// resolveMpEaterSkillId returns the MP Eater skill id for the given job
-// using an explicit allow-list. Returns ok=false for jobs that have no
-// MP Eater (non-mage jobs, base Magician 200, etc.).
-//
-// An explicit map is used rather than the Cosmic formula
-// (jobId - jobId%10) * 10000 because that formula produces false
-// positives against the registered skill set: e.g.,
-// MagicianId 200 → 2000000 = MagicianImprovedMpRecoveryId, and
-// FighterId 110 → 1100000 = FighterSwordMasteryId. Both are real
-// skills on other job lines, so the formula's `Skills[id]` filter
-// cannot rule out non-mage jobs reliably.
-var mpEaterSkillIds = map[job.Id]skill3.Id{
-	job.FirePoisonWizardId:         skill3.FirePoisonWizardMpEaterId,
-	job.FirePoisonMagicianId:       skill3.FirePoisonWizardMpEaterId,
-	job.FirePoisonArchMagicianId:   skill3.FirePoisonWizardMpEaterId,
-	job.IceLightningWizardId:       skill3.IceLightningWizardMpEaterId,
-	job.IceLightningMagicianId:     skill3.IceLightningWizardMpEaterId,
-	job.IceLightningArchMagicianId: skill3.IceLightningWizardMpEaterId,
-	job.ClericId:                   skill3.ClericMpEaterId,
-	job.PriestId:                   skill3.ClericMpEaterId,
-	job.BishopId:                   skill3.ClericMpEaterId,
-}
-
-func resolveMpEaterSkillId(jobId job.Id) (skill3.Id, bool) {
-	id, ok := mpEaterSkillIds[jobId]
-	return id, ok
-}
-
 // mpEaterShouldProc returns true when MP Eater should fire given the
 // skill's prop and a single uniform roll in [0,1). Mirrors Cosmic's
 // `prop == 1.0 || rand() < prop`. Defensive against negative props.
@@ -136,7 +108,7 @@ func mpEaterTryProc(
 	f field.Model,
 	characterId uint32,
 ) {
-	eaterId, ok := resolveMpEaterSkillId(c.JobId())
+	eaterId, ok := job.MpEaterSkillId(c.JobId())
 	if !ok {
 		return
 	}

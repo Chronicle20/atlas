@@ -46,6 +46,7 @@ type Processor interface {
 	DestroyInField(f field.Model) error
 	UseSkill(uniqueId uint32, characterId uint32, skillId byte, skillLevel byte)
 	UseSkillGM(uniqueId uint32, skillId byte, skillLevel byte)
+	UseBasicAttack(uniqueId uint32, attackPos uint8)
 	ApplyStatusEffect(uniqueId uint32, effect StatusEffect) error
 	CancelStatusEffect(uniqueId uint32, statusTypes []string) error
 	CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error
@@ -57,6 +58,10 @@ type Processor interface {
 // this indirection so tests can intercept event emissions without spinning up
 // kafka. Production wiring uses producer.ProviderImpl.
 type emitter func(topic string, provider model.Provider[[]kafka.Message]) error
+
+// testInformationLookup is a test-only override for information.GetById. When
+// nil (production), UseBasicAttack calls information.GetById normally.
+var testInformationLookup func(monsterId uint32) (information.Model, error)
 
 // ProcessorImpl implements the Processor interface
 type ProcessorImpl struct {
@@ -338,6 +343,7 @@ func (p *ProcessorImpl) Damage(id uint32, characterId uint32, damages []uint32, 
 	if killed {
 		// Clear cooldowns and drop timer on death
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, id)
 		GetDropTimerRegistry().Unregister(p.ctx, p.t, id)
 
 		// Emit cancellation events for any active status effects before death
@@ -445,6 +451,7 @@ func (p *ProcessorImpl) DamageFriendly(uniqueId uint32, attackerUniqueId uint32,
 
 	if s.Killed {
 		GetCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
+		GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 		GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
 
 		for _, se := range s.Monster.StatusEffects() {
@@ -667,6 +674,74 @@ func (p *ProcessorImpl) UseSkillGM(uniqueId uint32, skillId byte, skillLevel byt
 		p.executeSummon(m, sd)
 	default:
 		p.l.Warnf("Monster [%d] unknown skill category for GM skill [%d].", uniqueId, skillId)
+	}
+}
+
+// UseBasicAttack authoritatively applies the post-conditions of a basic
+// monster attack: MP decrement and cooldown registration. It is invoked
+// asynchronously via Kafka after atlas-channel has already optimistically
+// projected the post-decrement MP into the move ack. Every reject path
+// returns silently — there is nothing to communicate back.
+func (p *ProcessorImpl) UseBasicAttack(uniqueId uint32, attackPos uint8) {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.Debugf("UseBasicAttack: monster [%d] not found.", uniqueId)
+		return
+	}
+	if !m.Alive() {
+		p.l.Debugf("UseBasicAttack: monster [%d] not alive.", uniqueId)
+		return
+	}
+
+	// Look up template attack metadata. The hook lets tests inject a
+	// canned response without spinning up an HTTP fake.
+	var info information.Model
+	if testInformationLookup != nil {
+		info, err = testInformationLookup(m.MonsterId())
+	} else {
+		info, err = information.GetById(p.l)(p.ctx)(m.MonsterId())
+	}
+	if err != nil {
+		p.l.WithError(err).Debugf("UseBasicAttack: cannot fetch template for monster [%d].", uniqueId)
+		return
+	}
+
+	// pos in information.AttackInfo is 1-indexed; the wire/registry
+	// attackPos is 0-indexed. Convert.
+	wantPos := attackPos + 1
+	var atk information.AttackInfo
+	found := false
+	for _, a := range info.Attacks() {
+		if a.Pos == wantPos {
+			atk = a
+			found = true
+			break
+		}
+	}
+	if !found {
+		p.l.Debugf("UseBasicAttack: monster [%d] has no attack info for pos %d.", uniqueId, attackPos)
+		return
+	}
+
+	if GetAttackCooldownRegistry().IsOnCooldown(p.ctx, p.t, uniqueId, attackPos) {
+		p.l.Debugf("UseBasicAttack: monster [%d] attack pos %d on cooldown.", uniqueId, attackPos)
+		return
+	}
+
+	if atk.ConMP > 0 && uint32(m.Mp()) < uint32(atk.ConMP) {
+		p.l.Debugf("UseBasicAttack: monster [%d] insufficient MP [%d] for pos %d cost [%d].", uniqueId, m.Mp(), attackPos, atk.ConMP)
+		return
+	}
+
+	if atk.ConMP > 0 {
+		if _, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, uint32(atk.ConMP)); err != nil {
+			p.l.WithError(err).Errorf("UseBasicAttack: DeductMp failed for monster [%d].", uniqueId)
+			return
+		}
+	}
+
+	if atk.AttackAfter > 0 {
+		GetAttackCooldownRegistry().SetCooldown(p.ctx, p.t, uniqueId, attackPos, time.Duration(atk.AttackAfter)*time.Millisecond)
 	}
 }
 
@@ -968,6 +1043,7 @@ func (p *ProcessorImpl) executeSummon(m Model, sd mobskill.Model) {
 // Destroy destroys a monster
 func (p *ProcessorImpl) Destroy(uniqueId uint32) error {
 	GetDropTimerRegistry().Unregister(p.ctx, p.t, uniqueId)
+	GetAttackCooldownRegistry().ClearCooldowns(p.ctx, p.t, uniqueId)
 	m, err := GetMonsterRegistry().RemoveMonster(p.ctx, p.t, uniqueId)
 	if err != nil {
 		return err

@@ -62,6 +62,11 @@ func (p *Processor) UseSkill(f field.Model, monsterId uint32, characterId uint32
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(UseSkillCommandProvider(f, monsterId, characterId, skillId, skillLevel))
 }
 
+func (p *Processor) UseBasicAttack(f field.Model, monsterId uint32, attackPos uint8) error {
+	p.l.Debugf("Monster [%d] using basic attack pos [%d].", monsterId, attackPos)
+	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(UseBasicAttackCommandProvider(f, monsterId, attackPos))
+}
+
 func (p *Processor) ApplyStatus(f field.Model, monsterId uint32, characterId uint32, skillId uint32, skillLevel uint32, statuses map[string]int32, duration uint32) error {
 	p.l.Debugf("Applying status to monster [%d]. Character [%d]. Skill [%d].", monsterId, characterId, skillId)
 	return producer.ProviderImpl(p.l)(p.ctx)(monster2.EnvCommandTopic)(ApplyStatusCommandProvider(f, monsterId, characterId, skillId, skillLevel, statuses, duration))

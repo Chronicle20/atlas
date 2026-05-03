@@ -1324,6 +1324,96 @@ func TestReader(t *testing.T) {
 	}
 }
 
+const samihoAttackTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="5100004.img">
+  <imgdir name="info">
+    <int name="maxHP" value="3000"/>
+    <int name="maxMP" value="100"/>
+    <int name="level" value="50"/>
+  </imgdir>
+  <imgdir name="attack1">
+    <canvas name="0" width="100" height="100">
+      <int name="delay" value="120"/>
+    </canvas>
+  </imgdir>
+  <imgdir name="attack2">
+    <imgdir name="info">
+      <int name="conMP" value="5"/>
+      <int name="attackAfter" value="1500"/>
+    </imgdir>
+    <canvas name="0" width="100" height="100">
+      <int name="delay" value="180"/>
+    </canvas>
+  </imgdir>
+</imgdir>
+`
+
+const beetleAttackTestXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="7130003.img">
+  <imgdir name="info">
+    <int name="maxHP" value="500"/>
+    <int name="maxMP" value="0"/>
+    <int name="level" value="20"/>
+  </imgdir>
+  <imgdir name="attack1">
+    <canvas name="0" width="100" height="100">
+      <int name="delay" value="100"/>
+    </canvas>
+  </imgdir>
+</imgdir>
+`
+
+func TestRead_ParsesAttacks_Samiho(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(5100004), name: "Samiho"})
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(samihoAttackTestXML)))()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	if len(rm.Attacks) != 2 {
+		t.Fatalf("Attacks length = %d, want 2 (attack1 + attack2): %+v", len(rm.Attacks), rm.Attacks)
+	}
+	want := map[uint8]AttackInfo{
+		1: {Pos: 1, ConMP: 0, AttackAfter: 0},
+		2: {Pos: 2, ConMP: 5, AttackAfter: 1500},
+	}
+	for _, a := range rm.Attacks {
+		w, ok := want[a.Pos]
+		if !ok {
+			t.Errorf("unexpected pos %d", a.Pos)
+			continue
+		}
+		if a != w {
+			t.Errorf("pos %d: got %+v, want %+v", a.Pos, a, w)
+		}
+	}
+}
+
+func TestRead_ParsesAttacks_BeetleNoInfo(t *testing.T) {
+	tt := testTenant()
+	l, _ := test.NewNullLogger()
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	_, _ = GetMonsterStringRegistry().Add(tt, MonsterString{id: strconv.Itoa(7130003), name: "Dual Beetle"})
+
+	rm, err := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(beetleAttackTestXML)))()
+	if err != nil {
+		t.Fatalf("Read: %v", err)
+	}
+
+	// attack1 with no info subdirectory should NOT produce an entry.
+	if len(rm.Attacks) != 0 {
+		t.Fatalf("Attacks = %+v, want empty (no info subdirs)", rm.Attacks)
+	}
+}
+
 func TestReaderMobilityFlags(t *testing.T) {
 	tt := testTenant()
 	l, _ := test.NewNullLogger()

@@ -13,6 +13,7 @@ type Model struct {
 	skills         []Skill
 	revives        []uint32
 	banish         Banish
+	attacks        []AttackInfo
 	hpRecovery     uint32
 	mpRecovery     uint32
 }
@@ -26,6 +27,12 @@ type Banish struct {
 	Message    string
 	MapId      uint32
 	PortalName string
+}
+
+type AttackInfo struct {
+	Pos         uint8
+	ConMP       int32
+	AttackAfter int32
 }
 
 func (m Model) Hp() uint32 {
@@ -54,6 +61,10 @@ func (m Model) AnimationTimes() map[string]uint32 {
 
 func (m Model) Skills() []Skill {
 	return m.skills
+}
+
+func (m Model) Attacks() []AttackInfo {
+	return m.attacks
 }
 
 func (m Model) Revives() []uint32 {

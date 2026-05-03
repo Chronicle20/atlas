@@ -196,7 +196,10 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeJump, int32(e.Jump()))
 	}
 
-	//TODO LT
+	ltX, ltY := node.GetPoint("lt", 0, 0)
+	rbX, rbY := node.GetPoint("rb", 0, 0)
+	e.SetLT(effect.Point{X: int16(ltX), Y: int16(ltY)}).
+		SetRB(effect.Point{X: int16(rbX), Y: int16(rbY)})
 
 	e.SetX(int16(node.GetIntegerWithDefault("x", 0))).
 		SetY(int16(node.GetIntegerWithDefault("y", 0))).

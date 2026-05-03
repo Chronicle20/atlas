@@ -53,8 +53,8 @@ type ModelBuilder struct {
 	damage        uint32
 	attackCount   uint32
 	fixDamage     int32
-	//LT Point
-	//RB Point
+	lt                   Point
+	rb                   Point
 	bulletCount          uint16
 	bulletConsume        uint16
 	mapProtection        byte
@@ -271,6 +271,24 @@ func (b *ModelBuilder) SetY(y int16) *ModelBuilder {
 	return b
 }
 
+func (b *ModelBuilder) SetLT(p Point) *ModelBuilder {
+	b.lt = p
+	return b
+}
+
+func (b *ModelBuilder) SetRB(p Point) *ModelBuilder {
+	b.rb = p
+	return b
+}
+
+func (b *ModelBuilder) LT() Point {
+	return b.lt
+}
+
+func (b *ModelBuilder) RB() Point {
+	return b.rb
+}
+
 func (b *ModelBuilder) SetDamage(damage uint32) *ModelBuilder {
 	b.damage = damage
 	return b
@@ -346,6 +364,14 @@ func (b *ModelBuilder) SetStatups(statups []statup.RestModel) *ModelBuilder {
 	return b
 }
 func (b *ModelBuilder) Build() RestModel {
+	var ltPtr *PointRestModel
+	if b.lt.X != 0 || b.lt.Y != 0 {
+		ltPtr = &PointRestModel{X: b.lt.X, Y: b.lt.Y}
+	}
+	var rbPtr *PointRestModel
+	if b.rb.X != 0 || b.rb.Y != 0 {
+		rbPtr = &PointRestModel{X: b.rb.X, Y: b.rb.Y}
+	}
 	return RestModel{
 		WeaponAttack:         b.weaponAttack,
 		MagicAttack:          b.magicAttack,
@@ -399,6 +425,8 @@ func (b *ModelBuilder) Build() RestModel {
 		CureAbnormalStatuses: b.cureAbnormalStatuses,
 		Statups:              b.statups,
 		MonsterStatus:        b.monsterStatus,
+		LT:                   ltPtr,
+		RB:                   rbPtr,
 	}
 }
 

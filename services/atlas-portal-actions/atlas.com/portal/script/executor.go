@@ -75,6 +75,9 @@ func (e *OperationExecutor) ExecuteOperation(f field.Model, characterId uint32, 
 	case "warp_to_saved_location":
 		return e.executeWarpToSavedLocation(f, characterId, op)
 
+	case "start_quest":
+		return e.executeStartQuest(f, characterId, op)
+
 	default:
 		e.l.Warnf("Unknown operation type [%s] for character [%d]", op.Type(), characterId)
 		return nil
@@ -612,6 +615,48 @@ func (e *OperationExecutor) executeCancelConsumableEffect(f field.Model, charact
 				WorldId:     f.WorldId(),
 				ChannelId:   f.ChannelId(),
 				ItemId:      uint32(itemId),
+			},
+		).Build()
+
+	return e.sagaP.Create(s)
+}
+
+// executeStartQuest dispatches a saga to start a quest for the character.
+// questId is required. npcId is optional and defaults to 0 since portals have no NPC context.
+func (e *OperationExecutor) executeStartQuest(f field.Model, characterId uint32, op operation.Model) error {
+	params := op.Params()
+
+	questIdStr, ok := params["questId"]
+	if !ok {
+		return fmt.Errorf("start_quest operation missing questId parameter")
+	}
+	questId, err := strconv.ParseUint(questIdStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("invalid questId [%s]: %w", questIdStr, err)
+	}
+
+	var npcId uint64 = 0
+	if npcIdStr, hasNpcId := params["npcId"]; hasNpcId {
+		npcId, err = strconv.ParseUint(npcIdStr, 10, 32)
+		if err != nil {
+			return fmt.Errorf("invalid npcId [%s]: %w", npcIdStr, err)
+		}
+	}
+
+	e.l.Debugf("Starting quest [%d] for character [%d] (npcId=%d)", questId, characterId, npcId)
+
+	s := saga.NewBuilder().
+		SetSagaType(saga.InventoryTransaction).
+		SetInitiatedBy("portal-action-start-quest").
+		AddStep(
+			fmt.Sprintf("start-quest-%d-%d", characterId, questId),
+			saga.Pending,
+			saga.StartQuest,
+			saga.StartQuestPayload{
+				CharacterId: characterId,
+				WorldId:     f.WorldId(),
+				QuestId:     uint32(questId),
+				NpcId:       uint32(npcId),
 			},
 		).Build()
 

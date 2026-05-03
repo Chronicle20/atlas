@@ -16,6 +16,7 @@ import (
 	"math"
 	"math/rand"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -71,6 +72,49 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 		return monster2.ReflectKindMagical
 	}
 	return ""
+}
+
+// mpEaterSkillIds maps each mage job line to its MP Eater skill. Jobs that
+// do not have MP Eater (e.g. base Magician 200) are absent from the map.
+// F/P, I/L, and Cleric lines each share a single skill id across all tiers.
+var mpEaterSkillIds = map[job.Id]skill3.Id{
+	job.FirePoisonWizardId:         skill3.FirePoisionWizardMpEaterId,
+	job.FirePoisonMagicianId:       skill3.FirePoisionWizardMpEaterId,
+	job.FirePoisonArchMagicianId:   skill3.FirePoisionWizardMpEaterId,
+	job.IceLightningWizardId:       skill3.IceLightningWizardMpEaterId,
+	job.IceLightningMagicianId:     skill3.IceLightningWizardMpEaterId,
+	job.IceLightningArchMagicianId: skill3.IceLightningWizardMpEaterId,
+	job.ClericId:                   skill3.ClericMpEaterId,
+	job.PriestId:                   skill3.ClericMpEaterId,
+	job.BishopId:                   skill3.ClericMpEaterId,
+}
+
+// resolveMpEaterSkillId returns the MP Eater skill id for the given job.
+// Returns ok=false for jobs that have no MP Eater (non-mage jobs, base
+// Magician 200, etc.).
+func resolveMpEaterSkillId(jobId job.Id) (skill3.Id, bool) {
+	id, ok := mpEaterSkillIds[jobId]
+	return id, ok
+}
+
+// mpEaterShouldProc returns true when MP Eater should fire given the
+// skill's prop and a single uniform roll in [0,1). Mirrors Cosmic's
+// `prop == 1.0 || rand() < prop`. Defensive against negative props.
+func mpEaterShouldProc(prop float64, roll float64) bool {
+	if prop <= 0 {
+		return false
+	}
+	return prop >= 1.0 || roll < prop
+}
+
+// mpEaterAbsorbAmount computes the requested drain from monster MaxMp
+// and the skill's X (absorb percent). Returns 0 when MaxMp is 0 or X is
+// non-positive. atlas-monsters re-clamps to the monster's current MP.
+func mpEaterAbsorbAmount(maxMp uint32, x int16) uint32 {
+	if maxMp == 0 || x <= 0 {
+		return 0
+	}
+	return uint32(uint64(maxMp) * uint64(x) / 100)
 }
 
 func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(ai packetmodel.AttackInfo) model.Operator[session.Model] {

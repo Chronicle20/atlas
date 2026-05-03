@@ -119,6 +119,17 @@ func processDamageInfoEntry(
 			coef := 0.1 + rand.Float64()*0.1
 			ms["VENOM"] = snapshotVenomDamagePerTick(int(stats.Luck), int(stats.MagicAttack), coef)
 		}
+
+		// Doom: respect magic-reflect. Doom does no damage, so on reflect we
+		// simply skip the apply (nothing to bounce back). Gated on DOOM so
+		// no other empty-damage status flow changes behavior.
+		if _, isDoom := ms["DOOM"]; isDoom && attackKind != "" {
+			if _, ok := deps.getReflect(t, di.MonsterId(), attackKind); ok {
+				l.Debugf("Doom: monster [%d] has %s reflect; status apply skipped.", di.MonsterId(), attackKind)
+				return
+			}
+		}
+
 		_ = deps.applyStatus(f, di.MonsterId(), casterId, uint32(ai.SkillId()), skillLevel, ms, uint32(se.Duration()))
 		return
 	}

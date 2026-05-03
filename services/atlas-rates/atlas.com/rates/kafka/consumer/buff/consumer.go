@@ -8,6 +8,7 @@ import (
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -51,7 +52,7 @@ func handleBuffAppliedFor(p character.Processor, l logrus.FieldLogger, e buff.St
 
 	// Process each stat change and add rate factors for rate-affecting changes
 	for _, change := range e.Body.Changes {
-		mapping, exists := buff.GetRateMapping(change.Type)
+		mapping, exists := buff.GetRateMapping(charconst.TemporaryStatType(change.Type))
 		if !exists {
 			continue
 		}

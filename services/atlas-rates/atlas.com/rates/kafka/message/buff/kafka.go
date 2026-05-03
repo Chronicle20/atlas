@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -43,14 +44,6 @@ type ExpiredStatusEventBody struct {
 	ExpiresAt time.Time    `json:"expiresAt"`
 }
 
-// Game client stat types that affect rates
-// These are TemporaryStatType constants from the game client, not rate-specific types
-const (
-	StatTypeHolySymbol = "HOLY_SYMBOL" // EXP rate buff (additive: amount is bonus percentage)
-	StatTypeMesoUp     = "MESO_UP"     // Meso rate buff (direct: amount is total percentage)
-	StatTypeCurse      = "CURSE"       // EXP rate debuff (fixed: amount ignored, canonical v83 multiplier 0.5)
-)
-
 // ConversionMethod defines how to convert a stat amount to a rate multiplier
 type ConversionMethod int
 
@@ -76,20 +69,20 @@ type RateMapping struct {
 }
 
 // buffToRateMappings maps game client stat types to rate types with conversion methods
-var buffToRateMappings = map[string]RateMapping{
-	StatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
-	StatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
-	StatTypeCurse:      {RateType: "exp", Conversion: ConversionFixed, Multiplier: 0.5},
+var buffToRateMappings = map[character.TemporaryStatType]RateMapping{
+	character.TemporaryStatTypeHolySymbol: {RateType: "exp", Conversion: ConversionAdditive},
+	character.TemporaryStatTypeMesoUp:     {RateType: "meso", Conversion: ConversionDirect},
+	character.TemporaryStatTypeCurse:      {RateType: "exp", Conversion: ConversionFixed, Multiplier: 0.5},
 }
 
 // IsRateStatType checks if a stat change type affects rates
-func IsRateStatType(statType string) bool {
+func IsRateStatType(statType character.TemporaryStatType) bool {
 	_, exists := buffToRateMappings[statType]
 	return exists
 }
 
 // GetRateMapping returns the rate mapping for a stat type, if it exists
-func GetRateMapping(statType string) (RateMapping, bool) {
+func GetRateMapping(statType character.TemporaryStatType) (RateMapping, bool) {
 	mapping, exists := buffToRateMappings[statType]
 	return mapping, exists
 }

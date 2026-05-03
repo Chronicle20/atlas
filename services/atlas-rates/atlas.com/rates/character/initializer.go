@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	charconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
@@ -213,7 +214,7 @@ func initializeActiveBuffs(l logrus.FieldLogger, ctx context.Context, characterI
 
 		// Process each stat change for rate-affecting buffs
 		for _, change := range b.Changes {
-			mapping, exists := buff.GetRateMapping(change.Type)
+			mapping, exists := buff.GetRateMapping(charconst.TemporaryStatType(change.Type))
 			if !exists {
 				continue
 			}

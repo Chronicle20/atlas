@@ -9,6 +9,7 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/server"
 	"atlas-channel/session"
+	socketHandler "atlas-channel/socket/handler"
 	"atlas-channel/socket/writer"
 	"context"
 	"math"
@@ -75,6 +76,9 @@ func InitHandlers(l logrus.FieldLogger) func(sc server.Model) func(wp writer.Pro
 					return err
 				}
 				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventNextSkillDecided(sc, wp)))); err != nil {
+					return err
+				}
+				if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventMpChanged(sc, wp)))); err != nil {
 					return err
 				}
 				return nil
@@ -520,5 +524,36 @@ func handleStatusEventNextSkillDecided(sc server.Model, _ writer.Producer) messa
 			NextEligibleRepickAtMs: e.Body.NextEligibleRepickAtMs,
 		})
 		l.Debugf("Inbox: stored decision (skill=%d level=%d) for monster [%d].", e.Body.SkillId, e.Body.SkillLevel, e.UniqueId)
+	}
+}
+
+func handleStatusEventMpChanged(sc server.Model, wp writer.Producer) message.Handler[monster2.StatusEvent[monster2.StatusEventMpChangedBody]] {
+	return func(l logrus.FieldLogger, ctx context.Context, e monster2.StatusEvent[monster2.StatusEventMpChangedBody]) {
+		if e.Type != monster2.EventStatusMpChanged {
+			return
+		}
+		if !sc.Is(tenant.MustFromContext(ctx), e.WorldId, e.ChannelId) {
+			return
+		}
+
+		switch e.Body.Reason {
+		case monster2.MpChangeReasonMpEater:
+			f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
+			if err := character.NewProcessor(l, ctx).ChangeMP(f, e.Body.CharacterId, int16(e.Body.Amount)); err != nil {
+				l.WithError(err).Errorf("MP_CHANGED MP_EATER: ChangeMP failed for character [%d].", e.Body.CharacterId)
+			}
+
+			sp := session.NewProcessor(l, ctx)
+			_ = sp.IfPresentByCharacterId(sc.Channel())(
+				e.Body.CharacterId,
+				socketHandler.AnnounceSkillSpecial(l)(ctx)(wp)(e.Body.SkillId),
+			)
+			_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(
+				f, e.Body.CharacterId,
+				socketHandler.AnnounceForeignSkillSpecial(l)(ctx)(wp)(e.Body.CharacterId, e.Body.SkillId),
+			)
+		default:
+			l.Debugf("MP_CHANGED: ignoring unknown reason [%s] for monster [%d].", e.Body.Reason, e.UniqueId)
+		}
 	}
 }

@@ -1,0 +1,57 @@
+{
+  "service": "task-051-status-cure-consumables",
+  "path": "services/atlas-buffs + services/atlas-consumables",
+  "date": "2026-05-03",
+  "build": "pass",
+  "testsPassed": "all",
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "atlas-buffs/character",
+      "type": "domain",
+      "checks": [
+        {"id": "DOM-06", "name": "Processor accepts FieldLogger", "status": "pass", "evidence": "services/atlas-buffs/atlas.com/buffs/character/processor.go:32"},
+        {"id": "DOM-11", "name": "Providers use lazy evaluation", "status": "pass", "evidence": "services/atlas-buffs/atlas.com/buffs/character/producer.go:56-69 + processor.go:103-110 (message.Emit + buf.Put)"},
+        {"id": "DOM-12", "name": "No os.Getenv in handlers", "status": "pass", "evidence": "Zero matches across changed files"},
+        {"id": "DOM-13", "name": "No cross-domain logic in handlers", "status": "pass", "evidence": "services/atlas-buffs/atlas.com/buffs/kafka/consumer/character/consumer.go:81-89"},
+        {"id": "DOM-14", "name": "Handlers don't call providers directly", "status": "pass", "evidence": "consumer.go:86 routes through processor"},
+        {"id": "DOM-20", "name": "Table-driven tests", "status": "warn", "evidence": "processor_test.go:182-241 and registry_test.go:325-413 use per-case Test funcs (matches local convention)"},
+        {"id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "Wire uses []string; consumables producer uses ts.TemporaryStatType constants at consumable/processor.go:78-85"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/character/buff",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Has processor", "status": "pass", "evidence": "services/atlas-consumables/atlas.com/consumables/character/buff/processor.go:36-38"},
+        {"id": "SUB-04", "name": "No manual JSON parsing", "status": "pass", "evidence": "producer.go:71 uses producer.SingleMessageProvider"},
+        {"id": "DEFENSIVE-COPY", "name": "Slice defensively copied in provider", "status": "pass", "evidence": "services/atlas-consumables/atlas.com/consumables/character/buff/producer.go:59"}
+      ]
+    },
+    {
+      "name": "atlas-consumables/consumable",
+      "type": "sub-domain",
+      "checks": [
+        {"id": "SUB-01", "name": "Logic in processor", "status": "pass", "evidence": "services/atlas-consumables/atlas.com/consumables/consumable/processor.go:73-92, 99-105"},
+        {"id": "CURE-ORDER", "name": "Cure dispatched before HP/MP recovery", "status": "pass", "evidence": "processor.go:99-105 precedes :111-127"},
+        {"id": "DETERMINISTIC", "name": "collectCureTypes deterministic order", "status": "pass", "evidence": "processor.go:78-85 fixed slice; tests processor_test.go:271-289, :308-318"},
+        {"id": "ZERO-IGNORED", "name": "Zero-value cure spec ignored", "status": "pass", "evidence": "processor.go:87 requires val>0; test processor_test.go:312-318"}
+      ]
+    },
+    {
+      "name": "atlas-buffs/test-infra",
+      "type": "support",
+      "checks": [
+        {"id": "KAFKA-STUB", "name": "Test injects Kafka writer via ConfigWriterFactory", "status": "pass", "evidence": "services/atlas-buffs/atlas.com/buffs/character/processor_test.go:26-37 uses kafkaProducer.GetManager(kafkaProducer.ConfigWriterFactory(...)); resets via t.Cleanup"},
+        {"id": "WRITER-IFACE", "name": "noopWriter implements full Writer interface", "status": "pass", "evidence": "processor_test.go:20-24 vs libs/atlas-kafka/producer/producer.go:21"},
+        {"id": "HOLY-SHIELD-BYPASS", "name": "D5 test bypass via direct registry", "status": "pass", "evidence": "processor_test.go:226-241; comment at :217-219 documents intent"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "DOM-20: New tests are per-case TestX functions rather than table-driven; matches local convention in same files but future refactor possible.",
+    "Defensive observation: atlas-buffs accepts arbitrary []string for type filter; no compile-time guarantee against typos. Not a guideline violation."
+  ]
+}

@@ -321,3 +321,93 @@ func TestRegistry_ApplyAndCancel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, m.Buffs(), 25)
 }
+
+func TestRegistry_CancelByStatTypes_EmptyTypes(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	// Apply a POISON buff so we can prove an empty type set leaves it alone.
+	changes := []stat.Model{stat.NewStat("POISON", -10)}
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), changes)
+
+	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{})
+	assert.NoError(t, err)
+	assert.Nil(t, cancelled)
+
+	m, _ := GetRegistry().Get(ctx, uint32(1000))
+	assert.Len(t, m.Buffs(), 1)
+}
+
+func TestRegistry_CancelByStatTypes_NoMatch(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	// Character has only HOLY_SYMBOL, ask to cancel POISON — should keep the buff.
+	changes := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), changes)
+
+	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{"POISON": true})
+	assert.NoError(t, err)
+	assert.Nil(t, cancelled)
+
+	m, _ := GetRegistry().Get(ctx, uint32(1000))
+	assert.Len(t, m.Buffs(), 1)
+}
+
+func TestRegistry_CancelByStatTypes_SingleMatch(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	poison := []stat.Model{stat.NewStat("POISON", -10)}
+	holy := []stat.Model{stat.NewStat("HOLY_SYMBOL", 30)}
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(2311003), byte(1), int32(60), holy)
+
+	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{"POISON": true})
+	assert.NoError(t, err)
+	assert.Len(t, cancelled, 1)
+	assert.Equal(t, int32(124), cancelled[0].SourceId())
+
+	m, _ := GetRegistry().Get(ctx, uint32(1000))
+	assert.Len(t, m.Buffs(), 1)
+	_, holdsHoly := m.Buffs()[int32(2311003)]
+	assert.True(t, holdsHoly)
+}
+
+func TestRegistry_CancelByStatTypes_MultiMatch(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	poison := []stat.Model{stat.NewStat("POISON", -10)}
+	curse := []stat.Model{stat.NewStat("CURSE", -50)}
+	weaken := []stat.Model{stat.NewStat("WEAKEN", -20)}
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(124), byte(1), int32(60), poison)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(125), byte(1), int32(60), curse)
+	_, _ = GetRegistry().Apply(ctx, world.Id(0), channel.Id(0), uint32(1000), int32(126), byte(1), int32(60), weaken)
+
+	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(1000), map[string]bool{
+		"POISON": true,
+		"CURSE":  true,
+	})
+	assert.NoError(t, err)
+	assert.Len(t, cancelled, 2)
+
+	m, _ := GetRegistry().Get(ctx, uint32(1000))
+	assert.Len(t, m.Buffs(), 1)
+	_, holdsWeaken := m.Buffs()[int32(126)]
+	assert.True(t, holdsWeaken)
+}
+
+func TestRegistry_CancelByStatTypes_UnknownCharacter(t *testing.T) {
+	setupTestRegistry(t)
+	ten := setupTestTenant(t)
+	ctx := setupTestContext(t, ten)
+
+	cancelled, err := GetRegistry().CancelByStatTypes(ctx, uint32(9999), map[string]bool{"POISON": true})
+	assert.NoError(t, err)
+	assert.Nil(t, cancelled)
+}

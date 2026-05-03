@@ -166,7 +166,7 @@ Callback invoked after item reservation is confirmed.
   - ClassificationPetConsumable: Cash pet food (ConsumeCashPetFood)
   - ClassificationConsumableSummoningSack: Summoning sacks (ConsumeSummoningSack)
 - `RequestScroll`: Processes equipment enhancement scroll usage
-- `ApplyItemEffects`: Applies stat buffs and HP/MP recovery from consumable data
+- `ApplyItemEffects`: Applies cure → HP/MP recovery → status buffs from consumable data. Cure is dispatched first via a single `CANCEL_BY_TYPES` buff command when any disease cure spec (`poison`, `darkness`, `weakness`, `seal`, `curse`) is non-zero, so a queued poison tick cannot eat part of the heal.
 - `ApplyConsumableEffect`: Applies effects without consuming an inventory item (NPC-initiated)
 - `CancelConsumableEffect`: Cancels buff effects using sourceId = -int32(itemId)
 - `ConsumeError`: Cancels reservation and emits error event
@@ -304,6 +304,7 @@ None locally. Emits commands to the buff topic.
 
 - `Apply`: Emits APPLY buff command with stat changes, duration, and sourceId
 - `Cancel`: Emits CANCEL buff command with sourceId
+- `CancelByTypes`: Emits a single CANCEL_BY_TYPES buff command listing the disease stat types to cure
 
 ## inventory
 

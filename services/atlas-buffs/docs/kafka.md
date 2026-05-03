@@ -38,6 +38,7 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 | APPLY | ApplyCommandBody | Apply buff to character |
 | CANCEL | CancelCommandBody | Cancel buff on character |
 | CANCEL_ALL | CancelAllCommandBody | Cancel all buffs on character |
+| CANCEL_BY_TYPES | CancelByTypesCommandBody | Cancel buffs whose Changes() intersect a stat-type set |
 
 ##### ApplyCommandBody
 
@@ -58,6 +59,14 @@ Consumed from COMMAND_TOPIC_CHARACTER_BUFF. Generic envelope with typed body.
 ##### CancelAllCommandBody
 
 Empty body.
+
+##### CancelByTypesCommandBody
+
+| Field | Type |
+|-------|------|
+| Types | []string |
+
+Each entry is a `TemporaryStatType` string (`"POISON"`, `"DARKNESS"`, `"WEAKEN"`, `"SEAL"`, `"CURSE"`, etc.).
 
 ##### StatChange
 

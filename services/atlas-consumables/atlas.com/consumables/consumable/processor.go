@@ -66,6 +66,30 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+// collectCureTypes returns the TemporaryStatType strings whose matching
+// consumable cure spec is non-zero. Order is fixed
+// (POISON, DARKNESS, WEAKEN, SEAL, CURSE) for deterministic Kafka payloads
+// and easier testing.
+func collectCureTypes(ci consumable3.Model) []string {
+	pairs := []struct {
+		spec consumable3.SpecType
+		stat ts.TemporaryStatType
+	}{
+		{consumable3.SpecTypePoison, ts.TemporaryStatTypePoison},
+		{consumable3.SpecTypeDarkness, ts.TemporaryStatTypeDarkness},
+		{consumable3.SpecTypeWeakness, ts.TemporaryStatTypeWeaken},
+		{consumable3.SpecTypeSeal, ts.TemporaryStatTypeSeal},
+		{consumable3.SpecTypeCurse, ts.TemporaryStatTypeCurse},
+	}
+	out := make([]string, 0, len(pairs))
+	for _, p := range pairs {
+		if val, ok := ci.GetSpec(p.spec); ok && val > 0 {
+			out = append(out, string(p.stat))
+		}
+	}
+	return out
+}
+
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.
@@ -73,21 +97,17 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 	bp := buff.NewProcessor(l, ctx)
 	cp := character.NewProcessor(l, ctx)
 
-	statups := make([]stat.Model, 0)
-	duration := int32(0)
+	// 1. Cure first. Cure runs before HP/MP recovery so a queued poison tick
+	// (also routed through atlas-buffs's per-character partition) lands behind
+	// the cancel and cannot eat part of the heal between drink-time and
+	// cancel-commit-time. See task-051 D3.
+	if cureTypes := collectCureTypes(ci); len(cureTypes) > 0 {
+		if err := bp.CancelByTypes(f, characterId, cureTypes); err != nil {
+			l.WithError(err).Errorf("Unable to dispatch cure-by-types for character [%d] item [%d].", characterId, itemId)
+		}
+	}
 
-	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeAccuracy,
-			Amount: val,
-		})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeAvoidability,
-			Amount: val,
-		})
-	}
+	// 2. HP/MP recovery.
 	if val, ok := ci.GetSpec(consumable3.SpecTypeHP); ok && val > 0 {
 		_ = cp.ChangeHP(f, characterId, int16(val))
 	}
@@ -95,24 +115,6 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		pct := float64(val) / float64(100)
 		res := int16(math.Floor(float64(c.MaxHp()) * pct))
 		_ = cp.ChangeHP(f, characterId, res)
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeJump,
-			Amount: val,
-		})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeMagicAttack,
-			Amount: val,
-		})
-	}
-	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeMagicDefense,
-			Amount: val,
-		})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMP); ok && val > 0 {
 		_ = cp.ChangeMP(f, characterId, int16(val))
@@ -122,29 +124,37 @@ func ApplyItemEffects(l logrus.FieldLogger, ctx context.Context, c character.Mod
 		res := int16(math.Floor(float64(c.MaxMp()) * pct))
 		_ = cp.ChangeMP(f, characterId, res)
 	}
+
+	// 3. Status-up buffs.
+	statups := make([]stat.Model, 0)
+	duration := int32(0)
+
+	if val, ok := ci.GetSpec(consumable3.SpecTypeAccuracy); ok && val > 0 {
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAccuracy, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeEvasion); ok && val > 0 {
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeAvoidability, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeJump); ok && val > 0 {
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeJump, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicAttack); ok && val > 0 {
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicAttack, Amount: val})
+	}
+	if val, ok := ci.GetSpec(consumable3.SpecTypeMagicDefense); ok && val > 0 {
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMagicDefense, Amount: val})
+	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponAttack); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeWeaponAttack,
-			Amount: val,
-		})
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponAttack, Amount: val})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeWeaponDefense); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeWeaponDefense,
-			Amount: val,
-		})
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeWeaponDefense, Amount: val})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeSpeed); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeSpeed,
-			Amount: val,
-		})
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeSpeed, Amount: val})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeMorph); ok && val > 0 {
-		statups = append(statups, stat.Model{
-			Type:   ts.TemporaryStatTypeMorph,
-			Amount: val,
-		})
+		statups = append(statups, stat.Model{Type: ts.TemporaryStatTypeMorph, Amount: val})
 	}
 	if val, ok := ci.GetSpec(consumable3.SpecTypeTime); ok && val > 0 {
 		duration = val / 1000

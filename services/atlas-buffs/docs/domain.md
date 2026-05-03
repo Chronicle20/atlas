@@ -65,6 +65,7 @@ Represents a character with an active poison buff for tick processing.
 - Disease buffs (STUN, POISON, SEAL, DARKNESS, WEAKEN, CURSE, SEDUCE, CONFUSE, UNDEAD, SLOW, STOP_PORTION) are blocked if the character has a HOLY_SHIELD buff active
 - Poison ticks enforce a minimum 1-second interval between ticks per character
 - Poison tick damage is applied as negative HP change (amount negated to int16)
+- `CancelByStatTypes` ignores `HOLY_SHIELD` (immunity gates application, not cure).
 
 ## Processors
 
@@ -80,6 +81,7 @@ Primary domain processor for buff operations.
 | CancelAll | Cancel all buffs for character and emit expired events |
 | ExpireBuffs | Process and emit events for all expired buffs |
 | ProcessPoisonTicks | Find characters with poison buffs and emit HP change commands |
+| CancelByStatTypes | Cancel any buff whose Changes() intersects a stat-type set; emits one EXPIRED event per cancelled buff |
 
 ### Registry
 
@@ -99,6 +101,7 @@ Redis-backed buff storage (singleton). Per-tenant key isolation via TenantRegist
 | GetLastPoisonTick | Get last poison tick timestamp for character |
 | UpdatePoisonTick | Record poison tick timestamp for character |
 | ClearPoisonTick | Remove poison tick state for character |
+| CancelByStatTypes | Filter and remove buffs whose Changes() intersects a stat-type set; returns the cancelled buffs |
 
 ## Background Tasks
 

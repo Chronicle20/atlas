@@ -19,6 +19,7 @@ type Processor interface {
 	Apply(worldId world.Id, channelId channel.Id, characterId uint32, fromId uint32, sourceId int32, level byte, duration int32, changes []stat.Model) error
 	Cancel(worldId world.Id, characterId uint32, sourceId int32) error
 	CancelAll(worldId world.Id, characterId uint32) error
+	CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error
 	ExpireBuffs() error
 	ProcessPoisonTicks() error
 }
@@ -71,6 +72,33 @@ func (p *ProcessorImpl) CancelAll(worldId world.Id, characterId uint32) error {
 	}
 	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
 		for _, b := range buffs {
+			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func (p *ProcessorImpl) CancelByStatTypes(worldId world.Id, characterId uint32, types []string) error {
+	if len(types) == 0 {
+		return nil
+	}
+	typeSet := make(map[string]bool, len(types))
+	for _, t := range types {
+		typeSet[t] = true
+	}
+
+	cancelled, err := GetRegistry().CancelByStatTypes(p.ctx, characterId, typeSet)
+	if err != nil {
+		return err
+	}
+	if len(cancelled) == 0 {
+		return nil
+	}
+
+	return message.Emit(p.l, p.ctx)(func(buf *message.Buffer) error {
+		for _, b := range cancelled {
 			if err := buf.Put(character2.EnvEventStatusTopic, expiredStatusEventProvider(worldId, characterId, b.SourceId(), b.Level(), b.Duration(), b.Changes(), b.CreatedAt(), b.ExpiresAt())); err != nil {
 				return err
 			}

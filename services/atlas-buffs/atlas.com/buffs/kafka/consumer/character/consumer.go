@@ -36,6 +36,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelAll))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCancelByTypes))); err != nil {
+			return err
+		}
 		return nil
 	}
 }
@@ -72,5 +75,15 @@ func handleCancelAll(l logrus.FieldLogger, ctx context.Context, c character2.Com
 
 	if err := character.NewProcessor(l, ctx).CancelAll(c.WorldId, c.CharacterId); err != nil {
 		l.WithError(err).Errorf("Unable to cancel all buffs for character [%d].", c.CharacterId)
+	}
+}
+
+func handleCancelByTypes(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.CancelByTypesCommandBody]) {
+	if c.Type != character2.CommandTypeCancelByTypes {
+		return
+	}
+
+	if err := character.NewProcessor(l, ctx).CancelByStatTypes(c.WorldId, c.CharacterId, c.Body.Types); err != nil {
+		l.WithError(err).Errorf("Unable to cancel buffs by types %v for character [%d].", c.Body.Types, c.CharacterId)
 	}
 }

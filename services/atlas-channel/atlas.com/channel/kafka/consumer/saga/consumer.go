@@ -8,13 +8,13 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
-	storagepkt "github.com/Chronicle20/atlas/libs/atlas-packet/storage"
-	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	storagepkt "github.com/Chronicle20/atlas/libs/atlas-packet/storage"
+	storagecb "github.com/Chronicle20/atlas/libs/atlas-packet/storage/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/segmentio/kafka-go"
@@ -89,8 +89,8 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 		}).Debugf("Saga transaction failed. Reason: [%s]", e.Body.Reason)
 
 		// Look up the session for the character
-		s, ok := session.NewProcessor(l, ctx).GetSessionByCharacterId(e.Body.CharacterId)
-		if !ok {
+		s, err := session.NewProcessor(l, ctx).GetByCharacterId(sc.Channel())(e.Body.CharacterId)
+		if err != nil {
 			l.WithField("character_id", e.Body.CharacterId).Debug("Character not connected, skipping error notification.")
 			return
 		}
@@ -109,7 +109,7 @@ func handleFailedEvent(sc server.Model, wp writer.Producer) message.Handler[saga
 			}
 
 			// Send the error packet to the client
-			err := session.Announce(l)(ctx)(wp)(storagecb.StorageOperationWriter)(errorBody)(s)
+			err = session.Announce(l)(ctx)(wp)(storagecb.StorageOperationWriter)(errorBody)(s)
 			if err != nil {
 				l.WithError(err).WithField("character_id", e.Body.CharacterId).Error("Failed to send storage error packet to client.")
 				return

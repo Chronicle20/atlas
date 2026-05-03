@@ -1853,3 +1853,115 @@ func TestApplyStatusEffect_Doom_ReapplyReplacesExisting(t *testing.T) {
 	// pin for the replace-not-noop behavior.
 	_ = events
 }
+
+// TestGetInFieldRect_Inside verifies the rect filter returns mobs whose
+// position lies within the inclusive rectangle and excludes mobs outside.
+func TestGetInFieldRect_Inside(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	r.CreateMonster(ctx, ten, f, 9300018, 10, 10, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f, 9300018, 200, 200, 0, 0, 0, 100, 50)
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	got, err := p.GetInFieldRect(f, -100, -100, 100, 100, 0)
+	if err != nil {
+		t.Fatalf("GetInFieldRect: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("len(got) = %d, want 2 (mobs at (10,10) and (50,50))", len(got))
+	}
+}
+
+// TestGetInFieldRect_LimitTruncates verifies the limit parameter truncates
+// the result; ordering is by distance from rect center (ascending).
+func TestGetInFieldRect_LimitTruncates(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	for i := int16(0); i < 10; i++ {
+		r.CreateMonster(ctx, ten, f, 9300018, i*10, 0, 0, 0, 0, 100, 50)
+	}
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	got, err := p.GetInFieldRect(f, -50, -50, 200, 50, 3)
+	if err != nil {
+		t.Fatalf("GetInFieldRect: %v", err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("len(got) = %d, want 3", len(got))
+	}
+}
+
+// TestGetInFieldRect_BoundsInclusive verifies a monster sitting exactly on
+// a rectangle corner is included.
+func TestGetInFieldRect_BoundsInclusive(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	r.CreateMonster(ctx, ten, f, 9300018, 100, 100, 0, 0, 0, 100, 50)
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	got, err := p.GetInFieldRect(f, -100, -100, 100, 100, 0)
+	if err != nil {
+		t.Fatalf("GetInFieldRect: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("expected the corner-aligned monster to be included; got %d", len(got))
+	}
+}
+
+// TestGetInFieldRect_OtherFieldsExcluded verifies monsters on other maps
+// are not returned even if their (x, y) would otherwise match.
+func TestGetInFieldRect_OtherFieldsExcluded(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f1 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	f2 := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40001)).Build()
+	r.CreateMonster(ctx, ten, f1, 9300018, 0, 0, 0, 0, 0, 100, 50)
+	r.CreateMonster(ctx, ten, f2, 9300018, 0, 0, 0, 0, 0, 100, 50)
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	got, err := p.GetInFieldRect(f1, -100, -100, 100, 100, 0)
+	if err != nil {
+		t.Fatalf("GetInFieldRect: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("expected only field 40000's monster; got %d", len(got))
+	}
+}
+
+// TestGetInFieldRect_NormalizesCornerOrder verifies the corners can be
+// passed in either order; the rectangle is normalized to (min, max).
+func TestGetInFieldRect_NormalizesCornerOrder(t *testing.T) {
+	r := GetMonsterRegistry()
+	ten, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+	r.Clear(ctx)
+
+	f := field.NewBuilder(world.Id(0), channel.Id(0), _map.Id(40000)).Build()
+	r.CreateMonster(ctx, ten, f, 9300018, 50, 50, 0, 0, 0, 100, 50)
+
+	p := &ProcessorImpl{l: logrus.New(), ctx: tenant.WithContext(ctx, ten), t: ten}
+	// Corners passed in (high, low) order — should still find the (50,50) mob.
+	got, err := p.GetInFieldRect(f, 100, 100, -100, -100, 0)
+	if err != nil {
+		t.Fatalf("GetInFieldRect: %v", err)
+	}
+	if len(got) != 1 {
+		t.Errorf("expected normalized rect to include (50,50); got %d", len(got))
+	}
+}

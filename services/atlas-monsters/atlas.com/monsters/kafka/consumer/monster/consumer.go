@@ -43,6 +43,9 @@ func InitHandlers(l logrus.FieldLogger) func(rf func(topic string, handler handl
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUseSkillCommand))); err != nil {
 			return err
 		}
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleUseBasicAttackCommand))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleApplyStatusFieldCommand))); err != nil {
 			return err
 		}
@@ -131,6 +134,15 @@ func handleUseSkillCommand(l logrus.FieldLogger, ctx context.Context, c command[
 
 	p := monster.NewProcessor(l, ctx)
 	p.UseSkill(c.MonsterId, c.Body.CharacterId, c.Body.SkillId, c.Body.SkillLevel)
+}
+
+func handleUseBasicAttackCommand(l logrus.FieldLogger, ctx context.Context, c command[useBasicAttackCommandBody]) {
+	if c.Type != CommandTypeUseBasicAttack {
+		return
+	}
+
+	p := monster.NewProcessor(l, ctx)
+	p.UseBasicAttack(c.MonsterId, c.Body.AttackPos)
 }
 
 func handleMovementCommand(l logrus.FieldLogger, ctx context.Context, c movementCommand) {

@@ -5,8 +5,11 @@ import (
 	"atlas-consumables/equipable"
 	"testing"
 
+	consumable3 "atlas-consumables/data/consumable"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIsNotSlotConsumingScroll_SpikeScroll(t *testing.T) {
@@ -253,4 +256,64 @@ func createTestScrollAsset(templateId uint32) asset.Model {
 	return asset.NewBuilder(uuid.New(), templateId).
 		SetId(2).
 		Build()
+}
+
+func makeCureModel(t *testing.T, specs map[consumable3.SpecType]int32) consumable3.Model {
+	t.Helper()
+	rm := consumable3.RestModel{Spec: specs}
+	m, err := consumable3.Extract(rm)
+	if err != nil {
+		t.Fatalf("extract failed: %v", err)
+	}
+	return m
+}
+
+func TestCollectCureTypes_AntidotePot(t *testing.T) {
+	ci := makeCureModel(t, map[consumable3.SpecType]int32{
+		consumable3.SpecTypePoison: 1,
+	})
+	got := collectCureTypes(ci)
+	assert.Equal(t, []string{"POISON"}, got)
+}
+
+func TestCollectCureTypes_HolyWater(t *testing.T) {
+	ci := makeCureModel(t, map[consumable3.SpecType]int32{
+		consumable3.SpecTypeSeal:  1,
+		consumable3.SpecTypeCurse: 1,
+	})
+	got := collectCureTypes(ci)
+	// Order is fixed (POISON, DARKNESS, WEAKEN, SEAL, CURSE) for determinism;
+	// missing entries are dropped, so Holy Water yields just SEAL then CURSE.
+	assert.Equal(t, []string{"SEAL", "CURSE"}, got)
+}
+
+func TestCollectCureTypes_AllCure(t *testing.T) {
+	ci := makeCureModel(t, map[consumable3.SpecType]int32{
+		consumable3.SpecTypePoison:   1,
+		consumable3.SpecTypeDarkness: 1,
+		consumable3.SpecTypeWeakness: 1,
+		consumable3.SpecTypeSeal:     1,
+		consumable3.SpecTypeCurse:    1,
+	})
+	got := collectCureTypes(ci)
+	assert.Equal(t, []string{"POISON", "DARKNESS", "WEAKEN", "SEAL", "CURSE"}, got)
+}
+
+func TestCollectCureTypes_NonCureConsumable(t *testing.T) {
+	// White potion: HP recovery only, no cure flags.
+	ci := makeCureModel(t, map[consumable3.SpecType]int32{
+		consumable3.SpecTypeHP: 1000,
+	})
+	got := collectCureTypes(ci)
+	assert.Empty(t, got)
+}
+
+func TestCollectCureTypes_ZeroFlagsIgnored(t *testing.T) {
+	// A 0-valued cure spec must be treated as "not present" (parser default).
+	ci := makeCureModel(t, map[consumable3.SpecType]int32{
+		consumable3.SpecTypePoison: 0,
+		consumable3.SpecTypeCurse:  1,
+	})
+	got := collectCureTypes(ci)
+	assert.Equal(t, []string{"CURSE"}, got)
 }

@@ -66,6 +66,30 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) *Processor {
 	return p
 }
 
+// collectCureTypes returns the TemporaryStatType strings whose matching
+// consumable cure spec is non-zero. Order is fixed
+// (POISON, DARKNESS, WEAKEN, SEAL, CURSE) for deterministic Kafka payloads
+// and easier testing.
+func collectCureTypes(ci consumable3.Model) []string {
+	pairs := []struct {
+		spec consumable3.SpecType
+		stat ts.TemporaryStatType
+	}{
+		{consumable3.SpecTypePoison, ts.TemporaryStatTypePoison},
+		{consumable3.SpecTypeDarkness, ts.TemporaryStatTypeDarkness},
+		{consumable3.SpecTypeWeakness, ts.TemporaryStatTypeWeaken},
+		{consumable3.SpecTypeSeal, ts.TemporaryStatTypeSeal},
+		{consumable3.SpecTypeCurse, ts.TemporaryStatTypeCurse},
+	}
+	out := make([]string, 0, len(pairs))
+	for _, p := range pairs {
+		if val, ok := ci.GetSpec(p.spec); ok && val > 0 {
+			out = append(out, string(p.stat))
+		}
+	}
+	return out
+}
+
 // ApplyItemEffects applies the effects of a consumable item to a character.
 // This is the shared logic used by both regular item consumption and NPC-initiated item use.
 // It handles stat buffs (accuracy, evasion, attack, defense, speed, jump) and HP/MP recovery.

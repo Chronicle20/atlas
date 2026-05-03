@@ -44,6 +44,9 @@ func attackCooldownScanPattern(t tenant.Model, monsterId uint32) string {
 }
 
 func (r *attackCooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Model, monsterId uint32, attackPos uint8) bool {
+	if r == nil {
+		return false
+	}
 	key := attackCooldownKey(t, monsterId, attackPos)
 	result, err := r.client.Exists(ctx, key).Result()
 	if err != nil {
@@ -56,6 +59,9 @@ func (r *attackCooldownRegistry) IsOnCooldown(ctx context.Context, t tenant.Mode
 // Redis-managed TTL. A zero duration is a no-op (matches melee attacks
 // where attackAfter == 0).
 func (r *attackCooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model, monsterId uint32, attackPos uint8, duration time.Duration) {
+	if r == nil {
+		return
+	}
 	if duration <= 0 {
 		return
 	}
@@ -65,6 +71,9 @@ func (r *attackCooldownRegistry) SetCooldown(ctx context.Context, t tenant.Model
 }
 
 func (r *attackCooldownRegistry) ClearCooldowns(ctx context.Context, t tenant.Model, monsterId uint32) {
+	if r == nil {
+		return
+	}
 	pattern := attackCooldownScanPattern(t, monsterId)
 	var cursor uint64
 	for {

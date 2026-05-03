@@ -3,9 +3,11 @@ package handler
 import (
 	"atlas-channel/character"
 	"atlas-channel/character/skill"
+	"atlas-channel/consumable"
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
+	channelinv "atlas-channel/inventory"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
@@ -16,15 +18,19 @@ import (
 	"math"
 	"math/rand"
 
+	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
+	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill3 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
-	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/packet"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
-	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 )
 
 // computeReflect computes the damage that should be reflected back to the
@@ -72,6 +78,25 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 		return monster2.ReflectKindMagical
 	}
 	return ""
+}
+
+// findItemSlotInInventory returns the slot of the first asset in the
+// compartment matching the item's inventory type whose template id equals
+// itemId. Returns false if the inventory has no such item. Used by
+// processAttack to translate an effect.ItemConsume() id into a slot
+// position before emitting RequestItemConsume.
+func findItemSlotInInventory(inv channelinv.Model, itemId uint32) (slot.Position, bool) {
+	invType, ok := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
+	if !ok {
+		return 0, false
+	}
+	comp := inv.CompartmentByType(invType)
+	for _, a := range comp.Assets() {
+		if a.TemplateId() == itemId {
+			return slot.Position(a.Slot()), true
+		}
+	}
+	return 0, false
 }
 
 // damageInfoEntryDeps groups the per-attack closures and lookups that
@@ -224,6 +249,13 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							}
 							if se.MPConsume() > 0 {
 								_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
+							}
+							if se.ItemConsume() > 0 {
+								if pos, found := findItemSlotInInventory(c.Inventory(), se.ItemConsume()); found {
+									_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), charcon.Id(s.CharacterId()), itemconst.Id(se.ItemConsume()), pos, 0)
+								} else {
+									l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), se.ItemConsume())
+								}
 							}
 						}
 					}

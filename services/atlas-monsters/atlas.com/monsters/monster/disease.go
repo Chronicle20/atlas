@@ -4,12 +4,34 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
+
+// debuffWireValue returns the nValue to ship in an APPLY command for a mob
+// debuff skill. v83 wire convention (per Cosmic's giveDebuff): magnitude-
+// bearing diseases carry their value in the WZ `x` attribute and pass through
+// unchanged, while stat-flag diseases (SEAL/DARKNESS/CURSE/etc.) have no `x`
+// in the WZ and need a literal 1 — the client treats nValue==0 as "stat not
+// actually applied" and suppresses the icon plus flag-gated effects.
+func debuffWireValue(skillId uint16, x int32) int32 {
+	switch skillId {
+	case monster2.SkillTypePoison,
+		monster2.SkillTypeSlow,
+		monster2.SkillTypeStopPotion,
+		monster2.SkillTypeStopMotion:
+		return x
+	default:
+		if x == 0 {
+			return 1
+		}
+		return x
+	}
+}
 
 const (
 	EnvCommandTopicCharacterBuff = "COMMAND_TOPIC_CHARACTER_BUFF"

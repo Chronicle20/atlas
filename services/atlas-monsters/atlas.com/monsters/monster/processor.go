@@ -52,6 +52,7 @@ type Processor interface {
 	CancelStatusEffectGuarded(uniqueId uint32, statusTypes []string, sourceSkillClass string) error
 	CancelAllStatusEffects(uniqueId uint32) error
 	RepickAndEmit(uniqueId uint32, reason RepickReason) error
+	DrainMp(uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error
 }
 
 // emitter publishes a kafka message provider to a topic. ProcessorImpl uses
@@ -1329,6 +1330,56 @@ func destroyInTenant(l logrus.FieldLogger) func(ctx context.Context) func(t tena
 			}
 		}
 	}
+}
+
+// DrainMp deducts MP from a monster as the result of a player passive
+// (currently MP Eater). It re-checks Boss / MaxMp / current Mp guards
+// against atlas-monsters' authoritative state, clamps the deduction at
+// zero via DeductMp, and emits a MP_CHANGED status event with the
+// supplied reason and the actual amount removed. Bosses, dry monsters,
+// and missing/dead monsters short-circuit to nil with no event so the
+// channel never plays a misleading visual.
+//
+// The boss check uses testInformationLookup when non-nil so that unit
+// tests can stub the lookup without an HTTP round-trip to atlas-data.
+func (p *ProcessorImpl) DrainMp(uniqueId uint32, characterId uint32, skillId uint32, requestedAmount uint32) error {
+	m, err := GetMonsterRegistry().GetMonster(p.t, uniqueId)
+	if err != nil {
+		p.l.WithError(err).Debugf("DRAIN_MP: monster [%d] not found.", uniqueId)
+		return nil
+	}
+	if !m.Alive() {
+		return nil
+	}
+
+	if m.MaxMp() == 0 || m.Mp() == 0 || requestedAmount == 0 {
+		return nil
+	}
+
+	// Boss check — use the test hook when available (mirrors UseBasicAttack).
+	var infoModel information.Model
+	var infoErr error
+	if testInformationLookup != nil {
+		infoModel, infoErr = testInformationLookup(m.MonsterId())
+	} else {
+		infoModel, infoErr = information.GetById(p.l)(p.ctx)(m.MonsterId())
+	}
+	if infoErr == nil && infoModel.Boss() {
+		return nil
+	}
+
+	preMp := m.Mp()
+	post, err := GetMonsterRegistry().DeductMp(p.t, uniqueId, requestedAmount)
+	if err != nil {
+		return err
+	}
+
+	actual := preMp - post.Mp()
+	if actual == 0 {
+		return nil
+	}
+
+	return p.emit(EnvEventTopicMonsterStatus, mpChangedStatusEventProvider(post, characterId, skillId, MpChangeReasonMpEater, actual))
 }
 
 func DestroyAll(l logrus.FieldLogger, ctx context.Context) error {

@@ -167,7 +167,8 @@
             "save_location",
             "warp_to_saved_location",
             "apply_consumable_effect",
-            "cancel_consumable_effect"
+            "cancel_consumable_effect",
+            "start_quest"
           ]
         },
         "params": {
@@ -439,6 +440,29 @@
                   "itemId": {
                     "type": "string",
                     "description": "Consumable item ID whose effects should be cancelled"
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": { "type": { "const": "start_quest" } }
+          },
+          "then": {
+            "properties": {
+              "params": {
+                "type": "object",
+                "required": ["questId"],
+                "properties": {
+                  "questId": {
+                    "type": "string",
+                    "description": "The quest ID to start"
+                  },
+                  "npcId": {
+                    "type": "string",
+                    "description": "Originating NPC ID (default: 0 — portals have no NPC)"
                   }
                 }
               }

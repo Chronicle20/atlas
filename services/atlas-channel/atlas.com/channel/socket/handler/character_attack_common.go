@@ -7,7 +7,6 @@ import (
 	skill2 "atlas-channel/data/skill"
 	"atlas-channel/data/skill/effect"
 	"atlas-channel/effective_stats"
-	channelinv "atlas-channel/inventory"
 	_map "atlas-channel/map"
 	"atlas-channel/monster"
 	"atlas-channel/session"
@@ -78,23 +77,6 @@ func attackKindFromAttackType(at packetmodel.AttackType) string {
 		return monster2.ReflectKindMagical
 	}
 	return ""
-}
-
-// findItemSlotInInventory returns the slot of the first asset whose template
-// id equals itemId, looked up in the compartment that itemId's inventory
-// type resolves to. Returns false if the inventory has no such item. Used
-// by processAttack to translate an effect.ItemConsume() id into a slot
-// position before emitting RequestItemConsume.
-func findItemSlotInInventory(inv channelinv.Model, itemId uint32) (slot.Position, bool) {
-	invType, ok := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
-	if !ok {
-		return 0, false
-	}
-	a, found := inv.CompartmentByType(invType).FindFirstByItemId(itemId)
-	if !found {
-		return 0, false
-	}
-	return slot.Position(a.Slot()), true
 }
 
 // damageInfoEntryDeps groups the per-attack closures and lookups that
@@ -248,11 +230,12 @@ func processAttack(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 							if se.MPConsume() > 0 {
 								_ = cp.ChangeMP(s.Field(), s.CharacterId(), -int16(se.MPConsume()))
 							}
-							if se.ItemConsume() > 0 {
-								if pos, found := findItemSlotInInventory(c.Inventory(), se.ItemConsume()); found {
-									_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), charcon.Id(s.CharacterId()), itemconst.Id(se.ItemConsume()), pos, 0)
+							if itemId := se.ItemConsume(); itemId > 0 {
+								invType, typeOk := inventoryconst.TypeFromItemId(itemconst.Id(itemId))
+								if a, found := c.Inventory().CompartmentByType(invType).FindFirstByItemId(itemId); typeOk && found {
+									_ = consumable.NewProcessor(l, ctx).RequestItemConsume(s.Field(), charcon.Id(s.CharacterId()), itemconst.Id(itemId), slot.Position(a.Slot()), 0)
 								} else {
-									l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), se.ItemConsume())
+									l.Warnf("Character [%d] cast skill [%d] requiring item [%d] but no such item found in inventory; cast permitted (defense-in-depth gate only).", s.CharacterId(), ai.SkillId(), itemId)
 								}
 							}
 						}

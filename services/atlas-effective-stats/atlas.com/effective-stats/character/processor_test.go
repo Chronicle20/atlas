@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
 	"context"
 	"errors"
@@ -179,8 +180,12 @@ func TestProcessor_AddEquipmentBonuses(t *testing.T) {
 		stat.NewBonus("", stat.TypeDexterity, 10),
 	}
 
+	// Seed equipment requirements as all-zero so the asset always qualifies.
+	equipment.SeedForTest(ctx, 1234, equipment.EquipmentRequirements{})
+	t.Cleanup(equipment.ResetCacheForTest)
+
 	ch := channel.NewModel(1, 2)
-	err := p.AddEquipmentBonuses(ch, 12345, 999, bonuses)
+	err := p.AddEquipmentBonuses(ch, 12345, 999, 1234, bonuses)
 	if err != nil {
 		t.Fatalf("AddEquipmentBonuses() error = %v", err)
 	}
@@ -214,8 +219,11 @@ func TestProcessor_RemoveEquipmentBonuses(t *testing.T) {
 	bonuses := []stat.Bonus{
 		stat.NewBonus("", stat.TypeStrength, 15),
 	}
+	equipment.SeedForTest(ctx, 1234, equipment.EquipmentRequirements{})
+	t.Cleanup(equipment.ResetCacheForTest)
+
 	ch := channel.NewModel(1, 2)
-	_ = p.AddEquipmentBonuses(ch, 12345, 999, bonuses)
+	_ = p.AddEquipmentBonuses(ch, 12345, 999, 1234, bonuses)
 
 	err := p.RemoveEquipmentBonuses(12345, 999)
 	if err != nil {
@@ -413,7 +421,9 @@ func TestProcessor_MixedBonuses(t *testing.T) {
 		stat.NewBonus("", stat.TypeStrength, 15),
 		stat.NewBonus("", stat.TypeMaxHp, 500),
 	}
-	_ = p.AddEquipmentBonuses(ch, 12345, 100, equipBonuses)
+	equipment.SeedForTest(ctx, 1234, equipment.EquipmentRequirements{})
+	t.Cleanup(equipment.ResetCacheForTest)
+	_ = p.AddEquipmentBonuses(ch, 12345, 100, 1234, equipBonuses)
 
 	// Add multiplier buff (10% strength, 60% HP)
 	buffBonuses := []stat.Bonus{

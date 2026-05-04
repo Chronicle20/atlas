@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
 	character2 "atlas-effective-stats/kafka/message/character"
 	"atlas-effective-stats/kafka/producer"
 	"atlas-effective-stats/stat"
@@ -19,9 +20,12 @@ type Processor interface {
 	RemoveBonus(characterId uint32, source string, statType stat.Type) error
 	RemoveBonusesBySource(characterId uint32, source string) error
 	SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error
+	SetWearerProfile(ch channel.Model, characterId uint32, p WearerProfile) error
 	// Equipment bonus methods
-	AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error
+	AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, templateId uint32, bonuses []stat.Bonus) error
 	RemoveEquipmentBonuses(characterId uint32, equipmentId uint32) error
+	// Re-evaluation entry point
+	RecomputeEquipmentBonuses(ch channel.Model, characterId uint32) error
 	// Buff bonus methods
 	AddBuffBonuses(ch channel.Model, characterId uint32, buffSourceId int32, bonuses []stat.Bonus) error
 	RemoveBuffBonuses(characterId uint32, buffSourceId int32) error
@@ -128,32 +132,68 @@ func (p *ProcessorImpl) RemoveBonusesBySource(characterId uint32, source string)
 	return nil
 }
 
-// SetBaseStats sets the base stats for a character
+// SetBaseStats sets the base stats for a character and re-runs the qualifying set.
 func (p *ProcessorImpl) SetBaseStats(ch channel.Model, characterId uint32, base stat.Base) error {
-	m := GetRegistry().SetBaseStats(p.ctx, ch, characterId, base)
+	GetRegistry().SetBaseStats(p.ctx, ch, characterId, base)
 	p.l.Debugf("Set base stats for character [%d]: STR=%d, DEX=%d, INT=%d, LUK=%d, MaxHP=%d, MaxMP=%d",
 		characterId, base.Strength(), base.Dexterity(), base.Intelligence(), base.Luck(), base.MaxHp(), base.MaxMp())
-	p.logEffectiveStats(characterId, m.Computed())
+	return p.RecomputeEquipmentBonuses(ch, characterId)
+}
+
+// SetWearerProfile updates level/jobId then re-runs the qualifying set.
+func (p *ProcessorImpl) SetWearerProfile(ch channel.Model, characterId uint32, wp WearerProfile) error {
+	GetRegistry().SetWearerProfile(p.ctx, ch, characterId, wp)
+	p.l.Debugf("Set wearer profile for character [%d]: level=%d job=%d", characterId, wp.Level(), wp.JobId())
+	return p.RecomputeEquipmentBonuses(ch, characterId)
+}
+
+// RecomputeEquipmentBonuses re-runs QualifiedEquipment, updates Computed,
+// and emits clamp commands when MaxHp/MaxMp drops.
+func (p *ProcessorImpl) RecomputeEquipmentBonuses(ch channel.Model, characterId uint32) error {
+	oldModel, err := GetRegistry().Get(p.ctx, characterId)
+	if err != nil {
+		return err
+	}
+	oldComputed := oldModel.Computed()
+
+	newModel := oldModel.RecomputeWith(equipment.GetProvider(p.l), p.ctx)
+	GetRegistry().Update(p.ctx, newModel)
+
+	totalEquipped := len(newModel.Equipped())
+	totalQualified := 0
+	for _, ok := range newModel.qualifiedSnapshot {
+		if ok {
+			totalQualified++
+		}
+	}
+	p.l.Debugf("Recomputed qualifying equipment for character [%d]: %d/%d items qualify.", characterId, totalQualified, totalEquipped)
+	p.logEffectiveStats(characterId, newModel.Computed())
+
+	p.checkAndPublishClampCommands(newModel, oldComputed, newModel.Computed())
 	return nil
 }
 
-// AddEquipmentBonuses adds stat bonuses from equipment
-func (p *ProcessorImpl) AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, bonuses []stat.Bonus) error {
+// AddEquipmentBonuses writes the asset snapshot and re-runs the qualifying set.
+func (p *ProcessorImpl) AddEquipmentBonuses(ch channel.Model, characterId uint32, equipmentId uint32, templateId uint32, bonuses []stat.Bonus) error {
 	source := fmt.Sprintf("equipment:%d", equipmentId)
 	sourcedBonuses := make([]stat.Bonus, 0, len(bonuses))
 	for _, b := range bonuses {
 		sourcedBonuses = append(sourcedBonuses, stat.NewFullBonus(source, b.StatType(), b.Amount(), b.Multiplier()))
 	}
-	m := GetRegistry().AddBonuses(p.ctx, ch, characterId, sourcedBonuses)
-	p.l.Debugf("Added equipment [%d] bonuses for character [%d]: %d stats", equipmentId, characterId, len(bonuses))
-	p.logEffectiveStats(characterId, m.Computed())
-	return nil
+	snap := NewEquippedAsset(equipmentId, templateId, sourcedBonuses)
+	GetRegistry().PutEquippedAsset(p.ctx, ch, characterId, snap)
+	p.l.Debugf("Stored equipment [%d] (template %d) snapshot for character [%d]: %d stats", equipmentId, templateId, characterId, len(bonuses))
+	return p.RecomputeEquipmentBonuses(ch, characterId)
 }
 
-// RemoveEquipmentBonuses removes all stat bonuses from equipment
+// RemoveEquipmentBonuses clears the asset snapshot and re-runs.
 func (p *ProcessorImpl) RemoveEquipmentBonuses(characterId uint32, equipmentId uint32) error {
-	source := fmt.Sprintf("equipment:%d", equipmentId)
-	return p.RemoveBonusesBySource(characterId, source)
+	m, err := GetRegistry().RemoveEquippedAsset(p.ctx, characterId, equipmentId)
+	if err != nil {
+		return nil
+	}
+	p.l.Debugf("Removed equipment [%d] snapshot for character [%d]", equipmentId, characterId)
+	return p.RecomputeEquipmentBonuses(m.Channel(), characterId)
 }
 
 // AddBuffBonuses adds stat bonuses from a buff

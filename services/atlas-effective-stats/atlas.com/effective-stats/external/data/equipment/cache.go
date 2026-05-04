@@ -89,6 +89,21 @@ func (c *cache) reset() {
 	c.store = make(map[uuid.UUID]map[uint32]EquipmentRequirements)
 }
 
+// SeedForTest pre-populates the cache for the current tenant with the given
+// template requirements, bypassing the atlas-data fetch path. Intended for
+// tests in other packages that exercise paths going through GetProvider but
+// don't want to wire an HTTP fixture for atlas-data.
+func SeedForTest(ctx context.Context, templateId uint32, r EquipmentRequirements) {
+	t := tenant.MustFromContext(ctx)
+	getCache().put(t.Id(), templateId, r)
+}
+
+// ResetCacheForTest clears the entire cache. Tests in other packages should
+// call this in cleanup to avoid leaking state across runs.
+func ResetCacheForTest() {
+	getCache().reset()
+}
+
 // GetProvider returns a Provider closure bound to the given logger. The
 // closure consults the per-tenant cache first; on cold-cache miss it fetches
 // from atlas-data, caches success, and logs WARN on failure. Returning

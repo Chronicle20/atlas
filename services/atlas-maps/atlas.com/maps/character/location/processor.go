@@ -38,12 +38,15 @@ func (p *ProcessorImpl) Resolve(cur field.Model) (field.Model, ResolutionReason,
 	md, err := p.ip.GetById(cur.MapId())
 	if err != nil {
 		p.l.WithError(err).Warnf("location.Resolve: map info unavailable for [%d]; staying put.", cur.MapId())
+		locationResolutionsTotal.WithLabelValues(string(ReasonStayPut)).Inc()
 		return cur, ReasonStayPut, nil
 	}
 	if md.ForcedReturnMapId().IsSentinel() {
+		locationResolutionsTotal.WithLabelValues(string(ReasonStayPut)).Inc()
 		return cur, ReasonStayPut, nil
 	}
 	resolved := field.NewBuilder(cur.WorldId(), cur.ChannelId(), md.ForcedReturnMapId()).SetInstance(uuid.Nil).Build()
+	locationResolutionsTotal.WithLabelValues(string(ReasonForcedReturn)).Inc()
 	return resolved, ReasonForcedReturn, nil
 }
 

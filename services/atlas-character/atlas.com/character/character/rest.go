@@ -3,6 +3,7 @@ package character
 import (
 	"atlas-character/location"
 	"context"
+	"errors"
 	"strconv"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -80,7 +81,11 @@ func Transform(l logrus.FieldLogger, ctx context.Context) func(m Model) (RestMod
 		td := GetTemporalRegistry().GetById(ctx, t, m.Id())
 		f, err := location.GetField(l, ctx, m.Id())
 		if err != nil {
-			l.WithError(err).Warnf("Transform: atlas-maps location lookup failed for [%d]; using zero values.", m.Id())
+			if errors.Is(err, location.ErrNotFound) {
+				l.Warnf("Transform: no atlas-maps location for [%d] (likely first login of new character); using zero values.", m.Id())
+			} else {
+				l.WithError(err).Errorf("Transform: atlas-maps lookup failed for [%d] (infrastructure error); using zero values.", m.Id())
+			}
 			f = field.NewBuilder(0, 0, 0).SetInstance(uuid.Nil).Build()
 		}
 		return transformWithTemporal(m, td, f), nil

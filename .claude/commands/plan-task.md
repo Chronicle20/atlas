@@ -1,46 +1,75 @@
 ---
-description: Phase 3 — invoke superpowers:writing-plans to produce an implementation plan, using PRD and design as input context
-argument-hint: Task folder name under docs/tasks/ (e.g., "task-044-superpowers-integration")
+description: Phase 3 — invoke superpowers:writing-plans to produce an implementation plan inside the task worktree
+argument-hint: Task identifier — accepts "task-054-effect-duration-units", "task-054", "054", or "54"
 ---
 
-You are starting Phase 3 of the Atlas four-phase development workflow. The task folder is: **$ARGUMENTS**
+You are starting Phase 3 of the Atlas four-phase development workflow. Argument: **$ARGUMENTS**
 
 ## Process
 
-### Step 1 — Validate input
+### Step 1 — Resolve the task
 
-1. Resolve `docs/tasks/$ARGUMENTS/`. Confirm the folder exists.
-2. Confirm both `prd.md` and `design.md` exist. If either is missing, stop and tell the user to complete the prior phase first.
-3. Confirm `plan.md` does NOT already exist. If it does, ask the user whether to overwrite.
+Same fuzzy-match algorithm as `/design-task` Step 1:
 
-### Step 2 — Load context
+1. Glob `docs/tasks/task-*` (main) and `.worktrees/*/docs/tasks/task-*` (sibling worktrees).
+2. Match `$ARGUMENTS` against folder names — exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug fragment.
+3. Zero matches → ask for correction. Multiple matches → list and let the user pick.
+4. If the task lives only on main with no worktree, stop and tell the user the task needs a worktree.
+5. Resolve to `<worktree>/docs/tasks/<id>/`.
 
-Read the following:
+### Step 2 — Verify we're in the right worktree
 
-- `docs/tasks/$ARGUMENTS/prd.md`
-- `docs/tasks/$ARGUMENTS/design.md`
-- `CLAUDE.md`
-- `docs/superpowers-integration.md`
-- The relevant code areas the design touches
+Run `pwd`. If it does NOT match `<worktree>`, tell the user:
 
-### Step 3 — Invoke the writing-plans skill
+> Task `<id>` lives in `<worktree>`. Please `cd <worktree>` and re-run `/plan-task <id>`.
 
-Use the Skill tool to invoke `superpowers:writing-plans`. Pass context that:
+Stop. Do not proceed from the wrong cwd.
 
-- The spec is at `docs/tasks/$ARGUMENTS/design.md` (and the PRD at `prd.md` for additional reference).
-- The plan output MUST be saved to `docs/tasks/$ARGUMENTS/plan.md` (NOT `docs/superpowers/plans/...`).
-- Also produce a `docs/tasks/$ARGUMENTS/context.md` summarizing key files, decisions, and dependencies, useful as a quick reference for executing agents.
-- After the plan is written and self-reviewed, do NOT proceed to invoke execution. The user will run `/clear` and then `/execute-task $ARGUMENTS` separately.
+### Step 3 — Validate inputs
 
-### Step 4 — Save and confirm
+1. Confirm both `prd.md` and `design.md` exist. If either is missing, stop and tell the user to complete the prior phase.
+2. Confirm `plan.md` does NOT already exist. If it does, ask whether to overwrite.
 
-Once `plan.md` and `context.md` are written, tell the user:
+### Step 4 — Load context
 
-> Plan and context saved to `docs/tasks/$ARGUMENTS/`. Now run `/clear` to reset context, then `/execute-task $ARGUMENTS` to begin implementation.
+Read:
+- `<worktree>/docs/tasks/<id>/prd.md`
+- `<worktree>/docs/tasks/<id>/design.md`
+- `<worktree>/CLAUDE.md`
+- `<worktree>/docs/superpowers-integration.md`
+- Code areas the design touches
+
+### Step 5 — Invoke writing-plans
+
+Use the Skill tool to invoke `superpowers:writing-plans`. Pass:
+
+- Spec at `<worktree>/docs/tasks/<id>/design.md` (PRD at `prd.md` for reference).
+- Plan output MUST be saved to `<worktree>/docs/tasks/<id>/plan.md`.
+- Also produce `<worktree>/docs/tasks/<id>/context.md` summarizing key files, decisions, dependencies.
+- Do NOT auto-invoke execution.
+
+Run the `writing-plans` skill's self-review (placeholder scan, type consistency, spec coverage) before saving.
+
+### Step 6 — Commit and summarize
+
+```
+git add docs/tasks/<id>/plan.md docs/tasks/<id>/context.md
+git commit -m "plan(<id>): implementation plan and context"
+```
+
+Verify post-commit:
+
+```
+git rev-parse --show-toplevel  # must end with /.worktrees/<id>
+git branch --show-current      # must be <id>
+```
+
+If either is wrong, STOP and report BLOCKED. Then tell the user:
+
+> Plan and context saved and committed. Now run `/clear`, then `/execute-task <id>`. (You're already in the right worktree.)
 
 ## Important Rules
 
+- All file I/O uses absolute paths under `<worktree>`.
+- Never write plan artifacts under main's `docs/tasks/`.
 - DO NOT begin implementation. This phase produces planning documents only.
-- DO NOT auto-invoke any execution skill.
-- Honor the artifact location override — plan and context live in the task folder.
-- Run the `writing-plans` skill's self-review before saving (placeholder scan, type consistency, spec coverage).

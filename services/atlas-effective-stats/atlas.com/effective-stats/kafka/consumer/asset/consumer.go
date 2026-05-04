@@ -62,16 +62,14 @@ func handleAssetMoved(l logrus.FieldLogger, ctx context.Context, e asset.StatusE
 }
 
 func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.StatusEvent[asset.MovedStatusEventBody]) {
-	l.Debugf("Equipment [%d] equipped by character [%d], fetching stats.", e.AssetId, e.CharacterId)
+	l.Debugf("Equipment [%d] (template %d) equipped by character [%d], fetching stats.", e.AssetId, e.TemplateId, e.CharacterId)
 
-	// Fetch equipment stats from inventory service
 	compartment, err := inventory.RequestEquipCompartment(e.CharacterId)(l, ctx)
 	if err != nil {
 		l.WithError(err).Errorf("Failed to fetch equipment data for character [%d].", e.CharacterId)
 		return
 	}
 
-	// Find the asset we just equipped
 	var equipData *inventory.EquipableRestData
 	for _, a := range compartment.Assets {
 		if a.Id == e.AssetId {
@@ -88,15 +86,10 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		return
 	}
 
-	// Convert equipment stats to bonuses
 	bonuses := extractEquipmentBonuses(e.AssetId, equipData)
-	if len(bonuses) > 0 {
-		// We need worldId and channelId - get them from the registry or use defaults
-		// For now, use 0 as we'll update the existing entry
-		ch := channel.NewModel(0, 0)
-		if err := character.NewProcessor(l, ctx).AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, bonuses); err != nil {
-			l.WithError(err).Errorf("Failed to add equipment bonuses for character [%d].", e.CharacterId)
-		}
+	ch := channel.NewModel(0, 0)
+	if err := character.NewProcessor(l, ctx).AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, e.TemplateId, bonuses); err != nil {
+		l.WithError(err).Errorf("Failed to add equipment bonuses for character [%d].", e.CharacterId)
 	}
 }
 

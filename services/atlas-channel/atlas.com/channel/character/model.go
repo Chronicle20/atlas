@@ -9,12 +9,14 @@ import (
 	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
+	"errors"
 	"strconv"
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -256,6 +258,15 @@ func (m Model) WorldId() world.Id {
 
 func (m Model) Skills() []skill.Model {
 	return m.skills
+}
+
+func (m Model) SkillById(id skill2.Id) (skill.Model, error) {
+	for _, x := range m.skills {
+		if x.Id() == id {
+			return x, nil
+		}
+	}
+	return skill.Model{}, errors.New("skill not found")
 }
 
 func (m Model) Quests() []quest.Model {

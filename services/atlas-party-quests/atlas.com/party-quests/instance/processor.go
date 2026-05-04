@@ -950,9 +950,15 @@ func (p *ProcessorImpl) Leave(mb *message.Buffer) func(characterId uint32, reaso
 		}
 
 		// Warp the leaving character to exit map.
-		err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(ce.WorldId(), ce.ChannelId(), characterId, exitMap, uuid.Nil))
-		if err != nil {
-			p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", characterId)
+		// Skip on disconnect: atlas-maps's forced-return resolver will already
+		// have relocated the character to the WZ-defined target by the time the
+		// LOGOUT event is processed, so emitting another warp here would race
+		// against (or duplicate) that decision. See task-055.
+		if reason != "disconnect" {
+			err = mb.Put(character2.EnvCommandTopic, warpCharacterProvider(ce.WorldId(), ce.ChannelId(), characterId, exitMap, uuid.Nil))
+			if err != nil {
+				p.l.WithError(err).Errorf("Failed to warp character [%d] to exit map.", characterId)
+			}
 		}
 
 		p.l.Infof("Character [%d] left PQ instance [%s]. Reason: %s.", characterId, inst.Id(), reason)

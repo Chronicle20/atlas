@@ -262,3 +262,13 @@ func createTestContext() (logrus.FieldLogger, context.Context, tenant.Model) {
 	ctx := tenant.WithContext(context.Background(), t)
 	return l, ctx, t
 }
+
+// createTestContextWithHook is like createTestContext but also returns the
+// logrus test hook so tests can assert on logged entries (e.g. WARN messages
+// emitted by handleItemEquipped's diagnostic paths).
+func createTestContextWithHook() (logrus.FieldLogger, context.Context, tenant.Model, *test.Hook) {
+	l, hook := test.NewNullLogger()
+	t, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), t)
+	return l, ctx, t, hook
+}

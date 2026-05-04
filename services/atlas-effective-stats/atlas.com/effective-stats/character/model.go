@@ -28,8 +28,22 @@ type Model struct {
 	// Base stats from character service
 	baseStats stat.Base
 
-	// Bonuses by source type
+	// Bonuses by source. After this task lands and the equipment migration in
+	// Task 17 / 18 completes, this slice holds only buff:* and passive:*
+	// entries; equipment lives in the equipped map below.
 	bonuses []stat.Bonus
+
+	// Wearer profile (level + jobId) — inputs to reqLevel / reqJob.
+	wearer WearerProfile
+
+	// Equipped-asset snapshot map keyed by assetId. Source of truth for
+	// equipment bonuses.
+	equipped map[uint32]EquippedAsset
+
+	// Cached set of qualifying asset ids from the most recent
+	// RecomputeWith. Read by Bonuses() to avoid re-running the iterator.
+	// Always treated as read-only after construction.
+	qualifiedSnapshot map[uint32]bool
 
 	// Cached computed totals
 	computed    stat.Computed
@@ -61,6 +75,19 @@ func (m Model) BaseStats() stat.Base {
 	return m.baseStats
 }
 
+func (m Model) Wearer() WearerProfile {
+	return m.wearer
+}
+
+// Equipped returns a copy of the equipped-asset snapshot map.
+func (m Model) Equipped() map[uint32]EquippedAsset {
+	out := make(map[uint32]EquippedAsset, len(m.equipped))
+	for k, v := range m.equipped {
+		out[k] = v
+	}
+	return out
+}
+
 func (m Model) Bonuses() []stat.Bonus {
 	// Return defensive copy
 	result := make([]stat.Bonus, len(m.bonuses))
@@ -83,31 +110,25 @@ func (m Model) Initialized() bool {
 // NewModel creates a new character effective stats model
 func NewModel(t tenant.Model, ch channel.Model, characterId uint32) Model {
 	return Model{
-		tenant:      t,
-		ch:          ch,
-		characterId: characterId,
-		bonuses:     make([]stat.Bonus, 0),
-		initialized: false,
+		tenant:            t,
+		ch:                ch,
+		characterId:       characterId,
+		bonuses:           make([]stat.Bonus, 0),
+		equipped:          make(map[uint32]EquippedAsset),
+		qualifiedSnapshot: make(map[uint32]bool),
+		initialized:       false,
 	}
 }
 
 // WithBaseStats returns a new model with updated base stats
 func (m Model) WithBaseStats(base stat.Base) Model {
-	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   base,
-		bonuses:     m.bonuses,
-		computed:    m.computed,
-		lastUpdated: m.lastUpdated,
-		initialized: m.initialized,
-	}
+	out := m.shallowCopy()
+	out.baseStats = base
+	return out
 }
 
 // WithBonus returns a new model with the bonus added/updated
 func (m Model) WithBonus(b stat.Bonus) Model {
-	// Remove existing bonus with same source and stat type, then add new one
 	newBonuses := make([]stat.Bonus, 0, len(m.bonuses)+1)
 	for _, existing := range m.bonuses {
 		if existing.Source() != b.Source() || existing.StatType() != b.StatType() {
@@ -115,17 +136,9 @@ func (m Model) WithBonus(b stat.Bonus) Model {
 		}
 	}
 	newBonuses = append(newBonuses, b)
-
-	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   m.baseStats,
-		bonuses:     newBonuses,
-		computed:    m.computed,
-		lastUpdated: m.lastUpdated,
-		initialized: m.initialized,
-	}
+	out := m.shallowCopy()
+	out.bonuses = newBonuses
+	return out
 }
 
 // WithBonuses returns a new model with multiple bonuses added/updated
@@ -145,17 +158,9 @@ func (m Model) WithoutBonus(source string, statType stat.Type) Model {
 			newBonuses = append(newBonuses, existing)
 		}
 	}
-
-	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   m.baseStats,
-		bonuses:     newBonuses,
-		computed:    m.computed,
-		lastUpdated: m.lastUpdated,
-		initialized: m.initialized,
-	}
+	out := m.shallowCopy()
+	out.bonuses = newBonuses
+	return out
 }
 
 // WithoutBonusesBySource removes all bonuses from a specific source
@@ -166,45 +171,78 @@ func (m Model) WithoutBonusesBySource(source string) Model {
 			newBonuses = append(newBonuses, existing)
 		}
 	}
-
-	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   m.baseStats,
-		bonuses:     newBonuses,
-		computed:    m.computed,
-		lastUpdated: m.lastUpdated,
-		initialized: m.initialized,
-	}
+	out := m.shallowCopy()
+	out.bonuses = newBonuses
+	return out
 }
 
 // WithComputed returns a new model with updated computed stats
 func (m Model) WithComputed(computed stat.Computed) Model {
-	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   m.baseStats,
-		bonuses:     m.bonuses,
-		computed:    computed,
-		lastUpdated: time.Now(),
-		initialized: m.initialized,
-	}
+	out := m.shallowCopy()
+	out.computed = computed
+	out.lastUpdated = time.Now()
+	return out
 }
 
 // WithInitialized returns a new model marked as initialized
 func (m Model) WithInitialized() Model {
+	out := m.shallowCopy()
+	out.initialized = true
+	return out
+}
+
+// WithWearer returns a new model with an updated wearer profile.
+func (m Model) WithWearer(p WearerProfile) Model {
+	out := m.shallowCopy()
+	out.wearer = p
+	return out
+}
+
+// WithEquippedAsset overwrites (or inserts) the snapshot keyed by asset id.
+func (m Model) WithEquippedAsset(a EquippedAsset) Model {
+	out := m.shallowCopy()
+	out.equipped = copyEquipped(m.equipped)
+	out.equipped[a.AssetId()] = a
+	return out
+}
+
+// WithoutEquippedAsset removes the snapshot for the given asset id.
+func (m Model) WithoutEquippedAsset(assetId uint32) Model {
+	out := m.shallowCopy()
+	out.equipped = copyEquipped(m.equipped)
+	delete(out.equipped, assetId)
+	return out
+}
+
+// withQualifiedSnapshot is package-private — only RecomputeWith should call it.
+func (m Model) withQualifiedSnapshot(q map[uint32]bool) Model {
+	out := m.shallowCopy()
+	out.qualifiedSnapshot = q
+	return out
+}
+
+func (m Model) shallowCopy() Model {
 	return Model{
-		tenant:      m.tenant,
-		ch:          m.ch,
-		characterId: m.characterId,
-		baseStats:   m.baseStats,
-		bonuses:     m.bonuses,
-		computed:    m.computed,
-		lastUpdated: m.lastUpdated,
-		initialized: true,
+		tenant:            m.tenant,
+		ch:                m.ch,
+		characterId:       m.characterId,
+		baseStats:         m.baseStats,
+		bonuses:           m.bonuses,
+		wearer:            m.wearer,
+		equipped:          m.equipped,
+		qualifiedSnapshot: m.qualifiedSnapshot,
+		computed:          m.computed,
+		lastUpdated:       m.lastUpdated,
+		initialized:       m.initialized,
 	}
+}
+
+func copyEquipped(src map[uint32]EquippedAsset) map[uint32]EquippedAsset {
+	out := make(map[uint32]EquippedAsset, len(src)+1)
+	for k, v := range src {
+		out[k] = v
+	}
+	return out
 }
 
 // ComputeEffectiveStats calculates effective stats from base stats and bonuses

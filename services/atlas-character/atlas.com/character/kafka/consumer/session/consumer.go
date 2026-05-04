@@ -81,11 +81,6 @@ func handleStatusEvent(db *gorm.DB) message.Handler[session2.StatusEvent] {
 				if err != nil {
 					l.WithError(err).Warnf("Failed to start session history for character [%d] on channel change.", e.CharacterId)
 				}
-
-				err = character.NewProcessor(l, ctx, db).ChangeChannelAndEmit(uuid.New(), e.CharacterId, ch, cs.ChannelId())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to change character [%d] channel as a result of session [%s] being created.", e.CharacterId, e.SessionId.String())
-				}
 			}
 			return
 		}

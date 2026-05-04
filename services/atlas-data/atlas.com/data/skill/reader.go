@@ -161,10 +161,13 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 
 	e.SetMob(getMob(node))
 	e.SetSkill(true)
+	// Why ms: the wz `time` attribute is in seconds; convert here so
+	// downstream consumers (atlas-buffs, atlas-monsters) interpret
+	// effect.Duration() uniformly as time.Millisecond. See task-054.
 	if e.Duration() > -1 {
+		e.SetDuration(e.Duration() * 1000)
 		e.SetOverTime(true)
 	} else {
-		e.SetDuration(e.Duration() * 1000)
 		e.SetOverTime(overTime)
 	}
 

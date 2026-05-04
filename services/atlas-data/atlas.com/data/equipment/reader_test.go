@@ -575,3 +575,43 @@ func TestReader(t *testing.T) {
 		t.Fatal("len(equip_slots) != 1")
 	}
 }
+
+// stringTypedReqLUKXML mimics the v83 WZ shape for templateId 1052161,
+// where reqLUK (and other req fields) are typed as <string> rather than
+// <int>. atlas-data's xml accessors must fall back to StringNodes so the
+// downstream effective-stat gating sees the real requirement.
+const stringTypedReqLUKXML = `
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="01052161.img">
+  <imgdir name="info">
+    <string name="islot" value="Ma"/>
+    <int name="reqJob" value="2"/>
+    <int name="reqLevel" value="118"/>
+    <int name="reqSTR" value="0"/>
+    <int name="reqDEX" value="0"/>
+    <int name="reqINT" value="355"/>
+    <string name="reqLUK" value="120"/>
+  </imgdir>
+</imgdir>
+`
+
+func TestReader_StringTypedReqLUK(t *testing.T) {
+	l, _ := test.NewNullLogger()
+
+	rm, err := Read(l)(xml.FromByteArrayProvider([]byte(stringTypedReqLUKXML)))()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if rm.Id != 1052161 {
+		t.Fatalf("id = %d, want 1052161", rm.Id)
+	}
+	if rm.ReqLuk != 120 {
+		t.Fatalf("reqLuk = %d, want 120 (string-typed reqLUK should decode)", rm.ReqLuk)
+	}
+	if rm.ReqLevel != 118 {
+		t.Fatalf("reqLevel = %d, want 118", rm.ReqLevel)
+	}
+	if rm.ReqInt != 355 {
+		t.Fatalf("reqInt = %d, want 355", rm.ReqInt)
+	}
+}

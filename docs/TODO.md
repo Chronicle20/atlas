@@ -155,6 +155,8 @@ that is not available on the wire:
 - [ ] Space dash handling (`skill/reader.go:280`)
 - [ ] Power explosion handling (`skill/reader.go:293`)
 - [ ] Better naming for skill properties (`skill/reader.go:425`)
+- [ ] SnowCharge passes Duration as the WhiteKnightCharge stat amount; after task-054 this is 1000x larger (now ms, was raw seconds). Right fix: pass a charge-amount field (likely `e.X()`), not Duration (`skill/reader.go:373`)
+- [ ] Skill effect cooldown unit normalization (post task-054): the `cooltime` XML attribute is read directly into `Cooldown uint32` with no conversion. Cooldown flows through atlas-character via the skill subsystem; unit semantics need a separate audit + fix. Companion follow-up to task-054 which only normalized Duration (`skill/reader.go:154`)
 
 ### Guilds Service
 - [ ] Improve guild creation logic (`guild/processor.go:197`)

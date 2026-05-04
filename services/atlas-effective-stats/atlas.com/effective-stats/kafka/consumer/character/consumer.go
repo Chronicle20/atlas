@@ -2,6 +2,7 @@ package character
 
 import (
 	"atlas-effective-stats/character"
+	externalcharacter "atlas-effective-stats/external/character"
 	consumer2 "atlas-effective-stats/kafka/consumer"
 	character2 "atlas-effective-stats/kafka/message/character"
 	"atlas-effective-stats/stat"
@@ -40,42 +41,46 @@ func handleStatChanged(l logrus.FieldLogger, ctx context.Context, e character2.S
 		return
 	}
 
-	// Skip if no values provided (old events without values)
-	if e.Body.Values == nil || len(e.Body.Values) == 0 {
-		return
-	}
-
-	// Check if this event contains stats we care about (MaxHP, MaxMP, primary stats)
-	hasRelevantStats := false
+	relevantNumeric := false
+	relevantProfile := false
 	for _, update := range e.Body.Updates {
 		switch update {
 		case "MAX_HP", "MAX_MP", "STRENGTH", "DEXTERITY", "INTELLIGENCE", "LUCK":
-			hasRelevantStats = true
-			break
+			relevantNumeric = true
+		case "LEVEL", "JOB":
+			relevantProfile = true
 		}
 	}
-
-	if !hasRelevantStats {
+	if !relevantNumeric && !relevantProfile {
 		return
 	}
 
-	l.Debugf("Processing stat changed event for character [%d] with values: %v", e.CharacterId, e.Body.Values)
+	l.Debugf("Processing stat changed event for character [%d] updates=%v values=%v", e.CharacterId, e.Body.Updates, e.Body.Values)
 
 	p := character.NewProcessor(l, ctx)
 	ch := channel.NewModel(e.WorldId, e.Body.ChannelId)
 
-	// Fetch current base stats and merge. atlas-character emits STAT_CHANGED
-	// with only the fields that changed (e.g. a single AP into luck sends
-	// {luck: 38}), so treating Values as a full snapshot would zero every
-	// absent field. That's how character 12 silently died: each LUCK AP
-	// wiped MaxHP/MaxMP to 0 in the registry, and the next HoT regen tick
-	// read MaxHP=0 through GetEffectiveStats, clamped HP to 0, and emitted
-	// a DIED event with killerType=UNKNOWN.
-	currentBase := lookupCurrentBase(ctx, l, ch, e.CharacterId)
-	merged := mergeBaseStats(currentBase, e.Body.Values)
+	if relevantNumeric && len(e.Body.Values) > 0 {
+		currentBase := lookupCurrentBase(ctx, l, ch, e.CharacterId)
+		merged := mergeBaseStats(currentBase, e.Body.Values)
+		if err := p.SetBaseStats(ch, e.CharacterId, merged); err != nil {
+			l.WithError(err).Errorf("Unable to set base stats for character [%d].", e.CharacterId)
+		}
+	}
 
-	if err := p.SetBaseStats(ch, e.CharacterId, merged); err != nil {
-		l.WithError(err).Errorf("Unable to set base stats for character [%d].", e.CharacterId)
+	if relevantProfile {
+		// atlas-character emits TypeLevel / TypeJob STAT_CHANGED events with
+		// Values=nil. We must refetch the wearer record to pick up the new
+		// level/jobId.
+		cm, err := externalcharacter.RequestById(e.CharacterId)(l, ctx)
+		if err != nil {
+			l.WithError(err).Warnf("Unable to refetch wearer profile for character [%d]; skipping re-gate.", e.CharacterId)
+			return
+		}
+		wp := character.NewWearerProfile(cm.Level, cm.JobId)
+		if err := p.SetWearerProfile(ch, e.CharacterId, wp); err != nil {
+			l.WithError(err).Errorf("Unable to set wearer profile for character [%d].", e.CharacterId)
+		}
 	}
 }
 

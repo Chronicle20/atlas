@@ -378,7 +378,11 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(transactionId uuid.UUID, 
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
 			f, err := location.GetField(p.l, p.ctx, c.Id())
 			if err != nil {
-				p.l.WithError(err).Warnf("Login: atlas-maps location lookup failed for [%d]; emitting with zero map.", c.Id())
+				if errors.Is(err, location.ErrNotFound) {
+					p.l.Warnf("Login: no atlas-maps location for [%d] (likely first login of new character); emitting with zero map.", c.Id())
+				} else {
+					p.l.WithError(err).Errorf("Login: atlas-maps lookup failed for [%d] (infrastructure error); emitting with zero map.", c.Id())
+				}
 				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
 			}
 			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), f))
@@ -397,7 +401,11 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID,
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
 			f, err := location.GetField(p.l, p.ctx, c.Id())
 			if err != nil {
-				p.l.WithError(err).Warnf("Logout: atlas-maps location lookup failed for [%d]; emitting with zero map.", c.Id())
+				if errors.Is(err, location.ErrNotFound) {
+					p.l.Warnf("Logout: no atlas-maps location for [%d] (likely first login of new character); emitting with zero map.", c.Id())
+				} else {
+					p.l.WithError(err).Errorf("Logout: atlas-maps lookup failed for [%d] (infrastructure error); emitting with zero map.", c.Id())
+				}
 				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
 			}
 			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), f))
@@ -1101,7 +1109,11 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 		if adjusted == 0 {
 			f, lerr := location.GetField(p.l, p.ctx, characterId)
 			if lerr != nil {
-				p.l.WithError(lerr).Warnf("ChangeHP: atlas-maps location lookup failed for [%d]; emitting DIED with zero map.", characterId)
+				if errors.Is(lerr, location.ErrNotFound) {
+					p.l.Warnf("ChangeHP: no atlas-maps location for [%d] (likely first login of new character); emitting DIED with zero map.", characterId)
+				} else {
+					p.l.WithError(lerr).Errorf("ChangeHP: atlas-maps lookup failed for [%d] (infrastructure error); emitting DIED with zero map.", characterId)
+				}
 			}
 			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}
@@ -1147,7 +1159,11 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 		if clamped == 0 {
 			f, lerr := location.GetField(p.l, p.ctx, characterId)
 			if lerr != nil {
-				p.l.WithError(lerr).Warnf("SetHP: atlas-maps location lookup failed for [%d]; emitting DIED with zero map.", characterId)
+				if errors.Is(lerr, location.ErrNotFound) {
+					p.l.Warnf("SetHP: no atlas-maps location for [%d] (likely first login of new character); emitting DIED with zero map.", characterId)
+				} else {
+					p.l.WithError(lerr).Errorf("SetHP: atlas-maps lookup failed for [%d] (infrastructure error); emitting DIED with zero map.", characterId)
+				}
 			}
 			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}

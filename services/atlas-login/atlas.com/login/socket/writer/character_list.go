@@ -5,6 +5,7 @@ import (
 	"atlas-login/maps/location"
 	socketmodel "atlas-login/socket/model"
 	"context"
+	"errors"
 
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -36,7 +37,11 @@ func toCharacterListEntry(l logrus.FieldLogger, ctx context.Context, c character
 	mapId := _map.Id(0)
 	f, err := location.GetField(l, ctx, c.Id())
 	if err != nil {
-		l.WithError(err).Warnf("character_list: atlas-maps location unreachable for [%d]; rendering map=0.", c.Id())
+		if errors.Is(err, location.ErrNotFound) {
+			l.Warnf("character_list: no atlas-maps location for [%d] (likely first time at character_list since create); rendering map=0.", c.Id())
+		} else {
+			l.WithError(err).Errorf("character_list: atlas-maps unreachable for [%d] (infrastructure error); rendering map=0.", c.Id())
+		}
 	} else {
 		mapId = f.MapId()
 	}

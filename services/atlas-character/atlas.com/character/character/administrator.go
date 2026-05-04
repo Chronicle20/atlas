@@ -14,9 +14,9 @@ import (
 type EntityUpdateFunction func() ([]string, func(e *entity))
 
 func create(db *gorm.DB, tenantId uuid.UUID, accountId uint32, worldId world.Id, name string, level byte, strength uint16, dexterity uint16, intelligence uint16, luck uint16, maxHP uint16, maxMP uint16, jobId job.Id, gender byte, hair uint32, face uint32, skinColor byte, gm int, meso uint32) (Model, error) {
-	// MapId / Instance columns are still on the entity (Task 5.7 will drop
-	// them); they default to zero values. atlas-maps now owns character
-	// location state — see task-055-forced-return-on-exit Phase 5.
+	// MapId / Instance columns have been dropped from the entity
+	// (task-055 Phase 5). atlas-maps now owns character location state and
+	// is seeded via the CreateCharacter command pipeline.
 	e := &entity{
 		TenantId:     tenantId,
 		AccountId:    accountId,
@@ -83,10 +83,6 @@ func update(db *gorm.DB, characterId uint32, modifiers ...EntityUpdateFunction) 
 		// Extract the specific field values that were set
 		for _, column := range columns {
 			switch column {
-			case "MapId":
-				updates[column] = tempEntity.MapId
-			case "Instance":
-				updates[column] = tempEntity.Instance
 			case "Level":
 				updates[column] = tempEntity.Level
 			case "Experience":

@@ -4,6 +4,205 @@ import (
 	"testing"
 )
 
+func TestGetShort_StringFallback(t *testing.T) {
+	tests := []struct {
+		name        string
+		integerNodes []IntegerNode
+		stringNodes  []StringNode
+		field       string
+		def         uint16
+		want        uint16
+	}{
+		{
+			name:        "string-only matches and parses",
+			stringNodes: []StringNode{{Name: "reqLUK", Value: "120"}},
+			field:       "reqLUK",
+			def:         0,
+			want:        120,
+		},
+		{
+			name:         "int wins over string",
+			integerNodes: []IntegerNode{{Name: "reqLUK", Value: "100"}},
+			stringNodes:  []StringNode{{Name: "reqLUK", Value: "120"}},
+			field:        "reqLUK",
+			def:          0,
+			want:         100,
+		},
+		{
+			name:        "unparseable string returns default",
+			stringNodes: []StringNode{{Name: "reqLUK", Value: "abc"}},
+			field:       "reqLUK",
+			def:         42,
+			want:        42,
+		},
+		{
+			name:  "no match returns default",
+			field: "reqLUK",
+			def:   7,
+			want:  7,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			n := &Node{IntegerNodes: tc.integerNodes, StringNodes: tc.stringNodes}
+			if got := n.GetShort(tc.field, tc.def); got != tc.want {
+				t.Errorf("GetShort(%q) = %d, want %d", tc.field, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGetBool_StringFallback(t *testing.T) {
+	tests := []struct {
+		name         string
+		integerNodes []IntegerNode
+		stringNodes  []StringNode
+		field        string
+		def          bool
+		want         bool
+	}{
+		{
+			name:        "string-only true",
+			stringNodes: []StringNode{{Name: "cash", Value: "1"}},
+			field:       "cash",
+			def:         false,
+			want:        true,
+		},
+		{
+			name:        "string-only false",
+			stringNodes: []StringNode{{Name: "cash", Value: "0"}},
+			field:       "cash",
+			def:         true,
+			want:        false,
+		},
+		{
+			name:         "int wins over string",
+			integerNodes: []IntegerNode{{Name: "cash", Value: "0"}},
+			stringNodes:  []StringNode{{Name: "cash", Value: "1"}},
+			field:        "cash",
+			def:          true,
+			want:         false,
+		},
+		{
+			name:        "unparseable string returns default",
+			stringNodes: []StringNode{{Name: "cash", Value: "yes"}},
+			field:       "cash",
+			def:         true,
+			want:        true,
+		},
+		{
+			name:  "no match returns default",
+			field: "cash",
+			def:   true,
+			want:  true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			n := &Node{IntegerNodes: tc.integerNodes, StringNodes: tc.stringNodes}
+			if got := n.GetBool(tc.field, tc.def); got != tc.want {
+				t.Errorf("GetBool(%q) = %v, want %v", tc.field, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGetIntegerWithDefault_StringFallback(t *testing.T) {
+	tests := []struct {
+		name         string
+		integerNodes []IntegerNode
+		stringNodes  []StringNode
+		field        string
+		def          int32
+		want         int32
+	}{
+		{
+			name:        "string-only matches and parses",
+			stringNodes: []StringNode{{Name: "reqLevel", Value: "35"}},
+			field:       "reqLevel",
+			def:         0,
+			want:        35,
+		},
+		{
+			name:         "int wins over string",
+			integerNodes: []IntegerNode{{Name: "reqLevel", Value: "118"}},
+			stringNodes:  []StringNode{{Name: "reqLevel", Value: "35"}},
+			field:        "reqLevel",
+			def:          0,
+			want:         118,
+		},
+		{
+			name:        "unparseable string returns default",
+			stringNodes: []StringNode{{Name: "reqLevel", Value: "abc"}},
+			field:       "reqLevel",
+			def:         99,
+			want:        99,
+		},
+		{
+			name:  "no match returns default",
+			field: "reqLevel",
+			def:   13,
+			want:  13,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			n := &Node{IntegerNodes: tc.integerNodes, StringNodes: tc.stringNodes}
+			if got := n.GetIntegerWithDefault(tc.field, tc.def); got != tc.want {
+				t.Errorf("GetIntegerWithDefault(%q) = %d, want %d", tc.field, got, tc.want)
+			}
+		})
+	}
+}
+
+func TestGetFloatWithDefault_StringFallback(t *testing.T) {
+	tests := []struct {
+		name         string
+		integerNodes []IntegerNode
+		stringNodes  []StringNode
+		field        string
+		def          float64
+		want         float64
+	}{
+		{
+			name:        "string-only matches and parses",
+			stringNodes: []StringNode{{Name: "rate", Value: "1.5"}},
+			field:       "rate",
+			def:         0,
+			want:        1.5,
+		},
+		{
+			name:         "int wins over string",
+			integerNodes: []IntegerNode{{Name: "rate", Value: "2"}},
+			stringNodes:  []StringNode{{Name: "rate", Value: "1.5"}},
+			field:        "rate",
+			def:          0,
+			want:         2,
+		},
+		{
+			name:        "unparseable string returns default",
+			stringNodes: []StringNode{{Name: "rate", Value: "abc"}},
+			field:       "rate",
+			def:         9.99,
+			want:        9.99,
+		},
+		{
+			name:  "no match returns default",
+			field: "rate",
+			def:   3.14,
+			want:  3.14,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			n := &Node{IntegerNodes: tc.integerNodes, StringNodes: tc.stringNodes}
+			if got := n.GetFloatWithDefault(tc.field, tc.def); got != tc.want {
+				t.Errorf("GetFloatWithDefault(%q) = %f, want %f", tc.field, got, tc.want)
+			}
+		})
+	}
+}
+
 func TestGetDouble(t *testing.T) {
 	// Create a test Node with various DoubleNodes
 	node := &Node{

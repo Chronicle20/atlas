@@ -319,6 +319,13 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			return
 		}
 
+		// MapId on the create command body is intentionally ignored here.
+		// task-055-forced-return-on-exit Phase 5 transferred map ownership
+		// to atlas-maps; the initial location for a freshly created
+		// character is established when LOGIN flows through atlas-maps.
+		// TODO(task-055-followup): seed atlas-maps' character_locations
+		// with c.Body.MapId at character creation time so the first LOGIN
+		// can find the spawn map. Tracked separately from this refactor.
 		model := character.NewModelBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
@@ -335,7 +342,6 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			SetGm(c.Body.Gm).
 			SetMeso(c.Body.Meso).
 			Build()

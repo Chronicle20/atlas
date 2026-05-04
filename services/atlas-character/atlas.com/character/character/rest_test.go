@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -59,7 +58,7 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 		Build()
 
 	ctx := testTenantContext()
-	res, err := model.Map(character.Transform(ctx))(model.FixedProvider(im))()
+	res, err := model.Map(character.Transform(testLogger(), ctx))(model.FixedProvider(im))()
 	if err != nil {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}
@@ -93,67 +92,41 @@ func TestMarshalUnmarshalSunny(t *testing.T) {
 	}
 }
 
-func TestTransformExtractMapIdAndGmFields(t *testing.T) {
+// task-055: MapId/Instance are no longer model-owned; Transform pulls them
+// in-flight from atlas-maps. The dedicated Transform/Extract MapId test was
+// removed with the model fields. GM round-trip is exercised below.
+func TestTransformExtractGmField(t *testing.T) {
 	rc := setupTestRedis(t)
 	character.InitTemporalRegistry(rc)
 
-	// Create a model with mapId and gm fields set
 	im := character.NewModelBuilder().
 		SetAccountId(1000).
 		SetWorldId(0).
 		SetName("TestCharacter").
 		SetLevel(10).
 		SetExperience(1000).
-		SetMapId(_map.Id(100000001)). // Set a specific map ID
-		SetGm(1).                     // Set GM status
+		SetGm(1).
 		Build()
 
-	// Test Transform method
 	ctx := testTenantContext()
-	restModel, err := character.Transform(ctx)(im)
+	// Transform issues an atlas-maps lookup; in unit tests no such service
+	// exists, so it falls back to zero values for MapId/Instance — that's
+	// the expected D11 behavior.
+	restModel, err := character.Transform(testLogger(), ctx)(im)
 	if err != nil {
 		t.Fatalf("Failed to transform model to rest model: %v", err)
 	}
 
-	// Verify Transform method correctly maps mapId and gm fields
-	if restModel.MapId != im.MapId() {
-		t.Fatalf("Transform method failed to map mapId field correctly. Expected: %v, Got: %v", im.MapId(), restModel.MapId)
-	}
 	if restModel.Gm != im.GM() {
 		t.Fatalf("Transform method failed to map gm field correctly. Expected: %v, Got: %v", im.GM(), restModel.Gm)
 	}
 
-	// Test Extract method
 	extractedModel, err := character.Extract(restModel)
 	if err != nil {
 		t.Fatalf("Failed to extract model from rest model: %v", err)
 	}
 
-	// Verify Extract method correctly maps mapId and gm fields back to domain model
-	if extractedModel.MapId() != im.MapId() {
-		t.Fatalf("Extract method failed to map mapId field correctly. Expected: %v, Got: %v", im.MapId(), extractedModel.MapId())
-	}
 	if extractedModel.GM() != im.GM() {
 		t.Fatalf("Extract method failed to map gm field correctly. Expected: %v, Got: %v", im.GM(), extractedModel.GM())
-	}
-
-	// Test with different values to ensure the fields are actually being mapped
-	restModel2 := character.RestModel{
-		Id:    2000,
-		Name:  "TestCharacter2",
-		MapId: _map.Id(100000002),
-		Gm:    2,
-	}
-
-	extractedModel2, err := character.Extract(restModel2)
-	if err != nil {
-		t.Fatalf("Failed to extract model from rest model: %v", err)
-	}
-
-	if extractedModel2.MapId() != restModel2.MapId {
-		t.Fatalf("Extract method failed to map different mapId. Expected: %v, Got: %v", restModel2.MapId, extractedModel2.MapId())
-	}
-	if extractedModel2.GM() != restModel2.Gm {
-		t.Fatalf("Extract method failed to map different gm value. Expected: %v, Got: %v", restModel2.Gm, extractedModel2.GM())
 	}
 }

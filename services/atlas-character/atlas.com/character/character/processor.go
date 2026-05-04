@@ -9,6 +9,7 @@ import (
 	"atlas-character/kafka/message"
 	character2 "atlas-character/kafka/message/character"
 	"atlas-character/kafka/producer"
+	"atlas-character/location"
 	skill2 "atlas-character/skill"
 	"context"
 	"errors"
@@ -72,10 +73,6 @@ type Processor interface {
 	Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	LogoutAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
 	Logout(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error
-	ChangeChannelAndEmit(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error
-	ChangeChannel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error
-	ChangeMapAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
-	ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error
 	ChangeJobAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
 	ChangeJob(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model, jobId job.Id) error
 	ChangeHairAndEmit(transactionId uuid.UUID, characterId uint32, channel channel.Model, styleId uint32) error
@@ -279,7 +276,7 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 
 		var res Model
 		txErr := database.ExecuteTransaction(p.db.WithContext(p.ctx), func(tx *gorm.DB) error {
-			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.mapId, input.gm, input.meso)
+			res, err = create(tx, p.t.Id(), input.accountId, input.worldId, input.name, input.level, input.strength, input.dexterity, input.intelligence, input.luck, input.maxHp, input.maxMp, input.jobId, input.gender, input.hair, input.face, input.skinColor, input.gm, input.meso)
 			if err != nil {
 				p.l.WithError(err).Errorf("Error persisting character in database.")
 				tx.Rollback()
@@ -388,7 +385,12 @@ func (p *ProcessorImpl) LoginAndEmit(transactionId uuid.UUID, characterId uint32
 func (p *ProcessorImpl) Login(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).SetInstance(c.Instance()).Build()))
+			f, err := location.GetField(p.l, p.ctx, c.Id())
+			if err != nil {
+				p.l.WithError(err).Warnf("Login: atlas-maps location lookup failed for [%d]; emitting with zero map.", c.Id())
+				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
+			}
+			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), f))
 		})
 	}
 }
@@ -402,68 +404,13 @@ func (p *ProcessorImpl) LogoutAndEmit(transactionId uuid.UUID, characterId uint3
 func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 	return func(transactionId uuid.UUID, characterId uint32, channel channel.Model) error {
 		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), field.NewBuilder(channel.WorldId(), channel.Id(), c.MapId()).SetInstance(c.Instance()).Build()))
+			f, err := location.GetField(p.l, p.ctx, c.Id())
+			if err != nil {
+				p.l.WithError(err).Warnf("Logout: atlas-maps location lookup failed for [%d]; emitting with zero map.", c.Id())
+				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
+			}
+			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), f))
 		})
-	}
-}
-
-func (p *ProcessorImpl) ChangeChannelAndEmit(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeChannel(buf)(transactionId, characterId, currentChannel, oldChannelId)
-	})
-}
-
-func (p *ProcessorImpl) ChangeChannel(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error {
-	return func(transactionId uuid.UUID, characterId uint32, currentChannel channel.Model, oldChannelId channel.Id) error {
-		return model.For(p.ByIdProvider()(characterId), func(c Model) error {
-			oldField := field.NewBuilder(c.WorldId(), oldChannelId, c.MapId()).SetInstance(c.Instance()).Build()
-			newField := field.NewBuilder(currentChannel.WorldId(), currentChannel.Id(), c.MapId()).SetInstance(c.Instance()).Build()
-			return mb.Put(character2.EnvEventTopicCharacterStatus, changeChannelEventProvider(transactionId, c.Id(), oldField, newField))
-		})
-	}
-}
-
-func (p *ProcessorImpl) ChangeMapAndEmit(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-	return message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
-		return p.ChangeMap(buf)(transactionId, characterId, field, portalId)
-	})
-}
-
-func (p *ProcessorImpl) ChangeMap(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-	return func(transactionId uuid.UUID, characterId uint32, field field.Model, portalId uint32) error {
-		cmf := dynamicUpdate(p.db.WithContext(p.ctx))(SetMapId(field.MapId()), SetInstance(field.Instance()))
-		papf := p.positionAtPortal(field.MapId(), portalId)
-		amcf := announceMapChangedWithBuffer(mb)(transactionId, field, portalId)
-		return model.For(p.ByIdProvider()(characterId), model.ThenOperator(cmf, model.Operators(papf, amcf)))
-	}
-}
-
-func (p *ProcessorImpl) positionAtPortal(mapId _map.Id, portalId uint32) model.Operator[Model] {
-	return func(c Model) error {
-		por, err := p.pp.GetInMapById(mapId, portalId)
-		if err != nil {
-			return err
-		}
-		GetTemporalRegistry().UpdatePosition(p.ctx, tenant.MustFromContext(p.ctx), c.Id(), por.X(), por.Y())
-		return nil
-	}
-}
-
-func announceMapChangedWithBuffer(mb *message.Buffer) func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
-	return func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
-		return func(c Model) error {
-			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).SetInstance(c.Instance()).Build()
-			return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, c.Id(), oldField, newField, portalId))
-		}
-	}
-}
-
-func announceMapChanged(provider producer.Provider) func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
-	return func(transactionId uuid.UUID, newField field.Model, portalId uint32) model.Operator[Model] {
-		return func(c Model) error {
-			oldField := field.NewBuilder(newField.WorldId(), newField.ChannelId(), c.MapId()).SetInstance(c.Instance()).Build()
-			return provider(character2.EnvEventTopicCharacterStatus)(mapChangedEventProvider(transactionId, c.Id(), oldField, newField, portalId))
-		}
 	}
 }
 
@@ -1161,10 +1108,11 @@ func (p *ProcessorImpl) ChangeHP(mb *message.Buffer) func(transactionId uuid.UUI
 		}
 
 		if adjusted == 0 {
-			c, err := p.GetById()(characterId)
-			if err == nil {
-				_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, c.MapId(), 0, character2.KillerTypeUnknown))
+			f, lerr := location.GetField(p.l, p.ctx, characterId)
+			if lerr != nil {
+				p.l.WithError(lerr).Warnf("ChangeHP: atlas-maps location lookup failed for [%d]; emitting DIED with zero map.", characterId)
 			}
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}
 
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
@@ -1206,10 +1154,11 @@ func (p *ProcessorImpl) SetHP(mb *message.Buffer) func(transactionId uuid.UUID, 
 		}
 
 		if clamped == 0 {
-			c, err := p.GetById()(characterId)
-			if err == nil {
-				_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, c.MapId(), 0, character2.KillerTypeUnknown))
+			f, lerr := location.GetField(p.l, p.ctx, characterId)
+			if lerr != nil {
+				p.l.WithError(lerr).Warnf("SetHP: atlas-maps location lookup failed for [%d]; emitting DIED with zero map.", characterId)
 			}
+			_ = mb.Put(character2.EnvEventTopicCharacterStatus, diedEventProvider(transactionId, characterId, channel, f.MapId(), 0, character2.KillerTypeUnknown))
 		}
 
 		_ = mb.Put(character2.EnvEventTopicCharacterStatus, statChangedProvider(transactionId, channel, characterId, []stat.Type{stat.TypeHp}, nil))
@@ -1760,24 +1709,16 @@ func (p *ProcessorImpl) Update(mb *message.Buffer) func(transactionId uuid.UUID,
 				})
 			}
 
-			// MapId update
-			if input.MapId != 0 && input.MapId != c.MapId() {
-				changes = append(changes, fieldChange{
-					updateFunc:  SetMapId(input.MapId),
-					shouldApply: true,
-					eventFunc: func() error {
-						oldField := field.NewBuilder(c.WorldId(), 0, c.MapId()).SetInstance(c.Instance()).Build()
-						newField := field.NewBuilder(c.WorldId(), 0, input.MapId).Build()
-						return mb.Put(character2.EnvEventTopicCharacterStatus, mapChangedEventProvider(transactionId, characterId, oldField, newField, 0))
-					},
-				})
-				if c.Instance() != uuid.Nil {
-					changes = append(changes, fieldChange{
-						updateFunc:  SetInstance(uuid.Nil),
-						shouldApply: true,
-						eventFunc:   func() error { return nil },
-					})
-				}
+			// MapId/Instance updates are now owned by atlas-maps (task-055).
+			// The RestModel still carries the fields for D11 backward compat, but
+			// any change to them must be propagated via atlas-maps' CHANGE_MAP /
+			// CHANGE_CHANNEL_REQUEST flows, not via this REST shim.
+			if input.MapId != 0 {
+				p.l.WithFields(logrus.Fields{
+					"transaction_id": transactionId.String(),
+					"character_id":   characterId,
+					"map_id":         input.MapId,
+				}).Debug("Update: ignoring MapId in input; atlas-maps owns location.")
 			}
 
 			// If no updates are needed, return early

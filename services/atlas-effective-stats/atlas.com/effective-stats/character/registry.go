@@ -180,3 +180,44 @@ func (r *Registry) Delete(ctx context.Context, characterId uint32) {
 	t := tenant.MustFromContext(ctx)
 	_ = r.characters.Remove(ctx, t, characterId)
 }
+
+// PutEquippedAsset writes the snapshot, get-or-create the model. It does NOT
+// recompute Computed — callers must follow up with RecomputeWith via the
+// Processor.RecomputeEquipmentBonuses entry point.
+func (r *Registry) PutEquippedAsset(ctx context.Context, ch channel.Model, characterId uint32, a EquippedAsset) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
+		m = NewModel(t, ch, characterId)
+	}
+	m = m.WithEquippedAsset(a)
+	_ = r.characters.Put(ctx, t, characterId, m)
+	return m
+}
+
+// RemoveEquippedAsset clears the snapshot. ErrNotFound is returned if the
+// character is not in the registry — there is nothing to recompute in that
+// case.
+func (r *Registry) RemoveEquippedAsset(ctx context.Context, characterId uint32, assetId uint32) (Model, error) {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
+		return Model{}, ErrNotFound
+	}
+	m = m.WithoutEquippedAsset(assetId)
+	_ = r.characters.Put(ctx, t, characterId, m)
+	return m, nil
+}
+
+// SetWearerProfile writes the level/jobId. Like PutEquippedAsset, it does
+// NOT recompute — the Processor wraps this with RecomputeEquipmentBonuses.
+func (r *Registry) SetWearerProfile(ctx context.Context, ch channel.Model, characterId uint32, p WearerProfile) Model {
+	t := tenant.MustFromContext(ctx)
+	m, err := r.characters.Get(ctx, t, characterId)
+	if err != nil {
+		m = NewModel(t, ch, characterId)
+	}
+	m = m.WithWearer(p)
+	_ = r.characters.Put(ctx, t, characterId, m)
+	return m
+}

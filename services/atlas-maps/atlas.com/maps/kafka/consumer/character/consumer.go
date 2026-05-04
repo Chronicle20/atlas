@@ -1,6 +1,7 @@
 package character
 
 import (
+	"atlas-maps/character/location"
 	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
@@ -60,6 +61,9 @@ func handleStatusEventLoginFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx cont
 			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.EnterAndEmit(transactionId, f, event.CharacterId)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+				l.WithError(err).Warnf("location.Set on LOGIN failed for character [%d].", event.CharacterId)
+			}
 		}
 	}
 }
@@ -72,6 +76,9 @@ func handleStatusEventLogoutFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.ExitAndEmit(transactionId, f, event.CharacterId)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+				l.WithError(err).Warnf("location.Set on LOGOUT failed for character [%d].", event.CharacterId)
+			}
 		}
 	}
 }
@@ -85,6 +92,9 @@ func handleStatusEventMapChangedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx
 			oldField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.OldMapId).SetInstance(event.Body.OldInstance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionMapAndEmit(transactionId, newField, event.CharacterId, oldField)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
+				l.WithError(err).Warnf("location.Set on MAP_CHANGED failed for character [%d].", event.CharacterId)
+			}
 
 			// --- map-time-limit timer hooks (task-050) ---
 			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
@@ -109,6 +119,9 @@ func handleStatusEventChannelChangedFunc(db *gorm.DB) func(l logrus.FieldLogger,
 			newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionChannelAndEmit(transactionId, newField, event.Body.OldChannelId, event.CharacterId)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
+				l.WithError(err).Warnf("location.Set on CHANNEL_CHANGED failed for character [%d].", event.CharacterId)
+			}
 
 			// --- map-time-limit timer hooks (task-050) ---
 			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))

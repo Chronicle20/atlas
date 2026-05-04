@@ -178,9 +178,16 @@ func startInitializerStubs(t *testing.T, cfg stubConfig) *stubServers {
 			http.NotFound(w, r)
 			return
 		}
+		// Mirror the real atlas-data wire format: type "statistics" plus a
+		// "slots" toMany relationship. The slot data itself is irrelevant to
+		// requirement gating (the qualification engine never reads slots), but
+		// the relationship MUST be present for api2go.Unmarshal to succeed
+		// against the production RestModel's UnmarshalToManyRelations
+		// implementation. See external/data/equipment/rest.go for the
+		// full rationale.
 		writeJSONAPI(w, map[string]interface{}{
 			"data": map[string]interface{}{
-				"type": "equipment",
+				"type": "statistics",
 				"id":   idStr,
 				"attributes": map[string]interface{}{
 					"reqLevel": reqs.reqLevel,
@@ -190,7 +197,13 @@ func startInitializerStubs(t *testing.T, cfg stubConfig) *stubServers {
 					"reqInt":   reqs.reqInt,
 					"reqLuk":   reqs.reqLuk,
 				},
+				"relationships": map[string]interface{}{
+					"slots": map[string]interface{}{
+						"data": []interface{}{},
+					},
+				},
 			},
+			"included": []interface{}{},
 		})
 	}))
 

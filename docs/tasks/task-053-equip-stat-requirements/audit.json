@@ -1,0 +1,94 @@
+{
+  "service": "atlas-effective-stats",
+  "path": "services/atlas-effective-stats/atlas.com/effective-stats",
+  "branch": "task-053-equip-stat-requirements",
+  "date": "2026-05-04",
+  "build": "pass",
+  "vet": "pass",
+  "testsPassed": "all",
+  "testsFailed": 0,
+  "overallStatus": "needs-work",
+  "domains": [
+    {
+      "name": "external/data/equipment",
+      "type": "external-http-client",
+      "checks": [
+        {
+          "id": "EXT-01",
+          "name": "JSON:API target struct implements relationship interfaces",
+          "status": "fail",
+          "evidence": "external/data/equipment/rest.go:9-30 declares RestModel without SetToOneReferenceID/SetToManyReferenceIDs and with GetName()=='equipment'; atlas-data emits type:'statistics' with a slots toMany relationship (services/atlas-data/atlas.com/data/equipment/rest.go:50-52, 67-110). Reference correct client at services/atlas-character-factory/atlas.com/character-factory/data/item_requests.go:15,33-34."
+        },
+        {
+          "id": "EXT-02",
+          "name": "httptest-backed integration test exists",
+          "status": "fail",
+          "evidence": "character/initializer_test.go:64-67 + character/stubs_test.go:173-195 do spin up httptest.NewServer for atlas-data, but the stub returns type:'equipment' with no relationships block — matching the broken client, not the real upstream. cache_test.go bypasses unmarshal via swapFetcher (cache_test.go:14-27)."
+        },
+        {
+          "id": "EXT-03",
+          "name": "Errors distinguish 404 from other failures",
+          "status": "fail",
+          "evidence": "external/data/equipment/cache.go:117-122 collapses every fetcher error (404, decode failure, 5xx, transport) into a single WARN + (zero,false) return; no errors.Is(err, requests.ErrNotFound) branch."
+        },
+        {
+          "id": "EXT-04",
+          "name": "Service URL not hardcoded; uses RootUrl(domain)",
+          "status": "pass",
+          "evidence": "external/data/equipment/requests.go:14-23 — requests.RootUrl(\"DATA\")."
+        }
+      ]
+    },
+    {
+      "name": "character",
+      "type": "domain",
+      "checks": [
+        { "id": "DOM-01", "name": "builder.go exists",                       "status": "n/a",  "evidence": "Service uses Redis-backed Model with NewModel + With* chain (character/model.go:127-238); pre-existing." },
+        { "id": "DOM-02", "name": "ToEntity() method",                       "status": "n/a",  "evidence": "No GORM persistence; Redis via atlas.TenantRegistry (character/registry.go:20)." },
+        { "id": "DOM-03", "name": "Make(Entity) function",                   "status": "n/a",  "evidence": "Same as DOM-02." },
+        { "id": "DOM-04", "name": "Transform function",                      "status": "pass", "evidence": "stat.Transform consumed by character/resource.go:37." },
+        { "id": "DOM-05", "name": "TransformSlice function",                 "status": "n/a",  "evidence": "Single-record GET only." },
+        { "id": "DOM-06", "name": "Processor accepts FieldLogger",           "status": "pass", "evidence": "character/processor.go:44 — NewProcessor(l logrus.FieldLogger, ctx context.Context)." },
+        { "id": "DOM-07", "name": "Handlers pass d.Logger()",                "status": "pass", "evidence": "character/resource.go:30 — NewProcessor(d.Logger(), d.Context())." },
+        { "id": "DOM-08", "name": "POST/PATCH use RegisterInputHandler",     "status": "n/a",  "evidence": "Service exposes only GET endpoints (character/resource.go:21)." },
+        { "id": "DOM-09", "name": "Transform errors handled",                "status": "n/a",  "evidence": "stat.Transform has no error return in current signature." },
+        { "id": "DOM-10", "name": "Test DB has tenant callbacks",            "status": "n/a",  "evidence": "No SQL DB; Redis via miniredis.RunT(t) (character/processor_test.go:22)." },
+        { "id": "DOM-11", "name": "Providers use lazy evaluation",           "status": "n/a",  "evidence": "Equipment Provider closure is lazy by construction (external/data/equipment/cache.go:25,111-125)." },
+        { "id": "DOM-12", "name": "No os.Getenv() in handlers",              "status": "pass", "evidence": "Grep of character/*.go and external/data/equipment/*.go finds zero non-test os.Getenv." },
+        { "id": "DOM-13", "name": "No cross-domain logic in handlers",       "status": "pass", "evidence": "character/resource.go:25-45 calls own processor only." },
+        { "id": "DOM-14", "name": "Handlers don't call providers directly",  "status": "pass", "evidence": "Handler calls NewProcessor().GetEffectiveStats() only." },
+        { "id": "DOM-15", "name": "No direct entity creation in handlers",   "status": "n/a",  "evidence": "No DB writes anywhere." },
+        { "id": "DOM-16", "name": "administrator.go exists for write ops",   "status": "n/a",  "evidence": "No SQL persistence layer." },
+        { "id": "DOM-17", "name": "Domain error → HTTP status mapping",      "status": "pass", "evidence": "character/resource.go:32-34 — single GET returns 500 on error; pre-existing for read-through cache." },
+        { "id": "DOM-18", "name": "JSON:API interface on REST models",       "status": "pass", "evidence": "external/character/rest.go:28-43, external/data/equipment/rest.go:19-30 implement GetName/GetID/SetID. (Note: equipment additionally fails EXT-01.)" },
+        { "id": "DOM-19", "name": "Request models use flat structure",       "status": "n/a",  "evidence": "No request models — read-only service." },
+        { "id": "DOM-20", "name": "Table-driven tests",                      "status": "pass", "evidence": "character/qualification_test.go:16-49 uses table pattern; other tests are scenario-style (acceptable for state-machine logic)." },
+        { "id": "DOM-21", "name": "No duplication of atlas-constants types", "status": "pass", "evidence": "WearerProfile, EquippedAsset, EquipmentRequirements, AppliedStats, Provider, fetcher are service-local concepts; WearerProfile correctly stores job.Id (character/wearer.go:9). Warning-level: wearerClassMask (character/qualification.go:30) is a domain-meaningful v83 reqJob bitmask that should move to libs/atlas-constants/job/ if any second service ever needs it." }
+      ]
+    },
+    {
+      "name": "character (extra immutability/concurrency checks)",
+      "type": "domain-extra",
+      "checks": [
+        { "id": "MOD-IMMUT",   "name": "Model immutability via shallowCopy + With* methods",     "status": "pass", "evidence": "character/model.go:240-254; every With* uses shallowCopy. withQualifiedSnapshot is package-private (line 234)." },
+        { "id": "MOD-COPY-EQ", "name": "Defensive copy of equipped map on mutation",             "status": "pass", "evidence": "character/model.go:256-262 copyEquipped invoked in WithEquippedAsset (220) and WithoutEquippedAsset (228)." },
+        { "id": "MOD-COPY-EXP","name": "Equipped() returns map copy",                            "status": "pass", "evidence": "character/model.go:87-93 builds fresh map; EquippedAsset.Bonuses() (equipped_asset.go:30-34) is also defensive." },
+        { "id": "MOD-COPY-QS", "name": "qualifiedSnapshot treated as read-only",                 "status": "warn", "evidence": "shared by reference across shallowCopy (model.go:249); withQualifiedSnapshot accepts caller's map without defensive copy. Both call sites (Recompute line 355, RecomputeWith line 363) pass freshly-allocated maps so contract holds today." },
+        { "id": "MOD-JSON-RT", "name": "JSON round-trip with string-keyed maps",                 "status": "pass", "evidence": "character/model.go:377-415 (Marshal) and 417-463 (Unmarshal) convert map[uint32]X ↔ map[string]X via strconv. Test character/model_test.go:450-487 covers wearer + equipped + qualifiedSnapshot." },
+        { "id": "CACHE-LOCK",  "name": "Equipment cache uses RWMutex + sync.Once",               "status": "pass", "evidence": "external/data/equipment/cache.go:45-60." },
+        { "id": "CACHE-TENANT","name": "Cache is tenant-scoped",                                 "status": "pass", "evidence": "Nested map[uuid.UUID]map[uint32]EquipmentRequirements keyed by tenant.MustFromContext(ctx).Id() (cache.go:47, 62-82, 113); test cache_test.go:76-90." },
+        { "id": "TEST-SEAMS",  "name": "SeedForTest / ResetCacheForTest surface size acceptable","status": "pass", "evidence": "Minimum viable surface (cache.go:92-105); ForTest suffix; mutable defaultFetcher var swapped via swapFetcher (cache_test.go:14-27) is acceptable." },
+        { "id": "QUAL-MASK",   "name": "wearerClassMask reqJob mapping correct",                 "status": "pass", "evidence": "character/qualification.go:30-48; covers Explorer 100/200/300/400/500, Cygnus 1100..1500, Aran 2100..2112, Evan 2200..2218, Beginner/Noblesse/Legend → 0; tested by character/qualification_test.go:16-49." }
+      ]
+    }
+  ],
+  "blocking": [
+    "EXT-01: external/data/equipment/rest.go:19 — RestModel.GetName()=='equipment' but atlas-data emits type:'statistics'; missing SetToOneReferenceID / SetToManyReferenceIDs no-op stubs causes api2go.Unmarshal to fail on the slots toMany relationship.",
+    "EXT-03: external/data/equipment/cache.go:117-122 — fetcher errors are not classified; ErrNotFound and decode/transport/5xx are handled identically as 'unqualified', silently masking deploy bugs (including EXT-01)."
+  ],
+  "nonBlocking": [
+    "EXT-02: character/initializer_test.go:28-62, character/stubs_test.go:173-195 — data stub returns the broken shape ('type':'equipment', no relationships block); cannot regression-test EXT-01.",
+    "DOM-21: character/qualification.go:30-48 — wearerClassMask v83 reqJob bitmask is service-local; promote to libs/atlas-constants/job/ if any second service needs reqJob enforcement.",
+    "MOD-COPY-QS: character/model.go:233-238 — withQualifiedSnapshot accepts map without defensive copy; safe today because callers pass fresh maps and the method is package-private."
+  ]
+}

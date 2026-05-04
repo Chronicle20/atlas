@@ -2819,8 +2819,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 5 {
 		t.Fatalf("rm.Effects[0].MPConsume = %d, want 5", ef.MPConsume)
 	}
-	if ef.Duration != 30 {
-		t.Fatalf("rm.Effects[0].Duration = %d, want 30", ef.Duration)
+	if ef.Duration != 30000 {
+		t.Fatalf("rm.Effects[0].Duration = %d, want 30000", ef.Duration)
 	}
 	if ef.X != 4 {
 		t.Fatalf("rm.Effects[0].X = %d, want 4", ef.X)
@@ -2832,8 +2832,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 10 {
 		t.Fatalf("rm.Effects[1].MPConsume = %d, want 10", ef.MPConsume)
 	}
-	if ef.Duration != 30 {
-		t.Fatalf("rm.Effects[1].Duration = %d, want 30", ef.Duration)
+	if ef.Duration != 30000 {
+		t.Fatalf("rm.Effects[1].Duration = %d, want 30000", ef.Duration)
 	}
 	if ef.X != 8 {
 		t.Fatalf("rm.Effects[1].X = %d, want 8", ef.X)
@@ -2845,8 +2845,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 15 {
 		t.Fatalf("rm.Effects[2].MPConsume = %d, want 15", ef.MPConsume)
 	}
-	if ef.Duration != 30 {
-		t.Fatalf("rm.Effects[2].Duration = %d, want 30", ef.Duration)
+	if ef.Duration != 30000 {
+		t.Fatalf("rm.Effects[2].Duration = %d, want 30000", ef.Duration)
 	}
 	if ef.X != 12 {
 		t.Fatalf("rm.Effects[2].X = %d, want 12", ef.X)
@@ -2865,8 +2865,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 4 {
 		t.Fatalf("rm.Effects[0].MPConsume = %d, want 4", ef.MPConsume)
 	}
-	if ef.Duration != 4 {
-		t.Fatalf("rm.Effects[0].Duration = %d, want 4", ef.Duration)
+	if ef.Duration != 4000 {
+		t.Fatalf("rm.Effects[0].Duration = %d, want 4000", ef.Duration)
 	}
 	if ef.Speed != 10 {
 		t.Fatalf("rm.Effects[0].Speed = %d, want 10", ef.Speed)
@@ -2878,8 +2878,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 7 {
 		t.Fatalf("rm.Effects[1].MPConsume = %d, want 7", ef.MPConsume)
 	}
-	if ef.Duration != 8 {
-		t.Fatalf("rm.Effects[1].Duration = %d, want 8", ef.Duration)
+	if ef.Duration != 8000 {
+		t.Fatalf("rm.Effects[1].Duration = %d, want 8000", ef.Duration)
 	}
 	if ef.Speed != 15 {
 		t.Fatalf("rm.Effects[1].Speed = %d, want 15", ef.Speed)
@@ -2891,8 +2891,8 @@ func TestReader(t *testing.T) {
 	if ef.MPConsume != 10 {
 		t.Fatalf("rm.Effects[2].MPConsume = %d, want 10", ef.MPConsume)
 	}
-	if ef.Duration != 12 {
-		t.Fatalf("rm.Effects[2].Duration = %d, want 12", ef.Duration)
+	if ef.Duration != 12000 {
+		t.Fatalf("rm.Effects[2].Duration = %d, want 12000", ef.Duration)
 	}
 	if ef.Speed != 20 {
 		t.Fatalf("rm.Effects[2].Speed = %d, want 20", ef.Speed)
@@ -3040,5 +3040,133 @@ func TestReader_PriestDoom_MapsDoomStatus(t *testing.T) {
 	}
 	if ef.Duration <= 0 {
 		t.Fatalf("Duration = %d, want > 0", ef.Duration)
+	}
+}
+
+// TestReader_TimeAttributeEmittedAsMilliseconds pins the unit contract:
+// the wz `time` attribute (raw seconds) is converted to milliseconds by
+// atlas-data's reader before downstream consumers see it. See task-054.
+func TestReader_TimeAttributeEmittedAsMilliseconds(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="231.img">
+  <imgdir name="skill">
+    <imgdir name="2311005">
+      <imgdir name="level">
+        <imgdir name="30">
+          <int name="time" value="60"/>
+          <int name="mpCon" value="35"/>
+          <int name="prop" value="100"/>
+          <int name="mobCount" value="6"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2311005"]
+	if !ok {
+		t.Fatal("rmm[2311005] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if got := rm.Effects[0].Duration; got != 60000 {
+		t.Fatalf("Duration = %d, want 60000 (ms; wz time=60 seconds)", got)
+	}
+}
+
+// TestReader_TimeMissing_DurationStaysSentinel pins the cleaned-up else
+// branch: when the wz `time` attribute is absent, Duration stays at the
+// -1 sentinel and is NOT multiplied. See task-054.
+func TestReader_TimeMissing_DurationStaysSentinel(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="100.img">
+  <imgdir name="skill">
+    <imgdir name="1001004">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="mpCon" value="5"/>
+          <int name="damage" value="100"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["1001004"]
+	if !ok {
+		t.Fatal("rmm[1001004] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if got := rm.Effects[0].Duration; got != -1 {
+		t.Fatalf("Duration = %d, want -1 (sentinel; wz `time` missing)", got)
+	}
+}
+
+// TestReader_FreezeDoublesDuration pins that the FREEZE special-case
+// doubling at reader.go:346 operates on the milliseconds-converted
+// duration: time=4 → 4000 (ms) → 8000 (FREEZE-doubled). See task-054.
+func TestReader_FreezeDoublesDuration(t *testing.T) {
+	l, _ := test.NewNullLogger()
+	tn, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := tenant.WithContext(context.Background(), tn)
+
+	const xmlData = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<imgdir name="220.img">
+  <imgdir name="skill">
+    <imgdir name="2201004">
+      <imgdir name="level">
+        <imgdir name="1">
+          <int name="time" value="4"/>
+          <int name="mpCon" value="20"/>
+        </imgdir>
+      </imgdir>
+    </imgdir>
+  </imgdir>
+</imgdir>`
+
+	rms := Read(l)(ctx)(xml.FromByteArrayProvider([]byte(xmlData)))
+	rmm, err := model.CollectToMap[RestModel, string, RestModel](rms, RestModel.GetID, Identity)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	rm, ok := rmm["2201004"]
+	if !ok {
+		t.Fatal("rmm[2201004] does not exist.")
+	}
+	if len(rm.Effects) != 1 {
+		t.Fatalf("len(rm.Effects) = %d, want 1", len(rm.Effects))
+	}
+	if got := rm.Effects[0].Duration; got != 8000 {
+		t.Fatalf("Duration = %d, want 8000 (FREEZE doubles 4000 ms)", got)
 	}
 }

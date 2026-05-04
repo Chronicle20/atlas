@@ -27,3 +27,13 @@ type entity struct {
 func (e entity) TableName() string {
 	return "character_locations"
 }
+
+// Make rehydrates a persistence entity into its immutable domain Model.
+func Make(e entity) (Model, error) {
+	return NewBuilder(e.CharacterId).
+		SetWorldId(e.WorldId).
+		SetChannelId(e.ChannelId).
+		SetMapId(e.MapId).
+		SetInstance(e.Instance).
+		Build(), nil
+}

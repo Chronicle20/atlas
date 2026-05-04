@@ -43,7 +43,7 @@ func TestBuff_Timestamps(t *testing.T) {
 	assert.True(t, !b.CreatedAt().Before(before), "CreatedAt should be after or equal to before")
 	assert.True(t, !b.CreatedAt().After(after), "CreatedAt should be before or equal to after")
 
-	// ExpiresAt should be approximately duration seconds after CreatedAt
+	// ExpiresAt should be approximately duration milliseconds after CreatedAt
 	expectedExpiry := b.CreatedAt().Add(time.Duration(duration) * time.Millisecond)
 	diff := b.ExpiresAt().Sub(expectedExpiry)
 	assert.True(t, diff >= -time.Millisecond && diff <= time.Millisecond,

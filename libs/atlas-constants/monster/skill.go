@@ -19,48 +19,52 @@ const (
 	ReflectKindMagical  = "MAGICAL"
 
 	// MobSkill type IDs (from MobSkill.img.xml)
-	SkillTypeWeaponAttackUp     = 100
-	SkillTypeMagicAttackUp      = 101
-	SkillTypeWeaponDefenseUp    = 102
-	SkillTypeMagicDefenseUp     = 103
-	SkillTypeWeaponAttackUpAoe  = 110
-	SkillTypeMagicAttackUpAoe   = 111
-	SkillTypeWeaponDefenseUpAoe = 112
-	SkillTypeMagicDefenseUpAoe  = 113
-	SkillTypeHeal               = 114
-	SkillTypeSpeedUp            = 115
-	SkillTypeSeal               = 120
-	SkillTypeDarkness           = 121
-	SkillTypeWeakness           = 122
-	SkillTypeStun               = 123
-	SkillTypeCurse              = 124
-	SkillTypePoison             = 125
-	SkillTypeSlow               = 126
-	SkillTypeDispel             = 127
-	SkillTypeSeduce             = 128
-	SkillTypeBanish             = 129
-	SkillTypeAreaPoison         = 131
-	SkillTypeReverseInput       = 132
-	SkillTypeUndead             = 133
-	SkillTypeStopPotion         = 134
-	SkillTypeStopMotion         = 135
-	SkillTypeFear               = 136
-	SkillTypePhysicalImmune     = 140
-	SkillTypeMagicImmune        = 141
-	SkillTypeHardSkin           = 142
-	SkillTypePhysicalCounter    = 143
-	SkillTypeMagicCounter       = 144
+	SkillTypeWeaponAttackUp       = 100
+	SkillTypeMagicAttackUp        = 101
+	SkillTypeWeaponDefenseUp      = 102
+	SkillTypeMagicDefenseUp       = 103
+	SkillTypeWeaponAttackUpAoe    = 110
+	SkillTypeMagicAttackUpAoe     = 111
+	SkillTypeWeaponDefenseUpAoe   = 112
+	SkillTypeMagicDefenseUpAoe    = 113
+	SkillTypeHeal                 = 114
+	SkillTypeSpeedUp              = 115
+	SkillTypeSeal                 = 120
+	SkillTypeDarkness             = 121
+	SkillTypeWeakness             = 122
+	SkillTypeStun                 = 123
+	SkillTypeCurse                = 124
+	SkillTypePoison               = 125
+	SkillTypeSlow                 = 126
+	SkillTypeDispel               = 127
+	SkillTypeSeduce               = 128
+	SkillTypeBanish               = 129
+	SkillTypeAreaPoison           = 131
+	SkillTypeReverseInput         = 132
+	SkillTypeUndead               = 133
+	SkillTypeStopPotion           = 134
+	SkillTypeStopMotion           = 135
+	SkillTypeFear                 = 136
+	SkillTypePhysicalImmune       = 140
+	SkillTypeMagicImmune          = 141
+	SkillTypeHardSkin             = 142
+	SkillTypePhysicalCounter      = 143
+	SkillTypeMagicCounter         = 144
 	SkillTypePhysicalMagicCounter = 145
-	SkillTypeCarnivalPAD        = 150
-	SkillTypeCarnivalMAD        = 151
-	SkillTypeCarnivalPDR        = 152
-	SkillTypeCarnivalMDR        = 153
-	SkillTypeCarnivalACC        = 154
-	SkillTypeCarnivalEVA        = 155
-	SkillTypeCarnivalSpeed      = 156
-	SkillTypeCarnivalSealSkill  = 157
-	SkillTypeSummon             = 200
+	SkillTypeCarnivalPAD          = 150
+	SkillTypeCarnivalMAD          = 151
+	SkillTypeCarnivalPDR          = 152
+	SkillTypeCarnivalMDR          = 153
+	SkillTypeCarnivalACC          = 154
+	SkillTypeCarnivalEVA          = 155
+	SkillTypeCarnivalSpeed        = 156
+	SkillTypeCarnivalSealSkill    = 157
+	SkillTypeSummon               = 200
 )
+
+func IsMonsterSkill(id uint16) bool {
+	return id < SkillTypeSummon
+}
 
 // SkillTypeToStatusName maps a mob skill type to the monster temporary stat name
 // used for status effect tracking and client broadcast.

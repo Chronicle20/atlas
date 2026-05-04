@@ -6,23 +6,25 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
-// TestFetchEquipmentBonuses_HydratesEquipmentStats stubs atlas-inventory with
+// TestFetchEquippedSnapshots_HydratesEquipmentStats stubs atlas-inventory with
 // a JSON:API document containing one equipped Medal-style asset (slot -49,
-// templateId 1142107, hp 47, mp 50). It then calls fetchEquipmentBonuses and
-// asserts the returned []stat.Bonus includes the expected equipment:42
-// entries for TypeMaxHp and TypeMaxMp.
+// templateId 1142107, hp 47, mp 50). It then calls fetchEquippedSnapshots and
+// asserts the returned snapshots include the expected equipment:42 bonuses
+// for TypeMaxHp and TypeMaxMp.
 //
 // This is the integration-level regression net for the bug where the
 // CompartmentRestModel only kept asset IDs, leaving Slot==0 and starving
 // the IsEquipped() gate.
-func TestFetchEquipmentBonuses_HydratesEquipmentStats(t *testing.T) {
+func TestFetchEquippedSnapshots_HydratesEquipmentStats(t *testing.T) {
 	const doc = `{
       "data": {
         "type": "compartments",
@@ -77,11 +79,21 @@ func TestFetchEquipmentBonuses_HydratesEquipmentStats(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), ten)
 
-	bonuses, err := fetchEquipmentBonuses(l, ctx, 12)
+	snapshots, err := fetchEquippedSnapshots(l, ctx, 12)
 	if err != nil {
-		t.Fatalf("fetchEquipmentBonuses() error = %v", err)
+		t.Fatalf("fetchEquippedSnapshots() error = %v", err)
+	}
+	if len(snapshots) != 1 {
+		t.Fatalf("snapshots count = %d, want 1", len(snapshots))
+	}
+	if snapshots[0].AssetId() != 42 {
+		t.Errorf("asset id = %d, want 42", snapshots[0].AssetId())
+	}
+	if snapshots[0].TemplateId() != 1142107 {
+		t.Errorf("template id = %d, want 1142107", snapshots[0].TemplateId())
 	}
 
+	bonuses := snapshots[0].Bonuses()
 	var sawHp, sawMp bool
 	for _, b := range bonuses {
 		if b.Source() != "equipment:42" {
@@ -99,5 +111,82 @@ func TestFetchEquipmentBonuses_HydratesEquipmentStats(t *testing.T) {
 	}
 	if !sawMp {
 		t.Errorf("missing TypeMaxMp+50 bonus; got %d bonuses: %#v", len(bonuses), bonuses)
+	}
+}
+
+// TestInitializeCharacter_DropsUnqualifiedOverall_Diagnosis is the
+// integration-level reproduction of the PRD §4.1 case: a level-30 Magician
+// with LUK 39 has equipped a Pole Arm (templateId 1052095) whose template
+// requires LUK 40. The asset's MP +50 bonus must NOT show up in the final
+// Computed.MaxMp() and MUST NOT appear in Bonuses() because the qualification
+// gate dropped the asset.
+func TestInitializeCharacter_DropsUnqualifiedOverall_Diagnosis(t *testing.T) {
+	setupTestRegistry(t)
+	t.Cleanup(equipment.ResetCacheForTest)
+	l, ctx, _ := createTestContext()
+
+	stubServers := startInitializerStubs(t, stubConfig{
+		character: stubCharacter{
+			level: 30, jobId: 200,
+			str: 4, dex: 25, intl: 4, luk: 39,
+			maxHp: 1430, maxMp: 6330,
+		},
+		equipped: []stubEquipped{{
+			assetId: 42, templateId: 1052095, slot: -5, mp: 50,
+		}},
+		equipmentReqs: map[uint32]equipmentReqs{
+			1052095: {reqLuk: 40},
+		},
+	})
+	t.Cleanup(stubServers.Close)
+	stubServers.PointEnv(t)
+
+	if err := InitializeCharacter(l, ctx, 12345, channel.NewModel(0, 0)); err != nil {
+		t.Fatalf("InitializeCharacter: %v", err)
+	}
+	m, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if m.Computed().MaxMp() != 6330 {
+		t.Errorf("MaxMp = %d, want 6330 (overall +50 should be dropped)", m.Computed().MaxMp())
+	}
+	for _, b := range m.Bonuses() {
+		if b.Source() == "equipment:42" {
+			t.Errorf("Bonuses() unexpectedly contains equipment:42 entry: %+v", b)
+		}
+	}
+}
+
+// TestInitializeCharacter_KeepsQualifiedOverall is the positive companion to
+// the diagnosis case: bumping the wearer's LUK from 39 to 40 satisfies
+// reqLuk=40, so the +50 MP overall MUST be included in Computed.MaxMp().
+func TestInitializeCharacter_KeepsQualifiedOverall(t *testing.T) {
+	setupTestRegistry(t)
+	t.Cleanup(equipment.ResetCacheForTest)
+	l, ctx, _ := createTestContext()
+
+	stubServers := startInitializerStubs(t, stubConfig{
+		character: stubCharacter{
+			level: 30, jobId: 200,
+			str: 4, dex: 25, intl: 4, luk: 40,
+			maxHp: 1430, maxMp: 6330,
+		},
+		equipped: []stubEquipped{{
+			assetId: 42, templateId: 1052095, slot: -5, mp: 50,
+		}},
+		equipmentReqs: map[uint32]equipmentReqs{
+			1052095: {reqLuk: 40},
+		},
+	})
+	t.Cleanup(stubServers.Close)
+	stubServers.PointEnv(t)
+
+	if err := InitializeCharacter(l, ctx, 12345, channel.NewModel(0, 0)); err != nil {
+		t.Fatalf("InitializeCharacter: %v", err)
+	}
+	m, _ := GetRegistry().Get(ctx, 12345)
+	if m.Computed().MaxMp() != 6380 {
+		t.Errorf("MaxMp = %d, want 6380", m.Computed().MaxMp())
 	}
 }

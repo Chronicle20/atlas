@@ -1,10 +1,14 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
+	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -221,7 +225,7 @@ func TestModelComputeEffectiveStats_BaseOnly(t *testing.T) {
 	base := stat.NewBase(50, 40, 30, 25, 5000, 3000)
 	m = m.WithBaseStats(base)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	if computed.Strength() != 50 {
 		t.Errorf("Strength() = %v, want 50", computed.Strength())
@@ -252,7 +256,7 @@ func TestModelComputeEffectiveStats_WithFlatBonus(t *testing.T) {
 	b := stat.NewBonus("equipment:1", stat.TypeStrength, 15)
 	m = m.WithBaseStats(base).WithBonus(b)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	// (50 + 15) * 1.0 = 65
 	if computed.Strength() != 65 {
@@ -269,7 +273,7 @@ func TestModelComputeEffectiveStats_WithMultiplierBonus(t *testing.T) {
 	b := stat.NewMultiplierBonus("buff:2311003", stat.TypeStrength, 0.10) // +10%
 	m = m.WithBaseStats(base).WithBonus(b)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	// 50 * 1.10 = 55
 	if computed.Strength() != 55 {
@@ -289,7 +293,7 @@ func TestModelComputeEffectiveStats_MixedBonuses(t *testing.T) {
 	bBuff := stat.NewMultiplierBonus("buff:2311003", stat.TypeStrength, 0.10)
 	m = m.WithBaseStats(base).WithBonus(bEquip).WithBonus(bBuff)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	// (50 + 15) * 1.10 = 65 * 1.10 = 71.5 -> 71
 	if computed.Strength() != 71 {
@@ -312,7 +316,7 @@ func TestModelComputeEffectiveStats_MultipleMultipliers(t *testing.T) {
 
 	m = m.WithBaseStats(base).WithBonus(bEquip).WithBonus(bPassive).WithBonus(bHyperBody).WithBonus(bMapleWarrior)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	// (5000 + 500 + 200) * (1.0 + 0.60 + 0.10) = 5700 * 1.70 = 9690
 	if computed.MaxHp() != 9690 {
@@ -332,7 +336,7 @@ func TestModelComputeEffectiveStats_SecondaryStats(t *testing.T) {
 
 	m = m.WithBaseStats(base).WithBonus(bWatk).WithBonus(bWatkBuff)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	// (0 + 100 + 20) * 1.0 = 120
 	if computed.WeaponAttack() != 120 {
@@ -392,7 +396,7 @@ func TestModelComputeEffectiveStats_MaxHpCappedAt30k(t *testing.T) {
 	bMp := stat.NewBonus("equipment:2", stat.TypeMaxMp, 15000)
 	m = m.WithBaseStats(base).WithBonus(bHp).WithBonus(bMp)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	if computed.MaxHp() != MaxHpMpCap {
 		t.Errorf("MaxHp() = %v, want %v (cap)", computed.MaxHp(), MaxHpMpCap)
@@ -412,7 +416,7 @@ func TestModelComputeEffectiveStats_MaxHpUnderCapNotClamped(t *testing.T) {
 	bHp := stat.NewBonus("equipment:1", stat.TypeMaxHp, 1000)
 	m = m.WithBaseStats(base).WithBonus(bHp)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	if computed.MaxHp() != 6000 {
 		t.Errorf("MaxHp() = %v, want 6000 (no clamp applied)", computed.MaxHp())
@@ -433,12 +437,132 @@ func TestModelComputeEffectiveStats_MaxHpCappedWithMultiplier(t *testing.T) {
 	bMp := stat.NewMultiplierBonus("buff:hyper-body", stat.TypeMaxMp, 1.0)
 	m = m.WithBaseStats(base).WithBonus(bHp).WithBonus(bMp)
 
-	computed := m.ComputeEffectiveStats()
+	computed := m.ComputeEffectiveStats(nil)
 
 	if computed.MaxHp() != MaxHpMpCap {
 		t.Errorf("MaxHp() = %v, want %v (cap)", computed.MaxHp(), MaxHpMpCap)
 	}
 	if computed.MaxMp() != MaxHpMpCap {
 		t.Errorf("MaxMp() = %v, want %v (cap)", computed.MaxMp(), MaxHpMpCap)
+	}
+}
+
+func TestModel_JSONRoundTrip_PreservesWearerAndEquipped(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 39, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(35, job.Id(200))).
+		WithEquippedAsset(NewEquippedAsset(42, 1052095, []stat.Bonus{
+			stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+		})).
+		withQualifiedSnapshot(map[uint32]bool{42: true})
+
+	data, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	var got Model
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+
+	if got.Wearer().Level() != 35 || got.Wearer().JobId() != job.Id(200) {
+		t.Errorf("wearer not preserved: %+v", got.Wearer())
+	}
+	eq := got.Equipped()
+	if len(eq) != 1 {
+		t.Fatalf("equipped len = %d, want 1", len(eq))
+	}
+	asset := eq[42]
+	if asset.TemplateId() != 1052095 {
+		t.Errorf("template not preserved: %d", asset.TemplateId())
+	}
+	if len(asset.Bonuses()) != 1 || asset.Bonuses()[0].Amount() != 50 {
+		t.Errorf("snapshot bonuses not preserved: %+v", asset.Bonuses())
+	}
+	if !got.qualifiedSnapshot[42] {
+		t.Errorf("qualifiedSnapshot not preserved: %+v", got.qualifiedSnapshot)
+	}
+}
+
+func TestRecomputeWith_DropsUnqualifiedEquipmentFromComputed(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 39, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a)
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+	if m.Computed().MaxMp() != 6330 {
+		t.Errorf("MaxMp = %d, want 6330 (unqualified item dropped)", m.Computed().MaxMp())
+	}
+}
+
+func TestRecomputeWith_IncludesQualifiedEquipmentInComputed(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 40, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a)
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+	if m.Computed().MaxMp() != 6380 {
+		t.Errorf("MaxMp = %d, want 6380", m.Computed().MaxMp())
+	}
+}
+
+func TestBonuses_OmitsUnqualifiedEquipment(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 39, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a).
+		WithBonus(stat.NewBonus("buff:7", stat.TypeStrength, 5))
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+
+	got := m.Bonuses()
+	if len(got) != 1 || got[0].Source() != "buff:7" {
+		t.Errorf("Bonuses() = %+v, want only buff:7 entry", got)
+	}
+}
+
+func TestBonuses_IncludesQualifiedEquipment(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 40, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a)
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+
+	got := m.Bonuses()
+	if len(got) != 1 || got[0].Source() != "equipment:42" || got[0].Amount() != 50 {
+		t.Errorf("Bonuses() = %+v, want one equipment:42 MaxMp=50 entry", got)
 	}
 }

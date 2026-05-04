@@ -75,6 +75,9 @@ func (m Model) MPConsume() uint16 {
 	return m.mpCon
 }
 
+// Duration returns the effect duration in milliseconds. -1 is the
+// "no duration" sentinel. Consumers should use
+// time.Duration(d) * time.Millisecond. See task-054.
 func (m Model) Duration() int32 {
 	return m.duration
 }

@@ -16,8 +16,8 @@ func TestRestModel_DecodesAtlasDataFields(t *testing.T) {
 	}
 }
 
-func TestRestModel_GetNameIsEquipment(t *testing.T) {
-	if (RestModel{}).GetName() != "equipment" {
+func TestRestModel_GetNameIsStatistics(t *testing.T) {
+	if (RestModel{}).GetName() != "statistics" {
 		t.Errorf("GetName mismatch")
 	}
 }

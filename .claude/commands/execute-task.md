@@ -1,47 +1,54 @@
 ---
-description: Phase 4 — invoke superpowers:subagent-driven-development to implement a planned task, with subagent-per-task isolation
-argument-hint: Task folder name under docs/tasks/ (e.g., "task-044-superpowers-integration")
+description: Phase 4 — invoke superpowers:subagent-driven-development to implement a planned task in its existing worktree
+argument-hint: Task identifier — accepts "task-054-effect-duration-units", "task-054", "054", or "54"
 ---
 
-You are starting Phase 4 of the Atlas four-phase development workflow. The task folder is: **$ARGUMENTS**
+You are starting Phase 4 of the Atlas four-phase development workflow. Argument: **$ARGUMENTS**
 
 ## Process
 
-### Step 1 — Validate input
+### Step 1 — Resolve the task
 
-1. Resolve `docs/tasks/$ARGUMENTS/`. Confirm `plan.md` exists.
-2. Confirm `context.md` exists alongside.
-3. If either is missing, stop and tell the user to complete `/plan-task` first.
+Same fuzzy-match algorithm as `/design-task` Step 1:
 
-### Step 2 — Confirm execution mode
+1. Glob `docs/tasks/task-*` (main) and `.worktrees/*/docs/tasks/task-*` (sibling worktrees).
+2. Match `$ARGUMENTS` against folder names — exact, number-only (`54`/`054`/`task-54`/`task-054`), or slug fragment.
+3. Zero matches → ask for correction. Multiple matches → list and let the user pick.
+4. If the task lives only on main with no worktree, stop and tell the user the task needs a worktree.
+5. Resolve to `<worktree>/docs/tasks/<id>/`.
 
-Ask the user once: subagent-driven (recommended) or inline?
+### Step 2 — Verify we're in the right worktree
 
-- **Subagent-driven (default):** fresh subagent per task, two-stage review between tasks. Use `superpowers:subagent-driven-development`.
-- **Inline:** batch execution in current session with checkpoints. Use `superpowers:executing-plans`.
+Run `pwd`. If it does NOT match `<worktree>`, tell the user:
 
-If the user does not respond within the same message, default to subagent-driven.
+> Task `<id>` lives in `<worktree>`. Please `cd <worktree>` and re-run `/execute-task <id>`.
 
-### Step 3 — Recommend a worktree
+Do NOT auto-`cd` and do NOT create a new worktree — the worktree was created by `/spec-task` and must be reused so phase artifacts stay co-located.
 
-If the current branch is `main` (or another protected branch), strongly recommend invoking `superpowers:using-git-worktrees` first to create an isolated workspace. Do NOT begin implementation on `main` without explicit user consent.
+### Step 3 — Validate inputs
 
-### Step 4 — Invoke the chosen execution skill
+Confirm `<worktree>/docs/tasks/<id>/plan.md` AND `context.md` exist. If either is missing, tell the user to complete `/plan-task` first.
 
-Use the Skill tool to invoke either `superpowers:subagent-driven-development` or `superpowers:executing-plans`. Pass:
+### Step 4 — Invoke subagent-driven-development
 
-- Plan path: `docs/tasks/$ARGUMENTS/plan.md`
-- Context path: `docs/tasks/$ARGUMENTS/context.md`
-- Project conventions: `CLAUDE.md`
+Use the Skill tool to invoke `superpowers:subagent-driven-development` (default). Pass:
+
+- Plan path: `<worktree>/docs/tasks/<id>/plan.md`
+- Context path: `<worktree>/docs/tasks/<id>/context.md`
+- Project conventions: `<worktree>/CLAUDE.md`
+- **Worktree absolute path** (`<worktree>`) for every dispatched implementer subagent. Subagent prompts MUST follow the cwd-discipline template from memory `feedback_subagent_worktree_cwd.md` — every Bash call prefixed with `cd <worktree> && ...`, post-commit branch verification, no destructive git ops, no `git add -A` / `git add .`.
+
+If the user explicitly requests inline mode this session (rare), invoke `superpowers:executing-plans` instead.
 
 ### Step 5 — On completion
 
-After all plan tasks complete and verify, the chosen skill will hand off to `superpowers:finishing-a-development-branch`. Honor that handoff. Then suggest the user run code review:
+After all plan tasks complete and verify, the chosen skill hands off to `superpowers:finishing-a-development-branch`. Honor that handoff. Then suggest:
 
-> All plan tasks complete. Recommend running `superpowers:requesting-code-review` next, which will dispatch the appropriate reviewer agents (plan-adherence, backend-guidelines, frontend-guidelines) in parallel.
+> All plan tasks complete. Recommend running `superpowers:requesting-code-review` next, which dispatches the appropriate reviewer agents (plan-adherence, backend-guidelines, frontend-guidelines) in parallel.
 
 ## Important Rules
 
-- Never start implementation on `main`/`master` without explicit user consent.
+- The worktree was created by `/spec-task`. NEVER create a new one here.
+- Never start implementation outside the task worktree.
 - Follow plan steps exactly; stop and ask when blocked rather than guessing.
 - Run the verification commands the plan specifies; don't claim completion based on assumption.

@@ -20,12 +20,14 @@ Before defining a new domain type, alias, or numeric constant in a service, chec
 
 ## Development Workflow
 
-The canonical flow for any non-trivial change is four phases. Each phase is a separate slash command, each invoked from a fresh (`/clear`'d) session so the next phase consumes only the prior phase's documented artifacts:
+The canonical flow for any non-trivial change is four phases. **`/spec-task` creates a dedicated worktree at `.worktrees/task-NNN-slug/` on a `task-NNN-slug` branch; all subsequent phases run inside that worktree** so docs, code, and the eventual PR are one unit. Each phase is a separate slash command, invoked from a fresh (`/clear`'d) session so the next phase consumes only the prior phase's documented artifacts:
 
-1. `/spec-task <idea>` — interactive PRD interview. Output: `docs/tasks/task-NNN-slug/prd.md`.
-2. `/clear`, then `/design-task <task-folder>` — invokes `superpowers:brainstorming` for architecture/tradeoffs. Output: `design.md` in same folder.
-3. `/clear`, then `/plan-task <task-folder>` — invokes `superpowers:writing-plans` for bite-sized TDD steps. Output: `plan.md` + `context.md`.
-4. `/clear`, then `/execute-task <task-folder>` — invokes `superpowers:subagent-driven-development` (default) or `superpowers:executing-plans` (fallback).
+1. `/spec-task <idea>` — run from the main repo. Interactive PRD interview that creates the worktree + branch and commits the PRD. Output: `<worktree>/docs/tasks/task-NNN-slug/prd.md`.
+2. `cd .worktrees/task-NNN-slug`, `/clear`, then `/design-task <task-id>` — invokes `superpowers:brainstorming`. Output: `design.md` (committed on the task branch).
+3. `/clear`, then `/plan-task <task-id>` — invokes `superpowers:writing-plans`. Output: `plan.md` + `context.md` (committed).
+4. `/clear`, then `/execute-task <task-id>` — invokes `superpowers:subagent-driven-development`. Reuses the existing worktree; never creates a new one.
+
+Phase commands accept fuzzy task identifiers: `task-054-slug`, `task-054`, `054`, or `54` all resolve to the same folder. They search both `docs/tasks/` (main) and `.worktrees/*/docs/tasks/` to locate the task.
 
 Skip `/spec-task` only for trivial fixes that don't warrant a PRD; document those directly via a brainstorming session.
 

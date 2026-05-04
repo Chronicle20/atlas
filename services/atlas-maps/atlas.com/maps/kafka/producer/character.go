@@ -32,3 +32,25 @@ func ChannelChangedStatusProvider(transactionId uuid.UUID, characterId uint32, w
 	}
 	return producer.SingleMessageProvider(key, value)
 }
+
+// MapChangedStatusProvider builds a MAP_CHANGED status event for the
+// EVENT_TOPIC_CHARACTER_STATUS topic. atlas-maps emits this after handling a
+// CHANGE_MAP command so downstream consumers see the canonical post-warp map.
+func MapChangedStatusProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldField field.Model, newField field.Model, targetPortalId uint32) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := characterKafka.StatusEvent[characterKafka.StatusEventMapChangedBody]{
+		TransactionId: transactionId,
+		WorldId:       worldId,
+		CharacterId:   characterId,
+		Type:          characterKafka.EventCharacterStatusTypeMapChanged,
+		Body: characterKafka.StatusEventMapChangedBody{
+			ChannelId:      newField.ChannelId(),
+			OldMapId:       oldField.MapId(),
+			OldInstance:    oldField.Instance(),
+			TargetMapId:    newField.MapId(),
+			TargetInstance: newField.Instance(),
+			TargetPortalId: targetPortalId,
+		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}

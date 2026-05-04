@@ -9,6 +9,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/macro"
+	"atlas-channel/maps/location"
 	"atlas-channel/note"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -166,7 +167,13 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					s = sp.SetAccountId(s.SessionId(), c.AccountId())
 					s = sp.SetCharacterId(s.SessionId(), c.Id())
 					s = sp.SetGm(s.SessionId(), c.Gm())
-					s = sp.SetMapId(s.SessionId(), c.MapId())
+
+					f, lerr := location.GetField(l, ctx, c.Id())
+					if lerr != nil {
+						l.WithError(lerr).Errorf("Session bootstrap: atlas-maps unreachable for [%d]; aborting.", c.Id())
+						return sp.Destroy(s)
+					}
+					s = sp.SetMapId(s.SessionId(), f.MapId())
 
 					sp.SessionCreated(s)
 

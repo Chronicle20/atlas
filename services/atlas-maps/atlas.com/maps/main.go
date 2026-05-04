@@ -65,7 +65,7 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
-	db := database.Connect(l, database.SetMigrations(visit.MigrateTable))
+	db := database.Connect(l, database.SetMigrations(visit.MigrateTable, location.Migration))
 
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	character.InitConsumers(l)(cmf)(consumerGroupId)

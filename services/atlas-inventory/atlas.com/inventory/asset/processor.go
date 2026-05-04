@@ -201,7 +201,7 @@ func (p *Processor) UpdateSlot(mb *message.Buffer) func(transactionId uuid.UUID,
 			return err
 		}
 		if a.Slot() != int16(math.MinInt16) && s != int16(math.MinInt16) {
-			return mb.Put(asset.EnvEventTopicStatus, MovedEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), a.Slot(), s, a.CreatedAt()))
+			return mb.Put(asset.EnvEventTopicStatus, MovedEventStatusProvider(transactionId, characterId, compartmentId, a.Id(), a.TemplateId(), s /*newSlot*/, a.Slot() /*oldSlot*/, a.CreatedAt()))
 		}
 		return nil
 	}

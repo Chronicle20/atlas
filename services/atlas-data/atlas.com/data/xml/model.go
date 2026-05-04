@@ -36,11 +36,29 @@ func (n *Node) GetShort(name string, def uint16) uint16 {
 			return uint16(res)
 		}
 	}
+	for _, c := range n.StringNodes {
+		if c.Name == name {
+			res, err := strconv.ParseUint(c.Value, 10, 16)
+			if err != nil {
+				return def
+			}
+			return uint16(res)
+		}
+	}
 	return def
 }
 
 func (n *Node) GetBool(name string, def bool) bool {
 	for _, c := range n.IntegerNodes {
+		if c.Name == name {
+			res, err := strconv.ParseUint(c.Value, 10, 16)
+			if err != nil {
+				return def
+			}
+			return res == 1
+		}
+	}
+	for _, c := range n.StringNodes {
 		if c.Name == name {
 			res, err := strconv.ParseUint(c.Value, 10, 16)
 			if err != nil {
@@ -71,11 +89,29 @@ func (n *Node) GetIntegerWithDefault(name string, def int32) int32 {
 			return int32(res)
 		}
 	}
+	for _, c := range n.StringNodes {
+		if c.Name == name {
+			res, err := strconv.ParseInt(c.Value, 10, 32)
+			if err != nil {
+				return def
+			}
+			return int32(res)
+		}
+	}
 	return def
 }
 
 func (n *Node) GetFloatWithDefault(name string, def float64) float64 {
 	for _, c := range n.IntegerNodes {
+		if c.Name == name {
+			res, err := strconv.ParseFloat(c.Value, 64)
+			if err != nil {
+				return def
+			}
+			return res
+		}
+	}
+	for _, c := range n.StringNodes {
 		if c.Name == name {
 			res, err := strconv.ParseFloat(c.Value, 64)
 			if err != nil {

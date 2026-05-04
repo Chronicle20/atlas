@@ -26,6 +26,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("status_event")(characterKafka.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("channel_change_request")(characterKafka.EnvCommandTopicChannelChangeRequest)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -47,6 +48,10 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 			return err
 		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeletedFunc(l, db)))); err != nil {
+			return err
+		}
+		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopicChannelChangeRequest)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChangeRequestFunc(db)))); err != nil {
 			return err
 		}
 		return nil

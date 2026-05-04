@@ -13,16 +13,16 @@ import (
 	"github.com/sirupsen/logrus/hooks/test"
 )
 
-// TestFetchEquipmentBonuses_HydratesEquipmentStats stubs atlas-inventory with
+// TestFetchEquippedSnapshots_HydratesEquipmentStats stubs atlas-inventory with
 // a JSON:API document containing one equipped Medal-style asset (slot -49,
-// templateId 1142107, hp 47, mp 50). It then calls fetchEquipmentBonuses and
-// asserts the returned []stat.Bonus includes the expected equipment:42
-// entries for TypeMaxHp and TypeMaxMp.
+// templateId 1142107, hp 47, mp 50). It then calls fetchEquippedSnapshots and
+// asserts the returned snapshots include the expected equipment:42 bonuses
+// for TypeMaxHp and TypeMaxMp.
 //
 // This is the integration-level regression net for the bug where the
 // CompartmentRestModel only kept asset IDs, leaving Slot==0 and starving
 // the IsEquipped() gate.
-func TestFetchEquipmentBonuses_HydratesEquipmentStats(t *testing.T) {
+func TestFetchEquippedSnapshots_HydratesEquipmentStats(t *testing.T) {
 	const doc = `{
       "data": {
         "type": "compartments",
@@ -77,11 +77,21 @@ func TestFetchEquipmentBonuses_HydratesEquipmentStats(t *testing.T) {
 	}
 	ctx := tenant.WithContext(context.Background(), ten)
 
-	bonuses, err := fetchEquipmentBonuses(l, ctx, 12)
+	snapshots, err := fetchEquippedSnapshots(l, ctx, 12)
 	if err != nil {
-		t.Fatalf("fetchEquipmentBonuses() error = %v", err)
+		t.Fatalf("fetchEquippedSnapshots() error = %v", err)
+	}
+	if len(snapshots) != 1 {
+		t.Fatalf("snapshots count = %d, want 1", len(snapshots))
+	}
+	if snapshots[0].AssetId() != 42 {
+		t.Errorf("asset id = %d, want 42", snapshots[0].AssetId())
+	}
+	if snapshots[0].TemplateId() != 1142107 {
+		t.Errorf("template id = %d, want 1142107", snapshots[0].TemplateId())
 	}
 
+	bonuses := snapshots[0].Bonuses()
 	var sawHp, sawMp bool
 	for _, b := range bonuses {
 		if b.Source() != "equipment:42" {

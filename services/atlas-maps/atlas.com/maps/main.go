@@ -3,6 +3,7 @@ package main
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 	characterClient "atlas-maps/character"
+	"atlas-maps/character/location"
 	"atlas-maps/kafka/consumer/cashshop"
 	"atlas-maps/kafka/consumer/character"
 	mapConsumer "atlas-maps/kafka/consumer/map"
@@ -113,6 +114,7 @@ func main() {
 		AddRouteInitializer(_map.InitResource(GetServer())).
 		AddRouteInitializer(weather.InitResource(GetServer())).
 		AddRouteInitializer(visit.InitResource(GetServer())(db)).
+		AddRouteInitializer(location.InitResource(GetServer())(db)).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

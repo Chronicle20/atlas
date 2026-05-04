@@ -3,6 +3,7 @@ package character
 import (
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -13,6 +14,7 @@ type RestModel struct {
 	WorldId      world.Id `json:"worldId"`
 	Name         string   `json:"name"`
 	Level        byte     `json:"level"`
+	JobId        job.Id   `json:"jobId"`
 	Strength     uint16   `json:"strength"`
 	Dexterity    uint16   `json:"dexterity"`
 	Intelligence uint16   `json:"intelligence"`

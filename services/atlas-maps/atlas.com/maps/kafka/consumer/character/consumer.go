@@ -73,12 +73,29 @@ func handleStatusEventLogoutFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 		if event.Type == characterKafka.EventCharacterStatusTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.Instance)
 			transactionId := uuid.New()
-			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
-			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
-			_ = p.ExitAndEmit(transactionId, f, event.CharacterId)
-			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+			current := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
+
+			lp := location.NewProcessor(l, ctx, db)
+			resolved, reason, err := lp.Resolve(current)
+			if err != nil {
+				l.WithError(err).Warnf("location.Resolve on LOGOUT failed for [%d]; staying put.", event.CharacterId)
+				resolved = current
+				reason = location.ReasonStayPut
+			}
+			if reason != location.ReasonStayPut {
+				l.WithFields(logrus.Fields{
+					"character_id":      event.CharacterId,
+					"current_map_id":    current.MapId(),
+					"resolved_map_id":   resolved.MapId(),
+					"resolution_reason": string(reason),
+				}).Info("forced-return resolution on LOGOUT")
+			}
+			if _, err := lp.Set(event.CharacterId, resolved); err != nil {
 				l.WithError(err).Warnf("location.Set on LOGOUT failed for character [%d].", event.CharacterId)
 			}
+
+			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
+			_ = p.ExitAndEmit(transactionId, current, event.CharacterId)
 		}
 	}
 }

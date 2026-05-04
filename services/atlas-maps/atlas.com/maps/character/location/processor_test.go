@@ -140,6 +140,36 @@ func TestGetByIdMissing(t *testing.T) {
 	}
 }
 
+func TestResolveAndSetForcedReturnPersists(t *testing.T) {
+	ctx := newCtxTenant(t)
+	db := newTestDB(t)
+	stub := &stubInfoProcessor{out: info.NewBuilder().SetForcedReturnMapId(_map.Id(103000890)).Build()}
+	p := newProcessorWithInfo(logrus.New(), ctx, db, stub)
+
+	cur := field.NewBuilder(0, 0, _map.Id(103000800)).SetInstance(uuid.New()).Build()
+	resolved, reason, err := p.Resolve(cur)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reason != ReasonForcedReturn {
+		t.Fatalf("reason = %s", reason)
+	}
+	if _, err := p.Set(uint32(7), resolved); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := p.GetById(uint32(7))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.MapId() != _map.Id(103000890) {
+		t.Fatalf("MapId = %d, want 103000890", got.MapId())
+	}
+	if got.Instance() != uuid.Nil {
+		t.Fatalf("Instance must be Nil after relocation")
+	}
+}
+
 func TestSetIsTenantScoped(t *testing.T) {
 	db := newTestDB(t)
 	tnA, _ := tenant.Create(uuid.New(), "GMS", 83, 1)

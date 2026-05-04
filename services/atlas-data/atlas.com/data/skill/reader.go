@@ -373,6 +373,11 @@ func getEffect(skillId skill.Id, overTime bool, node xml.Node) effect.RestModel 
 	} else if skill.Is(skillId, skill.AranStage2BodyPressureId) {
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeBodyPressure, int32(e.X()))
 	} else if skill.Is(skillId, skill.AranStage3SnowChargeId) {
+		// TODO(post-task-054): SnowCharge passes Duration as the
+		// WhiteKnightCharge stat amount. After task-054 this is 1000x
+		// larger (now ms, was raw seconds). The right fix is to pass
+		// a charge-amount field (likely e.X()), not Duration. Tracked
+		// in docs/TODO.md.
 		statups = produceBuffStatAmount(statups, character.TemporaryStatTypeWhiteKnightCharge, e.Duration())
 	}
 

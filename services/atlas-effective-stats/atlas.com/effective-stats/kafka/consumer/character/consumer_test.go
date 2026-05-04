@@ -3,6 +3,13 @@ package character
 import (
 	"atlas-effective-stats/stat"
 	"testing"
+
+	character2 "atlas-effective-stats/character"
+	"atlas-effective-stats/external/data/equipment"
+	character3 "atlas-effective-stats/kafka/message/character"
+	conststat "github.com/Chronicle20/atlas/libs/atlas-constants/stat"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 )
 
 // Regression: atlas-character emits STAT_CHANGED with only the keys that
@@ -136,4 +143,157 @@ func TestHandleStatChanged_LevelUpdateRefetchesWearer(t *testing.T) {
 
 func TestHandleStatChanged_NumericAndProfileBothInOneEvent(t *testing.T) {
 	t.Skip("integration test placeholder; covered by Task 21")
+}
+
+// TestHandleStatChanged_LuckRise_RegatesEquipment is the consumer-level
+// reproduction of PRD §4.1 follow-up: a Pole Arm gated on LUK 40 should
+// reactivate as soon as the wearer's LUK ticks from 39 to 40 via a
+// STAT_CHANGED event, with MaxMp jumping by the asset's +50 bonus.
+func TestHandleStatChanged_LuckRise_RegatesEquipment(t *testing.T) {
+	setupCharacterTest(t)
+	t.Cleanup(equipment.ResetCacheForTest)
+
+	stubs := startInitializerStubs(t, stubConfig{
+		character: stubCharacter{
+			level: 30, jobId: 200,
+			str: 4, dex: 25, intl: 4, luk: 39,
+			maxHp: 1430, maxMp: 6330,
+		},
+		equipped: []stubEquipped{{
+			assetId: 42, templateId: 1052095, slot: -5, mp: 50,
+		}},
+		equipmentReqs: map[uint32]equipmentReqs{1052095: {reqLuk: 40}},
+	})
+	t.Cleanup(stubs.Close)
+	stubs.PointEnv(t)
+
+	l, ctx, _ := createTestContext()
+	if _, _, err := character2.NewProcessor(l, ctx).GetEffectiveStats(channel.NewModel(0, 0), 12345); err != nil {
+		t.Fatalf("GetEffectiveStats: %v", err)
+	}
+	m, _ := character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().MaxMp() != 6330 {
+		t.Fatalf("pre: MaxMp = %d, want 6330", m.Computed().MaxMp())
+	}
+
+	handleStatChanged(l, ctx, character3.StatusEvent[character3.StatusEventStatChangedBody]{
+		WorldId:     0,
+		CharacterId: 12345,
+		Type:        character3.StatusEventTypeStatChanged,
+		Body: character3.StatusEventStatChangedBody{
+			ChannelId: 0,
+			Updates:   []conststat.Type{conststat.TypeLuck},
+			Values:    map[string]interface{}{"luck": 40},
+		},
+	})
+
+	m, _ = character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().MaxMp() != 6380 {
+		t.Errorf("post: MaxMp = %d, want 6380 (asset reactivated)", m.Computed().MaxMp())
+	}
+}
+
+// TestHandleStatChanged_JobChange_RefetchesAndRegates validates that a
+// TypeJob STAT_CHANGED event with Values=nil triggers a wearer refetch and
+// re-runs equipment qualification — an asset gated on reqJob=1 (Warrior
+// branch) must activate once the wearer transitions from Magician (200) to
+// Warrior (100).
+func TestHandleStatChanged_JobChange_RefetchesAndRegates(t *testing.T) {
+	setupCharacterTest(t)
+	t.Cleanup(equipment.ResetCacheForTest)
+
+	cfg := stubConfig{
+		character: stubCharacter{
+			level: 30, jobId: 200, str: 4, dex: 25, intl: 4, luk: 50,
+			maxHp: 1430, maxMp: 6330,
+		},
+		equipped: []stubEquipped{{
+			assetId: 99, templateId: 1402000, slot: -10, str: 5,
+		}},
+		equipmentReqs: map[uint32]equipmentReqs{1402000: {reqJob: 1}},
+	}
+	stubs := startInitializerStubs(t, cfg)
+	t.Cleanup(stubs.Close)
+	stubs.PointEnv(t)
+
+	l, ctx, _ := createTestContext()
+	_, _, _ = character2.NewProcessor(l, ctx).GetEffectiveStats(channel.NewModel(0, 0), 12345)
+	m, _ := character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().Strength() != uint32(cfg.character.str) {
+		t.Fatalf("pre: STR = %d, want %d", m.Computed().Strength(), cfg.character.str)
+	}
+
+	cfg.character.jobId = 100
+	stubs.character.Close()
+	newStubs := startInitializerStubs(t, cfg)
+	t.Cleanup(newStubs.Close)
+	newStubs.PointEnv(t)
+
+	handleStatChanged(l, ctx, character3.StatusEvent[character3.StatusEventStatChangedBody]{
+		WorldId:     0,
+		CharacterId: 12345,
+		Type:        character3.StatusEventTypeStatChanged,
+		Body: character3.StatusEventStatChangedBody{
+			ChannelId: 0,
+			Updates:   []conststat.Type{conststat.TypeJob},
+			Values:    nil,
+		},
+	})
+
+	m, _ = character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().Strength() != uint32(cfg.character.str+5) {
+		t.Errorf("post-job-change: STR = %d, want %d", m.Computed().Strength(), cfg.character.str+5)
+	}
+}
+
+// TestHandleStatChanged_LevelRise_RefetchesAndRegates validates that a
+// TypeLevel STAT_CHANGED event with Values=nil triggers a wearer refetch and
+// re-runs equipment qualification — an asset gated on reqLevel=30 must
+// activate once the wearer dings from level 29 to 30.
+func TestHandleStatChanged_LevelRise_RefetchesAndRegates(t *testing.T) {
+	setupCharacterTest(t)
+	t.Cleanup(equipment.ResetCacheForTest)
+
+	cfg := stubConfig{
+		character: stubCharacter{
+			level: 29, jobId: 100, str: 50, dex: 4, intl: 4, luk: 4,
+			maxHp: 1430, maxMp: 6330,
+		},
+		equipped: []stubEquipped{{
+			assetId: 7, templateId: 1302000, slot: -10, str: 5,
+		}},
+		equipmentReqs: map[uint32]equipmentReqs{1302000: {reqLevel: 30}},
+	}
+	stubs := startInitializerStubs(t, cfg)
+	t.Cleanup(stubs.Close)
+	stubs.PointEnv(t)
+
+	l, ctx, _ := createTestContext()
+	_, _, _ = character2.NewProcessor(l, ctx).GetEffectiveStats(channel.NewModel(0, 0), 12345)
+	m, _ := character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().Strength() != 50 {
+		t.Fatalf("pre: STR = %d, want 50", m.Computed().Strength())
+	}
+
+	cfg.character.level = 30
+	stubs.character.Close()
+	newStubs := startInitializerStubs(t, cfg)
+	t.Cleanup(newStubs.Close)
+	newStubs.PointEnv(t)
+
+	handleStatChanged(l, ctx, character3.StatusEvent[character3.StatusEventStatChangedBody]{
+		WorldId:     0,
+		CharacterId: 12345,
+		Type:        character3.StatusEventTypeStatChanged,
+		Body: character3.StatusEventStatChangedBody{
+			ChannelId: 0,
+			Updates:   []conststat.Type{conststat.TypeLevel},
+			Values:    nil,
+		},
+	})
+
+	m, _ = character2.GetRegistry().Get(ctx, 12345)
+	if m.Computed().Strength() != 55 {
+		t.Errorf("post-level: STR = %d, want 55", m.Computed().Strength())
+	}
 }

@@ -71,7 +71,7 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 	}
 
 	var (
-		equipData      *inventory.EquipableRestData
+		assetModel     *inventory.AssetRestModel
 		foundInCompart bool
 		actualSlot     int16
 	)
@@ -79,14 +79,13 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		if a.Id == e.AssetId {
 			foundInCompart = true
 			actualSlot = a.Slot
-			if data, ok := a.GetEquipableData(); ok {
-				equipData = &data
-			}
+			am := a
+			assetModel = &am
 			break
 		}
 	}
 
-	if equipData == nil {
+	if assetModel == nil || !assetModel.IsEquipped() {
 		if !foundInCompart {
 			l.Warnf("Equip event for asset [%d] character [%d] but asset is not present in the equip compartment (event slot=[%d] oldSlot=[%d], compartment has %d assets). Likely a read-after-write race or concurrent delete.",
 				e.AssetId, e.CharacterId, e.Slot, e.Body.OldSlot, len(compartment.Assets))
@@ -97,7 +96,7 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		return
 	}
 
-	bonuses := extractEquipmentBonuses(e.AssetId, equipData)
+	bonuses := extractEquipmentBonuses(e.AssetId, *assetModel)
 	ch := channel.NewModel(0, 0)
 	if err := character.NewProcessor(l, ctx).AddEquipmentBonuses(ch, e.CharacterId, e.AssetId, e.TemplateId, bonuses); err != nil {
 		l.WithError(err).Errorf("Failed to add equipment bonuses for character [%d].", e.CharacterId)
@@ -133,51 +132,51 @@ func handleAssetDeleted(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 	}
 }
 
-func extractEquipmentBonuses(assetId uint32, equipData *inventory.EquipableRestData) []stat.Bonus {
+func extractEquipmentBonuses(assetId uint32, a inventory.AssetRestModel) []stat.Bonus {
 	bonuses := make([]stat.Bonus, 0)
 	source := fmt.Sprintf("equipment:%d", assetId)
 
-	if equipData.Strength > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeStrength, int32(equipData.Strength)))
+	if a.Strength > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeStrength, int32(a.Strength)))
 	}
-	if equipData.Dexterity > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeDexterity, int32(equipData.Dexterity)))
+	if a.Dexterity > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeDexterity, int32(a.Dexterity)))
 	}
-	if equipData.Luck > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeLuck, int32(equipData.Luck)))
+	if a.Luck > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeLuck, int32(a.Luck)))
 	}
-	if equipData.Intelligence > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeIntelligence, int32(equipData.Intelligence)))
+	if a.Intelligence > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeIntelligence, int32(a.Intelligence)))
 	}
-	if equipData.Hp > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHp, int32(equipData.Hp)))
+	if a.Hp > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxHp, int32(a.Hp)))
 	}
-	if equipData.Mp > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMp, int32(equipData.Mp)))
+	if a.Mp > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMaxMp, int32(a.Mp)))
 	}
-	if equipData.WeaponAttack > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponAttack, int32(equipData.WeaponAttack)))
+	if a.WeaponAttack > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponAttack, int32(a.WeaponAttack)))
 	}
-	if equipData.MagicAttack > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMagicAttack, int32(equipData.MagicAttack)))
+	if a.MagicAttack > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMagicAttack, int32(a.MagicAttack)))
 	}
-	if equipData.WeaponDefense > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponDefense, int32(equipData.WeaponDefense)))
+	if a.WeaponDefense > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeWeaponDefense, int32(a.WeaponDefense)))
 	}
-	if equipData.MagicDefense > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMagicDefense, int32(equipData.MagicDefense)))
+	if a.MagicDefense > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeMagicDefense, int32(a.MagicDefense)))
 	}
-	if equipData.Accuracy > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeAccuracy, int32(equipData.Accuracy)))
+	if a.Accuracy > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeAccuracy, int32(a.Accuracy)))
 	}
-	if equipData.Avoidability > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeAvoidability, int32(equipData.Avoidability)))
+	if a.Avoidability > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeAvoidability, int32(a.Avoidability)))
 	}
-	if equipData.Speed > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeSpeed, int32(equipData.Speed)))
+	if a.Speed > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeSpeed, int32(a.Speed)))
 	}
-	if equipData.Jump > 0 {
-		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeJump, int32(equipData.Jump)))
+	if a.Jump > 0 {
+		bonuses = append(bonuses, stat.NewBonus(source, stat.TypeJump, int32(a.Jump)))
 	}
 
 	return bonuses

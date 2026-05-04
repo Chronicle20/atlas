@@ -112,20 +112,9 @@ func TestCompartmentRestModel_HydratesIncludedAssets(t *testing.T) {
 		t.Errorf("Jump = %d, want 13", a.Jump)
 	}
 
-	// Sanity: IsEquipped() and GetEquipableData() must now succeed,
-	// confirming the downstream gate in fetchEquipmentBonuses will
-	// no longer starve.
+	// Sanity: IsEquipped() must now succeed, confirming the downstream gate
+	// in fetchEquipmentBonuses will no longer starve.
 	if !a.IsEquipped() {
 		t.Errorf("IsEquipped() = false, want true (Slot=%d)", a.Slot)
-	}
-	eq, ok := a.GetEquipableData()
-	if !ok {
-		t.Fatalf("GetEquipableData() ok = false, want true")
-	}
-	if eq.Hp != 47 {
-		t.Errorf("eq.Hp = %d, want 47", eq.Hp)
-	}
-	if eq.Mp != 50 {
-		t.Errorf("eq.Mp = %d, want 50", eq.Mp)
 	}
 }

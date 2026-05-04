@@ -140,8 +140,8 @@ func TestHandleItemEquipped_AssetAtNonEquippedSlot(t *testing.T) {
 	cfg := stubConfig{
 		character: stubCharacter{level: 30, jobId: 100, str: 100, dex: 4, intl: 4, luk: 4, maxHp: 1430, maxMp: 1000},
 		// The asset exists in the compartment, but at a positive slot — so
-		// GetEquipableData() returns ok=false and equipData stays nil while
-		// foundInCompart=true. This is the case-2 diagnostic branch.
+		// IsEquipped() returns false while foundInCompart=true. This is the
+		// case-2 diagnostic branch.
 		equipped: []stubEquipped{
 			{assetId: 42, templateId: 1402000, slot: 3, wAtk: 50},
 		},

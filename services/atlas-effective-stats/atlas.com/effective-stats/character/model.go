@@ -4,9 +4,11 @@ import (
 	"atlas-effective-stats/stat"
 	"encoding/json"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
@@ -326,38 +328,70 @@ func (m Model) Recompute() Model {
 	return m.WithComputed(computed)
 }
 
+type wearerJSON struct {
+	Level byte   `json:"level"`
+	JobId job.Id `json:"jobId"`
+}
+
+type equippedAssetJSON struct {
+	AssetId    uint32       `json:"assetId"`
+	TemplateId uint32       `json:"templateId"`
+	Bonuses    []stat.Bonus `json:"bonuses"`
+}
+
 func (m Model) MarshalJSON() ([]byte, error) {
+	eq := make(map[string]equippedAssetJSON, len(m.equipped))
+	for id, snap := range m.equipped {
+		eq[strconv.FormatUint(uint64(id), 10)] = equippedAssetJSON{
+			AssetId:    snap.assetId,
+			TemplateId: snap.templateId,
+			Bonuses:    append([]stat.Bonus(nil), snap.bonuses...),
+		}
+	}
+	qs := make(map[string]bool, len(m.qualifiedSnapshot))
+	for id, ok := range m.qualifiedSnapshot {
+		qs[strconv.FormatUint(uint64(id), 10)] = ok
+	}
 	return json.Marshal(struct {
-		WorldId     world.Id      `json:"worldId"`
-		ChannelId   channel.Id    `json:"channelId"`
-		CharacterId uint32        `json:"characterId"`
-		BaseStats   stat.Base     `json:"baseStats"`
-		Bonuses     []stat.Bonus  `json:"bonuses"`
-		Computed    stat.Computed `json:"computed"`
-		LastUpdated time.Time     `json:"lastUpdated"`
-		Initialized bool          `json:"initialized"`
+		WorldId           world.Id                     `json:"worldId"`
+		ChannelId         channel.Id                   `json:"channelId"`
+		CharacterId       uint32                       `json:"characterId"`
+		BaseStats         stat.Base                    `json:"baseStats"`
+		Bonuses           []stat.Bonus                 `json:"bonuses"`
+		Wearer            wearerJSON                   `json:"wearer"`
+		Equipped          map[string]equippedAssetJSON `json:"equipped"`
+		QualifiedSnapshot map[string]bool              `json:"qualifiedSnapshot"`
+		Computed          stat.Computed                `json:"computed"`
+		LastUpdated       time.Time                    `json:"lastUpdated"`
+		Initialized       bool                         `json:"initialized"`
 	}{
-		WorldId:     m.ch.WorldId(),
-		ChannelId:   m.ch.Id(),
-		CharacterId: m.characterId,
-		BaseStats:   m.baseStats,
-		Bonuses:     m.bonuses,
-		Computed:    m.computed,
-		LastUpdated: m.lastUpdated,
-		Initialized: m.initialized,
+		WorldId:           m.ch.WorldId(),
+		ChannelId:         m.ch.Id(),
+		CharacterId:       m.characterId,
+		BaseStats:         m.baseStats,
+		Bonuses:           m.bonuses,
+		Wearer:            wearerJSON{Level: m.wearer.level, JobId: m.wearer.jobId},
+		Equipped:          eq,
+		QualifiedSnapshot: qs,
+		Computed:          m.computed,
+		LastUpdated:       m.lastUpdated,
+		Initialized:       m.initialized,
 	})
 }
 
 func (m *Model) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		WorldId     world.Id      `json:"worldId"`
-		ChannelId   channel.Id    `json:"channelId"`
-		CharacterId uint32        `json:"characterId"`
-		BaseStats   stat.Base     `json:"baseStats"`
-		Bonuses     []stat.Bonus  `json:"bonuses"`
-		Computed    stat.Computed `json:"computed"`
-		LastUpdated time.Time     `json:"lastUpdated"`
-		Initialized bool          `json:"initialized"`
+		WorldId           world.Id                     `json:"worldId"`
+		ChannelId         channel.Id                   `json:"channelId"`
+		CharacterId       uint32                       `json:"characterId"`
+		BaseStats         stat.Base                    `json:"baseStats"`
+		Bonuses           []stat.Bonus                 `json:"bonuses"`
+		Wearer            wearerJSON                   `json:"wearer"`
+		Equipped          map[string]equippedAssetJSON `json:"equipped"`
+		QualifiedSnapshot map[string]bool              `json:"qualifiedSnapshot"`
+		Computed          stat.Computed                `json:"computed"`
+		LastUpdated       time.Time                    `json:"lastUpdated"`
+		Initialized       bool                         `json:"initialized"`
 	}
 	if err := json.Unmarshal(data, &aux); err != nil {
 		return err
@@ -365,7 +399,28 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.ch = channel.NewModel(aux.WorldId, aux.ChannelId)
 	m.characterId = aux.CharacterId
 	m.baseStats = aux.BaseStats
-	m.bonuses = aux.Bonuses
+	if aux.Bonuses == nil {
+		m.bonuses = make([]stat.Bonus, 0)
+	} else {
+		m.bonuses = aux.Bonuses
+	}
+	m.wearer = WearerProfile{level: aux.Wearer.Level, jobId: aux.Wearer.JobId}
+	m.equipped = make(map[uint32]EquippedAsset, len(aux.Equipped))
+	for _, snap := range aux.Equipped {
+		m.equipped[snap.AssetId] = EquippedAsset{
+			assetId:    snap.AssetId,
+			templateId: snap.TemplateId,
+			bonuses:    append([]stat.Bonus(nil), snap.Bonuses...),
+		}
+	}
+	m.qualifiedSnapshot = make(map[uint32]bool, len(aux.QualifiedSnapshot))
+	for k, v := range aux.QualifiedSnapshot {
+		id, err := strconv.ParseUint(k, 10, 32)
+		if err != nil {
+			continue
+		}
+		m.qualifiedSnapshot[uint32(id)] = v
+	}
 	m.computed = aux.Computed
 	m.lastUpdated = aux.LastUpdated
 	m.initialized = aux.Initialized

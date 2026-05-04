@@ -2,9 +2,11 @@ package character
 
 import (
 	"atlas-effective-stats/stat"
+	"encoding/json"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -440,5 +442,44 @@ func TestModelComputeEffectiveStats_MaxHpCappedWithMultiplier(t *testing.T) {
 	}
 	if computed.MaxMp() != MaxHpMpCap {
 		t.Errorf("MaxMp() = %v, want %v (cap)", computed.MaxMp(), MaxHpMpCap)
+	}
+}
+
+func TestModel_JSONRoundTrip_PreservesWearerAndEquipped(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 39, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(35, job.Id(200))).
+		WithEquippedAsset(NewEquippedAsset(42, 1052095, []stat.Bonus{
+			stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+		})).
+		withQualifiedSnapshot(map[uint32]bool{42: true})
+
+	data, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("Marshal: %v", err)
+	}
+	var got Model
+	if err := json.Unmarshal(data, &got); err != nil {
+		t.Fatalf("Unmarshal: %v", err)
+	}
+
+	if got.Wearer().Level() != 35 || got.Wearer().JobId() != job.Id(200) {
+		t.Errorf("wearer not preserved: %+v", got.Wearer())
+	}
+	eq := got.Equipped()
+	if len(eq) != 1 {
+		t.Fatalf("equipped len = %d, want 1", len(eq))
+	}
+	asset := eq[42]
+	if asset.TemplateId() != 1052095 {
+		t.Errorf("template not preserved: %d", asset.TemplateId())
+	}
+	if len(asset.Bonuses()) != 1 || asset.Bonuses()[0].Amount() != 50 {
+		t.Errorf("snapshot bonuses not preserved: %+v", asset.Bonuses())
+	}
+	if !got.qualifiedSnapshot[42] {
+		t.Errorf("qualifiedSnapshot not preserved: %+v", got.qualifiedSnapshot)
 	}
 }

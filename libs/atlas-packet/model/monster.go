@@ -282,8 +282,12 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context)
 				magicCounter = v.Value()
 			}
 			w.WriteInt16(int16(v.Value()))
-			w.WriteInt16(int16(v.SourceId()))
-			w.WriteInt16(int16(v.SourceLevel()))
+			if monster.IsMonsterSkill(uint16(v.SourceId())) {
+				w.WriteInt16(int16(v.SourceId()))
+				w.WriteInt16(int16(v.SourceLevel()))
+			} else {
+				w.WriteInt32(v.SourceId())
+			}
 			w.WriteInt16(monsterStatExpiry(v.ExpiresAt()))
 		}
 

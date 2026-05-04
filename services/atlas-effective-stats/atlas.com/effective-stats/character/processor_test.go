@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
@@ -436,5 +437,60 @@ func TestProcessor_MixedBonuses(t *testing.T) {
 	// Dexterity: 40 (no bonuses)
 	if m.Computed().Dexterity() != 40 {
 		t.Errorf("Computed Dexterity = %v, want 40", m.Computed().Dexterity())
+	}
+}
+
+func TestRegistry_PutEquippedAsset_PersistsSnapshot(t *testing.T) {
+	setupTestRegistry(t)
+	_, ctx, ten := createTestContext()
+	ch := channel.NewModel(1, 2)
+	snap := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	GetRegistry().PutEquippedAsset(ctx, ch, 12345, snap)
+	m, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if eq := m.Equipped(); len(eq) != 1 || eq[42].TemplateId() != 1052095 {
+		t.Errorf("equipped not persisted: %+v", eq)
+	}
+	_ = ten
+}
+
+func TestRegistry_RemoveEquippedAsset_ReturnsNilErrorOnAbsent(t *testing.T) {
+	setupTestRegistry(t)
+	_, ctx, _ := createTestContext()
+	if _, err := GetRegistry().RemoveEquippedAsset(ctx, 12345, 42); err == nil {
+		t.Error("expected ErrNotFound for absent character")
+	}
+}
+
+func TestRegistry_RemoveEquippedAsset_ClearsSnapshot(t *testing.T) {
+	setupTestRegistry(t)
+	_, ctx, _ := createTestContext()
+	ch := channel.NewModel(1, 2)
+	snap := NewEquippedAsset(42, 1052095, nil)
+	GetRegistry().PutEquippedAsset(ctx, ch, 12345, snap)
+	if _, err := GetRegistry().RemoveEquippedAsset(ctx, 12345, 42); err != nil {
+		t.Fatalf("RemoveEquippedAsset: %v", err)
+	}
+	m, _ := GetRegistry().Get(ctx, 12345)
+	if len(m.Equipped()) != 0 {
+		t.Errorf("expected empty equipped map, got %+v", m.Equipped())
+	}
+}
+
+func TestRegistry_SetWearerProfile_PersistsLevelAndJob(t *testing.T) {
+	setupTestRegistry(t)
+	_, ctx, _ := createTestContext()
+	ch := channel.NewModel(1, 2)
+	GetRegistry().SetWearerProfile(ctx, ch, 12345, NewWearerProfile(35, job.Id(200)))
+	m, err := GetRegistry().Get(ctx, 12345)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if m.Wearer().Level() != 35 || m.Wearer().JobId() != job.Id(200) {
+		t.Errorf("wearer not persisted: %+v", m.Wearer())
 	}
 }

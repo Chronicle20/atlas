@@ -153,52 +153,7 @@ func (r *AssetRestModel) SetID(strId string) error {
 	return nil
 }
 
-// EquipableRestData contains equipment stats
-type EquipableRestData struct {
-	OwnerId       uint32 `json:"ownerId"`
-	Strength      uint16 `json:"strength"`
-	Dexterity     uint16 `json:"dexterity"`
-	Intelligence  uint16 `json:"intelligence"`
-	Luck          uint16 `json:"luck"`
-	Hp            uint16 `json:"hp"`
-	Mp            uint16 `json:"mp"`
-	WeaponAttack  uint16 `json:"weaponAttack"`
-	MagicAttack   uint16 `json:"magicAttack"`
-	WeaponDefense uint16 `json:"weaponDefense"`
-	MagicDefense  uint16 `json:"magicDefense"`
-	Accuracy      uint16 `json:"accuracy"`
-	Avoidability  uint16 `json:"avoidability"`
-	Hands         uint16 `json:"hands"`
-	Speed         uint16 `json:"speed"`
-	Jump          uint16 `json:"jump"`
-}
-
 // IsEquipped returns true if this asset is in an equipped slot (negative slot number)
 func (r AssetRestModel) IsEquipped() bool {
 	return r.Slot < 0
-}
-
-// GetEquipableData returns the equipment stats from this asset's flat fields
-func (r AssetRestModel) GetEquipableData() (EquipableRestData, bool) {
-	if !r.IsEquipped() {
-		return EquipableRestData{}, false
-	}
-	return EquipableRestData{
-		OwnerId:       r.OwnerId,
-		Strength:      r.Strength,
-		Dexterity:     r.Dexterity,
-		Intelligence:  r.Intelligence,
-		Luck:          r.Luck,
-		Hp:            r.Hp,
-		Mp:            r.Mp,
-		WeaponAttack:  r.WeaponAttack,
-		MagicAttack:   r.MagicAttack,
-		WeaponDefense: r.WeaponDefense,
-		MagicDefense:  r.MagicDefense,
-		Accuracy:      r.Accuracy,
-		Avoidability:  r.Avoidability,
-		Hands:         r.Hands,
-		Speed:         r.Speed,
-		Jump:          r.Jump,
-	}, true
 }

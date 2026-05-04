@@ -35,9 +35,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db)))); err != nil {
-				return err
-			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db)))); err != nil {
 				return err
 			}
@@ -110,20 +107,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			return nil
-		}
-	}
-}
-
-func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
-		if c.Type != character2.CommandChangeMap {
-			return
-		}
-
-		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
-		err := character.NewProcessor(l, ctx, db).ChangeMapAndEmit(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
 	}
 }

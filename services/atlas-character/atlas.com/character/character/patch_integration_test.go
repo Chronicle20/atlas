@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -39,7 +38,6 @@ func TestPatchCharacterIntegration(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -124,7 +122,6 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -197,7 +194,6 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -255,7 +251,6 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -341,7 +336,6 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -399,7 +393,6 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -469,7 +462,6 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	// Create second character
@@ -489,7 +481,6 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -554,7 +545,6 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -612,7 +602,6 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -670,7 +659,6 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -728,7 +716,6 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -786,7 +773,6 @@ func TestNameChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -900,7 +886,6 @@ func TestHairChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -1014,7 +999,6 @@ func TestFaceChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -1128,7 +1112,6 @@ func TestGenderChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -1242,7 +1225,6 @@ func TestSkinColorChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
@@ -1356,7 +1338,6 @@ func TestGmChangedEventEmission(t *testing.T) {
 		SetHair(30000).
 		SetFace(20000).
 		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
 		SetGm(0). // Initially not a GM
 		Build()
 
@@ -1447,327 +1428,3 @@ func TestGmChangedEventEmission(t *testing.T) {
 	}
 }
 
-func TestMapChangedEventEmission(t *testing.T) {
-	// Setup test database
-	db := testDatabase(t)
-	tenantModel := testTenant()
-	tctx := tenant.WithContext(context.Background(), tenantModel)
-	logger := testLogger()
-
-	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
-		SetAccountId(1000).
-		SetWorldId(world.Id(0)).
-		SetName("OriginalName").
-		SetLevel(1).
-		SetStrength(4).
-		SetDexterity(4).
-		SetIntelligence(4).
-		SetLuck(4).
-		SetMaxHp(50).SetHp(50).
-		SetMaxMp(50).SetMp(50).
-		SetJobId(job.Id(0)).
-		SetGender(0).
-		SetHair(30000).
-		SetFace(20000).
-		SetSkinColor(0).
-		SetMapId(_map.Id(40000)). // Original map
-		Build()
-
-	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
-	if err != nil {
-		t.Fatalf("Failed to create character for testing: %v", err)
-	}
-
-	// Create message buffer to capture events
-	buf := message.NewBuffer()
-
-	// Test map change with message buffer
-	updatePayload := character.RestModel{
-		Id:    createdCharacter.Id(),
-		MapId: _map.Id(110000000), // Change to different map
-	}
-
-	transactionId := uuid.New()
-	err = processor.Update(buf)(transactionId, createdCharacter.Id(), updatePayload)
-	if err != nil {
-		t.Fatalf("Failed to update character: %v", err)
-	}
-
-	// Verify the character was updated in the database
-	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
-	if err != nil {
-		t.Fatalf("Failed to get updated character: %v", err)
-	}
-
-	if updatedCharacter.MapId() != _map.Id(110000000) {
-		t.Errorf("Expected map ID 110000000, got %d", updatedCharacter.MapId())
-	}
-
-	// Verify MAP_CHANGED event was buffered
-	bufferedMessages := buf.GetAll()
-	statusMessages, exists := bufferedMessages[character2.EnvEventTopicCharacterStatus]
-	if !exists || len(statusMessages) == 0 {
-		t.Fatal("Expected MAP_CHANGED event to be buffered to character status topic")
-	}
-
-	// Should have exactly one MAP_CHANGED event
-	if len(statusMessages) != 1 {
-		t.Fatalf("Expected 1 MAP_CHANGED event, got %d", len(statusMessages))
-	}
-
-	// Verify the event message structure
-	eventMessage := statusMessages[0]
-	if eventMessage.Key == nil {
-		t.Error("MAP_CHANGED event should have a key")
-	}
-
-	if eventMessage.Value == nil {
-		t.Error("MAP_CHANGED event should have a value")
-	}
-
-	// Parse the event value to verify it's a MAP_CHANGED event
-	// The event should be a StatusEvent[StatusEventMapChangedBody]
-	var eventValue character2.StatusEvent[character2.StatusEventMapChangedBody]
-	err = json.Unmarshal(eventMessage.Value, &eventValue)
-	if err != nil {
-		t.Fatalf("Failed to unmarshal event value: %v", err)
-	}
-
-	// Verify event contents
-	if eventValue.Type != character2.StatusEventTypeMapChanged {
-		t.Errorf("Expected event type '%s', got '%s'", character2.StatusEventTypeMapChanged, eventValue.Type)
-	}
-
-	if eventValue.CharacterId != createdCharacter.Id() {
-		t.Errorf("Expected character ID %d, got %d", createdCharacter.Id(), eventValue.CharacterId)
-	}
-
-	if eventValue.WorldId != world.Id(0) {
-		t.Errorf("Expected world ID 0, got %d", eventValue.WorldId)
-	}
-
-	if eventValue.TransactionId != transactionId {
-		t.Errorf("Expected transaction ID %s, got %s", transactionId, eventValue.TransactionId)
-	}
-
-	if eventValue.Body.OldMapId != _map.Id(40000) {
-		t.Errorf("Expected old map ID 40000, got %d", eventValue.Body.OldMapId)
-	}
-
-	if eventValue.Body.TargetMapId != _map.Id(110000000) {
-		t.Errorf("Expected target map ID 110000000, got %d", eventValue.Body.TargetMapId)
-	}
-}
-
-func TestMultipleFieldChangesEmitMultipleSpecificEvents(t *testing.T) {
-	// Setup test database
-	db := testDatabase(t)
-	tenantModel := testTenant()
-	tctx := tenant.WithContext(context.Background(), tenantModel)
-	logger := testLogger()
-
-	// Create a character to update
-	originalCharacter := character.NewModelBuilder().
-		SetAccountId(1000).
-		SetWorldId(world.Id(0)).
-		SetName("OriginalName").
-		SetLevel(1).
-		SetStrength(4).
-		SetDexterity(4).
-		SetIntelligence(4).
-		SetLuck(4).
-		SetMaxHp(50).SetHp(50).
-		SetMaxMp(50).SetMp(50).
-		SetJobId(job.Id(0)).
-		SetGender(0).
-		SetHair(30000).
-		SetFace(20000).
-		SetSkinColor(0).
-		SetMapId(_map.Id(40000)).
-		SetGm(0).
-		Build()
-
-	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
-	if err != nil {
-		t.Fatalf("Failed to create character for testing: %v", err)
-	}
-
-	// Create message buffer to capture events
-	buf := message.NewBuffer()
-
-	// Test multiple field changes - name, hair, face, gender, skin color, map, and GM status
-	updatePayload := character.RestModel{
-		Id:        createdCharacter.Id(),
-		Name:      "UpdatedName",
-		Hair:      30100,
-		Face:      20100,
-		Gender:    1,
-		SkinColor: 5,
-		MapId:     _map.Id(110000000),
-		Gm:        1,
-	}
-
-	transactionId := uuid.New()
-	err = processor.Update(buf)(transactionId, createdCharacter.Id(), updatePayload)
-	if err != nil {
-		t.Fatalf("Failed to update character: %v", err)
-	}
-
-	// Verify the character was updated in the database
-	updatedCharacter, err := processor.GetById()(createdCharacter.Id())
-	if err != nil {
-		t.Fatalf("Failed to get updated character: %v", err)
-	}
-
-	// Verify all fields were updated
-	if updatedCharacter.Name() != "UpdatedName" {
-		t.Errorf("Expected name 'UpdatedName', got '%s'", updatedCharacter.Name())
-	}
-	if updatedCharacter.Hair() != 30100 {
-		t.Errorf("Expected hair 30100, got %d", updatedCharacter.Hair())
-	}
-	if updatedCharacter.Face() != 20100 {
-		t.Errorf("Expected face 20100, got %d", updatedCharacter.Face())
-	}
-	if updatedCharacter.Gender() != 1 {
-		t.Errorf("Expected gender 1, got %d", updatedCharacter.Gender())
-	}
-	if updatedCharacter.SkinColor() != 5 {
-		t.Errorf("Expected skin color 5, got %d", updatedCharacter.SkinColor())
-	}
-	if updatedCharacter.MapId() != _map.Id(110000000) {
-		t.Errorf("Expected map ID 110000000, got %d", updatedCharacter.MapId())
-	}
-	if updatedCharacter.GM() != 1 {
-		t.Errorf("Expected GM status 1, got %d", updatedCharacter.GM())
-	}
-
-	// Verify multiple specific events were buffered
-	bufferedMessages := buf.GetAll()
-	statusMessages, exists := bufferedMessages[character2.EnvEventTopicCharacterStatus]
-	if !exists || len(statusMessages) == 0 {
-		t.Fatal("Expected multiple specific events to be buffered to character status topic")
-	}
-
-	// Should have exactly 7 events (NAME_CHANGED, HAIR_CHANGED, FACE_CHANGED, GENDER_CHANGED, SKIN_COLOR_CHANGED, MAP_CHANGED, GM_CHANGED)
-	if len(statusMessages) != 7 {
-		t.Fatalf("Expected 7 specific events, got %d", len(statusMessages))
-	}
-
-	// Parse all events and verify they are the correct types
-	eventTypes := make(map[string]bool)
-	for _, eventMessage := range statusMessages {
-		if eventMessage.Value == nil {
-			t.Error("Event should have a value")
-			continue
-		}
-
-		// Parse the generic event structure to get the type
-		var genericEvent struct {
-			Type string `json:"type"`
-		}
-		err = json.Unmarshal(eventMessage.Value, &genericEvent)
-		if err != nil {
-			t.Errorf("Failed to unmarshal event value: %v", err)
-			continue
-		}
-
-		eventTypes[genericEvent.Type] = true
-	}
-
-	// Verify all expected event types are present
-	expectedEventTypes := []string{
-		character2.StatusEventTypeNameChanged,
-		character2.StatusEventTypeHairChanged,
-		character2.StatusEventTypeFaceChanged,
-		character2.StatusEventTypeGenderChanged,
-		character2.StatusEventTypeSkinColorChanged,
-		character2.StatusEventTypeMapChanged,
-		character2.StatusEventTypeGmChanged,
-	}
-
-	for _, expectedType := range expectedEventTypes {
-		if !eventTypes[expectedType] {
-			t.Errorf("Expected event type '%s' was not found in buffered events", expectedType)
-		}
-	}
-
-	// Verify no unexpected event types
-	if len(eventTypes) != len(expectedEventTypes) {
-		t.Errorf("Expected exactly %d event types, got %d", len(expectedEventTypes), len(eventTypes))
-	}
-
-	// Verify each specific event has correct content (spot check a few)
-	for _, eventMessage := range statusMessages {
-		var genericEvent struct {
-			Type          string    `json:"type"`
-			CharacterId   uint32    `json:"characterId"`
-			WorldId       world.Id  `json:"worldId"`
-			TransactionId uuid.UUID `json:"transactionId"`
-		}
-		err = json.Unmarshal(eventMessage.Value, &genericEvent)
-		if err != nil {
-			t.Errorf("Failed to unmarshal event value: %v", err)
-			continue
-		}
-
-		// Verify common fields
-		if genericEvent.CharacterId != createdCharacter.Id() {
-			t.Errorf("Event character ID should be %d, got %d", createdCharacter.Id(), genericEvent.CharacterId)
-		}
-		if genericEvent.WorldId != world.Id(0) {
-			t.Errorf("Event world ID should be 0, got %d", genericEvent.WorldId)
-		}
-		if genericEvent.TransactionId != transactionId {
-			t.Errorf("Event transaction ID should be %s, got %s", transactionId, genericEvent.TransactionId)
-		}
-
-		// Spot check specific event content
-		switch genericEvent.Type {
-		case character2.StatusEventTypeNameChanged:
-			var nameEvent character2.StatusEvent[character2.StatusEventNameChangedBody]
-			err = json.Unmarshal(eventMessage.Value, &nameEvent)
-			if err != nil {
-				t.Errorf("Failed to unmarshal NAME_CHANGED event: %v", err)
-				continue
-			}
-			if nameEvent.Body.OldName != "OriginalName" {
-				t.Errorf("NAME_CHANGED event: expected old name 'OriginalName', got '%s'", nameEvent.Body.OldName)
-			}
-			if nameEvent.Body.NewName != "UpdatedName" {
-				t.Errorf("NAME_CHANGED event: expected new name 'UpdatedName', got '%s'", nameEvent.Body.NewName)
-			}
-
-		case character2.StatusEventTypeHairChanged:
-			var hairEvent character2.StatusEvent[character2.StatusEventHairChangedBody]
-			err = json.Unmarshal(eventMessage.Value, &hairEvent)
-			if err != nil {
-				t.Errorf("Failed to unmarshal HAIR_CHANGED event: %v", err)
-				continue
-			}
-			if hairEvent.Body.OldHair != 30000 {
-				t.Errorf("HAIR_CHANGED event: expected old hair 30000, got %d", hairEvent.Body.OldHair)
-			}
-			if hairEvent.Body.NewHair != 30100 {
-				t.Errorf("HAIR_CHANGED event: expected new hair 30100, got %d", hairEvent.Body.NewHair)
-			}
-
-		case character2.StatusEventTypeMapChanged:
-			var mapEvent character2.StatusEvent[character2.StatusEventMapChangedBody]
-			err = json.Unmarshal(eventMessage.Value, &mapEvent)
-			if err != nil {
-				t.Errorf("Failed to unmarshal MAP_CHANGED event: %v", err)
-				continue
-			}
-			if mapEvent.Body.OldMapId != _map.Id(40000) {
-				t.Errorf("MAP_CHANGED event: expected old map ID 40000, got %d", mapEvent.Body.OldMapId)
-			}
-			if mapEvent.Body.TargetMapId != _map.Id(110000000) {
-				t.Errorf("MAP_CHANGED event: expected target map ID 110000000, got %d", mapEvent.Body.TargetMapId)
-			}
-		}
-	}
-}

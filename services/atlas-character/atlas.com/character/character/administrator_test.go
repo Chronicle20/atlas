@@ -6,7 +6,6 @@ import (
 	"context"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -309,43 +308,3 @@ func TestMultipleEntityUpdateFunctions(t *testing.T) {
 	}
 }
 
-func TestSetMapId(t *testing.T) {
-	db := testDatabase(t)
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	
-	// Create a test character
-	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("MapTest").SetLevel(1).SetExperience(0).Build()
-	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
-	if err != nil {
-		t.Fatalf("Failed to create character: %v", err)
-	}
-	
-	// Test the SetMapId EntityUpdateFunction
-	setMapIdFunc := character.SetMapId(_map.Id(110000000))
-	columns, _ := setMapIdFunc()
-	
-	// Check that the correct columns are returned
-	if len(columns) != 1 || columns[0] != "MapId" {
-		t.Fatalf("Expected columns [MapId], got %v", columns)
-	}
-	
-	// Test the dynamic update functionality via processor
-	updateInput := character.RestModel{
-		MapId: _map.Id(110000001),
-	}
-	err = processor.Update(message.NewBuffer())(uuid.New(), created.Id(), updateInput)
-	if err != nil {
-		t.Fatalf("Failed to update character map ID: %v", err)
-	}
-	
-	// Verify the update persisted
-	updated, err := processor.GetById()(created.Id())
-	if err != nil {
-		t.Fatalf("Failed to retrieve updated character: %v", err)
-	}
-	
-	if updated.MapId() != 110000001 {
-		t.Fatalf("Expected updated map ID to be 110000001, got %d", updated.MapId())
-	}
-}

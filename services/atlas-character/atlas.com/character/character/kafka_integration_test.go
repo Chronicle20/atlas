@@ -72,7 +72,6 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
@@ -139,9 +138,6 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	}
 	if createdCharacter.SkinColor() != 0 {
 		t.Errorf("Expected SkinColor 0, got %d", createdCharacter.SkinColor())
-	}
-	if createdCharacter.MapId() != _map.Id(40000) {
-		t.Errorf("Expected MapId 40000, got %d", createdCharacter.MapId())
 	}
 
 	// Verify the character ID was assigned (should be > 0)
@@ -213,7 +209,6 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
@@ -304,7 +299,6 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
 		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
@@ -432,7 +426,6 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					SetHair(c.Body.Hair).
 					SetFace(c.Body.Face).
 					SetSkinColor(c.Body.SkinColor).
-					SetMapId(c.Body.MapId).
 					Build()
 
 				// Use the Create function with buffer to populate error events manually

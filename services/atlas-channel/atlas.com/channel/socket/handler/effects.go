@@ -36,28 +36,3 @@ func AnnounceForeignSkillUse(l logrus.FieldLogger) func(ctx context.Context) fun
 		}
 	}
 }
-
-// AnnounceSkillSpecial broadcasts the SKILL_SPECIAL CharacterEffect to the
-// caster's own session. Used by passive procs (e.g., MP Eater) to play the
-// skill's "special" visual without re-broadcasting a full skill-use cast.
-func AnnounceSkillSpecial(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(skillId uint32) model2.Operator[session.Model] {
-			return func(skillId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterSkillSpecialEffectBody(skillId))
-			}
-		}
-	}
-}
-
-// AnnounceForeignSkillSpecial is the same broadcast targeted at other sessions
-// on the caster's map.
-func AnnounceForeignSkillSpecial(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
-	return func(ctx context.Context) func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
-		return func(wp writer.Producer) func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
-			return func(characterId uint32, skillId uint32) model2.Operator[session.Model] {
-				return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterSkillSpecialEffectForeignBody(characterId, skillId))
-			}
-		}
-	}
-}

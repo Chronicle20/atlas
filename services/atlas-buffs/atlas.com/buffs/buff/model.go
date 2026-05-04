@@ -109,6 +109,6 @@ func NewBuff(sourceId int32, level byte, duration int32, changes []stat.Model) (
 		duration:  duration,
 		changes:   changes,
 		createdAt: time.Now(),
-		expiresAt: time.Now().Add(time.Duration(duration) * time.Second),
+		expiresAt: time.Now().Add(time.Duration(duration) * time.Millisecond),
 	}, nil
 }

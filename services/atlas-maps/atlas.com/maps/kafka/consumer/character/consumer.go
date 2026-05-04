@@ -27,6 +27,7 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("status_event")(characterKafka.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 			rf(consumer2.NewConfig(l)("channel_change_request")(characterKafka.EnvCommandTopicChannelChangeRequest)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_command")(characterKafka.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -52,6 +53,10 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		}
 		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopicChannelChangeRequest)()
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChangeRequestFunc(db)))); err != nil {
+			return err
+		}
+		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopic)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMapFunc(db)))); err != nil {
 			return err
 		}
 		return nil

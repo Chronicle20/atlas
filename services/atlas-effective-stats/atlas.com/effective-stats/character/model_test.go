@@ -523,3 +523,46 @@ func TestRecomputeWith_IncludesQualifiedEquipmentInComputed(t *testing.T) {
 		t.Errorf("MaxMp = %d, want 6380", m.Computed().MaxMp())
 	}
 }
+
+func TestBonuses_OmitsUnqualifiedEquipment(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 39, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a).
+		WithBonus(stat.NewBonus("buff:7", stat.TypeStrength, 5))
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+
+	got := m.Bonuses()
+	if len(got) != 1 || got[0].Source() != "buff:7" {
+		t.Errorf("Bonuses() = %+v, want only buff:7 entry", got)
+	}
+}
+
+func TestBonuses_IncludesQualifiedEquipment(t *testing.T) {
+	tn, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ch := channel.NewModel(0, 0)
+	a := NewEquippedAsset(42, 1052095, []stat.Bonus{
+		stat.NewBonus("equipment:42", stat.TypeMaxMp, 50),
+	})
+	m := NewModel(tn, ch, 12345).
+		WithBaseStats(stat.NewBase(4, 25, 40, 4, 1430, 6330)).
+		WithWearer(NewWearerProfile(30, job.Id(200))).
+		WithEquippedAsset(a)
+	prov := func(_ context.Context, id uint32) (equipment.EquipmentRequirements, bool) {
+		return equipment.EquipmentRequirements{ReqLuk: 40}, true
+	}
+	m = m.RecomputeWith(prov, tenant.WithContext(context.Background(), tn))
+
+	got := m.Bonuses()
+	if len(got) != 1 || got[0].Source() != "equipment:42" || got[0].Amount() != 50 {
+		t.Errorf("Bonuses() = %+v, want one equipment:42 MaxMp=50 entry", got)
+	}
+}

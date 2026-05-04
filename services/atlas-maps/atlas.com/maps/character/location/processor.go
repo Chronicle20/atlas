@@ -10,6 +10,8 @@ import (
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"gorm.io/gorm"
 )
 
@@ -35,17 +37,30 @@ func newProcessorWithInfo(l logrus.FieldLogger, ctx context.Context, db *gorm.DB
 }
 
 func (p *ProcessorImpl) Resolve(cur field.Model) (field.Model, ResolutionReason, error) {
+	_, span := otel.GetTracerProvider().Tracer("atlas-maps").Start(p.ctx, "Location.Resolve")
+	defer span.End()
+
+	t := tenant.MustFromContext(p.ctx)
+	span.SetAttributes(
+		attribute.Int("current.map.id", int(cur.MapId())),
+		attribute.String("tenant.id", t.Id().String()),
+	)
+
 	md, err := p.ip.GetById(cur.MapId())
 	if err != nil {
 		p.l.WithError(err).Warnf("location.Resolve: map info unavailable for [%d]; staying put.", cur.MapId())
+		span.SetAttributes(attribute.String("resolution.reason", string(ReasonStayPut)))
 		locationResolutionsTotal.WithLabelValues(string(ReasonStayPut)).Inc()
 		return cur, ReasonStayPut, nil
 	}
+	span.SetAttributes(attribute.Int("forced.return.map.id", int(md.ForcedReturnMapId())))
 	if md.ForcedReturnMapId().IsSentinel() {
+		span.SetAttributes(attribute.String("resolution.reason", string(ReasonStayPut)))
 		locationResolutionsTotal.WithLabelValues(string(ReasonStayPut)).Inc()
 		return cur, ReasonStayPut, nil
 	}
 	resolved := field.NewBuilder(cur.WorldId(), cur.ChannelId(), md.ForcedReturnMapId()).SetInstance(uuid.Nil).Build()
+	span.SetAttributes(attribute.String("resolution.reason", string(ReasonForcedReturn)))
 	locationResolutionsTotal.WithLabelValues(string(ReasonForcedReturn)).Inc()
 	return resolved, ReasonForcedReturn, nil
 }

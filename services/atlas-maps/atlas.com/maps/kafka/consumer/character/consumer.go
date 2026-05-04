@@ -36,6 +36,9 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(characterKafka.EnvEventTopicCharacterStatus)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreatedFunc(db)))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLoginFunc(db)))); err != nil {
 			return err
 		}
@@ -60,6 +63,24 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 			return err
 		}
 		return nil
+	}
+}
+
+// handleStatusEventCreatedFunc seeds character_locations on character creation
+// (task-055 Blocker 2 follow-up). Without this, a freshly created character
+// has no row in character_locations until first LOGIN, and atlas-character's
+// pre-LOGIN location.GetField returns 404 — causing the LOGIN to anchor on
+// mapId=0. Seeding here means the first LOGIN can resolve to the spawn map.
+// channelId is 0 because the character is not yet bound to any channel.
+func handleStatusEventCreatedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventCreatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventCreatedBody]) {
+		if event.Type == characterKafka.EventCharacterStatusTypeCreated {
+			l.Debugf("Character [%d] has been created. worldId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.MapId, event.Body.Instance)
+			f := field.NewBuilder(event.WorldId, 0, event.Body.MapId).SetInstance(event.Body.Instance).Build()
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+				l.WithError(err).Warnf("location.Set on CREATED failed for character [%d].", event.CharacterId)
+			}
+		}
 	}
 }
 

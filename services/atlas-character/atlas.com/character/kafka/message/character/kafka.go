@@ -251,7 +251,9 @@ type StatusEvent[E any] struct {
 }
 
 type StatusEventCreatedBody struct {
-	Name string `json:"name"`
+	Name     string    `json:"name"`
+	MapId    _map.Id   `json:"mapId"`
+	Instance uuid.UUID `json:"instance"`
 }
 
 type StatusEventCreationFailedBody struct {

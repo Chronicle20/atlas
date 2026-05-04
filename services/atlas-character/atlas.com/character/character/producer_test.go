@@ -27,7 +27,7 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 		SetLevel(10).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -98,7 +98,7 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 		SetHair(30000).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 		SetFace(20000).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -214,7 +214,7 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 		SetGender(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -272,7 +272,7 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 		SetSkinColor(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -330,7 +330,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 		SetGm(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -392,7 +392,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		SetGm(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -465,7 +465,7 @@ func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 		SetLevel(10).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}

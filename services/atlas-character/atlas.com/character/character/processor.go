@@ -21,6 +21,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -59,8 +60,8 @@ type Processor interface {
 	SkillModelDecorator(m Model) Model
 	IsValidName(name string) (bool, error)
 	CheckNameValidity(name string, worldId world.Id) (NameValidityResult, error)
-	CreateAndEmit(transactionId uuid.UUID, input Model) (Model, error)
-	Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model) (Model, error)
+	CreateAndEmit(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error)
+	Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error)
 	DeleteAndEmit(transactionId uuid.UUID, characterId uint32) error
 	Delete(mb *message.Buffer) func(transactionId uuid.UUID, characterId uint32) error
 	DeleteByAccountIdAndEmit(accountId uint32) error
@@ -235,11 +236,11 @@ func (p *ProcessorImpl) CheckNameValidity(name string, worldId world.Id) (NameVa
 	return NameValidityResult{Valid: true}, nil
 }
 
-func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model) (Model, error) {
+func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error) {
 	var output Model
 	err := message.Emit(producer.ProviderImpl(p.l)(p.ctx))(func(buf *message.Buffer) error {
 		var err error
-		output, err = p.Create(buf)(transactionId, input)
+		output, err = p.Create(buf)(transactionId, input, mapId)
 		if err != nil {
 			// Emit creation failed event on error
 			_ = buf.Put(character2.EnvEventTopicCharacterStatus, creationFailedEventProvider(transactionId, input.WorldId(), input.Name(), err.Error()))
@@ -249,8 +250,8 @@ func (p *ProcessorImpl) CreateAndEmit(transactionId uuid.UUID, input Model) (Mod
 	return output, err
 }
 
-func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model) (Model, error) {
-	return func(transactionId uuid.UUID, input Model) (Model, error) {
+func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error) {
+	return func(transactionId uuid.UUID, input Model, mapId _map.Id) (Model, error) {
 		ok, err := p.IsValidName(input.Name())
 		if err != nil {
 			p.l.WithError(err).Errorf("Error validating name [%s] during character creation.", input.Name())
@@ -273,7 +274,12 @@ func (p *ProcessorImpl) Create(mb *message.Buffer) func(transactionId uuid.UUID,
 				tx.Rollback()
 				return err
 			}
-			return mb.Put(character2.EnvEventTopicCharacterStatus, createdEventProvider(transactionId, res.Id(), res.WorldId(), res.Name()))
+			// task-055 Blocker 2 follow-up: include the spawn mapId on CREATED so
+			// atlas-maps can seed character_locations before the first LOGIN.
+			// Without this, the first LOGIN's location.GetField returns 404 and
+			// atlas-character falls back to mapId=0, anchoring new characters
+			// on map 0. Instance is always uuid.Nil at creation time.
+			return mb.Put(character2.EnvEventTopicCharacterStatus, createdEventProvider(transactionId, res.Id(), res.WorldId(), res.Name(), mapId))
 		})
 		if txErr != nil {
 			p.l.WithError(txErr).Errorf("Error persisting character in database.")

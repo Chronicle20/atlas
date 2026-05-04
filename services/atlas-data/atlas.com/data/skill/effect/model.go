@@ -162,6 +162,11 @@ func (b *ModelBuilder) SetSkill(skill bool) *ModelBuilder {
 	return b
 }
 
+// Duration returns the effect duration in milliseconds. -1 is the
+// "no duration" sentinel (the wz `time` attribute was missing).
+// Positive values are ms counts converted from raw wz seconds at
+// read time. Consumers should use time.Duration(d) * time.Millisecond.
+// See task-054.
 func (b *ModelBuilder) Duration() int32 {
 	return b.duration
 }

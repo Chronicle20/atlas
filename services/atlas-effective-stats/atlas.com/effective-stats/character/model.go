@@ -92,11 +92,23 @@ func (m Model) Equipped() map[uint32]EquippedAsset {
 	return out
 }
 
+// Bonuses reconstructs the flat list consumed by REST clients: every
+// non-equipment bonus from m.bonuses, plus the snapshot bonuses for every
+// asset in the most-recent qualifying set.
+//
+// This relies on qualifiedSnapshot being current — every state mutation
+// funnels through RecomputeWith (via Processor.RecomputeEquipmentBonuses),
+// so the cache is always populated when REST reads it.
 func (m Model) Bonuses() []stat.Bonus {
-	// Return defensive copy
-	result := make([]stat.Bonus, len(m.bonuses))
-	copy(result, m.bonuses)
-	return result
+	out := make([]stat.Bonus, 0, len(m.bonuses)+len(m.equipped)*4)
+	out = append(out, m.bonuses...)
+	for assetId, snap := range m.equipped {
+		if !m.qualifiedSnapshot[assetId] {
+			continue
+		}
+		out = append(out, snap.bonuses...)
+	}
+	return out
 }
 
 func (m Model) Computed() stat.Computed {

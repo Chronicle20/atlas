@@ -1,6 +1,8 @@
 package location
 
 import (
+	"time"
+
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
@@ -24,6 +26,21 @@ func (m Model) Instance() uuid.UUID   { return m.instance }
 
 func (m Model) Field() field.Model {
 	return field.NewBuilder(m.worldId, m.channelId, m.mapId).SetInstance(m.instance).Build()
+}
+
+// ToEntity projects the immutable Model into its persistence entity for the
+// given tenant. Callers (administrator) supply tenantId because the domain
+// Model deliberately does not carry tenant identity.
+func (m Model) ToEntity(tenantId uuid.UUID) entity {
+	return entity{
+		TenantId:    tenantId,
+		CharacterId: m.characterId,
+		WorldId:     m.worldId,
+		ChannelId:   m.channelId,
+		MapId:       m.mapId,
+		Instance:    m.instance,
+		UpdatedAt:   time.Now(),
+	}
 }
 
 type Builder struct{ m Model }

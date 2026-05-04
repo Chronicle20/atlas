@@ -2,7 +2,6 @@ package location
 
 import (
 	"context"
-	"time"
 
 	"atlas-maps/data/map/info"
 
@@ -67,33 +66,18 @@ func (p *ProcessorImpl) Resolve(cur field.Model) (field.Model, ResolutionReason,
 
 func (p *ProcessorImpl) GetById(characterId uint32) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
-	var e entity
-	if err := p.db.WithContext(p.ctx).
-		Where("tenant_id = ? AND character_id = ?", t.Id(), characterId).
-		First(&e).Error; err != nil {
+	e, err := getByTenantAndCharacterIdProvider(characterId)(t.Id())(p.db.WithContext(p.ctx))()
+	if err != nil {
 		return Model{}, err
 	}
-	return NewBuilder(e.CharacterId).
-		SetWorldId(e.WorldId).
-		SetChannelId(e.ChannelId).
-		SetMapId(e.MapId).
-		SetInstance(e.Instance).
-		Build(), nil
+	return Make(e)
 }
 
 func (p *ProcessorImpl) Set(characterId uint32, f field.Model) (Model, error) {
 	t := tenant.MustFromContext(p.ctx)
-	e := entity{
-		TenantId:    t.Id(),
-		CharacterId: characterId,
-		WorldId:     f.WorldId(),
-		ChannelId:   f.ChannelId(),
-		MapId:       f.MapId(),
-		Instance:    f.Instance(),
-		UpdatedAt:   time.Now(),
-	}
-	if err := p.db.WithContext(p.ctx).Save(&e).Error; err != nil {
+	e, err := upsertLocation(p.db.WithContext(p.ctx))(t.Id())(characterId)(f)
+	if err != nil {
 		return Model{}, err
 	}
-	return NewBuilder(e.CharacterId).SetField(f).Build(), nil
+	return Make(e)
 }

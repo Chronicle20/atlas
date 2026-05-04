@@ -21,7 +21,6 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/stat"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -55,7 +54,6 @@ type Processor interface {
 	ByIdProvider(decorators ...model.Decorator[Model]) func(id uint32) model.Provider[Model]
 	GetById(decorators ...model.Decorator[Model]) func(id uint32) (Model, error)
 	GetForAccountInWorld(decorators ...model.Decorator[Model]) func(accountId uint32, worldId world.Id) ([]Model, error)
-	GetForMapInWorld(decorators ...model.Decorator[Model]) func(worldId world.Id, mapId _map.Id) ([]Model, error)
 	GetForName(decorators ...model.Decorator[Model]) func(name string) ([]Model, error)
 	GetAll(decorators ...model.Decorator[Model]) ([]Model, error)
 	SkillModelDecorator(m Model) Model
@@ -167,13 +165,6 @@ func (p *ProcessorImpl) GetForAccountInWorld(decorators ...model.Decorator[Model
 	return func(accountId uint32, worldId world.Id) ([]Model, error) {
 		mp := model.SliceMap(modelFromEntity)(getForAccountInWorld(accountId, worldId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
 		return model.SliceMap(model.Decorate(decorators))(mp)(model.ParallelMap())()
-	}
-}
-
-func (p *ProcessorImpl) GetForMapInWorld(decorators ...model.Decorator[Model]) func(worldId world.Id, mapId _map.Id) ([]Model, error) {
-	return func(worldId world.Id, mapId _map.Id) ([]Model, error) {
-		mp := model.SliceMap(modelFromEntity)(getForMapInWorld(worldId, mapId)(p.db.WithContext(p.ctx)))(model.ParallelMap())
-		return model.SliceMap(model.Decorate[Model](decorators))(mp)(model.ParallelMap())()
 	}
 }
 

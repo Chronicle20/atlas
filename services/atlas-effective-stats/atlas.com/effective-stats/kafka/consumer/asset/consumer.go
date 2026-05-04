@@ -70,11 +70,16 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 		return
 	}
 
-	var equipData *inventory.EquipableRestData
+	var (
+		equipData      *inventory.EquipableRestData
+		foundInCompart bool
+		actualSlot     int16
+	)
 	for _, a := range compartment.Assets {
 		if a.Id == e.AssetId {
-			data, ok := a.GetEquipableData()
-			if ok {
+			foundInCompart = true
+			actualSlot = a.Slot
+			if data, ok := a.GetEquipableData(); ok {
 				equipData = &data
 			}
 			break
@@ -82,7 +87,13 @@ func handleItemEquipped(l logrus.FieldLogger, ctx context.Context, e asset.Statu
 	}
 
 	if equipData == nil {
-		l.Warnf("Could not find equipment data for asset [%d].", e.AssetId)
+		if !foundInCompart {
+			l.Warnf("Equip event for asset [%d] character [%d] but asset is not present in the equip compartment (event slot=[%d] oldSlot=[%d], compartment has %d assets). Likely a read-after-write race or concurrent delete.",
+				e.AssetId, e.CharacterId, e.Slot, e.Body.OldSlot, len(compartment.Assets))
+		} else {
+			l.Warnf("Equip event for asset [%d] character [%d] but inventory shows asset at non-equipped slot [%d] (event claims slot=[%d] oldSlot=[%d]). Possible upstream MOVED slot-semantic inversion — verify atlas-inventory's MovedEventStatusProvider call site.",
+				e.AssetId, e.CharacterId, actualSlot, e.Slot, e.Body.OldSlot)
+		}
 		return
 	}
 

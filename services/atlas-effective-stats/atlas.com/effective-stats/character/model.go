@@ -1,7 +1,9 @@
 package character
 
 import (
+	"atlas-effective-stats/external/data/equipment"
 	"atlas-effective-stats/stat"
+	"context"
 	"encoding/json"
 	"math"
 	"strconv"
@@ -247,10 +249,12 @@ func copyEquipped(src map[uint32]EquippedAsset) map[uint32]EquippedAsset {
 	return out
 }
 
-// ComputeEffectiveStats calculates effective stats from base stats and bonuses
-// Formula: effective = floor((base + flat_bonuses) * (1.0 + multiplier_bonuses))
-func (m Model) ComputeEffectiveStats() stat.Computed {
-	// Initialize with base stats
+// ComputeEffectiveStats calculates effective stats from base + non-equipment
+// bonuses + the qualifying-equipment subset described by `qualified`.
+//
+// `qualified` is the output of QualifiedEquipment for the same model; passing
+// a stale or wrong-sized map silently produces a stale Computed.
+func (m Model) ComputeEffectiveStats(qualified map[uint32]bool) stat.Computed {
 	baseValues := map[stat.Type]int32{
 		stat.TypeStrength:      int32(m.baseStats.Strength()),
 		stat.TypeDexterity:     int32(m.baseStats.Dexterity()),
@@ -268,24 +272,30 @@ func (m Model) ComputeEffectiveStats() stat.Computed {
 		stat.TypeJump:          0,
 	}
 
-	// Sum flat bonuses and multipliers for each stat type
 	flatBonuses := make(map[stat.Type]int32)
 	multipliers := make(map[stat.Type]float64)
-
 	for _, statType := range stat.AllTypes() {
 		flatBonuses[statType] = 0
 		multipliers[statType] = 0.0
 	}
 
+	// Non-equipment bonuses contribute both flat and multiplier values.
 	for _, b := range m.bonuses {
 		flatBonuses[b.StatType()] += b.Amount()
 		multipliers[b.StatType()] += b.Multiplier()
 	}
 
-	// Calculate effective values
-	// effective = floor((base + flat) * (1.0 + multiplier))
-	// MaxHp / MaxMp are clamped to MaxHpMpCap (30000) — see the
-	// MaxHpMpCap doc comment for the rationale.
+	// Equipment bonuses contribute only flat values (existing semantics) and
+	// only for assets that survived the qualification gate.
+	for assetId, snap := range m.equipped {
+		if !qualified[assetId] {
+			continue
+		}
+		for _, b := range snap.bonuses {
+			flatBonuses[b.StatType()] += b.Amount()
+		}
+	}
+
 	computeEffective := func(statType stat.Type) uint32 {
 		base := baseValues[statType]
 		flat := flatBonuses[statType]
@@ -322,10 +332,23 @@ func (m Model) ComputeEffectiveStats() stat.Computed {
 	)
 }
 
-// Recompute returns a new model with freshly computed effective stats
+// Recompute recomputes effective stats assuming every equipped item
+// qualifies. Use it only in unit tests or paths that have already gated
+// equipment via legacy bonuses[]; production code should use RecomputeWith.
 func (m Model) Recompute() Model {
-	computed := m.ComputeEffectiveStats()
-	return m.WithComputed(computed)
+	qualified := make(map[uint32]bool, len(m.equipped))
+	for id := range m.equipped {
+		qualified[id] = true
+	}
+	return m.WithComputed(m.ComputeEffectiveStats(qualified)).withQualifiedSnapshot(qualified)
+}
+
+// RecomputeWith runs the fixed-point qualification iteration via reqProvider,
+// caches the qualifying set on the returned model, and rebuilds Computed
+// from the qualifying subset.
+func (m Model) RecomputeWith(reqProvider equipment.Provider, ctx context.Context) Model {
+	qualified := m.QualifiedEquipment(reqProvider, ctx)
+	return m.WithComputed(m.ComputeEffectiveStats(qualified)).withQualifiedSnapshot(qualified)
 }
 
 type wearerJSON struct {

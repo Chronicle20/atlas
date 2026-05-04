@@ -44,7 +44,7 @@ func TestBuff_Timestamps(t *testing.T) {
 	assert.True(t, !b.CreatedAt().After(after), "CreatedAt should be before or equal to after")
 
 	// ExpiresAt should be approximately duration seconds after CreatedAt
-	expectedExpiry := b.CreatedAt().Add(time.Duration(duration) * time.Second)
+	expectedExpiry := b.CreatedAt().Add(time.Duration(duration) * time.Millisecond)
 	diff := b.ExpiresAt().Sub(expectedExpiry)
 	assert.True(t, diff >= -time.Millisecond && diff <= time.Millisecond,
 		"ExpiresAt should be within 1ms of expected expiry")
@@ -143,4 +143,26 @@ func TestBuff_Accessors(t *testing.T) {
 	assert.NotNil(t, b.Changes())
 	assert.NotZero(t, b.CreatedAt())
 	assert.NotZero(t, b.ExpiresAt())
+}
+
+// TestBuff_DurationInMilliseconds pins the unit contract for atlas-buffs:
+// Duration is interpreted as time.Millisecond (NOT time.Second). Aligned
+// with atlas-data's reader emitting ms after task-054.
+func TestBuff_DurationInMilliseconds(t *testing.T) {
+	sourceId := int32(2001001)
+	duration := int32(60000) // 60 seconds expressed in ms
+	changes := setupTestChanges()
+
+	b, err := NewBuff(sourceId, byte(5), duration, changes)
+	assert.NoError(t, err)
+
+	gap := b.ExpiresAt().Sub(b.CreatedAt())
+	expected := 60 * time.Second
+	tolerance := 50 * time.Millisecond
+	diff := gap - expected
+	if diff < 0 {
+		diff = -diff
+	}
+	assert.True(t, diff <= tolerance,
+		"expected ExpiresAt-CreatedAt within %v of %v, got %v (diff %v)", tolerance, expected, gap, diff)
 }

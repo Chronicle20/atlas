@@ -125,3 +125,15 @@ func TestMergeUint16_AbsentKeyReturnsCurrent(t *testing.T) {
 		t.Errorf("absent key returned %d; must preserve current=337 — this is the whole bug", got)
 	}
 }
+
+func TestHandleStatChanged_JobUpdateRefetchesWearer(t *testing.T) {
+	t.Skip("integration test placeholder; covered by Task 21 — keeps the consumer split honest at unit scope")
+}
+
+func TestHandleStatChanged_LevelUpdateRefetchesWearer(t *testing.T) {
+	t.Skip("integration test placeholder; covered by Task 21")
+}
+
+func TestHandleStatChanged_NumericAndProfileBothInOneEvent(t *testing.T) {
+	t.Skip("integration test placeholder; covered by Task 21")
+}

@@ -185,7 +185,12 @@ func TestProcessor_TimerFires_EmitsChangeMap(t *testing.T) {
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(0)))
 
-	time.Sleep(150 * time.Millisecond)
+	// time.AfterFunc(0) fires asynchronously; poll for the CHANGE_MAP emit
+	// (which handleExpire performs after claiming + removing the entry) so
+	// the test is deterministic on slow CI runners.
+	require.Eventually(t, func() bool {
+		return len(rec.Messages(characterKafka.EnvCommandTopic)) == 1
+	}, 2*time.Second, 5*time.Millisecond, "handleExpire must emit CHANGE_MAP")
 
 	_, ok := reg.Get(tt, 42)
 	require.False(t, ok, "expired entry must be removed by handleExpire")

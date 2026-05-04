@@ -319,13 +319,10 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			return
 		}
 
-		// MapId on the create command body is intentionally ignored here.
-		// task-055-forced-return-on-exit Phase 5 transferred map ownership
-		// to atlas-maps; the initial location for a freshly created
-		// character is established when LOGIN flows through atlas-maps.
-		// TODO(task-055-followup): seed atlas-maps' character_locations
-		// with c.Body.MapId at character creation time so the first LOGIN
-		// can find the spawn map. Tracked separately from this refactor.
+		// task-055 Blocker 2 follow-up: c.Body.MapId is now propagated to
+		// atlas-maps on the CREATED status event so atlas-maps can seed
+		// character_locations before the first LOGIN. atlas-maps owns the
+		// row; atlas-character only forwards the spawn map on the wire.
 		model := character.NewModelBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
@@ -353,7 +350,7 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 		// orchestrator's character-status consumer receives the failure
 		// signal regardless. This log line makes the failure visible in
 		// operational logs with full saga correlation.
-		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model); err != nil {
+		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId); err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": c.TransactionId.String(),
 				"account_id":     c.Body.AccountId,

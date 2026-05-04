@@ -41,7 +41,7 @@ func TestPatchCharacterIntegration(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestPatchCharacterPartialUpdate(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -197,7 +197,7 @@ func TestPatchCharacterWithInvalidName(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -254,7 +254,7 @@ func TestPatchCharacterWithInvalidHair(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestPatchCharacterWithInvalidGender(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -396,7 +396,7 @@ func TestPatchCharacterWithNoUpdates(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -486,12 +486,12 @@ func TestPatchCharacterWithDuplicateName(t *testing.T) {
 	processor := character.NewProcessor(logger, tctx, db)
 
 	// Create both characters
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), firstCharacter)
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), firstCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
 
-	createdSecondCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), secondCharacter)
+	createdSecondCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), secondCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create second character: %v", err)
 	}
@@ -548,7 +548,7 @@ func TestPatchCharacterWithInvalidFace(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -605,7 +605,7 @@ func TestPatchCharacterWithInvalidSkinColor(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -662,7 +662,7 @@ func TestPatchCharacterWithInvalidNameTooShort(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -719,7 +719,7 @@ func TestPatchCharacterWithInvalidNameSpecialCharacters(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -776,7 +776,7 @@ func TestNameChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -889,7 +889,7 @@ func TestHairChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -1002,7 +1002,7 @@ func TestFaceChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -1115,7 +1115,7 @@ func TestGenderChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -1228,7 +1228,7 @@ func TestSkinColorChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}
@@ -1342,7 +1342,7 @@ func TestGmChangedEventEmission(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter)
+	createdCharacter, err := processor.Create(message.NewBuffer())(uuid.New(), originalCharacter, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character for testing: %v", err)
 	}

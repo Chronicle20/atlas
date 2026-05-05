@@ -3,28 +3,31 @@ package card
 import (
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 )
 
 const (
-	MinCardId       uint32 = 2380000
-	MaxCardId       uint32 = 2389999
-	SpecialCardBase uint32 = 2388000 // cardId/1000 >= 2388
-	MaxLevel        uint8  = 5
+	MaxLevel uint8 = 5
 )
 
-func IsCardId(itemId uint32) bool {
-	return itemId >= MinCardId && itemId <= MaxCardId
+// IsCardId reports whether the given itemId is a monster-book card item.
+func IsCardId(itemId item.Id) bool {
+	return item.GetClassification(itemId) == item.ClassificationConsumableMonsterCard
 }
 
-func IsSpecialCard(cardId uint32) bool {
-	return cardId/1000 >= 2388
+// IsSpecialCard reports whether the given cardId belongs to the special-card
+// range. The threshold (cardId/1000 >= 2388) is a v1 hardcoded knob — see
+// design §6.4.
+func IsSpecialCard(cardId item.Id) bool {
+	return uint32(cardId)/1000 >= 2388
 }
 
 type Model struct {
 	tenantId        uuid.UUID
-	characterId     uint32
-	cardId          uint32
+	characterId     character.Id
+	cardId          item.Id
 	level           uint8
 	isSpecial       bool
 	lastEventId     *uuid.UUID
@@ -33,8 +36,8 @@ type Model struct {
 }
 
 func (m Model) TenantId() uuid.UUID        { return m.tenantId }
-func (m Model) CharacterId() uint32        { return m.characterId }
-func (m Model) CardId() uint32             { return m.cardId }
+func (m Model) CharacterId() character.Id  { return m.characterId }
+func (m Model) CardId() item.Id            { return m.cardId }
 func (m Model) Level() uint8               { return m.level }
 func (m Model) IsSpecial() bool            { return m.isSpecial }
 func (m Model) LastEventId() *uuid.UUID    { return m.lastEventId }

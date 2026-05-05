@@ -8,6 +8,8 @@ import (
 	"atlas-monster-book/collection"
 	"atlas-monster-book/rest"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/google/uuid"
@@ -39,7 +41,8 @@ func InitResource(si jsonapi.ServerInformation) func(*gorm.DB) server.RouteIniti
 
 func handleGet(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(rawId uint32) http.HandlerFunc {
+			characterId := characterconst.Id(rawId)
 			return func(w http.ResponseWriter, r *http.Request) {
 				p := collection.NewProcessor(d.Logger(), d.Context(), db)
 				m, err := p.GetByCharacterId(characterId)
@@ -56,7 +59,8 @@ func handleGet(db *gorm.DB) rest.GetHandler {
 
 func handlePatch(db *gorm.DB) rest.InputHandler[collection.PatchInput] {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext, in collection.PatchInput) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(rawId uint32) http.HandlerFunc {
+			characterId := characterconst.Id(rawId)
 			return func(w http.ResponseWriter, r *http.Request) {
 				p := collection.NewProcessor(d.Logger(), d.Context(), db)
 				if err := p.SetCoverAndEmit(uuid.New(), characterId, in.CoverCardId); err != nil {
@@ -77,7 +81,8 @@ func handlePatch(db *gorm.DB) rest.InputHandler[collection.PatchInput] {
 
 func handleListCards(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(rawId uint32) http.HandlerFunc {
+			characterId := characterconst.Id(rawId)
 			return func(w http.ResponseWriter, r *http.Request) {
 				cp := card.NewProcessor(d.Logger(), d.Context(), db)
 				ms, err := cp.GetByCharacterId(characterId)
@@ -124,8 +129,10 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 
 func handleGetCard(db *gorm.DB) rest.GetHandler {
 	return func(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-		return rest.ParseCharacterId(d.Logger(), func(characterId uint32) http.HandlerFunc {
-			return rest.ParseCardId(d.Logger(), func(cardId uint32) http.HandlerFunc {
+		return rest.ParseCharacterId(d.Logger(), func(rawCharId uint32) http.HandlerFunc {
+			characterId := characterconst.Id(rawCharId)
+			return rest.ParseCardId(d.Logger(), func(rawCardId uint32) http.HandlerFunc {
+				cardId := item.Id(rawCardId)
 				return func(w http.ResponseWriter, r *http.Request) {
 					cp := card.NewProcessor(d.Logger(), d.Context(), db)
 					m, err := cp.GetByCharacterIdAndCardId(characterId, cardId)

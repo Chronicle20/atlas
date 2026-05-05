@@ -3,10 +3,12 @@ package card
 import (
 	"strconv"
 	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 )
 
 type RestModel struct {
-	CardId          uint32    `json:"-"`
+	CardId          item.Id   `json:"-"`
 	Level           uint8     `json:"level"`
 	IsSpecial       bool      `json:"isSpecial"`
 	FirstAcquiredAt time.Time `json:"firstAcquiredAt"`
@@ -19,7 +21,7 @@ func (r *RestModel) SetID(id string) error {
 	if err != nil {
 		return err
 	}
-	r.CardId = uint32(v)
+	r.CardId = item.Id(v)
 	return nil
 }
 

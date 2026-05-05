@@ -1,15 +1,20 @@
 package collection
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+)
 
 type RestModel struct {
-	Id               uint32 `json:"-"`
-	BookLevel        uint16 `json:"bookLevel"`
-	NormalCount      uint16 `json:"normalCount"`
-	SpecialCount     uint16 `json:"specialCount"`
-	TotalUniqueCards uint16 `json:"totalUniqueCards"`
-	CoverCardId      uint32 `json:"coverCardId"`
-	ExpBonusPercent  uint16 `json:"expBonusPercent"`
+	Id               character.Id `json:"-"`
+	BookLevel        uint16       `json:"bookLevel"`
+	NormalCount      uint16       `json:"normalCount"`
+	SpecialCount     uint16       `json:"specialCount"`
+	TotalUniqueCards uint16       `json:"totalUniqueCards"`
+	CoverCardId      item.Id      `json:"coverCardId"`
+	ExpBonusPercent  uint16       `json:"expBonusPercent"`
 }
 
 func (r RestModel) GetName() string { return "monster-book" }
@@ -19,7 +24,7 @@ func (r *RestModel) SetID(id string) error {
 	if err != nil {
 		return err
 	}
-	r.Id = uint32(v)
+	r.Id = character.Id(v)
 	return nil
 }
 
@@ -36,8 +41,8 @@ func Transform(m Model) (RestModel, error) {
 }
 
 type PatchInput struct {
-	Id          uint32 `json:"-"`
-	CoverCardId uint32 `json:"coverCardId"`
+	Id          character.Id `json:"-"`
+	CoverCardId item.Id      `json:"coverCardId"`
 }
 
 func (p PatchInput) GetName() string { return "monster-book" }
@@ -47,6 +52,6 @@ func (p *PatchInput) SetID(id string) error {
 	if err != nil {
 		return err
 	}
-	p.Id = uint32(v)
+	p.Id = character.Id(v)
 	return nil
 }

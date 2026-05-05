@@ -3,6 +3,7 @@ package card
 import (
 	"testing"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 )
 
@@ -13,8 +14,9 @@ func TestBuilderRejectsZeroCharacter(t *testing.T) {
 	}
 }
 
-func TestBuilderRejectsOutOfRangeCardId(t *testing.T) {
-	for _, badId := range []uint32{0, 2370000, 2390000, 2389999 + 1} {
+func TestBuilderRejectsNonCardItemId(t *testing.T) {
+	// 0 is not a card; 2370000 belongs to classification 237 (not 238); 1234 is too small.
+	for _, badId := range []item.Id{0, 2370000, 1234} {
 		if _, err := NewModelBuilder().SetCharacterId(1).SetCardId(badId).SetLevel(1).Build(); err == nil {
 			t.Fatalf("expected reject for cardId %d", badId)
 		}
@@ -30,7 +32,7 @@ func TestBuilderRejectsLevelOutOfRange(t *testing.T) {
 }
 
 func TestIsSpecialDerivation(t *testing.T) {
-	cases := map[uint32]bool{
+	cases := map[item.Id]bool{
 		2380000: false,
 		2387999: false,
 		2388000: true,

@@ -4,13 +4,15 @@ import (
 	"errors"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 )
 
 type ModelBuilder struct {
 	tenantId         uuid.UUID
-	characterId      uint32
-	coverCardId      uint32
+	characterId      character.Id
+	coverCardId      item.Id
 	bookLevel        uint16
 	normalCount      uint16
 	specialCount     uint16
@@ -38,8 +40,8 @@ func CloneModelBuilder(m Model) *ModelBuilder {
 }
 
 func (b *ModelBuilder) SetTenantId(v uuid.UUID) *ModelBuilder         { b.tenantId = v; return b }
-func (b *ModelBuilder) SetCharacterId(v uint32) *ModelBuilder         { b.characterId = v; return b }
-func (b *ModelBuilder) SetCoverCardId(v uint32) *ModelBuilder         { b.coverCardId = v; return b }
+func (b *ModelBuilder) SetCharacterId(v character.Id) *ModelBuilder   { b.characterId = v; return b }
+func (b *ModelBuilder) SetCoverCardId(v item.Id) *ModelBuilder        { b.coverCardId = v; return b }
 func (b *ModelBuilder) SetBookLevel(v uint16) *ModelBuilder           { b.bookLevel = v; return b }
 func (b *ModelBuilder) SetNormalCount(v uint16) *ModelBuilder         { b.normalCount = v; return b }
 func (b *ModelBuilder) SetSpecialCount(v uint16) *ModelBuilder        { b.specialCount = v; return b }
@@ -78,8 +80,8 @@ func (b *ModelBuilder) MustBuild() Model {
 func Make(e entity) (Model, error) {
 	return NewModelBuilder().
 		SetTenantId(e.TenantId).
-		SetCharacterId(e.CharacterId).
-		SetCoverCardId(e.CoverCardId).
+		SetCharacterId(character.Id(e.CharacterId)).
+		SetCoverCardId(item.Id(e.CoverCardId)).
 		SetBookLevel(e.BookLevel).
 		SetNormalCount(e.NormalCount).
 		SetSpecialCount(e.SpecialCount).

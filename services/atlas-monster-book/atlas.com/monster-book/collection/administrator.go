@@ -3,6 +3,8 @@ package collection
 import (
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -17,10 +19,10 @@ type statsUpdate struct {
 
 // upsertStats inserts or updates the per-character collection row.
 // Returns true if the row was inserted (vs updated).
-func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId uint32, s statsUpdate) (bool, error) {
+func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, s statsUpdate) (bool, error) {
 	e := entity{
 		TenantId:        tenantId,
-		CharacterId:     characterId,
+		CharacterId:     uint32(characterId),
 		NormalCount:     s.NormalCount,
 		SpecialCount:    s.SpecialCount,
 		BookLevel:       s.BookLevel,
@@ -40,12 +42,12 @@ func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId uint32, s statsUpd
 
 // setCover updates the cover card guarded by lastCoverEventId.
 // Returns true if the row was modified, false if duplicate eventId.
-func setCover(db *gorm.DB, tenantId uuid.UUID, characterId uint32, coverCardId uint32, eventId uuid.UUID) (bool, error) {
+func setCover(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, coverCardId item.Id, eventId uuid.UUID) (bool, error) {
 	res := db.Model(&entity{}).
-		Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+		Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).
 		Where("last_cover_event_id IS NULL OR last_cover_event_id <> ?", eventId).
 		Updates(map[string]interface{}{
-			"cover_card_id":       coverCardId,
+			"cover_card_id":       uint32(coverCardId),
 			"last_cover_event_id": eventId,
 		})
 	if res.Error != nil {
@@ -56,7 +58,7 @@ func setCover(db *gorm.DB, tenantId uuid.UUID, characterId uint32, coverCardId u
 		// Distinguish by checking existence.
 		var count int64
 		if err := db.Model(&entity{}).
-			Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+			Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).
 			Count(&count).Error; err != nil {
 			return false, err
 		}
@@ -68,12 +70,12 @@ func setCover(db *gorm.DB, tenantId uuid.UUID, characterId uint32, coverCardId u
 	return true, nil
 }
 
-func getByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId uint32) (entity, error) {
+func getByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId character.Id) (entity, error) {
 	var e entity
-	err := db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).First(&e).Error
+	err := db.Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).First(&e).Error
 	return e, err
 }
 
-func deleteByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-	return db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Delete(&entity{}).Error
+func deleteByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId character.Id) error {
+	return db.Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).Delete(&entity{}).Error
 }

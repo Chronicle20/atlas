@@ -3,6 +3,8 @@ package card
 import (
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -16,21 +18,21 @@ type UpsertResult struct {
 
 // upsertCard inserts at level 1 or increments level (cap MaxLevel) for an existing row,
 // guarded by lastEventId for idempotency. Runs in the caller's transaction.
-func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId uint32, cardId uint32, eventId uuid.UUID) (UpsertResult, error) {
+func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, cardId item.Id, eventId uuid.UUID) (UpsertResult, error) {
 	if !IsCardId(cardId) {
-		return UpsertResult{}, errors.New("cardId out of range")
+		return UpsertResult{}, errors.New("cardId is not a monster-book card item")
 	}
 
 	// Try to load existing row.
 	var existing entity
-	err := db.Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, characterId, cardId).
+	err := db.Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, uint32(characterId), uint32(cardId)).
 		First(&existing).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		e := entity{
 			TenantId:    tenantId,
-			CharacterId: characterId,
-			CardId:      cardId,
+			CharacterId: uint32(characterId),
+			CardId:      uint32(cardId),
 			Level:       1,
 			IsSpecial:   IsSpecialCard(cardId),
 			LastEventId: &eventId,
@@ -53,7 +55,7 @@ func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId uint32, cardId uint
 		// Persist the eventId so future replays of *this* eventId no-op,
 		// but level stays capped.
 		if err := db.Model(&entity{}).
-			Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, characterId, cardId).
+			Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, uint32(characterId), uint32(cardId)).
 			Update("last_event_id", eventId).Error; err != nil {
 			return UpsertResult{}, err
 		}
@@ -62,13 +64,13 @@ func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId uint32, cardId uint
 
 	newLevel := existing.Level + 1
 	if err := db.Model(&entity{}).
-		Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, characterId, cardId).
+		Where("tenant_id = ? AND character_id = ? AND card_id = ?", tenantId, uint32(characterId), uint32(cardId)).
 		Updates(map[string]interface{}{"level": newLevel, "last_event_id": eventId}).Error; err != nil {
 		return UpsertResult{}, err
 	}
 	return UpsertResult{Inserted: false, NewLevel: newLevel, Full: newLevel >= MaxLevel, Duplicate: false}, nil
 }
 
-func deleteByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId uint32) error {
-	return db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).Delete(&entity{}).Error
+func deleteByCharacter(db *gorm.DB, tenantId uuid.UUID, characterId character.Id) error {
+	return db.Where("tenant_id = ? AND character_id = ?", tenantId, uint32(characterId)).Delete(&entity{}).Error
 }

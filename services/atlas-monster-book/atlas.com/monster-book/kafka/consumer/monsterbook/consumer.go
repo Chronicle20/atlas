@@ -10,6 +10,8 @@ import (
 	mbmsg "atlas-monster-book/kafka/message/monsterbook"
 	"atlas-monster-book/kafka/producer"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kmessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -49,11 +51,13 @@ func handleCardPickedUp(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Cont
 		if cmd.Type != mbmsg.CommandTypeCardPickedUp {
 			return
 		}
+		characterId := character.Id(cmd.CharacterId)
+		cardId := item.Id(cmd.Body.CardId)
 		err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			return message.Emit(producer.ProviderImpl(l)(ctx))(func(mb *message.Buffer) error {
 				cp := card.NewProcessor(l, ctx, tx)
 				colp := collection.NewProcessor(l, ctx, tx)
-				res, err := cp.Add(mb)(cmd.EventId, cmd.CharacterId, cmd.Body.CardId)
+				res, err := cp.Add(mb)(cmd.EventId, characterId, cardId)
 				if err != nil {
 					return err
 				}
@@ -61,7 +65,7 @@ func handleCardPickedUp(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Cont
 					return nil
 				}
 				if res.Inserted {
-					return colp.RecomputeAndEmit(mb)(cmd.CharacterId)
+					return colp.RecomputeAndEmit(mb)(characterId)
 				}
 				return nil
 			})
@@ -78,7 +82,7 @@ func handleSetCover(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context,
 			return
 		}
 		colp := collection.NewProcessor(l, ctx, db)
-		if err := colp.SetCoverAndEmit(cmd.EventId, cmd.CharacterId, cmd.Body.CoverCardId); err != nil {
+		if err := colp.SetCoverAndEmit(cmd.EventId, character.Id(cmd.CharacterId), item.Id(cmd.Body.CoverCardId)); err != nil {
 			l.WithError(err).Warnf("SetCover rejected for character %d cover %d.", cmd.CharacterId, cmd.Body.CoverCardId)
 		}
 	}

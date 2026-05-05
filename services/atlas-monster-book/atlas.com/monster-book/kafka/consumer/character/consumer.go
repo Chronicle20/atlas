@@ -8,6 +8,7 @@ import (
 	consumer2 "atlas-monster-book/kafka/consumer"
 	characterMsg "atlas-monster-book/kafka/message/character"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -44,13 +45,14 @@ func handleStatusEventDeleted(db *gorm.DB) message.Handler[characterMsg.StatusEv
 		if e.Type != characterMsg.StatusEventTypeDeleted {
 			return
 		}
+		characterId := character.Id(e.CharacterId)
 		if err := db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 			cp := card.NewProcessor(l, ctx, tx)
 			colp := collection.NewProcessor(l, ctx, tx)
-			if err := cp.DeleteByCharacterId(e.CharacterId); err != nil {
+			if err := cp.DeleteByCharacterId(characterId); err != nil {
 				return err
 			}
-			return colp.DeleteByCharacterId(e.CharacterId)
+			return colp.DeleteByCharacterId(characterId)
 		}); err != nil {
 			l.WithError(err).Errorf("Cascading monster-book delete failed for character %d.", e.CharacterId)
 		}

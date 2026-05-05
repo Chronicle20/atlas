@@ -9,6 +9,8 @@ import (
 	"atlas-monster-book/kafka/message/monsterbook"
 	"atlas-monster-book/kafka/producer"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	kafkaProducer "github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -48,11 +50,11 @@ type experienceStatusEvent struct {
 }
 
 type Processor interface {
-	GetByCharacterId(characterId uint32) (Model, error)
-	SetCoverAndEmit(eventId uuid.UUID, characterId uint32, cardId uint32) error
-	RecomputeAndEmit(mb *message.Buffer) func(characterId uint32) error
+	GetByCharacterId(characterId character.Id) (Model, error)
+	SetCoverAndEmit(eventId uuid.UUID, characterId character.Id, cardId item.Id) error
+	RecomputeAndEmit(mb *message.Buffer) func(characterId character.Id) error
 	WithTransaction(tx *gorm.DB) Processor
-	DeleteByCharacterId(characterId uint32) error
+	DeleteByCharacterId(characterId character.Id) error
 }
 
 type ProcessorImpl struct {
@@ -83,7 +85,7 @@ func (p *ProcessorImpl) WithTransaction(tx *gorm.DB) Processor {
 	}
 }
 
-func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Model, error) {
 	m, err := entityModelMapper(byCharacterIdEntityProvider(p.t.Id(), characterId)(p.db.WithContext(p.ctx)))()
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -98,7 +100,7 @@ func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Model, error) {
 	return m, nil
 }
 
-func (p *ProcessorImpl) DeleteByCharacterId(characterId uint32) error {
+func (p *ProcessorImpl) DeleteByCharacterId(characterId character.Id) error {
 	return deleteByCharacter(p.db.WithContext(p.ctx), p.t.Id(), characterId)
 }
 
@@ -125,8 +127,8 @@ func computeExpBonusPercent(bookLevel uint16) uint16 {
 	return bookLevel
 }
 
-func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId uint32) error {
-	return func(characterId uint32) error {
+func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId character.Id) error {
+	return func(characterId character.Id) error {
 		normals, err := p.cp.GetByCharacterIdAndIsSpecial(characterId, false)
 		if err != nil {
 			return err
@@ -166,7 +168,7 @@ func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId ui
 		// STATS_CHANGED on monster-book status topic.
 		statsEv := monsterbook.StatusEvent[monsterbook.StatsChangedBody]{
 			TenantId:    p.t.Id(),
-			CharacterId: characterId,
+			CharacterId: uint32(characterId),
 			EventId:     uuid.New(),
 			Type:        monsterbook.StatusEventTypeStatsChanged,
 			Body: monsterbook.StatsChangedBody{
@@ -186,7 +188,7 @@ func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId ui
 		// consumes. Subset of character.StatusEvent[ExperienceChangedStatusEventBody]
 		// — the consumer only reads CharacterId, Type, and Body.Distributions[].
 		expEv := experienceStatusEvent{
-			CharacterId: characterId,
+			CharacterId: uint32(characterId),
 			Type:        experienceStatusEventTypeChanged,
 			Body: experienceChangedBody{
 				Distributions: []experienceDistribution{{
@@ -202,11 +204,11 @@ func (p *ProcessorImpl) RecomputeAndEmit(mb *message.Buffer) func(characterId ui
 	}
 }
 
-func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId uint32, cardId uint32) error {
+func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character.Id, cardId item.Id) error {
 	// Validate ownership. cardId == 0 is allowed and clears the cover.
 	if cardId != 0 {
 		if !card.IsCardId(cardId) {
-			return errors.New("cardId out of range")
+			return errors.New("cardId is not a monster-book card item")
 		}
 		owned, err := p.cp.GetByCharacterIdAndCardId(characterId, cardId)
 		if err != nil {
@@ -230,11 +232,11 @@ func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId uint32, c
 		}
 		ev := monsterbook.StatusEvent[monsterbook.CoverChangedBody]{
 			TenantId:    p.t.Id(),
-			CharacterId: characterId,
+			CharacterId: uint32(characterId),
 			EventId:     eventId,
 			Type:        monsterbook.StatusEventTypeCoverChanged,
 			Body: monsterbook.CoverChangedBody{
-				CoverCardId: cardId,
+				CoverCardId: uint32(cardId),
 			},
 		}
 		key := kafkaProducer.CreateKey(int(characterId))

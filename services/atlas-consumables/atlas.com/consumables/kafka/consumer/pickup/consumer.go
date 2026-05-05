@@ -8,6 +8,7 @@ import (
 	pickupmsg "atlas-consumables/kafka/message/pickup"
 	"atlas-consumables/kafka/producer"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
 	kmessage "github.com/Chronicle20/atlas/libs/atlas-kafka/message"
@@ -17,10 +18,6 @@ import (
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
 )
-
-// cardItemPrefix is the high-order classifier for monster card items
-// (item ids in the 238x range). itemId / 10000 == 238 identifies a card.
-const cardItemPrefix = 238
 
 func InitConsumers(l logrus.FieldLogger) func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
@@ -45,7 +42,7 @@ func handlePickup(l logrus.FieldLogger, ctx context.Context, cmd pickupmsg.Comma
 	if cmd.Type != pickupmsg.CommandType {
 		return
 	}
-	if cmd.ItemId/10000 != cardItemPrefix {
+	if item.GetClassification(item.Id(cmd.ItemId)) != item.ClassificationConsumableMonsterCard {
 		l.Warnf("ITEM.CONSUMED_ON_PICKUP for non-card item %d - no handler yet, skipping.", cmd.ItemId)
 		return
 	}

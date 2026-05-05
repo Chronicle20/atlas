@@ -21,6 +21,20 @@ interface CardResource {
   attributes: MonsterBookCardAttributes;
 }
 
+// `/api/data/consumables/{id}` returns the full consumable resource with
+// the linked monster id under `attributes.monsterId`. The shared
+// `ConsumableData` model omits this field, so the widget reads it through
+// a thin local shape without leaking back into items.service.
+interface ConsumableMonsterResource {
+  id: string;
+  attributes: { monsterId?: number };
+}
+
+interface MonsterNameResource {
+  id: string;
+  attributes: { name: string };
+}
+
 export interface ListCardsOptions extends ServiceOptions {
   offset?: number;
   limit?: number;
@@ -86,6 +100,30 @@ export const monsterBookService = {
     const url = `${BASE_PATH}/${characterId}/monster-book/cards${buildCardQuery(opts)}`;
     const resources = await api.getList<CardResource>(url, opts);
     return resources.map(flattenCard);
+  },
+
+  /**
+   * Resolve the monster id linked to a monster-book card. Cards are
+   * consumable items in the 238xxxxx range; their `attributes.monsterId`
+   * points at the mob whose sprite + name we render. Returns `null` when
+   * the consumable has no linked monster (e.g. malformed data dump).
+   */
+  async getCardConsumableMonsterId(cardId: number): Promise<number | null> {
+    const resource = await api.getOne<ConsumableMonsterResource>(
+      `/api/data/consumables/${cardId}`,
+    );
+    const monsterId = resource.attributes.monsterId;
+    return monsterId !== undefined && monsterId > 0 ? monsterId : null;
+  },
+
+  /**
+   * Resolve the display name of a monster by id.
+   */
+  async getMonsterName(monsterId: number): Promise<string> {
+    const resource = await api.getOne<MonsterNameResource>(
+      `/api/data/monsters/${monsterId}`,
+    );
+    return resource.attributes.name;
   },
 };
 

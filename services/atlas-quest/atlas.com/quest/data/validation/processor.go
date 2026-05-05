@@ -94,6 +94,17 @@ func buildStartConditions(questDef dataquest.RestModel) []ConditionInput {
 		})
 	}
 
+	// Monster book unique-card-count requirement (WZ `mbmin`). Quests like
+	// "Monster Card Collector" gate progression on the player's monster book
+	// total unique cards via this field.
+	if req.MonsterBookCountMin > 0 {
+		conditions = append(conditions, ConditionInput{
+			Type:     MonsterBookCountCondition,
+			Operator: ">=",
+			Value:    int(req.MonsterBookCountMin),
+		})
+	}
+
 	// Meso requirements
 	if req.MesoMin > 0 {
 		conditions = append(conditions, ConditionInput{

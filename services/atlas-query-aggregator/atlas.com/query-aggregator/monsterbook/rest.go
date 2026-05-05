@@ -1,6 +1,10 @@
 package monsterbook
 
-import "strconv"
+import (
+	"strconv"
+
+	"github.com/jtumidanski/api2go/jsonapi"
+)
 
 // CollectionRestModel mirrors the wire shape returned by atlas-monster-book at
 // GET /characters/{characterId}/monster-book. The query-aggregator only needs
@@ -36,6 +40,42 @@ func (r *CollectionRestModel) SetID(id string) error {
 		return err
 	}
 	r.Id = uint32(v)
+	return nil
+}
+
+// GetReferences satisfies the jsonapi.MarshalReferences contract; the resource
+// has no related resources.
+func (r CollectionRestModel) GetReferences() []jsonapi.Reference {
+	return []jsonapi.Reference{}
+}
+
+// GetReferencedIDs satisfies the jsonapi.MarshalLinkedRelations contract; the
+// resource has no related resources.
+func (r CollectionRestModel) GetReferencedIDs() []jsonapi.ReferenceID {
+	return nil
+}
+
+// GetReferencedStructs satisfies the jsonapi.MarshalIncludedRelations contract;
+// the resource has no included resources.
+func (r CollectionRestModel) GetReferencedStructs() []jsonapi.MarshalIdentifier {
+	return nil
+}
+
+// SetToOneReferenceID satisfies the jsonapi.UnmarshalToOneRelations contract.
+// Required for api2go decoding even when no relationships are populated — see
+// libs/atlas-rest/CLAUDE.md for the rationale.
+func (r *CollectionRestModel) SetToOneReferenceID(_, _ string) error {
+	return nil
+}
+
+// SetToManyReferenceIDs satisfies the jsonapi.UnmarshalToManyRelations contract.
+// Required for api2go decoding even when no relationships are populated.
+func (r *CollectionRestModel) SetToManyReferenceIDs(_ string, _ []string) error {
+	return nil
+}
+
+// SetReferencedStructs satisfies the jsonapi.UnmarshalIncludedRelations contract.
+func (r *CollectionRestModel) SetReferencedStructs(_ map[string]map[string]jsonapi.Data) error {
 	return nil
 }
 

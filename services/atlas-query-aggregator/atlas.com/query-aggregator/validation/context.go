@@ -16,6 +16,7 @@ import (
 	"context"
 	"fmt"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -213,7 +214,7 @@ func (ctx ValidationContext) GetMonsterBookTotalUniqueCards() int {
 		return 0
 	}
 
-	total, err := ctx.mbP.GetTotalUniqueCards(ctx.character.Id())
+	total, err := ctx.mbP.GetTotalUniqueCards(characterconst.Id(ctx.character.Id()))
 	if err != nil {
 		if ctx.l != nil {
 			ctx.l.WithError(err).Debugf("Failed to get monster book unique cards for character %d, using 0", ctx.character.Id())

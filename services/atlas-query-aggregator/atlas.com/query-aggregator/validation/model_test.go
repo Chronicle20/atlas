@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
@@ -28,17 +29,17 @@ type fakeMonsterBookProcessor struct {
 	err   error
 }
 
-func (f *fakeMonsterBookProcessor) ByCharacterIdProvider(characterId uint32) model.Provider[monsterbook.Collection] {
+func (f *fakeMonsterBookProcessor) ByCharacterIdProvider(characterId characterconst.Id) model.Provider[monsterbook.Collection] {
 	return func() (monsterbook.Collection, error) {
 		return monsterbook.Collection{}, f.err
 	}
 }
 
-func (f *fakeMonsterBookProcessor) GetByCharacterId(characterId uint32) (monsterbook.Collection, error) {
+func (f *fakeMonsterBookProcessor) GetByCharacterId(characterId characterconst.Id) (monsterbook.Collection, error) {
 	return monsterbook.Collection{}, f.err
 }
 
-func (f *fakeMonsterBookProcessor) GetTotalUniqueCards(characterId uint32) (uint16, error) {
+func (f *fakeMonsterBookProcessor) GetTotalUniqueCards(characterId characterconst.Id) (uint16, error) {
 	if f.err != nil {
 		return 0, f.err
 	}

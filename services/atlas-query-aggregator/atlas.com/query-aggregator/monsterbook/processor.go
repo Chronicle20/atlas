@@ -3,6 +3,7 @@ package monsterbook
 import (
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
@@ -44,13 +45,13 @@ func (c Collection) ExpBonusPercent() uint16 { return c.expBonusPercent }
 type Processor interface {
 	// ByCharacterIdProvider returns a provider that lazily fetches the
 	// monster book collection for a character from atlas-monster-book.
-	ByCharacterIdProvider(characterId uint32) model.Provider[Collection]
+	ByCharacterIdProvider(characterId character.Id) model.Provider[Collection]
 	// GetByCharacterId fetches and returns the monster book collection for
 	// the given character.
-	GetByCharacterId(characterId uint32) (Collection, error)
+	GetByCharacterId(characterId character.Id) (Collection, error)
 	// GetTotalUniqueCards returns just the totalUniqueCards count for a
 	// character, the value used by the monsterBookCount condition.
-	GetTotalUniqueCards(characterId uint32) (uint16, error)
+	GetTotalUniqueCards(characterId character.Id) (uint16, error)
 }
 
 // ProcessorImpl is the REST-backed Processor implementation.
@@ -66,20 +67,20 @@ func NewProcessor(l logrus.FieldLogger, ctx context.Context) Processor {
 
 // ByCharacterIdProvider returns a provider that fetches the character's
 // monster book collection from atlas-monster-book.
-func (p *ProcessorImpl) ByCharacterIdProvider(characterId uint32) model.Provider[Collection] {
+func (p *ProcessorImpl) ByCharacterIdProvider(characterId character.Id) model.Provider[Collection] {
 	return requests.Provider[CollectionRestModel, Collection](p.l, p.ctx)(requestByCharacterId(characterId), Extract)
 }
 
 // GetByCharacterId fetches and returns the monster book collection for the
 // given character.
-func (p *ProcessorImpl) GetByCharacterId(characterId uint32) (Collection, error) {
+func (p *ProcessorImpl) GetByCharacterId(characterId character.Id) (Collection, error) {
 	return p.ByCharacterIdProvider(characterId)()
 }
 
 // GetTotalUniqueCards returns just the totalUniqueCards count for a character.
 // Errors are surfaced so callers can distinguish "no cards" (0) from "lookup
 // failed" (error).
-func (p *ProcessorImpl) GetTotalUniqueCards(characterId uint32) (uint16, error) {
+func (p *ProcessorImpl) GetTotalUniqueCards(characterId character.Id) (uint16, error) {
 	c, err := p.GetByCharacterId(characterId)
 	if err != nil {
 		return 0, err

@@ -3,6 +3,7 @@ package monsterbook
 import (
 	"fmt"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 )
 
@@ -16,6 +17,6 @@ func getBaseRequest() string {
 	return requests.RootUrl("MONSTER_BOOK")
 }
 
-func requestByCharacterId(characterId uint32) requests.Request[CollectionRestModel] {
+func requestByCharacterId(characterId character.Id) requests.Request[CollectionRestModel] {
 	return requests.GetRequest[CollectionRestModel](fmt.Sprintf(getBaseRequest()+Resource, characterId))
 }

@@ -7,6 +7,7 @@ import (
 	"atlas-channel/inventory"
 	character2 "atlas-channel/kafka/message/character"
 	"atlas-channel/kafka/producer"
+	"atlas-channel/monsterbook"
 	"atlas-channel/party"
 	"atlas-channel/pet"
 	"atlas-channel/quest"
@@ -29,6 +30,7 @@ type Processor interface {
 	SkillModelDecorator(m Model) Model
 	QuestModelDecorator(m Model) Model
 	PartyDecorator(m Model) Model
+	MonsterBookCoverDecorator(m Model) Model
 	GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model]
 	GetItemInSlot(characterId uint32, inventoryType inventory2.Type, slot int16) model.Provider[asset.Model]
 	ByNameProvider(name string) model.Provider[[]Model]
@@ -165,6 +167,18 @@ func (p *ProcessorImpl) PartyDecorator(m Model) Model {
 		return m
 	}
 	return m.SetParty(pm)
+}
+
+// MonsterBookCoverDecorator fetches the character's monster book
+// collection and attaches the cover card id to the model. Failures
+// (REST 404, network errors, etc.) surface as the undecorated model so
+// the rest of the character info response continues to render.
+func (p *ProcessorImpl) MonsterBookCoverDecorator(m Model) Model {
+	col, err := monsterbook.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
+	if err != nil {
+		return m
+	}
+	return m.SetCoverCardId(col.CoverCardId())
 }
 
 func (p *ProcessorImpl) GetEquipableInSlot(characterId uint32, slot int16) model.Provider[asset.Model] {

@@ -58,6 +58,7 @@ type Model struct {
 	skills             []skill.Model
 	quests             []quest.Model
 	party              party.Model
+	coverCardId        uint32
 }
 
 func (m Model) Gm() bool {
@@ -341,4 +342,17 @@ func (m Model) SetQuests(ms []quest.Model) Model {
 
 func (m Model) SetParty(p party.Model) Model {
 	return CloneModel(m).SetParty(p).MustBuild()
+}
+
+// CoverCardId returns the monster book cover card id selected by the
+// character. Zero on an undecorated model; populated by
+// Processor.MonsterBookCoverDecorator when the upstream REST call
+// succeeds.
+func (m Model) CoverCardId() uint32 {
+	return m.coverCardId
+}
+
+// SetCoverCardId returns a clone of the model with coverCardId set.
+func (m Model) SetCoverCardId(v uint32) Model {
+	return CloneModel(m).SetCoverCardId(v).MustBuild()
 }

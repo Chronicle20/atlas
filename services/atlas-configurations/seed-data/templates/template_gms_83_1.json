@@ -297,6 +297,11 @@
         "handler": "CharacterExpressionHandle"
       },
       {
+        "opCode": "0x39",
+        "validator": "LoggedInValidator",
+        "handler": "MonsterBookCover"
+      },
+      {
         "opCode": "0x3A",
         "validator": "LoggedInValidator",
         "handler": "NPCStartConversationHandle"
@@ -1497,6 +1502,14 @@
       {
         "opCode": "0x4C",
         "writer": "PetCashFoodResult"
+      },
+      {
+        "opCode": "0x53",
+        "writer": "MonsterBookSetCard"
+      },
+      {
+        "opCode": "0x54",
+        "writer": "MonsterBookSetCover"
       },
       {
         "opCode": "0x7A",

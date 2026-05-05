@@ -14,12 +14,14 @@ import (
 	"atlas-query-aggregator/skill"
 	"atlas-query-aggregator/transport"
 	"context"
+	"errors"
 	"fmt"
 
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -204,8 +206,20 @@ func (ctx ValidationContext) ItemProcessor() item.Processor {
 }
 
 // GetMonsterBookTotalUniqueCards returns the totalUniqueCards count for the
-// context's character via the injected monsterbook processor. Returns 0 when
-// the processor is unavailable or the lookup fails (graceful degradation).
+// context's character via the injected monsterbook processor.
+//
+// Error handling distinguishes three cases so quest gating doesn't silently
+// pass during transient outages:
+//
+//   - Processor unavailable / wiring error: returns 0 with a WARN log. This is
+//     a deploy-time bug, not a data condition; the caller fails closed.
+//   - upstream returns 404 (no monster-book row yet): returns 0 with no log.
+//     A character who has never opened the book has zero cards; gating
+//     evaluates accordingly.
+//   - Any other error (5xx, decode failure, connection refused): returns 0
+//     with a WARN log so the failure is visible. The evaluator contract has
+//     no error channel, so the condition fails closed via the zero count
+//     compared against its threshold.
 func (ctx ValidationContext) GetMonsterBookTotalUniqueCards() int {
 	if ctx.mbP == nil {
 		if ctx.l != nil {
@@ -216,8 +230,12 @@ func (ctx ValidationContext) GetMonsterBookTotalUniqueCards() int {
 
 	total, err := ctx.mbP.GetTotalUniqueCards(characterconst.Id(ctx.character.Id()))
 	if err != nil {
+		if errors.Is(err, requests.ErrNotFound) {
+			// Legitimate "no monster-book row yet" — silently treat as zero.
+			return 0
+		}
 		if ctx.l != nil {
-			ctx.l.WithError(err).Debugf("Failed to get monster book unique cards for character %d, using 0", ctx.character.Id())
+			ctx.l.WithError(err).Warnf("Failed to get monster book unique cards for character %d, returning 0 (condition fails closed)", ctx.character.Id())
 		}
 		return 0
 	}

@@ -19,6 +19,7 @@ import (
 	characterconst "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/google/uuid"
 )
 
@@ -2059,12 +2060,37 @@ func TestCondition_MonsterBookCount(t *testing.T) {
 			wantActual:   100,
 		},
 		{
-			name:         "Processor error degrades to 0",
+			// Non-NotFound errors (5xx, decode failures, etc.) must NOT
+			// silently produce a passing condition. The evaluator has no
+			// error channel, so it fails closed via zero count vs. threshold.
+			name:         "Processor non-NotFound error fails closed",
 			processor:    &fakeMonsterBookProcessor{err: errors.New("boom")},
 			operator:     GreaterEqual,
 			value:        1,
 			wantPassed:   false,
 			wantContains: "Monster Book Total Unique Cards >= 1",
+			wantActual:   0,
+		},
+		{
+			// 404 from atlas-monster-book is the legitimate "no row yet"
+			// case — character has zero cards. Gating evaluates accordingly.
+			name:         "Processor ErrNotFound treated as zero cards",
+			processor:    &fakeMonsterBookProcessor{err: requests.ErrNotFound},
+			operator:     GreaterEqual,
+			value:        1,
+			wantPassed:   false,
+			wantContains: "Monster Book Total Unique Cards >= 1",
+			wantActual:   0,
+		},
+		{
+			// 404 with a permissive threshold should still pass cleanly:
+			// "totalUniqueCards >= 0" is true for any character.
+			name:         "Processor ErrNotFound passes when threshold is 0",
+			processor:    &fakeMonsterBookProcessor{err: requests.ErrNotFound},
+			operator:     GreaterEqual,
+			value:        0,
+			wantPassed:   true,
+			wantContains: "Monster Book Total Unique Cards >= 0",
 			wantActual:   0,
 		},
 	}

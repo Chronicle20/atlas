@@ -46,6 +46,7 @@ If invoked with no argument and a `plan.md` exists in the current branch's task 
    - `.claude/skills/backend-dev-guidelines/resources/patterns-multitenancy-context.md`
    - `.claude/skills/backend-dev-guidelines/resources/patterns-rest-jsonapi.md`
    - `.claude/skills/backend-dev-guidelines/resources/patterns-functional.md`
+   - `.claude/skills/backend-dev-guidelines/resources/patterns-ingress-documentation.md`
    - `.claude/skills/backend-dev-guidelines/resources/scaffolding-checklist.md`
 
 ## Phase 1: Build & Test (Objective Gate)
@@ -114,6 +115,28 @@ Triggers: package contains a file that calls `requests.RootUrl(...)` or `request
 | EXT-02 | httptest-backed integration test exists | Look for `httptest.NewServer` (or equivalent) under the client package or its sibling `_test.go` | Test serves a representative fixture response (matching the upstream's actual JSON:API shape, including any `relationships` block) and asserts the client's domain method returns a populated struct. `FakeClient` mocks alone do NOT satisfy this — they bypass unmarshal. |
 | EXT-03 | Errors distinguish 404 from other failures | Grep client for `requests.ErrNotFound` or `errors.Is(err, requests.ErrNotFound)` | Only genuine 404s map to a domain-level "not found" error; transport / decode / 5xx failures bubble up with their original error. Surfacing every error as "not found" hides deploy bugs. |
 | EXT-04 | Service URL not hardcoded; uses `RootUrl(domain)` | Read client request file | URL composed via `requests.RootUrl(<DOMAIN>) + "<path>"`. Direct service DNS only when ingress would loop back; document with a comment if so. |
+
+### Service Scaffolding Checklist (run only when the diff introduces a new `services/atlas-<service>/` directory or a new atlas-channel packet writer/handler)
+
+Triggers:
+- A `services/atlas-<service>/` directory was added in this change (detect with `git diff --name-status <base>..HEAD | awk '$1 == "A" && $2 ~ /^services\/atlas-[^/]+\/.+\/main\.go$/'`).
+- OR the change registers a new `Writer` / `Handler` constant in `services/atlas-channel/atlas.com/channel/main.go`, or adds a package under `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/`.
+
+Source of truth: `.claude/skills/backend-dev-guidelines/resources/scaffolding-checklist.md` and `patterns-ingress-documentation.md`.
+
+| ID | Check | How to Verify | Pass Criteria |
+|----|-------|---------------|---------------|
+| SCAFFOLD-01 | services.json entry present | `jq '.services[] \| select(.name == "atlas-<service>")' .github/config/services.json` | Returns a non-empty object. CI's change-detection reads this file; without an entry the new service never builds. |
+| SCAFFOLD-02 | k8s manifest present | `test -f deploy/k8s/atlas-<service>.yaml` | File exists with `Deployment` + `Service` resources, image `ghcr.io/chronicle20/atlas-<service>/atlas-<service>:latest`, `containerPort: 8080`, db creds wired from `db-credentials` secret. |
+| SCAFFOLD-03 | Dockerfile present | `test -f services/atlas-<service>/Dockerfile` | File exists; multi-stage build per `scaffolding-checklist.md` §3. |
+| SCAFFOLD-04 | Ingress route present (REST services) | `grep -F "atlas-<service>:" deploy/shared/routes.conf` | At least one `location` block routes traffic to the service. Skip if the service is Kafka-only (no `rest/` package, no REST handlers in `main.go`). |
+| SCAFFOLD-05 | Ingress sync drift-clean | `./deploy/scripts/sync-k8s-ingress-routes.sh --check` | Exit 0. Routes were edited in `routes.conf` and the K8s ConfigMap was regenerated. |
+| SCAFFOLD-06 | docker-compose entry present | `grep -F "atlas-<service>:" deploy/compose/docker-compose.core.yml` | Service block exists alongside peers. |
+| SCAFFOLD-07 | Tenant opcode template seeded (atlas-channel feature only) | If the change adds `Writer` / `Handler` constants registered in `services/atlas-channel/atlas.com/channel/main.go` (or new `libs/atlas-packet/character/{clientbound,serverbound}/<feature>/` packages), grep each writer/handler name in the targeted `services/atlas-configurations/seed-data/templates/template_<region>_<major>_<minor>.json`. | Each new `Writer` constant appears as a `"writer": "<Name>"` row in the template's `writers[]`. Each new recv `Handler` constant appears as a `"handler": "<Name>"` row in `handlers[]`. The targeted client version(s) must match what the design doc declared. Pure-REST services and Kafka-only services skip this check. |
+
+### Bruno collection (REST services only)
+
+| SCAFFOLD-08 | Bruno collection present | `test -d services/atlas-<service>/.bruno && test -f services/atlas-<service>/.bruno/bruno.json` | Directory exists with `bruno.json`, `collection.bru`, and an `environments/` directory. Skip for Kafka-only services. |
 
 ## Phase 4: Security Review (auth-related services only)
 

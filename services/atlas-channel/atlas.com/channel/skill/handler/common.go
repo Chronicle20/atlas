@@ -16,6 +16,7 @@ import (
 	inventoryconst "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/inventory/slot"
 	itemconst "github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -310,18 +311,18 @@ func isCrashOrDispel(skillId skill2.Id) bool {
 
 // dispelSkillClass classifies a crash/dispel skill by the attacker's hit
 // class — warrior crashes are physical melee, Priest Dispel is magic. The
-// returned string matches atlas-monsters' monster.ReflectKind* constants
-// ("PHYSICAL" / "MAGICAL"). Returns "" for unrecognized skills so the
-// downstream guard falls through to normal cancel semantics.
+// returned string matches atlas-monsters' monster.ReflectKind* constants.
+// Returns "" for unrecognized skills so the downstream guard falls through
+// to normal cancel semantics.
 func dispelSkillClass(skillId skill2.Id) string {
 	switch {
 	case skill2.Is(skillId,
 		skill2.CrusaderArmorCrashId,
 		skill2.WhiteKnightMagicCrashId,
 		skill2.DragonKnightPowerCrashId):
-		return "PHYSICAL"
+		return monster2.ReflectKindPhysical
 	case skill2.Is(skillId, skill2.PriestDispelId):
-		return "MAGICAL"
+		return monster2.ReflectKindMagical
 	default:
 		return ""
 	}

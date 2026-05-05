@@ -28,3 +28,12 @@ func calculateBoundingBox(casterX, casterY int16, facingLeft bool, lt, rb point.
 	}
 	return
 }
+
+// hasEffectBbox reports whether the effect carries a non-degenerate target
+// rectangle. The WZ "no rect contract" sentinel is all four components zero;
+// any non-zero component (even a single int) indicates the effect prescribes
+// a rect. No v83 skill ships a literal zero-area effect, so the conflation is
+// safe in production.
+func hasEffectBbox(lt, rb point.Model) bool {
+	return lt.X() != 0 || lt.Y() != 0 || rb.X() != 0 || rb.Y() != 0
+}

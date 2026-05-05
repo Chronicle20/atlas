@@ -29,14 +29,17 @@ func upsertCard(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, cardI
 		First(&existing).Error
 
 	if errors.Is(err, gorm.ErrRecordNotFound) {
-		e := entity{
-			TenantId:    tenantId,
-			CharacterId: uint32(characterId),
-			CardId:      uint32(cardId),
-			Level:       1,
-			IsSpecial:   IsSpecialCard(cardId),
-			LastEventId: &eventId,
+		m, berr := NewModelBuilder().
+			SetTenantId(tenantId).
+			SetCharacterId(characterId).
+			SetCardId(cardId).
+			SetLevel(1).
+			SetLastEventId(&eventId).
+			Build()
+		if berr != nil {
+			return UpsertResult{}, berr
 		}
+		e := m.ToEntity()
 		if err := db.Create(&e).Error; err != nil {
 			return UpsertResult{}, err
 		}

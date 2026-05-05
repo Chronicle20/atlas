@@ -43,3 +43,20 @@ func (m Model) IsSpecial() bool            { return m.isSpecial }
 func (m Model) LastEventId() *uuid.UUID    { return m.lastEventId }
 func (m Model) FirstAcquiredAt() time.Time { return m.firstAcquiredAt }
 func (m Model) UpdatedAt() time.Time       { return m.updatedAt }
+
+// ToEntity is the inverse of Make: it projects the immutable Model into the
+// GORM entity used for persistence. autoCreateTime / autoUpdateTime fields
+// are emitted as-is — callers performing inserts should rely on GORM to
+// populate zero-valued timestamps.
+func (m Model) ToEntity() entity {
+	return entity{
+		TenantId:        m.tenantId,
+		CharacterId:     uint32(m.characterId),
+		CardId:          uint32(m.cardId),
+		Level:           m.level,
+		IsSpecial:       m.isSpecial,
+		LastEventId:     m.lastEventId,
+		FirstAcquiredAt: m.firstAcquiredAt,
+		UpdatedAt:       m.updatedAt,
+	}
+}

@@ -19,15 +19,24 @@ type statsUpdate struct {
 
 // upsertStats inserts or updates the per-character collection row.
 // Returns true if the row was inserted (vs updated).
+//
+// We build a Model (with default CoverCardId=0) and project it via ToEntity.
+// On insert, CoverCardId=0 is the correct default. On conflict, the
+// AssignmentColumns clause omits cover_card_id so any pre-existing cover is
+// preserved.
 func upsertStats(db *gorm.DB, tenantId uuid.UUID, characterId character.Id, s statsUpdate) (bool, error) {
-	e := entity{
-		TenantId:        tenantId,
-		CharacterId:     uint32(characterId),
-		NormalCount:     s.NormalCount,
-		SpecialCount:    s.SpecialCount,
-		BookLevel:       s.BookLevel,
-		ExpBonusPercent: s.ExpBonusPercent,
+	m, err := NewModelBuilder().
+		SetTenantId(tenantId).
+		SetCharacterId(characterId).
+		SetNormalCount(s.NormalCount).
+		SetSpecialCount(s.SpecialCount).
+		SetBookLevel(s.BookLevel).
+		SetExpBonusPercent(s.ExpBonusPercent).
+		Build()
+	if err != nil {
+		return false, err
 	}
+	e := m.ToEntity()
 	res := db.Clauses(clause.OnConflict{
 		Columns: []clause.Column{{Name: "tenant_id"}, {Name: "character_id"}},
 		DoUpdates: clause.AssignmentColumns([]string{

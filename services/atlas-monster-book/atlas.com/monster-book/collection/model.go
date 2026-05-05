@@ -32,3 +32,23 @@ func (m Model) LastCoverEventId() *uuid.UUID { return m.lastCoverEventId }
 func (m Model) CreatedAt() time.Time         { return m.createdAt }
 func (m Model) UpdatedAt() time.Time         { return m.updatedAt }
 func (m Model) TotalUniqueCards() uint16     { return m.normalCount + m.specialCount }
+
+// ToEntity is the inverse of Make: it projects the immutable Model into the
+// GORM entity used for persistence. CoverCardId is conditionally written by
+// callers that intend to update it, but the projection is unconditional —
+// upsertStats deliberately omits this method because it composes a partial
+// statsUpdate, not a full Model.
+func (m Model) ToEntity() entity {
+	return entity{
+		TenantId:         m.tenantId,
+		CharacterId:      uint32(m.characterId),
+		CoverCardId:      uint32(m.coverCardId),
+		BookLevel:        m.bookLevel,
+		NormalCount:      m.normalCount,
+		SpecialCount:     m.specialCount,
+		ExpBonusPercent:  m.expBonusPercent,
+		LastCoverEventId: m.lastCoverEventId,
+		CreatedAt:        m.createdAt,
+		UpdatedAt:        m.updatedAt,
+	}
+}

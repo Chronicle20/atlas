@@ -9,6 +9,7 @@ import (
 	"atlas-channel/quest"
 	"errors"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
@@ -56,7 +57,7 @@ type modelBuilder struct {
 	skills             []skill.Model
 	quests             []quest.Model
 	party              party.Model
-	coverCardId        uint32
+	coverCardId        item.Id
 }
 
 // NewModelBuilder creates a new builder instance
@@ -145,7 +146,7 @@ func (b *modelBuilder) SetInventory(v inventory.Model) *modelBuilder { b.invento
 func (b *modelBuilder) SetSkills(v []skill.Model) *modelBuilder      { b.skills = v; return b }
 func (b *modelBuilder) SetQuests(v []quest.Model) *modelBuilder      { b.quests = v; return b }
 func (b *modelBuilder) SetParty(v party.Model) *modelBuilder         { b.party = v; return b }
-func (b *modelBuilder) SetCoverCardId(v uint32) *modelBuilder        { b.coverCardId = v; return b }
+func (b *modelBuilder) SetCoverCardId(v item.Id) *modelBuilder       { b.coverCardId = v; return b }
 
 // Build creates a new Model instance with validation
 func (b *modelBuilder) Build() (Model, error) {

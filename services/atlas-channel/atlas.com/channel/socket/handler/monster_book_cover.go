@@ -6,6 +6,8 @@ import (
 	"atlas-channel/socket/writer"
 	"context"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
 	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
@@ -18,7 +20,7 @@ func MonsterBookCoverHandleFunc(l logrus.FieldLogger, ctx context.Context, _ wri
 		p := mbsb.Cover{}
 		p.Decode(l, ctx)(r, readerOptions)
 		l.Debugf("[%s] read [%s]", p.Operation(), p.String())
-		if err := monsterbook.NewProcessor(l, ctx).RequestSetCover(s.CharacterId(), p.CardId()); err != nil {
+		if err := monsterbook.NewProcessor(l, ctx).RequestSetCover(character.Id(s.CharacterId()), item.Id(p.CardId())); err != nil {
 			l.WithError(err).Errorf("Failed to emit MONSTER_BOOK.SET_COVER for character %d.", s.CharacterId())
 		}
 	}

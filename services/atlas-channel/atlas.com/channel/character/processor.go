@@ -15,6 +15,7 @@ import (
 	"errors"
 	"sort"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	inventory2 "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
@@ -174,7 +175,7 @@ func (p *ProcessorImpl) PartyDecorator(m Model) Model {
 // (REST 404, network errors, etc.) surface as the undecorated model so
 // the rest of the character info response continues to render.
 func (p *ProcessorImpl) MonsterBookCoverDecorator(m Model) Model {
-	col, err := monsterbook.NewProcessor(p.l, p.ctx).GetByCharacterId(m.Id())
+	col, err := monsterbook.NewProcessor(p.l, p.ctx).GetByCharacterId(character.Id(m.Id()))
 	if err != nil {
 		return m
 	}

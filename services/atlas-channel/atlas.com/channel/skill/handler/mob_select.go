@@ -1,7 +1,9 @@
 package handler
 
 import (
+	monster2 "github.com/Chronicle20/atlas/libs/atlas-constants/monster"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 // calculateBoundingBox derives the (x1, y1, x2, y2) target rectangle for a
@@ -60,4 +62,21 @@ func intersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
 		}
 	}
 	return applied, anomaly
+}
+
+// mobBuffApplyKind returns the reflect-kind that gates a mob-affecting buff
+// apply (FR-4.6). Today only Priest Doom is in `isMobAffectingBuff` for the
+// apply branch; future apply-style status skills are added here as they are
+// wired in. Returning "" tells the orchestrator to skip the reflect check
+// entirely and emit a debug "unclassified kind" log — the cast still proceeds.
+//
+// Crash/Dispel kinds continue to come from dispelSkillClass (common.go) and
+// are not handled here.
+func mobBuffApplyKind(skillId skill2.Id) string {
+	switch {
+	case skill2.Is(skillId, skill2.PriestDoomId):
+		return monster2.ReflectKindMagical
+	default:
+		return ""
+	}
 }

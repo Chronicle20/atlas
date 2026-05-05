@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/point"
+	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 )
 
 func mkPoint(x, y int16) point.Model {
@@ -121,5 +122,14 @@ func TestIntersectMobIds_EmptyClient(t *testing.T) {
 	applied, anomaly := intersectMobIds(nil, []uint32{1, 2})
 	if len(applied) != 0 || len(anomaly) != 0 {
 		t.Errorf("applied=%v, anomaly=%v, want both empty", applied, anomaly)
+	}
+}
+
+func TestMobBuffApplyKind(t *testing.T) {
+	if got := mobBuffApplyKind(skill2.PriestDoomId); got != "MAGICAL" {
+		t.Errorf("mobBuffApplyKind(PriestDoomId) = %q, want MAGICAL", got)
+	}
+	if got := mobBuffApplyKind(skill2.Id(999999999)); got != "" {
+		t.Errorf("mobBuffApplyKind(unknown) = %q, want empty", got)
 	}
 }

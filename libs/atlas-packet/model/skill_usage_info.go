@@ -91,6 +91,7 @@ func isMobAffectingBuff(skillId skill.Id) bool {
 		skill.IceLightningWizardMeditationId,
 		skill.IceLightningArchMagicianMapleWarriorId,
 		skill.ClericBlessId,
+		skill.PriestDoomId,
 		skill.PriestDispelId,
 		skill.PriestHolySymbolId,
 		skill.BishopMapleWarriorId,

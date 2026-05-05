@@ -22,6 +22,41 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// Package-level seams: these wrap the singleton/registry-backed
+// session and map plumbing so unit tests can swap them out without
+// standing up a session registry. Production code paths use the
+// real values defined here; consumer_test.go replaces them via
+// the helpers below.
+var (
+	// sessionForCharacter resolves a session for the given characterId
+	// on the channel and invokes f if one exists. Returns nil if no
+	// session is present (matching session.Processor.IfPresentByCharacterId).
+	sessionForCharacter = func(l logrus.FieldLogger, ctx context.Context, sc server.Model, characterId uint32, f model.Operator[session.Model]) {
+		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(characterId, f)
+	}
+
+	// announceSetCard writes a clientbound MonsterBookSetCard to the owner.
+	announceSetCard = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, body mbcb.SetCard) error {
+		return session.Announce(l)(ctx)(wp)(mbcb.MonsterBookSetCardWriter)(body.Encode)(s)
+	}
+
+	// announceCardGetEffect writes the owner-visible CardGet effect.
+	announceCardGetEffect = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) error {
+		return session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterMonsterBookCardGetEffectBody())(s)
+	}
+
+	// broadcastCardGetEffectForeign fans the foreign-effect packet out to
+	// every other session in the owner's map.
+	broadcastCardGetEffectForeign = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model) {
+		_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterMonsterBookCardGetEffectForeignBody(s.CharacterId())))
+	}
+
+	// announceSetCover writes a clientbound MonsterBookSetCover to the owner.
+	announceSetCover = func(l logrus.FieldLogger, ctx context.Context, wp writer.Producer, s session.Model, body mbcb.SetCover) error {
+		return session.Announce(l)(ctx)(wp)(mbcb.MonsterBookSetCoverWriter)(body.Encode)(s)
+	}
+)
+
 // InitConsumers registers a single consumer config for the monster book
 // status topic. The same topic backs CARD_ADDED, COVER_CHANGED and
 // STATS_CHANGED events; per-type handlers filter on Type.
@@ -67,24 +102,24 @@ func handleCardAdded(sc server.Model, wp writer.Producer) message.Handler[mbmsg.
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
+		sessionForCharacter(l, ctx, sc, e.CharacterId, func(s session.Model) error {
 			// Always send the SetCard inventory mutation to the owner.
-			if err := session.Announce(l)(ctx)(wp)(mbcb.MonsterBookSetCardWriter)(mbcb.SetCard{
+			if err := announceSetCard(l, ctx, wp, s, mbcb.SetCard{
 				CardId: e.Body.CardId,
 				Level:  e.Body.NewLevel,
 				Added:  true,
-			}.Encode)(s); err != nil {
+			}); err != nil {
 				l.WithError(err).Errorf("Unable to send MonsterBookSetCard for character [%d] card [%d].", e.CharacterId, e.Body.CardId)
 			}
 
 			// Only emit the visual "got a card" effect when the card was
 			// not already at the max level in the player's collection.
 			if !e.Body.Full {
-				if err := session.Announce(l)(ctx)(wp)(charcb.CharacterEffectWriter)(charpkt.CharacterMonsterBookCardGetEffectBody())(s); err != nil {
+				if err := announceCardGetEffect(l, ctx, wp, s); err != nil {
 					l.WithError(err).Errorf("Unable to send MonsterBookCardGet effect for character [%d].", e.CharacterId)
 				}
 
-				_ = _map.NewProcessor(l, ctx).ForOtherSessionsInMap(s.Field(), s.CharacterId(), session.Announce(l)(ctx)(wp)(charcb.CharacterEffectForeignWriter)(charpkt.CharacterMonsterBookCardGetEffectForeignBody(s.CharacterId())))
+				broadcastCardGetEffectForeign(l, ctx, wp, s)
 			}
 
 			return nil
@@ -105,10 +140,10 @@ func handleCoverChanged(sc server.Model, wp writer.Producer) message.Handler[mbm
 			return
 		}
 
-		_ = session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.CharacterId, func(s session.Model) error {
-			if err := session.Announce(l)(ctx)(wp)(mbcb.MonsterBookSetCoverWriter)(mbcb.SetCover{
+		sessionForCharacter(l, ctx, sc, e.CharacterId, func(s session.Model) error {
+			if err := announceSetCover(l, ctx, wp, s, mbcb.SetCover{
 				CardId: e.Body.CoverCardId,
-			}.Encode)(s); err != nil {
+			}); err != nil {
 				l.WithError(err).Errorf("Unable to send MonsterBookSetCover for character [%d] card [%d].", e.CharacterId, e.Body.CoverCardId)
 			}
 			return nil

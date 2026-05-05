@@ -9,14 +9,41 @@ import (
 	"atlas-query-aggregator/guild/title"
 	"atlas-query-aggregator/inventory"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/quest"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
 	inventory_type "github.com/Chronicle20/atlas/libs/atlas-constants/inventory"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/google/uuid"
 )
+
+// fakeMonsterBookProcessor satisfies the monsterbook.Processor interface for
+// tests. Tests set total/err to simulate atlas-monster-book responses.
+type fakeMonsterBookProcessor struct {
+	total uint16
+	err   error
+}
+
+func (f *fakeMonsterBookProcessor) ByCharacterIdProvider(characterId uint32) model.Provider[monsterbook.Collection] {
+	return func() (monsterbook.Collection, error) {
+		return monsterbook.Collection{}, f.err
+	}
+}
+
+func (f *fakeMonsterBookProcessor) GetByCharacterId(characterId uint32) (monsterbook.Collection, error) {
+	return monsterbook.Collection{}, f.err
+}
+
+func (f *fakeMonsterBookProcessor) GetTotalUniqueCards(characterId uint32) (uint16, error) {
+	if f.err != nil {
+		return 0, f.err
+	}
+	return f.total, nil
+}
 
 func TestCondition_Evaluate(t *testing.T) {
 	// Create test inventory with items
@@ -1982,6 +2009,140 @@ func TestValidationContext_ErrorHandling(t *testing.T) {
 			if exists {
 				t.Errorf("Expected quest %d to not exist in empty context", i)
 			}
+		}
+	})
+}
+
+// TestCondition_MonsterBookCount exercises the monsterBookCount condition
+// against the validation evaluator using a fake monsterbook.Processor. The
+// condition reads totalUniqueCards from the injected processor and compares
+// it via the configured operator/value, mirroring the QuestStatusCondition
+// pattern but with a REST-driven processor instead of a pre-loaded map.
+func TestCondition_MonsterBookCount(t *testing.T) {
+	char := character.NewModelBuilder().SetId(123).SetLevel(25).Build()
+
+	tests := []struct {
+		name         string
+		processor    *fakeMonsterBookProcessor
+		operator     Operator
+		value        int
+		wantPassed   bool
+		wantContains string
+		wantActual   int
+	}{
+		{
+			name:         "GreaterEqual passes when totalUniqueCards meets threshold",
+			processor:    &fakeMonsterBookProcessor{total: 50},
+			operator:     GreaterEqual,
+			value:        25,
+			wantPassed:   true,
+			wantContains: "Monster Book Total Unique Cards >= 25",
+			wantActual:   50,
+		},
+		{
+			name:         "GreaterEqual fails when totalUniqueCards below threshold",
+			processor:    &fakeMonsterBookProcessor{total: 10},
+			operator:     GreaterEqual,
+			value:        25,
+			wantPassed:   false,
+			wantContains: "Monster Book Total Unique Cards >= 25",
+			wantActual:   10,
+		},
+		{
+			name:         "Equals exact count passes",
+			processor:    &fakeMonsterBookProcessor{total: 100},
+			operator:     Equals,
+			value:        100,
+			wantPassed:   true,
+			wantContains: "Monster Book Total Unique Cards = 100",
+			wantActual:   100,
+		},
+		{
+			name:         "Processor error degrades to 0",
+			processor:    &fakeMonsterBookProcessor{err: errors.New("boom")},
+			operator:     GreaterEqual,
+			value:        1,
+			wantPassed:   false,
+			wantContains: "Monster Book Total Unique Cards >= 1",
+			wantActual:   0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := NewValidationContextBuilder(char).
+				SetMonsterBookProcessor(tt.processor).
+				Build()
+
+			cond := Condition{
+				conditionType: MonsterBookCountCondition,
+				operator:      tt.operator,
+				value:         tt.value,
+			}
+
+			result := cond.EvaluateWithContext(ctx)
+			if result.Passed != tt.wantPassed {
+				t.Errorf("Passed = %v, want %v", result.Passed, tt.wantPassed)
+			}
+			if result.Description != tt.wantContains {
+				t.Errorf("Description = %q, want %q", result.Description, tt.wantContains)
+			}
+			if result.ActualValue != tt.wantActual {
+				t.Errorf("ActualValue = %d, want %d", result.ActualValue, tt.wantActual)
+			}
+		})
+	}
+
+	t.Run("Evaluate without context returns ValidationContext required", func(t *testing.T) {
+		cond := Condition{
+			conditionType: MonsterBookCountCondition,
+			operator:      GreaterEqual,
+			value:         5,
+		}
+		result := cond.Evaluate(char)
+		if result.Passed {
+			t.Errorf("Expected Passed=false without context")
+		}
+		if !strings.Contains(result.Description, "Monster Book Count validation requires ValidationContext") {
+			t.Errorf("Description = %q, want context-required message", result.Description)
+		}
+	})
+
+	t.Run("EvaluateWithContext nil processor degrades to 0", func(t *testing.T) {
+		ctx := NewValidationContext(char)
+		cond := Condition{
+			conditionType: MonsterBookCountCondition,
+			operator:      GreaterEqual,
+			value:         1,
+		}
+		result := cond.EvaluateWithContext(ctx)
+		if result.Passed {
+			t.Errorf("Expected Passed=false when processor unavailable")
+		}
+		if result.ActualValue != 0 {
+			t.Errorf("ActualValue = %d, want 0", result.ActualValue)
+		}
+	})
+
+	t.Run("REST accept-list permits monsterBookCount conditions", func(t *testing.T) {
+		input := ConditionInput{
+			Type:     string(MonsterBookCountCondition),
+			Operator: ">=",
+			Value:    25,
+		}
+		if err := validateConditionInput(input); err != nil {
+			t.Errorf("validateConditionInput rejected monsterBookCount: %v", err)
+		}
+	})
+
+	t.Run("ConditionBuilder accepts monsterBookCount", func(t *testing.T) {
+		_, err := NewConditionBuilder().FromInput(ConditionInput{
+			Type:     string(MonsterBookCountCondition),
+			Operator: ">=",
+			Value:    25,
+		}).Build()
+		if err != nil {
+			t.Errorf("ConditionBuilder rejected monsterBookCount: %v", err)
 		}
 	})
 }

@@ -7,6 +7,7 @@ import (
 	"atlas-query-aggregator/item"
 	npcMap "atlas-query-aggregator/map"
 	"atlas-query-aggregator/marriage"
+	"atlas-query-aggregator/monsterbook"
 	"atlas-query-aggregator/party"
 	"atlas-query-aggregator/party_quest"
 	"atlas-query-aggregator/quest"
@@ -37,6 +38,7 @@ type ValidationContext struct {
 	buffP       buff.Processor
 	partyP      party.Processor
 	partyQuestP party_quest.Processor
+	mbP         monsterbook.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -57,6 +59,7 @@ func NewValidationContext(char character.Model) ValidationContext {
 		buffP:       nil,
 		partyP:      nil,
 		partyQuestP: nil,
+		mbP:         nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -78,6 +81,7 @@ func NewValidationContextWithLogger(char character.Model, l logrus.FieldLogger, 
 		buffP:       buff.NewProcessor(l, ctx),
 		partyP:      party.NewProcessor(l, ctx),
 		partyQuestP: party_quest.NewProcessor(l, ctx),
+		mbP:         monsterbook.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -198,6 +202,40 @@ func (ctx ValidationContext) ItemProcessor() item.Processor {
 	return ctx.itemP
 }
 
+// GetMonsterBookTotalUniqueCards returns the totalUniqueCards count for the
+// context's character via the injected monsterbook processor. Returns 0 when
+// the processor is unavailable or the lookup fails (graceful degradation).
+func (ctx ValidationContext) GetMonsterBookTotalUniqueCards() int {
+	if ctx.mbP == nil {
+		if ctx.l != nil {
+			ctx.l.Warnf("Monster book processor not available, returning 0 for character %d", ctx.character.Id())
+		}
+		return 0
+	}
+
+	total, err := ctx.mbP.GetTotalUniqueCards(ctx.character.Id())
+	if err != nil {
+		if ctx.l != nil {
+			ctx.l.WithError(err).Debugf("Failed to get monster book unique cards for character %d, using 0", ctx.character.Id())
+		}
+		return 0
+	}
+	return int(total)
+}
+
+// MonsterBookProcessor returns the monster book processor for querying monster
+// book data. Returns nil if not available (graceful degradation).
+func (ctx ValidationContext) MonsterBookProcessor() monsterbook.Processor {
+	return ctx.mbP
+}
+
+// WithMonsterBookProcessor returns a copy of the context with the supplied
+// monster book processor. Test seams use this to inject a fake processor.
+func (ctx ValidationContext) WithMonsterBookProcessor(p monsterbook.Processor) ValidationContext {
+	ctx.mbP = p
+	return ctx
+}
+
 // GetPlayerCountInMap returns the player count for a given map
 // Returns 0 if map processor is not available or on error (graceful degradation)
 func (ctx ValidationContext) GetPlayerCountInMap(field field.Model) int {
@@ -267,6 +305,7 @@ func (ctx ValidationContext) WithQuest(questModel quest.Model) ValidationContext
 		buffP:       ctx.buffP,
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
+		mbP:         ctx.mbP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -295,6 +334,7 @@ func (ctx ValidationContext) WithSkill(skillModel skill.Model) ValidationContext
 		buffP:       ctx.buffP,
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
+		mbP:         ctx.mbP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -317,6 +357,7 @@ func (ctx ValidationContext) WithMarriage(marriageModel marriage.Model) Validati
 		buffP:       ctx.buffP,
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
+		mbP:         ctx.mbP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -339,6 +380,7 @@ func (ctx ValidationContext) WithBuddyList(buddyListModel buddy.Model) Validatio
 		buffP:       ctx.buffP,
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
+		mbP:         ctx.mbP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -361,6 +403,7 @@ func (ctx ValidationContext) WithPetCount(count int) ValidationContext {
 		buffP:       ctx.buffP,
 		partyP:      ctx.partyP,
 		partyQuestP: ctx.partyQuestP,
+		mbP:         ctx.mbP,
 		l:           ctx.l,
 		ctx:         ctx.ctx,
 	}
@@ -382,6 +425,7 @@ type ValidationContextBuilder struct {
 	buffP       buff.Processor
 	partyP      party.Processor
 	partyQuestP party_quest.Processor
+	mbP         monsterbook.Processor
 	l           logrus.FieldLogger
 	ctx         context.Context
 }
@@ -402,6 +446,7 @@ func NewValidationContextBuilder(char character.Model) *ValidationContextBuilder
 		buffP:       nil,
 		partyP:      nil,
 		partyQuestP: nil,
+		mbP:         nil,
 		l:           nil,
 		ctx:         nil,
 	}
@@ -423,6 +468,7 @@ func NewValidationContextBuilderWithLogger(char character.Model, l logrus.FieldL
 		buffP:       buff.NewProcessor(l, ctx),
 		partyP:      party.NewProcessor(l, ctx),
 		partyQuestP: party_quest.NewProcessor(l, ctx),
+		mbP:         monsterbook.NewProcessor(l, ctx),
 		l:           l,
 		ctx:         ctx,
 	}
@@ -470,6 +516,13 @@ func (b *ValidationContextBuilder) SetPetCount(count int) *ValidationContextBuil
 	return b
 }
 
+// SetMonsterBookProcessor overrides the monster book processor on the
+// builder, primarily so tests can inject a fake.
+func (b *ValidationContextBuilder) SetMonsterBookProcessor(p monsterbook.Processor) *ValidationContextBuilder {
+	b.mbP = p
+	return b
+}
+
 // Build creates a validation context from the builder
 func (b *ValidationContextBuilder) Build() ValidationContext {
 	return ValidationContext{
@@ -487,6 +540,7 @@ func (b *ValidationContextBuilder) Build() ValidationContext {
 		buffP:       b.buffP,
 		partyP:      b.partyP,
 		partyQuestP: b.partyQuestP,
+		mbP:         b.mbP,
 		l:           b.l,
 		ctx:         b.ctx,
 	}

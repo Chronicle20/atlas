@@ -1,6 +1,7 @@
 package character
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -47,10 +48,19 @@ func handleGet(db *gorm.DB) rest.GetHandler {
 				p := collection.NewProcessor(d.Logger(), d.Context(), db)
 				m, err := p.GetByCharacterId(characterId)
 				if err != nil {
+					// GetByCharacterId synthesizes a default model on
+					// ErrRecordNotFound, so any error here is a real DB
+					// failure.
+					d.Logger().WithError(err).Errorf("Failed to load monster-book collection for character %d.", characterId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				rm, _ := collection.Transform(m)
+				rm, err := collection.Transform(m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Failed to transform collection model for character %d.", characterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				server.MarshalResponse[collection.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)
 			}
 		})
@@ -64,15 +74,27 @@ func handlePatch(db *gorm.DB) rest.InputHandler[collection.PatchInput] {
 			return func(w http.ResponseWriter, r *http.Request) {
 				p := collection.NewProcessor(d.Logger(), d.Context(), db)
 				if err := p.SetCoverAndEmit(uuid.New(), characterId, in.CoverCardId); err != nil {
-					w.WriteHeader(http.StatusUnprocessableEntity)
+					if errors.Is(err, collection.ErrCoverNotOwned) || errors.Is(err, collection.ErrCardIdOutOfRange) {
+						d.Logger().WithError(err).Debugf("SetCover validation rejected for character %d cover %d.", characterId, in.CoverCardId)
+						w.WriteHeader(http.StatusUnprocessableEntity)
+						return
+					}
+					d.Logger().WithError(err).Errorf("SetCover failed for character %d cover %d.", characterId, in.CoverCardId)
+					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
 				m, err := p.GetByCharacterId(characterId)
 				if err != nil {
+					d.Logger().WithError(err).Errorf("Failed to reload collection after SetCover for character %d.", characterId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
-				rm, _ := collection.Transform(m)
+				rm, err := collection.Transform(m)
+				if err != nil {
+					d.Logger().WithError(err).Errorf("Failed to transform collection model for character %d.", characterId)
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
 				server.MarshalResponse[collection.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)
 			}
 		})
@@ -87,6 +109,7 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 				cp := card.NewProcessor(d.Logger(), d.Context(), db)
 				ms, err := cp.GetByCharacterId(characterId)
 				if err != nil {
+					d.Logger().WithError(err).Errorf("Failed to list cards for character %d.", characterId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -118,6 +141,7 @@ func handleListCards(db *gorm.DB) rest.GetHandler {
 				}
 				res, err := model.SliceMap(card.Transform)(model.FixedProvider(ms))()()
 				if err != nil {
+					d.Logger().WithError(err).Errorf("Failed to transform cards for character %d.", characterId)
 					w.WriteHeader(http.StatusInternalServerError)
 					return
 				}
@@ -137,10 +161,20 @@ func handleGetCard(db *gorm.DB) rest.GetHandler {
 					cp := card.NewProcessor(d.Logger(), d.Context(), db)
 					m, err := cp.GetByCharacterIdAndCardId(characterId, cardId)
 					if err != nil {
-						w.WriteHeader(http.StatusNotFound)
+						if errors.Is(err, gorm.ErrRecordNotFound) {
+							w.WriteHeader(http.StatusNotFound)
+							return
+						}
+						d.Logger().WithError(err).Errorf("Failed to load card %d for character %d.", cardId, characterId)
+						w.WriteHeader(http.StatusInternalServerError)
 						return
 					}
-					rm, _ := card.Transform(m)
+					rm, err := card.Transform(m)
+					if err != nil {
+						d.Logger().WithError(err).Errorf("Failed to transform card %d for character %d.", cardId, characterId)
+						w.WriteHeader(http.StatusInternalServerError)
+						return
+					}
 					server.MarshalResponse[card.RestModel](d.Logger())(w)(c.ServerInformation())(r.URL.Query())(rm)
 				}
 			})

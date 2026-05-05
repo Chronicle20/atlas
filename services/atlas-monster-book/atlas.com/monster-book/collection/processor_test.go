@@ -2,6 +2,7 @@ package collection
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"atlas-monster-book/card"
@@ -104,12 +105,13 @@ func TestSetCoverRejectsUnownedCardBeforeProducerCall(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := NewProcessor(logrus.New(), ctx, db)
-	// Unowned card → must error out of validation; producer never invoked.
-	if err := p.SetCoverAndEmit(uuid.New(), 1, 2380001); err == nil {
-		t.Fatal("expected error for unowned card")
+	// Unowned card → must error out of validation with the typed sentinel
+	// so the REST handler can map it to 422.
+	if err := p.SetCoverAndEmit(uuid.New(), 1, 2380001); !errors.Is(err, ErrCoverNotOwned) {
+		t.Fatalf("expected ErrCoverNotOwned for unowned card, got %v", err)
 	}
-	// Out-of-range cardId → must error out of validation.
-	if err := p.SetCoverAndEmit(uuid.New(), 1, 1234); err == nil {
-		t.Fatal("expected error for non-card itemId")
+	// Non-card itemId → must error out of validation with the typed sentinel.
+	if err := p.SetCoverAndEmit(uuid.New(), 1, 1234); !errors.Is(err, ErrCardIdOutOfRange) {
+		t.Fatalf("expected ErrCardIdOutOfRange for non-card itemId, got %v", err)
 	}
 }

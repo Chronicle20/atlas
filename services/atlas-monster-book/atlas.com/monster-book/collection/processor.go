@@ -21,6 +21,13 @@ import (
 
 var entityModelMapper = model.Map(Make)
 
+// Sentinel errors classify SetCoverAndEmit failures so the REST handler can
+// map them to 422 (validation) vs 500 (DB).
+var (
+	ErrCardIdOutOfRange = errors.New("cardId is not a monster-book card item")
+	ErrCoverNotOwned    = errors.New("cover requires owned card")
+)
+
 // Topic + envelope shape mirror what atlas-channel already consumes at
 // services/atlas-channel/atlas.com/channel/kafka/consumer/character/consumer.go
 // (handleStatusEventExperienceChanged → announceExperienceGain, lines 238-270).
@@ -208,17 +215,17 @@ func (p *ProcessorImpl) SetCoverAndEmit(eventId uuid.UUID, characterId character
 	// Validate ownership. cardId == 0 is allowed and clears the cover.
 	if cardId != 0 {
 		if !card.IsCardId(cardId) {
-			return errors.New("cardId is not a monster-book card item")
+			return ErrCardIdOutOfRange
 		}
 		owned, err := p.cp.GetByCharacterIdAndCardId(characterId, cardId)
 		if err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return errors.New("cover requires owned card")
+				return ErrCoverNotOwned
 			}
 			return err
 		}
 		if owned.Level() < 1 {
-			return errors.New("cover requires owned card")
+			return ErrCoverNotOwned
 		}
 	}
 

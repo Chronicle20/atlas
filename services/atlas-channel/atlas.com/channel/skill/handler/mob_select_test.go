@@ -49,3 +49,24 @@ func TestBoundingBox_Asymmetric_FacingLeft(t *testing.T) {
 		t.Fatalf("got (%d,%d,%d,%d), want (50,40,250,80)", x1, y1, x2, y2)
 	}
 }
+
+func TestHasEffectBbox(t *testing.T) {
+	tests := []struct {
+		name string
+		lt   point.Model
+		rb   point.Model
+		want bool
+	}{
+		{"all-zero is sentinel for no-rect", mkPoint(0, 0), mkPoint(0, 0), false},
+		{"any non-zero on lt counts as rect", mkPoint(-1, 0), mkPoint(0, 0), true},
+		{"any non-zero on rb counts as rect", mkPoint(0, 0), mkPoint(0, 1), true},
+		{"full rect is rect", mkPoint(-50, -10), mkPoint(150, 30), true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := hasEffectBbox(tc.lt, tc.rb); got != tc.want {
+				t.Fatalf("hasEffectBbox = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}

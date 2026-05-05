@@ -9,6 +9,7 @@ import (
 	"atlas-channel/monster"
 	"atlas-channel/socket/writer"
 	"context"
+	"math/rand"
 
 	charcon "github.com/Chronicle20/atlas/libs/atlas-constants/character"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -18,8 +19,52 @@ import (
 	skill2 "github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	model2 "github.com/Chronicle20/atlas/libs/atlas-model/model"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
+
+// loadCasterFunc is the caster-load seam tests can replace. Production
+// calls atlas-character via character.Processor.GetById(); tests inject a
+// stub returning a deterministic character.Model so the orchestrator can
+// exercise its mob-selection / status-apply logic offline.
+var loadCasterFunc = func(cp character.Processor, characterId uint32) (character.Model, error) {
+	return cp.GetById()(characterId)
+}
+
+// rectQueryFunc is the mob-selection seam tests can replace. Production
+// calls atlas-monsters via monster.Processor.GetInMapRect; tests inject a
+// stub returning a fixed slice.
+var rectQueryFunc = func(p *monster.Processor, f field.Model, x1, y1, x2, y2 int16, limit uint32) ([]monster.Model, error) {
+	return p.GetInMapRect(f, x1, y1, x2, y2, limit)
+}
+
+// propRollFunc gates per-target apply/cancel by the skill's prop value.
+// Production uses a uniform RNG; tests inject a deterministic implementation
+// via a t.Cleanup-restored override.
+var propRollFunc = func(prop float64) bool {
+	if prop <= 0 {
+		return false
+	}
+	if prop >= 1 {
+		return true
+	}
+	return rand.Float64() <= prop
+}
+
+// reflectLookupFunc is the magic-reflect probe seam tests can replace.
+var reflectLookupFunc = func(t tenant.Model, monsterId uint32, kind string) (monster.ReflectInfo, bool) {
+	return monster.GetStatusMirror().GetReflect(t, monsterId, kind)
+}
+
+// applyStatusFunc is the status-apply emit seam tests can replace.
+var applyStatusFunc = func(p *monster.Processor, f field.Model, monsterId, characterId, skillId, skillLevel uint32, statuses map[string]int32, duration uint32) error {
+	return p.ApplyStatus(f, monsterId, characterId, skillId, skillLevel, statuses, duration)
+}
+
+// cancelStatusFunc is the status-cancel emit seam tests can replace.
+var cancelStatusFunc = func(p *monster.Processor, f field.Model, monsterId uint32, statusTypes []string, sourceCharacterId, sourceSkillId uint32, sourceSkillClass string) error {
+	return p.CancelStatus(f, monsterId, statusTypes, sourceCharacterId, sourceSkillId, sourceSkillClass)
+}
 
 func UseSkill(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {
 	return func(ctx context.Context) func(wp writer.Producer, f field.Model, characterId uint32, info packetmodel.SkillUsageInfo, e effect.Model) error {

@@ -1,0 +1,14 @@
+package collection
+
+import (
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+)
+
+func byCharacterIdEntityProvider(tenantId uuid.UUID, characterId uint32) database.EntityProvider[entity] {
+	return func(db *gorm.DB) model.Provider[entity] {
+		return database.Query[entity](db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId), &entity{})
+	}
+}

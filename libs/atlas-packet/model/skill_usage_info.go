@@ -70,6 +70,66 @@ func (m *SkillUsageInfo) Delay() uint16 {
 	return m.delay
 }
 
+// SkillUsageInfoBuilder fluently constructs SkillUsageInfo values for
+// callers that don't go through Decode (today: tests). The wire decoder
+// remains the canonical production path.
+type SkillUsageInfoBuilder struct {
+	info SkillUsageInfo
+}
+
+func NewSkillUsageInfoBuilder() *SkillUsageInfoBuilder {
+	return &SkillUsageInfoBuilder{}
+}
+
+func (b *SkillUsageInfoBuilder) SetUpdateTime(v uint32) *SkillUsageInfoBuilder {
+	b.info.updateTime = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetSkillId(v uint32) *SkillUsageInfoBuilder {
+	b.info.skillId = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetSkillLevel(v byte) *SkillUsageInfoBuilder {
+	b.info.skillLevel = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetCastX(v int16) *SkillUsageInfoBuilder {
+	b.info.castX = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetCastY(v int16) *SkillUsageInfoBuilder {
+	b.info.castY = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetSpiritJavelinItemId(v uint32) *SkillUsageInfoBuilder {
+	b.info.spiritJavelinItemId = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetAffectedPartyMemberBitmap(v uint8) *SkillUsageInfoBuilder {
+	b.info.affectedPartyMemberBitmap = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetAffectedMobIds(v []uint32) *SkillUsageInfoBuilder {
+	b.info.affectedMobIds = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) SetDelay(v uint16) *SkillUsageInfoBuilder {
+	b.info.delay = v
+	return b
+}
+
+func (b *SkillUsageInfoBuilder) Build() SkillUsageInfo {
+	return b.info
+}
+
 func isMobAffectingBuff(skillId skill.Id) bool {
 	// TODO this is not all inclusive 32111004 32121007 33121007 35111013
 	return skill.Is(skillId,

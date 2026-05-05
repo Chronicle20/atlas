@@ -115,9 +115,13 @@ func mkCaster(id uint32) character.Model {
 
 // mkInfo builds a SkillUsageInfo with the given skill id, level, and affected
 // mob ids. The wire decoder is exercised in its own test suite — here we
-// rely on packetmodel exposing builder fields the test can populate.
+// build through the public Builder.
 func mkInfo(skillId uint32, level byte, mobIds []uint32) packetmodel.SkillUsageInfo {
-	return packetmodel.NewSkillUsageInfoForTest(skillId, level, mobIds)
+	return packetmodel.NewSkillUsageInfoBuilder().
+		SetSkillId(skillId).
+		SetSkillLevel(level).
+		SetAffectedMobIds(mobIds).
+		Build()
 }
 
 // withRect returns the effect with non-zero LT/RB so hasEffectBbox is true.

@@ -67,7 +67,9 @@ import (
 	channelSB "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
 	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	mbcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound/monsterbook"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
+	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	chatSB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
 	dropcb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
@@ -497,6 +499,8 @@ func produceWriters() []string {
 		merchantcb.HiredMerchantOperationWriter,
 		interactioncb.CharacterInteractionWriter,
 		interaction2.MiniRoomWriter,
+		mbcb.MonsterBookSetCardWriter,
+		mbcb.MonsterBookSetCoverWriter,
 	}
 }
 
@@ -572,6 +576,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	return handlerMap
 }
 

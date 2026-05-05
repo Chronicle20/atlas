@@ -80,3 +80,32 @@ func mobBuffApplyKind(skillId skill2.Id) string {
 		return ""
 	}
 }
+
+// propBranch discriminates which emit branch the orchestrator is about to
+// take when consulting the prop carve-out table (FR-4.5).
+type propBranch int
+
+const (
+	propBranchApply propBranch = iota
+	propBranchCancel
+)
+
+// propCarveOut overrides the default "prop applies to both branches" rule
+// per (skillId, branch). Default is `true` for every (skill, branch) not
+// listed here; an entry with value `false` suppresses the prop roll on that
+// branch (treats it as "always pass" for that skill). Today the table is
+// empty: every current skill takes the default. The table is the contract
+// for future skills whose WZ data prescribes "prop only on apply" or "prop
+// only on cancel".
+var propCarveOut = map[skill2.Id]map[propBranch]bool{}
+
+// propAppliesTo reports whether the orchestrator should roll prop for the
+// given (skill, branch). Defaults to `true`.
+func propAppliesTo(skillId skill2.Id, branch propBranch) bool {
+	if entry, ok := propCarveOut[skillId]; ok {
+		if v, set := entry[branch]; set {
+			return v
+		}
+	}
+	return true
+}

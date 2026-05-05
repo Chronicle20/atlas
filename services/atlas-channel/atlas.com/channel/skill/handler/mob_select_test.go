@@ -133,3 +133,42 @@ func TestMobBuffApplyKind(t *testing.T) {
 		t.Errorf("mobBuffApplyKind(unknown) = %q, want empty", got)
 	}
 }
+
+func TestPropAppliesTo_DefaultsTrue(t *testing.T) {
+	tests := []struct {
+		sid    skill2.Id
+		branch propBranch
+	}{
+		{skill2.PriestDoomId, propBranchApply},
+		{skill2.CrusaderArmorCrashId, propBranchCancel},
+		{skill2.WhiteKnightMagicCrashId, propBranchCancel},
+		{skill2.DragonKnightPowerCrashId, propBranchCancel},
+		{skill2.PriestDispelId, propBranchCancel},
+	}
+	for _, tc := range tests {
+		if !propAppliesTo(tc.sid, tc.branch) {
+			t.Errorf("propAppliesTo(%v, %v) = false, want true (defaults)", tc.sid, tc.branch)
+		}
+	}
+}
+
+func TestPropAppliesTo_CarveOutHonored(t *testing.T) {
+	// Install a deny entry for a synthetic id; restore on cleanup.
+	id := skill2.Id(0xDEAD0001)
+	prev := propCarveOut[id]
+	propCarveOut[id] = map[propBranch]bool{propBranchCancel: false}
+	t.Cleanup(func() {
+		if prev == nil {
+			delete(propCarveOut, id)
+		} else {
+			propCarveOut[id] = prev
+		}
+	})
+
+	if propAppliesTo(id, propBranchCancel) {
+		t.Errorf("propAppliesTo(synthetic, cancel) = true, want false (deny entry)")
+	}
+	if !propAppliesTo(id, propBranchApply) {
+		t.Errorf("propAppliesTo(synthetic, apply) = false, want true (apply not carved out)")
+	}
+}

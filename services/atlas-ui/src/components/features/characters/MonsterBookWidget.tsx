@@ -1,30 +1,24 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useTenant } from "@/context/tenant-context";
-import { api } from "@/lib/api/client";
 import { getAssetIconUrl } from "@/lib/utils/asset-url";
-import { monsterBookService } from "@/services/api/monster-book.service";
+import {
+  useMonsterBookCardName,
+  useMonsterBookCards,
+  useMonsterBookCollection,
+} from "@/lib/hooks/api/useMonsterBook";
+import { createErrorFromUnknown } from "@/types/api/errors";
 import type { MonsterBookCard, MonsterBookCollection } from "@/types/monster-book";
 import type { Tenant } from "@/services/api/tenants.service";
 
-const PAGE_SIZE = 100;
 const CARD_LEVEL_MAX = 5;
 
 interface Props {
   characterId: number;
-}
-
-interface ConsumableResource {
-  id: string;
-  attributes: { monsterId?: number };
-}
-
-interface MonsterResource {
-  id: string;
-  attributes: { name: string };
 }
 
 /**
@@ -37,27 +31,19 @@ interface MonsterResource {
 export function MonsterBookWidget({ characterId }: Props) {
   const { activeTenant } = useTenant();
 
-  const collectionQuery = useQuery({
-    queryKey: ["monster-book", characterId, "collection"],
-    queryFn: () => monsterBookService.getCollection(characterId),
-    enabled: Number.isFinite(characterId) && characterId > 0,
-  });
+  const collectionQuery = useMonsterBookCollection(activeTenant, characterId);
+  const cardsQuery = useMonsterBookCards(activeTenant, characterId);
 
-  const cardsQuery = useInfiniteQuery({
-    queryKey: ["monster-book", characterId, "cards"],
-    queryFn: ({ pageParam }: { pageParam: number }) =>
-      monsterBookService.listCards(characterId, { offset: pageParam, limit: PAGE_SIZE }),
-    initialPageParam: 0,
-    // We page client-side by accumulating offsets. When a page returns
-    // fewer rows than the limit, the server has nothing more to give.
-    getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length < PAGE_SIZE) return undefined;
-      return allPages.reduce((acc, page) => acc + page.length, 0);
-    },
-    enabled: Number.isFinite(characterId) && characterId > 0,
-  });
+  // Surface load failures via toast in addition to the inline retry chip.
+  // The error helper normalises unknown shapes (network/api/runtime) into
+  // a single message string for sonner.
+  useEffect(() => {
+    if (collectionQuery.isError) {
+      toast.error(createErrorFromUnknown(collectionQuery.error).message);
+    }
+  }, [collectionQuery.isError, collectionQuery.error]);
 
-  if (collectionQuery.isLoading) {
+  if (collectionQuery.isLoading || (!activeTenant && !collectionQuery.isError)) {
     return (
       <Card>
         <CardHeader>
@@ -177,21 +163,9 @@ function CardList({
 }
 
 function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | null }) {
-  const consumableQuery = useQuery({
-    queryKey: ["consumable", card.cardId],
-    queryFn: async (): Promise<ConsumableResource> =>
-      api.getOne<ConsumableResource>(`/api/data/consumables/${card.cardId}`),
-  });
+  const { monsterId, name } = useMonsterBookCardName(tenant, card.cardId);
 
-  const monsterId = consumableQuery.data?.attributes.monsterId;
-  const monsterQuery = useQuery({
-    queryKey: ["monster", monsterId],
-    queryFn: async (): Promise<MonsterResource> =>
-      api.getOne<MonsterResource>(`/api/data/monsters/${monsterId}`),
-    enabled: monsterId !== undefined && monsterId > 0,
-  });
-
-  const name = monsterQuery.data?.attributes.name ?? `Card ${card.cardId}`;
+  const displayName = name ?? `Card ${card.cardId}`;
   const iconUrl = tenant && monsterId
     ? getAssetIconUrl(
         tenant.id,
@@ -208,7 +182,7 @@ function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | nul
       {iconUrl ? (
         <img
           src={iconUrl}
-          alt={name}
+          alt={displayName}
           width={32}
           height={32}
           loading="lazy"
@@ -219,7 +193,7 @@ function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | nul
       )}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="truncate text-sm font-medium">{name}</span>
+          <span className="truncate text-sm font-medium">{displayName}</span>
           {card.isSpecial && (
             <Badge variant="default" className="shrink-0">Special</Badge>
           )}
@@ -233,12 +207,7 @@ function CardRow({ card, tenant }: { card: MonsterBookCard; tenant: Tenant | nul
 }
 
 function CoverImage({ cardId, tenant }: { cardId: number; tenant: Tenant }) {
-  const consumableQuery = useQuery({
-    queryKey: ["consumable", cardId],
-    queryFn: async (): Promise<ConsumableResource> =>
-      api.getOne<ConsumableResource>(`/api/data/consumables/${cardId}`),
-  });
-  const monsterId = consumableQuery.data?.attributes.monsterId;
+  const { monsterId } = useMonsterBookCardName(tenant, cardId);
   if (!monsterId) {
     return <div className="h-12 w-12 rounded border bg-muted" aria-hidden />;
   }
@@ -261,4 +230,3 @@ function CoverImage({ cardId, tenant }: { cardId: number; tenant: Tenant }) {
     />
   );
 }
-

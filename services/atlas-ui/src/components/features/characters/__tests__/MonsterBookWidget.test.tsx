@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MonsterBookWidget } from "../MonsterBookWidget";
@@ -11,27 +11,60 @@ const fakeTenant = {
   id: "t1",
   attributes: { region: "GMS", majorVersion: 83, minorVersion: 1 },
 };
+const useTenantMock = vi.fn(() => ({ activeTenant: fakeTenant }));
 vi.mock("@/context/tenant-context", () => ({
-  useTenant: () => ({ activeTenant: fakeTenant }),
+  useTenant: () => useTenantMock(),
 }));
 
-const getCollectionMock = vi.fn();
-const listCardsMock = vi.fn();
-vi.mock("@/services/api/monster-book.service", () => ({
-  monsterBookService: {
-    getCollection: (...a: unknown[]) => getCollectionMock(...a),
-    listCards: (...a: unknown[]) => listCardsMock(...a),
+const useMonsterBookCollectionMock = vi.fn();
+const useMonsterBookCardsMock = vi.fn();
+const useMonsterBookCardNameMock = vi.fn();
+vi.mock("@/lib/hooks/api/useMonsterBook", () => ({
+  useMonsterBookCollection: (...a: unknown[]) =>
+    useMonsterBookCollectionMock(...a),
+  useMonsterBookCards: (...a: unknown[]) => useMonsterBookCardsMock(...a),
+  useMonsterBookCardName: (...a: unknown[]) =>
+    useMonsterBookCardNameMock(...a),
+}));
+
+const toastErrorMock = vi.fn();
+vi.mock("sonner", () => ({
+  toast: {
+    error: (...a: unknown[]) => toastErrorMock(...a),
   },
 }));
 
-// CardRow / CoverImage call api.getOne to chase the consumable→monster
-// relation. The widget should still render its skeleton/empty/header
-// states without these resolving, so we stub them to never settle.
-vi.mock("@/lib/api/client", () => ({
-  api: {
-    getOne: vi.fn(() => new Promise(() => {})),
-  },
-}));
+function makeCollectionResult(overrides: Partial<{
+  data: MonsterBookCollection | undefined;
+  isLoading: boolean;
+  isError: boolean;
+  error: unknown;
+  refetch: () => void;
+}> = {}) {
+  return {
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    ...overrides,
+  };
+}
+
+function makeCardsResult(overrides: Partial<{
+  data: { pages: MonsterBookCard[][] } | undefined;
+  isFetchingNextPage: boolean;
+  hasNextPage: boolean;
+  fetchNextPage: () => void;
+}> = {}) {
+  return {
+    data: undefined,
+    isFetchingNextPage: false,
+    hasNextPage: false,
+    fetchNextPage: vi.fn(),
+    ...overrides,
+  };
+}
 
 function renderWidget(characterId = 12345) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -45,18 +78,29 @@ function renderWidget(characterId = 12345) {
 describe("MonsterBookWidget", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useTenantMock.mockReturnValue({ activeTenant: fakeTenant });
+    // Cards + card-name hooks default to "loading, empty" so each test
+    // only has to override the bits it cares about.
+    useMonsterBookCardsMock.mockReturnValue(makeCardsResult());
+    useMonsterBookCardNameMock.mockReturnValue({
+      monsterId: null,
+      name: null,
+      isLoading: false,
+      isError: false,
+    });
   });
 
   it("renders the loading skeleton while the collection query is pending", () => {
-    getCollectionMock.mockImplementation(() => new Promise(() => {}));
-    listCardsMock.mockImplementation(() => new Promise(() => {}));
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({ isLoading: true }),
+    );
 
     renderWidget();
 
     expect(screen.getByTestId("monster-book-loading")).toBeInTheDocument();
   });
 
-  it("renders the book level + stats once the collection resolves", async () => {
+  it("renders the book level + stats once the collection resolves", () => {
     const collection: MonsterBookCollection = {
       characterId: 12345,
       bookLevel: 4,
@@ -69,18 +113,22 @@ describe("MonsterBookWidget", () => {
     const cards: MonsterBookCard[] = [
       { cardId: 2380000, level: 5, isSpecial: false, firstAcquiredAt: "2024-01-01T00:00:00Z" },
     ];
-    getCollectionMock.mockResolvedValue(collection);
-    listCardsMock.mockResolvedValue(cards);
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({ data: collection }),
+    );
+    useMonsterBookCardsMock.mockReturnValue(
+      makeCardsResult({ data: { pages: [cards] } }),
+    );
 
     renderWidget();
 
-    expect(await screen.findByText("Lv. 4")).toBeInTheDocument();
+    expect(screen.getByText("Lv. 4")).toBeInTheDocument();
     expect(screen.getByText("EXP Bonus")).toBeInTheDocument();
     expect(screen.getByText("5%")).toBeInTheDocument();
     expect(screen.getByText("20")).toBeInTheDocument();
   });
 
-  it("renders the empty-state message when the collection has zero cards", async () => {
+  it("renders the empty-state message when the collection has zero cards", () => {
     const collection: MonsterBookCollection = {
       characterId: 12345,
       bookLevel: 0,
@@ -90,11 +138,80 @@ describe("MonsterBookWidget", () => {
       coverCardId: 0,
       expBonusPercent: 0,
     };
-    getCollectionMock.mockResolvedValue(collection);
-    listCardsMock.mockResolvedValue([]);
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({ data: collection }),
+    );
+    useMonsterBookCardsMock.mockReturnValue(
+      makeCardsResult({ data: { pages: [[]] } }),
+    );
 
     renderWidget();
 
-    expect(await screen.findByText(/no cards collected yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/no cards collected yet/i)).toBeInTheDocument();
+  });
+
+  it("shows the inline error chip + Retry and surfaces a toast on failure", () => {
+    const refetch = vi.fn();
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({
+        isError: true,
+        error: new Error("boom"),
+        refetch,
+      }),
+    );
+
+    renderWidget();
+
+    expect(screen.getByText(/failed to load monster book/i)).toBeInTheDocument();
+    const retry = screen.getByRole("button", { name: /retry/i });
+    fireEvent.click(retry);
+    expect(refetch).toHaveBeenCalled();
+    expect(toastErrorMock).toHaveBeenCalled();
+  });
+
+  it("keeps queries disabled when no tenant is selected and shows loading", () => {
+    useTenantMock.mockReturnValue({ activeTenant: null as never });
+    // The hooks would, in production, return isLoading=false because
+    // their `enabled` gate is off. The widget must still render its
+    // skeleton rather than the "Failed" chip.
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({ data: undefined, isLoading: false }),
+    );
+
+    renderWidget();
+
+    expect(screen.getByTestId("monster-book-loading")).toBeInTheDocument();
+  });
+
+  it("loads more pages when the user clicks Load more", () => {
+    const collection: MonsterBookCollection = {
+      characterId: 12345,
+      bookLevel: 1,
+      normalCount: 1,
+      specialCount: 0,
+      totalUniqueCards: 1,
+      coverCardId: 0,
+      expBonusPercent: 0,
+    };
+    const cards: MonsterBookCard[] = [
+      { cardId: 2380001, level: 1, isSpecial: false, firstAcquiredAt: "2024-01-01T00:00:00Z" },
+    ];
+    const fetchNextPage = vi.fn();
+    useMonsterBookCollectionMock.mockReturnValue(
+      makeCollectionResult({ data: collection }),
+    );
+    useMonsterBookCardsMock.mockReturnValue(
+      makeCardsResult({
+        data: { pages: [cards] },
+        hasNextPage: true,
+        fetchNextPage,
+      }),
+    );
+
+    renderWidget();
+
+    const loadMore = screen.getByRole("button", { name: /load more/i });
+    fireEvent.click(loadMore);
+    expect(fetchNextPage).toHaveBeenCalled();
   });
 });

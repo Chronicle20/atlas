@@ -37,3 +37,27 @@ func calculateBoundingBox(casterX, casterY int16, facingLeft bool, lt, rb point.
 func hasEffectBbox(lt, rb point.Model) bool {
 	return lt.X() != 0 || lt.Y() != 0 || rb.X() != 0 || rb.Y() != 0
 }
+
+// intersectMobIds partitions client mob ids into "applied" (also present in
+// server) and "anomaly" (client-only) lists. Server-only ids are dropped per
+// FR-4.1: the client's omission is treated as authoritative for "did not
+// target". Result preserves client order (FR-4.4) so wire traces remain
+// readable. Both returned slices are nil if the corresponding bucket is
+// empty (callers checking len() observe the same behavior either way).
+func intersectMobIds(client, server []uint32) (applied, anomaly []uint32) {
+	if len(client) == 0 {
+		return nil, nil
+	}
+	serverSet := make(map[uint32]struct{}, len(server))
+	for _, id := range server {
+		serverSet[id] = struct{}{}
+	}
+	for _, id := range client {
+		if _, ok := serverSet[id]; ok {
+			applied = append(applied, id)
+		} else {
+			anomaly = append(anomaly, id)
+		}
+	}
+	return applied, anomaly
+}

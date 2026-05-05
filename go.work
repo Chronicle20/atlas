@@ -17,7 +17,6 @@ use (
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./libs/atlas-tracing
-	./tools/cideps
 	./services/atlas-account/atlas.com/account
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-ban/atlas.com/ban
@@ -50,6 +49,7 @@ use (
 	./services/atlas-merchant/atlas.com/merchant
 	./services/atlas-messages/atlas.com/messages
 	./services/atlas-messengers/atlas.com/messengers
+	./services/atlas-monster-book/atlas.com/monster-book
 	./services/atlas-monster-death/atlas.com/monster
 	./services/atlas-monsters/atlas.com/monsters
 	./services/atlas-notes/atlas.com/notes
@@ -72,4 +72,5 @@ use (
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
+	./tools/cideps
 )

@@ -79,3 +79,5 @@ If either is wrong, STOP and report BLOCKED. Then tell the user:
 - All file I/O uses absolute paths under `<worktree>`.
 - Never write design artifacts under main's `docs/tasks/`.
 - DO NOT begin implementation. This phase produces a design document only.
+
+Write the full design.md in one shot. Commit it. Reply only with the file path and commit SHA — do NOT summarize or walk through sections.

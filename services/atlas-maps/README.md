@@ -37,6 +37,7 @@ A service that tracks character presence in maps, manages spawning of monsters a
 | EVENT_TOPIC_SESSION_STATUS | Topic for session status events (consumed) |
 | COMMAND_TOPIC_MAP | Topic for map commands (consumed) |
 | COMMAND_TOPIC_CHARACTER | Topic for character commands (produced) |
+| COMMAND_TOPIC_CHARACTER_CHANNEL_CHANGE_REQUEST | Topic for character channel-change request commands (consumed) |
 | COMMAND_TOPIC_REACTOR | Topic for reactor commands (produced) |
 | COMMAND_TOPIC_MAP_ACTIONS | Topic for map action commands (produced) |
 | DATA | Root URL for atlas-data service |

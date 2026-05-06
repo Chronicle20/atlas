@@ -60,7 +60,7 @@ func seedCharacterWithTenant(t *testing.T, db *gorm.DB, tm *tenant.Model, name s
 	t.Helper()
 	tctx := tenant.WithContext(context.Background(), *tm)
 	input := character.NewModelBuilder().SetAccountId(1).SetWorldId(wid).SetName(name).SetLevel(1).Build()
-	_, err := character.NewProcessor(testLogger(), tctx, db).Create(message.NewBuffer())(uuid.New(), input)
+	_, err := character.NewProcessor(testLogger(), tctx, db).Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to seed character %s in world %d: %v", name, wid, err)
 	}

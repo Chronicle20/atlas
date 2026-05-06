@@ -2,7 +2,6 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 )
 
@@ -45,17 +44,11 @@ type Builder struct {
 	hair         uint32
 	face         uint32
 	ap           uint16
-	mapId        _map.Id
 	gm           int
 }
 
 func (b *Builder) SetJobId(jobId job.Id) *Builder {
 	b.jobId = jobId
-	return b
-}
-
-func (b *Builder) SetMapId(mapId _map.Id) *Builder {
-	b.mapId = mapId
 	return b
 }
 
@@ -90,7 +83,6 @@ func (b *Builder) Build() Model {
 		face:               b.face,
 		ap:                 b.ap,
 		sp:                 "",
-		mapId:              b.mapId,
 		spawnPoint:         0,
 		gm:                 b.gm,
 	}

@@ -2,9 +2,22 @@ package instance
 
 import (
 	"atlas-party-quests/condition"
+	"atlas-party-quests/definition"
+	character2 "atlas-party-quests/kafka/message/character"
+	"context"
 	"testing"
 
+	database "github.com/Chronicle20/atlas/libs/atlas-database"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+
+	"atlas-party-quests/kafka/message"
 )
 
 func TestCompareValues(t *testing.T) {
@@ -223,4 +236,93 @@ func TestGenerateCombination(t *testing.T) {
 			assert.Less(t, v, uint32(5))
 		}
 	})
+}
+
+// setupLeaveProcessor builds a ProcessorImpl wired to an in-memory sqlite DB
+// with a single seeded definition. It registers an instance owned by the test
+// tenant containing two active characters and returns the processor, the
+// instance model, and the leaving character id. The producer is intentionally
+// nil — tests must drive Leave via the buffer-accepting variant only.
+func setupLeaveProcessor(t *testing.T) (*ProcessorImpl, Model, uint32) {
+	t.Helper()
+
+	l, _ := test.NewNullLogger()
+
+	db, err := gorm.Open(sqlite.Open("file::memory:?cache=shared"), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	require.NoError(t, err)
+	database.RegisterTenantCallbacks(l, db)
+	require.NoError(t, definition.MigrateTable(db))
+	t.Cleanup(func() {
+		sqlDB, _ := db.DB()
+		_ = sqlDB.Close()
+	})
+
+	ten, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	require.NoError(t, err)
+	ctx := tenant.WithContext(context.Background(), ten)
+
+	// Seed a definition so Leave's ByIdProvider call succeeds.
+	defModel, _ := definition.NewBuilder().
+		SetQuestId("leave_pq").
+		SetName("Leave PQ").
+		SetDuration(1800).
+		SetExit(100000000).
+		Build()
+	created, err := definition.NewProcessor(l, ctx, db).Create(defModel)
+	require.NoError(t, err)
+
+	// Reset registry to keep tests isolated from each other.
+	GetRegistry().ResetForTesting()
+
+	leaverId := uint32(42001)
+	otherId := uint32(42002)
+	chars := []CharacterEntry{
+		NewCharacterEntry(leaverId, 0, 0),
+		NewCharacterEntry(otherId, 0, 0),
+	}
+	inst, err := NewBuilder().
+		SetTenantId(ten.Id()).
+		SetDefinitionId(created.Id()).
+		SetQuestId("leave_pq").
+		SetCharacters(chars).
+		Build()
+	require.NoError(t, err)
+	inst = inst.SetState(StateActive)
+	inst = GetRegistry().Create(ten, inst)
+
+	p := &ProcessorImpl{
+		l:   l,
+		ctx: ctx,
+		t:   ten,
+		p:   nil, // Leave only writes to the buffer; producer is unused.
+		db:  db,
+	}
+	return p, inst, leaverId
+}
+
+func TestLeave_DisconnectSkipsExitWarp(t *testing.T) {
+	p, _, leaverId := setupLeaveProcessor(t)
+
+	buf := message.NewBuffer()
+	require.NoError(t, p.Leave(buf)(leaverId, "disconnect"))
+
+	all := buf.GetAll()
+	_, hasWarp := all[character2.EnvCommandTopic]
+	assert.False(t, hasWarp,
+		"disconnect leave must not enqueue a warp on character command topic; "+
+			"atlas-maps's forced-return resolver owns disconnect placement (task-055)")
+}
+
+func TestLeave_VoluntaryEmitsExitWarp(t *testing.T) {
+	p, _, leaverId := setupLeaveProcessor(t)
+
+	buf := message.NewBuffer()
+	require.NoError(t, p.Leave(buf)(leaverId, "voluntary"))
+
+	all := buf.GetAll()
+	msgs, hasWarp := all[character2.EnvCommandTopic]
+	require.True(t, hasWarp, "voluntary leave should still warp the leaving character")
+	assert.NotEmpty(t, msgs)
 }

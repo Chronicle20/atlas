@@ -6,9 +6,7 @@ import (
 	"strings"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
-	"github.com/google/uuid"
 )
 
 type Model struct {
@@ -37,8 +35,6 @@ type Model struct {
 	face               uint32
 	ap                 uint16
 	sp                 string
-	mapId              _map.Id
-	instance           uuid.UUID
 	spawnPoint         uint32
 	gm                 int
 	skills             []skill.Model
@@ -94,14 +90,6 @@ func (m Model) MaxClassLevel() byte {
 
 func (m Model) Experience() uint32 {
 	return m.experience
-}
-
-func (m Model) MapId() _map.Id {
-	return m.mapId
-}
-
-func (m Model) Instance() uuid.UUID {
-	return m.instance
 }
 
 func (m Model) Id() uint32 {
@@ -236,8 +224,6 @@ type modelBuilder struct {
 	experience         uint32
 	fame               int16
 	gachaponExperience uint32
-	mapId              _map.Id
-	instance           uuid.UUID
 	spawnPoint         uint32
 	gm                 int
 	meso               uint32
@@ -274,8 +260,6 @@ func CloneModel(m Model) *modelBuilder {
 		experience:         m.experience,
 		fame:               m.fame,
 		gachaponExperience: m.gachaponExperience,
-		mapId:              m.mapId,
-		instance:           m.instance,
 		spawnPoint:         m.spawnPoint,
 		gm:                 m.gm,
 		meso:               m.meso,
@@ -398,16 +382,6 @@ func (c *modelBuilder) SetGachaponExperience(gachaponExperience uint32) *modelBu
 	return c
 }
 
-func (c *modelBuilder) SetMapId(mapId _map.Id) *modelBuilder {
-	c.mapId = mapId
-	return c
-}
-
-func (c *modelBuilder) SetInstance(instance uuid.UUID) *modelBuilder {
-	c.instance = instance
-	return c
-}
-
 func (c *modelBuilder) SetSpawnPoint(spawnPoint uint32) *modelBuilder {
 	c.spawnPoint = spawnPoint
 	return c
@@ -448,8 +422,6 @@ func (c *modelBuilder) Build() Model {
 		experience:         c.experience,
 		fame:               c.fame,
 		gachaponExperience: c.gachaponExperience,
-		mapId:              c.mapId,
-		instance:           c.instance,
 		spawnPoint:         c.spawnPoint,
 		gm:                 c.gm,
 		meso:               c.meso,

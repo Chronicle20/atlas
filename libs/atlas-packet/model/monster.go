@@ -269,12 +269,6 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context)
 				}
 				continue
 			}
-			if tst == monster.TemporaryStatTypeDisable {
-				w.WriteBool(false) // bInvincible
-				w.WriteBool(false) // bDisable
-				continue
-			}
-
 			if tst == monster.TemporaryStatTypeWeaponCounter {
 				weaponCounter = v.Value()
 			}
@@ -299,6 +293,13 @@ func (m *MonsterTemporaryStat) Encode(l logrus.FieldLogger, ctx context.Context)
 		}
 		if weaponCounter != -1 || magicCounter != -1 {
 			w.WriteInt32(int32(math.Max(float64(weaponCounter), float64(magicCounter))))
+		}
+		for k := range sortedValues {
+			tst := sortedValues[k].StatType().Name()
+			if tst == monster.TemporaryStatTypeDisable {
+				w.WriteBool(false) // bInvincible
+				w.WriteBool(false) // bDisable
+			}
 		}
 		return w.Bytes()
 	}

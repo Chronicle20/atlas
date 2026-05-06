@@ -2,14 +2,30 @@ package character
 
 import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
+// Migration runs AutoMigrate for the entity, then explicitly drops the
+// legacy MapId/Instance columns. atlas-maps owns character location state
+// (task-055); GORM's AutoMigrate adds columns but never removes them, so the
+// drop is performed here. Idempotent — safe to re-run.
 func Migration(db *gorm.DB) error {
-	return db.AutoMigrate(&entity{})
+	if err := db.AutoMigrate(&entity{}); err != nil {
+		return err
+	}
+	if db.Migrator().HasColumn(&entity{}, "MapId") {
+		if err := db.Migrator().DropColumn(&entity{}, "MapId"); err != nil {
+			return err
+		}
+	}
+	if db.Migrator().HasColumn(&entity{}, "Instance") {
+		if err := db.Migrator().DropColumn(&entity{}, "Instance"); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 type entity struct {
@@ -39,8 +55,6 @@ type entity struct {
 	Face               uint32    `gorm:"not null;default=0"`
 	AP                 uint16    `gorm:"not null;default=0"`
 	SP                 string    `gorm:"not null;default=0,0,0,0,0,0,0,0,0,0"`
-	MapId              _map.Id   `gorm:"not null;default=0"`
-	Instance           uuid.UUID `gorm:"type:uuid;not null;default:'00000000-0000-0000-0000-000000000000'"`
 	SpawnPoint         uint32    `gorm:"not null;default=0"`
 	GM                 int       `gorm:"not null;default=0"`
 	X                  int16     `gorm:"not null;default=0"`

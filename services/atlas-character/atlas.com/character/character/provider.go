@@ -3,7 +3,6 @@ package character
 import (
 	database "github.com/Chronicle20/atlas/libs/atlas-database"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"gorm.io/gorm"
@@ -24,12 +23,6 @@ func getForAccountInWorld(accountId uint32, worldId world.Id) database.EntityPro
 func getForAccount(accountId uint32) database.EntityProvider[[]entity] {
 	return func(db *gorm.DB) model.Provider[[]entity] {
 		return database.SliceQuery[entity](db.Where("account_id = ?", accountId), &entity{})
-	}
-}
-
-func getForMapInWorld(worldId world.Id, mapId _map.Id) database.EntityProvider[[]entity] {
-	return func(db *gorm.DB) model.Provider[[]entity] {
-		return database.SliceQuery[entity](db.Where("world = ? AND map_id = ?", worldId, mapId), &entity{})
 	}
 }
 
@@ -82,8 +75,6 @@ func modelFromEntity(e entity) (Model, error) {
 		SetFace(e.Face).
 		SetAp(e.AP).
 		SetSp(e.SP).
-		SetMapId(e.MapId).
-		SetInstance(e.Instance).
 		SetSpawnPoint(e.SpawnPoint).
 		SetGm(e.GM).
 		Build()

@@ -2,9 +2,12 @@ package writer
 
 import (
 	"atlas-login/character"
+	"atlas-login/maps/location"
 	socketmodel "atlas-login/socket/model"
 	"context"
+	"errors"
 
+	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	charpkt "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
@@ -18,17 +21,29 @@ func CharacterListBody(characters []character.Model, worldId world.Id, status in
 		return func(options map[string]interface{}) []byte {
 			entries := make([]packetmodel.CharacterListEntry, len(characters))
 			for i, c := range characters {
-				entries[i] = toCharacterListEntry(c, false)
+				entries[i] = toCharacterListEntry(l, ctx, c, false)
 			}
 			return charpkt.NewCharacterList(byte(status), entries, pic != "", uint32(characterSlots)).Encode(l, ctx)(options)
 		}
 	}
 }
 
-func toCharacterListEntry(c character.Model, viewAll bool) packetmodel.CharacterListEntry {
+func toCharacterListEntry(l logrus.FieldLogger, ctx context.Context, c character.Model, viewAll bool) packetmodel.CharacterListEntry {
 	var petIds [3]uint64
 	for _, p := range c.Pets() {
 		petIds[p.Slot()] = p.CashId()
+	}
+
+	mapId := _map.Id(0)
+	f, err := location.GetField(l, ctx, c.Id())
+	if err != nil {
+		if errors.Is(err, location.ErrNotFound) {
+			l.Warnf("character_list: no atlas-maps location for [%d] (likely first time at character_list since create); rendering map=0.", c.Id())
+		} else {
+			l.WithError(err).Errorf("character_list: atlas-maps unreachable for [%d] (infrastructure error); rendering map=0.", c.Id())
+		}
+	} else {
+		mapId = f.MapId()
 	}
 
 	stats := packetmodel.NewCharacterStatistics(
@@ -38,7 +53,7 @@ func toCharacterListEntry(c character.Model, viewAll bool) packetmodel.Character
 		c.Hp(), c.MaxHp(), c.Mp(), c.MaxMp(),
 		c.Ap(), c.HasSPTable(), c.RemainingSp(),
 		c.Experience(), c.Fame(), c.GachaponExperience(),
-		uint32(c.MapId()), c.SpawnPoint(),
+		uint32(mapId), c.SpawnPoint(),
 	)
 
 	avatar := socketmodel.NewFromCharacter(c, false)

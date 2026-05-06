@@ -138,8 +138,9 @@ func (p *ProcessorImpl) CancelIfTracked(characterId uint32) bool {
 }
 
 // ForceReturnIfTracked is invoked on disconnect: if the character has a
-// tracked entry it is removed unconditionally and CHANGE_MAP is emitted so
-// they reappear at the forced-return map on next login.
+// tracked entry it is removed unconditionally so the per-entry timer stops
+// firing. Forced-return persistence is handled by location.Resolve at next
+// login, so no CHANGE_MAP is emitted here.
 func (p *ProcessorImpl) ForceReturnIfTracked(characterId uint32) bool {
 	entry, ok := p.r.ClaimAny(p.t, characterId)
 	if !ok {
@@ -150,16 +151,13 @@ func (p *ProcessorImpl) ForceReturnIfTracked(characterId uint32) bool {
 		attribute.String("tenant.id", p.t.Id().String()),
 		attribute.Int("world.id", int(entry.Field().WorldId())),
 		attribute.Int("map.id", int(entry.Field().MapId())),
-		attribute.Int("forced.return.map.id", int(entry.ForcedReturnMapId())),
 	)
 	defer span.End()
 	if entry.Timer() != nil {
 		entry.Timer().Stop()
 	}
-	if err := p.emitChangeMap(entry); err != nil {
-		p.l.WithError(err).Errorf("MapTimer.Disconnect: failed to emit CHANGE_MAP for character [%d].", characterId)
-	}
-	p.l.Warnf("MapTimer.Disconnect: tenant=[%s] character=[%d] map=[%d] forcedReturn=[%d].", p.t.Id(), characterId, entry.Field().MapId(), entry.ForcedReturnMapId())
+	p.l.Warnf("MapTimer.Disconnect: tenant=[%s] character=[%d] map=[%d] (forced-return persistence handled by location.Resolve).",
+		p.t.Id(), characterId, entry.Field().MapId())
 	return true
 }
 

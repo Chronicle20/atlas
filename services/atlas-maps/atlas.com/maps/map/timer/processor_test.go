@@ -56,6 +56,12 @@ func (m *recordingProducer) Messages(topic string) []kafka.Message {
 	return append([]kafka.Message(nil), m.messages[topic]...)
 }
 
+func (m *recordingProducer) Reset() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.messages = map[string][]kafka.Message{}
+}
+
 func mkProcTenant(t *testing.T) tenant.Model {
 	t.Helper()
 	tt, err := tenant.Create(uuid.New(), "GMS", 83, 1)
@@ -137,7 +143,7 @@ func TestProcessor_CancelIfTracked_AbsentReturnsFalse(t *testing.T) {
 	require.False(t, p.CancelIfTracked(uint32(999)))
 }
 
-func TestProcessor_ForceReturnIfTracked_EmitsChangeMap(t *testing.T) {
+func TestProcessor_ForceReturnIfTracked_DoesNotEmitChangeMap(t *testing.T) {
 	tt := mkProcTenant(t)
 	reg := NewTestRegistry()
 	rec := newRecordingProducer()
@@ -146,22 +152,19 @@ func TestProcessor_ForceReturnIfTracked_EmitsChangeMap(t *testing.T) {
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(600)))
 
+	// Drop any messages produced by Register (e.g. MAP_TIMER_STARTED) so
+	// that the post-condition is purely about ForceReturnIfTracked.
+	rec.Reset()
+
 	forced := p.ForceReturnIfTracked(uint32(42))
 	require.True(t, forced)
 
 	_, ok := reg.Get(tt, 42)
 	require.False(t, ok)
 
-	msgs := rec.Messages(characterKafka.EnvCommandTopic)
-	require.Len(t, msgs, 1)
-	var cmd characterKafka.Command[characterKafka.ChangeMapBody]
-	require.NoError(t, json.Unmarshal(msgs[0].Value, &cmd))
-	require.Equal(t, characterKafka.CommandChangeMap, cmd.Type)
-	require.Equal(t, world.Id(1), cmd.WorldId)
-	require.Equal(t, channel.Id(2), cmd.Body.ChannelId)
-	require.Equal(t, _map.Id(100000201), cmd.Body.MapId)
-	require.Equal(t, uuid.Nil, cmd.Body.Instance)
-	require.Equal(t, uint32(0), cmd.Body.PortalId)
+	// Forced-return persistence is now handled by location.Resolve on next
+	// login, so ForceReturnIfTracked must not emit any CHANGE_MAP command.
+	require.Empty(t, rec.Messages(characterKafka.EnvCommandTopic))
 }
 
 func TestProcessor_ForceReturnIfTracked_AbsentIsNoOp(t *testing.T) {
@@ -182,7 +185,12 @@ func TestProcessor_TimerFires_EmitsChangeMap(t *testing.T) {
 	f := field.NewBuilder(world.Id(1), channel.Id(2), _map.Id(100000000)).SetInstance(uuid.Nil).Build()
 	require.NoError(t, p.Register(uuid.New(), uint32(42), f, _map.Id(100000201), uint32(0)))
 
-	time.Sleep(150 * time.Millisecond)
+	// time.AfterFunc(0) fires asynchronously; poll for the CHANGE_MAP emit
+	// (which handleExpire performs after claiming + removing the entry) so
+	// the test is deterministic on slow CI runners.
+	require.Eventually(t, func() bool {
+		return len(rec.Messages(characterKafka.EnvCommandTopic)) == 1
+	}, 2*time.Second, 5*time.Millisecond, "handleExpire must emit CHANGE_MAP")
 
 	_, ok := reg.Get(tt, 42)
 	require.False(t, ok, "expired entry must be removed by handleExpire")

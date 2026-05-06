@@ -9,6 +9,7 @@ import (
 
 const (
 	EnvEventTopicCharacterStatus           = "EVENT_TOPIC_CHARACTER_STATUS"
+	EventCharacterStatusTypeCreated        = "CREATED"
 	EventCharacterStatusTypeLogin          = "LOGIN"
 	EventCharacterStatusTypeLogout         = "LOGOUT"
 	EventCharacterStatusTypeChannelChanged = "CHANNEL_CHANGED"
@@ -22,6 +23,16 @@ type StatusEvent[E any] struct {
 	CharacterId   uint32    `json:"characterId"`
 	Type          string    `json:"type"`
 	Body          E         `json:"body"`
+}
+
+// StatusEventCreatedBody mirrors atlas-character's StatusEventCreatedBody so
+// atlas-maps can seed character_locations on character creation, before the
+// first LOGIN. ChannelId is omitted because a freshly created character is
+// not yet associated with a channel; channel binding happens at LOGIN.
+type StatusEventCreatedBody struct {
+	Name     string    `json:"name"`
+	MapId    _map.Id   `json:"mapId"`
+	Instance uuid.UUID `json:"instance"`
 }
 
 type StatusEventLoginBody struct {

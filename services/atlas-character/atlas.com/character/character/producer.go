@@ -30,7 +30,7 @@ func awardLevelCommandProvider(transactionId uuid.UUID, characterId uint32, chan
 	return producer.SingleMessageProvider(key, value)
 }
 
-func createdEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, name string) model.Provider[[]kafka.Message] {
+func createdEventProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, name string, mapId _map.Id) model.Provider[[]kafka.Message] {
 	key := producer.CreateKey(int(characterId))
 	value := &character2.StatusEvent[character2.StatusEventCreatedBody]{
 		TransactionId: transactionId,
@@ -38,7 +38,9 @@ func createdEventProvider(transactionId uuid.UUID, characterId uint32, worldId w
 		WorldId:       worldId,
 		Type:          character2.StatusEventTypeCreated,
 		Body: character2.StatusEventCreatedBody{
-			Name: name,
+			Name:     name,
+			MapId:    mapId,
+			Instance: uuid.Nil,
 		},
 	}
 	return producer.SingleMessageProvider(key, value)

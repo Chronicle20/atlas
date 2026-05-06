@@ -35,9 +35,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleCreateCharacter(db)))); err != nil {
 				return err
 			}
-			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMap(db)))); err != nil {
-				return err
-			}
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeJob(db)))); err != nil {
 				return err
 			}
@@ -110,20 +107,6 @@ func InitHandlers(l logrus.FieldLogger) func(db *gorm.DB) func(rf func(topic str
 				return err
 			}
 			return nil
-		}
-	}
-}
-
-func handleChangeMap(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
-	return func(l logrus.FieldLogger, ctx context.Context, c character2.Command[character2.ChangeMapBody]) {
-		if c.Type != character2.CommandChangeMap {
-			return
-		}
-
-		f := field.NewBuilder(c.WorldId, c.Body.ChannelId, c.Body.MapId).SetInstance(c.Body.Instance).Build()
-		err := character.NewProcessor(l, ctx, db).ChangeMapAndEmit(c.TransactionId, c.CharacterId, f, c.Body.PortalId)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to change character [%d] map.", c.CharacterId)
 		}
 	}
 }
@@ -336,6 +319,10 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			return
 		}
 
+		// task-055 Blocker 2 follow-up: c.Body.MapId is now propagated to
+		// atlas-maps on the CREATED status event so atlas-maps can seed
+		// character_locations before the first LOGIN. atlas-maps owns the
+		// row; atlas-character only forwards the spawn map on the wire.
 		model := character.NewModelBuilder().
 			SetAccountId(c.Body.AccountId).
 			SetWorldId(c.Body.WorldId).
@@ -352,7 +339,6 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			SetGm(c.Body.Gm).
 			SetMeso(c.Body.Meso).
 			Build()
@@ -364,7 +350,7 @@ func handleCreateCharacter(db *gorm.DB) message.Handler[character2.Command[chara
 		// orchestrator's character-status consumer receives the failure
 		// signal regardless. This log line makes the failure visible in
 		// operational logs with full saga correlation.
-		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model); err != nil {
+		if _, err := character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId); err != nil {
 			l.WithError(err).WithFields(logrus.Fields{
 				"transaction_id": c.TransactionId.String(),
 				"account_id":     c.Body.AccountId,

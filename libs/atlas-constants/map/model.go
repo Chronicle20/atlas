@@ -35,6 +35,13 @@ func (m Model) MapId() Id {
 	return m.mapId
 }
 
+// IsSentinel reports whether this map id is the WZ "no override" sentinel
+// (999999999). Used by the forced-return resolver to decide whether to
+// relocate the character on exit.
+func (id Id) IsSentinel() bool {
+	return id == EmptyMapId
+}
+
 func GenerateSequentialDungeonIds(baseId Id, size int) []Id {
 	ids := make([]Id, 0)
 	for i := range size {

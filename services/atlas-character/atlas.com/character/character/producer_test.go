@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
@@ -28,7 +27,7 @@ func TestNameChangedEventViaUpdate(t *testing.T) {
 		SetLevel(10).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -99,7 +98,7 @@ func TestHairChangedEventViaUpdate(t *testing.T) {
 		SetHair(30000).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -157,7 +156,7 @@ func TestFaceChangedEventViaUpdate(t *testing.T) {
 		SetFace(20000).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -215,7 +214,7 @@ func TestGenderChangedEventViaUpdate(t *testing.T) {
 		SetGender(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -273,7 +272,7 @@ func TestSkinColorChangedEventViaUpdate(t *testing.T) {
 		SetSkinColor(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -331,7 +330,7 @@ func TestGmChangedEventViaUpdate(t *testing.T) {
 		SetGm(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -393,7 +392,7 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 		SetGm(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -454,64 +453,6 @@ func TestMultipleFieldChangesProduceMultipleEvents(t *testing.T) {
 	}
 }
 
-func TestMapChangedEventViaUpdate(t *testing.T) {
-	tctx := tenant.WithContext(context.Background(), testTenant())
-	db := testDatabase(t)
-
-	// Create a character first
-	input := character.NewModelBuilder().
-		SetAccountId(1000).
-		SetWorldId(0).
-		SetName("MapTest").
-		SetLevel(10).
-		SetMapId(100000000).
-		Build()
-	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
-	if err != nil {
-		t.Fatalf("Failed to create character: %v", err)
-	}
-
-	// Update the map and capture the message buffer
-	updateInput := character.RestModel{
-		MapId: _map.Id(110000000),
-	}
-
-	transactionId := uuid.New()
-	mb := message.NewBuffer()
-	err = processor.Update(mb)(transactionId, created.Id(), updateInput)
-	if err != nil {
-		t.Fatalf("Failed to update character map: %v", err)
-	}
-
-	// Verify the message was added to the buffer
-	messages := mb.GetAll()
-	statusMessages, exists := messages[character2.EnvEventTopicCharacterStatus]
-	if !exists {
-		t.Fatal("Expected character status event topic in buffer")
-	}
-
-	if len(statusMessages) != 1 {
-		t.Fatalf("Expected 1 message in character status topic, got %d", len(statusMessages))
-	}
-
-	// Verify the message content - should be MAP_CHANGED event
-	var event character2.StatusEvent[character2.StatusEventMapChangedBody]
-	if err := json.Unmarshal(statusMessages[0].Value, &event); err != nil {
-		t.Fatalf("Failed to unmarshal message: %v", err)
-	}
-
-	if event.Type != character2.StatusEventTypeMapChanged {
-		t.Errorf("Expected Type %s, got %s", character2.StatusEventTypeMapChanged, event.Type)
-	}
-	if event.Body.OldMapId != _map.Id(100000000) {
-		t.Errorf("Expected OldMapId 100000000, got %d", event.Body.OldMapId)
-	}
-	if event.Body.TargetMapId != _map.Id(110000000) {
-		t.Errorf("Expected TargetMapId 110000000, got %d", event.Body.TargetMapId)
-	}
-}
-
 func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 	tctx := tenant.WithContext(context.Background(), testTenant())
 	db := testDatabase(t)
@@ -524,7 +465,7 @@ func TestProducerFunctionsHandleEmptyStringValues(t *testing.T) {
 		SetLevel(10).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, 0)
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}

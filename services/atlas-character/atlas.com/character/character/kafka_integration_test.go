@@ -72,10 +72,9 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
-		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
+		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
 
 	handler(logger, tctx, command)
@@ -139,9 +138,6 @@ func TestKafkaCreateCharacterIntegration(t *testing.T) {
 	}
 	if createdCharacter.SkinColor() != 0 {
 		t.Errorf("Expected SkinColor 0, got %d", createdCharacter.SkinColor())
-	}
-	if createdCharacter.MapId() != _map.Id(40000) {
-		t.Errorf("Expected MapId 40000, got %d", createdCharacter.MapId())
 	}
 
 	// Verify the character ID was assigned (should be > 0)
@@ -213,10 +209,9 @@ func TestKafkaCreateCharacterIntegrationWithInvalidName(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
-		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
+		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
 
 	handler(logger, tctx, command)
@@ -250,7 +245,7 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 		Build()
 
 	processor := character.NewProcessor(logger, tctx, db)
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
@@ -304,10 +299,9 @@ func TestKafkaCreateCharacterIntegrationWithDuplicateName(t *testing.T) {
 			SetHair(c.Body.Hair).
 			SetFace(c.Body.Face).
 			SetSkinColor(c.Body.SkinColor).
-			SetMapId(c.Body.MapId).
 			Build()
 
-		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model)
+		_, _ = character.NewProcessor(l, ctx, db).CreateAndEmit(c.TransactionId, model, c.Body.MapId)
 	}
 
 	handler(logger, tctx, command)
@@ -432,12 +426,11 @@ func TestKafkaCreateCharacterIntegrationWithErrorEventEmission(t *testing.T) {
 					SetHair(c.Body.Hair).
 					SetFace(c.Body.Face).
 					SetSkinColor(c.Body.SkinColor).
-					SetMapId(c.Body.MapId).
 					Build()
 
 				// Use the Create function with buffer to populate error events manually
 				processor := character.NewProcessor(l, ctx, db)
-				_, err := processor.Create(buf)(c.TransactionId, model)
+				_, err := processor.Create(buf)(c.TransactionId, model, c.Body.MapId)
 
 				// Manually emit creation failed event on error (simulating CreateAndEmit behavior)
 				if err != nil {

@@ -52,7 +52,7 @@ func TestCreateSunny(t *testing.T) {
 
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Atlas").SetLevel(1).SetExperience(0).Build()
 
-	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input)
+	c, err := character.NewProcessor(testLogger(), tctx, testDatabase(t)).Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -78,7 +78,7 @@ func TestGetByIdWithZeroCharacter(t *testing.T) {
 	// Create a character
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ZeroTest").SetLevel(1).SetExperience(0).Build()
 	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
-	created, err := cp.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -101,7 +101,7 @@ func TestGetByIdWithNonZeroCharacter(t *testing.T) {
 	// Create a character
 	input := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("NonZeroTest").SetLevel(1).SetExperience(0).Build()
 	cp := character.NewProcessor(testLogger(), tctx, testDatabase(t))
-	created, err := cp.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := cp.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create model: %v", err)
 	}
@@ -126,7 +126,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Ab").SetLevel(1).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
-	_, err := processor.CreateAndEmit(uuid.New(), input)
+	_, err := processor.CreateAndEmit(uuid.New(), input, _map.Id(0))
 
 	// Should get an error due to invalid name
 	if err == nil {
@@ -136,7 +136,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	// Test with invalid name - contains invalid characters
 	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("Test@Name!").SetLevel(1).SetExperience(0).Build()
 
-	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
 	// Should get an error due to invalid name
 	if err2 == nil {
@@ -146,7 +146,7 @@ func TestCreateAndEmitWithInvalidName(t *testing.T) {
 	// Test with invalid name - too long
 	input3 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("ThisNameIsTooLong").SetLevel(1).SetExperience(0).Build()
 
-	_, err3 := processor.CreateAndEmit(uuid.New(), input3)
+	_, err3 := processor.CreateAndEmit(uuid.New(), input3, _map.Id(0))
 
 	// Should get an error due to invalid name
 	if err3 == nil {
@@ -162,7 +162,7 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
@@ -171,7 +171,7 @@ func TestCreateAndEmitWithDuplicateName(t *testing.T) {
 	// Try to create another character with the same name using CreateAndEmit
 	input2 := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("TestDupe").SetLevel(1).SetExperience(0).Build()
 
-	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
 	// Should get an error due to duplicate name
 	if err2 == nil {
@@ -186,7 +186,7 @@ func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel0").SetLevel(0).SetExperience(0).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, testDatabase(t))
-	_, err := processor.CreateAndEmit(uuid.New(), input)
+	_, err := processor.CreateAndEmit(uuid.New(), input, _map.Id(0))
 
 	// Should get an error due to invalid level
 	if err == nil {
@@ -196,7 +196,7 @@ func TestCreateAndEmitWithInvalidLevel(t *testing.T) {
 	// Test with invalid level - too high (201)
 	input2 := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("TestLevel201").SetLevel(201).SetExperience(0).Build()
 
-	_, err2 := processor.CreateAndEmit(uuid.New(), input2)
+	_, err2 := processor.CreateAndEmit(uuid.New(), input2, _map.Id(0))
 
 	// Should get an error due to invalid level
 	if err2 == nil {
@@ -211,7 +211,7 @@ func TestUpdateValidNameChange(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).SetExperience(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -245,7 +245,7 @@ func TestUpdateValidHairChange(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).SetHair(30000).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestUpdateValidFaceChange(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).SetFace(20000).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -313,7 +313,7 @@ func TestUpdateValidGenderChange(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).SetGender(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -347,7 +347,7 @@ func TestUpdateValidSkinColorChange(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).SetSkinColor(0).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -390,7 +390,7 @@ func TestUpdateMultipleFields(t *testing.T) {
 		SetSkinColor(0).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -440,7 +440,7 @@ func TestUpdateInvalidName(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("OriginalName").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -476,12 +476,12 @@ func TestUpdateDuplicateName(t *testing.T) {
 	input2 := character.NewModelBuilder().SetAccountId(2000).SetWorldId(0).SetName("SecondChar").SetLevel(10).Build()
 
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	_, err := processor.Create(message.NewBuffer())(uuid.New(), input1)
+	_, err := processor.Create(message.NewBuffer())(uuid.New(), input1, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create first character: %v", err)
 	}
 
-	created2, err := processor.Create(message.NewBuffer())(uuid.New(), input2)
+	created2, err := processor.Create(message.NewBuffer())(uuid.New(), input2, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create second character: %v", err)
 	}
@@ -505,7 +505,7 @@ func TestUpdateInvalidHair(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("HairTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -529,7 +529,7 @@ func TestUpdateInvalidFace(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("FaceTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -553,7 +553,7 @@ func TestUpdateInvalidGender(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("GenderTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -577,7 +577,7 @@ func TestUpdateInvalidSkinColor(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("SkinTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -601,7 +601,7 @@ func TestUpdateNoChanges(t *testing.T) {
 	// Create a character first
 	input := character.NewModelBuilder().SetAccountId(1000).SetWorldId(0).SetName("NoChangeTest").SetLevel(10).Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -662,7 +662,7 @@ func TestUpdatePreservesUnchangedValues(t *testing.T) {
 		SetDexterity(50).
 		Build()
 	processor := character.NewProcessor(testLogger(), tctx, db)
-	created, err := processor.Create(message.NewBuffer())(uuid.New(), input)
+	created, err := processor.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("Failed to create character: %v", err)
 	}
@@ -742,7 +742,7 @@ func TestDeleteForSagaCompensation_Existing(t *testing.T) {
 
 	input := character.NewModelBuilder().SetAccountId(7001).SetWorldId(0).SetName("DeleteMe").SetLevel(1).SetExperience(0).Build()
 	buf := message.NewBuffer()
-	created, err := cp.Create(buf)(uuid.New(), input)
+	created, err := cp.Create(buf)(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("setup: create character: %v", err)
 	}
@@ -784,7 +784,7 @@ func TestRebalanceAP_PersistsAndEmits(t *testing.T) {
 		SetAccountId(1000).SetWorldId(0).SetName("PirateRef").
 		SetLevel(10).SetStrength(53).SetDexterity(9).SetIntelligence(4).SetLuck(4).SetAp(0).
 		Build()
-	c, err := proc.Create(message.NewBuffer())(uuid.New(), input)
+	c, err := proc.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}
@@ -824,7 +824,7 @@ func TestRebalanceAP_ErrorDoesNotMutate(t *testing.T) {
 		SetAccountId(1000).SetWorldId(0).SetName("LowAP").
 		SetLevel(1).SetStrength(4).SetDexterity(4).SetIntelligence(4).SetLuck(4).SetAp(0).
 		Build()
-	c, err := proc.Create(message.NewBuffer())(uuid.New(), input)
+	c, err := proc.Create(message.NewBuffer())(uuid.New(), input, _map.Id(0))
 	if err != nil {
 		t.Fatalf("seed: %v", err)
 	}

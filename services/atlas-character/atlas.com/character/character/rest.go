@@ -1,14 +1,18 @@
 package character
 
 import (
+	"atlas-character/location"
 	"context"
+	"errors"
 	"strconv"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/job"
 	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
 type RestModel struct {
@@ -67,15 +71,28 @@ func (r *RestModel) SetToManyReferenceIDs(_ string, _ []string) error {
 	return nil
 }
 
-func Transform(ctx context.Context) func(m Model) (RestModel, error) {
+// Transform produces the JSON:API projection for a character.
+// MapId / Instance are no longer model-owned (task-055); they are pulled
+// in-flight from atlas-maps via the location client. On lookup failure we
+// log and emit zero values so the JSON shape stays backward-compatible (D11).
+func Transform(l logrus.FieldLogger, ctx context.Context) func(m Model) (RestModel, error) {
 	t := tenant.MustFromContext(ctx)
 	return func(m Model) (RestModel, error) {
 		td := GetTemporalRegistry().GetById(ctx, t, m.Id())
-		return transformWithTemporal(m, td)
+		f, err := location.GetField(l, ctx, m.Id())
+		if err != nil {
+			if errors.Is(err, location.ErrNotFound) {
+				l.Warnf("Transform: no atlas-maps location for [%d] (likely first login of new character); using zero values.", m.Id())
+			} else {
+				l.WithError(err).Errorf("Transform: atlas-maps lookup failed for [%d] (infrastructure error); using zero values.", m.Id())
+			}
+			f = field.NewBuilder(0, 0, 0).SetInstance(uuid.Nil).Build()
+		}
+		return transformWithTemporal(m, td, f), nil
 	}
 }
 
-func transformWithTemporal(m Model, td temporalData) (RestModel, error) {
+func transformWithTemporal(m Model, td temporalData, f field.Model) RestModel {
 	rm := RestModel{
 		Id:                 m.Id(),
 		AccountId:          m.AccountId(),
@@ -102,17 +119,20 @@ func transformWithTemporal(m Model, td temporalData) (RestModel, error) {
 		Face:               m.Face(),
 		Ap:                 m.AP(),
 		Sp:                 m.SPString(),
-		MapId:              m.MapId(),
-		Instance:           m.Instance(),
+		MapId:              f.MapId(),
+		Instance:           f.Instance(),
 		SpawnPoint:         m.SpawnPoint(),
 		Gm:                 m.GM(),
 		X:                  td.X(),
 		Y:                  td.Y(),
 		Stance:             td.Stance(),
 	}
-	return rm, nil
+	return rm
 }
 
+// Extract converts an inbound RestModel back to the domain Model. MapId /
+// Instance from the wire are intentionally dropped — atlas-maps owns location
+// state (task-055). The fields remain on RestModel for backward compat (D11).
 func Extract(m RestModel) (Model, error) {
 	return NewModelBuilder().
 		SetId(m.Id).
@@ -140,8 +160,6 @@ func Extract(m RestModel) (Model, error) {
 		SetFace(m.Face).
 		SetAp(m.Ap).
 		SetSp(m.Sp).
-		SetMapId(m.MapId).
-		SetInstance(m.Instance).
 		SetSpawnPoint(m.SpawnPoint).
 		SetGm(m.Gm).
 		Build(), nil

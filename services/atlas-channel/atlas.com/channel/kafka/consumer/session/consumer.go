@@ -9,6 +9,7 @@ import (
 	consumer2 "atlas-channel/kafka/consumer"
 	session2 "atlas-channel/kafka/message/account/session"
 	"atlas-channel/macro"
+	"atlas-channel/maps/location"
 	"atlas-channel/note"
 	"atlas-channel/server"
 	"atlas-channel/session"
@@ -16,6 +17,7 @@ import (
 	"atlas-channel/socket/writer"
 	"atlas-channel/world"
 	"context"
+	"errors"
 	"sort"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
@@ -166,7 +168,17 @@ func processStateReturn(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 					s = sp.SetAccountId(s.SessionId(), c.AccountId())
 					s = sp.SetCharacterId(s.SessionId(), c.Id())
 					s = sp.SetGm(s.SessionId(), c.Gm())
-					s = sp.SetMapId(s.SessionId(), c.MapId())
+
+					f, lerr := location.GetField(l, ctx, c.Id())
+					if lerr != nil {
+						if errors.Is(lerr, location.ErrNotFound) {
+							l.Errorf("Session bootstrap: no atlas-maps location found for [%d]; aborting (a session cannot bootstrap without a chosen map).", c.Id())
+						} else {
+							l.WithError(lerr).Errorf("Session bootstrap: atlas-maps unreachable for [%d] (infrastructure error); aborting.", c.Id())
+						}
+						return sp.Destroy(s)
+					}
+					s = sp.SetMapId(s.SessionId(), f.MapId())
 
 					sp.SessionCreated(s)
 

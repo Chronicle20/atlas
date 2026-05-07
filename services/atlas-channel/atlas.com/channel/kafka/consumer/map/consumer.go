@@ -319,11 +319,11 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 			// collect other character IDs already in the map
 			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
 			if err != nil {
-				l.WithError(err).Errorf("enterMap: no characters found in map [%d] instance [%s].", f.MapId(), f.Instance())
+				l.WithError(err).Errorf("enterMap: failed to fetch characters in map [%d] instance [%s] for world [%d] and channel [%d]: aborting inter-character notifications.", f.MapId(), f.Instance(), f.WorldId(), f.ChannelId())
 				return err
 			}
 
-			// spawn new character for others — skip stale entries defensively
+			// spawn new character for others — skip entries whose session is gone
 			for _, k := range ids {
 				if k == s.CharacterId() {
 					continue
@@ -333,7 +333,7 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 						l.Warnf("enterMap: skipping stale session entry for character [%d].", k)
 						continue
 					}
-					l.WithError(err).Errorf("enterMap: unable to spawn character [%d] for [%d]", s.CharacterId(), k)
+					l.WithError(err).Errorf("enterMap: unable to spawn character [%d] for [%d] — continuing.", k, s.CharacterId())
 				}
 			}
 
@@ -383,14 +383,6 @@ func spawnCharacterForSession(l logrus.FieldLogger) func(ctx context.Context) fu
 			}
 		}
 	}
-}
-
-func GetModel(m character.Model) character.Model {
-	return m
-}
-
-func GetId(m character.Model) uint32 {
-	return m.Id()
 }
 
 func handleStatusEventCharacterExit(sc server.Model, wp writer.Producer) func(l logrus.FieldLogger, ctx context.Context, event _map3.StatusEvent[_map3.CharacterExit]) {

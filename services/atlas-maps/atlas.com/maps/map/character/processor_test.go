@@ -353,6 +353,128 @@ func TestProcessorImpl_TenantIsolation(t *testing.T) {
 	}
 }
 
+func TestRegistry_RemoveCharacterFromAllMaps_MultiMapMultiInstance(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+	ctx, te := createTestContext()
+
+	p := NewProcessor(logger, ctx)
+
+	transactionId := uuid.New()
+	worldId := world.Id(11)
+	channelId := channel.Id(11)
+	mapId1 := _map.Id(200000000)
+	mapId2 := _map.Id(200000001)
+	instance1 := uuid.New()   // non-zero instance to exercise multi-instance path
+	targetChar := uint32(111001)
+	otherChar := uint32(111002)
+
+	// Target character in map 1 (nil instance) and map 2 (non-nil instance)
+	f1 := field.NewBuilder(worldId, channelId, mapId1).Build()
+	f2 := field.NewBuilder(worldId, channelId, mapId2).SetInstance(instance1).Build()
+
+	p.Enter(transactionId, f1, targetChar)
+	p.Enter(transactionId, f2, targetChar)
+	// Other character also in map 2 — must survive
+	p.Enter(transactionId, f2, otherChar)
+
+	// Sanity-check seeding
+	key1 := MapKey{Tenant: te, Field: f1}
+	key2 := MapKey{Tenant: te, Field: f2}
+	if len(getRegistry().GetInMap(key1)) != 1 {
+		t.Fatalf("setup: expected 1 character in map1, got %d", len(getRegistry().GetInMap(key1)))
+	}
+	if len(getRegistry().GetInMap(key2)) != 2 {
+		t.Fatalf("setup: expected 2 characters in map2, got %d", len(getRegistry().GetInMap(key2)))
+	}
+
+	// Remove target from all maps
+	getRegistry().RemoveCharacterFromAllMaps(te, targetChar)
+
+	// Target must be gone from both maps
+	charsInMap1 := getRegistry().GetInMap(key1)
+	for _, c := range charsInMap1 {
+		if c == targetChar {
+			t.Errorf("targetChar still present in map1 after RemoveCharacterFromAllMaps")
+		}
+	}
+
+	charsInMap2 := getRegistry().GetInMap(key2)
+	for _, c := range charsInMap2 {
+		if c == targetChar {
+			t.Errorf("targetChar still present in map2 after RemoveCharacterFromAllMaps")
+		}
+	}
+
+	// Other character in map2 must still be there
+	found := false
+	for _, c := range charsInMap2 {
+		if c == otherChar {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("otherChar was unexpectedly removed from map2 by RemoveCharacterFromAllMaps")
+	}
+}
+
+func TestRegistry_RemoveCharacterFromAllMaps_CrossTenantScoping(t *testing.T) {
+	logger, _ := test.NewNullLogger()
+
+	ctxA, teA := createTestContext()
+	ctxB, teB := createTestContext()
+
+	pA := NewProcessor(logger, ctxA)
+	pB := NewProcessor(logger, ctxB)
+
+	transactionId := uuid.New()
+	worldId := world.Id(12)
+	channelId := channel.Id(12)
+	mapId := _map.Id(200000002)
+	sharedCharId := uint32(112001) // same character ID used in both tenants
+
+	f := field.NewBuilder(worldId, channelId, mapId).Build()
+
+	// Register same character ID under two different tenants
+	pA.Enter(transactionId, f, sharedCharId)
+	pB.Enter(transactionId, f, sharedCharId)
+
+	keyA := MapKey{Tenant: teA, Field: f}
+	keyB := MapKey{Tenant: teB, Field: f}
+
+	// Sanity-check
+	if len(getRegistry().GetInMap(keyA)) != 1 {
+		t.Fatalf("setup: expected sharedCharId in tenant A, got %d", len(getRegistry().GetInMap(keyA)))
+	}
+	if len(getRegistry().GetInMap(keyB)) != 1 {
+		t.Fatalf("setup: expected sharedCharId in tenant B, got %d", len(getRegistry().GetInMap(keyB)))
+	}
+
+	// Remove only under tenant A
+	getRegistry().RemoveCharacterFromAllMaps(teA, sharedCharId)
+
+	// Gone from tenant A
+	charsA := getRegistry().GetInMap(keyA)
+	for _, c := range charsA {
+		if c == sharedCharId {
+			t.Errorf("sharedCharId still present under tenant A after RemoveCharacterFromAllMaps")
+		}
+	}
+
+	// Still present under tenant B
+	charsB := getRegistry().GetInMap(keyB)
+	foundInB := false
+	for _, c := range charsB {
+		if c == sharedCharId {
+			foundInB = true
+			break
+		}
+	}
+	if !foundInB {
+		t.Errorf("sharedCharId was incorrectly removed from tenant B by RemoveCharacterFromAllMaps(tenantA, ...)")
+	}
+}
+
 func TestProcessorImpl_InstanceIsolation(t *testing.T) {
 	logger, _ := test.NewNullLogger()
 	ctx, te := createTestContext()

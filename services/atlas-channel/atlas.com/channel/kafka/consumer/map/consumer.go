@@ -360,9 +360,10 @@ func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) fun
 				}
 			}()
 
-			// SpawnForSelf handles all "world for me" rendering: other chars,
-			// their pets, NPCs, monsters, drops, reactors, chairs, merchants, boat, etc.
-			return SpawnForSelf(l, ctx, wp)(s, f)
+			// "spawn world for self" (SpawnForSelf) is handled by the SetField-writing
+			// path (session bootstrap and warpCharacter) to guarantee packet ordering.
+			// enterMap only handles the inter-character notifications.
+			return nil
 		}
 	}
 }

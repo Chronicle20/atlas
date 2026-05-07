@@ -96,3 +96,17 @@ func (r *Registry) GetMapsWithCharacters() []MapKey {
 	}
 	return result
 }
+
+// RemoveCharacterFromAllMaps removes characterId from every map key that
+// belongs to tenant t. This is used during character deletion to clean up
+// phantom registry entries regardless of which map the character was in.
+func (r *Registry) RemoveCharacterFromAllMaps(t tenant.Model, characterId uint32) {
+	r.mutex.Lock()
+	defer r.mutex.Unlock()
+
+	for mk := range r.characterRegister {
+		if mk.Tenant == t {
+			r.characterRegister[mk] = removeIfExists(r.characterRegister[mk], characterId)
+		}
+	}
+}

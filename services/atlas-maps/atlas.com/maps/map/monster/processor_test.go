@@ -843,6 +843,9 @@ func (m *mockCharacterProcessor) Enter(_ uuid.UUID, _ field.Model, _ uint32) {
 func (m *mockCharacterProcessor) Exit(_ uuid.UUID, _ field.Model, _ uint32) {
 }
 
+func (m *mockCharacterProcessor) ExitAll(_ uint32) {
+}
+
 type mockMonsterProcessor struct {
 	monstersInMap   map[character.MapKey]int
 	createdMonsters []MockCreatedMonster

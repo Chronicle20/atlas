@@ -67,7 +67,15 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 	tok := uuid.New()
 	duration := time.Duration(seconds) * time.Second
 	expiresAt := time.Now().Add(duration)
+
+	// Block the AfterFunc callback until p.r.Add has installed the entry into
+	// the registry. Without this gate, time.AfterFunc(small) can schedule the
+	// callback fast enough that handleExpire's Claim races p.r.Add for the
+	// registry mutex, finds nothing, and silently no-ops — leaving the timer
+	// permanently inert. Forced returns then never emit CHANGE_MAP.
+	ready := make(chan struct{})
 	t := time.AfterFunc(duration, func() {
+		<-ready
 		p.handleExpire(p.t, characterId, tok)
 	})
 
@@ -83,8 +91,10 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 		Build()
 	if err := p.r.Add(entry); err != nil {
 		t.Stop()
+		close(ready)
 		return err
 	}
+	close(ready)
 
 	if err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		return buf.Put(mapKafka.EnvEventTopicMapStatus, mapTimerStartedProvider(transactionId, f, characterId, seconds))

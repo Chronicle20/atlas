@@ -7,6 +7,7 @@ import (
 	characterKafka "atlas-maps/kafka/message/character"
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
+	mapcharacter "atlas-maps/map/character"
 	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
@@ -187,10 +188,19 @@ func handleStatusEventDeletedFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus
 				count, err := vp.DeleteByCharacterId(event.CharacterId)
 				if err != nil {
 					fl.WithError(err).Errorf("Failed to delete visits for character [%d].", event.CharacterId)
-					return
+				} else {
+					fl.Debugf("Deleted [%d] visit records for character [%d].", count, event.CharacterId)
 				}
-				fl.Debugf("Deleted [%d] visit records for character [%d].", count, event.CharacterId)
+
+				if err := location.NewProcessor(fl, ctx, db).Delete(event.CharacterId); err != nil {
+					fl.WithError(err).Errorf("Failed to delete character_locations for character [%d].", event.CharacterId)
+				} else {
+					fl.Debugf("Deleted character_locations for character [%d].", event.CharacterId)
+				}
 			}
+
+			mapcharacter.NewProcessor(fl, ctx).ExitAll(event.CharacterId)
+			fl.Debugf("Removed character [%d] from all in-memory map registry entries.", event.CharacterId)
 		}
 	}
 }

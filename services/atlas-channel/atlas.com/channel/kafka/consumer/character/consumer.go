@@ -4,6 +4,7 @@ import (
 	"atlas-channel/character"
 	consumer2 "atlas-channel/kafka/consumer"
 	character2 "atlas-channel/kafka/message/character"
+	mapconsumer "atlas-channel/kafka/consumer/map"
 	_map "atlas-channel/map"
 	"atlas-channel/party"
 	"atlas-channel/server"
@@ -227,6 +228,11 @@ func warpCharacter(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 					if err != nil {
 						l.WithError(err).Errorf("Unable to show set field response for character [%d]", c.Id())
 						return err
+					}
+					// SpawnForSelf must be called synchronously after SetField so that the
+					// client receives spawn packets in the correct order (SetField first).
+					if serr := mapconsumer.SpawnForSelf(l, ctx, wp)(s, targetField); serr != nil {
+						l.WithError(serr).Warnf("SpawnForSelf failed for character [%d] during warp; continuing.", c.Id())
 					}
 					return nil
 				}

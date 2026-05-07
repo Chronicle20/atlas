@@ -187,10 +187,12 @@ func TestProcessor_TimerFires_EmitsChangeMap(t *testing.T) {
 
 	// time.AfterFunc(0) fires asynchronously; poll for the CHANGE_MAP emit
 	// (which handleExpire performs after claiming + removing the entry) so
-	// the test is deterministic on slow CI runners.
+	// the test is deterministic on slow CI runners. The 2s timeout from the
+	// task-055 deflake still flaked under PR-validation runner load; widen
+	// well past any realistic scheduler latency to make this stable.
 	require.Eventually(t, func() bool {
 		return len(rec.Messages(characterKafka.EnvCommandTopic)) == 1
-	}, 2*time.Second, 5*time.Millisecond, "handleExpire must emit CHANGE_MAP")
+	}, 10*time.Second, 5*time.Millisecond, "handleExpire must emit CHANGE_MAP")
 
 	_, ok := reg.Get(tt, 42)
 	require.False(t, ok, "expired entry must be removed by handleExpire")

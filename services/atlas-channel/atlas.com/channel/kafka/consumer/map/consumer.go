@@ -25,6 +25,7 @@ import (
 	"atlas-channel/transport/route"
 	"atlas-channel/weather"
 	"context"
+	"errors"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
@@ -33,6 +34,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/message"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/topic"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
@@ -100,203 +102,267 @@ func handleStatusEventCharacterEnter(sc server.Model, wp writer.Producer) func(l
 	}
 }
 
-func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model) model.Operator[session.Model] {
-	return func(f field.Model) model.Operator[session.Model] {
-		return func(s session.Model) error {
-			l.Debugf("Processing character [%d] entering map [%d] instance [%s].", s.CharacterId(), f.MapId(), f.Instance())
-			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
-			if err != nil {
-				l.WithError(err).Errorf("No characters found in map [%d] instance [%s] for world [%d] and channel [%d].", f.MapId(), f.Instance(), s.WorldId(), s.ChannelId())
-				return err
-			}
+// fetchOtherCharactersInMap returns a map of character models for all characters
+// currently in the field, excluding the character with excludeId. Characters
+// that cannot be fetched due to a 404 (stale registry entry) are skipped with
+// a Warn log; only infrastructure errors are returned as hard failures.
+func fetchOtherCharactersInMap(l logrus.FieldLogger, ctx context.Context, f field.Model, excludeId uint32) (map[uint32]character.Model, error) {
+	ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
+	if err != nil {
+		return nil, err
+	}
 
-			cp := character.NewProcessor(l, ctx)
-			cmp := model.SliceMap(cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator))(model.FixedProvider(ids))(model.ParallelMap())
-			cms, err := model.CollectToMap(cmp, GetId, GetModel)()
-			if err != nil {
-				l.WithError(err).Errorf("Unable to retrieve character details for characters in map.")
-				return err
+	cp := character.NewProcessor(l, ctx)
+	cms := make(map[uint32]character.Model, len(ids))
+	for _, id := range ids {
+		if id == excludeId {
+			continue
+		}
+		c, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(id)
+		if err != nil {
+			if errors.Is(err, requests.ErrNotFound) {
+				l.Warnf("Skipping stale registry entry: character [%d] not found in atlas-character.", id)
+				continue
 			}
-			g, err := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
+			return nil, err
+		}
+		cms[id] = c
+	}
+	return cms, nil
+}
 
-			// spawn new character for others
-			for k := range cms {
-				if k != s.CharacterId() {
-					err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, spawnCharacterForSession(l)(ctx)(wp)(cms[s.CharacterId()], g, true))
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", s.CharacterId(), k)
-					}
+// SpawnForSelf sends all per-character render packets to the entering session s:
+// other characters visible in the field, their pets, NPCs, monsters, drops,
+// reactors, chalkboards, chairs, merchants, boat state, clock, party HP, and
+// active weather. It does NOT notify other players that s has arrived — that
+// is enterMap's responsibility.
+//
+// Exported so that paths that write SetField (session bootstrap, warpCharacter)
+// can call it synchronously after writing SetField to guarantee ordering.
+func SpawnForSelf(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(s session.Model, f field.Model) error {
+	return func(s session.Model, f field.Model) error {
+		l.Debugf("SpawnForSelf: character [%d] in map [%d] instance [%s].", s.CharacterId(), f.MapId(), f.Instance())
+
+		cms, err := fetchOtherCharactersInMap(l, ctx, f, s.CharacterId())
+		if err != nil {
+			l.WithError(err).Errorf("SpawnForSelf: unable to retrieve character details for characters in map.")
+			return err
+		}
+
+		// spawn other characters for incoming (synchronous — must complete before goroutines so
+		// client sees other players before world objects)
+		for k, v := range cms {
+			if k != s.CharacterId() {
+				kg, _ := guild.NewProcessor(l, ctx).GetByMemberId(k)
+				if err = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s); err != nil {
+					l.WithError(err).Errorf("SpawnForSelf: unable to spawn character [%d] for [%d]", v.Id(), s.CharacterId())
 				}
 			}
+		}
 
-			// spawn other characters for incoming
+		go func() {
 			for k, v := range cms {
 				if k != s.CharacterId() {
-					kg, _ := guild.NewProcessor(l, ctx).GetByMemberId(k)
-					err = spawnCharacterForSession(l)(ctx)(wp)(v, kg, false)(s)
-					if err != nil {
-						l.WithError(err).Errorf("Unable to spawn character [%d] for [%d]", v.Id(), s.CharacterId())
-					}
-				}
-			}
-
-			go func() {
-				for k, v := range cms {
-					if k != s.CharacterId() {
-						for _, p := range v.Pets() {
-							if p.Slot() >= 0 {
-								err = session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s)
-								if err != nil {
-									l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
-								}
+					for _, p := range v.Pets() {
+						if p.Slot() >= 0 {
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))(s); err != nil {
+								l.WithError(err).Errorf("SpawnForSelf: unable to spawn character [%d] pet for [%d]", k, s.CharacterId())
 							}
 						}
 					}
 				}
-			}()
+			}
+		}()
 
+		go func() {
+			if err := npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to spawn npcs for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn monsters for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn drops for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn reactors for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chalkboards for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn chairs for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			if err := merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s)); err != nil {
+				l.WithError(err).Debugf("SpawnForSelf: unable to spawn merchants for character [%d].", s.CharacterId())
+			}
+		}()
+
+		go func() {
+			cp := character.NewProcessor(l, ctx)
+			cd, err := cp.GetById(cp.PartyDecorator)(s.CharacterId())
+			if err != nil || !cd.InParty() {
+				return
+			}
+			pmp := model.FixedProvider(cd.Party())
+			imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
+			oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
+			_ = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cd.Hp(), cd.MaxHp()).Encode))
+			_ = model.ForEachSlice(oip, func(oid uint32) error {
+				oc, oerr := cp.GetById()(oid)
+				if oerr != nil {
+					if errors.Is(oerr, requests.ErrNotFound) {
+						l.Warnf("SpawnForSelf: skipping party HP for stale character [%d].", oid)
+						return nil
+					}
+					return oerr
+				}
+				return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, oc.Hp(), oc.MaxHp()).Encode)(s)
+			}, model.ParallelExecute())
+		}()
+
+		go func() {
+			md, err := mapData.NewProcessor(l, ctx).GetById(f.MapId())
+			if err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve map data for map [%d].", f.MapId())
+				return
+			}
+			if md.Clock() {
+				now := time.Now()
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
+			}
+		}()
+
+		go func() {
+			hasShip, err := route.NewProcessor(l, ctx).IsBoatInMap(f.MapId())
+			if err != nil {
+				l.WithError(err).Errorf("SpawnForSelf: unable to retrieve boat data for map [%d].", f.MapId())
+				return
+			}
+			if hasShip {
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode)(s)
+			} else {
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode)(s)
+			}
+		}()
+
+		go func() {
+			timer, terr := party_quest.NewProcessor(l, ctx).GetTimerByCharacterId(s.CharacterId())
+			if terr != nil {
+				return
+			}
+			if timer.Duration() <= 0 {
+				return
+			}
+			_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
+		}()
+
+		go func() {
+			we, werr := weather.NewProcessor(l, ctx).GetActive(f)
+			if werr != nil {
+				return
+			}
+			_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWeatherWriter)(fieldcb.NewFieldEffectWeatherStart(we.ItemId, we.Message).Encode)(s)
+
+			ci, cerr := cashData.NewProcessor(l, ctx).GetById(we.ItemId)
+			if cerr != nil {
+				return
+			}
+			if ci.BgmPath != "" {
+				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
+			}
+			if ci.StateChangeItem > 0 {
+				applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
+			}
+		}()
+
+		return nil
+	}
+}
+
+// enterMap notifies other players in the field that a new character has arrived,
+// and spawns the entering character's pets for those players. The "spawn world
+// for self" work (NPCs, monsters, other characters, etc.) is handled by
+// SpawnForSelf, which must be called separately by the SetField-writing path.
+func enterMap(l logrus.FieldLogger, ctx context.Context, wp writer.Producer) func(f field.Model) model.Operator[session.Model] {
+	return func(f field.Model) model.Operator[session.Model] {
+		return func(s session.Model) error {
+			l.Debugf("Processing character [%d] entering map [%d] instance [%s].", s.CharacterId(), f.MapId(), f.Instance())
+
+			// fetch the entering character's own model for spawning to others
+			cp := character.NewProcessor(l, ctx)
+			self, err := cp.GetById(cp.InventoryDecorator, cp.PetAssetEnrichmentDecorator)(s.CharacterId())
+			if err != nil {
+				l.WithError(err).Errorf("enterMap: unable to fetch self character [%d].", s.CharacterId())
+				return err
+			}
+			g, _ := guild.NewProcessor(l, ctx).GetByMemberId(s.CharacterId())
+
+			// collect other character IDs already in the map
+			ids, err := _map.NewProcessor(l, ctx).GetCharacterIdsInMap(f)
+			if err != nil {
+				l.WithError(err).Errorf("enterMap: no characters found in map [%d] instance [%s].", f.MapId(), f.Instance())
+				return err
+			}
+
+			// spawn new character for others — skip stale entries defensively
+			for _, k := range ids {
+				if k == s.CharacterId() {
+					continue
+				}
+				if err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, spawnCharacterForSession(l)(ctx)(wp)(self, g, true)); err != nil {
+					if errors.Is(err, requests.ErrNotFound) {
+						l.Warnf("enterMap: skipping stale session entry for character [%d].", k)
+						continue
+					}
+					l.WithError(err).Errorf("enterMap: unable to spawn character [%d] for [%d]", s.CharacterId(), k)
+				}
+			}
+
+			// spawn self's pets for every other player in the map
 			go func() {
-				for k := range cms {
-					for _, p := range cms[s.CharacterId()].Pets() {
+				for _, k := range ids {
+					if k == s.CharacterId() {
+						continue
+					}
+					for _, p := range self.Pets() {
 						if p.Slot() >= 0 {
-							err = session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh()))))
-							if err != nil {
-								l.WithError(err).Errorf("Unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
+							if err := session.NewProcessor(l, ctx).IfPresentByCharacterId(s.Field().Channel())(k, session.Announce(l)(ctx)(wp)(petpkt.PetActivatedWriter)(petpkt.PetSpawnBody(p.OwnerId(), p.Slot(), p.TemplateId(), p.Name(), uint64(p.Id()), p.X(), p.Y(), p.Stance(), uint16(p.Fh())))); err != nil {
+								l.WithError(err).Errorf("enterMap: unable to spawn character [%d] pet for [%d]", s.CharacterId(), k)
 							}
 							excludeIds := make([]uint32, len(p.Excludes()))
 							for i, e := range p.Excludes() {
 								excludeIds[i] = e.ItemId()
 							}
-							err = session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s)
-							if err != nil {
-								l.WithError(err).Errorf("Unable to announce pet [%d] exclusion list to character [%d].", p.Id(), s.CharacterId())
+							if err := session.Announce(l)(ctx)(wp)(petpkt.PetExcludeResponseWriter)(petpkt.NewPetExcludeResponse(p.OwnerId(), p.Slot(), uint64(p.Id()), excludeIds).Encode)(s); err != nil {
+								l.WithError(err).Errorf("enterMap: unable to announce pet [%d] exclusion list to character [%d].", p.Id(), s.CharacterId())
 							}
 						}
 					}
 				}
 			}()
 
-			go func() {
-				err = npc2.NewProcessor(l, ctx).ForEachInMap(f.MapId(), spawnNPCForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Errorf("Unable to spawn npcs for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = monster.NewProcessor(l, ctx).ForEachInMap(f, spawnMonsterForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn monsters for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = drop.NewProcessor(l, ctx).ForEachInMap(f, spawnDropsForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn drops for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = reactor.NewProcessor(l, ctx).ForEachInMap(f, spawnReactorsForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn reactors for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = chalkboard.NewProcessor(l, ctx).ForEachInMap(f, spawnChalkboardsForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn chalkboards for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = chair.NewProcessor(l, ctx).ForEachInMap(f, spawnChairsForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn chairs for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				err = merchant.NewProcessor(l, ctx).ForEachInField(f, spawnMerchantsForSession(l)(ctx)(wp)(s))
-				if err != nil {
-					l.WithError(err).Debugf("Unable to spawn merchants for character [%d].", s.CharacterId())
-				}
-			}()
-
-			go func() {
-				cp := character.NewProcessor(l, ctx)
-				cd, err := cp.GetById(cp.PartyDecorator)(s.CharacterId())
-				if err != nil || !cd.InParty() {
-					return
-				}
-				pmp := model.FixedProvider(cd.Party())
-				imf := party.OtherMemberInMap(s.Field(), s.CharacterId())
-				oip := party.MemberToMemberIdMapper(party.FilteredMemberProvider(imf)(pmp))
-				_ = session.NewProcessor(l, ctx).ForEachByCharacterId(s.Field().Channel())(oip, session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(s.CharacterId(), cms[s.CharacterId()].Hp(), cms[s.CharacterId()].MaxHp()).Encode))
-				_ = model.ForEachSlice(oip, func(oid uint32) error {
-					return session.Announce(l)(ctx)(wp)(partycb.PartyMemberHPWriter)(partycb.NewPartyMemberHP(oid, cms[oid].Hp(), cms[oid].MaxHp()).Encode)(s)
-				}, model.ParallelExecute())
-			}()
-
-			go func() {
-				var md mapData.Model
-				md, err = mapData.NewProcessor(l, ctx).GetById(f.MapId())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to retrieve map data for map [%d].", f.MapId())
-					return
-				}
-				if md.Clock() {
-					now := time.Now()
-					_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTownClock(byte(now.Hour()), byte(now.Minute()), byte(now.Second())).Encode)(s)
-				}
-			}()
-
-			go func() {
-				var hasShip bool
-				hasShip, err = route.NewProcessor(l, ctx).IsBoatInMap(f.MapId())
-				if err != nil {
-					l.WithError(err).Errorf("Unable to retrieve boat data for map [%d].", f.MapId())
-					return
-				}
-				if hasShip {
-					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateEnter1, false).Encode)(s)
-				} else {
-					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldTransportStateWriter)(fieldcb.NewFieldTransport(fieldcb.TransportStateMove1, false).Encode)(s)
-				}
-			}()
-
-			go func() {
-				timer, terr := party_quest.NewProcessor(l, ctx).GetTimerByCharacterId(s.CharacterId())
-				if terr != nil {
-					return
-				}
-				if timer.Duration() <= 0 {
-					return
-				}
-				_ = session.Announce(l)(ctx)(wp)(fieldcb.ClockWriter)(fieldcb.NewTimerClock(uint32(timer.Duration().Seconds())).Encode)(s)
-			}()
-
-			go func() {
-				we, werr := weather.NewProcessor(l, ctx).GetActive(f)
-				if werr != nil {
-					return
-				}
-				_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWeatherWriter)(fieldcb.NewFieldEffectWeatherStart(we.ItemId, we.Message).Encode)(s)
-
-				ci, cerr := cashData.NewProcessor(l, ctx).GetById(we.ItemId)
-				if cerr != nil {
-					return
-				}
-				if ci.BgmPath != "" {
-					_ = session.Announce(l)(ctx)(wp)(fieldcb.FieldEffectWriter)(fieldpkt.FieldEffectBackgroundMusicBody(ci.BgmPath))(s)
-				}
-				if ci.StateChangeItem > 0 {
-					applyConsumableEffectSaga(l, saga.NewProcessor(l, ctx), s.CharacterId(), f, ci.StateChangeItem)
-				}
-			}()
-			return nil
+			// SpawnForSelf handles all "world for me" rendering: other chars,
+			// their pets, NPCs, monsters, drops, reactors, chairs, merchants, boat, etc.
+			return SpawnForSelf(l, ctx, wp)(s, f)
 		}
 	}
 }

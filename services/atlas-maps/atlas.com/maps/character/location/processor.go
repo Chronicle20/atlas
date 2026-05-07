@@ -17,6 +17,7 @@ import (
 type Processor interface {
 	GetById(characterId uint32) (Model, error)
 	Set(characterId uint32, f field.Model) (Model, error)
+	Delete(characterId uint32) error
 	Resolve(currentField field.Model) (field.Model, ResolutionReason, error)
 }
 
@@ -80,4 +81,9 @@ func (p *ProcessorImpl) Set(characterId uint32, f field.Model) (Model, error) {
 		return Model{}, err
 	}
 	return Make(e)
+}
+
+func (p *ProcessorImpl) Delete(characterId uint32) error {
+	t := tenant.MustFromContext(p.ctx)
+	return deleteLocation(p.db.WithContext(p.ctx))(t.Id())(characterId)
 }

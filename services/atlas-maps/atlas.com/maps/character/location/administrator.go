@@ -24,3 +24,14 @@ func upsertLocation(db *gorm.DB) func(tenantId uuid.UUID) func(characterId uint3
 		}
 	}
 }
+
+// deleteLocation removes the character_locations row for (tenantId, characterId).
+// Returns nil if the row does not exist (idempotent).
+func deleteLocation(db *gorm.DB) func(tenantId uuid.UUID) func(characterId uint32) error {
+	return func(tenantId uuid.UUID) func(characterId uint32) error {
+		return func(characterId uint32) error {
+			return db.Where("tenant_id = ? AND character_id = ?", tenantId, characterId).
+				Delete(&entity{}).Error
+		}
+	}
+}

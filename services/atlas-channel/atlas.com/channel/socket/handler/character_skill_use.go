@@ -12,10 +12,23 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/skill"
 	packetmodel "github.com/Chronicle20/atlas/libs/atlas-packet/model"
+	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/sirupsen/logrus"
-	statpkt "github.com/Chronicle20/atlas/libs/atlas-packet/stat/clientbound"
 )
+
+// CUserLocal::DoActiveSkill_TownPortal
+// CUserLocal::DoActiveSkill_StatChangeAdmin
+// CUserLocal::DoActiveSkill_Heal
+// CUserLocal::DoActiveSkill_Summon
+// CUserLocal::TryDoingMonsterMagnet
+// CUserLocal::DoActiveSkill_SmokeShell
+// CUserLocal::DoActiveSkill_RecoveryAura
+// CUserLocal::DoActiveSkill_Flying
+// CUserLocal::DoActiveSkill_DamageMeter
+// CUserLocal::SendSkillUseRequest
+// sub_A3ED44
+// CGrenade::SendTimeBombInfo
 
 const CharacterUseSkillHandle = "CharacterUseSkillHandle"
 
@@ -88,4 +101,3 @@ func enableActions(l logrus.FieldLogger) func(ctx context.Context) func(wp write
 		}
 	}
 }
-

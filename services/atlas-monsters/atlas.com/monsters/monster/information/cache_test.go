@@ -134,3 +134,38 @@ func TestNotFoundError_IsNotFound(t *testing.T) {
 		t.Fatalf("notFoundError no longer wraps ErrNotFound: %v", err)
 	}
 }
+
+func TestGetById_HitAvoidsUpstream(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, id uint32) (RestModel, error) {
+		return RestModel{Hp: id * 10, Mp: 5}, nil
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	m1, err := get(100)
+	if err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if m1.Hp() != 1000 {
+		t.Fatalf("m1.Hp() = %d, want 1000 (upstream returned Hp=1000 via Extract)", m1.Hp())
+	}
+	m2, err := get(100)
+	if err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if m2.Hp() != 1000 {
+		t.Fatalf("m2.Hp() = %d, want 1000 (cache hit must round-trip Hp)", m2.Hp())
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("upstream calls = %d, want 1 (second call must hit cache)", got)
+	}
+}

@@ -114,6 +114,7 @@ import (
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -144,7 +145,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
-	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Id.String())
+	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()

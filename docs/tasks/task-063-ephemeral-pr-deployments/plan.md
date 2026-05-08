@@ -252,46 +252,82 @@ git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
 git commit -m "docs(task-063): record Longhorn RecurringJob exclusion mechanism"
 ```
 
-### Task 0.7: Verify atlas-tenants channel-host config flow
+### Task 0.7: Capture canonical Tenant and Service config payloads
 
-atlas-channel reads its public `IPAddress` from atlas-tenants configuration (`services/atlas-channel/atlas.com/channel/configuration/rest.go:35`). For per-PR game-socket exposure, the bootstrap Job must seed the per-PR LB IP into atlas-tenants' `services` config after MetalLB assigns it.
+Per `docs/onboarding.md`, every Atlas env needs three artefacts before WZ upload + seed will succeed:
 
-- [ ] **Step 1: Confirm the resource name and shape**
+1. **A Tenant** (region + major + minor + worlds/channels topology). Created either by cloning a Template via `Web UI → Templates → Clone`, or by POSTing a canonical payload directly to atlas-tenants. PR envs use the latter for self-containment.
+2. **Three Service config entries** in atlas-configurations:
+   - login-service (`e7fb1d7e-47b8-46bd-97dc-867d93530856`)
+   - channel-service (`e7fb1d7e-47b8-46bd-97dc-867d93530000`)
+   - drops-service (`00000000-0000-0000-0000-000000000000`) — also covers atlas-character-factory and atlas-world, which read the same UUID
+3. **Per-tenant WZ data + seed runs** — already covered in the bootstrap.
+
+This task captures (1) and (2) verbatim from the live `main` env so the bootstrap can re-create them in each PR namespace.
+
+- [ ] **Step 1: Confirm Service config resource name and shape**
 
 ```bash
 grep -rn 'GetName\(\) string' services/atlas-channel/atlas.com/channel/configuration/rest.go
-grep -rn 'configurations\|services' services/atlas-tenants/atlas.com/tenants/ --include='*.go' | head -20
 ```
 
-Expected: `RestModel.GetName()` returns `"services"`; atlas-tenants exposes `GET/PATCH /tenants/{tenantId}/configurations/services`.
+Expected: `RestModel.GetName()` returns `"services"`. atlas-tenants exposes `GET/PATCH /tenants/{tenantId}/configurations/services`.
 
-- [ ] **Step 2: Confirm the JSON shape against an existing main-env tenant**
+- [ ] **Step 2: Capture the canonical Tenant payload from the live main env**
 
 ```bash
+TENANT_ID=$(kubectl exec -n atlas deploy/atlas-tenants -- \
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+    'http://localhost:8080/api/tenants' | jq -r '.data[0].id')
+
 kubectl exec -n atlas deploy/atlas-tenants -- \
-    curl -s -H 'Accept: application/vnd.api+json' \
-    "http://localhost:8080/api/tenants/<known-tenant-id>/configurations/services" \
-    | jq '.data.attributes'
+    curl -fsS -H 'Accept: application/vnd.api+json' \
+    "http://localhost:8080/api/tenants/${TENANT_ID}" \
+    | jq '.' > /tmp/canonical-tenant.json
+
+# Strip the runtime id; bootstrap will create a fresh one per PR.
+jq 'del(.data.id)' /tmp/canonical-tenant.json > docs/tasks/task-063-ephemeral-pr-deployments/canonical-tenant.json
 ```
 
-Expected: payload contains `tenants[].ipAddress`, `tenants[].worlds[].channels[].port`. Capture the structure for the bootstrap script (Phase 6) to PATCH.
+- [ ] **Step 3: Capture the canonical Service-config payloads**
 
-- [ ] **Step 3: Append to `preflight.md`**
+For each of the three SERVICE_ID UUIDs, snapshot the live config:
+
+```bash
+mkdir -p docs/tasks/task-063-ephemeral-pr-deployments/canonical-services
+for svc in login-service:e7fb1d7e-47b8-46bd-97dc-867d93530856 \
+           channel-service:e7fb1d7e-47b8-46bd-97dc-867d93530000 \
+           drops-service:00000000-0000-0000-0000-000000000000; do
+    type="${svc%%:*}"
+    id="${svc##*:}"
+    kubectl exec -n atlas deploy/atlas-configurations -- \
+        curl -fsS -H 'Accept: application/vnd.api+json' \
+        "http://localhost:8080/api/configurations/services/${id}" \
+        > "docs/tasks/task-063-ephemeral-pr-deployments/canonical-services/${type}.json"
+done
+```
+
+- [ ] **Step 4: Append outcome to `preflight.md`**
 
 ```markdown
-## atlas-tenants channel-host config
-- Resource name: services
-- PATCH endpoint: /api/tenants/{tenantId}/configurations/services
-- IPAddress field path: data.attributes.tenants[].ipAddress
-- Verified shape: <captured JSON snippet>
+## Canonical Tenant + Service configs for bootstrap
+- Captured from live main env on <date>
+- Tenant payload: docs/tasks/task-063-ephemeral-pr-deployments/canonical-tenant.json
+- Service configs: docs/tasks/task-063-ephemeral-pr-deployments/canonical-services/{login,channel,drops}-service.json
+- Service UUIDs (deployed): login=e7fb1d7e-…0856, channel=e7fb1d7e-…0000, drops=00000000-…0000
+- Note: atlas-character-factory and atlas-world also read SERVICE_ID=00000000-…0000; the drops-service config record satisfies all three
 ```
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
-git commit -m "docs(task-063): record atlas-tenants channel-host config shape"
+git add docs/tasks/task-063-ephemeral-pr-deployments/canonical-tenant.json \
+        docs/tasks/task-063-ephemeral-pr-deployments/canonical-services/ \
+        docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
+git commit -m "docs(task-063): capture canonical Tenant + Service config payloads"
 ```
+
+> **Multi-tenant per env is out of scope at v1.** PR envs ship one canonical tenant (GMS v83.1, single world, four channels — whatever the captured payload encodes). If a PR needs to test JMS or a multi-world topology, the maintainer drops an additional canonical tenant JSON into the bootstrap image and the script POSTs each in turn. Tracked as future work.
 
 ---
 
@@ -1219,11 +1255,26 @@ WORKDIR /atlas
 COPY scripts/lib.sh /atlas/lib.sh
 COPY scripts/bootstrap.sh /atlas/bootstrap.sh
 COPY scripts/cleanup.sh /atlas/cleanup.sh
+COPY canonical/ /atlas/canonical/
 
 RUN chmod +x /atlas/bootstrap.sh /atlas/cleanup.sh
 
 ENTRYPOINT ["/atlas/bootstrap.sh"]
 ```
+
+- [ ] **Step 1b: Stage the canonical Tenant + Service config payloads inside the image**
+
+The payloads were captured at Phase 0 Task 0.7. Copy them into the image build context:
+
+```bash
+mkdir -p services/atlas-pr-bootstrap/canonical/services
+cp docs/tasks/task-063-ephemeral-pr-deployments/canonical-tenant.json \
+   services/atlas-pr-bootstrap/canonical/tenant.json
+cp docs/tasks/task-063-ephemeral-pr-deployments/canonical-services/*.json \
+   services/atlas-pr-bootstrap/canonical/services/
+```
+
+These are read by `bootstrap.sh` at runtime via `cat /atlas/canonical/tenant.json` etc.
 
 - [ ] **Step 2: Create `services/atlas-pr-bootstrap/scripts/lib.sh`**
 
@@ -1311,10 +1362,121 @@ get_attr() {
         "$1" | jq -r ".data.attributes.$2"
 }
 
-ATLAS_STEP=wait-ready log info "waiting for atlas-data and atlas-wz-extractor"
+ATLAS_STEP=wait-ready log info "waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-wz-extractor"
+retry 60 5 http_ok "$ATLAS_UI_BASE/api/tenants"
+retry 60 5 http_ok "$ATLAS_UI_BASE/api/configurations/tenants"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/data/status"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/wz/input"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/wz/extractions"
+
+# Tenant: POST canonical payload, capture the assigned id, override
+# downstream TENANT_ID for all subsequent calls. The atlas-tenants pitfall
+# (duplicate rows on retry-after-Kafka-failure) is mitigated by checking
+# whether a tenant with the canonical region+major+minor already exists.
+ATLAS_STEP=tenant-create
+canonical_region=$(jq -r '.data.attributes.region' /atlas/canonical/tenant.json)
+canonical_major=$(jq -r '.data.attributes.majorVersion' /atlas/canonical/tenant.json)
+canonical_minor=$(jq -r '.data.attributes.minorVersion' /atlas/canonical/tenant.json)
+
+existing=$(curl -fsS -H 'Accept: application/vnd.api+json' \
+    "$ATLAS_UI_BASE/api/tenants" \
+    | jq -r --arg r "$canonical_region" --arg M "$canonical_major" --arg m "$canonical_minor" \
+        '.data[] | select(.attributes.region == $r and (.attributes.majorVersion|tostring) == $M and (.attributes.minorVersion|tostring) == $m) | .id' \
+    | head -1)
+
+if [ -n "$existing" ] && [ "$existing" != "null" ]; then
+    log info "canonical tenant already present: $existing"
+    TENANT_ID="$existing"
+else
+    log info "creating canonical tenant ($canonical_region v$canonical_major.$canonical_minor)"
+    created=$(curl -fsS -X POST \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        -d @/atlas/canonical/tenant.json \
+        "$ATLAS_UI_BASE/api/tenants")
+    TENANT_ID=$(echo "$created" | jq -r '.data.id')
+    if [ -z "$TENANT_ID" ] || [ "$TENANT_ID" = "null" ]; then
+        log error "tenant POST returned no id"
+        exit 1
+    fi
+
+    # Wait for tenant.status Kafka event to settle. Atlas-tenants writes
+    # the DB row before the emit; if Kafka is unreachable, the emit fails
+    # and the next caller would see a tenant via REST but no event was
+    # published. We poll the GET endpoint until the tenant is present —
+    # which it already is post-POST — and additionally wait a short window
+    # for downstream services to reconcile via the Kafka event. This mirrors
+    # the onboarding doc pitfall #1.
+    sleep 10
+fi
+
+REGION="$canonical_region"
+MAJOR_VERSION="$canonical_major"
+MINOR_VERSION="$canonical_minor"
+log info "using TENANT_ID=$TENANT_ID for downstream calls"
+
+# Discover the per-PR LB IP before writing service config, so the
+# channel-service tenants[].ipAddress is correct on the first write and
+# the subsequent rolling restart picks up the right host in one shot.
+ATLAS_STEP=lb-discover
+LB_IP=$(kubectl get svc atlas-channel-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+if [ -z "$LB_IP" ]; then
+    log error "atlas-channel-lb has no allocated LoadBalancer IP — MetalLB pool exhausted?"
+    exit 1
+fi
+log info "LB IP for channel service: $LB_IP"
+
+# Service configs: per-tenant 'services' configuration resource carrying
+# the login/channel/drops topology. Captured shape is locked at Phase 0.7;
+# the canonical payload at /atlas/canonical/services.json holds the
+# default tenant id and a placeholder ipAddress that we rewrite to the
+# per-PR TENANT_ID and the just-discovered LB_IP.
+ATLAS_STEP=service-config
+payload=/atlas/canonical/services.json
+[ -f "$payload" ] || { log error "missing canonical services payload"; exit 1; }
+
+# Rewrite tenants[].id → per-PR TENANT_ID, tenants[].ipAddress → LB_IP.
+rewritten=$(jq --arg tid "$TENANT_ID" --arg ip "$LB_IP" \
+    '(.data.attributes.tenants? // []) |= map(.id = $tid | .ipAddress = $ip)' \
+    "$payload")
+
+# Upsert via atlas-tenants' configurations endpoint. PATCH if exists,
+# POST otherwise.
+existing=$(curl -fsS -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+        -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+        -H 'Accept: application/vnd.api+json' \
+        "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" \
+        2>/dev/null || true)
+
+if echo "$existing" | jq -e '.data.id' >/dev/null 2>&1; then
+    log info "services config exists; PATCH"
+    curl -fsS -X PATCH \
+        -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+        -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        -d "$rewritten" \
+        "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" >/dev/null
+else
+    log info "services config absent; POST"
+    curl -fsS -X POST \
+        -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+        -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+        -H 'Accept: application/vnd.api+json' \
+        -H 'Content-Type: application/vnd.api+json' \
+        -d "$rewritten" \
+        "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" >/dev/null
+fi
+
+# Rolling restart for the 5 services that read SERVICE_ID at startup
+# so they re-fetch the freshly-written config. login/channel especially.
+ATLAS_STEP=service-restart
+for d in atlas-login atlas-channel atlas-drops atlas-character-factory atlas-world; do
+    kubectl rollout restart deployment/"$d" 2>/dev/null || log warn "could not restart $d"
+done
+for d in atlas-login atlas-channel atlas-drops atlas-character-factory atlas-world; do
+    kubectl rollout status deployment/"$d" --timeout=180s 2>/dev/null || log warn "$d not ready"
+done
 
 # WZ upload: PATCH /api/wz/input
 ATLAS_STEP=wz-upload
@@ -1368,47 +1530,12 @@ for ep in "${endpoints[@]}"; do
 done
 wait
 
-# Seed the per-env LoadBalancer IP into atlas-tenants services config so
-# atlas-channel hands clients the correct host:port at login.
-ATLAS_STEP=channel-config
-LB_IP=$(kubectl get svc atlas-channel-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-if [ -z "$LB_IP" ]; then
-    log error "atlas-channel-lb has no allocated LoadBalancer IP"
-    exit 1
-fi
-log info "seeding atlas-tenants services config: ipAddress=$LB_IP"
-
-# Fetch existing services config to read its id (atlas-tenants returns
-# JSON:API with .data.id). The PATCH body must include the id.
-existing=$(curl -fsS \
-    -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
-    -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
-    -H "Accept: application/vnd.api+json" \
-    "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" || echo '{}')
-
-config_id=$(echo "$existing" | jq -r '.data.id // empty')
-if [ -z "$config_id" ]; then
-    log error "atlas-tenants returned no services config; bootstrap precondition not met"
-    exit 1
-fi
-
-# Replace ipAddress for every tenants[] entry, preserve worlds/channels.
-new_attrs=$(echo "$existing" | jq --arg ip "$LB_IP" \
-    '.data.attributes.tenants |= map(.ipAddress = $ip) | .data.attributes')
-
-curl -fsS -X PATCH \
-    -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
-    -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
-    -H "Content-Type: application/vnd.api+json" \
-    -d "$(jq -n --arg id "$config_id" --argjson attrs "$new_attrs" \
-            '{data: {type: "services", id: $id, attributes: $attrs}}')" \
-    "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" \
-    > /dev/null
-
 ATLAS_STEP=done log info "bootstrap complete"
 ```
 
-> **Verification gate:** the exact PATCH body shape is locked in Phase 0 Task 0.7's preflight capture. If the live atlas-tenants schema differs (e.g. nested under `worlds[].channels[].host`), update the `jq` filter accordingly. Both atlas-login and atlas-channel read the same configuration resource.
+> **Verification gate:** the exact `services` config body shape is locked in Phase 0 Task 0.7's preflight capture. If the live atlas-tenants schema differs (e.g. ipAddress nested under `worlds[].channels[].host` instead of `tenants[].ipAddress`), update the `jq` filter in the `service-config` step accordingly. Both atlas-login and atlas-channel read the same configuration resource.
+
+> **Idempotency:** every step short-circuits when its target state is already present (tenant lookup-before-create, services-config GET-before-PATCH, WZ fileCount check, data documentCount check, seed status checks). Re-running the bootstrap against an already-bootstrapped namespace is safe and exits in seconds.
 
 - [ ] **Step 4: Create `services/atlas-pr-bootstrap/scripts/cleanup.sh`**
 
@@ -2293,6 +2420,18 @@ rules:
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get"]
+  # Rolling-restart of the 5 SERVICE_ID-reading services after Service
+  # config write. kubectl rollout restart sets a template annotation;
+  # patch+get on deployments + pods covers it.
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -2773,6 +2912,14 @@ spec:
           tokenRef:
             secretName: argocd-repo-creds-chronicle20-atlas
             key: password
+          # On-demand provisioning: only PRs carrying the 'deploy-env' label
+          # produce an Application. Reviewer adds the label when they want
+          # to exercise the change in a real cluster; for doc-only / WIP /
+          # draft PRs the env never spins up and no resources are consumed.
+          # To switch to always-on, remove the labels: filter and (optionally)
+          # add a 'skip-env' label check in template.metadata.annotations.
+          labels:
+            - deploy-env
         requeueAfterSeconds: 30
   template:
     metadata:

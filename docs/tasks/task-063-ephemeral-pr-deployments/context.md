@@ -158,6 +158,9 @@ These are not up for revisitation in the plan phase — they were resolved durin
 10. **`prune: false` on `Application(atlas-main)` initially.** Flip to `prune: true` after 1 week of clean syncs.
 11. **PVC isolation by namespace.** `atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc` are namespace-scoped; the PR overlay creates fresh same-named PVCs in `atlas-pr-<N>`. Longhorn `reclaimPolicy: Delete` (verified preflight) reclaims PVs on namespace deletion.
 12. **Main env keeps existing LoadBalancer IP reservations** (`192.168.23.231` login, `.232` channel). PR envs draw from the remaining MetalLB pool. The `lb-pin.yaml` patch in `overlays/main` enforces this.
+13. **Per-PR provisioning is on-demand via `deploy-env` label.** ApplicationSet's GitHub PR generator filters by label, so doc-only / WIP / draft PRs don't churn the cluster. Reviewer adds `deploy-env` to the PR when they want a real env.
+14. **Bootstrap creates one tenant + one services config record per PR.** Per `docs/onboarding.md`, every cold env needs (a) a Tenant, (b) a `services` configuration entry, (c) WZ data + seeds. Steps a/b are added to bootstrap.sh before the WZ upload step. Multi-tenant per env (e.g. GMS+JMS coexisting) is future work.
+15. **Three SERVICE_ID UUIDs are deployment-pinned**: login `e7fb1d7e-…0856`, channel `e7fb1d7e-…0000`, drops `00000000-…0000`. atlas-character-factory and atlas-world also use the drops UUID — they share its `services` config record. atlas-drop-information has the same env but doesn't call `configuration.Init`, so no record needed.
 
 ## 4. Dependency order
 

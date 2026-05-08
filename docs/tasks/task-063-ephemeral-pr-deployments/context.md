@@ -44,7 +44,7 @@ atlas/                                        # this worktree's root
 │   ├── runbooks/ephemeral-pr-deployments.md  # Phase 10.2 NEW
 │   ├── observability.md                      # Phase 10.3 appends env-label section
 │   └── tasks/task-063-ephemeral-pr-deployments/   # this PRD/design/plan
-└── deploy/argocd-bee/                        # Phase 8 NEW (delivered to tumidanski/k3s manually)
+└── deploy/argocd/                        # Phase 8 NEW (delivered to <infra-repo> manually)
     ├── argocd.yml
     ├── argocd-atlas-main.yml
     ├── argocd-atlas-pr.yml
@@ -176,7 +176,7 @@ Phase 5  ─→ (no downstream code, but Phase 7 manifests should be applied AFT
 
 Phase 6 (bootstrap image) ─→ Phase 7.7 (PostSync references the image)
 Phase 7 (manifest restructure) ─→ Phase 8 (Argo Application points at overlay paths)
-Phase 8 (bee artifacts) ─→ Phase 11 (deployment cutover)
+Phase 8 (infra artifacts) ─→ Phase 11 (deployment cutover)
 
 Phase 9 (CI) is independent of 1–8; can land in parallel.
 Phase 10 (docs) follows 8–9 so URLs and file paths reference real artifacts.
@@ -205,12 +205,12 @@ Within phases, tasks are TDD where applicable (write test → fail → implement
 
 ## 6. External cluster facts referenced by the plan
 
-These come from inspecting the live `bee` cluster (must be true at plan-execution time; Phase 0 verifies):
+These come from inspecting the the cluster (must be true at plan-execution time; Phase 0 verifies):
 
 - Postgres host: `postgres.home:5432`, role from `db-credentials` secret, must have `CREATEDB`.
 - Kafka brokers: `kafka.home:9093` (TLS port per current ConfigMap value).
 - Redis: `redis.home:6379`, no password by default in dev.
-- Traefik LoadBalancer IP: `192.168.23.230` (per `bee/traefik-helmchart.yaml`).
+- Traefik LoadBalancer IP: `192.168.23.230` (per `<infra-repo>/traefik-helmchart.yaml`).
 - Pi-holes: two external servers, base URLs and tokens via Secret to be created in `argocd` namespace.
 - Longhorn storage class: `longhorn` (default).
 - ghcr.io registry public; no image-pull secret needed by `atlas` namespace.

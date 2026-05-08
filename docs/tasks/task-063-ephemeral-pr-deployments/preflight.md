@@ -135,7 +135,7 @@ No services were in `<pending>` state at survey time.
 Task 0.4 set the Longhorn-derived soft cap at 5 concurrent PR envs. MetalLB allows 16. The smaller of the two (Longhorn = 5) is the binding constraint on concurrent PR envs; MetalLB has comfortable headroom.
 
 ## Longhorn RecurringJobs and PR PVC exclusion
-- BackupTarget: `nfs://nas.tumidanski:/volume1/LonghornBackup` (BackupTarget CR named `default`, pollInterval 5m)
+- BackupTarget: `nfs://nas.home:/volume1/LonghornBackup` (BackupTarget CR named `default`, pollInterval 5m)
 - RecurringJobs: `backup-daily` (cron `0 2 * * *`, retain 7, concurrency 2) and `backup-weekly` (cron `0 3 * * 0`, retain 4, concurrency 2); both target group `default` only, task `backup`
 - PR PVC exclusion mechanism: dedicated StorageClass `longhorn-pr` with `parameters.recurringJobSelector: '[]'` (empty JSON array) — referenced from PR-overlay PVCs via `spec.storageClassName`. Rationale below; see "Mechanism rationale" for why label-on-PVC was rejected.
 - Longhorn version: `longhornio/longhorn-manager:v1.9.1` (Helm chart `longhorn-105.3.0_up1.9.1`); `longhorn-manager` is a DaemonSet, not a Deployment — `kubectl get deployment` returns NotFound, must use `kubectl get daemonset`.

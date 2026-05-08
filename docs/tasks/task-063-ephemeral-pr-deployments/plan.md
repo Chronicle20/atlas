@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Stand up Argo CD on the `bee` cluster, ship a Kustomize base/overlay layout for `deploy/k8s`, and add the per-environment isolation plumbing (`ATLAS_ENV` token through Postgres DB names, Kafka topics, Kafka consumer groups, Redis key prefix) so every open PR gets its own reachable, isolated review environment that auto-tears-down after a grace period.
+**Goal:** Stand up Argo CD on the cluster, ship a Kustomize base/overlay layout for `deploy/k8s`, and add the per-environment isolation plumbing (`ATLAS_ENV` token through Postgres DB names, Kafka topics, Kafka consumer groups, Redis key prefix) so every open PR gets its own reachable, isolated review environment that auto-tears-down after a grace period.
 
-**Architecture:** Four layers, three of them in this repo: `libs/atlas-redis` becomes env-aware via `KeyPrefix()`; a new `libs/atlas-kafka/consumergroup` resolver lets every service derive its consumer group from `KAFKA_CONSUMER_GROUP` with literal fallback; `deploy/k8s/` restructures into a `base` plus `overlays/main` (auto-synced by Argo) and `overlays/pr` (templated per PR); CI gains per-PR image builds and a PR-close cleanup hook. The fourth layer — Argo `Application(atlas-main)`, `ApplicationSet(atlas-pr)`, cleanup CronJob, Pi-hole secret — is staged in this repo at `deploy/argocd-bee/` for the maintainer to copy into the `tumidanski/k3s` infra repo.
+**Architecture:** Four layers, three of them in this repo: `libs/atlas-redis` becomes env-aware via `KeyPrefix()`; a new `libs/atlas-kafka/consumergroup` resolver lets every service derive its consumer group from `KAFKA_CONSUMER_GROUP` with literal fallback; `deploy/k8s/` restructures into a `base` plus `overlays/main` (auto-synced by Argo) and `overlays/pr` (templated per PR); CI gains per-PR image builds and a PR-close cleanup hook. The fourth layer — Argo `Application(atlas-main)`, `ApplicationSet(atlas-pr)`, cleanup CronJob, Pi-hole secret — is staged in this repo at `deploy/argocd/` for the maintainer to copy into the `<infra-repo>` infra repo.
 
-**Tech Stack:** Go 1.25.5, Kustomize 4.5+, Argo CD 2.13.x with `goTemplate: true` and the GitHub PR generator, Traefik IngressRoute, Longhorn (existing on bee), Pi-hole v6 REST API, GitHub Actions, ghcr.io, kafka-tools and redis-cli (for hooks), `psql` 15.
+**Tech Stack:** Go 1.25.5, Kustomize 4.5+, Argo CD 2.13.x with `goTemplate: true` and the GitHub PR generator, Traefik IngressRoute, Longhorn (existing on the cluster), Pi-hole v6 REST API, GitHub Actions, ghcr.io, kafka-tools and redis-cli (for hooks), `psql` 15.
 
 ---
 
@@ -16,27 +16,27 @@
 - Every task ends with a `git commit` step. Don't batch commits across tasks.
 - Phase 0 contains pre-flight checks that **must** be done before Phase 1. Their output goes into commit messages and the runbook (Phase 10), not into code.
 - After every Go-package edit, run `go build ./...` from the package directory and `go test ./...` if the package has tests.
-- Worktree: `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-063-ephemeral-pr-deployments`. All paths below are relative to this worktree root.
+- Worktree: `<worktree-root>`. All paths below are relative to this worktree root.
 
 ## Phase 0 findings (read before implementing later phases)
 
-The Phase 0 preflight tasks ran against the live `bee` cluster and surfaced corrections to several plan-author assumptions. Each finding is captured verbatim in `docs/tasks/task-063-ephemeral-pr-deployments/preflight.md`; the load-bearing ones are summarised here so later-phase implementers don't re-discover them:
+The Phase 0 preflight tasks ran against the the cluster and surfaced corrections to several plan-author assumptions. Each finding is captured verbatim in `docs/tasks/task-063-ephemeral-pr-deployments/preflight.md`; the load-bearing ones are summarised here so later-phase implementers don't re-discover them:
 
 - **`db-credentials` secret values carry trailing whitespace** (literal space + CR + LF on both `DB_USER` and `DB_PASSWORD`). In-cluster services tolerate it, but raw `psql` calls auth-fail with `password authentication failed for user "atlas "`. Phase 7.6 PreSync hook and Phase 11.2 cutover both `tr -d ' \r\n'` after base64-decode. Re-issuing the secret cleanly is deferred to Phase 11 cutover.
 - **Longhorn 1.9.1 group-label shape differs from plan assumption**: actual key is `recurring-job-group.longhorn.io/<group>` on the Longhorn `Volume` CR (not on K8s PV). Phase 7.4 Step 1b uses a dedicated StorageClass `longhorn-pr` instead of per-PVC labels (provisioned cluster-wide via Phase 8 Task 8.7).
 - **Soft cap on concurrent PR envs is 5, bound by Longhorn capacity** (167 GiB usable / 30 GiB per env); MetalLB pool has 16 free IPs but is not the binding constraint.
-- **Kafka `auto.create.topics.enable=true`** on bee — no PreSync topic-creation hook needed.
+- **Kafka `auto.create.topics.enable=true`** on the cluster — no PreSync topic-creation hook needed.
 - **atlas-tenants and atlas-configurations Alpine pods lack curl**. Phase 0 Task 0.7 commands rerun-from-scratch should use `wget` instead of curl, OR run from a pod that has curl. Phase 6 bootstrap is unaffected because the bootstrap container ships its own curl.
 - **Phase 5 service count grew from 12 to 14** once the live audit-redis-prefix grep ran; atlas-account and atlas-rates were added as Tasks 5.13/5.14, original final-grep renumbered to 5.15.
 - **`channel-service.json` `attributes.tenants[].ipAddress` is the live MetalLB VIP** (`192.168.23.232`). Phase 6 bootstrap.sh already substitutes this with the per-PR LB IP at runtime (no plan change required, but worth flagging).
-- **Apache Kafka KRaft broker uses `node.id=1` not 0**. Phase 0 Task 0.2's `kafka-configs.sh --entity-name 0` example fails on bee; use env-var inspection instead.
+- **Apache Kafka KRaft broker uses `node.id=1` not 0**. Phase 0 Task 0.2's `kafka-configs.sh --entity-name 0` example fails on the cluster; use env-var inspection instead.
 - **`longhorn-manager` is a DaemonSet, not a Deployment**. Affects rerun of Phase 0 Task 0.6's image lookup.
 
 ---
 
 ## Phase 0: Pre-flight verification
 
-These produce no committed code; they confirm the design's environmental assumptions and feed into the runbook (Phase 10). Capture the outputs in the runbook task. Run commands against the live `bee` cluster.
+These produce no committed code; they confirm the design's environmental assumptions and feed into the runbook (Phase 10). Capture the outputs in the runbook task. Run commands against the the cluster.
 
 ### Task 0.1: Verify Postgres role has CREATEDB
 
@@ -91,7 +91,7 @@ kubectl get pod -A -l app.kubernetes.io/name=kafka -o name | head -1
 
 ```bash
 KAFKA_POD=<pod-from-step-1>
-# Apache vanilla in KRaft mode uses non-zero node.id (live bee broker = 1).
+# Apache vanilla in KRaft mode uses non-zero node.id (the broker = 1).
 # If this returns "broker '0' doesn't exist", read the broker's actual
 # node.id from env or server.properties:
 #     kubectl exec -n <kafka-ns> "$KAFKA_POD" -- env | grep KAFKA_NODE_ID
@@ -106,7 +106,7 @@ kubectl exec -n <kafka-ns> "$KAFKA_POD" -- env | grep -i KAFKA_AUTO_CREATE_TOPIC
 kubectl exec -n <kafka-ns> "$KAFKA_POD" -- sh -c 'cat /opt/kafka/config/server.properties 2>/dev/null || cat /etc/kafka/server.properties 2>/dev/null' | grep -i auto.create
 ```
 
-Expected: `auto.create.topics.enable=true` (the value visible should be `true`). On bee (Apache vanilla `apache/kafka:4.1.1`, KRaft, single broker `node.id=1`), the env-var check returns it cleanly even when the kafka-configs.sh node.id is wrong.
+Expected: `auto.create.topics.enable=true` (the value visible should be `true`). On the cluster (Apache vanilla `apache/kafka:4.1.1`, KRaft, single broker `node.id=1`), the env-var check returns it cleanly even when the kafka-configs.sh node.id is wrong.
 
 - [ ] **Step 3: Append outcome to `preflight.md`**
 
@@ -253,10 +253,10 @@ Longhorn supports excluding volumes from a group via either:
 - Setting the per-group label `recurringjob.longhorn.io/<group>: ""` (empty) so the volume isn't a member, or
 - Using a separate StorageClass that doesn't include the default group.
 
-The PR overlay propagates labels to the volume via PVC annotations consumed by the Longhorn CSI driver. The exact annotation key is version-dependent; capture from upstream Longhorn docs at the version installed on bee:
+The PR overlay propagates labels to the volume via PVC annotations consumed by the Longhorn CSI driver. The exact annotation key is version-dependent; capture from upstream Longhorn docs at the version installed on the cluster:
 
 ```bash
-# longhorn-manager is a DaemonSet on bee, not a Deployment.
+# longhorn-manager is a DaemonSet on the cluster, not a Deployment.
 kubectl get daemonset -n longhorn-system longhorn-manager -o jsonpath='{.spec.template.spec.containers[0].image}'
 ```
 
@@ -269,7 +269,7 @@ kubectl get daemonset -n longhorn-system longhorn-manager -o jsonpath='{.spec.te
 
 ```markdown
 ## Longhorn RecurringJobs and PR PVC exclusion
-- BackupTarget: nfs://nas.tumidanski:/volume1/LonghornBackup
+- BackupTarget: nfs://nas.home:/volume1/LonghornBackup
 - RecurringJobs: backup-daily (retain 7), backup-weekly (retain 4); both target group "default"
 - PR PVC exclusion mechanism: <label key>=<value>, applied via PVC annotation <key>=<value>
 - Longhorn version: <captured from manager image>
@@ -2926,33 +2926,33 @@ Expected: every resource validates against its schema. (Traefik/Argo CRDs requir
 
 ---
 
-## Phase 8: Argo CD bee-repo manifests (staged in this repo)
+## Phase 8: Argo CD Argo CD manifests (staged in this repo)
 
-These belong in `tumidanski/k3s` but are committed here at `deploy/argocd-bee/` for version control. The runbook (Phase 10) tells the maintainer to copy them into the bee repo and apply.
+These belong in `<infra-repo>` but are committed here at `deploy/argocd/` for version control. The runbook (Phase 10) tells the maintainer to copy them into the cluster infra repo and apply.
 
 **Files:**
-- `deploy/argocd-bee/argocd.yml` — Argo install with patches
-- `deploy/argocd-bee/argocd-atlas-main.yml`
-- `deploy/argocd-bee/argocd-atlas-pr.yml`
-- `deploy/argocd-bee/argocd-cleanup-cronjob.yml`
-- `deploy/argocd-bee/argocd-pihole-secret.yml.example`
-- `deploy/argocd-bee/argocd-ghcr-secret.yml.example`
-- `deploy/argocd-bee/README.md`
+- `deploy/argocd/argocd.yml` — Argo install with patches
+- `deploy/argocd/argocd-atlas-main.yml`
+- `deploy/argocd/argocd-atlas-pr.yml`
+- `deploy/argocd/argocd-cleanup-cronjob.yml`
+- `deploy/argocd/argocd-pihole-secret.yml.example`
+- `deploy/argocd/argocd-ghcr-secret.yml.example`
+- `deploy/argocd/README.md`
 
 ### Task 8.1: Argo CD install manifest
 
-- [ ] **Step 1: Render and commit `deploy/argocd-bee/argocd.yml`**
+- [ ] **Step 1: Render and commit `deploy/argocd/argocd.yml`**
 
 ```bash
-mkdir -p deploy/argocd-bee
+mkdir -p deploy/argocd
 curl -fsSL https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.0/manifests/install.yaml \
-    > deploy/argocd-bee/argocd-upstream.yml
+    > deploy/argocd/argocd-upstream.yml
 ```
 
 Copy `argocd-upstream.yml` to `argocd.yml` and apply patches:
 
 1. Add `--insecure` to the `argocd-server` deployment's `command:` list (Traefik terminates HTTP at the edge).
-2. Append the Traefik `IngressRoute` for `argocd.bee.tumidanski`:
+2. Append the Traefik `IngressRoute` for `argocd.home`:
 
 ```yaml
 ---
@@ -2965,7 +2965,7 @@ spec:
   entryPoints:
     - web
   routes:
-    - match: Host(`argocd.bee.tumidanski`)
+    - match: Host(`argocd.home`)
       kind: Rule
       services:
         - name: argocd-server
@@ -2975,25 +2975,25 @@ spec:
 - [ ] **Step 2: Delete the upstream copy after extracting**
 
 ```bash
-rm deploy/argocd-bee/argocd-upstream.yml
+rm deploy/argocd/argocd-upstream.yml
 ```
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add deploy/argocd-bee/argocd.yml
-git commit -m "chore(deploy): stage Argo CD install manifest for bee
+git add deploy/argocd/argocd.yml
+git commit -m "chore(deploy): stage Argo CD install manifest
 
 Renders Argo CD v2.13.0 with --insecure and a Traefik IngressRoute at
-argocd.bee.tumidanski. Maintainer copies this to tumidanski/k3s/bee/
-and applies via kubectl. See deploy/argocd-bee/README.md.
+argocd.home. Maintainer copies this to <infra-repo>/
+and applies via kubectl. See deploy/argocd/README.md.
 
 Refs task-063."
 ```
 
 ### Task 8.2: Application(atlas-main)
 
-- [ ] **Step 1: Create `deploy/argocd-bee/argocd-atlas-main.yml`**
+- [ ] **Step 1: Create `deploy/argocd/argocd-atlas-main.yml`**
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -3022,8 +3022,8 @@ spec:
 - [ ] **Step 2: Commit**
 
 ```bash
-git add deploy/argocd-bee/argocd-atlas-main.yml
-git commit -m "chore(deploy): stage Application(atlas-main) for bee
+git add deploy/argocd/argocd-atlas-main.yml
+git commit -m "chore(deploy): stage Application(atlas-main)
 
 Argo CD Application that auto-syncs deploy/k8s/overlays/main from
 main branch into the atlas namespace. prune disabled until the
@@ -3034,7 +3034,7 @@ Refs task-063."
 
 ### Task 8.3: ApplicationSet(atlas-pr)
 
-- [ ] **Step 1: Create `deploy/argocd-bee/argocd-atlas-pr.yml`**
+- [ ] **Step 1: Create `deploy/argocd/argocd-atlas-pr.yml`**
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -3115,8 +3115,8 @@ spec:
 - [ ] **Step 2: Commit**
 
 ```bash
-git add deploy/argocd-bee/argocd-atlas-pr.yml
-git commit -m "chore(deploy): stage ApplicationSet(atlas-pr) for bee
+git add deploy/argocd/argocd-atlas-pr.yml
+git commit -m "chore(deploy): stage ApplicationSet(atlas-pr)
 
 GitHub PR generator polls Chronicle20/atlas every 30s and emits one
 Application per open PR. ATLAS_ENV is computed deterministically as
@@ -3127,7 +3127,7 @@ Refs task-063."
 
 ### Task 8.4: Cleanup CronJob
 
-- [ ] **Step 1: Create `deploy/argocd-bee/argocd-cleanup-cronjob.yml`**
+- [ ] **Step 1: Create `deploy/argocd/argocd-cleanup-cronjob.yml`**
 
 ```yaml
 apiVersion: batch/v1
@@ -3232,8 +3232,8 @@ subjects:
 - [ ] **Step 2: Commit**
 
 ```bash
-git add deploy/argocd-bee/argocd-cleanup-cronjob.yml
-git commit -m "chore(deploy): stage cleanup CronJob for bee
+git add deploy/argocd/argocd-cleanup-cronjob.yml
+git commit -m "chore(deploy): stage cleanup CronJob
 
 Hourly job that polls each atlas-pr-* Application's GitHub state. On
 PR close, sets cleanup-deadline; on grace expiry, deletes the
@@ -3244,7 +3244,7 @@ Refs task-063."
 
 ### Task 8.5: Secret examples
 
-- [ ] **Step 1: Create `deploy/argocd-bee/argocd-pihole-secret.yml.example`**
+- [ ] **Step 1: Create `deploy/argocd/argocd-pihole-secret.yml.example`**
 
 ```yaml
 # DO NOT COMMIT REAL VALUES.
@@ -3264,7 +3264,7 @@ stringData:
   PIHOLE_TOKEN_2: "REPLACE"
 ```
 
-- [ ] **Step 2: Create `deploy/argocd-bee/argocd-ghcr-secret.yml.example`**
+- [ ] **Step 2: Create `deploy/argocd/argocd-ghcr-secret.yml.example`**
 
 ```yaml
 apiVersion: v1
@@ -3280,31 +3280,31 @@ stringData:
 - [ ] **Step 3: Commit (no real secrets)**
 
 ```bash
-git add deploy/argocd-bee/argocd-pihole-secret.yml.example \
-        deploy/argocd-bee/argocd-ghcr-secret.yml.example
-git commit -m "chore(deploy): stage Pi-hole and ghcr secret examples for bee
+git add deploy/argocd/argocd-pihole-secret.yml.example \
+        deploy/argocd/argocd-ghcr-secret.yml.example
+git commit -m "chore(deploy): stage Pi-hole and ghcr secret examples
 
 Refs task-063."
 ```
 
-### Task 8.6: README for bee delivery
+### Task 8.6: README for cluster delivery
 
-- [ ] **Step 1: Create `deploy/argocd-bee/README.md`**
+- [ ] **Step 1: Create `deploy/argocd/README.md`**
 
 ```markdown
-# Argo CD bee-cluster artifacts
+# Argo CD cluster Argo CD artifacts
 
 Files in this directory are version-controlled here but **belong in
-`tumidanski/k3s`** under `bee/`. The Atlas repo carries them so the
+`<infra-repo>`** under the cluster infra repo. The Atlas repo carries them so the
 manifests that drive Atlas live alongside the Atlas code that drives
 them.
 
 ## Initial setup (one-time)
 
-1. Install Argo CD on bee:
+1. Install Argo CD:
    ```sh
-   cp argocd.yml ~/source/k3s/bee/argocd.yml
-   kubectl apply -f ~/source/k3s/bee/argocd.yml
+   cp argocd.yml <infra-repo>/argocd.yml
+   kubectl apply -f <infra-repo>/argocd.yml
    ```
 
 2. Provision repo credentials. Generate a fine-scoped GitHub PAT (read
@@ -3320,26 +3320,26 @@ them.
 
 3. Apply Pi-hole and ghcr secrets (replace placeholders first):
    ```sh
-   cp argocd-pihole-secret.yml.example ~/source/k3s/bee/argocd-pihole-secret.yml
-   cp argocd-ghcr-secret.yml.example ~/source/k3s/bee/argocd-ghcr-secret.yml
-   $EDITOR ~/source/k3s/bee/argocd-pihole-secret.yml
-   $EDITOR ~/source/k3s/bee/argocd-ghcr-secret.yml
-   kubectl apply -f ~/source/k3s/bee/argocd-pihole-secret.yml
-   kubectl apply -f ~/source/k3s/bee/argocd-ghcr-secret.yml
+   cp argocd-pihole-secret.yml.example <infra-repo>/argocd-pihole-secret.yml
+   cp argocd-ghcr-secret.yml.example <infra-repo>/argocd-ghcr-secret.yml
+   $EDITOR <infra-repo>/argocd-pihole-secret.yml
+   $EDITOR <infra-repo>/argocd-ghcr-secret.yml
+   kubectl apply -f <infra-repo>/argocd-pihole-secret.yml
+   kubectl apply -f <infra-repo>/argocd-ghcr-secret.yml
    ```
 
 4. Apply the Application and ApplicationSet:
    ```sh
-   cp argocd-atlas-main.yml ~/source/k3s/bee/argocd-atlas-main.yml
-   cp argocd-atlas-pr.yml ~/source/k3s/bee/argocd-atlas-pr.yml
-   kubectl apply -f ~/source/k3s/bee/argocd-atlas-main.yml
-   kubectl apply -f ~/source/k3s/bee/argocd-atlas-pr.yml
+   cp argocd-atlas-main.yml <infra-repo>/argocd-atlas-main.yml
+   cp argocd-atlas-pr.yml <infra-repo>/argocd-atlas-pr.yml
+   kubectl apply -f <infra-repo>/argocd-atlas-main.yml
+   kubectl apply -f <infra-repo>/argocd-atlas-pr.yml
    ```
 
 5. Apply the cleanup CronJob:
    ```sh
-   cp argocd-cleanup-cronjob.yml ~/source/k3s/bee/argocd-cleanup-cronjob.yml
-   kubectl apply -f ~/source/k3s/bee/argocd-cleanup-cronjob.yml
+   cp argocd-cleanup-cronjob.yml <infra-repo>/argocd-cleanup-cronjob.yml
+   kubectl apply -f <infra-repo>/argocd-cleanup-cronjob.yml
    ```
 
 6. Wait for Application(atlas-main) to report Synced/Healthy with zero
@@ -3349,13 +3349,13 @@ them.
 
 Application(atlas-main) ships with `prune: false` so the initial sync
 adopts existing resources without risk of deletion. After ~1 week of
-clean syncs, edit `~/source/k3s/bee/argocd-atlas-main.yml` to set
+clean syncs, edit `<infra-repo>/argocd-atlas-main.yml` to set
 `prune: true` and reapply.
 
 ## Updating Argo CD
 
 Re-render the upstream manifest, re-apply the patches, commit to the
-Atlas repo (this directory) and to `tumidanski/k3s`:
+Atlas repo (this directory) and to `<infra-repo>`:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.x/manifests/install.yaml \
@@ -3367,19 +3367,19 @@ $EDITOR argocd.yml  # re-apply --insecure and IngressRoute patches
 - [ ] **Step 2: Commit**
 
 ```bash
-git add deploy/argocd-bee/README.md
-git commit -m "docs(deploy): bee-cluster Argo CD delivery README
+git add deploy/argocd/README.md
+git commit -m "docs(deploy): Argo CD delivery README
 
 Refs task-063."
 ```
 
 ### Task 8.7: Cluster-scoped `longhorn-pr` StorageClass
 
-The PR overlay (Phase 7.4 Step 1b) sets `spec.storageClassName: longhorn-pr` on each per-PR PVC. Because StorageClasses are cluster-scoped (one resource per name across the cluster), the StorageClass cannot live inside a per-PR namespace — it ships with the bee infrastructure manifests and is provisioned once.
+The PR overlay (Phase 7.4 Step 1b) sets `spec.storageClassName: longhorn-pr` on each per-PR PVC. Because StorageClasses are cluster-scoped (one resource per name across the cluster), the StorageClass cannot live inside a per-PR namespace — it ships with the cluster infrastructure manifests and is provisioned once.
 
 **Files:**
-- Create: `deploy/argocd-bee/storageclass-longhorn-pr.yaml`
-- Modify: `deploy/argocd-bee/README.md` (add a step in "Initial setup" to apply it)
+- Create: `deploy/argocd/storageclass-longhorn-pr.yaml`
+- Modify: `deploy/argocd/README.md` (add a step in "Initial setup" to apply it)
 
 - [ ] **Step 1: Create the StorageClass**
 
@@ -3405,7 +3405,7 @@ parameters:
   recurringJobSelector: '[]'
 ```
 
-> The default `longhorn` StorageClass installed on bee already targets `provisioner: driver.longhorn.io` with `numberOfReplicas: "3"`. Verify before applying:
+> The default `longhorn` StorageClass installed on the cluster already targets `provisioner: driver.longhorn.io` with `numberOfReplicas: "3"`. Verify before applying:
 >
 > ```bash
 > kubectl get storageclass longhorn -o yaml | yq '.parameters'
@@ -3413,13 +3413,13 @@ parameters:
 >
 > Match `numberOfReplicas`, `staleReplicaTimeout`, `fromBackup`, and `fsType` to whatever the existing `longhorn` class advertises so per-PR Volumes have identical replication and FS shape — only `recurringJobSelector` differs.
 
-- [ ] **Step 2: Add an "Apply longhorn-pr StorageClass" step to `deploy/argocd-bee/README.md` "Initial setup" before the Application/ApplicationSet step**
+- [ ] **Step 2: Add an "Apply longhorn-pr StorageClass" step to `deploy/argocd/README.md` "Initial setup" before the Application/ApplicationSet step**
 
 ```markdown
 3a. Apply the per-PR StorageClass:
    ```sh
-   cp storageclass-longhorn-pr.yaml ~/source/k3s/bee/storageclass-longhorn-pr.yaml
-   kubectl apply -f ~/source/k3s/bee/storageclass-longhorn-pr.yaml
+   cp storageclass-longhorn-pr.yaml <infra-repo>/storageclass-longhorn-pr.yaml
+   kubectl apply -f <infra-repo>/storageclass-longhorn-pr.yaml
    kubectl get storageclass | grep longhorn-pr   # confirm
    ```
 ```
@@ -3427,12 +3427,12 @@ parameters:
 - [ ] **Step 3: Commit**
 
 ```bash
-git add deploy/argocd-bee/storageclass-longhorn-pr.yaml deploy/argocd-bee/README.md
+git add deploy/argocd/storageclass-longhorn-pr.yaml deploy/argocd/README.md
 git commit -m "feat(deploy): cluster-scoped longhorn-pr StorageClass for PR PVCs
 
 PR overlay PVCs reference this StorageClass; its empty recurringJobSelector
 keeps per-PR Volumes outside the default backup-daily/backup-weekly
-cadence. Provisioned once on bee, used by every PR overlay reconcile.
+cadence. Provisioned once on the cluster, used by every PR overlay reconcile.
 
 Refs task-063, Phase 0 Task 0.6."
 ```
@@ -3813,7 +3813,7 @@ push to perturb the head). Long-term mitigation: bump suffix to 6 hex.
        /tmp/built.yaml /tmp/live.yaml
    ```
    Expected: only Kustomize-injected labels are net new.
-2. Apply Argo CD on bee per `deploy/argocd-bee/README.md`.
+2. Apply Argo CD per `deploy/argocd/README.md`.
 3. Apply `Application(atlas-main)` with `prune: false`. Confirm
    `Synced/Healthy` with zero changes.
 4. Wait 7 days.
@@ -4036,7 +4036,7 @@ This reclaims the legacy PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-as
 - [ ] **Step 1: Apply `Application(atlas-main)`**
 
 ```bash
-kubectl apply -f ~/source/k3s/bee/argocd-atlas-main.yml
+kubectl apply -f <infra-repo>/argocd-atlas-main.yml
 ```
 
 Argo creates the `atlas-main` namespace, applies the rendered overlay, and triggers PostSync hooks. Bootstrap Job re-uploads the canonical WZ zip and seeds every domain.

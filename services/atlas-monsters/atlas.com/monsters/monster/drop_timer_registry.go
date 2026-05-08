@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
@@ -64,7 +65,7 @@ func GetDropTimerRegistry() *DropTimerRegistry {
 }
 
 func dropTimerKey(t tenant.Model, uniqueId uint32) string {
-	return fmt.Sprintf("atlas:drop-timer:%s:%d", t.Id().String(), uniqueId)
+	return fmt.Sprintf("%s:drop-timer:%s:%d", atlasredis.KeyPrefix(), t.Id().String(), uniqueId)
 }
 
 func (r *DropTimerRegistry) Register(ctx context.Context, t tenant.Model, uniqueId uint32, e DropTimerEntry) {
@@ -153,7 +154,7 @@ func (r *DropTimerRegistry) GetAll(ctx context.Context) map[MonsterKey]DropTimer
 	result := make(map[MonsterKey]DropTimerEntry)
 	var cursor uint64
 	for {
-		keys, nextCursor, err := r.client.Scan(ctx, cursor, "atlas:drop-timer:*", 100).Result()
+		keys, nextCursor, err := r.client.Scan(ctx, cursor, atlasredis.KeyPrefix()+":drop-timer:*", 100).Result()
 		if err != nil {
 			return result
 		}

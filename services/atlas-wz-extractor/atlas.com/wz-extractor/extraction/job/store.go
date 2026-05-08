@@ -244,7 +244,104 @@ func (s *storeImpl) MarkUnitRunning(ctx context.Context, jobId, wzFile string) (
 	return false, errors.New("MarkUnitRunning: too many WATCH retries")
 }
 func (s *storeImpl) FinalizeUnit(ctx context.Context, jobId, wzFile string, terminal UnitStatus, runErr error) (Counters, error) {
-	return Counters{}, errors.New("not implemented")
+	if terminal != UnitSucceeded && terminal != UnitFailed {
+		return Counters{}, errors.New("FinalizeUnit: terminal must be Succeeded or Failed")
+	}
+	jKey := jobKey(jobId)
+	uKey := unitsKey(jobId)
+
+	var out Counters
+	txn := func(tx *goredis.Tx) error {
+		raw, err := tx.HGet(ctx, uKey, wzFile).Result()
+		if err == goredis.Nil {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		u, err := unitFromJSON(wzFile, raw)
+		if err != nil {
+			return err
+		}
+
+		// Already terminal (redelivery): read counters, return them, no-op.
+		if u.Status() == UnitSucceeded || u.Status() == UnitFailed || u.Status() == UnitSkipped {
+			j, _, gerr := s.Get(ctx, jobId)
+			if gerr != nil {
+				return gerr
+			}
+			out = Counters{
+				UnitsTotal:     j.UnitsTotal(),
+				UnitsCompleted: j.UnitsCompleted(),
+				UnitsFailed:    j.UnitsFailed(),
+				AllDone:        (j.UnitsCompleted() + j.UnitsFailed()) == j.UnitsTotal(),
+				LockKey:        LockKey(j.TenantId(), j.Region(), j.MajorVersion(), j.MinorVersion()),
+			}
+			return nil
+		}
+
+		nb := NewUnitBuilder().SetWzFile(wzFile).SetStatus(terminal).
+			SetStartedAt(u.StartedAt()).
+			SetCompletedAt(time.Now().UTC())
+		if runErr != nil {
+			nb = nb.SetErrorMessage(runErr.Error())
+		}
+		nraw, err := unitToJSON(nb.Build())
+		if err != nil {
+			return err
+		}
+
+		field := "unitsCompleted"
+		if terminal == UnitFailed {
+			field = "unitsFailed"
+		}
+
+		var totalCmd, completedCmd, failedCmd, tenantCmd, regionCmd, majCmd, minCmd *goredis.StringCmd
+		var newCounter *goredis.IntCmd
+		_, err = tx.TxPipelined(ctx, func(p goredis.Pipeliner) error {
+			p.HSet(ctx, uKey, wzFile, nraw)
+			newCounter = p.HIncrBy(ctx, jKey, field, 1)
+			p.HSet(ctx, jKey, "updatedAt", time.Now().UTC().Format(time.RFC3339))
+			totalCmd = p.HGet(ctx, jKey, "unitsTotal")
+			completedCmd = p.HGet(ctx, jKey, "unitsCompleted")
+			failedCmd = p.HGet(ctx, jKey, "unitsFailed")
+			tenantCmd = p.HGet(ctx, jKey, "tenantId")
+			regionCmd = p.HGet(ctx, jKey, "region")
+			majCmd = p.HGet(ctx, jKey, "majorVersion")
+			minCmd = p.HGet(ctx, jKey, "minorVersion")
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+		_ = newCounter // increment already applied above; counters re-read post-EXEC
+
+		total, _ := strconv.Atoi(totalCmd.Val())
+		completed, _ := strconv.Atoi(completedCmd.Val())
+		failed, _ := strconv.Atoi(failedCmd.Val())
+		maj, _ := strconv.Atoi(majCmd.Val())
+		min, _ := strconv.Atoi(minCmd.Val())
+		out = Counters{
+			UnitsTotal:     total,
+			UnitsCompleted: completed,
+			UnitsFailed:    failed,
+			AllDone:        (completed + failed) == total,
+			LockKey:        LockKey(tenantCmd.Val(), regionCmd.Val(), uint16(maj), uint16(min)),
+		}
+		return nil
+	}
+
+	for attempt := 0; attempt < 5; attempt++ {
+		err := s.client.Watch(ctx, txn, uKey)
+		if err == nil {
+			return out, nil
+		}
+		if err == goredis.TxFailedErr {
+			continue
+		}
+		return Counters{}, err
+	}
+	return Counters{}, errors.New("FinalizeUnit: too many WATCH retries")
 }
 func (s *storeImpl) MarkJobTerminal(ctx context.Context, jobId string, terminal JobStatus) (bool, error) {
 	return false, errors.New("not implemented")

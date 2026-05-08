@@ -127,6 +127,12 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 			RetryStrategy: redislock.NoRetry(),
 		})
 		if err != nil {
+			if errors.Is(err, redislock.ErrNotObtained) {
+				acquireFailedTotal.WithLabelValues(le.name, "held_by_other").Inc()
+			} else {
+				acquireFailedTotal.WithLabelValues(le.name, "redis_error").Inc()
+				le.cfg.log.WithError(err).Debugf("Acquire for [%s] failed: %v", le.name, err)
+			}
 			select {
 			case <-ctx.Done():
 				return nil

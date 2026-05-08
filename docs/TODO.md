@@ -15,6 +15,32 @@ This document tracks planned features and improvements for the Atlas MapleStory 
 - [ ] **TokenItem Purchasing** - Returns "not implemented" error in NPC shops
 - [ ] **Reactor Actions** - Boss weakening, environment manipulation, mass kill sagas
 
+## Leader-election adoption (depends on task-064)
+
+Each entry below is a per-service follow-up task — adopt `libs/atlas-lock`
+for that service's sweep tickers so the Deployment can scale beyond one
+replica without duplicating Kafka emission. See PRD §7.3 of
+`docs/tasks/task-064-redis-leader-election/prd.md` for the catalogue.
+
+- [ ] atlas-buffs — gate `NewExpiration`, `NewPoisonTick` (`services/atlas-buffs/atlas.com/buffs/main.go:63-64`)
+- [ ] atlas-ban — gate `NewExpiredBanCleanup`, `NewHistoryPurge` (`services/atlas-ban/atlas.com/ban/main.go:79-80`)
+- [ ] atlas-drops — gate `NewExpirationTask` (`services/atlas-drops/atlas.com/drops/main.go:92`)
+- [ ] atlas-pets — gate `NewHungerTask` (`services/atlas-pets/atlas.com/pets/main.go:89`)
+- [ ] atlas-skills — gate `NewExpirationTask` (`services/atlas-skills/atlas.com/skills/main.go:77`)
+- [ ] atlas-reactors — gate `NewCooldownCleanup` (`services/atlas-reactors/atlas.com/reactors/main.go:68`)
+- [ ] atlas-maps — gate `NewRespawn`, `NewWeather`, `NewMistTick` (`services/atlas-maps/atlas.com/maps/main.go:105-107`)
+- [ ] atlas-merchant — gate `NewExpirationTask`, `NewCleanupTask`, `NewNotificationTask` (`services/atlas-merchant/atlas.com/merchant/main.go:79-81`)
+- [ ] atlas-guilds — gate `NewTransitionTimeout` (`services/atlas-guilds/atlas.com/guilds/main.go:99`)
+- [ ] atlas-account — gate `NewTransitionTimeout` (`services/atlas-account/atlas.com/account/main.go:76`)
+- [ ] atlas-world — gate `NewExpiration` (`services/atlas-world/atlas.com/world/main.go:90`)
+- [ ] atlas-invites — gate `NewInviteTimeout` (`services/atlas-invites/atlas.com/invites/main.go:80`)
+- [ ] atlas-expressions — gate `NewRevertTask` (`services/atlas-expressions/atlas.com/expressions/main.go:49`)
+- [ ] atlas-character — review `NewTimeout` (`services/atlas-character/atlas.com/character/main.go:102`); gate iff the work is global, not per-pod-session
+
+The following two services are **review-and-decline** — listed for completeness, not for adoption:
+- atlas-login — `NewTimeout` is per-pod session timeout, do NOT gate
+- atlas-channel — `NewHeartbeat` is per-pod state by design, do NOT gate
+
 ---
 
 ## Services

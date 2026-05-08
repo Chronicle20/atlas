@@ -30,8 +30,8 @@ func getRegistry() *Registry {
 func (r *Registry) setKey(key MapKey) string {
 	tk := atlas.TenantKey(key.Tenant)
 	f := key.Field
-	return fmt.Sprintf("atlas:%s:%s:%d:%d:%d:%s",
-		r.namespace, tk,
+	return fmt.Sprintf("%s:%s:%s:%d:%d:%d:%s",
+		atlas.KeyPrefix(), r.namespace, tk,
 		f.WorldId(), f.ChannelId(), f.MapId(), f.Instance().String())
 }
 

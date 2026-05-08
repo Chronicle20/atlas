@@ -7,18 +7,18 @@ Created: 2026-05-03
 
 ## 1. Overview
 
-Atlas ships from a monorepo of 57 Go services plus a Next.js UI, runs as ~80 pods in the shared `bee` k3s cluster, and currently has no automated review-environment story. Every code change is reviewed against the running `main` deployment, which means reviewers can't exercise a feature in a real cluster before merge, and a regression in `main` can cascade across all in-flight work.
+Atlas ships from a monorepo of 57 Go services plus a Next.js UI, runs as ~80 pods in the shared k3s cluster, and currently has no automated review-environment story. Every code change is reviewed against the running `main` deployment, which means reviewers can't exercise a feature in a real cluster before merge, and a regression in `main` can cascade across all in-flight work.
 
-This task introduces **two coordinated deployment surfaces** managed by Argo CD on the existing `bee` cluster:
+This task introduces **two coordinated deployment surfaces** managed by Argo CD on the existing the cluster:
 
 1. A **persistent `main` environment** that auto-syncs from the `main` branch on every push.
 2. A pool of **ephemeral per-PR environments**, each spun up on PR open and torn down (after a grace period) on PR close/merge.
 
-The `bee` cluster's shared infrastructure pods — Postgres, Kafka, Redis, Traefik, observability — are reused by every environment. Isolation is achieved at the **name/key level**, not the pod level: each environment carries a 4-character hex hash (`ATLAS_ENV`) that suffixes Postgres database names, prefixes Redis keys, suffixes Kafka topic names, and namespaces consumer-group IDs. The `main` environment's hash is the literal string `m4in`; PR environments derive their hash deterministically from the PR number (`hash("pr-<N>")[:4]`). Determinism is chosen over randomness so Argo CD restarts and Application CRD recreations re-attach to existing data instead of leaking it.
+The the cluster's shared infrastructure pods — Postgres, Kafka, Redis, Traefik, observability — are reused by every environment. Isolation is achieved at the **name/key level**, not the pod level: each environment carries a 4-character hex hash (`ATLAS_ENV`) that suffixes Postgres database names, prefixes Redis keys, suffixes Kafka topic names, and namespaces consumer-group IDs. The `main` environment's hash is the literal string `m4in`; PR environments derive their hash deterministically from the PR number (`hash("pr-<N>")[:4]`). Determinism is chosen over randomness so Argo CD restarts and Application CRD recreations re-attach to existing data instead of leaking it.
 
 The work spans three planes:
 
-- **Cluster infra:** install Argo CD on `bee`, add an Argo `ApplicationSet` driven by the GitHub PR generator, install the DNS-update side-channel for the two out-of-cluster Pi-hole servers.
+- **Cluster infra:** install Argo CD on the cluster, add an Argo `ApplicationSet` driven by the GitHub PR generator, install the DNS-update side-channel for the two out-of-cluster Pi-hole servers.
 - **Repository plumbing:** refactor `deploy/k8s/*.yaml` (currently flat manifests) into a Kustomize base + `main` overlay + parameterized `pr` overlay; extend `.github/workflows/pr-validation.yml` to build and push images per PR.
 - **Service code sweeps:** make Kafka consumer-group IDs env-driven (currently hardcoded in ~50 service `main.go` files) and add transparent key-prefixing to `libs/atlas-redis` so all Redis-using services pick up isolation without per-service code changes.
 
@@ -28,7 +28,7 @@ The success metric is end-to-end: open a PR → ~minutes later → reviewer hits
 
 ### Primary goals
 
-- Argo CD installed on the `bee` cluster and accessible via Traefik ingress.
+- Argo CD installed on the cluster and accessible via Traefik ingress.
 - A `main` Argo Application that auto-syncs from `main` branch and replaces the current ad-hoc apply-by-hand flow.
 - An `ApplicationSet` with a GitHub PR generator that creates one Argo Application per open PR against `Chronicle20/atlas`.
 - Each PR environment is fully isolated from `main` and from every other PR environment along these dimensions: Postgres data, Kafka messages, Kafka consumer-group offsets, Redis state, container images.
@@ -47,7 +47,7 @@ The success metric is end-to-end: open a PR → ~minutes later → reviewer hits
 - Tenant or character data preservation across PR environments. Each PR starts from an empty data plane.
 - Slack/GitHub-comment notifications when an environment becomes ready or is reclaimed.
 - Performance or load-test-grade environments. PR envs are functional-review only.
-- Image-pull credentials. The `chronicle20/atlas-*` ghcr repos are public; verified by all 50+ atlas pods running on `bee` with zero image-pull secrets configured on the `atlas` namespace's default ServiceAccount.
+- Image-pull credentials. The `chronicle20/atlas-*` ghcr repos are public; verified by all 50+ atlas pods running on the cluster with zero image-pull secrets configured on the `atlas` namespace's default ServiceAccount.
 
 ## 3. User Stories
 
@@ -102,15 +102,15 @@ Requirements are grouped by the system surface they touch.
 - Services that compose Redis keys without going through `libs/atlas-redis` are bugs to be fixed in this task. A grep audit during Phase 1 enumerates them.
 - An Argo `PostDelete` hook runs `redis-cli --scan --pattern '<ATLAS_ENV>:*' | xargs -r redis-cli DEL` (chunked) to reclaim keyspace on environment teardown.
 
-### 4.6 Argo CD on bee
+### 4.6 Argo CD
 
-- Argo CD installed via a manifest at `~/source/k3s/bee/argocd.yml` (committed to the bee infrastructure repo at `tumidanski/k3s`, not the Atlas repo).
-- Argo CD's UI exposed via Traefik IngressRoute at `argocd.bee.tumidanski` (matching existing bee naming convention used by `dns.bee.tumidanski` for Pi-hole).
+- Argo CD installed via a manifest at `<infra-repo>/argocd.yml` (committed to the cluster infra repo, not the Atlas repo).
+- Argo CD's UI exposed via Traefik IngressRoute at `argocd.home` (matching existing cluster naming convention used by `dns.home` for Pi-hole).
 - Argo CD's GitHub credentials configured via a Kubernetes Secret containing a fine-scoped GitHub PAT with read access to `Chronicle20/atlas`. PAT lives in 1Password / outside the repo.
 
 ### 4.7 Argo CD ApplicationSet for PR environments
 
-- An `ApplicationSet` resource in `~/source/k3s/bee/argocd-atlas.yml` (or under a dedicated `bee/argocd/` subdirectory) configured with the **GitHub Pull Request generator** pointing at `Chronicle20/atlas`, polling at 30s.
+- An `ApplicationSet` resource in `<infra-repo>/argocd-atlas.yml` (or under a dedicated `<infra-repo>/argocd/` subdirectory) configured with the **GitHub Pull Request generator** pointing at `Chronicle20/atlas`, polling at 30s.
 - For each open PR, the generator emits parameters: `{{number}}`, `{{branch}}`, `{{head_sha}}`, `{{labels}}`. The template substitutes these into a per-PR Application:
   - `metadata.name: atlas-pr-{{number}}`
   - `spec.source.path: deploy/k8s/overlays/pr`
@@ -122,7 +122,7 @@ Requirements are grouped by the system surface they touch.
 
 ### 4.8 Argo CD Application for the main environment
 
-- A single `Application` resource at `~/source/k3s/bee/argocd-atlas-main.yml` pointing at `Chronicle20/atlas` `main` branch, path `deploy/k8s/overlays/main`, destination namespace `atlas`.
+- A single `Application` resource at `<infra-repo>/argocd-atlas-main.yml` pointing at `Chronicle20/atlas` `main` branch, path `deploy/k8s/overlays/main`, destination namespace `atlas`.
 - `automated` sync with `selfHeal: true`. No `prune` initially (to avoid surprise deletions during the migration); revisited after the migration is stable.
 - Replaces the current ad-hoc `kubectl apply -f deploy/k8s/` flow.
 
@@ -164,9 +164,9 @@ Requirements are grouped by the system surface they touch.
 
 ### 4.12 DNS automation for Pi-hole
 
-- The bee cluster relies on **two external (out-of-cluster) Pi-hole servers** for home-network DNS. The in-cluster `pihole` namespace exists but has no running pods (verified via `kubectl get pods -n pihole`).
+- The cluster relies on **two external (out-of-cluster) Pi-hole servers** for home-network DNS. The in-cluster `pihole` namespace exists but has no running pods (verified via `kubectl get pods -n pihole`).
 - An Argo `PostSync` hook Job, after the bootstrap Job, calls each Pi-hole's REST API (Pi-hole v6+) to register an A record `<PR_NUMBER>.atlas.home → <Traefik LB IP>`. The job needs:
-  - Both Pi-hole API base URLs (configured via Secret in the bee cluster)
+  - Both Pi-hole API base URLs (configured via Secret in the cluster)
   - Both Pi-hole API tokens / passwords
   - The Traefik LoadBalancer IP from `traefik-helmchart.yaml`'s `loadBalancerIP: 192.168.23.230`
 - An Argo `PostDelete` hook removes the same A record from both Pi-holes.
@@ -197,7 +197,7 @@ This task is primarily infrastructure; few new HTTP APIs are introduced. The rel
 
 ### 5.2 Argo CD UI
 
-- Hostname: `argocd.bee.tumidanski`
+- Hostname: `argocd.home`
 - Authentication: Argo CD admin password (initial) → SSO via Cattle / Rancher if/when relevant. SSO not in v1 scope.
 
 ### 5.3 Pi-hole automation API
@@ -244,7 +244,7 @@ This task introduces no new domain entities. It introduces deployment-level stat
 ### 6.5 Pi-hole A records
 
 - Naming: `<PR_NUMBER>.atlas.home` for PR envs, `<TBD>.atlas.home` for main (open question #2 includes whether main also takes a hostname)
-- Target: Traefik LoadBalancer IP (`192.168.23.230` per current `bee/traefik-helmchart.yaml`)
+- Target: Traefik LoadBalancer IP (`192.168.23.230` per current `<infra-repo>/traefik-helmchart.yaml`)
 
 ## 7. Service Impact
 
@@ -261,13 +261,13 @@ This task introduces no new domain entities. It introduces deployment-level stat
 - **`.github/workflows/pr-validation.yml`** — add `docker-build-pr` job and matrix.
 - **`.github/workflows/pr-cleanup.yml`** — new file, deletes PR-tagged ghcr images on PR close.
 
-### 7.3 New infrastructure (in `tumidanski/k3s` repo, not Atlas repo)
+### 7.3 New infrastructure (in the cluster infra repo, not Atlas repo)
 
-- `bee/argocd.yml` — Argo CD install (Helm-rendered or vanilla manifest set).
-- `bee/argocd-atlas.yml` — ApplicationSet for PR generator.
-- `bee/argocd-atlas-main.yml` — main Application.
-- `bee/argocd-cleanup-cronjob.yml` — past-grace Application cleanup.
-- `bee/argocd-pihole-secret.yml` (sealed) — Pi-hole API tokens.
+- `<infra-repo>/argocd.yml` — Argo CD install (Helm-rendered or vanilla manifest set).
+- `<infra-repo>/argocd-atlas.yml` — ApplicationSet for PR generator.
+- `<infra-repo>/argocd-atlas-main.yml` — main Application.
+- `<infra-repo>/argocd-cleanup-cronjob.yml` — past-grace Application cleanup.
+- `<infra-repo>/argocd-pihole-secret.yml` (sealed) — Pi-hole API tokens.
 
 ### 7.4 No service is removed or refactored beyond consumer-group sweep
 
@@ -337,7 +337,7 @@ The task is complete when **every** item below is demonstrably true.
 
 ### 10.1 Argo CD operational
 
-- [ ] Argo CD is installed in the `bee` cluster, accessible at `argocd.bee.tumidanski` over HTTP.
+- [ ] Argo CD is installed in the cluster, accessible at `argocd.home` over HTTP.
 - [ ] An Argo `Application` named `atlas-main` exists, points at `Chronicle20/atlas` `main` branch, syncs the manifests under `deploy/k8s/overlays/main/`, and `automated.selfHeal=true`.
 - [ ] Pushing a commit to `main` automatically updates the cluster within 60 seconds (Argo's poll interval).
 - [ ] An Argo `ApplicationSet` named `atlas-pr` exists, configured with the GitHub PR generator pointing at `Chronicle20/atlas`.

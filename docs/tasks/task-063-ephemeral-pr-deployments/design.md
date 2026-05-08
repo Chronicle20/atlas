@@ -26,14 +26,14 @@ This design realises the PRD by composing four layers, each with an explicit own
 
 | Layer | Owner repo | Purpose |
 |---|---|---|
-| **Argo CD control plane** | `tumidanski/k3s` (bee infra) | Argo install, `Application(main)`, `ApplicationSet(pr)`, cleanup CronJob, Pi-hole secrets |
+| **Argo CD control plane** | `<infra-repo>` (cluster infra) | Argo install, `Application(main)`, `ApplicationSet(pr)`, cleanup CronJob, Pi-hole secrets |
 | **Atlas manifest layout** | `Chronicle20/atlas` (this repo) | `deploy/k8s/` restructured into Kustomize `base` + `overlays/main` + `overlays/pr` |
 | **Atlas service code** | `Chronicle20/atlas` | `libs/atlas-redis` env-aware keyPrefix, new `libs/atlas-kafka/consumergroup` resolver, ~49 service `main.go` sweep, audit of raw-client redis users |
 | **Atlas CI / image plumbing** | `Chronicle20/atlas` `.github/` | per-PR image builds tagged `pr-<N>-<sha7>`, PR-close cleanup workflow |
 
-The `bee` cluster's data-plane pods (Postgres, Kafka, Redis, Traefik) are unchanged. Isolation is **logical only**: every per-environment Postgres database, Kafka topic, Redis key, and Kafka consumer-group ID is name-suffixed (or prefixed) with a 4-hex-char `ATLAS_ENV` token derived deterministically from the PR number. Determinism lets Argo CD restarts and Application recreations re-attach to existing data instead of leaking it.
+The the cluster's data-plane pods (Postgres, Kafka, Redis, Traefik) are unchanged. Isolation is **logical only**: every per-environment Postgres database, Kafka topic, Redis key, and Kafka consumer-group ID is name-suffixed (or prefixed) with a 4-hex-char `ATLAS_ENV` token derived deterministically from the PR number. Determinism lets Argo CD restarts and Application recreations re-attach to existing data instead of leaking it.
 
-The Atlas repo carries **all PR-environment-specific config** as Kustomize patches. The bee infra repo carries **only the Argo wiring** (which paths to sync, how to template per PR, and where to find Pi-hole credentials). This split lets the Atlas team ship a manifest change in a normal Atlas PR without touching the bee infra repo.
+The Atlas repo carries **all PR-environment-specific config** as Kustomize patches. The cluster infra repo carries **only the Argo wiring** (which paths to sync, how to template per PR, and where to find Pi-hole credentials). This split lets the Atlas team ship a manifest change in a normal Atlas PR without touching the cluster infra repo.
 
 ---
 
@@ -60,17 +60,17 @@ The PRD listed ten open questions. Each is resolved below. The reasoning is in t
 
 ### 3.1 Argo CD install
 
-- Manifest committed to `tumidanski/k3s` at `bee/argocd.yml`. Rendered from the upstream Argo CD vanilla install (`https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.x/manifests/install.yaml`) with two patches:
+- Manifest committed to `<infra-repo>` at `<infra-repo>/argocd.yml`. Rendered from the upstream Argo CD vanilla install (`https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.x/manifests/install.yaml`) with two patches:
   1. `argocd-server` `command:` includes `--insecure` (Traefik terminates HTTP at the edge).
   2. `argocd-cm` ConfigMap sets `application.instanceLabelKey: argocd.argoproj.io/instance` (default; explicit for clarity).
 - Namespace `argocd`. RBAC unchanged from upstream.
-- Traefik `IngressRoute` at `argocd.bee.tumidanski` → service `argocd-server:80`. HTTP only at v1.
+- Traefik `IngressRoute` at `argocd.home` → service `argocd-server:80`. HTTP only at v1.
 - **Auth at v1: default `admin` password** (read from `argocd-initial-admin-secret`). SSO via Cattle is deferred.
-- GitHub credentials: a fine-scoped GitHub PAT with read-only access to `Chronicle20/atlas` is stored as Argo CD repo credentials (`argocd-repo-creds-chronicle20-atlas` Secret). PAT lives outside both repos (1Password). The `bee/argocd.yml` manifest references the secret name; the secret is created out-of-band the first time and is not committed.
+- GitHub credentials: a fine-scoped GitHub PAT with read-only access to `Chronicle20/atlas` is stored as Argo CD repo credentials (`argocd-repo-creds-chronicle20-atlas` Secret). PAT lives outside both repos (1Password). The `<infra-repo>/argocd.yml` manifest references the secret name; the secret is created out-of-band the first time and is not committed.
 
 ### 3.2 `Application(atlas-main)`
 
-- File: `tumidanski/k3s` `bee/argocd-atlas-main.yml`.
+- File: `<infra-repo>/argocd-atlas-main.yml`.
 - Spec:
   ```yaml
   source:
@@ -93,7 +93,7 @@ The PRD listed ten open questions. Each is resolved below. The reasoning is in t
 
 ### 3.3 `ApplicationSet(atlas-pr)`
 
-- File: `tumidanski/k3s` `bee/argocd-atlas-pr.yml`.
+- File: `<infra-repo>/argocd-atlas-pr.yml`.
 - Generator: GitHub PR generator polling `Chronicle20/atlas`, every 30s, **filtered by PR label `deploy-env`** so envs are on-demand. Reviewer adds the label when they want a real cluster; doc-only / WIP / draft PRs never spin up. Soft-cap-respecting and explicit. Switch to always-on by removing the `labels:` filter.
 - Template substitutes `{{number}}`, `{{branch}}`, `{{head_sha}}`, `{{head_short_sha}}` into a per-PR `Application`:
   ```yaml
@@ -133,7 +133,7 @@ The PRD listed ten open questions. Each is resolved below. The reasoning is in t
 
 ### 3.4 Cleanup CronJob
 
-- File: `tumidanski/k3s` `bee/argocd-cleanup-cronjob.yml`.
+- File: `<infra-repo>/argocd-cleanup-cronjob.yml`.
 - Runs hourly in the `argocd` namespace as a service account with permissions:
   - `applications.argoproj.io`: `get`, `list`, `delete`, `patch`
   - GitHub PR status reader (uses Argo's existing PAT secret, mounted read-only)
@@ -340,9 +340,9 @@ Three services own PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-p
 
 ### 5.8 Longhorn backup behaviour
 
-Live state on `bee`:
+Live state on the cluster:
 
-- BackupTarget: `nfs://nas.tumidanski:/volume1/LonghornBackup`
+- BackupTarget: `nfs://nas.home:/volume1/LonghornBackup`
 - RecurringJobs (in `longhorn-system` namespace, both targeting group `default`):
   - `backup-daily` — cron `0 2 * * *`, retain 7
   - `backup-weekly` — cron `0 3 * * 0`, retain 4
@@ -351,7 +351,7 @@ Live state on `bee`:
 **Implications of this change:**
 
 1. **Main env backups continue uninterrupted.** RecurringJobs are group-targeted, not namespace-targeted. After cutover, `atlas-main`'s three PVs auto-join `default` and the existing daily/weekly cadence covers them. No re-configuration of RecurringJobs needed.
-2. **Old PV history persists on NFS.** Pre-cutover backups under the old PV names remain on `nas.tumidanski` until they age out (7 daily / 4 weekly retention). They are no longer attached to any live volume, but can be browsed in the Longhorn UI for audit / disaster recovery.
+2. **Old PV history persists on NFS.** Pre-cutover backups under the old PV names remain on `nas.home` until they age out (7 daily / 4 weekly retention). They are no longer attached to any live volume, but can be browsed in the Longhorn UI for audit / disaster recovery.
 3. **Pre-cutover safety snapshot is required.** Phase 11 Task 11.0 takes a fresh Longhorn backup of all three PVs immediately before namespace deletion. This is the rollback point if cutover fails after Task 11.5. The standard daily backup may be up to 24 hours stale.
 4. **PR-env PVs would inherit backups too — and shouldn't.** Without intervention, every per-PR PVC auto-joins `default`, so `3 × N × (daily 7 + weekly 4)` backup chains accumulate on NFS for ephemeral data. The PR overlay sets the Longhorn label `recurringjob.longhorn.io/source: disabled` on each per-PR PVC (annotation propagated to the volume by the Longhorn CSI driver) so RecurringJobs skip them. Exact label syntax verified at plan Phase 0 Task 0.6.
 5. **Manual restore-to-atlas-main during cutover is an option.** If the user wants to preserve current `atlas-data-pvc` contents (5-min re-bootstrap savings), the cutover can switch from "delete namespace + re-bootstrap" to "Longhorn-backup-restore into atlas-main PVCs" — restore time depends on backup size and NFS throughput. Default plan choice: re-bootstrap, because it's cleaner and within the maintenance window. The runbook documents both paths.
@@ -548,7 +548,7 @@ Alternatives considered:
 
 | Option | Pro | Con | Verdict |
 |---|---|---|---|
-| **Longhorn PVC (chosen)** | already on bee, no external deps, single source of truth, easy update by mounting into a one-shot writer pod | requires creating a dedicated PVC | Selected |
+| **Longhorn PVC (chosen)** | already on the cluster, no external deps, single source of truth, easy update by mounting into a one-shot writer pod | requires creating a dedicated PVC | Selected |
 | ghcr image with WZ baked in | immutable, versioned | image is ~GB; bake-and-push pipeline; per-env pull cost | Rejected — pull cost compounds |
 | HTTP endpoint on `main` env | reuses existing atlas-data | runtime dependency on `main`; `main` outage blocks bootstrap | Rejected — coupling |
 | S3-compatible store | strong concurrency story | external dep; setup overhead | Rejected — overkill |
@@ -702,13 +702,13 @@ The current `main` is deployed by manual `kubectl apply -f deploy/k8s/` into nam
 3. **Drop legacy Kafka topics** (best-effort). Topics with no consumers carry no in-flight load. New `-main`-suffixed topics auto-create on first publish.
 4. **Flush legacy Redis keys.** `SCAN+DEL` under the `atlas:` prefix. Atlas Redis content is mostly cache; warm-up is automatic on next request.
 5. **Delete the `atlas` namespace.** Reclaims orphaned PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`); Longhorn deletes the PVs (verified `reclaimPolicy: Delete`).
-6. **Apply `Application(atlas-main)` on bee.** Argo creates the `atlas-main` namespace, applies the rendered overlay, fires PostSync hooks. Bootstrap re-uploads the canonical WZ zip and seeds every domain into the freshly-renamed `*-main` DBs.
+6. **Apply `Application(atlas-main)` on the cluster.** Argo creates the `atlas-main` namespace, applies the rendered overlay, fires PostSync hooks. Bootstrap re-uploads the canonical WZ zip and seeds every domain into the freshly-renamed `*-main` DBs.
 7. **End of maintenance window.** Verify `ATLAS_ENV=main` everywhere; smoke-test a Maple client connecting via `192.168.23.231` (login) → `192.168.23.232` (channel).
 8. **Stability window.** 7 days of green Argo syncs against `Application(atlas-main)`, then flip `prune: false` → `prune: true` and reapply.
 
 The plan's Phase 11 (Tasks 11.0–11.10) is the runnable checklist for this procedure.
 
-PR-environment infrastructure (`ApplicationSet(atlas-pr)`, cleanup CronJob) can land on bee **before** the cutover — they target the `atlas-pr-*` namespace pattern and don't touch `atlas`. Test the PR pipeline against an early canary PR before draining `main`.
+PR-environment infrastructure (`ApplicationSet(atlas-pr)`, cleanup CronJob) can land on the cluster **before** the cutover — they target the `atlas-pr-*` namespace pattern and don't touch `atlas`. Test the PR pipeline against an early canary PR before draining `main`.
 
 **Rollback:** if cutover fails after Task 11.5 (namespace deleted), restore from the pg_dumpall snapshot taken in Task 11.0 plus the PVC contents (which are gone, so a re-bootstrap of the WZ zip is required). Time to recover ≈ time of original cutover. PVs from before the namespace deletion are not recoverable past the point Longhorn reclaims them — capture the snapshot before Task 11.5.
 
@@ -747,9 +747,9 @@ Committed to this repo at PR time:
   9.7 Hash-collision resolution.
 - **`docs/observability.md`** — append a section: "Filtering by environment uses the label `atlas.env=<token>`. Main env is `atlas.env=main`. PR envs are `atlas.env=<4hex>`." Include sample Loki / Prometheus queries.
 
-Lives in the bee infra repo (`tumidanski/k3s`):
+Lives in the cluster infra repo (`<infra-repo>`):
 
-- A short `bee/argocd-README.md` describing where the Argo manifests came from and how to upgrade Argo (re-render the upstream manifest, re-apply the patches).
+- A short `<infra-repo>/argocd-README.md` describing where the Argo manifests came from and how to upgrade Argo (re-render the upstream manifest, re-apply the patches).
 
 ---
 
@@ -795,7 +795,7 @@ Each PRD §10 acceptance criterion maps to a section of this design:
 
 `.github/workflows/pr-validation.yml`:
 
-- Add a new `build-docker-pr` job (after the existing `build-docker` validation-only job). Mirrors the build steps of `main-publish.yml`'s `build-amd64` job (single-arch is enough for v1; bee nodes are mixed amd64/arm64 but Argo schedules to amd64 nodes — verified at plan phase). Tag: `pr-<PR_NUMBER>-<HEAD_SHORT_SHA>`. Pushes to ghcr (PR validation already authenticates via `secrets.GHCR_TOKEN`).
+- Add a new `build-docker-pr` job (after the existing `build-docker` validation-only job). Mirrors the build steps of `main-publish.yml`'s `build-amd64` job (single-arch is enough for v1; cluster nodes are mixed amd64/arm64 but Argo schedules to amd64 nodes — verified at plan phase). Tag: `pr-<PR_NUMBER>-<HEAD_SHORT_SHA>`. Pushes to ghcr (PR validation already authenticates via `secrets.GHCR_TOKEN`).
 - Trigger condition: `needs.detect-changes.outputs.docker-services-matrix != '[]'`. Unchanged services keep the `:latest` tag from `main-publish` — the per-PR `images:` mapping in the Kustomize PR overlay covers only services that were rebuilt for this PR. Generation: at plan-phase a small action computes the per-PR `images:` mapping from the changed-service matrix and emits it as a workflow artifact consumed by the per-PR Argo `Application` (or, simpler: the ApplicationSet template defaults all services to `:latest` and only overrides those with a per-PR build via a `kustomize edit set image` step in a follow-up Argo hook). **Recommendation: defaults to `:latest`, ApplicationSet's `images:` list overrides for changed services only**, computed by Argo's Go template from a `.github/changed-services.json` artifact published as a release asset on the PR's head SHA tag.
 
 `.github/workflows/pr-cleanup.yml` (new):
@@ -823,7 +823,7 @@ Surface the plan phase will likely produce, listed for sequencing intuition:
 6. Restructure `deploy/k8s/` into base + overlays.
 7. Build the bootstrap container image and publish to ghcr.
 8. Create the Longhorn `atlas-wz-canonical` PVC, seed it with canonical WZ.
-9. Argo CD install on bee + GitHub PAT secret.
+9. Argo CD install on the cluster + GitHub PAT secret.
 10. `Application(atlas-main)` with `prune: false`; verify zero-diff sync.
 11. ApplicationSet for PR generator + cleanup CronJob + Pi-hole credentials Secret (sealed).
 12. Extend `pr-validation.yml`; create `pr-cleanup.yml`.

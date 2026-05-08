@@ -1,6 +1,6 @@
 # Backend Audit — task-063 Phases 1–5 (Ephemeral PR Deployments)
 
-- **Worktree:** `<home>/source/atlas-ms/atlas/.worktrees/task-063-ephemeral-pr-deployments`
+- **Worktree:** `<worktree-root>`
 - **Branch:** `task-063-ephemeral-pr-deployments`
 - **Range:** `10d61861f150fce94f01d7b5da32917c4c5b4c40` → `1055cc725630cc86feeb0b6c3a2412bfc9377e00` (24 commits)
 - **Guidelines Source:** backend-dev-guidelines skill

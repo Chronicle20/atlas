@@ -8,7 +8,10 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 )
@@ -489,36 +492,82 @@ func findFirstCanvas(props []property.Property) *property.CanvasProperty {
 	return nil
 }
 
+// equipIconJob is a single unit of work for the equipment-icon worker pool.
+type equipIconJob struct {
+	imgName string
+	itemId  string
+	cp      *property.CanvasProperty
+}
+
 // extractEquipmentIcons extracts equipment icons from Character.wz.
 // Equipment items are organized in subdirectories by type (Weapon, Cap, Coat, etc.).
 // Each .img file represents a single equipment item with an info/icon canvas.
+//
+// Images are pre-parsed serially (because image parsing uses the shared
+// seek-based wz.Reader), then dispatched to a runtime.NumCPU() worker pool
+// for the CPU- and I/O-intensive canvas decode / PNG write phase.
+// Per-job errors are logged but do not abort the pool, preserving the
+// existing continue-on-error semantics.
 func extractEquipmentIcons(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	root := f.Root()
 	if root == nil {
 		return nil
 	}
 
-	count := 0
+	itemOut := filepath.Join(outputDir, "item")
+
+	// Pre-parse all images serially so workers only access already-cached data.
+	var jobs []equipIconJob
 	for _, dir := range root.Directories() {
 		for _, img := range dir.Images() {
-			props := img.Properties()
+			props := img.Properties() // serial pre-parse
 			if len(props) == 0 {
 				continue
 			}
-
 			cp := findInfoIcon(props)
 			if cp == nil {
 				continue
 			}
-
-			if err := writeCanvasPng(l, f, cp, outputDir, "item", normalizeId(img.Name())); err != nil {
-				l.WithError(err).Warnf("Unable to extract icon for equipment [%s].", img.Name())
-				continue
-			}
-			count++
+			jobs = append(jobs, equipIconJob{
+				imgName: img.Name(),
+				itemId:  normalizeId(img.Name()),
+				cp:      cp,
+			})
 		}
 	}
-	l.Infof("Extracted [%d] equipment icons.", count)
+
+	// Worker pool: runtime.NumCPU() goroutines consuming from jobCh.
+	workers := runtime.NumCPU()
+	if workers < 1 {
+		workers = 1
+	}
+
+	jobCh := make(chan equipIconJob, workers*2)
+	var wg sync.WaitGroup
+	var count atomic.Int64
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := range jobCh {
+				dir := filepath.Join(itemOut, j.itemId)
+				if err := canvasWriter(l, f, j.cp, dir, "icon"); err != nil {
+					l.WithError(err).Warnf("Unable to extract icon for equipment [%s].", j.imgName)
+					continue
+				}
+				count.Add(1)
+			}
+		}()
+	}
+
+	for _, j := range jobs {
+		jobCh <- j
+	}
+	close(jobCh)
+	wg.Wait()
+
+	l.Infof("Extracted [%d] equipment icons.", count.Load())
 	return nil
 }
 

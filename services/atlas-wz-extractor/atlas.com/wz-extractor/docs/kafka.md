@@ -24,10 +24,14 @@ Atlas-data uses `kafka.LastOffset` because its commands are fire-and-forget — 
 
 ## Within-pod parallelism
 
-A single pod's parallelism is bounded by the Kafka partitions assigned to it.
-With partition count of 16 and `replicas=3`, each pod is assigned ~5
-partitions, which means up to 5 units run in parallel per pod. With
-`replicas=1`, all 16 partitions are assigned to one pod.
+A single pod's parallelism is bounded by `WZ_EXTRACT_PARALLELISM` (default `runtime.NumCPU()`). The consumer uses the opt-in prefix-commit worker pool from `libs/atlas-kafka` (see `consumer.SetMaxInFlight`): up to N units run concurrently per pod, and offsets are committed in partition order (failed units block the commit cursor, matching at-least-once redelivery semantics).
+
+`WZ_EXTRACT_PARALLELISM` controls three things:
+1. **Topic provisioning hint**: partition count must be ≥ this value so cross-pod parallelism scales.
+2. **In-pod consumer concurrency** (`SetMaxInFlight`): how many units a single pod processes simultaneously.
+3. **Legacy `Extract` whole-list pool size** (used by tests).
+
+With 16 partitions and `replicas=3`, a job's units distribute across partitions (different `wzFile` keys → different partitions); each pod processes its assigned partitions with up to `WZ_EXTRACT_PARALLELISM` concurrent goroutines. Wall-clock for a job ≈ `max(per-WZ-time) / min(replicas, partitions) / NumCPU_per_pod`.
 
 ## Message envelope
 

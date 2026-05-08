@@ -5,6 +5,7 @@ import (
 	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
+	"atlas-monsters/monster/information"
 	"atlas-monsters/tasks"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-monsters/world"
@@ -16,6 +17,7 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const serviceName = "atlas-monsters"
@@ -51,6 +53,7 @@ func main() {
 	monster.InitAttackCooldownRegistry(rc)
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
+	information.InitDataCache(rc)
 
 	tdm := service.GetTeardownManager()
 
@@ -78,6 +81,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(monster.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
+		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

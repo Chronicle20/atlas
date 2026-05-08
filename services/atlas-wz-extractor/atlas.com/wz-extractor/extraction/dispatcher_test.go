@@ -16,6 +16,7 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
@@ -58,8 +59,10 @@ func (f *fakeEmitter) Emit(token string) producer.MessageProducer {
 }
 
 func (f *fakeEmitter) provider() producerProvider {
-	return func(token string) producer.MessageProducer {
-		return f.Emit(token)
+	return func(_ context.Context) func(token string) producer.MessageProducer {
+		return func(token string) producer.MessageProducer {
+			return f.Emit(token)
+		}
 	}
 }
 
@@ -181,5 +184,60 @@ func TestDispatcher_LockConflict409(t *testing.T) {
 	}
 }
 
-// keep context import used
-var _ = context.Background
+func TestDispatcher_PassesRequestContextToProvider(t *testing.T) {
+	c := newRedisD(t)
+	fe := &fakeEmitter{}
+
+	// Capture the ctx the provider was invoked with.
+	var capturedCtx context.Context
+	captureProvider := func(ctx context.Context) func(string) producer.MessageProducer {
+		capturedCtx = ctx
+		return func(token string) producer.MessageProducer {
+			return fe.Emit(token)
+		}
+	}
+
+	tenantId := uuid.New()
+	inputDir := t.TempDir()
+	tenantInput := filepath.Join(inputDir, tenantId.String(), "GMS", "83.1")
+	if err := os.MkdirAll(tenantInput, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(tenantInput, "Map.wz"), []byte("dummy"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	store := job.NewStore(c)
+	tl := lock.NewTenantLock(c, time.Minute)
+	dirs := Dirs{InputDir: inputDir, OutputXmlDir: t.TempDir(), OutputImgDir: t.TempDir()}
+
+	router := mux.NewRouter()
+	l, _ := test.NewNullLogger()
+	initFn := InitResource(NewProcessor(inputDir, dirs.OutputXmlDir, dirs.OutputImgDir), store, tl, captureProvider, &sync.WaitGroup{}, dirs)
+	initFn(serverInfo{})(router, l)
+
+	req := httptest.NewRequest(http.MethodPost, "/wz/extractions", nil)
+	req.Header.Set("TENANT_ID", tenantId.String())
+	req.Header.Set("REGION", "GMS")
+	req.Header.Set("MAJOR_VERSION", "83")
+	req.Header.Set("MINOR_VERSION", "1")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusAccepted {
+		t.Fatalf("status: %d body=%s", w.Code, w.Body.String())
+	}
+	if capturedCtx == nil {
+		t.Fatal("provider was never invoked with a context")
+	}
+	tt, err := tenant.FromContext(capturedCtx)()
+	if err != nil {
+		t.Fatalf("expected tenant in producer ctx, got error: %v", err)
+	}
+	if tt.Id() != tenantId {
+		t.Fatalf("expected tenant %s, got %s", tenantId, tt.Id())
+	}
+	if tt.Region() != "GMS" || tt.MajorVersion() != 83 || tt.MinorVersion() != 1 {
+		t.Fatalf("tenant fields wrong: %+v", tt)
+	}
+}

@@ -356,3 +356,66 @@ func TestRun_GracePeriodHonored(t *testing.T) {
 		t.Fatal("Run did not return within gracePeriod + slack — runaway fn blocked it")
 	}
 }
+
+func TestRun_AcquireFailed_HeldByOther(t *testing.T) {
+	rc, _ := newTestClient(t)
+	acquireFailedTotal.Reset()
+
+	leA, err := New(rc, "held-by-other",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+	leB, err := New(rc, "held-by-other",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	doneA := make(chan error, 1)
+	go func() {
+		doneA <- leA.Run(ctx, func(leaderCtx context.Context) { <-leaderCtx.Done() })
+	}()
+	// Let A acquire first.
+	time.Sleep(200 * time.Millisecond)
+
+	doneB := make(chan error, 1)
+	go func() {
+		doneB <- leB.Run(ctx, func(leaderCtx context.Context) { <-leaderCtx.Done() })
+	}()
+
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(acquireFailedTotal.WithLabelValues("held-by-other", "held_by_other")) >= 1
+	}, 5*time.Second, 100*time.Millisecond)
+
+	cancel()
+	require.NoError(t, <-doneA)
+	require.NoError(t, <-doneB)
+}
+
+func TestRun_AcquireFailed_RedisError(t *testing.T) {
+	rc, mr := newTestClient(t)
+	acquireFailedTotal.Reset()
+
+	le, err := New(rc, "redis-err",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	// Stop miniredis so Obtain fails with a connection error.
+	mr.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	doneRun := make(chan error, 1)
+	go func() {
+		doneRun <- le.Run(ctx, func(leaderCtx context.Context) { <-leaderCtx.Done() })
+	}()
+
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(acquireFailedTotal.WithLabelValues("redis-err", "redis_error")) >= 1
+	}, 5*time.Second, 100*time.Millisecond)
+
+	cancel()
+	require.NoError(t, <-doneRun)
+}

@@ -65,7 +65,21 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e
 	}
 
 	p := monster.NewProcessor(l, ctx)
-	provider := p.ControlledByCharacterInFieldProvider(f, e.Body.CharacterId)
-	_ = model.ForEachSlice(provider, p.StopControl, model.ParallelExecute())
-	_ = model.ForEachSlice(provider, p.FindNextController(model.FixedProvider(ocids)), model.ParallelExecute())
+	// Materialize the controlled-by-character list ONCE: the provider re-evaluates
+	// against live registry state on each call, and StopControl mutates that
+	// state. If we passed the same Provider to both ForEachSlice calls the
+	// second invocation would observe the post-StopControl state (zero mobs
+	// controlled by this character) and FindNextController would no-op —
+	// leaving every released mob uncontrolled until something else triggers
+	// reassignment. Snapshot the list first so both ops iterate the same set.
+	mobs, err := p.ControlledByCharacterInFieldProvider(f, e.Body.CharacterId)()
+	if err != nil {
+		l.WithError(err).Warnf("[control-debug] CharacterExit: unable to fetch mobs controlled by char [%d] in field; skipping reassignment.", e.Body.CharacterId)
+		return
+	}
+	snapshot := model.FixedProvider(mobs)
+	_ = model.ForEachSlice(snapshot, p.StopControl, model.ParallelExecute())
+	if len(ocids) > 0 {
+		_ = model.ForEachSlice(snapshot, p.FindNextController(model.FixedProvider(ocids)), model.ParallelExecute())
+	}
 }

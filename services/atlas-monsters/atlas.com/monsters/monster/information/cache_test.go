@@ -1,0 +1,136 @@
+package information
+
+import (
+	"context"
+	"errors"
+	"sync"
+	"sync/atomic"
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
+	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+)
+
+// resetDataCache returns the wrapper to its pre-Init state so successive
+// tests can call InitDataCache against a fresh miniredis with a fresh env
+// snapshot. Call BEFORE each InitDataCache.
+func resetDataCache(t *testing.T) {
+	t.Helper()
+	dataCachePtr = nil
+	dataCacheOnce = sync.Once{}
+}
+
+// newRedis spins up a miniredis-backed *goredis.Client scoped to the test.
+func newRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+	return client, mr
+}
+
+// ctxFor builds a tenant context. region must be at least 1 byte (used by
+// TestGetById_TenantIsolation to encode tenant identity into responses).
+func ctxFor(t *testing.T, region string) context.Context {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), region, 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	return tenant.WithContext(context.Background(), tm)
+}
+
+// withFakeUpstream temporarily replaces upstreamFn for the duration of the
+// test. Returns the call counter so tests can assert on issued requests.
+func withFakeUpstream(t *testing.T, fn func(_ logrus.FieldLogger, _ context.Context, id uint32) (RestModel, error)) *atomic.Int32 {
+	t.Helper()
+	var calls atomic.Int32
+	prev := upstreamFn
+	upstreamFn = func(l logrus.FieldLogger, ctx context.Context, id uint32) (RestModel, error) {
+		calls.Add(1)
+		return fn(l, ctx, id)
+	}
+	t.Cleanup(func() { upstreamFn = prev })
+	return &calls
+}
+
+// --- Env-loader and classifier unit tests ----------------------------------
+
+func TestLoadConfig_Defaults(t *testing.T) {
+	t.Setenv(envEnabled, "")
+	t.Setenv(envTTL, "")
+	t.Setenv(envNegativeTTL, "")
+
+	cfg := loadConfig()
+	if !cfg.enabled {
+		t.Fatalf("enabled = false, want true (default)")
+	}
+	if cfg.ttl != defaultTTL {
+		t.Fatalf("ttl = %s, want %s", cfg.ttl, defaultTTL)
+	}
+	if cfg.negativeTTL != defaultNegativeTTL {
+		t.Fatalf("negativeTTL = %s, want %s", cfg.negativeTTL, defaultNegativeTTL)
+	}
+}
+
+func TestLoadConfig_InvalidValues_FallBackToDefaults(t *testing.T) {
+	t.Setenv(envEnabled, "maybe")
+	t.Setenv(envTTL, "not-a-duration")
+	t.Setenv(envNegativeTTL, "999h") // out of range > maxNegativeTTL
+
+	cfg := loadConfig()
+	if !cfg.enabled {
+		t.Fatalf("enabled = false, want true (invalid bool falls back to default true)")
+	}
+	if cfg.ttl != defaultTTL {
+		t.Fatalf("ttl = %s, want default %s", cfg.ttl, defaultTTL)
+	}
+	if cfg.negativeTTL != defaultNegativeTTL {
+		t.Fatalf("negativeTTL = %s, want default %s", cfg.negativeTTL, defaultNegativeTTL)
+	}
+}
+
+func TestLoadConfig_ExplicitFalse(t *testing.T) {
+	t.Setenv(envEnabled, "false")
+	t.Setenv(envTTL, "10m")
+	t.Setenv(envNegativeTTL, "0s")
+
+	cfg := loadConfig()
+	if cfg.enabled {
+		t.Fatalf("enabled = true, want false")
+	}
+	if cfg.negativeTTL != 0 {
+		t.Fatalf("negativeTTL = %s, want 0s", cfg.negativeTTL)
+	}
+}
+
+func TestClassifyError(t *testing.T) {
+	if got := classifyError(requests.ErrNotFound); got != errKindNotFound {
+		t.Fatalf("classifyError(ErrNotFound) = %v, want errKindNotFound", got)
+	}
+	wrapped := errors.New("boom: " + requests.ErrNotFound.Error())
+	if got := classifyError(wrapped); got != errKindTransient {
+		t.Fatalf("classifyError(string-wrapped) = %v, want errKindTransient (must be errors.Is, not string match)", got)
+	}
+	wrappedW := errors.Join(errors.New("upstream"), requests.ErrNotFound)
+	if got := classifyError(wrappedW); got != errKindNotFound {
+		t.Fatalf("classifyError(joined w/ ErrNotFound) = %v, want errKindNotFound", got)
+	}
+	if got := classifyError(requests.ErrBadRequest); got != errKindTransient {
+		t.Fatalf("classifyError(ErrBadRequest) = %v, want errKindTransient", got)
+	}
+	if got := classifyError(errors.New("connection refused")); got != errKindTransient {
+		t.Fatalf("classifyError(generic) = %v, want errKindTransient", got)
+	}
+}
+
+func TestNotFoundError_IsNotFound(t *testing.T) {
+	err := notFoundError(123)
+	if !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("notFoundError no longer wraps ErrNotFound: %v", err)
+	}
+}

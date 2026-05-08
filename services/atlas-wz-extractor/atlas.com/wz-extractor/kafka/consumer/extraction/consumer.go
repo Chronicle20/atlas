@@ -1,6 +1,7 @@
 package extraction
 
 import (
+	"atlas-wz-extractor/extraction"
 	"atlas-wz-extractor/extraction/job"
 	"atlas-wz-extractor/extraction/lock"
 	consumer2 "atlas-wz-extractor/kafka/consumer"
@@ -31,6 +32,7 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(consumer.Config, ...model.
 				consumer2.NewConfig(l)("wz_extraction_command")(mext.EnvCommandTopic)(consumerGroupId),
 				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
 				consumer.SetStartOffset(kafka.FirstOffset),
+				consumer.SetMaxInFlight(extraction.ParallelismFromEnv(l)),
 			)
 		}
 	}

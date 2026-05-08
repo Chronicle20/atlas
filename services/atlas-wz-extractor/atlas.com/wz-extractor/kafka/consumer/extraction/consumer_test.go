@@ -107,6 +107,33 @@ func TestHandler_RedeliverySkipsWork(t *testing.T) {
 	}
 }
 
+func TestHandler_OrphanMessage_NoErrorNoWork(t *testing.T) {
+	ctx := context.Background()
+	c := newRedis(t)
+	store := job.NewStore(c)
+	tl := lock.NewTenantLock(c, time.Minute)
+
+	// Note: we never Create the job. The Kafka message references a jobId that
+	// has no matching Redis hash (simulating an orphan after the 24h job-hash
+	// TTL expired but the Kafka topic still has the unprocessed message).
+
+	fp := &fakeProcessor{}
+	l, _ := test.NewNullLogger()
+	h := handleStartExtractionUnit(fp, store, tl)
+
+	h(l, ctx, command[startExtractionUnitBody]{
+		Type: mext.CommandStartExtractionUnit,
+		Body: startExtractionUnitBody{JobId: "ORPHAN", WzFile: "Map.wz"},
+	})
+
+	if fp.calls != 0 {
+		t.Fatalf("expected ExtractUnit to be skipped on orphan, got %d calls", fp.calls)
+	}
+	// No assertion on lock state — orphan path doesn't touch it.
+	// The key invariant is that the handler returns cleanly; in real Kafka
+	// integration, that allows the consumer to commit the offset.
+}
+
 func TestHandler_FailedUnit_MarksJobFailed(t *testing.T) {
 	ctx := context.Background()
 	c := newRedis(t)

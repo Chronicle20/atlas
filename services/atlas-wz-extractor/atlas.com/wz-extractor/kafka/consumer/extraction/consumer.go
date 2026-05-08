@@ -6,6 +6,7 @@ import (
 	consumer2 "atlas-wz-extractor/kafka/consumer"
 	mext "atlas-wz-extractor/kafka/message/extraction"
 	"context"
+	"errors"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/handler"
@@ -29,7 +30,7 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(consumer.Config, ...model.
 			rf(
 				consumer2.NewConfig(l)("wz_extraction_command")(mext.EnvCommandTopic)(consumerGroupId),
 				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
-				consumer.SetStartOffset(kafka.LastOffset),
+				consumer.SetStartOffset(kafka.FirstOffset),
 			)
 		}
 	}
@@ -55,6 +56,10 @@ func handleStartExtractionUnit(p processor, store job.Store, tl *lock.TenantLock
 		ll := l.WithFields(logrus.Fields{"jobId": c.Body.JobId, "wzFile": c.Body.WzFile})
 
 		claimed, err := store.MarkUnitRunning(ctx, c.Body.JobId, c.Body.WzFile)
+		if errors.Is(err, job.ErrNotFound) {
+			ll.Warn("orphan unit message; job hash expired or never existed — skipping (offset will commit)")
+			return
+		}
 		if err != nil {
 			ll.WithError(err).Error("MarkUnitRunning failed; will retry via Kafka redelivery")
 			return
@@ -71,6 +76,10 @@ func handleStartExtractionUnit(p processor, store job.Store, tl *lock.TenantLock
 		}
 
 		cnt, err := store.FinalizeUnit(ctx, c.Body.JobId, c.Body.WzFile, terminal, runErr)
+		if errors.Is(err, job.ErrNotFound) {
+			ll.Warn("orphan unit on FinalizeUnit; job hash expired mid-processing — skipping")
+			return
+		}
 		if err != nil {
 			ll.WithError(err).Error("FinalizeUnit failed; will retry via Kafka redelivery")
 			return

@@ -44,13 +44,12 @@ spec:
           value: "/usr/data"
         - name: OUTPUT_IMG_DIR
           value: "/usr/assets"
-        # BOOTSTRAP_SERVERS and REDIS_URL are supplied by the atlas-env ConfigMap above.
+        # BOOTSTRAP_SERVERS, REDIS_URL, and COMMAND_TOPIC_WZ_EXTRACTION are
+        # supplied by the atlas-env ConfigMap above.
         # REDIS_PASSWORD: not required for this cluster's Redis instance (no auth configured).
         # Kafka topic partition requirements: see services/atlas-wz-extractor/atlas.com/wz-extractor/docs/kafka.md
         # Topic provisioning is out-of-band (no KafkaTopic CRs in this repo); ensure
-        # command.wz.extraction is created with partitions=16, replication=3, retention=24h.
-        - name: COMMAND_TOPIC_WZ_EXTRACTION
-          value: "command.wz.extraction"
+        # COMMAND_TOPIC_WZ_EXTRACTION is created with partitions=16, replication=3, retention=24h.
         - name: WZ_EXTRACT_PARALLELISM
           value: "16"
         resources:

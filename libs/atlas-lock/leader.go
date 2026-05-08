@@ -190,8 +190,18 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 			setReason("released")
 		}
 		cancelLeader()
-		<-fnDone
 		<-renewerDone
+
+		graceTimer := time.NewTimer(le.cfg.gracePeriod)
+		select {
+		case <-fnDone:
+			if !graceTimer.Stop() {
+				<-graceTimer.C
+			}
+		case <-graceTimer.C:
+			le.cfg.log.Warnf("Leader fn did not return within grace period [%s] for [%s]; proceeding without waiting.",
+				le.cfg.gracePeriod, le.name)
+		}
 
 		relCtx, relCancel := context.WithTimeout(context.Background(), 2*time.Second)
 		_ = rl.Release(relCtx)

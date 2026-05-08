@@ -8,7 +8,7 @@
 
 **Tech Stack:** Go, Redis (`miniredis` for tests), Kafka (existing `EnvCommandTopic`), JSON:API via `api2go/jsonapi`, XML WZ reader.
 
-**Working directory note:** All paths are relative to the worktree root `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-046-mob-basic-attack-handling`. All build / test commands assume `cd` into the relevant service directory (`services/atlas-data/atlas.com/data/`, `services/atlas-monsters/atlas.com/monsters/`, `services/atlas-channel/atlas.com/channel/`).
+**Working directory note:** All paths are relative to the worktree root `<worktree-root>`. All build / test commands assume `cd` into the relevant service directory (`services/atlas-data/atlas.com/data/`, `services/atlas-monsters/atlas.com/monsters/`, `services/atlas-channel/atlas.com/channel/`).
 
 ---
 

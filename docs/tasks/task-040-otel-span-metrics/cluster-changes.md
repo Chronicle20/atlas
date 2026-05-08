@@ -1,6 +1,6 @@
 # Out-of-tree cluster changes for task-040
 
-These changes live in `~/source/k3s/bee/` (the bee cluster manifests). They are not in the Atlas repo but are required for the task-040 acceptance criteria to be observable.
+These changes live in `<infra-repo>/` (the cluster manifests). They are not in the Atlas repo but are required for the task-040 acceptance criteria to be observable.
 
 Apply order:
 1. Atlas repo PR merges and ships images (this repo).
@@ -10,7 +10,7 @@ Apply order:
 
 ## 1. Tempo overrides — enable span-metrics
 
-In `~/source/k3s/bee/observability-tempo.yml`, append to the `tempo-config` ConfigMap's `tempo.yaml` data:
+In `<infra-repo>/observability-tempo.yml`, append to the `tempo-config` ConfigMap's `tempo.yaml` data:
 
 ```yaml
 overrides:
@@ -25,14 +25,14 @@ overrides:
             - world.id
 ```
 
-Apply: `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml`.
+Apply: `kubectl apply -f <infra-repo>/observability-tempo.yml`.
 
 Tempo 2.7.x hot-reloads overrides — no pod restart required. Verify via:
 `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 
 ## 2. Grafana — mount the dashboards configmap
 
-In `~/source/k3s/bee/observability-grafana.yml`, on the Grafana Deployment:
+In `<infra-repo>/observability-grafana.yml`, on the Grafana Deployment:
 
 Add to `volumeMounts`:
 
@@ -49,7 +49,7 @@ Add to `volumes`:
     name: grafana-dashboards-atlas
 ```
 
-Apply: `kubectl apply -f ~/source/k3s/bee/observability-grafana.yml`.
+Apply: `kubectl apply -f <infra-repo>/observability-grafana.yml`.
 
 The `grafana-dashboards-atlas` configmap was created in step 2 of the apply order by Atlas's `deploy/grafana/apply.sh`.
 

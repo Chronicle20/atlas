@@ -101,7 +101,7 @@ Independent assessment: **DEVIATION-ACCEPTED**. Verified at `resource_test.go:20
 
 ## Build / vet / test results
 
-Run from `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-062-wz-extractor-parallelism`:
+Run from `<worktree-root>`:
 
 ```
 $ go build -C services/atlas-wz-extractor/atlas.com/wz-extractor ./...

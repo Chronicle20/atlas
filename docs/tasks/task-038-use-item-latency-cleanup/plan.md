@@ -47,7 +47,7 @@ Expected: `go.sum` is populated with the `golang.org/x/sync` entry. No errors.
 
 - [ ] **Step 3: Verify the workspace still builds**
 
-Run: `go build ./...` from `/home/tumidanski/source/atlas-ms/atlas`
+Run: `go build ./...` from `<repo-root>`
 
 Expected: clean build.
 
@@ -1145,7 +1145,7 @@ git commit -m "atlas-consumables: document why remaining Consume* variants stay 
 
 - [ ] **Step 1: Build every module in the workspace**
 
-Run from `/home/tumidanski/source/atlas-ms/atlas`:
+Run from `<repo-root>`:
 
 ```bash
 go build ./...

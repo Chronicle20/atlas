@@ -166,19 +166,19 @@ func (r *Registry) GetMapsWithCharacters() []MapKey {
 
 ### Run Tests Without Race Detector
 ```bash
-cd /home/tumidanski/source/pers/atlas/services/atlas-chairs/atlas.com/chairs
+cd <repo-root>/services/atlas-chairs/atlas.com/chairs
 go test ./...
 ```
 
 ### Run Tests With Race Detector
 ```bash
-cd /home/tumidanski/source/pers/atlas/services/atlas-chairs/atlas.com/chairs
+cd <repo-root>/services/atlas-chairs/atlas.com/chairs
 go test -race ./...
 ```
 
 ### Check Coverage
 ```bash
-cd /home/tumidanski/source/pers/atlas/services/atlas-chairs/atlas.com/chairs
+cd <repo-root>/services/atlas-chairs/atlas.com/chairs
 go test -cover ./character/...
 ```
 

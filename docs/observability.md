@@ -47,7 +47,7 @@ Spanmetrics auto-publishes the new span within ~60 seconds via Tempo's metrics_g
 
 ## How to add a new spanmetrics dimension
 
-Edit the Tempo overrides ConfigMap in `~/source/k3s/bee/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
+Edit the Tempo overrides ConfigMap in `<infra-repo>/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
 
 ⚠️ **Read the cardinality budget below before adding a dimension.** A bad pick can swamp Prometheus.
 
@@ -98,7 +98,7 @@ The Tempo overrides explicitly enumerates the allowlist; "all attributes become 
 
 ## Smoke test (verify a deploy end-to-end)
 
-1. `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
+1. `kubectl apply -f <infra-repo>/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 2. `cd ~/source/atlas-ms/atlas/deploy/grafana && ./apply.sh`.
 3. `kubectl rollout restart deployment/atlas-channel -n atlas`.
 4. Log in to a test character. Use a potion 5 times. Walk a few maps.

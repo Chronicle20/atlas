@@ -253,3 +253,45 @@ func TestGetById_BadRequestNotCached(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 3 (ErrBadRequest is transient, never cached)", got)
 	}
 }
+
+func TestGetById_TenantIsolation(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	// Encode tenant region into Hp so each tenant produces a distinct
+	// cacheable answer. Region must be >=1 byte; ctxFor enforces this.
+	_ = withFakeUpstream(t, func(_ logrus.FieldLogger, ctx context.Context, id uint32) (RestModel, error) {
+		tm := tenant.MustFromContext(ctx)
+		return RestModel{Hp: uint32(tm.Region()[0]) + id}, nil
+	})
+
+	ctxA := ctxFor(t, "AMS")
+	ctxB := ctxFor(t, "BMS")
+	getA := GetById(logrus.New())(ctxA)
+	getB := GetById(logrus.New())(ctxB)
+
+	a1, err := getA(7)
+	if err != nil {
+		t.Fatalf("getA: %v", err)
+	}
+	b1, err := getB(7)
+	if err != nil {
+		t.Fatalf("getB: %v", err)
+	}
+	if a1.Hp() == b1.Hp() {
+		t.Fatalf("tenants A and B saw the same Hp (%d) - isolation broken", a1.Hp())
+	}
+	a2, _ := getA(7)
+	b2, _ := getB(7)
+	if a2.Hp() != a1.Hp() || b2.Hp() != b1.Hp() {
+		t.Fatalf("cached values diverged across calls; a=%d->%d b=%d->%d", a1.Hp(), a2.Hp(), b1.Hp(), b2.Hp())
+	}
+	if a2.Hp() == b2.Hp() {
+		t.Fatalf("on second read, tenants A and B converged to the same Hp (%d) - cross-tenant key collision", a2.Hp())
+	}
+}

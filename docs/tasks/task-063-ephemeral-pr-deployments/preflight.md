@@ -202,3 +202,26 @@ Trade-off: a cluster-scoped StorageClass must be created once outside the per-PR
 ### Open caveat for downstream tasks
 
 The plan's Step 2 example (`grep -A20 'labels:'` on the PV) assumes the K8s PV carries the recurring-job labels. **It does not on this cluster.** Any task that walks PVs by recurring-job label to identify which volumes will be backed up must instead query Longhorn `Volume` CRs in `longhorn-system`. The PR cleanup and capacity-counting tasks should treat this as the source of truth.
+
+## Canonical Tenant + Service configs for bootstrap
+- Captured from live main env on 2026-05-08
+- Tenant payload: docs/tasks/task-063-ephemeral-pr-deployments/canonical-tenant.json (`.data.id` stripped; bootstrap mints a fresh UUID per PR)
+- Service configs: docs/tasks/task-063-ephemeral-pr-deployments/canonical-services/{login,channel,drops}-service.json (ids preserved; SERVICE_ID env vars are pinned)
+- Service UUIDs (deployed): login=`e7fb1d7e-47b8-46bd-97dc-867d93530856`, channel=`e7fb1d7e-47b8-46bd-97dc-867d93530000`, drops=`00000000-0000-0000-0000-000000000000`
+- Note: atlas-character-factory and atlas-world also read `SERVICE_ID=00000000-0000-0000-0000-000000000000`; the drops-service config record satisfies all three.
+
+### Endpoints used (in-pod, port-forward equivalents)
+- Tenant list:    `GET http://localhost:8080/api/tenants` (in `deploy/atlas-tenants`)
+- Tenant detail:  `GET http://localhost:8080/api/tenants/{tenantId}` (in `deploy/atlas-tenants`)
+- Service config: `GET http://localhost:8080/api/configurations/services/{serviceId}` (in `deploy/atlas-configurations`)
+
+All four GETs returned HTTP 200 with `application/vnd.api+json`. No auth header was required against either Deployment's in-pod localhost endpoint.
+
+### Top-level shape per artefact
+- `canonical-tenant.json`: `data.type=tenants`, `data.attributes={name, region, majorVersion, minorVersion}`. World/channel topology is **not** stored on the Tenant — it lives inside the channel-service config under `tenants[].worlds[].channels[]` (matches `docs/onboarding.md` §"Step 2").
+- `login-service.json`: `data.type=services`, `data.attributes={type:"login-service", tasks:[{type:"timeout",...}], tenants:[{id, port}]}`.
+- `channel-service.json`: `data.type=services`, `data.attributes={type:"channel-service", tasks:[{type:"timeout",...}], tenants:[{id, ipAddress, worlds:[{id, channels:[{id, port}]}]}]}`. Note `ipAddress=192.168.23.232` (atlas-channel-lb MetalLB VIP from §"MetalLB pool capacity") — the bootstrap will need to substitute the per-PR LB IP rather than reuse this literal.
+- `drops-service.json`: `data.type=services`, `data.attributes={type:"drops-service", tasks:[{type:"drop_expiration_task",...}]}`. **No `tenants` array** — drops-service is tenant-agnostic at the config layer.
+
+### Tooling note
+The plan's `curl -fsS` command fails inside both `atlas-tenants` and `atlas-configurations` containers (Alpine images without curl). The captures used busybox `wget -qO- --header='Accept: application/vnd.api+json'` instead. The bootstrap should not assume curl is present in either container; if the env-agent reads/writes via in-pod exec, prefer wget or run curl from a sidecar/jobpod.

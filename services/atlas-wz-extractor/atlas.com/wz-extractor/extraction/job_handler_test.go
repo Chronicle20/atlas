@@ -76,14 +76,31 @@ func TestJobHandler_200Returns_wzExtractionJob(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status: %d body=%s", w.Code, w.Body.String())
 	}
-	var env jobEnvelope
+	// api2go serialises as {"data":{"type":"...","id":"...","attributes":{...}}}
+	var env map[string]interface{}
 	if err := json.NewDecoder(w.Body).Decode(&env); err != nil {
 		t.Fatal(err)
 	}
-	if env.Data.Type != "wzExtractionJob" || env.Data.Id != "J" {
-		t.Fatalf("envelope: %+v", env)
+	data, ok := env["data"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("missing data object in envelope: %v", env)
 	}
-	if env.Data.Attributes.UnitsTotal != 2 || len(env.Data.Attributes.Units) != 2 {
-		t.Fatalf("attrs: %+v", env.Data.Attributes)
+	if data["type"] != "wzExtractionJob" {
+		t.Fatalf("wrong type: %v", data["type"])
+	}
+	if data["id"] != "J" {
+		t.Fatalf("wrong id: %v", data["id"])
+	}
+	attrs, ok := data["attributes"].(map[string]interface{})
+	if !ok {
+		t.Fatalf("missing attributes in data: %v", data)
+	}
+	// unitsTotal is decoded as float64 by json.Unmarshal into interface{}
+	if int(attrs["unitsTotal"].(float64)) != 2 {
+		t.Fatalf("unitsTotal: %v", attrs["unitsTotal"])
+	}
+	units, ok := attrs["units"].([]interface{})
+	if !ok || len(units) != 2 {
+		t.Fatalf("units: %v", attrs["units"])
 	}
 }

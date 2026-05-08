@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -135,5 +136,74 @@ func seedJob(t *testing.T, ctx context.Context, s Store, id string, files []stri
 	}
 	if err := s.Create(ctx, j, units, 3600); err != nil {
 		t.Fatalf("seed Create: %v", err)
+	}
+}
+
+func TestStore_FinalizeUnit_Succeeded(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j5", []string{"Map.wz", "Mob.wz"})
+	if _, err := s.MarkUnitRunning(ctx, "j5", "Map.wz"); err != nil {
+		t.Fatalf("MarkUnitRunning: %v", err)
+	}
+
+	cnt, err := s.FinalizeUnit(ctx, "j5", "Map.wz", UnitSucceeded, nil)
+	if err != nil {
+		t.Fatalf("FinalizeUnit: %v", err)
+	}
+	if cnt.UnitsCompleted != 1 || cnt.UnitsFailed != 0 || cnt.UnitsTotal != 2 || cnt.AllDone {
+		t.Fatalf("counters: %+v", cnt)
+	}
+
+	got, units, _ := s.Get(ctx, "j5")
+	if got.UnitsCompleted() != 1 {
+		t.Fatalf("Get unitsCompleted: %d", got.UnitsCompleted())
+	}
+	for _, u := range units {
+		if u.WzFile() == "Map.wz" && u.Status() != UnitSucceeded {
+			t.Fatalf("unit not succeeded: %v", u.Status())
+		}
+	}
+}
+
+func TestStore_FinalizeUnit_Failed(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j6", []string{"Map.wz"})
+	if _, err := s.MarkUnitRunning(ctx, "j6", "Map.wz"); err != nil {
+		t.Fatalf("MarkUnitRunning: %v", err)
+	}
+
+	cnt, err := s.FinalizeUnit(ctx, "j6", "Map.wz", UnitFailed, errors.New("open failed"))
+	if err != nil {
+		t.Fatalf("FinalizeUnit: %v", err)
+	}
+	if cnt.UnitsFailed != 1 || cnt.UnitsCompleted != 0 || !cnt.AllDone {
+		t.Fatalf("counters: %+v", cnt)
+	}
+}
+
+func TestStore_FinalizeUnit_RedeliveryNoOp(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j7", []string{"Map.wz"})
+	if _, err := s.MarkUnitRunning(ctx, "j7", "Map.wz"); err != nil {
+		t.Fatalf("MarkUnitRunning: %v", err)
+	}
+	if _, err := s.FinalizeUnit(ctx, "j7", "Map.wz", UnitSucceeded, nil); err != nil {
+		t.Fatalf("first finalize: %v", err)
+	}
+
+	// Redelivery: a second FinalizeUnit with the unit already terminal must
+	// not double-increment counters.
+	cnt, err := s.FinalizeUnit(ctx, "j7", "Map.wz", UnitSucceeded, nil)
+	if err != nil {
+		t.Fatalf("redelivery finalize: %v", err)
+	}
+	if cnt.UnitsCompleted != 1 {
+		t.Fatalf("redelivery double-counted: %+v", cnt)
 	}
 }

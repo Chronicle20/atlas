@@ -142,20 +142,22 @@ Source of truth for what's an Atlas image. Used by:
 
 When adding `atlas-pr-bootstrap` to it, follow the existing schema. Use `type: support-image` since it's not a long-running service. The schema at `.github/config/services.schema.json` may not have this type; if it complains, add the type to the schema.
 
-## 3. Decisions locked by design.md
+## 3. Decisions locked by design.md (v1.1)
 
 These are not up for revisitation in the plan phase — they were resolved during brainstorming:
 
 1. **`replacements:` over Argo Kustomize plugin.** Plain Kustomize 4.5+ string substitution covers everything; no plugin install needed.
 2. **No caching in v1 bootstrap.** Always run full WZ ingest. Pre-extracted-PVC optimization is future work.
 3. **Longhorn `ReadOnlyMany` PVC for canonical WZ zip.** Not ghcr image, not S3.
-4. **ATLAS_ENV unset on `main`, set on PR envs.** No data migration; `keyPrefix` falls back to `"atlas"`, `consumergroup.Resolve` falls back to literal, `DB_NAME` patches don't apply. Main env is byte-identical to current.
+4. **`ATLAS_ENV=main` on the main env, `ATLAS_ENV=<4hex>` on PR envs.** Symmetric — same overlay shape, same code path; only the literal differs. Cutover migration in Phase 11 renames existing DBs in place and recreates the namespace as `atlas-main`. (Reversed from earlier draft that left main unsuffixed; the asymmetry was paying special-case complexity in code, manifests, and hooks for one-time migration savings — net loss.)
 5. **HTTP only at v1.** No TLS, no auth on PR envs. Reviewers exercise on home network.
-6. **No game-socket exposure per PR env.** UI-only review.
+6. **Per-PR game-socket exposure via one MetalLB-allocated LB IP.** Both atlas-login and atlas-channel back the same per-PR IP (their wire ports don't collide). Bootstrap Job seeds the IP into atlas-tenants `services` config. Soft cap on concurrent PRs = MetalLB pool free count (`preflight.md`).
 7. **Argo SSO out of v1.** Default admin password.
 8. **24h cleanup grace by default.** Annotation-overridable per Application.
-9. **Bootstrap image is one image with two entrypoints.** Same Dockerfile, `bootstrap.sh` and `cleanup.sh` paths.
+9. **Bootstrap image is one image with two entrypoints.** Same Dockerfile, `bootstrap.sh` and `cleanup.sh` paths. Image carries `kubectl` so bootstrap can read its own LB Service status for the channel-host seed.
 10. **`prune: false` on `Application(atlas-main)` initially.** Flip to `prune: true` after 1 week of clean syncs.
+11. **PVC isolation by namespace.** `atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc` are namespace-scoped; the PR overlay creates fresh same-named PVCs in `atlas-pr-<N>`. Longhorn `reclaimPolicy: Delete` (verified preflight) reclaims PVs on namespace deletion.
+12. **Main env keeps existing LoadBalancer IP reservations** (`192.168.23.231` login, `.232` channel). PR envs draw from the remaining MetalLB pool. The `lb-pin.yaml` patch in `overlays/main` enforces this.
 
 ## 4. Dependency order
 
@@ -188,6 +190,9 @@ Within phases, tasks are TDD where applicable (write test → fail → implement
 | atlas-object-id test | `cd libs/atlas-object-id && go test ./...` | After Phase 3 |
 | Whole workspace build | `go build ./...` from repo root | After Phase 4 |
 | Whole workspace test | `go test ./...` from repo root | After Phase 5 |
+| Preflight Longhorn capacity | Phase 0 Task 0.4 commands | Before Phase 7 |
+| Preflight MetalLB pool | Phase 0 Task 0.5 commands | Before Phase 7.10 |
+| Preflight atlas-tenants channel-host config | Phase 0 Task 0.6 | Before Phase 6 bootstrap.sh implementation |
 | Audit clean | `grep -rn '"atlas:' services/ libs/ --include='*.go' \| grep -v _test.go` | End of Phase 5 |
 | Bootstrap image lint | `shellcheck services/atlas-pr-bootstrap/scripts/*.sh && bats services/atlas-pr-bootstrap/test/` | End of Phase 6 |
 | Kustomize main render | `kustomize build deploy/k8s/overlays/main` | After Phase 7.2 |
@@ -212,13 +217,13 @@ The plan deliberately does NOT cover:
 
 - Per-env TLS termination
 - Authentication on PR envs
-- Game-socket port exposure
 - Grafana dashboard authoring (only filtering syntax in `observability.md`)
 - atlas-tenants seed data per PR env (assumed to exist; if absent at first canary, add a presync-create-tenant Job in a follow-up)
 - 6-hex `ATLAS_ENV` collision-resistant variant
 - `external-dns` Pi-hole webhook provider
 - Per-namespace `LimitRange`
 - Bootstrap-cache (pre-extracted WZ PVC)
+- Port-shifting fallback if MetalLB pool exhausts
 
 If any of these surface during execution, file follow-up tasks rather than expanding the plan.
 

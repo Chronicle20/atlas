@@ -9,7 +9,6 @@ import (
 	extconsumer "atlas-wz-extractor/kafka/consumer/extraction"
 	wzproducer "atlas-wz-extractor/kafka/producer"
 	"atlas-wz-extractor/logger"
-	"context"
 	"os"
 	"time"
 
@@ -71,7 +70,7 @@ func main() {
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })
 
-	prodProvider := wzproducer.ProviderImpl(l)(context.Background())
+	prodProvider := wzproducer.ProviderImpl(l)
 
 	server.New(l).
 		WithContext(tdm.Context()).

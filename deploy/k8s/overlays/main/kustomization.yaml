@@ -20,7 +20,7 @@ configMapGenerator:
   - name: atlas-env
     behavior: replace
     literals:
-      - BASE_SERVICE_URL=http://atlas-ingress.atlas.svc.cluster.local:80/api/
+      - BASE_SERVICE_URL=http://atlas-ingress.atlas-main.svc.cluster.local:80/api/
       - BOOTSTRAP_SERVERS=kafka.home:9093
       - DB_HOST=postgres.home
       - DB_PORT=5432

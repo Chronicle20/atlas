@@ -68,7 +68,7 @@ We do **not** extend this type for leader election because:
 1. **Different responsibility.** Leader election is a long-lived auto-renewing lease with a callback contract. The existing `Lock` is a short-lived NX-acquire-then-Release primitive. Mashing both onto one type produces a Frankenstein API surface where 70% of methods don't apply to either caller.
 2. **Different correctness boundary.** The existing `Lock` is intentionally cheap-and-loose; promoting it to fenced-lease semantics either breaks atlas-messengers (which doesn't expect ownership tokens) or forks behavior with a flag, which is worse than just a separate type.
 3. **Misuse-resistance goal.** PRD §3 user story 4 says "should be impossible to use incorrectly." The existing `Lock` exposes `Acquire`/`Release`/`Extend` directly — exactly the API surface the PRD says the new library MUST NOT expose to callers.
-4. **Migration risk.** Replacing or refactoring the existing `Lock` to add fencing changes atlas-messengers' wire format (the value at rest in Redis), which is a separable cleanup task with its own tradeoffs. That cleanup is **not** in scope for task-063.
+4. **Migration risk.** Replacing or refactoring the existing `Lock` to add fencing changes atlas-messengers' wire format (the value at rest in Redis), which is a separable cleanup task with its own tradeoffs. That cleanup is **not** in scope for task-064.
 
 **Conclusion:** `libs/atlas-lock` is a new module. The existing `atlas-redis/lock.go` stays as-is for its single short-lived-critical-section caller. A future task can decide whether to migrate atlas-messengers onto `libs/atlas-lock` (using a separate `lock.Mutex`-style API if we add one) or simply fix `atlas-redis/lock.go` to use ownership tokens. Out of scope here.
 
@@ -383,7 +383,7 @@ Considered alternative: replace `tasks.Register` with a hand-rolled select-loop 
 
 The kill switch protects:
 - Single-pod docker-compose deployments where Redis hiccups during pod startup. If Redis is briefly unavailable, the acquire loop will retry forever — but that's the right behavior in production. In docker-compose, an operator can set `=false` to skip the dance entirely.
-- Emergency rollback if leader election misbehaves in production. Set the env var, re-deploy, behavior is identical to pre-task-063.
+- Emergency rollback if leader election misbehaves in production. Set the env var, re-deploy, behavior is identical to pre-task-064.
 
 ### 7.6 What does NOT change in atlas-monsters
 
@@ -529,7 +529,7 @@ The caveat from PRD §8.4 must appear in:
 1. **`libs/atlas-lock/doc.go`** — package-level Go doc comment.
 2. **`libs/atlas-lock/README.md`** — top-section "Correctness boundary" block, including a list of unsuitable workloads (financial transactions, exclusive resource claims with no idempotency).
 3. **`services/atlas-monsters` integration commit message** — explicit acknowledgment that the chosen workloads are at-least-once-tolerant.
-4. **PR description for task-063** — link to PRD §8.4 plus a one-paragraph summary so future adopters reading the PR history don't blindly copy the pattern.
+4. **PR description for task-064** — link to PRD §8.4 plus a one-paragraph summary so future adopters reading the PR history don't blindly copy the pattern.
 
 The wording must include the phrase "Redlock is out of scope" so future readers find the link.
 
@@ -545,7 +545,7 @@ The wording must include the phrase "Redlock is out of scope" so future readers 
 
 ## 14. Out-of-scope / follow-up work
 
-The following are explicitly out of scope for task-063 and tracked in `docs/TODO.md` as separate tasks (per PRD §10 acceptance criterion):
+The following are explicitly out of scope for task-064 and tracked in `docs/TODO.md` as separate tasks (per PRD §10 acceptance criterion):
 
 - **Per-service adoption** of `libs/atlas-lock` for the 14 candidate services in PRD §7.3 (atlas-buffs, atlas-ban, atlas-drops, atlas-pets, atlas-skills, atlas-reactors, atlas-maps, atlas-merchant, atlas-guilds, atlas-account, atlas-world, atlas-invites, atlas-expressions, atlas-character).
 - **Migration of `atlas-redis/lock.go`** to use ownership tokens (or migration of atlas-messengers onto a `lock.Mutex` short-lived API). Decision deferred — depends on whether other short-lived-critical-section callers appear.
@@ -556,4 +556,4 @@ The following are explicitly out of scope for task-063 and tracked in `docs/TODO
 
 ## 15. Summary
 
-Task-063 introduces `libs/atlas-lock`, a misuse-resistant leader-election library that wraps `bsm/redislock`. The single public entry point is `Run(ctx, fn)`. atlas-monsters' six sweep tasks are gated by a single shared `monsters-sweep` lease via the trivial composition `fn(leaderCtx) { tasks.Register(l, leaderCtx)(...); <-leaderCtx.Done() }` — leveraging the existing `tasks.Register` ctx-cancel semantics with zero changes to the `Task` interface or any task body. Kill switch via env var preserves docker-compose single-pod behavior. Four `atlas_lock_*` counters give operators failover visibility. The single-Redis split-brain caveat is documented in code, README, commit, and PR. Per-service adoption follow-ups are tracked in `docs/TODO.md`.
+Task-064 introduces `libs/atlas-lock`, a misuse-resistant leader-election library that wraps `bsm/redislock`. The single public entry point is `Run(ctx, fn)`. atlas-monsters' six sweep tasks are gated by a single shared `monsters-sweep` lease via the trivial composition `fn(leaderCtx) { tasks.Register(l, leaderCtx)(...); <-leaderCtx.Done() }` — leveraging the existing `tasks.Register` ctx-cancel semantics with zero changes to the `Task` interface or any task body. Kill switch via env var preserves docker-compose single-pod behavior. Four `atlas_lock_*` counters give operators failover visibility. The single-Redis split-brain caveat is documented in code, README, commit, and PR. Per-service adoption follow-ups are tracked in `docs/TODO.md`.

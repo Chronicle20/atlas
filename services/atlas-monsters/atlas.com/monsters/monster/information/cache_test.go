@@ -368,3 +368,29 @@ func TestGetById_RedisDown_FallsThroughGracefully(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 3 (Redis-down means every call must fall through)", got)
 	}
 }
+
+func TestGetById_NegativeTTLZero_DisablesNegativeCache(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "0s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrNotFound
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 3; i++ {
+		_, err := get(404)
+		if !errors.Is(err, requests.ErrNotFound) {
+			t.Fatalf("call %d err = %v, want ErrNotFound", i, err)
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (NegativeTTL=0 must disable negative caching)", got)
+	}
+}

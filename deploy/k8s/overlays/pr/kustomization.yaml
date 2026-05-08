@@ -29,8 +29,8 @@ namespace: atlas-pr-PLACEHOLDER_PR_NUMBER
 resources:
   - ../../base
   - atlas-env-tokens.yaml
+  - ingress-route.yaml
   # Hooks (created in Phase 7.5-7.10):
-  #   - ingress-route.yaml         # Phase 7.5
   #   - presync-create-dbs.yaml    # Phase 7.6
   #   - postsync-bootstrap.yaml    # Phase 7.7
   #   - postsync-pihole-add.yaml   # Phase 7.8

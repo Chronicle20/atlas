@@ -3,6 +3,7 @@ package lock
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -153,4 +154,53 @@ func TestRun_AcquireAndReleaseOnOuterCancel(t *testing.T) {
 
 	// Lease should be gone (Released on shutdown).
 	require.False(t, mr.Exists("atlas:lock:release-test"), "lease released on shutdown")
+}
+
+func TestRun_TwoCompetitors_OneAcquires(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	leA, err := New(rc, "competitors",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+	leB, err := New(rc, "competitors",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var concurrent int32
+	var maxConcurrent int32
+
+	worker := func(le *LeaderElection) error {
+		return le.Run(ctx, func(leaderCtx context.Context) {
+			n := atomic.AddInt32(&concurrent, 1)
+			defer atomic.AddInt32(&concurrent, -1)
+			for {
+				cur := atomic.LoadInt32(&maxConcurrent)
+				if n <= cur || atomic.CompareAndSwapInt32(&maxConcurrent, cur, n) {
+					break
+				}
+			}
+			<-leaderCtx.Done()
+		})
+	}
+
+	doneA := make(chan error, 1)
+	doneB := make(chan error, 1)
+	go func() { doneA <- worker(leA) }()
+	go func() { doneB <- worker(leB) }()
+
+	// Let them race; verify exactly one is running fn at any sampled moment.
+	for i := 0; i < 40; i++ {
+		require.LessOrEqual(t, atomic.LoadInt32(&concurrent), int32(1), "no overlap permitted")
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	cancel()
+	require.NoError(t, <-doneA)
+	require.NoError(t, <-doneB)
+	require.Equal(t, int32(1), atomic.LoadInt32(&maxConcurrent), "exactly one fn ran across the whole window")
 }

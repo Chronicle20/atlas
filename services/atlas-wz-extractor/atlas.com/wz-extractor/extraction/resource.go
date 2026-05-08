@@ -70,9 +70,6 @@ func handleExtract(p Processor, wg *sync.WaitGroup) rest.GetHandler {
 			wg.Add(1)
 			go func() {
 				defer wg.Done()
-				key := TenantKey(t)
-				m := Acquire(key)
-				defer Release(m)
 				if err := p.Extract(d.Logger(), asyncCtx, xmlOnly, imagesOnly); err != nil {
 					d.Logger().WithError(err).Errorf("Extraction failed.")
 				} else {

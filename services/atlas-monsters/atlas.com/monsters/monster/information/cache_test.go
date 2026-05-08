@@ -198,3 +198,58 @@ func TestGetById_NegativeCache_AvoidsUpstream(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 1 (negative cache must absorb second call)", got)
 	}
 }
+
+func TestGetById_TransientErrorNotCached(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	transient := errors.New("connection refused")
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, transient
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	if _, err := get(500); !errors.Is(err, transient) {
+		t.Fatalf("first err = %v, want %v", err, transient)
+	}
+	if _, err := get(500); !errors.Is(err, transient) {
+		t.Fatalf("second err = %v, want %v", err, transient)
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("upstream calls = %d, want 2 (transient errors must not populate negative cache)", got)
+	}
+}
+
+func TestGetById_BadRequestNotCached(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrBadRequest
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	for i := 0; i < 3; i++ {
+		_, err := get(400)
+		if !errors.Is(err, requests.ErrBadRequest) {
+			t.Fatalf("err = %v, want ErrBadRequest", err)
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (ErrBadRequest is transient, never cached)", got)
+	}
+}

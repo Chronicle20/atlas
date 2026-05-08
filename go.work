@@ -17,7 +17,6 @@ use (
 	./libs/atlas-socket
 	./libs/atlas-tenant
 	./libs/atlas-tracing
-	./tools/cideps
 	./services/atlas-account/atlas.com/account
 	./services/atlas-asset-expiration/atlas.com/asset-expiration
 	./services/atlas-ban/atlas.com/ban
@@ -72,4 +71,5 @@ use (
 	./services/atlas-transports/atlas.com/transports
 	./services/atlas-world/atlas.com/world
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
+	./tools/cideps
 )

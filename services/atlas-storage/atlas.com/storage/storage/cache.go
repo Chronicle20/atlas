@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	goredis "github.com/redis/go-redis/v9"
 )
 
@@ -33,7 +34,7 @@ func GetNpcContextCache() NpcContextCacheInterface {
 }
 
 func (c *NpcContextCache) key(characterId uint32) string {
-	return fmt.Sprintf("atlas:npc-context:%d", characterId)
+	return fmt.Sprintf("%s:npc-context:%d", atlasredis.KeyPrefix(), characterId)
 }
 
 // Get retrieves the NPC ID for a character if not expired

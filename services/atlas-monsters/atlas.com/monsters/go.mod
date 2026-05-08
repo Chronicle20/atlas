@@ -98,3 +98,5 @@ replace github.com/Chronicle20/atlas/libs/atlas-socket => ../../../../libs/atlas
 replace github.com/Chronicle20/atlas/libs/atlas-object-id => ../../../../libs/atlas-object-id
 
 replace github.com/Chronicle20/atlas/libs/atlas-tracing => ../../../../libs/atlas-tracing
+
+replace github.com/Chronicle20/atlas/libs/atlas-lock => ../../../../libs/atlas-lock

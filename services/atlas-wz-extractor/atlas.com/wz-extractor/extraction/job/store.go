@@ -195,7 +195,53 @@ func (s *storeImpl) MarkJobRunning(ctx context.Context, jobId string) error {
 	return err
 }
 func (s *storeImpl) MarkUnitRunning(ctx context.Context, jobId, wzFile string) (bool, error) {
-	return false, errors.New("not implemented")
+	uKey := unitsKey(jobId)
+
+	var claimed bool
+	txn := func(tx *goredis.Tx) error {
+		raw, err := tx.HGet(ctx, uKey, wzFile).Result()
+		if err != nil && err != goredis.Nil {
+			return err
+		}
+		if err == goredis.Nil {
+			return ErrNotFound
+		}
+		u, err := unitFromJSON(wzFile, raw)
+		if err != nil {
+			return err
+		}
+		if u.Status() == UnitSucceeded || u.Status() == UnitFailed || u.Status() == UnitSkipped {
+			claimed = false
+			return nil
+		}
+		nu := NewUnitBuilder().SetWzFile(wzFile).SetStatus(UnitRunning).
+			SetStartedAt(time.Now().UTC()).Build()
+		nraw, err := unitToJSON(nu)
+		if err != nil {
+			return err
+		}
+		_, err = tx.TxPipelined(ctx, func(p goredis.Pipeliner) error {
+			p.HSet(ctx, uKey, wzFile, nraw)
+			p.HSet(ctx, jobKey(jobId), "updatedAt", time.Now().UTC().Format(time.RFC3339))
+			return nil
+		})
+		if err == nil {
+			claimed = true
+		}
+		return err
+	}
+
+	for attempt := 0; attempt < 5; attempt++ {
+		err := s.client.Watch(ctx, txn, uKey)
+		if err == nil {
+			return claimed, nil
+		}
+		if err == goredis.TxFailedErr {
+			continue
+		}
+		return false, err
+	}
+	return false, errors.New("MarkUnitRunning: too many WATCH retries")
 }
 func (s *storeImpl) FinalizeUnit(ctx context.Context, jobId, wzFile string, terminal UnitStatus, runErr error) (Counters, error) {
 	return Counters{}, errors.New("not implemented")

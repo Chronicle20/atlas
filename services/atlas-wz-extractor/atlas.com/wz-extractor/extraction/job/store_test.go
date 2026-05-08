@@ -83,3 +83,57 @@ func TestStore_MarkJobRunning(t *testing.T) {
 		t.Fatalf("status: got %s", got.Status())
 	}
 }
+
+func TestStore_MarkUnitRunning_FirstTime(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j3", []string{"Map.wz"})
+
+	claimed, err := s.MarkUnitRunning(ctx, "j3", "Map.wz")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if !claimed {
+		t.Fatalf("expected claimed=true on first transition")
+	}
+}
+
+func TestStore_MarkUnitRunning_AlreadyTerminal(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j4", []string{"Map.wz"})
+
+	// Manually set the unit to terminal.
+	raw, _ := unitToJSON(NewUnitBuilder().SetWzFile("Map.wz").SetStatus(UnitSucceeded).Build())
+	if err := c.HSet(ctx, unitsKey("j4"), "Map.wz", raw).Err(); err != nil {
+		t.Fatalf("seed terminal: %v", err)
+	}
+
+	claimed, err := s.MarkUnitRunning(ctx, "j4", "Map.wz")
+	if err != nil {
+		t.Fatalf("err: %v", err)
+	}
+	if claimed {
+		t.Fatalf("expected claimed=false on already-terminal unit (redelivery)")
+	}
+}
+
+// helper used by store tests
+func seedJob(t *testing.T, ctx context.Context, s Store, id string, files []string) {
+	t.Helper()
+	now := time.Now().UTC().Truncate(time.Second)
+	j := NewJobBuilder().SetId(id).SetTenantId("t").SetRegion("GMS").
+		SetMajorVersion(83).SetMinorVersion(1).
+		SetStatus(JobRunning).
+		SetUnitsTotal(len(files)).
+		SetCreatedAt(now).SetUpdatedAt(now).Build()
+	units := make([]Unit, 0, len(files))
+	for _, f := range files {
+		units = append(units, NewUnitBuilder().SetWzFile(f).SetStatus(UnitPending).Build())
+	}
+	if err := s.Create(ctx, j, units, 3600); err != nil {
+		t.Fatalf("seed Create: %v", err)
+	}
+}

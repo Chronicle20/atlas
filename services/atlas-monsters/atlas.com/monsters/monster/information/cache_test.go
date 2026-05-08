@@ -2,7 +2,10 @@ package information
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -366,6 +369,85 @@ func TestGetById_RedisDown_FallsThroughGracefully(t *testing.T) {
 	}
 	if got := calls.Load(); got != 3 {
 		t.Fatalf("upstream calls = %d, want 3 (Redis-down means every call must fall through)", got)
+	}
+}
+
+// TestGetById_HTTPRoundTrip_Integration exercises the real upstream path:
+// requests.GetRequest -> retry loop -> jsonapi.Unmarshal of the body, plus
+// the real 404 -> requests.ErrNotFound mapping. It does NOT replace
+// upstreamFn; it stands up an httptest server and points DATA_SERVICE_URL
+// at it (libs/atlas-rest/requests/url.go RootUrl("DATA")).
+func TestGetById_HTTPRoundTrip_Integration(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	var hits int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt32(&hits, 1)
+		switch r.URL.Path {
+		case "/api/data/monsters/100":
+			body := map[string]any{
+				"data": map[string]any{
+					"type": "monsters",
+					"id":   "100",
+					"attributes": map[string]any{
+						"name":          "Pig",
+						"hp":            uint32(1000),
+						"mp":            uint32(50),
+						"experience":    uint32(0),
+						"level":         uint32(1),
+						"weapon_attack": uint32(0),
+					},
+				},
+			}
+			w.Header().Set("Content-Type", "application/vnd.api+json")
+			_ = json.NewEncoder(w).Encode(body)
+		case "/api/data/monsters/404":
+			http.NotFound(w, r)
+		default:
+			http.Error(w, "unexpected path: "+r.URL.Path, http.StatusInternalServerError)
+		}
+	}))
+	t.Cleanup(srv.Close)
+	t.Setenv("DATA_SERVICE_URL", srv.URL+"/api/")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	// Positive path through real HTTP transport + real jsonapi decode.
+	m1, err := get(100)
+	if err != nil {
+		t.Fatalf("first call (200 path): %v", err)
+	}
+	if m1.Hp() != 1000 {
+		t.Fatalf("m1.Hp() = %d, want 1000 (real JSON:API decode)", m1.Hp())
+	}
+	// Cache hit - no second HTTP request.
+	m2, err := get(100)
+	if err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if m2.Hp() != 1000 {
+		t.Fatalf("m2.Hp() = %d, want 1000 (cache hit)", m2.Hp())
+	}
+
+	// Negative path: real 404 -> real requests.ErrNotFound.
+	if _, err := get(404); !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("first 404 err = %v, want errors.Is(_, requests.ErrNotFound)", err)
+	}
+	// Negative cache must absorb the second call.
+	if _, err := get(404); !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("second 404 err = %v, want errors.Is(_, requests.ErrNotFound)", err)
+	}
+
+	// Two HTTP calls total: one for 100, one for 404. Cache absorbs the rest.
+	if got := atomic.LoadInt32(&hits); got != 2 {
+		t.Fatalf("upstream HTTP hits = %d, want 2 (1x id=100, 1x id=404)", got)
 	}
 }
 

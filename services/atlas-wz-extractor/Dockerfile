@@ -6,7 +6,9 @@ WORKDIR /app
 
 # Copy library module definitions
 COPY libs/atlas-constants/go.mod libs/atlas-constants/go.sum libs/atlas-constants/
+COPY libs/atlas-kafka/go.mod libs/atlas-kafka/go.sum libs/atlas-kafka/
 COPY libs/atlas-model/go.mod libs/atlas-model/go.sum libs/atlas-model/
+COPY libs/atlas-redis/go.mod libs/atlas-redis/go.sum libs/atlas-redis/
 COPY libs/atlas-rest/go.mod libs/atlas-rest/go.sum libs/atlas-rest/
 COPY libs/atlas-retry/go.mod libs/atlas-retry/
 COPY libs/atlas-service/go.mod libs/atlas-service/
@@ -21,7 +23,9 @@ RUN echo 'go 1.25.5' > go.work && \
     echo '' >> go.work && \
     echo 'use (' >> go.work && \
     echo '    ./libs/atlas-constants' >> go.work && \
+    echo '    ./libs/atlas-kafka' >> go.work && \
     echo '    ./libs/atlas-model' >> go.work && \
+    echo '    ./libs/atlas-redis' >> go.work && \
     echo '    ./libs/atlas-rest' >> go.work && \
     echo '    ./libs/atlas-retry' >> go.work && \
     echo '    ./libs/atlas-service' >> go.work && \
@@ -35,7 +39,9 @@ RUN go mod download -C services/atlas-wz-extractor/atlas.com/wz-extractor || tru
 
 # Copy library source code
 COPY libs/atlas-constants libs/atlas-constants
+COPY libs/atlas-kafka libs/atlas-kafka
 COPY libs/atlas-model libs/atlas-model
+COPY libs/atlas-redis libs/atlas-redis
 COPY libs/atlas-rest libs/atlas-rest
 COPY libs/atlas-retry libs/atlas-retry
 COPY libs/atlas-service libs/atlas-service
@@ -48,7 +54,9 @@ COPY services/atlas-wz-extractor/atlas.com/wz-extractor services/atlas-wz-extrac
 RUN cd services/atlas-wz-extractor/atlas.com/wz-extractor && \
     go mod edit \
       -replace=github.com/Chronicle20/atlas/libs/atlas-constants=/app/libs/atlas-constants \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-kafka=/app/libs/atlas-kafka \
       -replace=github.com/Chronicle20/atlas/libs/atlas-model=/app/libs/atlas-model \
+      -replace=github.com/Chronicle20/atlas/libs/atlas-redis=/app/libs/atlas-redis \
       -replace=github.com/Chronicle20/atlas/libs/atlas-rest=/app/libs/atlas-rest \
       -replace=github.com/Chronicle20/atlas/libs/atlas-retry=/app/libs/atlas-retry \
       -replace=github.com/Chronicle20/atlas/libs/atlas-service=/app/libs/atlas-service \

@@ -94,7 +94,7 @@ The PRD listed ten open questions. Each is resolved below. The reasoning is in t
 ### 3.3 `ApplicationSet(atlas-pr)`
 
 - File: `tumidanski/k3s` `bee/argocd-atlas-pr.yml`.
-- Generator: GitHub PR generator polling `Chronicle20/atlas`, every 30s.
+- Generator: GitHub PR generator polling `Chronicle20/atlas`, every 30s, **filtered by PR label `deploy-env`** so envs are on-demand. Reviewer adds the label when they want a real cluster; doc-only / WIP / draft PRs never spin up. Soft-cap-respecting and explicit. Switch to always-on by removing the `labels:` filter.
 - Template substitutes `{{number}}`, `{{branch}}`, `{{head_sha}}`, `{{head_short_sha}}` into a per-PR `Application`:
   ```yaml
   metadata:
@@ -590,15 +590,21 @@ spec:
             claimName: atlas-wz-canonical-readonly
 ```
 
-The bootstrap container is a small image (~50MB on alpine) that runs a sequence of HTTP calls against the in-namespace `atlas-ingress`. Endpoints — verified in plan phase by reading `services/atlas-ui/src/services/api/seed.service.ts` and `services/atlas-ui/src/lib/hooks/api/useSeed.ts`, which are the exact same calls SetupPage makes:
+The bootstrap container is a small image (~80MB on alpine, including `kubectl`) that runs a sequence of HTTP calls against the in-namespace `atlas-ingress` plus two `kubectl` reads against its own namespace. The flow mirrors `docs/onboarding.md` (which is canonical for what an Atlas env needs before gameplay works):
 
-1. **Wait-ready**: `GET /api/data/health`, `GET /api/wz/health`, retry until 200 or 60s.
-2. **Upload WZ**: `POST /api/wz/inputs` with the canonical zip (multipart, ~1GB).
-3. **Run extraction**: `POST /api/wz/extractions/runs`. Poll `GET /api/wz/extractions/status` until complete.
-4. **Run data processing**: `POST /api/data/runs`. Poll `GET /api/data/status` until complete.
-5. **Seed**: parallel POSTs to seed endpoints (drops, gachapons, NPC conversations, quest conversations, NPC shops, portal scripts, reactor scripts, map action scripts), each with poll-to-ready.
+1. **Wait-ready**: poll `/api/tenants`, `/api/configurations/tenants`, `/api/data/status`, `/api/wz/input`, `/api/wz/extractions` until 200.
+2. **Tenant**: lookup-before-create. If a tenant with the canonical `(region, major, minor)` already exists, reuse its id; otherwise POST `/atlas/canonical/tenant.json`. After POST, sleep briefly to let the `tenant.status` Kafka event settle (mitigates the duplicate-tenant pitfall #1 in onboarding.md).
+3. **LB IP discover**: `kubectl get svc atlas-channel-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`. Fail fast if MetalLB hasn't allocated.
+4. **Service config**: GET-before-PATCH on `/api/tenants/{tid}/configurations/services`. Substitute `tenants[].id` with the per-PR tenant id and `tenants[].ipAddress` with the discovered LB IP, then PATCH (or POST if absent). One configuration record per tenant carries the login/channel/drops topology — the three SERVICE_ID UUIDs (`e7fb…0856`, `e7fb…0000`, `00000000…000`) are referenced by service type, not by separate records.
+5. **Rolling restart** the five SERVICE_ID-reading deployments (`atlas-login`, `atlas-channel`, `atlas-drops`, `atlas-character-factory`, `atlas-world`) so they re-fetch the freshly-written config. `kubectl rollout restart` + `kubectl rollout status` with 180s timeout.
+6. **Upload WZ**: `PATCH /api/wz/input` with the canonical zip (multipart, ~1GB), tenant headers from step 2.
+7. **Run extraction**: `POST /api/wz/extractions`. Poll `GET /api/wz/extractions` until `fileCount > 0`.
+8. **Run data processing**: `POST /api/data/process`. Poll `GET /api/data/status` until `documentCount > 0`.
+9. **Seed**: parallel POSTs to seed endpoints (drops, gachapons, NPC conversations, quest conversations, NPC shops, portal scripts, reactor scripts, map action scripts), each with poll-to-ready.
 
-The Job is **idempotent**: each step's status endpoint reports a non-empty count when complete. The Job short-circuits on already-populated stages.
+The Job is **idempotent**: every step has a precondition check (tenant lookup, services-config GET, fileCount check, documentCount check, per-seed status check) and short-circuits when the target state is already present. Re-running against a healthy env exits in seconds.
+
+> **Single-tenant for v1.** The canonical payload describes one tenant (e.g. GMS v83.1) with the production world/channel topology. Multi-tenant per env (e.g. GMS+JMS in the same PR) is future work — would require multiple `canonical/tenants/<n>.json` payloads and a per-tenant loop.
 
 **Auth**: SetupPage in dev mode does not require auth on these endpoints. The bootstrap Job runs in-cluster on the per-PR namespace's default ServiceAccount; calls go to `http://atlas-ingress.atlas-pr-<N>.svc.cluster.local` (cluster-internal DNS). NetworkPolicy is not v1 scope.
 

@@ -305,6 +305,7 @@ func (p *ProcessorImpl) StartControl(uniqueId uint32, controllerId uint32) (Mode
 
 	m, err = GetMonsterRegistry().ControlMonster(p.t, uniqueId, controllerId)
 	if err == nil {
+		p.l.Debugf("[control-debug] StartControl: mob=[%d] new controller=[%d] aggro=[%t]; emitting StartControl event.", uniqueId, controllerId, m.ControllerHasAggro())
 		_ = p.emit(EnvEventTopicMonsterStatus, startControlStatusEventProvider(m))
 		// FR-2.3 parity: a controller-change must not start a fresh skill
 		// decision when the new controller has no aggro. Without this guard
@@ -327,6 +328,7 @@ func (p *ProcessorImpl) StopControl(m Model) error {
 	oldControllerId := m.ControlCharacterId()
 	m, err := GetMonsterRegistry().ClearControl(p.t, m.UniqueId())
 	if err == nil {
+		p.l.Debugf("[control-debug] StopControl: mob=[%d] formerController=[%d]; emitting StopControl event.", m.UniqueId(), oldControllerId)
 		_ = p.emit(EnvEventTopicMonsterStatus, stopControlStatusEventProvider(m, oldControllerId))
 	}
 	return err

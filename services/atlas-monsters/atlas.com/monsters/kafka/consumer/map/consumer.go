@@ -42,6 +42,7 @@ func handleStatusEventCharacterEnter(l logrus.FieldLogger, ctx context.Context, 
 		return
 	}
 
+	l.Debugf("[control-debug] CharacterEnter received: char=[%d] world=[%d] channel=[%d] map=[%d]; reassigning uncontrolled mobs.", e.Body.CharacterId, e.WorldId, e.ChannelId, e.MapId)
 	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 
 	p := monster.NewProcessor(l, ctx)
@@ -54,10 +55,12 @@ func handleStatusEventCharacterExit(l logrus.FieldLogger, ctx context.Context, e
 		return
 	}
 
+	l.Debugf("[control-debug] CharacterExit received: char=[%d] world=[%d] channel=[%d] map=[%d]; releasing their controlled mobs.", e.Body.CharacterId, e.WorldId, e.ChannelId, e.MapId)
 	f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 
 	ocids, err := _map.CharacterIdsInFieldProvider(l)(ctx)(f)()
 	if err != nil {
+		l.WithError(err).Warnf("[control-debug] CharacterExit: unable to fetch other char ids in field for reassignment.")
 		return
 	}
 

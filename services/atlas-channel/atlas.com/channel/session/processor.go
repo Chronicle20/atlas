@@ -218,6 +218,7 @@ func (p *Processor) SetCharacterId(id uuid.UUID, characterId uint32) Model {
 	if s, ok = getRegistry().Get(p.t.Id(), id); ok {
 		s = s.setCharacterId(characterId)
 		getRegistry().Update(p.t.Id(), s)
+		p.l.Debugf("[control-debug] Session registered: char=[%d] sessionId=[%s].", characterId, id.String())
 		return s
 	}
 	return s

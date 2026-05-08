@@ -261,6 +261,7 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			return
 		}
 
+		l.Debugf("[control-debug] StartControl received: mob=[%d] target=[%d] aggro=[%t].", e.UniqueId, e.Body.ActorId, e.Body.ControllerHasAggro)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			SetControlCharacterId(e.Body.ActorId).
@@ -269,10 +270,16 @@ func handleStatusEventStartControl(sc server.Model, wp writer.Producer) message.
 			SetFH(e.Body.FH).
 			SetTeam(e.Body.Team).
 			MustBuild()
+		sp := session.NewProcessor(l, ctx)
+		s, lerr := sp.ByCharacterIdModelProvider(sc.Channel())(e.Body.ActorId)()
+		if lerr != nil {
+			l.Warnf("[control-debug] StartControl: NO session for char=[%d] on this channel; control packet for mob=[%d] DROPPED (lookup-err: %v).", e.Body.ActorId, e.UniqueId, lerr)
+			return
+		}
+		l.Debugf("[control-debug] StartControl: session found for char=[%d]; writing MonsterControl for mob=[%d].", e.Body.ActorId, e.UniqueId)
 		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, e.Body.ControllerHasAggro))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
+		if werr := sf(s); werr != nil {
+			l.WithError(werr).Errorf("Unable to start control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
 	}
 }
@@ -287,13 +294,20 @@ func handleStatusEventStopControl(sc server.Model, wp writer.Producer) message.H
 			return
 		}
 
+		l.Debugf("[control-debug] StopControl received: mob=[%d] formerController=[%d].", e.UniqueId, e.Body.ActorId)
 		f := field.NewBuilder(e.WorldId, e.ChannelId, e.MapId).SetInstance(e.Instance).Build()
 		m := monster.NewModelBuilder(e.UniqueId, f, e.MonsterId).
 			MustBuild()
+		sp := session.NewProcessor(l, ctx)
+		s, lerr := sp.ByCharacterIdModelProvider(sc.Channel())(e.Body.ActorId)()
+		if lerr != nil {
+			l.Warnf("[control-debug] StopControl: NO session for char=[%d] on this channel; stop-control packet for mob=[%d] DROPPED (lookup-err: %v).", e.Body.ActorId, e.UniqueId, lerr)
+			return
+		}
+		l.Debugf("[control-debug] StopControl: session found for char=[%d]; writing MonsterControl(stop) for mob=[%d].", e.Body.ActorId, e.UniqueId)
 		sf := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StopControlMonsterBody(m))
-		err := session.NewProcessor(l, ctx).IfPresentByCharacterId(sc.Channel())(e.Body.ActorId, sf)
-		if err != nil {
-			l.WithError(err).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
+		if werr := sf(s); werr != nil {
+			l.WithError(werr).Errorf("Unable to stop control of monster [%d] for character [%d].", e.UniqueId, e.Body.ActorId)
 		}
 	}
 }

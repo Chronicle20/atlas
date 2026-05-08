@@ -95,10 +95,10 @@ func (u Unit) ErrorMessage() string   { return u.errMsg }
 
 type UnitBuilder struct{ u Unit }
 
-func NewUnitBuilder() *UnitBuilder                             { return &UnitBuilder{} }
-func (b *UnitBuilder) SetWzFile(v string) *UnitBuilder         { b.u.wzFile = v; return b }
-func (b *UnitBuilder) SetStatus(v UnitStatus) *UnitBuilder     { b.u.status = v; return b }
-func (b *UnitBuilder) SetStartedAt(v time.Time) *UnitBuilder   { b.u.startedAt = v; return b }
+func NewUnitBuilder() *UnitBuilder                           { return &UnitBuilder{} }
+func (b *UnitBuilder) SetWzFile(v string) *UnitBuilder       { b.u.wzFile = v; return b }
+func (b *UnitBuilder) SetStatus(v UnitStatus) *UnitBuilder   { b.u.status = v; return b }
+func (b *UnitBuilder) SetStartedAt(v time.Time) *UnitBuilder { b.u.startedAt = v; return b }
 func (b *UnitBuilder) SetCompletedAt(v time.Time) *UnitBuilder {
 	b.u.completedAt = v
 	return b

@@ -282,3 +282,40 @@ func TestRun_LeaseLossCancelsInnerCtx(t *testing.T) {
 	cancel()
 	require.NoError(t, <-done)
 }
+
+func TestRun_PanicInFn_RecoveredAndReleased(t *testing.T) {
+	rc, mr := newTestClient(t)
+	le, err := New(rc, "panic-test",
+		WithTTL(5*time.Second),
+		WithRefreshInterval(time.Second),
+		WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	// Reset counter to read it deterministically.
+	lostTotal.Reset()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	var firstInvocation int32
+
+	done := make(chan error, 1)
+	go func() {
+		done <- le.Run(ctx, func(leaderCtx context.Context) {
+			if atomic.AddInt32(&firstInvocation, 1) == 1 {
+				panic("boom")
+			}
+			<-leaderCtx.Done()
+		})
+	}()
+
+	require.Eventually(t, func() bool {
+		return testutil.ToFloat64(lostTotal.WithLabelValues("panic-test", "panic")) >= 1
+	}, 5*time.Second, 50*time.Millisecond, "panic counter recorded")
+
+	require.Eventually(t, func() bool {
+		return mr.Exists("atlas:lock:panic-test") || atomic.LoadInt32(&firstInvocation) >= 2
+	}, 5*time.Second, 50*time.Millisecond, "either re-acquired by 2nd invocation or lease was released after panic")
+
+	cancel()
+	require.NoError(t, <-done, "panic must not escape Run")
+}

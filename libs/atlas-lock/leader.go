@@ -148,6 +148,13 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 
 		go func() {
 			defer close(fnDone)
+			defer func() {
+				if r := recover(); r != nil {
+					le.cfg.log.WithField("panic", r).Errorf("Leader fn panic for [%s].", le.name)
+					setReason("panic")
+					cancelLeader()
+				}
+			}()
 			fn(leaderCtx)
 		}()
 

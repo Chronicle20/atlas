@@ -428,7 +428,11 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID,
 				// Override stored world/channel with the channel the
 				// character is actually disconnecting from so downstream
 				// services release per-channel state (e.g. atlas-monsters
-				// control assignment) on the right channel. See Login for
+				// control assignment) on the right channel. The `channel`
+				// argument here originates from the session registry's
+				// transition-state values (see session/task.go), so it is
+				// the channel the destroyed session was last on — which is
+				// where downstream per-channel state lives. See Login for
 				// the symmetric rationale.
 				f = field.NewBuilder(channel.WorldId(), channel.Id(), f.MapId()).SetInstance(f.Instance()).Build()
 			}

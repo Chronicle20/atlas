@@ -390,6 +390,17 @@ func (p *ProcessorImpl) Login(mb *message.Buffer) func(transactionId uuid.UUID, 
 					p.l.WithError(err).Errorf("Login: atlas-maps lookup failed for [%d] (infrastructure error); emitting with zero map.", c.Id())
 				}
 				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
+			} else {
+				// The stored channelId in character_locations reflects the
+				// channel the character was last on (or 0 from the
+				// CREATED-time seed). The character is now logging in to a
+				// possibly different channel — override the stored
+				// world/channel with the current login so downstream
+				// consumers (atlas-maps -> atlas-monsters -> atlas-channel)
+				// route MAP_STATUS / MONSTER_STATUS events to the channel
+				// the user is actually connected to. mapId/instance from
+				// storage remain authoritative.
+				f = field.NewBuilder(channel.WorldId(), channel.Id(), f.MapId()).SetInstance(f.Instance()).Build()
 			}
 			return mb.Put(character2.EnvEventTopicCharacterStatus, loginEventProvider(transactionId, c.Id(), f))
 		})
@@ -413,6 +424,13 @@ func (p *ProcessorImpl) Logout(mb *message.Buffer) func(transactionId uuid.UUID,
 					p.l.WithError(err).Errorf("Logout: atlas-maps lookup failed for [%d] (infrastructure error); emitting with zero map.", c.Id())
 				}
 				f = field.NewBuilder(channel.WorldId(), channel.Id(), 0).SetInstance(uuid.Nil).Build()
+			} else {
+				// Override stored world/channel with the channel the
+				// character is actually disconnecting from so downstream
+				// services release per-channel state (e.g. atlas-monsters
+				// control assignment) on the right channel. See Login for
+				// the symmetric rationale.
+				f = field.NewBuilder(channel.WorldId(), channel.Id(), f.MapId()).SetInstance(f.Instance()).Build()
 			}
 			return mb.Put(character2.EnvEventTopicCharacterStatus, logoutEventProvider(transactionId, c.Id(), f))
 		})

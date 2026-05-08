@@ -337,3 +337,34 @@ func TestGetById_NotInitialized_BypassesCache(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 2 (uninitialized cache must bypass)", got)
 	}
 }
+
+func TestGetById_RedisDown_FallsThroughGracefully(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, mr := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 7}, nil
+	})
+
+	mr.Close()
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 3; i++ {
+		m, err := get(1)
+		if err != nil {
+			t.Fatalf("call %d returned error: %v (Redis-down must NOT surface to caller)", i, err)
+		}
+		if m.Hp() != 7 {
+			t.Fatalf("call %d: m.Hp() = %d, want 7 (must serve upstream value)", i, m.Hp())
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (Redis-down means every call must fall through)", got)
+	}
+}

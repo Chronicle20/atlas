@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -18,48 +19,22 @@ func TestNewProcessor(t *testing.T) {
 	}
 }
 
-func TestRunExtraction_NoWzFiles(t *testing.T) {
-	dir := t.TempDir()
-	p := &processorImpl{inputDir: dir, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
-	l, _ := test.NewNullLogger()
-	err := p.runExtraction(context.Background(), l, dir, t.TempDir(), t.TempDir(), false, false)
-	if err == nil {
-		t.Fatal("expected error for empty input directory")
-	}
-	if got := err.Error(); got != "no WZ files found in ["+dir+"]" {
-		t.Errorf("unexpected error: %s", got)
-	}
-}
+func TestExtract_NoWzFiles(t *testing.T) {
+	tenantId := uuid.New()
+	tt, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), tt)
 
-func TestRunExtraction_InvalidInputDir(t *testing.T) {
-	p := &processorImpl{inputDir: "/nonexistent/path/that/should/not/exist", outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
-	l, _ := test.NewNullLogger()
-	err := p.runExtraction(context.Background(), l, "/nonexistent/path/that/should/not/exist", t.TempDir(), t.TempDir(), false, false)
-	if err == nil {
-		t.Fatal("expected error for nonexistent input directory")
-	}
-}
-
-func TestRunExtraction_NoFallbackToFlatInput(t *testing.T) {
-	rootInput := t.TempDir()
-	// put a .wz at the flat, non-tenant-scoped level
-	if err := os.WriteFile(filepath.Join(rootInput, "Test.wz"), []byte("dummy"), 0644); err != nil {
-		t.Fatalf("unable to write flat fixture: %v", err)
-	}
-	// tenant-scoped subdir is empty
-	tenantScoped := filepath.Join(rootInput, "some-tenant", "GMS", "83.1")
-	if err := os.MkdirAll(tenantScoped, 0o755); err != nil {
-		t.Fatalf("unable to mkdir: %v", err)
+	inputDir := t.TempDir()
+	tenantInput := filepath.Join(inputDir, tenantId.String(), "GMS", "83.1")
+	if err := os.MkdirAll(tenantInput, 0o755); err != nil {
+		t.Fatal(err)
 	}
 
-	p := &processorImpl{inputDir: rootInput, outputXmlDir: t.TempDir(), outputImgDir: t.TempDir()}
+	p := NewProcessor(inputDir, t.TempDir(), t.TempDir())
 	l, _ := test.NewNullLogger()
-	err := p.runExtraction(context.Background(), l, tenantScoped, t.TempDir(), t.TempDir(), false, false)
-	if err == nil {
-		t.Fatal("expected no-WZ-files error despite flat-level fixture")
-	}
-	if got := err.Error(); got != "no WZ files found in ["+tenantScoped+"]" {
-		t.Errorf("unexpected error: %s", got)
+	err := p.Extract(l, ctx, false, false)
+	if err == nil || !strings.Contains(err.Error(), "no WZ files found") {
+		t.Fatalf("expected no-WZ-files error, got %v", err)
 	}
 }
 
@@ -121,6 +96,41 @@ func TestRunExtractionWipesCharacterCache(t *testing.T) {
 	}
 	if _, err := os.Stat(cacheDir); !os.IsNotExist(err) {
 		t.Fatalf("expected cacheDir gone, stat err=%v", err)
+	}
+}
+
+func TestExtractUnit_FailsWhenWzCannotBeOpened(t *testing.T) {
+	tenantId := uuid.New()
+	tt, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), tt)
+
+	inputDir := t.TempDir()
+	xmlDir := t.TempDir()
+	imgDir := t.TempDir()
+	tenantInput := filepath.Join(inputDir, tenantId.String(), "GMS", "83.1")
+	if err := os.MkdirAll(tenantInput, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	bad := filepath.Join(tenantInput, "Bad.wz")
+	if err := os.WriteFile(bad, []byte("not a real wz"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	p := NewProcessor(inputDir, xmlDir, imgDir)
+	l, _ := test.NewNullLogger()
+	if err := p.ExtractUnit(l, ctx, "Bad.wz", false, false); err == nil {
+		t.Fatalf("expected non-nil error when wz.Open fails")
+	}
+}
+
+func TestExtractUnit_RejectsMissingWzFile(t *testing.T) {
+	tenantId := uuid.New()
+	tt, _ := tenant.Create(tenantId, "GMS", 83, 1)
+	ctx := tenant.WithContext(context.Background(), tt)
+	p := NewProcessor(t.TempDir(), t.TempDir(), t.TempDir())
+	l, _ := test.NewNullLogger()
+	if err := p.ExtractUnit(l, ctx, "Nope.wz", false, false); err == nil {
+		t.Fatalf("expected error for missing wz file")
 	}
 }
 

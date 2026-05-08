@@ -2,7 +2,10 @@ package extraction
 
 import (
 	"archive/zip"
+	"atlas-wz-extractor/extraction/job"
+	"atlas-wz-extractor/extraction/lock"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"mime/multipart"
@@ -12,8 +15,14 @@ import (
 	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
+	"github.com/sirupsen/logrus/hooks/test"
+
+	goredis "github.com/redis/go-redis/v9"
 )
 
 type zipEntry struct {
@@ -204,31 +213,6 @@ func TestUpload_NonWzEntry400(t *testing.T) {
 	}
 }
 
-func TestUpload_MutexBusy409(t *testing.T) {
-	inputDir := t.TempDir()
-	mock := newMockProcessor()
-	wg := &sync.WaitGroup{}
-	router := setupRouterWithDirs(mock, wg, Dirs{InputDir: inputDir})
-
-	tenantId := uuid.New()
-
-	// hand-craft a tenant to derive the same key used by handleUpload
-	key := tenantId.String() + ":GMS:83.1"
-	held := Acquire(key)
-	defer Release(held)
-
-	zipBytes := buildZip(t, []zipEntry{
-		{"Map.wz", []byte("ok")},
-	})
-
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, uploadRequest(t, zipBytes, tenantId))
-
-	if w.Code != http.StatusConflict {
-		t.Fatalf("expected 409, got %d: %s", w.Code, w.Body.String())
-	}
-}
-
 func TestUpload_ReuploadReplaces(t *testing.T) {
 	inputDir := t.TempDir()
 	mock := newMockProcessor()
@@ -261,5 +245,52 @@ func TestUpload_ReuploadReplaces(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dst, "New.wz")); err != nil {
 		t.Errorf("expected New.wz to exist after re-upload: %v", err)
+	}
+}
+
+func newRedisUpload(t *testing.T) *goredis.Client {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	return goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+}
+
+// TestUpload_ConflictWhileLocked409 verifies that a second concurrent upload
+// against the same tenant is rejected with 409 when the tenant lock is already
+// held. The lock is pre-occupied directly (simulating an in-flight extraction
+// or upload for that tenant), then a PATCH /wz/input is issued and must return
+// 409 Conflict.
+func TestUpload_ConflictWhileLocked409(t *testing.T) {
+	ctx := context.Background()
+	c := newRedisUpload(t)
+	tl := lock.NewTenantLock(c, time.Minute)
+
+	tenantId := uuid.New()
+	// Pre-occupy the lock on behalf of a different owner (simulating an
+	// in-flight extraction that already holds it).
+	lockKey := job.LockKey(tenantId.String(), "GMS", 83, 1)
+	acquired, err := tl.Acquire(ctx, lockKey, "pre-existing-owner")
+	if err != nil {
+		t.Fatalf("pre-acquire: %v", err)
+	}
+	if !acquired {
+		t.Fatalf("expected lock to be available for pre-acquire")
+	}
+
+	// Build a router wired with the same Redis-backed TenantLock.
+	inputDir := t.TempDir()
+	router := mux.NewRouter()
+	l, _ := test.NewNullLogger()
+	dirs := Dirs{InputDir: inputDir, OutputXmlDir: t.TempDir(), OutputImgDir: t.TempDir()}
+	initFn := InitResource(newMockProcessor(), nil, tl, nil, &sync.WaitGroup{}, dirs)
+	initFn(serverInfo{})(router, l)
+
+	zipBytes := buildZip(t, []zipEntry{
+		{"Map.wz", []byte("map-bytes")},
+	})
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, uploadRequest(t, zipBytes, tenantId))
+
+	if w.Code != http.StatusConflict {
+		t.Fatalf("expected 409 Conflict while lock held, got %d: %s", w.Code, w.Body.String())
 	}
 }

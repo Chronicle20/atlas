@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/alicebob/miniredis/v2"
+	"github.com/prometheus/client_golang/prometheus/testutil"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
@@ -92,4 +93,23 @@ func TestNew_AcceptsValidConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, le)
 	require.Equal(t, "atlas:lock:monsters-sweep", le.keyPath())
+}
+
+func TestMetrics_AllCountersExist(t *testing.T) {
+	// Force reset to known zero state for a deterministic assertion.
+	acquiredTotal.Reset()
+	lostTotal.Reset()
+	renewFailedTotal.Reset()
+	acquireFailedTotal.Reset()
+
+	// Increment each by 1 with representative labels.
+	acquiredTotal.WithLabelValues("test").Inc()
+	lostTotal.WithLabelValues("test", "released").Inc()
+	renewFailedTotal.WithLabelValues("test").Inc()
+	acquireFailedTotal.WithLabelValues("test", "held_by_other").Inc()
+
+	require.Equal(t, float64(1), testutil.ToFloat64(acquiredTotal.WithLabelValues("test")))
+	require.Equal(t, float64(1), testutil.ToFloat64(lostTotal.WithLabelValues("test", "released")))
+	require.Equal(t, float64(1), testutil.ToFloat64(renewFailedTotal.WithLabelValues("test")))
+	require.Equal(t, float64(1), testutil.ToFloat64(acquireFailedTotal.WithLabelValues("test", "held_by_other")))
 }

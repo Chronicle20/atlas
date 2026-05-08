@@ -13,8 +13,14 @@ topic; it does not run any unit synchronously even with `replicas=1`.
 
 - Group ID: `wz-extractor-extraction`
 - Header parsers: `consumer.SpanHeaderParser`, `consumer.TenantHeaderParser`
-- Start offset: `kafka.LastOffset`
+- **Start offset: `kafka.FirstOffset`** (deviates from atlas-data's `LastOffset` parity — see below)
 - Persistent handler config (matches atlas-data)
+
+### Why `FirstOffset` here
+
+Atlas-data uses `kafka.LastOffset` because its commands are fire-and-forget — losing a few startup-time messages is acceptable. Atlas-wz-extractor's unit messages are tied to durable Redis job state and **must not** be silently dropped on first-start, group rename, or operator-driven offset reset.
+
+`FirstOffset` replays from offset 0 only on first-ever start of a brand-new consumer group; on every subsequent restart, the committed offset wins. Replay risk is bounded by Kafka retention (24h) and is harmless thanks to the WATCH guard in `MarkUnitRunning` (already-terminal units skip cleanly) and the orphan-handling path in the handler (messages whose job hash has expired log + skip + commit).
 
 ## Within-pod parallelism
 

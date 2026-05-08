@@ -348,6 +348,13 @@
       "docker_context": "."
     },
     {
+      "name": "atlas-pr-bootstrap",
+      "type": "support-image",
+      "path": "services/atlas-pr-bootstrap",
+      "docker_image": "ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap",
+      "docker_context": "services/atlas-pr-bootstrap"
+    },
+    {
       "name": "atlas-query-aggregator",
       "type": "go-service",
       "path": "services/atlas-query-aggregator",

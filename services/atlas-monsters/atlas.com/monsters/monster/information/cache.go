@@ -11,6 +11,7 @@ import (
 
 	redislib "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -155,4 +156,25 @@ var upstreamFn = upstreamFetch
 
 func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (RestModel, error) {
 	return requests.GetRequest[RestModel](getBaseRequest() + fmt.Sprintf(monsterResource, monsterId))(l, ctx)
+}
+
+// FlushTenant clears both the positive and negative cache namespaces for
+// tenant t. If the cache is disabled (MONSTER_DATA_CACHE_ENABLED=false) or
+// has not yet been initialized, this is a no-op returning (0, nil). On
+// partial Redis failure across the two namespaces, returns the running
+// total of keys deleted and the first error observed; the second Clear is
+// still attempted so a degraded posReg does not block negReg cleanup.
+func FlushTenant(ctx context.Context, t tenant.Model) (int, error) {
+	if dataCachePtr == nil || !dataCachePtr.cfg.enabled {
+		return 0, nil
+	}
+
+	posDeleted, posErr := dataCachePtr.posReg.Clear(ctx, t)
+	negDeleted, negErr := dataCachePtr.negReg.Clear(ctx, t)
+	deleted := posDeleted + negDeleted
+
+	if posErr != nil {
+		return deleted, posErr
+	}
+	return deleted, negErr
 }

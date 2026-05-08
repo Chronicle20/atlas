@@ -201,7 +201,58 @@ git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
 git commit -m "docs(task-063): record MetalLB pool pre-flight outcome"
 ```
 
-### Task 0.6: Verify atlas-tenants channel-host config flow
+### Task 0.6: Lock Longhorn RecurringJob exclusion label for PR PVCs
+
+PR PVCs auto-join Longhorn's `default` group → daily/weekly RecurringJobs would back them up to NFS. Verify the exclusion label so the PR overlay can apply it.
+
+- [ ] **Step 1: Inspect existing RecurringJobs**
+
+```bash
+kubectl get recurringjob -n longhorn-system -o yaml
+```
+
+Expected: `spec.groups: ["default"]` on `backup-daily` and `backup-weekly`. Capture exact CRD shape.
+
+- [ ] **Step 2: Find a sample atlas PV's labels**
+
+```bash
+kubectl get pv $(kubectl get pvc -n atlas atlas-data-pvc -o jsonpath='{.spec.volumeName}') -o yaml \
+    | grep -A20 'labels:'
+```
+
+Expected: contains `recurringjob.longhorn.io/source: enabled` plus group memberships like `recurringjob-default.longhorn.io/<job-name>: enabled`. Note the exact label keys/values.
+
+- [ ] **Step 3: Determine the exclusion mechanism**
+
+Longhorn supports excluding volumes from a group via either:
+- Setting `recurringjob.longhorn.io/source: ""` (empty) on the volume, or
+- Setting the per-group label `recurringjob.longhorn.io/<group>: ""` (empty) so the volume isn't a member, or
+- Using a separate StorageClass that doesn't include the default group.
+
+The PR overlay propagates labels to the volume via PVC annotations consumed by the Longhorn CSI driver. The exact annotation key is version-dependent; capture from upstream Longhorn docs at the version installed on bee:
+
+```bash
+kubectl get deployment -n longhorn-system longhorn-manager -o jsonpath='{.spec.template.spec.containers[0].image}'
+```
+
+- [ ] **Step 4: Append outcome to `preflight.md`**
+
+```markdown
+## Longhorn RecurringJobs and PR PVC exclusion
+- BackupTarget: nfs://nas.tumidanski:/volume1/LonghornBackup
+- RecurringJobs: backup-daily (retain 7), backup-weekly (retain 4); both target group "default"
+- PR PVC exclusion mechanism: <label key>=<value>, applied via PVC annotation <key>=<value>
+- Longhorn version: <captured from manager image>
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
+git commit -m "docs(task-063): record Longhorn RecurringJob exclusion mechanism"
+```
+
+### Task 0.7: Verify atlas-tenants channel-host config flow
 
 atlas-channel reads its public `IPAddress` from atlas-tenants configuration (`services/atlas-channel/atlas.com/channel/configuration/rest.go:35`). For per-PR game-socket exposure, the bootstrap Job must seed the per-PR LB IP into atlas-tenants' `services` config after MetalLB assigns it.
 
@@ -1357,7 +1408,7 @@ curl -fsS -X PATCH \
 ATLAS_STEP=done log info "bootstrap complete"
 ```
 
-> **Verification gate:** the exact PATCH body shape is locked in Phase 0 Task 0.6's preflight capture. If the live atlas-tenants schema differs (e.g. nested under `worlds[].channels[].host`), update the `jq` filter accordingly. Both atlas-login and atlas-channel read the same configuration resource.
+> **Verification gate:** the exact PATCH body shape is locked in Phase 0 Task 0.7's preflight capture. If the live atlas-tenants schema differs (e.g. nested under `worlds[].channels[].host`), update the `jq` filter accordingly. Both atlas-login and atlas-channel read the same configuration resource.
 
 - [ ] **Step 4: Create `services/atlas-pr-bootstrap/scripts/cleanup.sh`**
 
@@ -1934,6 +1985,38 @@ metadata:
 data:
   ATLAS_ENV: "PLACEHOLDER_ATLAS_ENV"
 ```
+
+- [ ] **Step 1b: Create `deploy/k8s/overlays/pr/patches/pvc-exclude-recurring-backup.yaml`**
+
+Annotates each per-PR PVC so the Longhorn CSI driver labels the volume with the RecurringJob exclusion captured in Phase 0 Task 0.6. PR PVCs are ephemeral; they have no place in the daily/weekly NFS backup cadence.
+
+```yaml
+# Exact annotation key/value comes from Phase 0 Task 0.6 preflight capture.
+# The pattern below is illustrative; replace with the captured value.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-data-pvc
+  annotations:
+    recurringjob.longhorn.io/source: "disabled"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-wz-input-pvc
+  annotations:
+    recurringjob.longhorn.io/source: "disabled"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-assets-pvc
+  annotations:
+    recurringjob.longhorn.io/source: "disabled"
+```
+
+Add this patch to the PR overlay's `patches:` list in `kustomization.yaml`.
 
 - [ ] **Step 2: Create `deploy/k8s/overlays/pr/patches/db-name-suffix.yaml`**
 
@@ -3474,6 +3557,30 @@ done
 
 # k8s manifests as-applied
 kubectl get -n atlas all,configmap,secret,pvc -o yaml > /tmp/pre-cutover-atlas.yaml
+
+# Longhorn backups of all three atlas PVs to NFS target. The standard
+# daily backup may be up to 24h old; this snapshot is the canonical
+# rollback point and stays on NFS until manually purged.
+for pvc in atlas-data-pvc atlas-wz-input-pvc atlas-assets-pvc; do
+    pv=$(kubectl get pvc -n atlas "$pvc" -o jsonpath='{.spec.volumeName}')
+    cat <<EOF | kubectl apply -f -
+apiVersion: longhorn.io/v1beta2
+kind: Backup
+metadata:
+  name: pre-cutover-${pvc}-$(date +%s)
+  namespace: longhorn-system
+  labels:
+    atlas.cutover-snapshot: "task-063"
+spec:
+  snapshotName: pre-cutover-${pvc}
+  labels:
+    atlas.cutover-snapshot: "task-063"
+EOF
+done
+
+# Wait for backups to complete before proceeding
+kubectl wait --for=condition=Ready backup -n longhorn-system \
+    -l atlas.cutover-snapshot=task-063 --timeout 30m
 ```
 
 - [ ] **Step 3: Confirm ApplicationSet is paused**
@@ -3667,7 +3774,7 @@ Walked the design's §3 through §13 (with the symmetric-main and game-socket re
 | §12 CI changes | Phase 9 |
 | §13 Decomposition preview | this plan |
 
-Phase 0 pre-flight tasks (0.1 CREATEDB, 0.2 Kafka auto-create, 0.3 raw-redis-key audit, 0.4 Longhorn capacity, 0.5 MetalLB pool, 0.6 atlas-tenants channel-host shape) gate every code-changing phase that depends on the live cluster's behaviour matching design assumptions.
+Phase 0 pre-flight tasks (0.1 CREATEDB, 0.2 Kafka auto-create, 0.3 raw-redis-key audit, 0.4 Longhorn capacity, 0.5 MetalLB pool, 0.6 Longhorn RecurringJob exclusion, 0.7 atlas-tenants channel-host shape) gate every code-changing phase that depends on the live cluster's behaviour matching design assumptions.
 
 PRD acceptance criteria (PRD §10.1–10.8) all map to one or more plan tasks; PRD §4.1's `ATLAS_ENV=m4in` literal is honoured as `main` (more readable; one-line change in `deploy/k8s/overlays/main/atlas-env-tokens.yaml` if you prefer the original literal).
 

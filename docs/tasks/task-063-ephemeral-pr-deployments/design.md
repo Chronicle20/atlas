@@ -324,13 +324,39 @@ Each PR env exposes the Maple game socket via **one MetalLB-allocated LoadBalanc
   - The pod-level `env: ATLAS_ENV: a3f7` on every Deployment via Kustomize patch.
 - The dual destination (ConfigMap + pod env) is intentional. The pod env is what `libs/atlas-redis` reads at startup; the ConfigMap is what the Argo hook Jobs (PreSync DB create, PostDelete cleanup) read because they are not patched by the same overlay.
 
-### 5.7 PVC isolation
+### 5.7 PVC and PV isolation
 
-Three services own PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`). PVCs are namespace-scoped: when the PR overlay deploys to `atlas-pr-<N>`, Kubernetes creates fresh same-named PVCs in that namespace and Longhorn provisions a separate PV for each. **Isolation is automatic; no explicit suffixing needed.**
+Three services own PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`).
 
-Cleanup follows from namespace deletion. With the longhorn StorageClass at `reclaimPolicy: Delete` (verified Phase 0 Task 0.4), the backing PVs are deleted along with the namespace. The PostDelete cleanup hook does not need to handle PVCs explicitly.
+**Layered isolation:**
 
-Storage budget is the per-env footprint times the soft cap from preflight.md. If usage approaches Longhorn pool capacity, add per-namespace `LimitRange` (§10 future work).
+- **PVC layer (namespace-scoped).** A PVC named `atlas-data-pvc` in `atlas-pr-5` is a different API object from the same-named PVC in `atlas-pr-7` or `atlas-main`. Each PR overlay creates its own PVCs at sync time.
+- **PV layer (cluster-scoped, dynamically provisioned).** PVs themselves are not namespaced. But each PVC referencing `storageClassName: longhorn` triggers the Longhorn CSI provisioner to mint a **fresh PV with a generated name** (`pvc-<uuid>`) and bind it. Two PVCs with identical names in different namespaces produce two distinct PVs with distinct backing storage.
+- **Binding lock.** Once a PV binds to a PVC, its `claimRef` pins it to that (namespace, PVC-name) pair. The PV will not re-bind to another namespace's PVC unless explicitly released.
+
+**Cleanup chain:** namespace delete → PVC delete → PV delete (because `reclaimPolicy: Delete`, verified Phase 0 Task 0.4) → Longhorn frees the backing volume. The PostDelete hook does not handle PVCs explicitly; namespace deletion is sufficient.
+
+**Caveat — `Released` PVs.** If `reclaimPolicy` is ever flipped to `Retain` (it isn't today), namespace deletion would leave PVs in `Released` state with stale `claimRef`s. The cleanup hook would then need explicit `kubectl delete pv -l atlas.env=<token>` calls. Phase 0 Task 0.4 locks `reclaimPolicy: Delete` as a precondition.
+
+### 5.8 Longhorn backup behaviour
+
+Live state on `bee`:
+
+- BackupTarget: `nfs://nas.tumidanski:/volume1/LonghornBackup`
+- RecurringJobs (in `longhorn-system` namespace, both targeting group `default`):
+  - `backup-daily` — cron `0 2 * * *`, retain 7
+  - `backup-weekly` — cron `0 3 * * 0`, retain 4
+- Default Longhorn behaviour: every PV with default labels joins the `default` group, so the daily/weekly cadence applies automatically.
+
+**Implications of this change:**
+
+1. **Main env backups continue uninterrupted.** RecurringJobs are group-targeted, not namespace-targeted. After cutover, `atlas-main`'s three PVs auto-join `default` and the existing daily/weekly cadence covers them. No re-configuration of RecurringJobs needed.
+2. **Old PV history persists on NFS.** Pre-cutover backups under the old PV names remain on `nas.tumidanski` until they age out (7 daily / 4 weekly retention). They are no longer attached to any live volume, but can be browsed in the Longhorn UI for audit / disaster recovery.
+3. **Pre-cutover safety snapshot is required.** Phase 11 Task 11.0 takes a fresh Longhorn backup of all three PVs immediately before namespace deletion. This is the rollback point if cutover fails after Task 11.5. The standard daily backup may be up to 24 hours stale.
+4. **PR-env PVs would inherit backups too — and shouldn't.** Without intervention, every per-PR PVC auto-joins `default`, so `3 × N × (daily 7 + weekly 4)` backup chains accumulate on NFS for ephemeral data. The PR overlay sets the Longhorn label `recurringjob.longhorn.io/source: disabled` on each per-PR PVC (annotation propagated to the volume by the Longhorn CSI driver) so RecurringJobs skip them. Exact label syntax verified at plan Phase 0 Task 0.6.
+5. **Manual restore-to-atlas-main during cutover is an option.** If the user wants to preserve current `atlas-data-pvc` contents (5-min re-bootstrap savings), the cutover can switch from "delete namespace + re-bootstrap" to "Longhorn-backup-restore into atlas-main PVCs" — restore time depends on backup size and NFS throughput. Default plan choice: re-bootstrap, because it's cleaner and within the maintenance window. The runbook documents both paths.
+
+Storage budget is the per-env footprint times the soft cap from `preflight.md`. If usage approaches Longhorn pool capacity, add per-namespace `LimitRange` (§10 future work).
 
 ### 5.2 Postgres DB-name suffixing
 

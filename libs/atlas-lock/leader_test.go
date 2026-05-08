@@ -319,3 +319,40 @@ func TestRun_PanicInFn_RecoveredAndReleased(t *testing.T) {
 	cancel()
 	require.NoError(t, <-done, "panic must not escape Run")
 }
+
+func TestRun_GracePeriodHonored(t *testing.T) {
+	rc, mr := newTestClient(t)
+	le, err := New(rc, "grace-test",
+		WithTTL(5*time.Second),
+		WithRefreshInterval(time.Second),
+		WithBackoff(time.Second),
+		WithGracePeriod(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	fnStarted := make(chan struct{})
+
+	done := make(chan error, 1)
+	go func() {
+		done <- le.Run(ctx, func(leaderCtx context.Context) {
+			close(fnStarted)
+			// Ignore leaderCtx.Done() — simulate runaway fn.
+			time.Sleep(10 * time.Second)
+		})
+	}()
+
+	<-fnStarted
+	require.Eventually(t, func() bool {
+		return mr.Exists("atlas:lock:grace-test")
+	}, 2*time.Second, 25*time.Millisecond)
+
+	// Cancel; Run should return within gracePeriod + small slack, not 10s.
+	cancel()
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run did not return within gracePeriod + slack — runaway fn blocked it")
+	}
+}

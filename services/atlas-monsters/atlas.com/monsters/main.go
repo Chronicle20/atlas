@@ -7,17 +7,20 @@ import (
 	"atlas-monsters/monster"
 	"atlas-monsters/monster/information"
 	"atlas-monsters/tasks"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-monsters/world"
+	"context"
 	"os"
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
+	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
 )
 
 const serviceName = "atlas-monsters"
@@ -85,12 +88,39 @@ func main() {
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 
-	tasks.Register(l, tdm.Context())(monster.NewRegistryAudit(l, time.Second*30))
-	tasks.Register(l, tdm.Context())(monster.NewStatusExpirationTask(l, tdm.Context(), time.Second))
-	tasks.Register(l, tdm.Context())(monster.NewDropTimerTask(l, tdm.Context(), time.Second))
-	tasks.Register(l, tdm.Context())(monster.NewMonsterAggroDecayTask(l, tdm.Context(), monster.AggroSweepInterval))
-	tasks.Register(l, tdm.Context())(monster.NewMonsterSkillPickerSweepTask(l, tdm.Context(), monster.MonsterSkillPickerSweepInterval))
-	tasks.Register(l, tdm.Context())(monster.NewMonsterRecoveryTask(l, tdm.Context(), monster.MonsterRecoveryInterval))
+	registerSweepTasks := func(l logrus.FieldLogger, ctx context.Context) {
+		tasks.Register(l, ctx)(monster.NewRegistryAudit(l, time.Second*30))
+		tasks.Register(l, ctx)(monster.NewStatusExpirationTask(l, ctx, time.Second))
+		tasks.Register(l, ctx)(monster.NewDropTimerTask(l, ctx, time.Second))
+		tasks.Register(l, ctx)(monster.NewMonsterAggroDecayTask(l, ctx, monster.AggroSweepInterval))
+		tasks.Register(l, ctx)(monster.NewMonsterSkillPickerSweepTask(l, ctx, monster.MonsterSkillPickerSweepInterval))
+		tasks.Register(l, ctx)(monster.NewMonsterRecoveryTask(l, ctx, monster.MonsterRecoveryInterval))
+	}
+
+	if leaderEnabled(l) {
+		ttl := leaderTTL(l)
+		le, err := lock.New(rc, "monsters-sweep",
+			lock.WithTTL(ttl),
+			lock.WithRefreshInterval(leaderRefresh(l, ttl)),
+			lock.WithBackoff(leaderBackoff(l)),
+			lock.WithLogger(l),
+		)
+		if err != nil {
+			l.WithError(err).Fatal("Unable to construct LeaderElection.")
+		}
+		go func() {
+			err := le.Run(tdm.Context(), func(leaderCtx context.Context) {
+				registerSweepTasks(l, leaderCtx)
+				<-leaderCtx.Done()
+			})
+			if err != nil {
+				l.WithError(err).Errorf("LeaderElection.Run exited with error.")
+			}
+		}()
+	} else {
+		l.Warnf("MONSTER_LEADER_ELECTION_ENABLED=false — sweep tasks run unconditionally on this pod.")
+		registerSweepTasks(l, tdm.Context())
+	}
 
 	tdm.TeardownFunc(monster.Teardown(l))
 	tdm.TeardownFunc(tracing.Teardown(l)(tc))

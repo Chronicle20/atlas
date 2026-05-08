@@ -63,6 +63,17 @@ func (r *Reader) ReadBytes(n int) ([]byte, error) {
 	return buf, err
 }
 
+// ReadAt reads exactly n bytes starting at offset, without modifying the
+// file's seek pointer. Safe for concurrent use against the same Reader
+// because os.File.ReadAt is documented as concurrent-safe.
+func (r *Reader) ReadAt(offset int64, n int) ([]byte, error) {
+	buf := make([]byte, n)
+	if _, err := r.f.ReadAt(buf, offset); err != nil {
+		return nil, err
+	}
+	return buf, nil
+}
+
 // ReadInt16 reads a little-endian int16.
 func (r *Reader) ReadInt16() (int16, error) {
 	var buf [2]byte

@@ -98,14 +98,14 @@ func (wz *File) EncryptionKey() *crypto.WzKey {
 // ReadCanvasData reads raw canvas data from the WZ file at the given offset and size.
 // The first byte at the offset is a flag/header byte that is skipped (matching MapleLib's approach).
 // Returns (size - 1) bytes of actual compressed canvas data.
+//
+// Uses os.File.ReadAt (positional read) which does not modify the file's seek
+// pointer and is safe for concurrent calls from multiple goroutines.
 func (wz *File) ReadCanvasData(offset int64, size int32) ([]byte, error) {
 	if size <= 1 {
 		return nil, nil
 	}
-	if _, err := wz.reader.Seek(offset+1, io.SeekStart); err != nil {
-		return nil, err
-	}
-	return wz.reader.ReadBytes(int(size - 1))
+	return wz.reader.ReadAt(offset+1, int(size-1))
 }
 
 // CanvasEncryptionKey returns the raw key bytes for canvas block decryption.

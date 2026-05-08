@@ -11,6 +11,7 @@ import (
 	monster2 "atlas-maps/data/map/monster"
 	"atlas-maps/map/character"
 
+	"github.com/google/uuid"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -282,6 +283,53 @@ func (r *SpawnPointRegistry) GetSpawnPointsForMap(ctx context.Context, mapKey ch
 	}
 
 	return spawnPoints, true
+}
+
+// FlushTenant deletes every spawn-point hash for tenantId.
+// Uses SCAN with COUNT=100 to avoid blocking the broker on large key
+// spaces; pipelines DEL per batch. Errors are logged at WARN per batch
+// and surfaced via the returned error; partial deletions are not rolled
+// back.
+func (r *SpawnPointRegistry) FlushTenant(ctx context.Context, l logrus.FieldLogger, tenantId uuid.UUID) (int, error) {
+	pattern := fmt.Sprintf("atlas:maps:spawn:%s:*", tenantId.String())
+	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := r.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, perr := pipe.Exec(ctx); perr != nil {
+			l.WithError(perr).Warnf("Spawn-registry DEL batch failure for tenant [%s].", tenantId)
+			if firstErr == nil {
+				firstErr = perr
+			}
+		}
+		pipe = r.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if ierr := iter.Err(); ierr != nil {
+		l.WithError(ierr).Warnf("Spawn-registry SCAN failure for tenant [%s].", tenantId)
+		if firstErr == nil {
+			firstErr = ierr
+		}
+	}
+	return deleted, firstErr
 }
 
 // SetSpawnPointsForMap sets spawn points for a map key directly. Primarily used for testing.

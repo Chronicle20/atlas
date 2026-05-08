@@ -382,5 +382,39 @@ func (s *storeImpl) MarkJobTerminal(ctx context.Context, jobId string, terminal 
 	return false, errors.New("MarkJobTerminal: too many WATCH retries")
 }
 func (s *storeImpl) MarkUnitsSkippedByStatus(ctx context.Context, jobId string, fromStatuses []UnitStatus) error {
-	return errors.New("not implemented")
+	allow := map[UnitStatus]bool{}
+	for _, st := range fromStatuses {
+		allow[st] = true
+	}
+	uKey := unitsKey(jobId)
+	rawAll, err := s.client.HGetAll(ctx, uKey).Result()
+	if err != nil {
+		return err
+	}
+	pipe := s.client.TxPipeline()
+	now := time.Now().UTC()
+	changed := 0
+	for wzFile, raw := range rawAll {
+		u, err := unitFromJSON(wzFile, raw)
+		if err != nil {
+			continue
+		}
+		if !allow[u.Status()] {
+			continue
+		}
+		nu := NewUnitBuilder().SetWzFile(wzFile).SetStatus(UnitSkipped).
+			SetStartedAt(u.StartedAt()).SetCompletedAt(now).Build()
+		nraw, err := unitToJSON(nu)
+		if err != nil {
+			continue
+		}
+		pipe.HSet(ctx, uKey, wzFile, nraw)
+		changed++
+	}
+	if changed == 0 {
+		return nil
+	}
+	pipe.HSet(ctx, jobKey(jobId), "updatedAt", now.Format(time.RFC3339))
+	_, err = pipe.Exec(ctx)
+	return err
 }

@@ -241,3 +241,35 @@ func TestStore_MarkJobTerminal_Once(t *testing.T) {
 		t.Fatalf("completedAt not set")
 	}
 }
+
+func TestStore_MarkUnitsSkippedByStatus(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j9", []string{"Map.wz", "Mob.wz", "Item.wz"})
+	if _, err := s.MarkUnitRunning(ctx, "j9", "Mob.wz"); err != nil {
+		t.Fatalf("MarkUnitRunning: %v", err)
+	}
+
+	if err := s.MarkUnitsSkippedByStatus(ctx, "j9", []UnitStatus{UnitPending}); err != nil {
+		t.Fatalf("MarkUnitsSkippedByStatus: %v", err)
+	}
+
+	_, units, err := s.Get(ctx, "j9")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	statuses := map[string]UnitStatus{}
+	for _, u := range units {
+		statuses[u.WzFile()] = u.Status()
+	}
+	if statuses["Map.wz"] != UnitSkipped {
+		t.Fatalf("Map.wz: %s", statuses["Map.wz"])
+	}
+	if statuses["Item.wz"] != UnitSkipped {
+		t.Fatalf("Item.wz: %s", statuses["Item.wz"])
+	}
+	if statuses["Mob.wz"] != UnitRunning {
+		t.Fatalf("Mob.wz must NOT have been skipped: %s", statuses["Mob.wz"])
+	}
+}

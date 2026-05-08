@@ -1,0 +1,28 @@
+# Personal identifier denylist — TEMPLATE
+#
+# Copy this file to `.gitleaks.local.toml` (which is gitignored) and replace
+# the placeholders with your own identifiers: developer username, hostnames,
+# Kubernetes/k3s cluster names, machine names, real names, etc.
+#
+# The local file is loaded by the pre-commit hook in .githooks/pre-commit
+# so each developer can scan for their own tokens without ever committing
+# them. CI uses .gitleaks.toml only and never sees this file.
+
+[extend]
+path = ".gitleaks.toml"
+
+[[rules]]
+id = "personal-username"
+description = "Developer username"
+regex = '''(?i)\bYOUR_USERNAME_HERE\b'''
+tags = ["identifying", "personal"]
+
+[[rules]]
+id = "personal-cluster-name"
+description = "Personal cluster / hostname"
+regex = '''(?i)\bYOUR_CLUSTER_NAME_HERE\b'''
+tags = ["identifying", "personal"]
+
+# Add more [[rules]] blocks below for any additional tokens you want
+# scanned. Use \b...\b word boundaries to avoid matching short words
+# inside unrelated identifiers.

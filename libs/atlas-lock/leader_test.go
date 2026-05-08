@@ -204,3 +204,81 @@ func TestRun_TwoCompetitors_OneAcquires(t *testing.T) {
 	require.NoError(t, <-doneB)
 	require.Equal(t, int32(1), atomic.LoadInt32(&maxConcurrent), "exactly one fn ran across the whole window")
 }
+
+func TestRun_RenewalExtendsLeasePastTTL(t *testing.T) {
+	rc, mr := newTestClient(t)
+	le, err := New(rc, "renew-test",
+		WithTTL(5*time.Second),
+		WithRefreshInterval(time.Second),
+		WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	done := make(chan error, 1)
+	go func() {
+		done <- le.Run(ctx, func(leaderCtx context.Context) {
+			<-leaderCtx.Done()
+		})
+	}()
+
+	// Wait for acquire.
+	require.Eventually(t, func() bool {
+		return mr.Exists("atlas:lock:renew-test")
+	}, 2*time.Second, 25*time.Millisecond)
+
+	// Advance miniredis time past the original TTL — renewer should keep the
+	// lease alive.
+	mr.FastForward(4 * time.Second)
+	time.Sleep(1500 * time.Millisecond) // let renewer tick at least once after FastForward
+	mr.FastForward(4 * time.Second)
+	time.Sleep(1500 * time.Millisecond)
+
+	require.True(t, mr.Exists("atlas:lock:renew-test"), "lease still held after > TTL elapsed")
+
+	cancel()
+	require.NoError(t, <-done)
+}
+
+func TestRun_LeaseLossCancelsInnerCtx(t *testing.T) {
+	rc, mr := newTestClient(t)
+	le, err := New(rc, "lose-test",
+		WithTTL(5*time.Second),
+		WithRefreshInterval(time.Second),
+		WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	outerCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	innerCtxCancelled := make(chan struct{})
+
+	done := make(chan error, 1)
+	go func() {
+		done <- le.Run(outerCtx, func(leaderCtx context.Context) {
+			<-leaderCtx.Done()
+			close(innerCtxCancelled)
+		})
+	}()
+
+	// Wait for acquire.
+	require.Eventually(t, func() bool {
+		return mr.Exists("atlas:lock:lose-test")
+	}, 2*time.Second, 25*time.Millisecond)
+
+	// Force-expire the lease in miniredis. Next Refresh will return ErrNotObtained.
+	mr.FastForward(10 * time.Second)
+
+	// fn's leaderCtx should be cancelled.
+	select {
+	case <-innerCtxCancelled:
+	case <-time.After(5 * time.Second):
+		t.Fatal("inner ctx not cancelled within 5s of lease loss")
+	}
+
+	cancel()
+	require.NoError(t, <-done)
+}

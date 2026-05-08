@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/bsm/redislock"
@@ -111,9 +112,9 @@ func (le *LeaderElection) keyPath() string {
 // or the outer ctx is cancelled. On outer-ctx cancel, Run releases the lease
 // (best-effort) and returns nil.
 //
-// This minimal version has no renewal, no panic recovery, and no grace
-// period — those are added in subsequent commits. It exists to validate
-// the acquire/release skeleton.
+// A background renewer goroutine refreshes the lease every refreshInterval.
+// If the lease cannot be renewed (ErrNotObtained), the inner leaderCtx is
+// cancelled so fn can detect lease loss.
 func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) error {
 	locker := redislock.New(le.rc)
 
@@ -126,7 +127,6 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 			RetryStrategy: redislock.NoRetry(),
 		})
 		if err != nil {
-			// Held by other or redis error — back off and retry.
 			select {
 			case <-ctx.Done():
 				return nil
@@ -140,27 +140,62 @@ func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) err
 
 		leaderCtx, cancelLeader := context.WithCancel(ctx)
 		fnDone := make(chan struct{})
+		renewerDone := make(chan struct{})
+
+		// First-writer-wins reason; multiple goroutines call setReason.
+		var lostReason atomic.Value // string
+		setReason := func(r string) { lostReason.CompareAndSwap(nil, r) }
 
 		go func() {
 			defer close(fnDone)
 			fn(leaderCtx)
 		}()
 
-		// Wait for outer ctx to cancel or fn to return on its own.
+		go func() {
+			defer close(renewerDone)
+			t := time.NewTicker(le.cfg.refreshInterval)
+			defer t.Stop()
+			for {
+				select {
+				case <-leaderCtx.Done():
+					return
+				case <-t.C:
+					rerr := rl.Refresh(ctx, le.cfg.ttl, nil)
+					if rerr == nil {
+						continue
+					}
+					if errors.Is(rerr, redislock.ErrNotObtained) {
+						setReason("renew_failed")
+						le.cfg.log.WithError(rerr).Warnf("Lease lost during refresh for [%s].", le.name)
+						cancelLeader()
+						return
+					}
+					renewFailedTotal.WithLabelValues(le.name).Inc()
+					le.cfg.log.WithError(rerr).Warnf("Renewal attempt failed for [%s] (transient).", le.name)
+				}
+			}
+		}()
+
 		select {
 		case <-ctx.Done():
+			setReason("context_cancelled")
 		case <-fnDone:
+			setReason("released")
 		}
 		cancelLeader()
 		<-fnDone
+		<-renewerDone
 
-		// Best-effort release.
 		relCtx, relCancel := context.WithTimeout(context.Background(), 2*time.Second)
 		_ = rl.Release(relCtx)
 		relCancel()
 
-		lostTotal.WithLabelValues(le.name, "released").Inc()
-		le.cfg.log.Infof("Lost leader for [%s] (reason: released).", le.name)
+		reason, _ := lostReason.Load().(string)
+		if reason == "" {
+			reason = "released"
+		}
+		lostTotal.WithLabelValues(le.name, reason).Inc()
+		le.cfg.log.Infof("Lost leader for [%s] (reason: %s).", le.name, reason)
 
 		if ctx.Err() != nil {
 			return nil

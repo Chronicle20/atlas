@@ -40,6 +40,7 @@ patches:
   - path: patches/db-name-suffix.yaml
   - path: patches/consumer-group-env.yaml
   - path: patches/pvc-storageclass.yaml
+  - path: patches/lb-allocate.yaml
 
 # Per-env atlas-env ConfigMap with topic suffixing.
 configMapGenerator:

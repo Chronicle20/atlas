@@ -3,6 +3,8 @@ package redis
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -90,3 +92,73 @@ func TestTenantRegistry_Clear_TenantIsolation(t *testing.T) {
 		}
 	}
 }
+
+func TestTenantRegistry_Clear_NamespaceIsolation(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	regA := NewTenantRegistry[string, string](client, "test:clear:A", func(k string) string { return k })
+	regB := NewTenantRegistry[string, string](client, "test:clear:B", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	for i := 0; i < 4; i++ {
+		_ = regA.Put(ctx, tm, fmt.Sprintf("k%d", i), "vA")
+		_ = regB.Put(ctx, tm, fmt.Sprintf("k%d", i), "vB")
+	}
+
+	deleted, err := regA.Clear(ctx, tm)
+	if err != nil {
+		t.Fatalf("Clear: %v", err)
+	}
+	if deleted != 4 {
+		t.Fatalf("deleted = %d, want 4", deleted)
+	}
+	for i := 0; i < 4; i++ {
+		if ok, _ := regA.Exists(ctx, tm, fmt.Sprintf("k%d", i)); ok {
+			t.Fatalf("regA key k%d should be gone", i)
+		}
+		if ok, _ := regB.Exists(ctx, tm, fmt.Sprintf("k%d", i)); !ok {
+			t.Fatalf("regB key k%d should still exist", i)
+		}
+	}
+}
+
+func TestTenantRegistry_Clear_RaceCleanWithPut(t *testing.T) {
+	client, _ := setupTestRedis(t)
+	defer client.Close()
+	reg := NewTenantRegistry[string, string](client, "test:clear:race", func(k string) string { return k })
+	tm := newTestTenant(t, "GMS")
+	ctx := context.Background()
+
+	for i := 0; i < 50; i++ {
+		_ = reg.Put(ctx, tm, fmt.Sprintf("seed%d", i), "v")
+	}
+
+	var wg sync.WaitGroup
+	stop := make(chan struct{})
+	for w := 0; w < 4; w++ {
+		wg.Add(1)
+		go func(w int) {
+			defer wg.Done()
+			i := 0
+			for {
+				select {
+				case <-stop:
+					return
+				default:
+					_ = reg.Put(ctx, tm, fmt.Sprintf("w%d-k%d", w, i), "v")
+					i++
+				}
+			}
+		}(w)
+	}
+
+	if _, err := reg.Clear(ctx, tm); err != nil {
+		t.Fatalf("Clear: %v", err)
+	}
+	close(stop)
+	wg.Wait()
+}
+
+// helper for non-shared use; ensures package compiles with strconv import.
+var _ = strconv.Itoa

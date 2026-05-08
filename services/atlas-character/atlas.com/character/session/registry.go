@@ -35,7 +35,7 @@ func GetRegistry() *Registry {
 }
 
 func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) Add(ctx context.Context, characterId uint32, ch channel.Model, state State) error {

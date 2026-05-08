@@ -6,9 +6,16 @@ set -euo pipefail
 log() {
     local level="$1"; shift
     local step="${ATLAS_STEP:-init}"
-    printf '{"ts":"%s","level":"%s","atlas.env":"%s","atlas.cleanup-step":"%s","msg":%s}\n' \
-        "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$level" "${ATLAS_ENV:-}" "$step" \
-        "$(printf '%s' "$*" | jq -Rs .)"
+    if command -v jq >/dev/null 2>&1; then
+        printf '{"ts":"%s","level":"%s","atlas.env":"%s","atlas.step":"%s","msg":%s}\n' \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$level" "${ATLAS_ENV:-}" "$step" \
+            "$(printf '%s' "$*" | jq -Rs .)"
+    else
+        # Fallback for environments without jq (e.g., bats hosts without
+        # the bootstrap image installed). Emits the same raw message
+        # without JSON encoding so test assertions still match.
+        printf '[%s] %s\n' "$level" "$*" >&2
+    fi
 }
 
 require_env() {
@@ -38,5 +45,15 @@ http_ok() {
     local url=$1
     local status
     status=$(curl -s -o /dev/null -w '%{http_code}' "$url" || echo 000)
+    [ "$status" = "200" ] || [ "$status" = "204" ]
+}
+
+http_ok_tenant() {
+    local url=$1
+    local status
+    status=$(curl -s -o /dev/null -w '%{http_code}' \
+        -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+        -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+        "$url" || echo 000)
     [ "$status" = "200" ] || [ "$status" = "204" ]
 }

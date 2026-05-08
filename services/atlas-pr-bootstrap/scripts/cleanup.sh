@@ -21,6 +21,11 @@ set -euo pipefail
 
 require_env ATLAS_ENV DB_HOST DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
 
+# Phase 0 Task 0.1 finding: db-credentials secret values carry trailing
+# whitespace (literal space + CR + LF). Strip before passing to psql.
+DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
+DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
+
 ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 IFS=',' read -ra dbs <<< "$ATLAS_DB_NAMES"
 for db in "${dbs[@]}"; do

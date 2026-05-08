@@ -13,7 +13,7 @@ Quick reference for executing agents. Read alongside `plan.md`.
 
 ## Owning service
 
-**atlas-maps** — `<home>/source/atlas-ms/atlas/services/atlas-maps/atlas.com/maps/`
+**atlas-maps** — `<repo-root>/services/atlas-maps/atlas.com/maps/`
 
 Atlas-channel becomes a dumb renderer for the new `MAP_TIMER_STARTED` event.
 

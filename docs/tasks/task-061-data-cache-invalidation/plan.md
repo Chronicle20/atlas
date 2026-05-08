@@ -15,7 +15,7 @@
 - [ ] **Verify task-060 v2 is merged to main**
 
 ```bash
-cd <home>/source/atlas-ms/atlas/.worktrees/task-061-data-cache-invalidation
+cd <worktree-root>
 git log main --oneline | grep -i 'task-060' | head -3
 ```
 
@@ -1912,7 +1912,7 @@ git commit -m "feat(deploy): add EVENT_TOPIC_DATA to shared env config"
 - [ ] **Step 1: Build all four affected Go modules**
 
 ```bash
-cd <home>/source/atlas-ms/atlas/.worktrees/task-061-data-cache-invalidation
+cd <worktree-root>
 ( cd libs/atlas-redis                          && go build ./... && go test -race ./... )
 ( cd services/atlas-data/atlas.com/data        && go build ./... && go test -race ./... )
 ( cd services/atlas-monsters/atlas.com/monsters && go build ./... && go test -race ./... )
@@ -1947,12 +1947,12 @@ git commit -m "chore: refresh go.work.sum for task-061"
 ## Task 27: Update memory note for atlas-maps spawn cache
 
 **Files:**
-- Modify: `<home>/.claude/projects/-home-tumidanski-source-atlas-ms-atlas/memory/reference_atlas_maps_spawn_cache.md`
+- Modify: `~/.claude/projects/-<workspace-atlas>/memory/reference_atlas_maps_spawn_cache.md`
 
 - [ ] **Step 1: Read the current note**
 
 ```bash
-cat <home>/.claude/projects/-home-tumidanski-source-atlas-ms-atlas/memory/reference_atlas_maps_spawn_cache.md
+cat ~/.claude/projects/-<workspace-atlas>/memory/reference_atlas_maps_spawn_cache.md
 ```
 
 - [ ] **Step 2: Append a "Now automated" addendum**

@@ -15,7 +15,7 @@
 - Phases are deploy-ordered. Phase 1 lands first (atlas-maps additive), Phases 5+ require atlas-maps in place.
 - Within a phase, complete tasks top-to-bottom. Each task is TDD-shaped: failing test → minimal impl → passing test → commit.
 - Verification commands are per-task. The phase-level gate (build + tests + smoke) lives at the end of each phase.
-- All file paths are absolute or rooted at the worktree (`<home>/source/atlas-ms/atlas/.worktrees/task-055-forced-return-on-exit/`).
+- All file paths are absolute or rooted at the worktree (`<worktree-root>/`).
 - Always read the file before editing it (project rule).
 - Per `CLAUDE.md`: **never commit directly to `main`**. Commit on `task-055-forced-return-on-exit`.
 

@@ -101,7 +101,7 @@ After the migration sweeps, any reference to `dev/active/<slug>/` or `dev/audits
 - `CLAUDE.md` — any references updated.
 - `docs/TODO.md` — any references updated.
 - Any other markdown under `docs/` that points into the old locations.
-- Auto-memory files under `~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/` that reference `dev/active/...` paths (e.g., `MEMORY.md`) are updated; the `dev/active/` references there today point at redis-migration, automatic-tenant-filtering, saga-orchestrator-durability, character-shop-merchant, writer-packet-extraction.
+- Auto-memory files under `~/.claude/projects/-<workspace-pers-atlas>/memory/` that reference `dev/active/...` paths (e.g., `MEMORY.md`) are updated; the `dev/active/` references there today point at redis-migration, automatic-tenant-filtering, saga-orchestrator-durability, character-shop-merchant, writer-packet-extraction.
 
 ### 4.10 Removals
 

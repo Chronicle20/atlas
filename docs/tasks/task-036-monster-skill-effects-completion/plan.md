@@ -3636,7 +3636,7 @@ git commit -m "task-036: snapshot venom DPT from attacker stats at apply time"
 - [x] **Step 26.1: Build every touched service and lib**
 
 ```bash
-cd <home>/source/atlas-ms/atlas
+cd <repo-root>
 for path in libs/atlas-constants libs/atlas-packet services/atlas-monsters/atlas.com/monsters services/atlas-channel/atlas.com/channel services/atlas-buffs/atlas.com/buffs services/atlas-maps/atlas.com/maps; do
   echo "=== building $path ==="
   (cd "$path" && go build ./...) || exit 1

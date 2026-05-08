@@ -11,7 +11,7 @@ You are a product-minded engineer turning a rough backlog idea into a structured
 
 Run `git rev-parse --show-toplevel` and `pwd`. If the result is under `.worktrees/`, stop and tell the user:
 
-> You're already inside a task worktree. `/spec-task` must be run from the main repo (`<home>/source/atlas-ms/atlas`). `cd` there and re-run.
+> You're already inside a task worktree. `/spec-task` must be run from the main repo (`<repo-root>`). `cd` there and re-run.
 
 ### Step 2 — Determine task number and working slug
 
@@ -47,7 +47,7 @@ Once scope and slug are confirmed, invoke `superpowers:using-git-worktrees` to c
 - Branch: `task-NNN-<slug>` (from `main`)
 - Worktree: `.worktrees/task-NNN-<slug>` (relative to main repo root)
 
-From this point on, every file write, read, and shell command MUST use absolute paths under the worktree (e.g., `<home>/source/atlas-ms/atlas/.worktrees/task-NNN-<slug>/docs/tasks/task-NNN-<slug>/prd.md`). Do NOT write any files under the main repo's `docs/tasks/`.
+From this point on, every file write, read, and shell command MUST use absolute paths under the worktree (e.g., `<worktree-root><slug>/docs/tasks/task-NNN-<slug>/prd.md`). Do NOT write any files under the main repo's `docs/tasks/`.
 
 ### Step 6 — Generate the PRD inside the worktree
 

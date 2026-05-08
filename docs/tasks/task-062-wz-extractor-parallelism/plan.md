@@ -59,7 +59,7 @@ Always work in the task worktree.
 - [ ] **Step 0.1: Verify cwd and branch**
 
 ```bash
-cd <home>/source/atlas-ms/atlas/.worktrees/task-062-wz-extractor-parallelism
+cd <worktree-root>
 pwd                       # must end with /.worktrees/task-062-wz-extractor-parallelism
 git branch --show-current # must print task-062-wz-extractor-parallelism
 ```

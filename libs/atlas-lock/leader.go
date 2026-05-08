@@ -1,11 +1,13 @@
 package lock
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
+	"github.com/bsm/redislock"
 	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
@@ -100,4 +102,73 @@ func New(rc *goredis.Client, name string, opts ...Option) (*LeaderElection, erro
 
 func (le *LeaderElection) keyPath() string {
 	return keyPrefix + le.name
+}
+
+// Run blocks until ctx is cancelled.
+//
+// While the lease is held by this pod, fn is invoked once with a child
+// context. fn is expected to block on its leaderCtx until the lease is lost
+// or the outer ctx is cancelled. On outer-ctx cancel, Run releases the lease
+// (best-effort) and returns nil.
+//
+// This minimal version has no renewal, no panic recovery, and no grace
+// period — those are added in subsequent commits. It exists to validate
+// the acquire/release skeleton.
+func (le *LeaderElection) Run(ctx context.Context, fn func(context.Context)) error {
+	locker := redislock.New(le.rc)
+
+	for {
+		if ctx.Err() != nil {
+			return nil
+		}
+
+		rl, err := locker.Obtain(ctx, le.keyPath(), le.cfg.ttl, &redislock.Options{
+			RetryStrategy: redislock.NoRetry(),
+		})
+		if err != nil {
+			// Held by other or redis error — back off and retry.
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-time.After(le.cfg.backoff):
+			}
+			continue
+		}
+
+		acquiredTotal.WithLabelValues(le.name).Inc()
+		le.cfg.log.Infof("Acquired leader for [%s].", le.name)
+
+		leaderCtx, cancelLeader := context.WithCancel(ctx)
+		fnDone := make(chan struct{})
+
+		go func() {
+			defer close(fnDone)
+			fn(leaderCtx)
+		}()
+
+		// Wait for outer ctx to cancel or fn to return on its own.
+		select {
+		case <-ctx.Done():
+		case <-fnDone:
+		}
+		cancelLeader()
+		<-fnDone
+
+		// Best-effort release.
+		relCtx, relCancel := context.WithTimeout(context.Background(), 2*time.Second)
+		_ = rl.Release(relCtx)
+		relCancel()
+
+		lostTotal.WithLabelValues(le.name, "released").Inc()
+		le.cfg.log.Infof("Lost leader for [%s] (reason: released).", le.name)
+
+		if ctx.Err() != nil {
+			return nil
+		}
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(le.cfg.backoff):
+		}
+	}
 }

@@ -3,6 +3,7 @@ package objectid
 import (
 	"context"
 	"strconv"
+	"strings"
 	"testing"
 
 	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
@@ -145,6 +146,14 @@ func TestAllocator_keysRespectEnvPrefix(t *testing.T) {
 	gotFree := freeKey(tm)
 	if want := prefix + ":oid:" + id.String() + ":free"; gotFree != want {
 		t.Fatalf("freeKey = %q, want %q", gotFree, want)
+	}
+
+	// Non-tautological guard: keys must carry the atlas-redis library's
+	// "atlas" literal somewhere in the prefix. Catches a regression where
+	// KeyPrefix() drifts from the documented prefix shape ("atlas" or
+	// "<atlasEnv>:atlas").
+	if !strings.Contains(gotNext, "atlas") {
+		t.Fatalf("counterKey = %q does not contain the atlas literal", gotNext)
 	}
 }
 

@@ -1,0 +1,204 @@
+package job
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"strconv"
+	"time"
+
+	goredis "github.com/redis/go-redis/v9"
+)
+
+// Store persists Jobs and Units in Redis. All methods are safe for concurrent
+// use; correctness across pods is enforced by Redis primitives (HINCRBY,
+// WATCH/MULTI/EXEC) inside the implementation.
+type Store interface {
+	Create(ctx context.Context, j Job, units []Unit, ttlSeconds int) error
+	Get(ctx context.Context, jobId string) (Job, []Unit, error)
+
+	MarkJobRunning(ctx context.Context, jobId string) error
+	MarkUnitRunning(ctx context.Context, jobId, wzFile string) (claimed bool, err error)
+	FinalizeUnit(ctx context.Context, jobId, wzFile string, terminal UnitStatus, runErr error) (Counters, error)
+	MarkJobTerminal(ctx context.Context, jobId string, terminal JobStatus) (claimed bool, err error)
+	MarkUnitsSkippedByStatus(ctx context.Context, jobId string, fromStatuses []UnitStatus) error
+
+	Delete(ctx context.Context, jobId string) error
+}
+
+// ErrNotFound is returned by Get when the jobId does not exist.
+var ErrNotFound = errors.New("job not found")
+
+type storeImpl struct {
+	client *goredis.Client
+}
+
+func NewStore(client *goredis.Client) Store {
+	return &storeImpl{client: client}
+}
+
+type unitJSON struct {
+	Status      string `json:"status"`
+	StartedAt   string `json:"startedAt,omitempty"`
+	CompletedAt string `json:"completedAt,omitempty"`
+	Error       string `json:"error,omitempty"`
+}
+
+func unitToJSON(u Unit) (string, error) {
+	uj := unitJSON{Status: string(u.Status())}
+	if !u.StartedAt().IsZero() {
+		uj.StartedAt = u.StartedAt().UTC().Format(time.RFC3339)
+	}
+	if !u.CompletedAt().IsZero() {
+		uj.CompletedAt = u.CompletedAt().UTC().Format(time.RFC3339)
+	}
+	uj.Error = u.ErrorMessage()
+	b, err := json.Marshal(uj)
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func unitFromJSON(wzFile, raw string) (Unit, error) {
+	var uj unitJSON
+	if err := json.Unmarshal([]byte(raw), &uj); err != nil {
+		return Unit{}, err
+	}
+	b := NewUnitBuilder().SetWzFile(wzFile).SetStatus(UnitStatus(uj.Status))
+	if uj.StartedAt != "" {
+		if t, err := time.Parse(time.RFC3339, uj.StartedAt); err == nil {
+			b = b.SetStartedAt(t)
+		}
+	}
+	if uj.CompletedAt != "" {
+		if t, err := time.Parse(time.RFC3339, uj.CompletedAt); err == nil {
+			b = b.SetCompletedAt(t)
+		}
+	}
+	if uj.Error != "" {
+		b = b.SetErrorMessage(uj.Error)
+	}
+	return b.Build(), nil
+}
+
+func (s *storeImpl) Create(ctx context.Context, j Job, units []Unit, ttlSeconds int) error {
+	jKey := jobKey(j.Id())
+	uKey := unitsKey(j.Id())
+
+	jobFields := map[string]interface{}{
+		"tenantId":       j.TenantId(),
+		"region":         j.Region(),
+		"majorVersion":   strconv.Itoa(int(j.MajorVersion())),
+		"minorVersion":   strconv.Itoa(int(j.MinorVersion())),
+		"status":         string(j.Status()),
+		"unitsTotal":     strconv.Itoa(j.UnitsTotal()),
+		"unitsCompleted": "0",
+		"unitsFailed":    "0",
+		"xmlOnly":        strconv.FormatBool(j.XmlOnly()),
+		"imagesOnly":     strconv.FormatBool(j.ImagesOnly()),
+		"createdAt":      j.CreatedAt().UTC().Format(time.RFC3339),
+		"updatedAt":      j.UpdatedAt().UTC().Format(time.RFC3339),
+	}
+
+	pipe := s.client.TxPipeline()
+	pipe.HSet(ctx, jKey, jobFields)
+	if ttlSeconds > 0 {
+		pipe.Expire(ctx, jKey, time.Duration(ttlSeconds)*time.Second)
+	}
+
+	uMap := map[string]interface{}{}
+	for _, u := range units {
+		raw, err := unitToJSON(u)
+		if err != nil {
+			return err
+		}
+		uMap[u.WzFile()] = raw
+	}
+	if len(uMap) > 0 {
+		pipe.HSet(ctx, uKey, uMap)
+		if ttlSeconds > 0 {
+			pipe.Expire(ctx, uKey, time.Duration(ttlSeconds)*time.Second)
+		}
+	}
+	_, err := pipe.Exec(ctx)
+	return err
+}
+
+func (s *storeImpl) Get(ctx context.Context, jobId string) (Job, []Unit, error) {
+	fields, err := s.client.HGetAll(ctx, jobKey(jobId)).Result()
+	if err != nil {
+		return Job{}, nil, err
+	}
+	if len(fields) == 0 {
+		return Job{}, nil, ErrNotFound
+	}
+
+	parseInt := func(v string) int {
+		n, _ := strconv.Atoi(v)
+		return n
+	}
+	parseTime := func(v string) time.Time {
+		if v == "" {
+			return time.Time{}
+		}
+		t, _ := time.Parse(time.RFC3339, v)
+		return t
+	}
+	parseBool := func(v string) bool {
+		b, _ := strconv.ParseBool(v)
+		return b
+	}
+
+	jb := NewJobBuilder().
+		SetId(jobId).
+		SetTenantId(fields["tenantId"]).
+		SetRegion(fields["region"]).
+		SetMajorVersion(uint16(parseInt(fields["majorVersion"]))).
+		SetMinorVersion(uint16(parseInt(fields["minorVersion"]))).
+		SetStatus(JobStatus(fields["status"])).
+		SetUnitsTotal(parseInt(fields["unitsTotal"])).
+		SetUnitsCompleted(parseInt(fields["unitsCompleted"])).
+		SetUnitsFailed(parseInt(fields["unitsFailed"])).
+		SetXmlOnly(parseBool(fields["xmlOnly"])).
+		SetImagesOnly(parseBool(fields["imagesOnly"])).
+		SetCreatedAt(parseTime(fields["createdAt"])).
+		SetUpdatedAt(parseTime(fields["updatedAt"])).
+		SetCompletedAt(parseTime(fields["completedAt"]))
+	j := jb.Build()
+
+	uMap, err := s.client.HGetAll(ctx, unitsKey(jobId)).Result()
+	if err != nil {
+		return Job{}, nil, err
+	}
+	units := make([]Unit, 0, len(uMap))
+	for wzFile, raw := range uMap {
+		u, err := unitFromJSON(wzFile, raw)
+		if err != nil {
+			return Job{}, nil, err
+		}
+		units = append(units, u)
+	}
+	return j, units, nil
+}
+
+func (s *storeImpl) Delete(ctx context.Context, jobId string) error {
+	_, err := s.client.Del(ctx, jobKey(jobId), unitsKey(jobId)).Result()
+	return err
+}
+
+func (s *storeImpl) MarkJobRunning(ctx context.Context, jobId string) error {
+	return errors.New("not implemented")
+}
+func (s *storeImpl) MarkUnitRunning(ctx context.Context, jobId, wzFile string) (bool, error) {
+	return false, errors.New("not implemented")
+}
+func (s *storeImpl) FinalizeUnit(ctx context.Context, jobId, wzFile string, terminal UnitStatus, runErr error) (Counters, error) {
+	return Counters{}, errors.New("not implemented")
+}
+func (s *storeImpl) MarkJobTerminal(ctx context.Context, jobId string, terminal JobStatus) (bool, error) {
+	return false, errors.New("not implemented")
+}
+func (s *storeImpl) MarkUnitsSkippedByStatus(ctx context.Context, jobId string, fromStatuses []UnitStatus) error {
+	return errors.New("not implemented")
+}

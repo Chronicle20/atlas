@@ -1,10 +1,22 @@
 # Ephemeral Per-PR Deployments — Design
 
-Version: v1
+Version: v1.1
 Status: Draft
 Created: 2026-05-08
+Revised: 2026-05-08
 
 PRD: [`prd.md`](./prd.md)
+
+---
+
+## Revision notes
+
+**v1.1** — Two design decisions reversed after planning recon:
+
+1. **`main` is symmetric.** Earlier draft kept `main` unsuffixed to avoid migration. Reversed: `ATLAS_ENV=main`, namespace `atlas-main`, every DB/topic/group/Redis-key suffixed `-main`. The cutover is a one-time scheduled-downtime migration (~30 min) — see §7.
+2. **Game-socket is in v1 scope.** Earlier draft deferred per-PR game-socket exposure. Reversed: each PR gets one MetalLB-allocated LoadBalancer IP that backs both atlas-login and atlas-channel; the bootstrap Job seeds the IP into atlas-tenants `services` config so the login server hands clients the right host. See §4.6 and §6.2. Soft cap on concurrent PR envs = MetalLB pool free count.
+
+The plan's Phase 0 (preflight.md) verifies the live cluster's Longhorn capacity, MetalLB pool, and atlas-tenants config schema before any code lands.
 
 ---
 
@@ -37,9 +49,9 @@ The PRD listed ten open questions. Each is resolved below. The reasoning is in t
 | 4 | Kustomize plugin vs. `replacements:` | **Kustomize-native `replacements:` + `configMapGenerator`.** No Argo CD plugin. | §4.4 |
 | 5 | `main` cutover sequencing | **Argo adopts existing resources** via `ServerSideApply=true` and `prune=false`. Enable prune after a stability window. | §7 |
 | 6 | Argo SSO at v1 | **No SSO at v1.** Default admin password; SSO via Cattle/Rancher is follow-up. | §3.1 |
-| 7 | Game-socket port for PR envs | **HTTP-only at v1.** No game-socket exposure per PR; reviewers exercise the UI. | §4.5 |
+| 7 | Game-socket port for PR envs | **In scope at v1.** One MetalLB-allocated LoadBalancer IP per PR, backing both atlas-login and atlas-channel (their wire ports don't collide). Bootstrap Job seeds the IP into atlas-tenants `services` config. Soft cap = MetalLB pool free count. | §4.6 |
 | 8 | Bootstrap auth on SetupPage | **No auth required.** SetupPage endpoints are open in dev mode; bootstrap Job calls them via in-cluster service URLs. | §6.2 |
-| 9 | `main` env hash naming | **No hash on `main`.** `ATLAS_ENV` is unset on `main`; the helper functions pass through unchanged. PR envs only carry the 4-char token. **Eliminates one-time data migration of `main`.** | §5 |
+| 9 | `main` env hash naming | **`ATLAS_ENV=main` everywhere.** Symmetric with PR envs: namespace `atlas-main`, DB/topic/group/Redis-key all suffixed `-main`. One-time cutover migration documented in §7. | §5 |
 | 10 | Concurrent-PR resource budget | **No `LimitRange` at v1.** Measure during the first month; add caps if pressure observed. | §8.5 |
 
 ---
@@ -170,11 +182,25 @@ The current flat manifests in `deploy/k8s/*.yaml` move into `deploy/k8s/base/` v
 
 ### 4.2 `overlays/main`
 
+`main` is symmetric to PR envs. Same `replacements:` machinery, same patches, only the literal `ATLAS_ENV` value differs:
+
 ```yaml
 # kustomization.yaml
-namespace: atlas
+namespace: atlas-main
 resources:
   - ../../base
+  - atlas-env-tokens.yaml             # ATLAS_ENV: "main" (literal)
+patches:
+  - path: ../pr/patches/db-name-suffix.yaml          # shared with PR overlay
+  - path: ../pr/patches/consumer-group-env.yaml      # shared with PR overlay
+  - path: lb-pin.yaml                                # pins .231/.232 (existing reservations)
+configMapGenerator:
+  - name: atlas-env
+    behavior: replace
+    literals:
+      # Same shape as PR overlay; PLACEHOLDER_ATLAS_ENV → "main" via replacements
+replacements:
+  # Same rule shape as PR overlay
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
     newTag: latest
@@ -183,7 +209,15 @@ commonLabels:
   atlas.env: main
 ```
 
-`main` does **not** set `ATLAS_ENV` env var, does **not** suffix `DB_NAME`, does **not** suffix topic names, does **not** override `KAFKA_CONSUMER_GROUP`. Behaviour is identical to today, except now driven by Argo CD instead of `kubectl apply -f`.
+The differences vs `overlays/pr`:
+
+- `lb-pin.yaml` keeps `atlas-login-lb` at `192.168.23.231` and `atlas-channel-lb` at `192.168.23.232` (existing home-network reservations the Pi-holes already point at). PR overlay clears these so MetalLB allocates fresh IPs (§4.6).
+- No PostDelete cleanup hook: Application(atlas-main) is never deleted.
+- No PreSync DB-create hook: cutover migration (§7) renames existing DBs in place; subsequent fresh `main` re-installs from scratch are theoretical and use a distinct runbook.
+- No Pi-hole register hook: `main.atlas.home` and the bare `dev.atlas.home` are pinned in Pi-hole out-of-band.
+- `images:` pinned to `:latest`, not `pr-<N>-<sha>`.
+
+Symmetry means service code and `replacements:` rules don't branch on env type. Adding a future `staging` env is the same overlay shape with a different literal.
 
 ### 4.3 `overlays/pr`
 
@@ -256,7 +290,26 @@ spec:
 
 Routes only the existing nginx `atlas-ingress` (which already proxies to atlas-ui at `/`). `PLACEHOLDER` is rewritten to the PR number. The per-PR namespace contains its own `atlas-ingress` Deployment via the base, so no cross-namespace traffic.
 
-**Game socket: out of v1 scope.** Reviewers exercise the PR env via the web UI only. Adding game-socket access requires either per-PR LoadBalancer IPs (4 nodes × 1 IP each is the current pool — too few for concurrent PRs) or a port-mapping scheme on a single LB IP. Both are non-trivial; they live in §10.
+### 4.6 Per-PR game-socket exposure
+
+Each PR env exposes the Maple game socket via **one MetalLB-allocated LoadBalancer IP** that backs both atlas-login (wire ports 1200/8300/8700/9200/9500/18500) and atlas-channel (wire ports 1201/8301/8701/18501). The wire ports don't collide, so a single IP per PR suffices.
+
+**Mechanism:**
+
+1. The base `atlas-login.yaml` and `atlas-channel.yaml` declare `Service` of type `LoadBalancer` with `loadBalancerIP: 192.168.23.231` / `.232` pinned for the main env.
+2. The PR overlay's `patches/lb-allocate.yaml` clears these to `loadBalancerIP: ""` so MetalLB assigns from the pool.
+3. After Argo's PostSync hooks run, the bootstrap Job (§6.2) does `kubectl get svc atlas-channel-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}'`, then PATCHes atlas-tenants' `services` configuration with that IP.
+4. atlas-channel reads the `ipAddress` field from atlas-tenants config (`services/atlas-channel/atlas.com/channel/configuration/rest.go:35`); atlas-login uses the same configuration to broadcast `(host, port)` per channel to the connecting client.
+
+**Concurrency cap:** MetalLB pool free count after subtracting the 5 existing fixed allocations (.230 traefik, .231 main login, .232 main channel, .235 nginx-proxy-manager, .237 tempo-collector). Verified at plan-phase Task 0.5; documented in `preflight.md` and the runbook.
+
+**Failure modes:**
+
+- *MetalLB pool exhausted.* Argo PostSync stalls waiting for `atlas-channel-lb` to acquire an IP; bootstrap step `channel-config` fails because `LB_IP` is empty. Mitigation: expand pool, or fall back to port-shifting on a shared IP (§10 future work).
+- *atlas-tenants PATCH fails.* Bootstrap Job exits non-zero; Application stays `Degraded`. Maintainer investigates per runbook.
+- *MetalLB IP not released on PR close.* Namespace deletion releases the LB Service; MetalLB observes and frees the IP. No explicit cleanup step needed.
+
+> **Note** — `main` env keeps its existing IP reservations (.231/.232) because the home network's Pi-holes already point at them; no migration of those bindings during cutover.
 
 ---
 
@@ -264,12 +317,20 @@ Routes only the existing nginx `atlas-ingress` (which already proxies to atlas-u
 
 ### 5.1 `ATLAS_ENV` token
 
-- A 4-character lowercase hex string. Defined by **presence**: if env var `ATLAS_ENV` is set on the pod, suffix/prefix logic activates; if unset, all helpers pass through.
-- For `main`: never set. All names are unsuffixed.
-- For PR envs: set to `sha256("pr-<PR_NUMBER>")[:4]`. Computed by the ApplicationSet Go template, materialised as a literal in the per-PR Application's `replacements:`, propagated into:
+- A short lowercase string set on every pod and every Argo hook Job in the env.
+- For `main`: literal `"main"`. (PRD §4.1's `m4in` literal is honoured as `main` for readability — switch is a one-line change in `deploy/k8s/overlays/main/atlas-env-tokens.yaml`.)
+- For PR envs: `sha256("pr-<PR_NUMBER>")[:4]`. Computed by the ApplicationSet Go template, materialised as a literal in the per-PR Application's `replacements:`, propagated into:
   - The `atlas-env-tokens` ConfigMap created per env (single-key: `ATLAS_ENV: a3f7`).
   - The pod-level `env: ATLAS_ENV: a3f7` on every Deployment via Kustomize patch.
 - The dual destination (ConfigMap + pod env) is intentional. The pod env is what `libs/atlas-redis` reads at startup; the ConfigMap is what the Argo hook Jobs (PreSync DB create, PostDelete cleanup) read because they are not patched by the same overlay.
+
+### 5.7 PVC isolation
+
+Three services own PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`). PVCs are namespace-scoped: when the PR overlay deploys to `atlas-pr-<N>`, Kubernetes creates fresh same-named PVCs in that namespace and Longhorn provisions a separate PV for each. **Isolation is automatic; no explicit suffixing needed.**
+
+Cleanup follows from namespace deletion. With the longhorn StorageClass at `reclaimPolicy: Delete` (verified Phase 0 Task 0.4), the backing PVs are deleted along with the namespace. The PostDelete cleanup hook does not need to handle PVCs explicitly.
+
+Storage budget is the per-env footprint times the soft cap from preflight.md. If usage approaches Longhorn pool capacity, add per-namespace `LimitRange` (§10 future work).
 
 ### 5.2 Postgres DB-name suffixing
 
@@ -602,17 +663,22 @@ Sequence (in this order; one transaction per resource type, each emits structure
 
 ## 7. Migration Strategy for `main`
 
-The current `main` is deployed by manual `kubectl apply -f deploy/k8s/`. Cutover:
+The current `main` is deployed by manual `kubectl apply -f deploy/k8s/` into namespace `atlas` with unsuffixed DBs/topics/keys. Symmetric `main` (`ATLAS_ENV=main`, namespace `atlas-main`, every name suffixed `-main`) requires a **one-time scheduled-downtime migration** of ~30 minutes:
 
-1. **PR-merge gate.** Before turning on Argo `Application(main)`, the manifest restructure (§4.1) must be merged into `main` and produce identical rendered output. Verification: `kubectl get -n atlas all,configmap,secret -o yaml` (live cluster) compared with `kustomize build deploy/k8s/overlays/main` (post-merge) — diff must be empty modulo Kustomize-injected labels (`app.kubernetes.io/managed-by: kustomize`).
-2. **Argo install on bee.** Apply `bee/argocd.yml` and the GitHub-creds Secret. Confirm Argo CD UI loads at `argocd.bee.tumidanski`.
-3. **Apply Application(main) with `prune: false`.** Argo CD adopts existing resources via `ServerSideApply=true`. First sync should report `Synced/Healthy` with **zero changes**. If non-zero, halt and reconcile (likely a Kustomize-injected label that the live cluster lacks).
-4. **Stability window: 1 week.** During this window, manual `kubectl apply` is forbidden; `main` deployments happen only by merging PRs. Argo's `selfHeal: true` reverts any stray edits.
-5. **Enable `prune: true`** on `Application(main)` after the stability window. This is a single-line patch to `bee/argocd-atlas-main.yml`.
+1. **Drain `atlas` namespace.** Scale every Atlas Deployment to 0 — clients disconnect. This is the start of the maintenance window.
+2. **Rename Postgres DBs.** `ALTER DATABASE "atlas-<svc>" RENAME TO "atlas-<svc>-main"` per service. Atomic, fast, no data move.
+3. **Drop legacy Kafka topics** (best-effort). Topics with no consumers carry no in-flight load. New `-main`-suffixed topics auto-create on first publish.
+4. **Flush legacy Redis keys.** `SCAN+DEL` under the `atlas:` prefix. Atlas Redis content is mostly cache; warm-up is automatic on next request.
+5. **Delete the `atlas` namespace.** Reclaims orphaned PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`); Longhorn deletes the PVs (verified `reclaimPolicy: Delete`).
+6. **Apply `Application(atlas-main)` on bee.** Argo creates the `atlas-main` namespace, applies the rendered overlay, fires PostSync hooks. Bootstrap re-uploads the canonical WZ zip and seeds every domain into the freshly-renamed `*-main` DBs.
+7. **End of maintenance window.** Verify `ATLAS_ENV=main` everywhere; smoke-test a Maple client connecting via `192.168.23.231` (login) → `192.168.23.232` (channel).
+8. **Stability window.** 7 days of green Argo syncs against `Application(atlas-main)`, then flip `prune: false` → `prune: true` and reapply.
 
-This procedure is documented in `docs/runbooks/ephemeral-pr-deployments.md` (§9).
+The plan's Phase 11 (Tasks 11.0–11.10) is the runnable checklist for this procedure.
 
-PR-environment infrastructure (`Application(atlas-pr)`, ApplicationSet, cleanup CronJob) can land on bee **before** the `main` cutover — they target a different namespace pattern (`atlas-pr-*`) and don't touch `atlas`. Test the PR pipeline against an early test PR before flipping `main`.
+PR-environment infrastructure (`ApplicationSet(atlas-pr)`, cleanup CronJob) can land on bee **before** the cutover — they target the `atlas-pr-*` namespace pattern and don't touch `atlas`. Test the PR pipeline against an early canary PR before draining `main`.
+
+**Rollback:** if cutover fails after Task 11.5 (namespace deleted), restore from the pg_dumpall snapshot taken in Task 11.0 plus the PVC contents (which are gone, so a re-bootstrap of the WZ zip is required). Time to recover ≈ time of original cutover. PVs from before the namespace deletion are not recoverable past the point Longhorn reclaims them — capture the snapshot before Task 11.5.
 
 ---
 
@@ -666,7 +732,7 @@ Tracked here so the plan phase doesn't accidentally pull these in:
 - **Tenant data preservation across envs.** Each PR starts empty.
 - **Slack/GitHub notifications** when an env becomes ready or is reclaimed.
 - **Performance/load-test grade envs.** v1 is functional review only.
-- **Game-socket exposure per PR env.** UI-only at v1.
+- ~~Game-socket exposure per PR env.~~ — **In v1 scope as of design v1.1.** See §4.6.
 - **Argo CD SSO.** Default admin password at v1.
 - **Pre-extracted WZ PVC** for bootstrap-cache (open question 2 future work).
 - **`external-dns` operator** with Pi-hole webhook (PRD §4.12 future work).

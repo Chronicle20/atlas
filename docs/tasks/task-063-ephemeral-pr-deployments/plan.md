@@ -122,6 +122,126 @@ git add docs/tasks/task-063-ephemeral-pr-deployments/audit-redis-prefix.txt
 git commit -m "docs(task-063): snapshot raw-redis-key audit before sweep"
 ```
 
+### Task 0.4: Verify Longhorn capacity for per-env PVCs
+
+Three services own PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`). Each PR namespace gets its own copies, provisioned fresh by Longhorn. Per-env footprint needs to be measured against pool free space.
+
+- [ ] **Step 1: Inspect current PVC sizes**
+
+```bash
+kubectl get pvc -n atlas atlas-data-pvc atlas-wz-input-pvc atlas-assets-pvc \
+    -o custom-columns=NAME:.metadata.name,REQUEST:.spec.resources.requests.storage,USED:.status.capacity.storage
+```
+
+- [ ] **Step 2: Inspect Longhorn pool free space**
+
+```bash
+kubectl get nodes.longhorn.io -n longhorn-system \
+    -o custom-columns=NAME:.metadata.name,FREE:.status.diskStatus.*.storageAvailable | head
+```
+
+- [ ] **Step 3: Verify reclaimPolicy on the longhorn StorageClass**
+
+```bash
+kubectl get storageclass longhorn -o jsonpath='{.reclaimPolicy}'
+```
+
+Expected: `Delete`. If `Retain`, the cleanup CronJob must explicitly delete orphaned PVs after the namespace goes away — note this in the runbook.
+
+- [ ] **Step 4: Append capacity outcome to `preflight.md`**
+
+```markdown
+## Longhorn capacity for PR envs
+- Per-env PVC footprint (sum of three PVC requests): <X> Gi
+- Longhorn free space: <Y> Gi
+- Soft cap on concurrent PR envs: floor(Y / X) = <N>
+- StorageClass reclaimPolicy: Delete / Retain
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
+git commit -m "docs(task-063): record Longhorn capacity pre-flight outcome"
+```
+
+### Task 0.5: Verify MetalLB pool capacity for per-PR LB IPs
+
+Each PR env claims one MetalLB-allocated LoadBalancer IP that backs both its atlas-login and atlas-channel Services (their wire ports don't collide). Live state already consumes 5 IPs (.230 traefik, .231 atlas-login, .232 atlas-channel, .235 nginx-proxy-manager, .237 tempo-collector).
+
+- [ ] **Step 1: Inspect MetalLB IP pool**
+
+```bash
+kubectl get ipaddresspools.metallb.io -A -o yaml
+```
+
+- [ ] **Step 2: Inspect already-allocated IPs**
+
+```bash
+kubectl get svc -A -o wide | awk '/LoadBalancer/ {print $5}' | sort -u
+```
+
+- [ ] **Step 3: Compute free count = (pool size) − (allocated)**
+
+- [ ] **Step 4: Append outcome to `preflight.md`**
+
+```markdown
+## MetalLB pool capacity
+- Pool ranges: <list>
+- Allocated IPs: <count> (reserved: traefik, atlas-login, atlas-channel, nginx-proxy-manager, tempo-collector, ...)
+- Free IPs: <N>
+- Soft cap on concurrent PR envs (game-socket): <N>
+- If main becomes symmetric (atlas-main namespace), atlas-login-lb and atlas-channel-lb keep their existing .231/.232 reservations during cutover; PR envs draw from the remaining pool.
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
+git commit -m "docs(task-063): record MetalLB pool pre-flight outcome"
+```
+
+### Task 0.6: Verify atlas-tenants channel-host config flow
+
+atlas-channel reads its public `IPAddress` from atlas-tenants configuration (`services/atlas-channel/atlas.com/channel/configuration/rest.go:35`). For per-PR game-socket exposure, the bootstrap Job must seed the per-PR LB IP into atlas-tenants' `services` config after MetalLB assigns it.
+
+- [ ] **Step 1: Confirm the resource name and shape**
+
+```bash
+grep -rn 'GetName\(\) string' services/atlas-channel/atlas.com/channel/configuration/rest.go
+grep -rn 'configurations\|services' services/atlas-tenants/atlas.com/tenants/ --include='*.go' | head -20
+```
+
+Expected: `RestModel.GetName()` returns `"services"`; atlas-tenants exposes `GET/PATCH /tenants/{tenantId}/configurations/services`.
+
+- [ ] **Step 2: Confirm the JSON shape against an existing main-env tenant**
+
+```bash
+kubectl exec -n atlas deploy/atlas-tenants -- \
+    curl -s -H 'Accept: application/vnd.api+json' \
+    "http://localhost:8080/api/tenants/<known-tenant-id>/configurations/services" \
+    | jq '.data.attributes'
+```
+
+Expected: payload contains `tenants[].ipAddress`, `tenants[].worlds[].channels[].port`. Capture the structure for the bootstrap script (Phase 6) to PATCH.
+
+- [ ] **Step 3: Append to `preflight.md`**
+
+```markdown
+## atlas-tenants channel-host config
+- Resource name: services
+- PATCH endpoint: /api/tenants/{tenantId}/configurations/services
+- IPAddress field path: data.attributes.tenants[].ipAddress
+- Verified shape: <captured JSON snippet>
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add docs/tasks/task-063-ephemeral-pr-deployments/preflight.md
+git commit -m "docs(task-063): record atlas-tenants channel-host config shape"
+```
+
 ---
 
 ## Phase 1: `libs/atlas-redis` env-aware key prefix
@@ -1041,7 +1161,8 @@ RUN apk add --no-cache \
         redis \
         kafka-tools \
         ca-certificates \
-        github-cli
+        github-cli \
+        kubectl
 
 WORKDIR /atlas
 COPY scripts/lib.sh /atlas/lib.sh
@@ -1196,8 +1317,47 @@ for ep in "${endpoints[@]}"; do
 done
 wait
 
+# Seed the per-env LoadBalancer IP into atlas-tenants services config so
+# atlas-channel hands clients the correct host:port at login.
+ATLAS_STEP=channel-config
+LB_IP=$(kubectl get svc atlas-channel-lb -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+if [ -z "$LB_IP" ]; then
+    log error "atlas-channel-lb has no allocated LoadBalancer IP"
+    exit 1
+fi
+log info "seeding atlas-tenants services config: ipAddress=$LB_IP"
+
+# Fetch existing services config to read its id (atlas-tenants returns
+# JSON:API with .data.id). The PATCH body must include the id.
+existing=$(curl -fsS \
+    -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+    -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+    -H "Accept: application/vnd.api+json" \
+    "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" || echo '{}')
+
+config_id=$(echo "$existing" | jq -r '.data.id // empty')
+if [ -z "$config_id" ]; then
+    log error "atlas-tenants returned no services config; bootstrap precondition not met"
+    exit 1
+fi
+
+# Replace ipAddress for every tenants[] entry, preserve worlds/channels.
+new_attrs=$(echo "$existing" | jq --arg ip "$LB_IP" \
+    '.data.attributes.tenants |= map(.ipAddress = $ip) | .data.attributes')
+
+curl -fsS -X PATCH \
+    -H "TENANT_ID: $TENANT_ID" -H "REGION: $REGION" \
+    -H "MAJOR_VERSION: $MAJOR_VERSION" -H "MINOR_VERSION: $MINOR_VERSION" \
+    -H "Content-Type: application/vnd.api+json" \
+    -d "$(jq -n --arg id "$config_id" --argjson attrs "$new_attrs" \
+            '{data: {type: "services", id: $id, attributes: $attrs}}')" \
+    "$ATLAS_UI_BASE/api/tenants/$TENANT_ID/configurations/services" \
+    > /dev/null
+
 ATLAS_STEP=done log info "bootstrap complete"
 ```
+
+> **Verification gate:** the exact PATCH body shape is locked in Phase 0 Task 0.6's preflight capture. If the live atlas-tenants schema differs (e.g. nested under `worlds[].channels[].host`), update the `jq` filter accordingly. Both atlas-login and atlas-channel read the same configuration resource.
 
 - [ ] **Step 4: Create `services/atlas-pr-bootstrap/scripts/cleanup.sh`**
 
@@ -1532,46 +1692,75 @@ output of the main env.
 Refs task-063."
 ```
 
-### Task 7.2: Create the `main` overlay
+### Task 7.2: Create the `main` overlay (symmetric to PR overlay)
 
-- [ ] **Step 1: Create `deploy/k8s/overlays/main/kustomization.yaml`**
+`main` is treated as just another env: `ATLAS_ENV=main`, namespace `atlas-main`, every DB/topic/group/Redis-key suffixed `-main`. The only differences vs the PR overlay are:
 
-```yaml
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
+- No PostDelete cleanup hook (Application(atlas-main) is never deleted).
+- No PreSync DB-create hook (the cutover migration in Phase 11 renames existing DBs in place; subsequent fresh installs of `main` are theoretical and use a separate runbook).
+- No Pi-hole register hook (main env has a fixed hostname registered out-of-band).
+- LoadBalancer Services keep their existing reserved IPs `192.168.23.231` (login) and `192.168.23.232` (channel); they are pinned, not MetalLB-allocated.
+- Image tags are `:latest` instead of `pr-<N>-<sha>`.
 
-namespace: atlas
-resources:
-  - ../../base
-
-# Pin every service image to :latest. main env is unsuffixed.
-images:
-  - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: latest
-  - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
-    newTag: latest
-  # … one entry per service. Generate from .github/config/services.json:
-  #   jq -r '.services[] | select(.docker_image) | "  - name: \(.docker_image)\n    newTag: latest"'
-  #   < .github/config/services.json
-```
-
-Generate the full list mechanically — script it into `deploy/k8s/overlays/main/kustomization.yaml`:
+- [ ] **Step 1: Generate `deploy/k8s/overlays/main/kustomization.yaml`**
 
 ```bash
+mkdir -p deploy/k8s/overlays/main
 {
-    cat <<EOF
+    cat <<'EOF'
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: atlas
+namespace: atlas-main
+
 resources:
   - ../../base
+  - atlas-env-tokens.yaml
+
+patches:
+  - path: ../pr/patches/db-name-suffix.yaml
+  - path: ../pr/patches/consumer-group-env.yaml
+  - path: lb-pin.yaml
+
+configMapGenerator:
+  - name: atlas-env
+    behavior: replace
+    literals:
+EOF
+    yq -r '.data | to_entries | .[] | select(.key | test("^(BASE_SERVICE_URL|BOOTSTRAP_SERVERS|DB_HOST|DB_PORT|REDIS_URL|TRACE_ENDPOINT|TRACE_SAMPLING_RATIO|REST_PORT)$")) | "      - " + .key + "=" + .value' \
+        deploy/k8s/base/env-configmap.yaml
+    yq -r '.data | to_entries | .[] | select(.key | test("^(COMMAND|EVENT)_TOPIC_")) | "      - " + .key + "=" + .value + "-PLACEHOLDER_ATLAS_ENV"' \
+        deploy/k8s/base/env-configmap.yaml
+
+    cat <<'EOF'
+
+replacements:
+  - source:
+      kind: ConfigMap
+      name: atlas-env-tokens
+      fieldPath: data.ATLAS_ENV
+    targets:
+      - select:
+          kind: Deployment
+        fieldPaths:
+          - spec.template.spec.containers.*.env.[name=ATLAS_ENV].value
+          - spec.template.spec.containers.*.env.[name=KAFKA_CONSUMER_GROUP].value
+          - spec.template.spec.containers.*.env.[name=DB_NAME].value
+        options:
+          create: false
+      - select:
+          kind: ConfigMap
+          name: atlas-env
+        fieldPaths:
+          - data.[COMMAND_TOPIC_*]
+          - data.[EVENT_TOPIC_*]
 
 images:
 EOF
     jq -r '.services[] | select(.docker_image) | "  - name: \(.docker_image)\n    newTag: latest"' \
         < .github/config/services.json
-    cat <<EOF
+
+    cat <<'EOF'
 
 commonLabels:
   atlas.env: main
@@ -1579,34 +1768,60 @@ EOF
 } > deploy/k8s/overlays/main/kustomization.yaml
 ```
 
-- [ ] **Step 2: Verify the overlay renders identical to current cluster state**
+- [ ] **Step 2: Create `deploy/k8s/overlays/main/atlas-env-tokens.yaml`**
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: atlas-env-tokens
+data:
+  ATLAS_ENV: "main"
+```
+
+> **Decision:** the literal value is `main`, not the PRD's original `m4in`. Readability over symmetry-with-hex. If you later switch to `m4in`, only this file changes.
+
+- [ ] **Step 3: Create `deploy/k8s/overlays/main/lb-pin.yaml`**
+
+Pins the existing LoadBalancer IPs that today's home network already resolves to — main env keeps its reservations:
+
+```yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-login-lb
+spec:
+  loadBalancerIP: "192.168.23.231"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-channel-lb
+spec:
+  loadBalancerIP: "192.168.23.232"
+```
+
+- [ ] **Step 4: Verify the overlay renders cleanly**
 
 ```bash
 kustomize build deploy/k8s/overlays/main > /tmp/main-rendered.yaml
-kubectl get -n atlas all,configmap -o yaml > /tmp/cluster-current.yaml
-
-# Compare resource counts
 grep -c '^kind:' /tmp/main-rendered.yaml
-grep -c '^  kind:' /tmp/cluster-current.yaml
+grep -c PLACEHOLDER /tmp/main-rendered.yaml
 ```
 
-Expected: counts match (modulo Kubernetes-injected fields like `creationTimestamp`, `resourceVersion`, etc.). For a finer-grained diff, normalize with `yq`:
+Expected: PLACEHOLDER count is zero (replacements: substitutes them all because `ATLAS_ENV=main` is provided by the local atlas-env-tokens ConfigMap).
 
-```bash
-yq eval-all 'select(fileIndex == 0) - select(fileIndex == 1)' /tmp/main-rendered.yaml /tmp/cluster-current.yaml
-```
-
-Expected: only Kustomize-injected labels (`atlas.env: main`, `app.kubernetes.io/managed-by: kustomize`) are net new.
-
-- [ ] **Step 3: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add deploy/k8s/overlays/main/
-git commit -m "feat(deploy): add Kustomize overlay for the main env
+git commit -m "feat(deploy): main overlay treats main as ATLAS_ENV=main
 
-Renders to the same set of resources currently live in the atlas
-namespace plus the 'atlas.env: main' label. Argo CD's Application(atlas-main)
-syncs from this path.
+Mirrors the PR overlay structure: ATLAS_ENV=main literal, namespace
+atlas-main, DB/topic/group/Redis-key suffixed -main. No PostDelete,
+no PreSync DB-create, LoadBalancer IPs pinned to existing reservations.
+Cutover migration is a one-time procedure documented in the runbook.
 
 Refs task-063."
 ```
@@ -1981,6 +2196,33 @@ Refs task-063."
 - [ ] **Step 1: Create `deploy/k8s/overlays/pr/postsync-bootstrap.yaml`**
 
 ```yaml
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-pr-bootstrap
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: atlas-pr-bootstrap
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: atlas-pr-bootstrap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: atlas-pr-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: atlas-pr-bootstrap
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -1993,6 +2235,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
+      serviceAccountName: atlas-pr-bootstrap
       containers:
         - name: bootstrap
           image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
@@ -2032,6 +2275,8 @@ spec:
           persistentVolumeClaim:
             claimName: atlas-wz-canonical-readonly
 ```
+
+> The ServiceAccount + Role grant `services:get` in the per-PR namespace so `bootstrap.sh`'s channel-config step can read `atlas-channel-lb`'s allocated LoadBalancer IP.
 
 - [ ] **Step 2: Add the `atlas-pr-bootstrap-tenant` ConfigMap to the overlay**
 
@@ -2207,7 +2452,80 @@ manual investigation.
 Refs task-063."
 ```
 
-### Task 7.10: Render and verify the PR overlay
+### Task 7.10: Per-PR game-socket LoadBalancer override
+
+The base `atlas-login.yaml` and `atlas-channel.yaml` declare `Service` of type `LoadBalancer` with `loadBalancerIP: 192.168.23.231` / `192.168.23.232`. The PR overlay must clear those pinnings so MetalLB assigns a fresh IP per PR. Both Services land on the same allocated IP per PR (login wire ports 1200/8300/8700/9200/9500/18500 don't collide with channel wire ports 1201/8301/8701/18501).
+
+**Concurrency cap:** see Phase 0 Task 0.5 — soft cap = MetalLB pool free count.
+
+- [ ] **Step 1: Create `deploy/k8s/overlays/pr/patches/lb-allocate.yaml`**
+
+```yaml
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-login-lb
+spec:
+  loadBalancerIP: ""
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlas-channel-lb
+spec:
+  loadBalancerIP: ""
+```
+
+> Empty-string `loadBalancerIP` instructs MetalLB to assign from the pool. If your MetalLB version errors on empty-string, replace with a JSON-patch that removes the field:
+>
+> ```yaml
+> # Alternative: patches/lb-allocate.json (referenced from kustomization.yaml under `patches:` with target)
+> [
+>   {"op": "remove", "path": "/spec/loadBalancerIP"}
+> ]
+> ```
+
+- [ ] **Step 2: Add it to the PR overlay's `patches:` list**
+
+Edit `deploy/k8s/overlays/pr/kustomization.yaml`:
+
+```yaml
+patches:
+  - path: patches/db-name-suffix.yaml
+  - path: patches/consumer-group-env.yaml
+  - path: patches/lb-allocate.yaml
+```
+
+- [ ] **Step 3: Render and confirm `loadBalancerIP` is unpinned in the PR overlay**
+
+```bash
+kustomize build deploy/k8s/overlays/pr | grep -A3 'name: atlas-channel-lb' | grep loadBalancerIP
+```
+
+Expected: `loadBalancerIP: ""` (or no line at all if you used the JSON-patch alternative).
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add deploy/k8s/overlays/pr/patches/lb-allocate.yaml \
+        deploy/k8s/overlays/pr/kustomization.yaml
+git commit -m "feat(deploy): per-PR LoadBalancer allocation for game-socket
+
+Clears the pinned loadBalancerIP on atlas-login-lb and atlas-channel-lb
+so MetalLB assigns a fresh IP per PR. Login and channel wire ports
+don't collide; one IP backs both Services per env. The PostSync
+bootstrap Job seeds atlas-tenants 'services' config with the allocated
+IP so Maple clients connecting to the PR env's login server are handed
+the correct channel host.
+
+Soft cap on concurrent PR envs = MetalLB pool free count
+(see preflight.md).
+
+Refs task-063."
+```
+
+### Task 7.11: Render and verify the PR overlay
 
 - [ ] **Step 1: Render with PLACEHOLDER values**
 
@@ -3135,47 +3453,182 @@ Refs task-063."
 
 ---
 
-## Phase 11: End-to-end validation (manual, post-merge)
+## Phase 11: End-to-end validation and main-env cutover (manual, post-merge)
 
-These are not committable code; they are runbook acceptance steps the maintainer follows after the PR merges. Document them in the runbook (Phase 10) and tick them off during cutover. Listed here for completeness.
+These are runbook acceptance steps the maintainer follows after the PR merges. Document them in the runbook (Phase 10) and tick them off during cutover.
 
-### Task 11.1: Apply Argo CD on bee
-- See `deploy/argocd-bee/README.md` §1.
+### Task 11.0: Pre-cutover preparation
 
-### Task 11.2: Verify Application(atlas-main) zero-diff sync
+The current `main` env runs in namespace `atlas`, with unsuffixed Postgres DBs (`atlas-accounts`, `atlas-buffs`, ...), unsuffixed Kafka topics, and `atlas:`-prefixed Redis keys. Going to symmetric ATLAS_ENV=main, every name acquires the `-main` suffix and the namespace becomes `atlas-main`. This is a **one-time scheduled-downtime migration**.
+
+- [ ] **Step 1: Announce maintenance window** (~30 minutes for DB renames + WZ re-bootstrap).
+
+- [ ] **Step 2: Snapshot current state for rollback**
 
 ```bash
-argocd app diff atlas-main
+# Postgres
+PGPASSWORD=... pg_dumpall -h postgres.home -U <admin> --globals-only > /tmp/pre-cutover-globals.sql
+for db in atlas-accounts atlas-buffs ...; do
+    PGPASSWORD=... pg_dump -h postgres.home -U <user> "$db" > /tmp/pre-cutover-${db}.sql
+done
+
+# k8s manifests as-applied
+kubectl get -n atlas all,configmap,secret,pvc -o yaml > /tmp/pre-cutover-atlas.yaml
 ```
 
-Expected: no output (zero diff). If non-zero, reconcile per runbook §9.8.
+- [ ] **Step 3: Confirm ApplicationSet is paused**
 
-### Task 11.3: Open canary PR
+While the cutover runs, prevent ApplicationSet from auto-syncing PR envs that might pull from a half-migrated state:
 
-Open a no-op PR (e.g. one-line whitespace tweak) against `Chronicle20/atlas`
-and watch:
+```bash
+kubectl patch applicationset atlas-pr -n argocd --type=merge \
+    -p '{"spec":{"syncPolicy":{"applicationsSync":"sync"}}}' \
+    || kubectl scale --replicas=0 deployment/argocd-applicationset-controller -n argocd
+```
 
-1. Within 30s, `atlas-pr-<N>` Application appears in Argo UI.
-2. PreSync, Sync, PostSync hooks all green.
-3. `<N>.atlas.home` resolves and serves atlas-ui.
-4. `kubectl exec -n atlas-pr-<N> atlas-character-* -- env | grep ATLAS_ENV`
-   shows the 4-char token.
-5. `kafka-consumer-groups.sh --list | grep "[<token>]"` lists per-env groups.
-6. `redis-cli --scan --pattern "<token>:*" | head` lists per-env keys.
+(Restore at end.)
 
-### Task 11.4: Verify isolation across two PRs
+### Task 11.1: Drain the legacy `atlas` namespace
 
-Open a second canary PR. Repeat checks; confirm hashes differ.
+- [ ] **Step 1: Scale every Atlas Deployment in `atlas` to 0**
 
-### Task 11.5: Close canary, verify cleanup
-- Close the PR.
-- Wait for cleanup CronJob to set `atlas.cleanup-deadline` annotation.
-- `kubectl annotate -n argocd application atlas-pr-<N> atlas.cleanup-deadline=$(date -u +%Y-%m-%dT%H:%M:%SZ) --overwrite` to force-immediate-cleanup.
-- Verify PostDelete fires and namespace is gone.
+```bash
+kubectl scale deployment -n atlas --replicas=0 --all
+```
 
-### Task 11.6: Stability window and prune cutover
-- After 7 days of green syncs, edit `argocd-atlas-main.yml` to set
-  `prune: true`. Reapply.
+Wait until pods are gone (`kubectl get pods -n atlas` returns nothing). Active client connections drop; this is the maintenance window's start.
+
+### Task 11.2: Rename Postgres databases
+
+- [ ] **Step 1: Rename each service DB**
+
+```bash
+PGPASSWORD=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
+USER=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_USER}' | base64 -d)
+for db in atlas-accounts atlas-asset-expiration atlas-bans atlas-buddies \
+         atlas-buffs atlas-cashshop atlas-chairs atlas-chalkboards \
+         atlas-channel atlas-character atlas-character-factory \
+         atlas-configurations atlas-consumables atlas-data \
+         atlas-drop-information atlas-drops atlas-effective-stats \
+         atlas-expressions atlas-fame atlas-families atlas-gachapons \
+         atlas-guilds atlas-inventory atlas-invites atlas-keys \
+         atlas-login atlas-map-actions atlas-maps atlas-marriages \
+         atlas-merchant atlas-messages atlas-messengers \
+         atlas-monster-death atlas-monsters atlas-notes \
+         atlas-npc-conversations atlas-npc-shops atlas-parties \
+         atlas-party-quests atlas-pets atlas-portal-actions \
+         atlas-portals atlas-quest atlas-rates atlas-reactor-actions \
+         atlas-reactors atlas-saga-orchestrator atlas-skills \
+         atlas-storage atlas-tenants atlas-transports atlas-world; do
+    PGPASSWORD="$PGPASSWORD" psql -h postgres.home -U "$USER" -d postgres \
+        -c "ALTER DATABASE \"$db\" RENAME TO \"${db}-main\";" || \
+        echo "skip: $db (likely doesn't exist)"
+done
+```
+
+This is atomic and fast. No data is moved; only catalog entries change.
+
+### Task 11.3: Drop legacy Kafka topics (best-effort)
+
+Existing topics carry no in-flight data once consumers are scaled to zero. New `-main`-suffixed topics auto-create on first publish.
+
+- [ ] **Step 1: List, then delete legacy unsuffixed topics**
+
+```bash
+kubectl exec -n <kafka-ns> kafka-broker-pod -- \
+    kafka-topics.sh --bootstrap-server localhost:9092 --list \
+    | grep -E '^(COMMAND|EVENT)_TOPIC_[A-Z_]+$' \
+    > /tmp/legacy-topics.txt
+
+# Review, then delete:
+xargs -a /tmp/legacy-topics.txt -n 1 \
+    kubectl exec -n <kafka-ns> kafka-broker-pod -- \
+    kafka-topics.sh --bootstrap-server localhost:9092 --delete --topic
+```
+
+> If the broker has `delete.topic.enable=false`, document the topics and let them age out naturally.
+
+### Task 11.4: Flush legacy Redis keys
+
+Atlas Redis content is mostly cache and short-lived registries. Keys under the legacy `atlas:` prefix are orphaned; new keys land under `main:atlas:`.
+
+- [ ] **Step 1: SCAN+DEL the legacy prefix**
+
+```bash
+redis-cli -h redis.home --scan --pattern 'atlas:*' \
+    | xargs -r -n 1000 redis-cli -h redis.home DEL
+```
+
+### Task 11.5: Delete the legacy `atlas` namespace
+
+- [ ] **Step 1: Delete the namespace**
+
+```bash
+kubectl delete namespace atlas --wait=true
+```
+
+This reclaims the legacy PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-assets-pvc`). Their backing Longhorn PVs follow `reclaimPolicy: Delete` (verified in Phase 0 Task 0.4) and disappear.
+
+### Task 11.6: Bootstrap the `atlas-main` env
+
+- [ ] **Step 1: Apply `Application(atlas-main)`**
+
+```bash
+kubectl apply -f ~/source/k3s/bee/argocd-atlas-main.yml
+```
+
+Argo creates the `atlas-main` namespace, applies the rendered overlay, and triggers PostSync hooks. Bootstrap Job re-uploads the canonical WZ zip and seeds every domain.
+
+- [ ] **Step 2: Watch sync to green**
+
+```bash
+argocd app wait atlas-main --health --timeout 600
+```
+
+Expected: `Synced/Healthy` within ~10 minutes.
+
+- [ ] **Step 3: Verify ATLAS_ENV=main everywhere**
+
+```bash
+kubectl exec -n atlas-main deploy/atlas-character -- env | grep ATLAS_ENV
+# expected: ATLAS_ENV=main
+kubectl exec -n atlas-main deploy/atlas-character -- env | grep DB_NAME
+# expected: DB_NAME=atlas-character-main
+kubectl get configmap -n atlas-main atlas-env -o yaml | grep COMMAND_TOPIC_ACCOUNT
+# expected: COMMAND_TOPIC_ACCOUNT: COMMAND_TOPIC_ACCOUNT-main
+```
+
+### Task 11.7: Re-enable ApplicationSet, smoke-test PR env
+
+- [ ] **Step 1: Restore ApplicationSet controller**
+
+```bash
+kubectl scale --replicas=1 deployment/argocd-applicationset-controller -n argocd
+```
+
+- [ ] **Step 2: Open a no-op canary PR**
+
+Within 30s the `atlas-pr-<N>` Application should appear. Hooks fire; `<N>.atlas.home` serves atlas-ui. Verify:
+
+1. `kubectl exec -n atlas-pr-<N> deploy/atlas-character -- env | grep ATLAS_ENV` — 4-char hex.
+2. `kubectl get svc -n atlas-pr-<N> atlas-channel-lb` — fresh MetalLB IP, distinct from main's `192.168.23.232`.
+3. `kafka-consumer-groups.sh --list` shows entries with `[<hex>]` and `[main]` side-by-side.
+4. `redis-cli --scan --pattern '<hex>:*' | head` and `redis-cli --scan --pattern 'main:*' | head` — distinct keyspaces.
+5. `psql -l | grep '\-(main|<hex>)$'` — distinct DB sets.
+
+### Task 11.8: Two-PR isolation check
+
+- [ ] **Step 1: Open a second canary PR.** Repeat the checks. Confirm both PRs have distinct hashes, distinct LB IPs, distinct DB names.
+
+### Task 11.9: Close canaries, verify cleanup
+
+- Close the PRs.
+- Force-immediate-cleanup with the runbook's annotation override.
+- Verify PostDelete cleanup script: DBs dropped, topics deleted, consumer groups removed, Redis prefixes purged, ghcr image tags deleted, Pi-hole A records removed, MetalLB IPs released, namespace deleted.
+
+### Task 11.10: Stability window and prune cutover
+
+- After 7 days of green syncs against `Application(atlas-main)`, edit `argocd-atlas-main.yml` to set `prune: true`. Reapply.
 
 ---
 
@@ -3183,7 +3636,7 @@ Open a second canary PR. Repeat checks; confirm hashes differ.
 
 ### Spec coverage
 
-Walked the design's §3 through §13. Gaps and how they're addressed:
+Walked the design's §3 through §13 (with the symmetric-main and game-socket revisions noted at the top of design.md). Gaps and how they're addressed:
 
 | Design § | Plan task |
 |---|---|
@@ -3192,28 +3645,31 @@ Walked the design's §3 through §13. Gaps and how they're addressed:
 | §3.3 ApplicationSet | 8.3 |
 | §3.4 Cleanup CronJob | 8.4 |
 | §4.1 Directory restructure | 7.1 |
-| §4.2 main overlay | 7.2 |
+| §4.2 main overlay (symmetric, ATLAS_ENV=main, namespace=atlas-main) | 7.2 |
 | §4.3 PR overlay shell | 7.3, 7.4 |
 | §4.4 replacements: vs plugin (decision) | embedded in 7.4 |
 | §4.5 Per-PR ingress | 7.5 |
+| §4.6 Per-PR game-socket LoadBalancer (revised, no longer OOS) | 7.10 |
 | §5.1 ATLAS_ENV token | end-to-end through 7.4 + atlas-env-tokens ConfigMap |
 | §5.2 Postgres DB-name | 7.6 (PreSync) + db-name-suffix patch in 7.4 |
 | §5.3 Kafka topic | configMapGenerator in 7.4 |
 | §5.4 Consumer group resolver | Phase 2 + Phase 4 sweep |
 | §5.5 Redis prefix | Phase 1 |
 | §5.6 Audit raw-key | Phase 5 + libs/atlas-object-id in Phase 3 |
+| §5.7 PVC isolation by namespace (implicit) | called out in 10.1 README |
 | §6.1 Longhorn PVC | 10.2 §9.1 (one-time runbook step) |
-| §6.2 PostSync bootstrap | 7.7 + Phase 6 image |
+| §6.2 PostSync bootstrap (incl. atlas-tenants channel-host seed) | 7.7 + Phase 6 image |
 | §6.3 PostSync Pi-hole | 7.8 |
 | §6.4 PostDelete cleanup | 7.9 + Phase 6 image |
-| §7 main migration | 10.2 §9.8 |
+| §7 main cutover migration (DB renames + namespace recreate) | Phase 11 (Tasks 11.0–11.6) |
 | §8 Failure modes | 10.2 §9.2–9.7 |
 | §9 Documentation | 10.1, 10.2, 10.3 |
 | §12 CI changes | Phase 9 |
 | §13 Decomposition preview | this plan |
 
-PRD acceptance criteria (PRD §10.1–10.8) all map to one or more plan
-tasks. Verified by walking each criterion against the plan.
+Phase 0 pre-flight tasks (0.1 CREATEDB, 0.2 Kafka auto-create, 0.3 raw-redis-key audit, 0.4 Longhorn capacity, 0.5 MetalLB pool, 0.6 atlas-tenants channel-host shape) gate every code-changing phase that depends on the live cluster's behaviour matching design assumptions.
+
+PRD acceptance criteria (PRD §10.1–10.8) all map to one or more plan tasks; PRD §4.1's `ATLAS_ENV=m4in` literal is honoured as `main` (more readable; one-line change in `deploy/k8s/overlays/main/atlas-env-tokens.yaml` if you prefer the original literal).
 
 ### Placeholder scan
 

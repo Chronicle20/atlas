@@ -23,11 +23,13 @@ type StartExtractionUnitBody struct {
 	ImagesOnly bool   `json:"imagesOnly"`
 }
 
-// StartExtractionUnitProvider builds one kafka.Message keyed by jobId so all
-// of one job's units land in the same partition (when partition count permits)
-// — but partition count >= 16 means cross-job parallelism still works.
+// StartExtractionUnitProvider builds one kafka.Message keyed by (jobId, wzFile)
+// so a single job's units distribute across partitions. Cross-pod parallelism
+// works as long as partition count >= number of pods. Collisions among 16
+// partitions are fine because units are independent (no ordering requirement
+// within a job).
 func StartExtractionUnitProvider(jobId, wzFile string, xmlOnly, imagesOnly bool) model.Provider[[]kafka.Message] {
-	key := producer.CreateKey(int(djb2(jobId)))
+	key := producer.CreateKey(int(djb2(jobId + ":" + wzFile)))
 	value := &Command[StartExtractionUnitBody]{
 		Type: CommandStartExtractionUnit,
 		Body: StartExtractionUnitBody{

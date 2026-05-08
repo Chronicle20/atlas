@@ -25,6 +25,14 @@ type File struct {
 	encryptionKey *crypto.WzKey
 }
 
+// NewFileWithRoot constructs an in-memory File backed only by the given root
+// directory. No real file on disk is needed; ReadCanvasData will fail if
+// called (pass a stubbed canvasWriter to avoid that in tests).
+// Intended for constructing in-memory WZ trees in tests and tooling.
+func NewFileWithRoot(name string, root *Directory) *File {
+	return &File{name: name, root: root}
+}
+
 // Open opens and parses a WZ file from disk.
 func Open(l logrus.FieldLogger, path string) (*File, error) {
 	f, err := os.Open(path)

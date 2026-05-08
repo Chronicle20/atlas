@@ -9,7 +9,10 @@ import (
 	"image/png"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/sirupsen/logrus"
 )
@@ -401,47 +404,102 @@ func extractTemplateImg(l logrus.FieldLogger, f *wz.File, img *wz.Image, outRoot
 	return count, nil
 }
 
+// charPartJob is a single unit of work for the character-parts worker pool.
+type charPartJob struct {
+	sub string    // subdomain label: e.g. "Cap", "Hair", or "(body)"
+	img *wz.Image // image to extract
+}
+
 // extractCharacterParts walks Character.wz: every .img at the root (body
 // skins) plus every .img in equipmentSubdirs, emitting per-template assets.
+//
+// Images are pre-parsed serially (because image parsing uses the shared
+// seek-based wz.Reader), then dispatched to a runtime.NumCPU() worker pool
+// for the CPU- and I/O-intensive canvas decode / PNG write phase.
+// Per-job errors are logged but do not abort the pool, preserving the
+// existing continue-on-error semantics.
 func extractCharacterParts(l logrus.FieldLogger, f *wz.File, outputDir string) error {
 	root := f.Root()
 	if root == nil {
 		return nil
 	}
 	tenantOut := filepath.Join(outputDir, "character-parts")
-	total := 0
+
+	// Collect all jobs; calling img.Properties() here parses each image
+	// serially so that workers only access already-cached data (no seeks).
+	var jobs []charPartJob
 
 	for _, img := range root.Images() {
-		// Only body skin imgs live at the root; their names start with "0000" or "0001".
 		if !strings.HasPrefix(img.Name(), "0000") && !strings.HasPrefix(img.Name(), "0001") {
 			continue
 		}
-		n, err := extractTemplateImg(l, f, img, tenantOut)
-		if err != nil {
-			l.WithError(err).Warnf("extract body skin %s", img.Name())
-			continue
-		}
-		total += n
+		img.Properties() // pre-parse before concurrent dispatch
+		jobs = append(jobs, charPartJob{sub: "(body)", img: img})
 	}
+
+	subImgCounts := make(map[string]int, len(equipmentSubdirs))
 	for _, sub := range equipmentSubdirs {
 		dir := findCharSubdir(root.Directories(), sub)
 		if dir == nil {
 			continue
 		}
-		subStart := total
 		imgs := dir.Images()
+		subImgCounts[sub] = len(imgs)
 		for _, img := range imgs {
-			n, err := extractTemplateImg(l, f, img, tenantOut)
-			if err != nil {
-				l.WithError(err).Warnf("extract %s/%s", sub, img.Name())
-				continue
+			img.Properties() // pre-parse before concurrent dispatch
+			jobs = append(jobs, charPartJob{sub: sub, img: img})
+		}
+	}
+
+	// Worker pool: runtime.NumCPU() goroutines consuming from jobCh.
+	workers := runtime.NumCPU()
+	if workers < 1 {
+		workers = 1
+	}
+
+	jobCh := make(chan charPartJob, workers*2)
+	var wg sync.WaitGroup
+	var totalCount atomic.Int64
+	var subTotals sync.Map // sub -> *atomic.Int64
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+		go func(workerId int) {
+			defer wg.Done()
+			wl := l.WithField("worker", workerId)
+			for j := range jobCh {
+				n, err := extractTemplateImg(wl, f, j.img, tenantOut)
+				if err != nil {
+					wl.WithError(err).Warnf("extract %s/%s", j.sub, j.img.Name())
+					continue
+				}
+				totalCount.Add(int64(n))
+				cnt, _ := subTotals.LoadOrStore(j.sub, &atomic.Int64{})
+				cnt.(*atomic.Int64).Add(int64(n))
 			}
-			total += n
+		}(i)
+	}
+
+	for _, j := range jobs {
+		jobCh <- j
+	}
+	close(jobCh)
+	wg.Wait()
+
+	// Emit per-subdomain log lines matching the pre-existing format so
+	// operators tracking progress see familiar markers.
+	for _, sub := range equipmentSubdirs {
+		v, ok := subTotals.Load(sub)
+		if !ok {
+			continue
 		}
 		l.Infof("Character.wz/%s: %d imgs, %d canvases extracted (running total %d).",
-			sub, len(imgs), total-subStart, total)
+			sub, subImgCounts[sub], v.(*atomic.Int64).Load(), totalCount.Load())
 	}
-	l.Infof("Extracted [%d] character part canvases.", total)
+	if v, ok := subTotals.Load("(body)"); ok {
+		l.Infof("Character.wz/(body): %d canvases extracted.", v.(*atomic.Int64).Load())
+	}
+	l.Infof("Extracted [%d] character part canvases.", totalCount.Load())
 	return nil
 }
 

@@ -133,3 +133,72 @@ No services were in `<pending>` state at survey time.
 
 ### Binding constraint
 Task 0.4 set the Longhorn-derived soft cap at 5 concurrent PR envs. MetalLB allows 16. The smaller of the two (Longhorn = 5) is the binding constraint on concurrent PR envs; MetalLB has comfortable headroom.
+
+## Longhorn RecurringJobs and PR PVC exclusion
+- BackupTarget: `nfs://nas.tumidanski:/volume1/LonghornBackup` (BackupTarget CR named `default`, pollInterval 5m)
+- RecurringJobs: `backup-daily` (cron `0 2 * * *`, retain 7, concurrency 2) and `backup-weekly` (cron `0 3 * * 0`, retain 4, concurrency 2); both target group `default` only, task `backup`
+- PR PVC exclusion mechanism: dedicated StorageClass `longhorn-pr` with `parameters.recurringJobSelector: '[]'` (empty JSON array) — referenced from PR-overlay PVCs via `spec.storageClassName`. Rationale below; see "Mechanism rationale" for why label-on-PVC was rejected.
+- Longhorn version: `longhornio/longhorn-manager:v1.9.1` (Helm chart `longhorn-105.3.0_up1.9.1`); `longhorn-manager` is a DaemonSet, not a Deployment — `kubectl get deployment` returns NotFound, must use `kubectl get daemonset`.
+
+### Evidence
+
+RecurringJob CRD shape (`kubectl get recurringjob -n longhorn-system -o yaml`, two items, abridged):
+```
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata: {name: backup-daily, namespace: longhorn-system}
+spec:
+  concurrency: 2
+  cron: 0 2 * * *
+  groups: [default]
+  retain: 7
+  task: backup
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata: {name: backup-weekly, namespace: longhorn-system}
+spec:
+  concurrency: 2
+  cron: 0 3 * * 0
+  groups: [default]
+  retain: 4
+  task: backup
+```
+
+Sample PV labels (`kubectl get pv pvc-b6afea0d-1d86-41ff-90d8-b9327a36bb39 -o yaml`, the PV bound to `atlas/atlas-data-pvc`): the K8s `PersistentVolume` carries **no labels** (`labels: {}` in the applied configuration; no `labels:` block in `metadata`). The `recurringjob.longhorn.io/source: enabled` label the plan expected on the PV is **not present on this cluster** — group membership is tracked on the Longhorn `Volume` CR in `longhorn-system`, not on the K8s PV.
+
+Sample Longhorn Volume CR labels (`kubectl get volume -n longhorn-system pvc-b6afea0d-1d86-41ff-90d8-b9327a36bb39 -o jsonpath='{.metadata.labels}'`):
+```json
+{
+  "backup-target": "default",
+  "longhornvolume": "pvc-b6afea0d-1d86-41ff-90d8-b9327a36bb39",
+  "recurring-job-group.longhorn.io/default": "enabled",
+  "setting.longhorn.io/remove-snapshots-during-filesystem-trim": "ignored",
+  "setting.longhorn.io/replica-auto-balance": "ignored",
+  "setting.longhorn.io/snapshot-data-integrity": "ignored"
+}
+```
+
+Spot-checked all 19 Longhorn Volumes in the cluster: every one has `recurring-job-group.longhorn.io/default: enabled`. None deviate. The label is auto-added by Longhorn during dynamic provisioning (volumes have no `kubectl.kubernetes.io/last-applied-configuration` annotation, so this isn't from `kubectl apply`).
+
+Longhorn version (`kubectl get daemonset -n longhorn-system longhorn-manager -o jsonpath='{.spec.template.spec.containers[0].image}'`):
+```
+longhornio/longhorn-manager:v1.9.1
+```
+
+### Mechanism rationale
+
+Longhorn 1.9.1 supports three exclusion mechanisms (per docs):
+1. Set `recurring-job-group.longhorn.io/<group>: ""` (empty value) on the Longhorn Volume CR.
+2. Set the per-job label `recurring-job.longhorn.io/<job-name>: ""` on the Volume CR.
+3. Use a separate StorageClass whose `recurringJobSelector` parameter excludes the default group.
+
+Options 1 and 2 require **post-creation patching** of each Longhorn Volume CR (a separate API object in `longhorn-system`, not the K8s PVC). The PR overlay would need a sync hook or operator that watches PVCs created in the PR namespace, looks up their corresponding Longhorn Volume by name (`pvc-<uid>`), and patches its labels. This is fragile (race vs. recurring-job controller's first reconcile) and adds a controller dependency.
+
+Option 3 — dedicated StorageClass — is fully declarative: the PR overlay defines a `StorageClass longhorn-pr` (one-time, cluster-scoped) with `parameters.recurringJobSelector: '[]'`. PR-overlay PVCs reference it via `spec.storageClassName: longhorn-pr`. Longhorn applies the empty selector at provision time, so the Volume CR is never tagged into the `default` group. No race, no controller, no patching.
+
+Trade-off: a cluster-scoped StorageClass must be created once outside the per-PR overlay (e.g., installed as part of the env-agent's bootstrap or hand-applied). It is not destroyed when a PR is torn down. This is acceptable: the StorageClass costs nothing when unused, and reusing it across all PR envs eliminates per-PR drift.
+
+### Open caveat for downstream tasks
+
+The plan's Step 2 example (`grep -A20 'labels:'` on the PV) assumes the K8s PV carries the recurring-job labels. **It does not on this cluster.** Any task that walks PVs by recurring-job label to identify which volumes will be backed up must instead query Longhorn `Volume` CRs in `longhorn-system`. The PR cleanup and capacity-counting tasks should treat this as the source of truth.

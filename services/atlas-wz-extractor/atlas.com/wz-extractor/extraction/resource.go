@@ -25,7 +25,7 @@ type Dirs struct {
 // in consumer pods, not on a goroutine here). Removal is planned as a
 // follow-up — see design.md §11.
 func InitResource(p Processor, store job.Store, tl *lock.TenantLock, prod producerProvider, wg *sync.WaitGroup, dirs Dirs) func(si jsonapi.ServerInformation) server.RouteInitializer {
-	u := &uploadDeps{inputDir: dirs.InputDir}
+	u := &uploadDeps{inputDir: dirs.InputDir, tl: tl}
 	s := &statusDeps{inputDir: dirs.InputDir, outputXmlDir: dirs.OutputXmlDir}
 	_ = wg
 	return func(si jsonapi.ServerInformation) server.RouteInitializer {

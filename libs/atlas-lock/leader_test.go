@@ -419,3 +419,54 @@ func TestRun_AcquireFailed_RedisError(t *testing.T) {
 	cancel()
 	require.NoError(t, <-doneRun)
 }
+
+func TestRun_FailoverAfterGracefulRelease(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	leA, err := New(rc, "failover",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+	leB, err := New(rc, "failover",
+		WithTTL(5*time.Second), WithRefreshInterval(time.Second), WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctxA, cancelA := context.WithCancel(context.Background())
+	ctxB, cancelB := context.WithCancel(context.Background())
+	defer cancelB()
+
+	bAcquired := make(chan struct{})
+
+	doneA := make(chan error, 1)
+	go func() {
+		doneA <- leA.Run(ctxA, func(leaderCtx context.Context) { <-leaderCtx.Done() })
+	}()
+	doneB := make(chan error, 1)
+	go func() {
+		doneB <- leB.Run(ctxB, func(leaderCtx context.Context) {
+			close(bAcquired)
+			<-leaderCtx.Done()
+		})
+	}()
+
+	// Let A acquire first.
+	time.Sleep(500 * time.Millisecond)
+
+	// A releases gracefully.
+	start := time.Now()
+	cancelA()
+	require.NoError(t, <-doneA)
+
+	// B should acquire within Backoff (small) — graceful release frees the lease immediately.
+	select {
+	case <-bAcquired:
+		require.LessOrEqual(t, time.Since(start), 3*time.Second,
+			"failover after graceful release should be within Backoff, well under TTL")
+	case <-time.After(8 * time.Second):
+		t.Fatal("standby did not acquire after leader released")
+	}
+
+	cancelB()
+	require.NoError(t, <-doneB)
+}

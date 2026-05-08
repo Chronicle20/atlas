@@ -16,6 +16,17 @@ type Image struct {
 	parsed     bool
 }
 
+// NewParsedImage constructs an Image whose properties are already populated
+// (parsed == true). Intended for constructing in-memory WZ trees in tests and
+// tooling without requiring a real WZ file on disk.
+func NewParsedImage(name string, props []property.Property) *Image {
+	return &Image{
+		name:       name,
+		properties: props,
+		parsed:     true,
+	}
+}
+
 // Name returns the image name.
 func (i *Image) Name() string {
 	return i.name

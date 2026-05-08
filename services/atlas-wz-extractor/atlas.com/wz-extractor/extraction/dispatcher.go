@@ -19,7 +19,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type producerProvider func(token string) producer.MessageProducer
+type producerProvider func(ctx context.Context) func(token string) producer.MessageProducer
 
 const (
 	jobTTLSeconds  = 24 * 60 * 60
@@ -105,7 +105,7 @@ func handleExtract(p Processor, store job.Store, tl *lock.TenantLock, prod produ
 			}
 
 			// Publish one START_EXTRACTION_UNIT per WZ file.
-			emit := prod(mext.EnvCommandTopic)
+			emit := prod(d.Context())(mext.EnvCommandTopic)
 			publishErr := error(nil)
 			published := 0
 			for _, name := range wzNames {

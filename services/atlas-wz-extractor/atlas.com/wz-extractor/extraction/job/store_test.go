@@ -273,3 +273,47 @@ func TestStore_MarkUnitsSkippedByStatus(t *testing.T) {
 		t.Fatalf("Mob.wz must NOT have been skipped: %s", statuses["Mob.wz"])
 	}
 }
+
+// TestStore_MarkUnitsSkippedByStatus_DoesNotClobberRunning verifies that a
+// unit concurrently transitioned to Running by MarkUnitRunning is NOT
+// overwritten by MarkUnitsSkippedByStatus when the WATCH fires.
+//
+// Miniredis does not provide a hook to inject a mutation between WATCH and
+// EXEC, so instead we use the post-MarkUnitRunning state: one unit is already
+// Running (won the race) when MarkUnitsSkippedByStatus is called with
+// fromStatuses=[Pending]. The Running unit must survive unchanged.
+func TestStore_MarkUnitsSkippedByStatus_DoesNotClobberRunning(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j10", []string{"Map.wz", "Mob.wz"})
+
+	// Mob.wz wins the MarkUnitRunning race first.
+	claimed, err := s.MarkUnitRunning(ctx, "j10", "Mob.wz")
+	if err != nil {
+		t.Fatalf("MarkUnitRunning: %v", err)
+	}
+	if !claimed {
+		t.Fatalf("expected claimed=true")
+	}
+
+	// Now skip only Pending units — Mob.wz (Running) must be preserved.
+	if err := s.MarkUnitsSkippedByStatus(ctx, "j10", []UnitStatus{UnitPending}); err != nil {
+		t.Fatalf("MarkUnitsSkippedByStatus: %v", err)
+	}
+
+	_, units, err := s.Get(ctx, "j10")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	statuses := map[string]UnitStatus{}
+	for _, u := range units {
+		statuses[u.WzFile()] = u.Status()
+	}
+	if statuses["Map.wz"] != UnitSkipped {
+		t.Fatalf("Map.wz should be Skipped, got %s", statuses["Map.wz"])
+	}
+	if statuses["Mob.wz"] != UnitRunning {
+		t.Fatalf("Mob.wz must remain Running (not clobbered), got %s", statuses["Mob.wz"])
+	}
+}

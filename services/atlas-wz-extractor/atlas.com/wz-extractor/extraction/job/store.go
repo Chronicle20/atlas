@@ -387,34 +387,56 @@ func (s *storeImpl) MarkUnitsSkippedByStatus(ctx context.Context, jobId string, 
 		allow[st] = true
 	}
 	uKey := unitsKey(jobId)
-	rawAll, err := s.client.HGetAll(ctx, uKey).Result()
-	if err != nil {
+
+	txn := func(tx *goredis.Tx) error {
+		rawAll, err := tx.HGetAll(ctx, uKey).Result()
+		if err != nil {
+			return err
+		}
+		now := time.Now().UTC()
+		type pending struct {
+			wzFile string
+			nraw   string
+		}
+		var writes []pending
+		for wzFile, raw := range rawAll {
+			u, err := unitFromJSON(wzFile, raw)
+			if err != nil {
+				continue
+			}
+			if !allow[u.Status()] {
+				continue
+			}
+			nu := NewUnitBuilder().SetWzFile(wzFile).SetStatus(UnitSkipped).
+				SetStartedAt(u.StartedAt()).SetCompletedAt(now).Build()
+			nraw, err := unitToJSON(nu)
+			if err != nil {
+				continue
+			}
+			writes = append(writes, pending{wzFile: wzFile, nraw: nraw})
+		}
+		if len(writes) == 0 {
+			return nil
+		}
+		_, err = tx.TxPipelined(ctx, func(p goredis.Pipeliner) error {
+			for _, w := range writes {
+				p.HSet(ctx, uKey, w.wzFile, w.nraw)
+			}
+			p.HSet(ctx, jobKey(jobId), "updatedAt", now.Format(time.RFC3339))
+			return nil
+		})
 		return err
 	}
-	pipe := s.client.TxPipeline()
-	now := time.Now().UTC()
-	changed := 0
-	for wzFile, raw := range rawAll {
-		u, err := unitFromJSON(wzFile, raw)
-		if err != nil {
+
+	for attempt := 0; attempt < 5; attempt++ {
+		err := s.client.Watch(ctx, txn, uKey)
+		if err == nil {
+			return nil
+		}
+		if err == goredis.TxFailedErr {
 			continue
 		}
-		if !allow[u.Status()] {
-			continue
-		}
-		nu := NewUnitBuilder().SetWzFile(wzFile).SetStatus(UnitSkipped).
-			SetStartedAt(u.StartedAt()).SetCompletedAt(now).Build()
-		nraw, err := unitToJSON(nu)
-		if err != nil {
-			continue
-		}
-		pipe.HSet(ctx, uKey, wzFile, nraw)
-		changed++
+		return err
 	}
-	if changed == 0 {
-		return nil
-	}
-	pipe.HSet(ctx, jobKey(jobId), "updatedAt", now.Format(time.RFC3339))
-	_, err = pipe.Exec(ctx)
-	return err
+	return errors.New("MarkUnitsSkippedByStatus: too many WATCH retries")
 }

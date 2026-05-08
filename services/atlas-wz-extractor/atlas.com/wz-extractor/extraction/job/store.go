@@ -188,7 +188,11 @@ func (s *storeImpl) Delete(ctx context.Context, jobId string) error {
 }
 
 func (s *storeImpl) MarkJobRunning(ctx context.Context, jobId string) error {
-	return errors.New("not implemented")
+	now := time.Now().UTC().Format(time.RFC3339)
+	pipe := s.client.TxPipeline()
+	pipe.HSet(ctx, jobKey(jobId), "status", string(JobRunning), "updatedAt", now)
+	_, err := pipe.Exec(ctx)
+	return err
 }
 func (s *storeImpl) MarkUnitRunning(ctx context.Context, jobId, wzFile string) (bool, error) {
 	return false, errors.New("not implemented")

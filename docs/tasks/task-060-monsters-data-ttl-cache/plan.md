@@ -1,827 +1,209 @@
-# atlas-monsters Data TTL Cache — Implementation Plan
+# atlas-monsters Data TTL Cache — Implementation Plan (v2, Redis-backed)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Eliminate >95% of repeat `GET /api/data/monsters/{id}` calls from `atlas-monsters` to `atlas-data` by introducing an in-process, tenant-scoped TTL cache fronting `monster/information.GetById`, plus a reusable generic cache library at `libs/atlas-cache`.
+**Goal:** Eliminate >95% of repeat `GET /api/data/monsters/{id}` calls from `atlas-monsters` to `atlas-data` by introducing a tenant-scoped, Redis-backed read-through TTL cache fronting `monster/information.GetById`.
 
-**Architecture:** Two-layer split. `libs/atlas-cache` ships a generic `Cache[K,V]` (positive + negative TTL, lazy expiration, single `RWMutex` over `map[K]entry`, no Prometheus dep, injectable clock). `services/atlas-monsters/.../monster/information/cache.go` adds a per-tenant registry of `Cache[uint32, Model]`, an env-var loader (`MONSTER_DATA_CACHE_{ENABLED,TTL,NEGATIVE_TTL}`), an error classifier keyed on `requests.ErrNotFound`, and Prometheus counters/gauges. `GetById` becomes a read-through wrapper preserving its curried signature so no caller changes.
+**Architecture:** Two `redislib.TenantRegistry` instances (one positive namespace `monsters:cache:data`, one negative namespace `monsters:cache:data:not_found`) share the existing `*goredis.Client` already wired in `main.go:48`. `GetById` becomes a read-through wrapper preserving its curried signature. Native Redis EX TTL handles eviction. No new shared library; design.md v2 explicitly supersedes the rejected v1 in-process `libs/atlas-cache` direction.
 
-**Tech Stack:** Go 1.24+ generics, std `sync.RWMutex` + `map`, `github.com/prometheus/client_golang/promauto`, existing `libs/atlas-tenant`, `libs/atlas-rest/requests`, `httptest` for service-side tests.
+**Tech Stack:** Go 1.25, existing `libs/atlas-redis.TenantRegistry`, `libs/atlas-tenant`, `libs/atlas-rest/requests`, `github.com/prometheus/client_golang` (new dep at v1.23.2 to match other services), `github.com/alicebob/miniredis/v2` (already in go.mod) for tests.
 
 ---
 
-## File Structure (locked before tasks)
+## Plan-Time Correction to design.md
+
+**design.md §5.2 declares `TenantRegistry[uint32, Model]`. This will silently corrupt the cache.**
+
+`information.Model` (`services/atlas-monsters/atlas.com/monsters/monster/information/model.go:3-19`) has only unexported fields (`hp`, `mp`, `boss`, …). Go's `encoding/json` cannot marshal unexported fields: `json.Marshal(Model{hp: 5})` returns `{}`. `TenantRegistry` uses `json.Marshal`/`json.Unmarshal` by default (`libs/atlas-redis/tenant_registry.go:30-35`). Storing `Model` in Redis would persist `{}`, and every cache hit would deserialize back into a zero `Model`, returning all-zero monster stats to callers.
+
+**Correction adopted by this plan:** the positive registry caches `RestModel` (`rest.go:3-40`), which has fully exported, JSON-tagged fields and is the upstream payload as it arrives. `GetById` runs `Extract(rm)` (`rest.go:89-115`) after a positive hit to convert to `Model`. `Extract` is a few field copies plus two slice allocations — measured cost is sub-microsecond, trivial vs. the multi-millisecond Redis roundtrip it sits behind, and orders of magnitude cheaper than the upstream HTTP it replaces. The negative registry continues to use `struct{}` as the value (its existence is the signal; `json.Marshal(struct{}{})` is `{}` which is valid).
+
+The rest of design.md v2 stands as written. Wherever design.md says "the cached value type is `Model`", read "the cached value type is `RestModel`; `Extract` runs after the cache lookup."
+
+---
+
+## File Structure
 
 **New:**
-- `libs/atlas-cache/go.mod` — module declaration, std-lib only.
-- `libs/atlas-cache/go.sum` — empty.
-- `libs/atlas-cache/cache.go` — `Cache` interface, `cache[K,V]` impl, `New[K,V]`.
-- `libs/atlas-cache/config.go` — `Config` struct.
-- `libs/atlas-cache/cache_test.go` — unit + race-clean concurrency tests.
-- `libs/atlas-cache/bench_test.go` — `Get`/`Put` microbenchmarks.
-- `libs/atlas-cache/README.md` — API + "lost on pod restart" note.
-- `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go` — registry + loader + classifier.
-- `services/atlas-monsters/atlas.com/monsters/monster/information/metrics.go` — promauto counter/gauge declarations.
-- `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go` — wrapper unit tests.
+- `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go` — `DataCache` singleton, env loader, error classifier, upstream-fetch indirection, `InitDataCache`.
+- `services/atlas-monsters/atlas.com/monsters/monster/information/metrics.go` — `promauto` counter declarations.
+- `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go` — wrapper-level tests using `miniredis.RunT`.
 
 **Modified:**
-- `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` — `GetById` becomes read-through.
-- `services/atlas-monsters/atlas.com/monsters/go.mod` + `go.sum` — add `libs/atlas-cache` (with replace) and `prometheus/client_golang`.
+- `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go` — `GetById` becomes read-through. Signature preserved verbatim.
+- `services/atlas-monsters/atlas.com/monsters/main.go` — one line: `information.InitDataCache(rc)` after the existing `monster.Init*Registry(rc)` block.
+- `services/atlas-monsters/atlas.com/monsters/go.mod` — add `github.com/prometheus/client_golang v1.23.2`.
+- `services/atlas-monsters/atlas.com/monsters/go.sum` — regenerated by `go mod tidy`.
+- `docs/tasks/task-060-monsters-data-ttl-cache/prd.md` — reconcile v2 deltas (Task 1).
 
-**Untouched:** `model.go`, `requests.go`, `rest.go`, `rest_test.go`, `builder.go`, `main.go`, every caller of `GetById`.
+**Untouched:** `model.go`, `requests.go`, `rest.go`, `rest_test.go`, `builder.go`, every caller of `GetById`, every other package in `atlas-monsters`, `libs/*` (no library changes).
 
 ---
 
-## Task 1: Bootstrap `libs/atlas-cache` module
+## Task 1: Reconcile PRD with design.md v2
 
 **Files:**
-- Create: `libs/atlas-cache/go.mod`
-- Create: `libs/atlas-cache/go.sum`
-- Create: `libs/atlas-cache/README.md`
+- Modify: `docs/tasks/task-060-monsters-data-ttl-cache/prd.md`
 
-- [ ] **Step 1: Create the module file**
+The PRD was written against v1 (in-process `libs/atlas-cache`). design.md §4 enumerates the deltas; this task lands them so the PRD matches the implementation we will ship.
 
-Write `libs/atlas-cache/go.mod`:
+- [ ] **Step 1: Update §1 Overview last paragraph**
 
-```
-module github.com/Chronicle20/atlas/libs/atlas-cache
-
-go 1.24
-```
-
-- [ ] **Step 2: Create empty go.sum**
-
-```bash
-touch libs/atlas-cache/go.sum
-```
-
-- [ ] **Step 3: Write the README**
-
-Write `libs/atlas-cache/README.md`:
+In `prd.md`, find the paragraph beginning "The cache primitive is built as a new shared library at `libs/atlas-cache`". Replace it with:
 
 ```markdown
-# atlas-cache
-
-Generic in-process TTL cache with distinct positive and negative entry
-lifetimes. Concurrency-safe; lazy expiration on read; no background
-goroutine; no I/O dependencies.
-
-Intended for read-heavy reference data fronting an upstream HTTP service
-(e.g. `data/monsters/{id}` lookups). Cache state is **per-process** and is
-**lost on restart** — that is the supported invalidation mechanism for
-upstream redeploys in v1. There is no admin endpoint, no event-driven
-flush, and no cross-pod coherence.
-
-## Usage
-
-```go
-import "github.com/Chronicle20/atlas/libs/atlas-cache"
-
-c := cache.New[uint32, MyModel](cache.Config{
-    TTL:         5 * time.Minute,
-    NegativeTTL: 30 * time.Second,
-})
-
-if v, ok := c.Get(id); ok {
-    return v // hit
-}
-if c.IsNegative(id) {
-    return zero, ErrNotFound // negative hit
-}
-v, err := upstream(id)
-if err == nil { c.Put(id, v) } else if isNotFound(err) { c.PutNegative(id) }
+The cache reuses `libs/atlas-redis.TenantRegistry`, which already provides tenant-scoped CRUD with native Redis EX TTL via `PutWithTTL`. Two registry instances are used: one in the namespace `monsters:cache:data` for positive entries (TTL 5 m default), and one in `monsters:cache:data:not_found` for negative entries (TTL 30 s default). Cache state lives in the Redis instance that `atlas-monsters` already depends on for cooldowns, drops, and the monster registry — no new shared library, no new runtime dependency. The cache is now shared across `atlas-monsters` pods and survives pod restarts; the formal invalidation mechanism is TTL expiry, with `redis-cli DEL` (pattern-based) as the operator-side flush. A future task adds Kafka-driven invalidation on `atlas-data` redeploys.
 ```
 
-## Operability
+- [ ] **Step 2: Replace §4.1 entirely**
 
-- `Config.OnEviction(kind)` is called under the write lock when a lazy
-  expiration purges an entry. Use it to bump a Prometheus counter.
-- `Config.Now` is the clock function (defaults to `time.Now`). Inject a
-  fake for deterministic tests.
-- `NegativeTTL == 0` disables negative caching (`PutNegative` is a no-op,
-  `IsNegative` always returns false).
-- `Len() (positive, negative int)` is O(n); call it only for sampled
-  metrics, not on hot paths.
+Replace the entire `### 4.1 New library: libs/atlas-cache` section (and everything under it through the start of §4.2) with:
+
+```markdown
+### 4.1 Reuse `libs/atlas-redis.TenantRegistry`
+
+- No new module. Two `redislib.TenantRegistry` instances back the cache:
+  - Positive: `redislib.NewTenantRegistry[uint32, RestModel](rc, "monsters:cache:data", uint32KeyFn)`.
+  - Negative: `redislib.NewTenantRegistry[uint32, struct{}](rc, "monsters:cache:data:not_found", uint32KeyFn)`.
+- The cached payload is `RestModel`, not `Model`: `Model` has unexported fields and is not JSON-serializable, while `RestModel` is the upstream wire format. `GetById` runs `Extract(rm)` after a positive hit to convert to `Model`.
+- `TenantRegistry.Get` returns `redislib.ErrNotFound` on a Redis miss; the wrapper interprets that as "fall through" and `errors.Is`-checks for it explicitly. Any other Redis error is treated as a soft failure: log, increment the `redis_errors_total` counter, fall through to the upstream HTTP path.
+- TTL is enforced natively by Redis via `PutWithTTL`. No app-side sweeper. No `OnEviction` callback.
 ```
 
-- [ ] **Step 4: Verify the module builds (it has no code yet, but the empty module is valid)**
+- [ ] **Step 3: Update §4.5**
 
-Run:
+Find `### 4.5 Multi-tenancy`. Replace its bullet list with:
+
+```markdown
+- Tenant identity is encoded into the Redis key via the existing `tenantEntityKey` helper (`libs/atlas-redis/keys.go:27`), which yields `atlas:<namespace>:<tenantUUID>:<region>:<major>.<minor>:<id>`. Two tenants writing the same monster id produce distinct Redis keys; cross-tenant reads are not possible without explicitly constructing a different `tenant.Model`.
+- A single pair of `TenantRegistry` instances handles all tenants. There is no per-tenant struct lazy-initialization in v2 — the registry is constructed once and `tenant.Model` is passed into each `Get`/`PutWithTTL` call.
+```
+
+- [ ] **Step 4: Update §4.7**
+
+Find `### 4.7 Observability`. Replace the bullet list with:
+
+```markdown
+- `atlas_monsters_data_cache_hits_total{tenant, kind}` — counter. `kind` is `positive` or `negative`.
+- `atlas_monsters_data_cache_misses_total{tenant}` — counter, incremented on every upstream HTTP request issued.
+- `atlas_monsters_data_cache_errors_total{tenant, classification}` — counter. `classification` is `not_found` (negative entry recorded) or `transient` (not cached).
+- `atlas_monsters_data_cache_redis_errors_total{tenant, operation}` — counter. `operation` is `get_positive`, `get_negative`, `put_positive`, or `put_negative`. Each increment indicates a graceful fallthrough.
+
+No `cache_size` gauge in v2: counting Redis keys requires `SCAN` per sample, which is operationally expensive. Operators introspect cache occupancy via `redis-cli DBSIZE` or `INFO keyspace` when needed; the four counters above are sufficient for hit-rate, error-rate, and degraded-mode dashboards.
+```
+
+- [ ] **Step 5: Update §8.1**
+
+Find `### 8.1 Performance`. Replace the bullet list with:
+
+```markdown
+- p99 cache-hit latency ≤ 5 ms in-cluster. Typical Redis GET against an in-cluster instance is 0.2–1 ms; the budget allows for tail. Validation is operational (existing OpenTelemetry tracing on `atlas-monsters`); no microbenchmark gates this task.
+- A cache miss adds at most two Redis GETs (positive + optional negative) before falling through to the existing HTTP path. The combined miss overhead must be statistically dwarfed by the upstream HTTP latency it replaces.
+- Memory: state lives in the existing Redis instance, not in `atlas-monsters` heap. Worst case ≈ a few thousand `RestModel` JSON blobs × ≤5 tenants ≈ low single-digit MB. Negligible against the existing Redis allocation.
+```
+
+- [ ] **Step 6: Update §8.5**
+
+Find `### 8.5 Operability`. Replace the bullet list with:
+
+```markdown
+- Master kill-switch (`MONSTER_DATA_CACHE_ENABLED=false`) bypasses both Redis registries and behaves identically to the pre-task implementation. Restart of the pod after env-var change is acceptable.
+- Cache state is shared across `atlas-monsters` pods and survives pod restarts. Native Redis TTL is the steady-state invalidation mechanism. Operator-side flush is `redis-cli --scan --pattern 'atlas:monsters:cache:data:*' | xargs redis-cli DEL` (and similarly for the `not_found` namespace) — no pod restart required. A future task adds Kafka-event-driven invalidation on `atlas-data` redeploys.
+- Redis unavailability degrades the cache to "no-cache" mode: every lookup falls through to the upstream HTTP path. Counters under `atlas_monsters_data_cache_redis_errors_total` make the degradation visible. No requests fail.
+```
+
+- [ ] **Step 7: Update §10 Acceptance Criteria**
+
+In `### 10 Acceptance Criteria`, find the bullet beginning "New module `libs/atlas-cache` exists with…" and replace it with:
+
+```markdown
+- [ ] No new shared library is introduced. `libs/atlas-redis.TenantRegistry` is reused for positive and negative caches.
+```
+
+In the same section, find the bullet "On a cache hit, no HTTP request is issued" and confirm it remains. Find the bullet "go test -race ./... is clean in both modules" and replace "in both modules" with "in `services/atlas-monsters/atlas.com/monsters` (no new library to test)."
+
+- [ ] **Step 8: Update §6 Data Model**
+
+Find `### Data Model` (or equivalent under §6). Replace the in-memory description with:
+
+```markdown
+No persistent data changes. No database migrations. No new Kafka topics.
+
+In-memory state in `atlas-monsters`: a single `*DataCache` struct holding two `*redislib.TenantRegistry` pointers and the loaded TTL configuration. Cache payloads live in Redis under the namespaces `atlas:monsters:cache:data:*` (positive, JSON-encoded `RestModel`) and `atlas:monsters:cache:data:not_found:*` (negative, JSON-encoded empty `struct{}`).
+```
+
+- [ ] **Step 9: Verify the PRD reads coherently**
+
+Re-read `prd.md` end-to-end. Look for any leftover reference to "in-process", "libs/atlas-cache", "lost on pod restart", "sub-microsecond hit", "OnEviction", or "background sweeper". If found, edit them to match v2 (or remove if obsolete). Do not edit §3 User Stories or §9 Open Questions — both already read sensibly under either model.
+
+- [ ] **Step 10: Commit**
+
 ```bash
-cd libs/atlas-cache && go build ./...
-```
-Expected: no output, exit 0. (No Go files yet; build is a no-op.)
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add libs/atlas-cache/go.mod libs/atlas-cache/go.sum libs/atlas-cache/README.md
-git commit -m "feat(atlas-cache): bootstrap module skeleton"
+git add docs/tasks/task-060-monsters-data-ttl-cache/prd.md
+git commit -m "docs(task-060): reconcile PRD with v2 Redis-backed design"
 ```
 
 ---
 
-## Task 2: Define `Config` and the `Cache` interface
-
-**Files:**
-- Create: `libs/atlas-cache/config.go`
-- Create: `libs/atlas-cache/cache.go`
-
-- [ ] **Step 1: Write `config.go`**
-
-```go
-package cache
-
-import "time"
-
-// Config configures a Cache instance.
-type Config struct {
-	// TTL is the lifetime of a positive entry. Must be > 0.
-	TTL time.Duration
-
-	// NegativeTTL is the lifetime of a negative entry. Zero disables
-	// negative caching (PutNegative is a no-op; IsNegative always
-	// returns false).
-	NegativeTTL time.Duration
-
-	// Now is the clock function. nil falls back to time.Now.
-	Now func() time.Time
-
-	// OnEviction is called under the cache's write lock when a lazy
-	// expiration removes an entry. nil disables the callback. kind is
-	// "positive" or "negative".
-	OnEviction func(kind string)
-}
-```
-
-- [ ] **Step 2: Write the interface and constructor stub in `cache.go`**
-
-```go
-package cache
-
-import (
-	"sync"
-	"time"
-)
-
-// Cache is a generic in-process TTL cache supporting distinct positive
-// and negative entry lifetimes. All methods are safe for concurrent use.
-type Cache[K comparable, V any] interface {
-	Get(key K) (V, bool)
-	Put(key K, value V)
-	PutNegative(key K)
-	IsNegative(key K) bool
-	Delete(key K)
-	Len() (positive int, negative int)
-}
-
-type entry[V any] struct {
-	value     V
-	expiresAt time.Time
-	negative  bool
-}
-
-type cache[K comparable, V any] struct {
-	mu      sync.RWMutex
-	entries map[K]entry[V]
-	cfg     Config
-	now     func() time.Time
-}
-
-// New constructs a Cache. Panics if cfg.TTL <= 0.
-func New[K comparable, V any](cfg Config) Cache[K, V] {
-	if cfg.TTL <= 0 {
-		panic("atlas-cache: Config.TTL must be > 0")
-	}
-	now := cfg.Now
-	if now == nil {
-		now = time.Now
-	}
-	return &cache[K, V]{
-		entries: make(map[K]entry[V]),
-		cfg:     cfg,
-		now:     now,
-	}
-}
-
-func (c *cache[K, V]) Get(key K) (V, bool)     { var z V; _ = key; return z, false }
-func (c *cache[K, V]) Put(key K, value V)      { _, _ = key, value }
-func (c *cache[K, V]) PutNegative(key K)       { _ = key }
-func (c *cache[K, V]) IsNegative(key K) bool   { _ = key; return false }
-func (c *cache[K, V]) Delete(key K)            { _ = key }
-func (c *cache[K, V]) Len() (int, int)         { return 0, 0 }
-```
-
-The method bodies are deliberately empty — they will be implemented test-by-test in tasks 3–7.
-
-- [ ] **Step 3: Verify it compiles**
-
-Run:
-```bash
-cd libs/atlas-cache && go build ./...
-```
-Expected: exit 0, no output.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add libs/atlas-cache/config.go libs/atlas-cache/cache.go
-git commit -m "feat(atlas-cache): define Cache interface and Config"
-```
-
----
-
-## Task 3: Implement `Put` + `Get` (positive path) test-first
-
-**Files:**
-- Create: `libs/atlas-cache/cache_test.go`
-- Modify: `libs/atlas-cache/cache.go`
-
-- [ ] **Step 1: Write the failing tests**
-
-Create `libs/atlas-cache/cache_test.go`:
-
-```go
-package cache
-
-import (
-	"testing"
-	"time"
-)
-
-func newFakeClock() (*time.Time, func() time.Time) {
-	t := time.Date(2026, 5, 8, 12, 0, 0, 0, time.UTC)
-	now := &t
-	return now, func() time.Time { return *now }
-}
-
-func advance(now *time.Time, d time.Duration) { *now = now.Add(d) }
-
-func TestCache_Get_Miss(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute})
-	if _, ok := c.Get(1); ok {
-		t.Fatalf("Get(1) on empty cache: ok=true, want false")
-	}
-}
-
-func TestCache_PutThenGet_Hit(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute})
-	c.Put(7, "seven")
-	v, ok := c.Get(7)
-	if !ok || v != "seven" {
-		t.Fatalf("Get(7) after Put: (%q, %v), want (\"seven\", true)", v, ok)
-	}
-}
-
-func TestCache_Put_Overwrites(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute})
-	c.Put(7, "first")
-	c.Put(7, "second")
-	v, _ := c.Get(7)
-	if v != "second" {
-		t.Fatalf("Get(7) = %q, want \"second\"", v)
-	}
-}
-```
-
-- [ ] **Step 2: Run tests, confirm failure**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -run TestCache_ -v
-```
-Expected: `TestCache_PutThenGet_Hit` fails (`ok=false`), `TestCache_Put_Overwrites` fails. `TestCache_Get_Miss` passes (stub returns false).
-
-- [ ] **Step 3: Implement `Put` and `Get`**
-
-Replace the stub methods in `libs/atlas-cache/cache.go`:
-
-```go
-func (c *cache[K, V]) Get(key K) (V, bool) {
-	var zero V
-	c.mu.RLock()
-	e, ok := c.entries[key]
-	if !ok || e.negative {
-		c.mu.RUnlock()
-		return zero, false
-	}
-	if !e.expiresAt.After(c.now()) {
-		c.mu.RUnlock()
-		c.evict(key, e, "positive")
-		return zero, false
-	}
-	v := e.value
-	c.mu.RUnlock()
-	return v, true
-}
-
-func (c *cache[K, V]) Put(key K, value V) {
-	c.mu.Lock()
-	c.entries[key] = entry[V]{
-		value:     value,
-		expiresAt: c.now().Add(c.cfg.TTL),
-		negative:  false,
-	}
-	c.mu.Unlock()
-}
-
-// evict removes key under the write lock if the live entry still matches
-// the expired snapshot the caller observed. Idempotent across concurrent
-// calls.
-func (c *cache[K, V]) evict(key K, snapshot entry[V], kind string) {
-	c.mu.Lock()
-	cur, ok := c.entries[key]
-	if ok && cur.expiresAt.Equal(snapshot.expiresAt) && cur.negative == snapshot.negative {
-		delete(c.entries, key)
-		if c.cfg.OnEviction != nil {
-			c.cfg.OnEviction(kind)
-		}
-	}
-	c.mu.Unlock()
-}
-```
-
-- [ ] **Step 4: Run tests, confirm pass**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -run TestCache_ -v
-```
-Expected: all three tests PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add libs/atlas-cache/cache.go libs/atlas-cache/cache_test.go
-git commit -m "feat(atlas-cache): implement Put and Get for positive entries"
-```
-
----
-
-## Task 4: Implement positive-entry expiration via injected clock
-
-**Files:**
-- Modify: `libs/atlas-cache/cache_test.go`
-
-- [ ] **Step 1: Add the failing tests**
-
-Append to `libs/atlas-cache/cache_test.go`:
-
-```go
-func TestCache_Get_Expired(t *testing.T) {
-	now, clock := newFakeClock()
-	c := New[int, string](Config{TTL: time.Minute, Now: clock})
-	c.Put(7, "seven")
-	advance(now, time.Minute) // exactly TTL elapsed → expired (strict After)
-	if _, ok := c.Get(7); ok {
-		t.Fatalf("Get(7) at TTL boundary: ok=true, want false")
-	}
-}
-
-func TestCache_Get_Expired_PurgesEntry(t *testing.T) {
-	now, clock := newFakeClock()
-	var evicted []string
-	c := New[int, string](Config{
-		TTL:        time.Minute,
-		Now:        clock,
-		OnEviction: func(kind string) { evicted = append(evicted, kind) },
-	})
-	c.Put(7, "seven")
-	advance(now, 2*time.Minute)
-	_, _ = c.Get(7) // triggers lazy eviction
-	if pos, _ := c.Len(); pos != 0 {
-		t.Fatalf("positive Len after expired Get = %d, want 0", pos)
-	}
-	if len(evicted) != 1 || evicted[0] != "positive" {
-		t.Fatalf("evicted = %v, want [positive]", evicted)
-	}
-}
-```
-
-- [ ] **Step 2: Run, confirm failure**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -run TestCache_Get_Expired -v
-```
-Expected: `TestCache_Get_Expired_PurgesEntry` fails because `Len()` still returns `(0, 0)` from the stub.
-
-- [ ] **Step 3: Implement `Len`**
-
-Replace the `Len` stub in `cache.go`:
-
-```go
-func (c *cache[K, V]) Len() (int, int) {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	now := c.now()
-	var pos, neg int
-	for _, e := range c.entries {
-		if !e.expiresAt.After(now) {
-			continue
-		}
-		if e.negative {
-			neg++
-		} else {
-			pos++
-		}
-	}
-	return pos, neg
-}
-```
-
-- [ ] **Step 4: Run, confirm pass**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -run TestCache_ -v
-```
-Expected: all five tests PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add libs/atlas-cache/cache.go libs/atlas-cache/cache_test.go
-git commit -m "feat(atlas-cache): lazy expiration + Len for positive entries"
-```
-
----
-
-## Task 5: Implement `PutNegative`, `IsNegative`, and negative expiration
-
-**Files:**
-- Modify: `libs/atlas-cache/cache_test.go`
-- Modify: `libs/atlas-cache/cache.go`
-
-- [ ] **Step 1: Add the failing tests**
-
-Append to `cache_test.go`:
-
-```go
-func TestCache_PutNegative_IsNegative(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute, NegativeTTL: 10 * time.Second})
-	c.PutNegative(42)
-	if c.IsNegative(42) != true {
-		t.Fatalf("IsNegative(42) = false, want true")
-	}
-	if _, ok := c.Get(42); ok {
-		t.Fatalf("Get(42) on negative entry: ok=true, want false")
-	}
-}
-
-func TestCache_NegativeExpires(t *testing.T) {
-	now, clock := newFakeClock()
-	var evicted []string
-	c := New[int, string](Config{
-		TTL: time.Minute, NegativeTTL: 10 * time.Second, Now: clock,
-		OnEviction: func(kind string) { evicted = append(evicted, kind) },
-	})
-	c.PutNegative(42)
-	advance(now, 11*time.Second)
-	if c.IsNegative(42) {
-		t.Fatalf("IsNegative(42) after expiry = true, want false")
-	}
-	if _, neg := c.Len(); neg != 0 {
-		t.Fatalf("negative Len = %d, want 0", neg)
-	}
-	if len(evicted) != 1 || evicted[0] != "negative" {
-		t.Fatalf("evicted = %v, want [negative]", evicted)
-	}
-}
-
-func TestCache_NegativeTTLZero_Disabled(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute, NegativeTTL: 0})
-	c.PutNegative(42)
-	if c.IsNegative(42) {
-		t.Fatalf("IsNegative(42) with NegativeTTL=0: true, want false")
-	}
-}
-
-func TestCache_PutOverridesNegative(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute, NegativeTTL: time.Minute})
-	c.PutNegative(42)
-	c.Put(42, "found")
-	if c.IsNegative(42) {
-		t.Fatalf("IsNegative(42) after Put: true, want false")
-	}
-	v, ok := c.Get(42)
-	if !ok || v != "found" {
-		t.Fatalf("Get(42) = (%q, %v), want (\"found\", true)", v, ok)
-	}
-}
-```
-
-- [ ] **Step 2: Run, confirm failure**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -run TestCache_PutNegative -v
-```
-Expected: failures — stubs return false / no-op.
-
-- [ ] **Step 3: Implement negative methods**
-
-Replace the `PutNegative` and `IsNegative` stubs:
-
-```go
-func (c *cache[K, V]) PutNegative(key K) {
-	if c.cfg.NegativeTTL <= 0 {
-		return
-	}
-	c.mu.Lock()
-	c.entries[key] = entry[V]{
-		expiresAt: c.now().Add(c.cfg.NegativeTTL),
-		negative:  true,
-	}
-	c.mu.Unlock()
-}
-
-func (c *cache[K, V]) IsNegative(key K) bool {
-	if c.cfg.NegativeTTL <= 0 {
-		return false
-	}
-	c.mu.RLock()
-	e, ok := c.entries[key]
-	if !ok || !e.negative {
-		c.mu.RUnlock()
-		return false
-	}
-	if !e.expiresAt.After(c.now()) {
-		c.mu.RUnlock()
-		c.evict(key, e, "negative")
-		return false
-	}
-	c.mu.RUnlock()
-	return true
-}
-```
-
-- [ ] **Step 4: Run, confirm pass**
-
-Run:
-```bash
-cd libs/atlas-cache && go test -v
-```
-Expected: all tests PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add libs/atlas-cache/cache.go libs/atlas-cache/cache_test.go
-git commit -m "feat(atlas-cache): negative caching with independent TTL"
-```
-
----
-
-## Task 6: Implement `Delete`
-
-**Files:**
-- Modify: `libs/atlas-cache/cache_test.go`
-- Modify: `libs/atlas-cache/cache.go`
-
-- [ ] **Step 1: Add the failing test**
-
-Append to `cache_test.go`:
-
-```go
-func TestCache_Delete(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute, NegativeTTL: time.Minute})
-	c.Put(1, "a")
-	c.PutNegative(2)
-	c.Delete(1)
-	c.Delete(2)
-	if _, ok := c.Get(1); ok {
-		t.Fatalf("Get(1) after Delete: ok=true, want false")
-	}
-	if c.IsNegative(2) {
-		t.Fatalf("IsNegative(2) after Delete: true, want false")
-	}
-	if pos, neg := c.Len(); pos != 0 || neg != 0 {
-		t.Fatalf("Len after Delete = (%d,%d), want (0,0)", pos, neg)
-	}
-}
-
-func TestCache_Delete_Missing_NoOp(t *testing.T) {
-	c := New[int, string](Config{TTL: time.Minute})
-	c.Delete(99) // must not panic
-}
-```
-
-- [ ] **Step 2: Run, confirm failure**
-
-```bash
-cd libs/atlas-cache && go test -run TestCache_Delete -v
-```
-Expected: `TestCache_Delete` fails.
-
-- [ ] **Step 3: Implement `Delete`**
-
-```go
-func (c *cache[K, V]) Delete(key K) {
-	c.mu.Lock()
-	delete(c.entries, key)
-	c.mu.Unlock()
-}
-```
-
-- [ ] **Step 4: Run, confirm pass**
-
-```bash
-cd libs/atlas-cache && go test -v
-```
-Expected: all tests PASS.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add libs/atlas-cache/cache.go libs/atlas-cache/cache_test.go
-git commit -m "feat(atlas-cache): Delete"
-```
-
----
-
-## Task 7: Concurrency stress + race-detector test
-
-**Files:**
-- Modify: `libs/atlas-cache/cache_test.go`
-
-- [ ] **Step 1: Add the test**
-
-Add `"sync"` to the existing import block at the top of `cache_test.go` (so it reads `import ("sync"; "testing"; "time")`), then append to the file:
-
-```go
-func TestCache_Concurrent_GetPut(t *testing.T) {
-	c := New[int, int](Config{TTL: time.Hour, NegativeTTL: time.Hour})
-	var wg sync.WaitGroup
-	for g := 0; g < 16; g++ {
-		wg.Add(1)
-		go func(g int) {
-			defer wg.Done()
-			for i := 0; i < 5_000; i++ {
-				k := i % 64
-				switch g % 4 {
-				case 0:
-					c.Put(k, i)
-				case 1:
-					c.Get(k)
-				case 2:
-					c.PutNegative(k + 1000)
-				case 3:
-					c.IsNegative(k + 1000)
-				}
-				if i%128 == 0 {
-					c.Delete(k)
-				}
-			}
-		}(g)
-	}
-	wg.Wait()
-}
-```
-
-- [ ] **Step 2: Run with the race detector**
-
-```bash
-cd libs/atlas-cache && go test -race -run TestCache_Concurrent -v
-```
-Expected: PASS, no DATA RACE warnings.
-
-- [ ] **Step 3: Run the full suite under -race**
-
-```bash
-cd libs/atlas-cache && go test -race ./...
-```
-Expected: PASS, no warnings.
-
-- [ ] **Step 4: Commit**
-
-```bash
-git add libs/atlas-cache/cache_test.go
-git commit -m "test(atlas-cache): race-detector clean concurrency stress"
-```
-
----
-
-## Task 8: Microbenchmarks (perf gates from design §3.5)
-
-**Files:**
-- Create: `libs/atlas-cache/bench_test.go`
-
-- [ ] **Step 1: Write the benchmarks**
-
-```go
-package cache
-
-import (
-	"testing"
-	"time"
-)
-
-func BenchmarkCacheGet_Hit(b *testing.B) {
-	c := New[int, int](Config{TTL: time.Hour})
-	for i := 0; i < 1024; i++ {
-		c.Put(i, i)
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.Get(i & 1023)
-	}
-}
-
-func BenchmarkCacheGet_Miss(b *testing.B) {
-	c := New[int, int](Config{TTL: time.Hour})
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.Get(i)
-	}
-}
-
-func BenchmarkCachePut(b *testing.B) {
-	c := New[int, int](Config{TTL: time.Hour})
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.Put(i&1023, i)
-	}
-}
-```
-
-- [ ] **Step 2: Run the benchmarks**
-
-```bash
-cd libs/atlas-cache && go test -bench=. -benchmem -run=^$ ./...
-```
-Expected: PASS. Record the ns/op for `Get_Hit`. Targets per design §3.5: hit ≤ 200 ns/op, miss ≤ 100 ns/op, put ≤ 500 ns/op on commodity hardware.
-
-If a target is missed by >2x, stop and revisit the locking model (`sync.Map` alternative discussed in design §3.2). Otherwise note the measured numbers in the commit message and continue.
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add libs/atlas-cache/bench_test.go
-git commit -m "bench(atlas-cache): Get/Put microbenchmarks"
-```
-
----
-
-## Task 9: Wire `libs/atlas-cache` and `prometheus/client_golang` into atlas-monsters' go.mod
+## Task 2: Add `prometheus/client_golang` dependency
 
 **Files:**
 - Modify: `services/atlas-monsters/atlas.com/monsters/go.mod`
 - Modify: `services/atlas-monsters/atlas.com/monsters/go.sum`
 
-- [ ] **Step 1: Add the require + replace**
+`atlas-monsters` does not yet pull in `prometheus/client_golang`. Other services already pin it at `v1.23.2` (e.g. `services/atlas-maps/atlas.com/maps/go.mod`); match that version.
 
-Edit `services/atlas-monsters/atlas.com/monsters/go.mod`. In the main `require ( ... )` block, add:
+- [ ] **Step 1: Add the require**
+
+Edit `services/atlas-monsters/atlas.com/monsters/go.mod`. In the first `require ( ... )` block (the one that currently lists `github.com/sirupsen/logrus`), add the line:
 
 ```
-	github.com/Chronicle20/atlas/libs/atlas-cache v0.0.0
 	github.com/prometheus/client_golang v1.23.2
 ```
 
-In the `replace ( ... )` block (or append if not yet present), add:
-
-```
-	github.com/Chronicle20/atlas/libs/atlas-cache => ../../../../libs/atlas-cache
-```
-
-(The four `..` segments go from `services/atlas-monsters/atlas.com/monsters/` up to repo root, then down to `libs/atlas-cache`.)
+Do not add a `replace` directive. `prometheus/client_golang` is an external module, not a sibling lib.
 
 - [ ] **Step 2: Run `go mod tidy`**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go mod tidy
 ```
-Expected: indirect prometheus deps appear in `go.sum`. No errors.
+
+Expected: indirect prometheus deps appear in `go.sum`. No errors. Existing `require` blocks may pick up additional indirect entries.
 
 - [ ] **Step 3: Verify the service still builds**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./...
 ```
-Expected: exit 0.
+
+Expected: exit 0, no output.
 
 - [ ] **Step 4: Verify existing tests still pass**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
 ```
-Expected: all existing tests PASS unchanged.
+
+Expected: PASS unchanged. (No code changes yet.)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/go.mod services/atlas-monsters/atlas.com/monsters/go.sum
-git commit -m "build(atlas-monsters): add atlas-cache and prometheus deps"
+git commit -m "build(atlas-monsters): add prometheus/client_golang for data-cache metrics"
 ```
 
 ---
 
-## Task 10: Declare Prometheus metrics in `monster/information/metrics.go`
+## Task 3: Declare Prometheus metrics
 
 **Files:**
 - Create: `services/atlas-monsters/atlas.com/monsters/monster/information/metrics.go`
 
-- [ ] **Step 1: Write the metrics file**
+Four counters, no gauge (per design §5.6). Pattern lifted from `services/atlas-maps/atlas.com/maps/character/location/metrics.go`.
+
+- [ ] **Step 1: Write `metrics.go`**
 
 ```go
 package information
@@ -856,20 +238,12 @@ var (
 		[]string{"tenant", "classification"},
 	)
 
-	cacheSize = promauto.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "atlas_monsters_data_cache_size",
-			Help: "Current count of cached monster information entries, by tenant and kind.",
-		},
-		[]string{"tenant", "kind"},
-	)
-
-	evictionsTotal = promauto.NewCounterVec(
+	redisErrorsTotal = promauto.NewCounterVec(
 		prometheus.CounterOpts{
-			Name: "atlas_monsters_data_cache_evictions_total",
-			Help: "Lazy expirations of cached monster information entries, by tenant and reason.",
+			Name: "atlas_monsters_data_cache_redis_errors_total",
+			Help: "Redis-side errors during monster data cache operations. Each increment indicates a graceful fallthrough to upstream (or a discarded cache write).",
 		},
-		[]string{"tenant", "reason"},
+		[]string{"tenant", "operation"},
 	)
 )
 ```
@@ -879,21 +253,24 @@ var (
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./monster/information/...
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/information/metrics.go
-git commit -m "feat(monsters): declare data-cache prometheus metrics"
+git commit -m "feat(monsters): declare data-cache prometheus counters"
 ```
 
 ---
 
-## Task 11: Add the env-var loader and per-tenant registry skeleton
+## Task 4: Skeleton `cache.go` — env config + `parse*Env` helpers
 
 **Files:**
 - Create: `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go`
+
+We split `cache.go` introduction across three tasks (4, 5, 6) so each commit is reviewable on its own. Task 4 lands the configuration substrate.
 
 - [ ] **Step 1: Write `cache.go`**
 
@@ -901,17 +278,10 @@ git commit -m "feat(monsters): declare data-cache prometheus metrics"
 package information
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"os"
 	"sync"
 	"time"
 
-	cache "github.com/Chronicle20/atlas/libs/atlas-cache"
-	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
-	"github.com/Chronicle20/atlas/libs/atlas-tenant"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -937,23 +307,16 @@ const (
 	maxNegativeTTL = 5 * time.Minute
 )
 
-var (
-	cfgOnce sync.Once
-	cfg     cacheConfig
+// configLogger is the logger used for one-time configuration warnings.
+// Tests may swap it; in production it stays the standard logger.
+var configLogger logrus.FieldLogger = logrus.StandardLogger()
 
-	tenantCachesMu sync.RWMutex
-	tenantCaches   = make(map[uuid.UUID]cache.Cache[uint32, Model])
-
-	// configLogger is the logger used for one-time configuration warnings.
-	// Tests may override it; in production the first call site swaps in
-	// the service logger.
-	configLogger logrus.FieldLogger = logrus.StandardLogger()
-)
-
-func loadConfig() {
-	cfg.enabled = parseBoolEnv(envEnabled, true)
-	cfg.ttl = parseDurationEnv(envTTL, defaultTTL, minTTL, maxTTL)
-	cfg.negativeTTL = parseDurationEnv(envNegativeTTL, defaultNegativeTTL, minNegativeTTL, maxNegativeTTL)
+func loadConfig() cacheConfig {
+	return cacheConfig{
+		enabled:     parseBoolEnv(envEnabled, true),
+		ttl:         parseDurationEnv(envTTL, defaultTTL, minTTL, maxTTL),
+		negativeTTL: parseDurationEnv(envNegativeTTL, defaultNegativeTTL, minNegativeTTL, maxNegativeTTL),
+	}
 }
 
 func parseBoolEnv(name string, def bool) bool {
@@ -972,7 +335,7 @@ func parseBoolEnv(name string, def bool) bool {
 	}
 }
 
-func parseDurationEnv(name string, def, min, max time.Duration) time.Duration {
+func parseDurationEnv(name string, def, lo, hi time.Duration) time.Duration {
 	v, ok := os.LookupEnv(name)
 	if !ok || v == "" {
 		return def
@@ -982,50 +345,48 @@ func parseDurationEnv(name string, def, min, max time.Duration) time.Duration {
 		configLogger.Warnf("invalid duration for %s=%q; using default %s", name, v, def)
 		return def
 	}
-	if d < min || d > max {
-		configLogger.Warnf("%s=%s out of range [%s, %s]; using default %s", name, d, min, max, def)
+	if d < lo || d > hi {
+		configLogger.Warnf("%s=%s out of range [%s, %s]; using default %s", name, d, lo, hi, def)
 		return def
 	}
 	return d
 }
 
-// --- Per-tenant registry ---------------------------------------------------
+// _ keeps sync imported until later tasks add the singleton.
+var _ sync.Once
+```
 
-// cacheFor returns the per-tenant cache, creating it on first use. Returns
-// nil when the kill-switch is set, signaling the caller to bypass the
-// cache entirely.
-func cacheFor(t tenant.Model) cache.Cache[uint32, Model] {
-	cfgOnce.Do(loadConfig)
-	if !cfg.enabled {
-		return nil
-	}
-	id := t.Id()
+The trailing `var _ sync.Once` is a placeholder — Task 6 imports `sync` for real and the line is removed there.
 
-	tenantCachesMu.RLock()
-	c, ok := tenantCaches[id]
-	tenantCachesMu.RUnlock()
-	if ok {
-		return c
-	}
+- [ ] **Step 2: Verify it compiles**
 
-	tenantCachesMu.Lock()
-	defer tenantCachesMu.Unlock()
-	if c, ok = tenantCaches[id]; ok {
-		return c
-	}
-	tenantStr := id.String()
-	c = cache.New[uint32, Model](cache.Config{
-		TTL:         cfg.ttl,
-		NegativeTTL: cfg.negativeTTL,
-		OnEviction: func(kind string) {
-			reason := "expired_" + kind
-			evictionsTotal.WithLabelValues(tenantStr, reason).Inc()
-		},
-	})
-	tenantCaches[id] = c
-	return c
-}
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go build ./monster/information/...
+```
 
+Expected: exit 0.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache.go
+git commit -m "feat(monsters): cache config loader with env-var validation"
+```
+
+---
+
+## Task 5: Add error classifier + `notFoundError`
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go`
+
+design.md §5.4 plus context.md §3.2: classifier uses `errors.Is(err, requests.ErrNotFound)`. `requests.ErrBadRequest` and every other error are transient (not cached).
+
+- [ ] **Step 1: Append to `cache.go`**
+
+Add this block at the end of the file (replace the placeholder `var _ sync.Once` with the new content):
+
+```go
 // --- Error classification --------------------------------------------------
 
 type errKind int
@@ -1036,10 +397,10 @@ const (
 )
 
 // classifyError decides whether a failed upstream lookup should be cached
-// as a negative entry. The underlying transport at libs/atlas-rest/requests
-// returns the sentinel requests.ErrNotFound on HTTP 404; all other
-// failures (network, 5xx, parse, retry exhaustion, requests.ErrBadRequest)
-// are treated as transient and not cached.
+// as a negative entry. The transport at libs/atlas-rest/requests returns
+// the sentinel requests.ErrNotFound on HTTP 404 (libs/atlas-rest/requests/get.go:14-15);
+// everything else (network, 5xx, parse, retry exhaustion, ErrBadRequest) is
+// treated as transient and not cached.
 func classifyError(err error) errKind {
 	if errors.Is(err, requests.ErrNotFound) {
 		return errKindNotFound
@@ -1053,91 +414,233 @@ func classifyError(err error) errKind {
 func notFoundError(monsterId uint32) error {
 	return fmt.Errorf("monster %d not found: %w", monsterId, requests.ErrNotFound)
 }
-
-// --- Upstream fetch hook (test-overridable) -------------------------------
-
-// upstreamFn is the indirection that lets cache_test.go inject a fake
-// upstream without standing up a full httptest.Server. Production code
-// uses upstreamFetch.
-var upstreamFn = upstreamFetch
-
-func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (Model, error) {
-	return requests.Provider[RestModel, Model](l, ctx)(requestById(monsterId), Extract)()
-}
 ```
+
+Replace the existing import block at the top of `cache.go` with:
+
+```go
+import (
+	"errors"
+	"fmt"
+	"os"
+	"sync"
+	"time"
+
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	"github.com/sirupsen/logrus"
+)
+```
+
+Remove the `var _ sync.Once` placeholder line at the bottom of the file.
 
 - [ ] **Step 2: Verify it compiles**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./monster/information/...
 ```
+
 Expected: exit 0.
 
 - [ ] **Step 3: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/information/cache.go
-git commit -m "feat(monsters): per-tenant data cache registry and config loader"
+git commit -m "feat(monsters): cache error classifier (sentinel-based)"
 ```
 
 ---
 
-## Task 12: Wire `GetById` into the read-through cache
+## Task 6: Add `DataCache` singleton + `InitDataCache` + upstream indirection
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go`
+
+This task lands the substrate the read-through path needs. No tests yet — Task 7 wires `processor.go`, then Tasks 8–15 cover behavior tests.
+
+- [ ] **Step 1: Append to `cache.go`**
+
+Append to the end of `cache.go`:
+
+```go
+// --- Singleton + Init ------------------------------------------------------
+
+const (
+	posNamespace = "monsters:cache:data"
+	negNamespace = "monsters:cache:data:not_found"
+)
+
+type dataCache struct {
+	cfg    cacheConfig
+	posReg *redislib.TenantRegistry[uint32, RestModel]
+	negReg *redislib.TenantRegistry[uint32, struct{}]
+}
+
+var (
+	dataCacheOnce sync.Once
+	dataCachePtr  *dataCache
+)
+
+// InitDataCache wires the singleton DataCache. Idempotent; safe to call
+// from main.go alongside the other Init*Registry hooks. Reads env vars
+// once on first call.
+func InitDataCache(rc *goredis.Client) {
+	dataCacheOnce.Do(func() {
+		cfg := loadConfig()
+		dataCachePtr = &dataCache{
+			cfg:    cfg,
+			posReg: redislib.NewTenantRegistry[uint32, RestModel](rc, posNamespace, uint32KeyFn),
+			negReg: redislib.NewTenantRegistry[uint32, struct{}](rc, negNamespace, uint32KeyFn),
+		}
+	})
+}
+
+func uint32KeyFn(id uint32) string {
+	return strconv.FormatUint(uint64(id), 10)
+}
+
+// --- Upstream-fetch indirection (test-overridable) -------------------------
+
+// upstreamFn is the indirection that lets cache_test.go inject a fake
+// upstream without standing up a full httptest.Server. Production code
+// uses upstreamFetch.
+var upstreamFn = upstreamFetch
+
+func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (RestModel, error) {
+	return requests.GetRequest[RestModel](getBaseRequest() + fmt.Sprintf(monsterResource, monsterId))(l, ctx)
+}
+```
+
+Update the import block at the top of `cache.go` to:
+
+```go
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"strconv"
+	"sync"
+	"time"
+
+	redislib "github.com/Chronicle20/atlas/libs/atlas-redis"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	goredis "github.com/redis/go-redis/v9"
+	"github.com/sirupsen/logrus"
+)
+```
+
+**Why `upstreamFetch` returns `RestModel`, not `Model`:** the cache stores `RestModel` (see Plan-Time Correction at the top of this plan). `processor.go` will run `Extract(rm)` after a positive hit. `requests.GetRequest[RestModel](url)` produces a `Request[RestModel]`; calling it with `(l, ctx)` returns `(RestModel, error)`. We bypass `requests.Provider[RestModel, Model](…, Extract)` because `Extract` runs outside the cache layer.
+
+- [ ] **Step 2: Verify it compiles**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go build ./monster/information/...
+```
+
+Expected: exit 0. If you see "imported and not used: requests" or similar — `upstreamFetch` uses `requests.GetRequest`, so the import is live.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache.go
+git commit -m "feat(monsters): DataCache singleton with two TenantRegistry instances"
+```
+
+---
+
+## Task 7: Make `GetById` read-through
 
 **Files:**
 - Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/processor.go`
 
+The new `GetById` keeps its curried signature exactly. No callers change.
+
 - [ ] **Step 1: Replace `processor.go`**
+
+Replace the entire file contents:
 
 ```go
 package information
 
 import (
 	"context"
+	"errors"
 
+	redislib "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
-// GetById returns the monster information for monsterId, served from a
-// per-tenant in-process TTL cache when enabled. Signature is preserved
-// for all existing call sites.
+// GetById returns the parsed monster information for monsterId, served
+// from a tenant-scoped Redis-backed read-through cache when enabled.
+// Signature is preserved for all existing call sites.
 func GetById(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint32) (Model, error) {
 	return func(ctx context.Context) func(monsterId uint32) (Model, error) {
 		return func(monsterId uint32) (Model, error) {
 			t := tenant.MustFromContext(ctx)
-			c := cacheFor(t)
-			if c == nil {
-				// Kill-switch path: behave exactly like the pre-cache implementation.
-				return upstreamFn(l, ctx, monsterId)
-			}
 			tenantStr := t.Id().String()
 
-			if v, ok := c.Get(monsterId); ok {
-				hitsTotal.WithLabelValues(tenantStr, "positive").Inc()
-				return v, nil
+			if dataCachePtr == nil || !dataCachePtr.cfg.enabled {
+				return upstreamAndExtract(l, ctx, monsterId)
 			}
-			if c.IsNegative(monsterId) {
-				hitsTotal.WithLabelValues(tenantStr, "negative").Inc()
-				return Model{}, notFoundError(monsterId)
+			c := dataCachePtr
+
+			// Positive lookup.
+			if rm, err := c.posReg.Get(ctx, t, monsterId); err == nil {
+				hitsTotal.WithLabelValues(tenantStr, "positive").Inc()
+				return Extract(rm)
+			} else if !errors.Is(err, redislib.ErrNotFound) {
+				redisErrorsTotal.WithLabelValues(tenantStr, "get_positive").Inc()
+				l.WithError(err).Debug("data cache positive lookup failed; falling through")
 			}
 
-			missesTotal.WithLabelValues(tenantStr).Inc()
-			v, err := upstreamFn(l, ctx, monsterId)
-			if err == nil {
-				c.Put(monsterId, v)
-				return v, nil
+			// Negative lookup (only if NegativeTTL > 0).
+			if c.cfg.negativeTTL > 0 {
+				if _, nerr := c.negReg.Get(ctx, t, monsterId); nerr == nil {
+					hitsTotal.WithLabelValues(tenantStr, "negative").Inc()
+					return Model{}, notFoundError(monsterId)
+				} else if !errors.Is(nerr, redislib.ErrNotFound) {
+					redisErrorsTotal.WithLabelValues(tenantStr, "get_negative").Inc()
+					l.WithError(nerr).Debug("data cache negative lookup failed; falling through")
+				}
 			}
-			switch classifyError(err) {
+
+			// True miss → upstream.
+			missesTotal.WithLabelValues(tenantStr).Inc()
+			rm, ferr := upstreamFn(l, ctx, monsterId)
+			if ferr == nil {
+				if perr := c.posReg.PutWithTTL(ctx, t, monsterId, rm, c.cfg.ttl); perr != nil {
+					redisErrorsTotal.WithLabelValues(tenantStr, "put_positive").Inc()
+					l.WithError(perr).Debug("data cache positive put failed; serving fetched value uncached")
+				}
+				return Extract(rm)
+			}
+			switch classifyError(ferr) {
 			case errKindNotFound:
 				errorsTotal.WithLabelValues(tenantStr, "not_found").Inc()
-				c.PutNegative(monsterId)
+				if c.cfg.negativeTTL > 0 {
+					if perr := c.negReg.PutWithTTL(ctx, t, monsterId, struct{}{}, c.cfg.negativeTTL); perr != nil {
+						redisErrorsTotal.WithLabelValues(tenantStr, "put_negative").Inc()
+						l.WithError(perr).Debug("data cache negative put failed; not caching")
+					}
+				}
 			default:
 				errorsTotal.WithLabelValues(tenantStr, "transient").Inc()
 			}
-			return Model{}, err
+			return Model{}, ferr
 		}
 	}
+}
+
+// upstreamAndExtract is the kill-switch / unwired path: it skips the cache
+// entirely and reproduces the pre-task behavior — fetch RestModel and
+// Extract.
+func upstreamAndExtract(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (Model, error) {
+	rm, err := upstreamFn(l, ctx, monsterId)
+	if err != nil {
+		return Model{}, err
+	}
+	return Extract(rm)
 }
 ```
 
@@ -1146,32 +649,34 @@ func GetById(l logrus.FieldLogger) func(ctx context.Context) func(monsterId uint
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go build ./...
 ```
+
 Expected: exit 0.
 
-- [ ] **Step 3: Run the existing test suite to confirm we did not break anything**
+- [ ] **Step 3: Run existing tests**
 
 ```bash
 cd services/atlas-monsters/atlas.com/monsters && go test ./...
 ```
-Expected: PASS. (Existing callers of `GetById` either use function-typed lookups in tests or never run the real `GetById` path, so the wrapper is invisible to them.)
+
+Expected: PASS. Existing tests stub `GetById` via function-typed fields (per `monster/recovery_task.go:29`, `monster/processor.go:65`) and never exercise the real `GetById` path, so the wrapper is invisible to them. If `monster/information/rest_test.go` runs, it tests `Extract` only and is unaffected.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/information/processor.go
-git commit -m "feat(monsters): GetById is now a tenant-scoped read-through cache"
+git commit -m "feat(monsters): GetById is a tenant-scoped Redis read-through cache"
 ```
 
 ---
 
-## Task 13: Wrapper unit tests — cache hit, miss, and tenant isolation
+## Task 8: Test scaffolding + env-loader unit tests
 
 **Files:**
 - Create: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
 
-- [ ] **Step 1: Write the tests**
+This file accumulates wrapper tests across Tasks 8–15. Task 8 establishes the helpers and covers the env-loader + classifier in isolation.
 
-Create `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go` with these contents:
+- [ ] **Step 1: Write the file**
 
 ```go
 package information
@@ -1185,27 +690,32 @@ import (
 
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/alicebob/miniredis/v2"
 	"github.com/google/uuid"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
-// resetCacheState wipes per-tenant caches and resets the config Once so
-// each test sees a clean slate under per-test env vars. Tests using this
-// helper must NOT run in parallel — the singletons are package-scoped.
-func resetCacheState(t *testing.T) {
+// resetDataCache returns the wrapper to its pre-Init state so successive
+// tests can call InitDataCache against a fresh miniredis with a fresh env
+// snapshot. Call BEFORE each InitDataCache.
+func resetDataCache(t *testing.T) {
 	t.Helper()
-	tenantCachesMu.Lock()
-	for k := range tenantCaches {
-		delete(tenantCaches, k)
-	}
-	tenantCachesMu.Unlock()
-	cfgOnce = sync.Once{}
+	dataCachePtr = nil
+	dataCacheOnce = sync.Once{}
 }
 
-// _ = uuid.Nil keeps the uuid import live; resetCacheState uses uuid.UUID
-// implicitly through tenantCaches' map type.
-var _ = uuid.Nil
+// newRedis spins up a miniredis-backed *goredis.Client scoped to the test.
+func newRedis(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {
+	t.Helper()
+	mr := miniredis.RunT(t)
+	client := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = client.Close() })
+	return client, mr
+}
 
+// ctxFor builds a tenant context. region must be at least 1 byte (used by
+// TestGetById_TenantIsolation to encode tenant identity into responses).
 func ctxFor(t *testing.T, region string) context.Context {
 	t.Helper()
 	tm, err := tenant.Create(uuid.New(), region, 83, 1)
@@ -1215,377 +725,695 @@ func ctxFor(t *testing.T, region string) context.Context {
 	return tenant.WithContext(context.Background(), tm)
 }
 
-func TestGetById_HitAvoidsUpstream(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "true")
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "1m")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "30s")
-
+// withFakeUpstream temporarily replaces upstreamFn for the duration of the
+// test. Returns the call counter so tests can assert on issued requests.
+func withFakeUpstream(t *testing.T, fn func(_ logrus.FieldLogger, _ context.Context, id uint32) (RestModel, error)) *atomic.Int32 {
+	t.Helper()
 	var calls atomic.Int32
 	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, _ context.Context, id uint32) (Model, error) {
+	upstreamFn = func(l logrus.FieldLogger, ctx context.Context, id uint32) (RestModel, error) {
 		calls.Add(1)
-		return Model{hp: uint32(id) * 10}, nil
+		return fn(l, ctx, id)
 	}
 	t.Cleanup(func() { upstreamFn = prev })
+	return &calls
+}
 
-	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
-	if _, err := get(100); err != nil {
-		t.Fatalf("first call: %v", err)
+// --- Env-loader and classifier unit tests ----------------------------------
+
+func TestLoadConfig_Defaults(t *testing.T) {
+	t.Setenv(envEnabled, "")
+	t.Setenv(envTTL, "")
+	t.Setenv(envNegativeTTL, "")
+
+	cfg := loadConfig()
+	if !cfg.enabled {
+		t.Fatalf("enabled = false, want true (default)")
 	}
-	if _, err := get(100); err != nil {
-		t.Fatalf("second call: %v", err)
+	if cfg.ttl != defaultTTL {
+		t.Fatalf("ttl = %s, want %s", cfg.ttl, defaultTTL)
 	}
-	if got := calls.Load(); got != 1 {
-		t.Fatalf("upstream calls = %d, want 1", got)
+	if cfg.negativeTTL != defaultNegativeTTL {
+		t.Fatalf("negativeTTL = %s, want %s", cfg.negativeTTL, defaultNegativeTTL)
 	}
 }
 
-func TestGetById_NegativeCache_AvoidsUpstream(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "true")
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "1m")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "30s")
+func TestLoadConfig_InvalidValues_FallBackToDefaults(t *testing.T) {
+	t.Setenv(envEnabled, "maybe")
+	t.Setenv(envTTL, "not-a-duration")
+	t.Setenv(envNegativeTTL, "999h") // out of range > maxNegativeTTL
 
-	var calls atomic.Int32
-	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (Model, error) {
-		calls.Add(1)
-		return Model{}, requests.ErrNotFound
+	cfg := loadConfig()
+	if !cfg.enabled {
+		t.Fatalf("enabled = false, want true (invalid bool falls back to default true)")
 	}
-	t.Cleanup(func() { upstreamFn = prev })
+	if cfg.ttl != defaultTTL {
+		t.Fatalf("ttl = %s, want default %s", cfg.ttl, defaultTTL)
+	}
+	if cfg.negativeTTL != defaultNegativeTTL {
+		t.Fatalf("negativeTTL = %s, want default %s", cfg.negativeTTL, defaultNegativeTTL)
+	}
+}
+
+func TestLoadConfig_ExplicitFalse(t *testing.T) {
+	t.Setenv(envEnabled, "false")
+	t.Setenv(envTTL, "10m")
+	t.Setenv(envNegativeTTL, "0s")
+
+	cfg := loadConfig()
+	if cfg.enabled {
+		t.Fatalf("enabled = true, want false")
+	}
+	if cfg.negativeTTL != 0 {
+		t.Fatalf("negativeTTL = %s, want 0s", cfg.negativeTTL)
+	}
+}
+
+func TestClassifyError(t *testing.T) {
+	if got := classifyError(requests.ErrNotFound); got != errKindNotFound {
+		t.Fatalf("classifyError(ErrNotFound) = %v, want errKindNotFound", got)
+	}
+	wrapped := errors.New("boom: " + requests.ErrNotFound.Error())
+	if got := classifyError(wrapped); got != errKindTransient {
+		t.Fatalf("classifyError(string-wrapped) = %v, want errKindTransient (must be errors.Is, not string match)", got)
+	}
+	wrappedW := errors.Join(errors.New("upstream"), requests.ErrNotFound)
+	if got := classifyError(wrappedW); got != errKindNotFound {
+		t.Fatalf("classifyError(joined w/ ErrNotFound) = %v, want errKindNotFound", got)
+	}
+	if got := classifyError(requests.ErrBadRequest); got != errKindTransient {
+		t.Fatalf("classifyError(ErrBadRequest) = %v, want errKindTransient", got)
+	}
+	if got := classifyError(errors.New("connection refused")); got != errKindTransient {
+		t.Fatalf("classifyError(generic) = %v, want errKindTransient", got)
+	}
+}
+
+func TestNotFoundError_IsNotFound(t *testing.T) {
+	err := notFoundError(123)
+	if !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("notFoundError no longer wraps ErrNotFound: %v", err)
+	}
+}
+```
+
+- [ ] **Step 2: Run the new tests**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run "TestLoadConfig|TestClassifyError|TestNotFoundError" -v ./monster/information/...
+```
+
+Expected: all five tests PASS.
+
+- [ ] **Step 3: Run the full service test suite**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test ./...
+```
+
+Expected: PASS, no regressions.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): cache config loader and error classifier"
+```
+
+---
+
+## Task 9: TDD — positive cache hit avoids upstream
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+Append to `cache_test.go`:
+
+```go
+func TestGetById_HitAvoidsUpstream(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, id uint32) (RestModel, error) {
+		return RestModel{Hp: id * 10, Mp: 5}, nil
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	m1, err := get(100)
+	if err != nil {
+		t.Fatalf("first call: %v", err)
+	}
+	if m1.Hp() != 1000 {
+		t.Fatalf("m1.Hp() = %d, want 1000 (upstream returned Hp=1000 via Extract)", m1.Hp())
+	}
+	m2, err := get(100)
+	if err != nil {
+		t.Fatalf("second call: %v", err)
+	}
+	if m2.Hp() != 1000 {
+		t.Fatalf("m2.Hp() = %d, want 1000 (cache hit must round-trip Hp)", m2.Hp())
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("upstream calls = %d, want 1 (second call must hit cache)", got)
+	}
+}
+```
+
+- [ ] **Step 2: Run the test**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById_HitAvoidsUpstream -v ./monster/information/...
+```
+
+Expected: PASS. The test exercises Task 7's wrapper end-to-end against miniredis. If it fails:
+
+- `m1.Hp() = 0`: indicates `Extract(rm)` is not running on the miss path, OR the cache stored a zero-value `Model` (regression of the Plan-Time Correction). Re-check `processor.go` Step 1.
+- `m2.Hp() = 0`: indicates the cache stored `Model` (not `RestModel`) and JSON marshalling lost the unexported fields. Re-check Task 6 Step 1.
+- `calls.Load() = 2`: indicates `posReg.Get` is not finding the entry — likely a key-namespace or `tenant.Model` propagation bug.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): positive cache hit avoids upstream"
+```
+
+---
+
+## Task 10: TDD — negative cache hit avoids upstream
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
+func TestGetById_NegativeCache_AvoidsUpstream(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrNotFound
+	})
 
 	ctx := ctxFor(t, "GMS")
 	get := GetById(logrus.New())(ctx)
 
 	_, err1 := get(404)
 	if !errors.Is(err1, requests.ErrNotFound) {
-		t.Fatalf("first call err = %v, want ErrNotFound", err1)
+		t.Fatalf("first call err = %v, want errors.Is(_, ErrNotFound)", err1)
 	}
 	_, err2 := get(404)
 	if !errors.Is(err2, requests.ErrNotFound) {
-		t.Fatalf("second call err = %v, want ErrNotFound", err2)
+		t.Fatalf("second call err = %v, want errors.Is(_, ErrNotFound)", err2)
 	}
 	if got := calls.Load(); got != 1 {
-		t.Fatalf("upstream calls = %d, want 1", got)
+		t.Fatalf("upstream calls = %d, want 1 (negative cache must absorb second call)", got)
 	}
 }
+```
 
+- [ ] **Step 2: Run**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById_NegativeCache -v ./monster/information/...
+```
+
+Expected: PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): negative cache hit avoids upstream"
+```
+
+---
+
+## Task 11: TDD — transient errors are not cached
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
 func TestGetById_TransientErrorNotCached(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "true")
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "1m")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "30s")
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
 
-	var calls atomic.Int32
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
 	transient := errors.New("connection refused")
-	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (Model, error) {
-		calls.Add(1)
-		return Model{}, transient
-	}
-	t.Cleanup(func() { upstreamFn = prev })
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, transient
+	})
 
 	ctx := ctxFor(t, "GMS")
 	get := GetById(logrus.New())(ctx)
 
 	if _, err := get(500); !errors.Is(err, transient) {
-		t.Fatalf("err = %v, want transient", err)
+		t.Fatalf("first err = %v, want %v", err, transient)
 	}
 	if _, err := get(500); !errors.Is(err, transient) {
-		t.Fatalf("second err = %v, want transient", err)
+		t.Fatalf("second err = %v, want %v", err, transient)
 	}
 	if got := calls.Load(); got != 2 {
-		t.Fatalf("upstream calls = %d, want 2 (transient errors must not cache)", got)
+		t.Fatalf("upstream calls = %d, want 2 (transient errors must not populate negative cache)", got)
 	}
 }
 
-func TestGetById_TenantIsolation(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "true")
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "1m")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "30s")
+func TestGetById_BadRequestNotCached(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
 
-	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, ctx context.Context, id uint32) (Model, error) {
-		tm := tenant.MustFromContext(ctx)
-		// Encode tenant identity into the response so the test can check
-		// each tenant sees its own value.
-		hash := uint32(tm.Region()[0])
-		return Model{hp: hash + id}, nil
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrBadRequest
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	for i := 0; i < 3; i++ {
+		_, err := get(400)
+		if !errors.Is(err, requests.ErrBadRequest) {
+			t.Fatalf("err = %v, want ErrBadRequest", err)
+		}
 	}
-	t.Cleanup(func() { upstreamFn = prev })
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (ErrBadRequest is transient, never cached)", got)
+	}
+}
+```
 
-	ctxA := ctxFor(t, "A-region")
-	ctxB := ctxFor(t, "B-region")
+- [ ] **Step 2: Run**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run "TestGetById_TransientErrorNotCached|TestGetById_BadRequestNotCached" -v ./monster/information/...
+```
+
+Expected: both PASS.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): transient and bad-request errors are not cached"
+```
+
+---
+
+## Task 12: TDD — tenant isolation
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
+func TestGetById_TenantIsolation(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	// Encode tenant region into Hp so each tenant produces a distinct
+	// cacheable answer. Region must be ≥1 byte; ctxFor enforces this.
+	_ = withFakeUpstream(t, func(_ logrus.FieldLogger, ctx context.Context, id uint32) (RestModel, error) {
+		tm := tenant.MustFromContext(ctx)
+		return RestModel{Hp: uint32(tm.Region()[0]) + id}, nil
+	})
+
+	ctxA := ctxFor(t, "AMS")
+	ctxB := ctxFor(t, "BMS")
 	getA := GetById(logrus.New())(ctxA)
 	getB := GetById(logrus.New())(ctxB)
 
-	a, err := getA(7)
+	a1, err := getA(7)
 	if err != nil {
 		t.Fatalf("getA: %v", err)
 	}
-	b, err := getB(7)
+	b1, err := getB(7)
 	if err != nil {
 		t.Fatalf("getB: %v", err)
 	}
-	if a.Hp() == b.Hp() {
-		t.Fatalf("tenant A and B saw the same value (%d) — isolation broken", a.Hp())
+	if a1.Hp() == b1.Hp() {
+		t.Fatalf("tenants A and B saw the same Hp (%d) — isolation broken", a1.Hp())
 	}
-	// Re-read to confirm cache hit returns each tenant's own value.
+	// Re-read: cached values must remain tenant-distinct.
 	a2, _ := getA(7)
 	b2, _ := getB(7)
-	if a2.Hp() != a.Hp() || b2.Hp() != b.Hp() {
-		t.Fatalf("cached values diverged across calls; a=%d->%d b=%d->%d", a.Hp(), a2.Hp(), b.Hp(), b2.Hp())
+	if a2.Hp() != a1.Hp() || b2.Hp() != b1.Hp() {
+		t.Fatalf("cached values diverged across calls; a=%d->%d b=%d->%d", a1.Hp(), a2.Hp(), b1.Hp(), b2.Hp())
+	}
+	if a2.Hp() == b2.Hp() {
+		t.Fatalf("on second read, tenants A and B converged to the same Hp (%d) — cross-tenant key collision", a2.Hp())
 	}
 }
+```
 
+- [ ] **Step 2: Run**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById_TenantIsolation -v ./monster/information/...
+```
+
+Expected: PASS. If it fails with "saw the same Hp": the keys are not tenant-scoped — verify Task 6 used `redislib.NewTenantRegistry` (tenant-aware) rather than `redislib.NewRegistry` (single-tenant).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): tenant isolation across cached values"
+```
+
+---
+
+## Task 13: TDD — kill-switch bypasses cache entirely
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
 func TestGetById_KillSwitchBypassesCache(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "false")
+	resetDataCache(t)
+	t.Setenv(envEnabled, "false")
 
-	var calls atomic.Int32
-	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, _ context.Context, _ uint32) (Model, error) {
-		calls.Add(1)
-		return Model{hp: 1}, nil
-	}
-	t.Cleanup(func() { upstreamFn = prev })
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 1}, nil
+	})
 
 	ctx := ctxFor(t, "GMS")
 	get := GetById(logrus.New())(ctx)
-	_, _ = get(1)
-	_, _ = get(1)
-	_, _ = get(1)
+	for i := 0; i < 3; i++ {
+		if _, err := get(1); err != nil {
+			t.Fatalf("call %d: %v", i, err)
+		}
+	}
 	if got := calls.Load(); got != 3 {
 		t.Fatalf("upstream calls = %d, want 3 (kill-switch must bypass cache)", got)
 	}
 }
 
-func TestLoadConfig_InvalidValues_FallBackToDefaults(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "not-a-duration")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "999h")
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "")
+func TestGetById_NotInitialized_BypassesCache(t *testing.T) {
+	resetDataCache(t) // no InitDataCache
 
-	loadConfig()
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 1}, nil
+	})
 
-	if cfg.ttl != defaultTTL {
-		t.Fatalf("cfg.ttl = %s, want default %s", cfg.ttl, defaultTTL)
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 2; i++ {
+		if _, err := get(1); err != nil {
+			t.Fatalf("call %d: %v", i, err)
+		}
 	}
-	if cfg.negativeTTL != defaultNegativeTTL {
-		t.Fatalf("cfg.negativeTTL = %s, want default %s", cfg.negativeTTL, defaultNegativeTTL)
-	}
-	if !cfg.enabled {
-		t.Fatalf("cfg.enabled = false, want true (empty env should default to true)")
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("upstream calls = %d, want 2 (uninitialized cache must bypass)", got)
 	}
 }
-
 ```
 
-- [ ] **Step 2: Run the tests**
+- [ ] **Step 2: Run**
 
 ```bash
-cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById -v ./monster/information/...
+cd services/atlas-monsters/atlas.com/monsters && go test -run "TestGetById_KillSwitch|TestGetById_NotInitialized" -v ./monster/information/...
 ```
-Expected: all five `TestGetById_*` and `TestLoadConfig_*` PASS.
 
-- [ ] **Step 3: Run the full service test suite under -race**
+Expected: PASS.
+
+- [ ] **Step 3: Commit**
 
 ```bash
-cd services/atlas-monsters/atlas.com/monsters && go test -race ./...
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): kill-switch and uninitialized state bypass cache"
 ```
-Expected: PASS, no DATA RACE warnings, no regressions in other packages.
+
+---
+
+## Task 14: TDD — Redis-down fallthrough is graceful
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
+func TestGetById_RedisDown_FallsThroughGracefully(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, mr := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 7}, nil
+	})
+
+	// Kill Redis BEFORE any cache interaction. Every Get/PutWithTTL must
+	// return an error; the wrapper must still serve the upstream answer.
+	mr.Close()
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 3; i++ {
+		m, err := get(1)
+		if err != nil {
+			t.Fatalf("call %d returned error: %v (Redis-down must NOT surface to caller)", i, err)
+		}
+		if m.Hp() != 7 {
+			t.Fatalf("call %d: m.Hp() = %d, want 7 (must serve upstream value)", i, m.Hp())
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (Redis-down means every call must fall through)", got)
+	}
+}
+```
+
+- [ ] **Step 2: Run**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById_RedisDown -v ./monster/information/...
+```
+
+Expected: PASS. If the test hangs or fails with a context-deadline-exceeded error, the wrapper is propagating Redis errors instead of falling through — verify `processor.go` checks `errors.Is(err, redislib.ErrNotFound)` and continues on every other Redis error.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
+git commit -m "test(monsters): Redis-down degrades to no-cache without surfacing errors"
+```
+
+---
+
+## Task 15: TDD — `MONSTER_DATA_CACHE_NEGATIVE_TTL=0` disables negative caching
+
+**Files:**
+- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go`
+
+- [ ] **Step 1: Append the test**
+
+```go
+func TestGetById_NegativeTTLZero_DisablesNegativeCache(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "0s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrNotFound
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 3; i++ {
+		_, err := get(404)
+		if !errors.Is(err, requests.ErrNotFound) {
+			t.Fatalf("call %d err = %v, want ErrNotFound", i, err)
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (NegativeTTL=0 must disable negative caching)", got)
+	}
+}
+```
+
+- [ ] **Step 2: Run**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -run TestGetById_NegativeTTLZero -v ./monster/information/...
+```
+
+Expected: PASS.
+
+- [ ] **Step 3: Run the full wrapper test suite under -race**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -race ./monster/information/...
+```
+
+Expected: PASS, no DATA RACE warnings.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
-git commit -m "test(monsters): wrapper-level cache tests (hit, negative, isolation, kill-switch)"
+git commit -m "test(monsters): NEGATIVE_TTL=0 disables negative caching"
 ```
 
 ---
 
-## Task 14: Cache-size sampling goroutine
+## Task 16: Wire `InitDataCache` in `main.go`
 
 **Files:**
-- Modify: `services/atlas-monsters/atlas.com/monsters/monster/information/cache.go`
+- Modify: `services/atlas-monsters/atlas.com/monsters/main.go`
 
-- [ ] **Step 1: Add the sampler**
+- [ ] **Step 1: Add the import**
 
-Append to `cache.go`:
-
-```go
-// Sample interval for the cache_size gauge. Matches the existing
-// RegistryAudit cadence in monster/.
-const cacheSizeSampleInterval = 30 * time.Second
-
-var samplerOnce sync.Once
-
-// startSampler launches a single goroutine that periodically polls Len()
-// on every per-tenant cache and sets the cache_size gauge. Idempotent.
-func startSampler() {
-	samplerOnce.Do(func() {
-		go func() {
-			ticker := time.NewTicker(cacheSizeSampleInterval)
-			defer ticker.Stop()
-			for range ticker.C {
-				sampleCacheSizes()
-			}
-		}()
-	})
-}
-
-func sampleCacheSizes() {
-	tenantCachesMu.RLock()
-	snapshot := make(map[uuid.UUID]cache.Cache[uint32, Model], len(tenantCaches))
-	for k, v := range tenantCaches {
-		snapshot[k] = v
-	}
-	tenantCachesMu.RUnlock()
-	for id, c := range snapshot {
-		pos, neg := c.Len()
-		tenantStr := id.String()
-		cacheSize.WithLabelValues(tenantStr, "positive").Set(float64(pos))
-		cacheSize.WithLabelValues(tenantStr, "negative").Set(float64(neg))
-	}
-}
-```
-
-- [ ] **Step 2: Kick off the sampler from `cacheFor` on first tenant**
-
-In `cacheFor`, just after the line `tenantCaches[id] = c`, insert:
+In the import block of `main.go`, add this line below the existing `"atlas-monsters/monster"` line:
 
 ```go
-	startSampler()
+	"atlas-monsters/monster/information"
 ```
 
-So the section becomes:
+- [ ] **Step 2: Add the Init call**
+
+In `func main()`, locate the block:
 
 ```go
-	tenantCaches[id] = c
-	startSampler()
-	return c
+	rc := atlas.Connect(l)
+	monster.InitIdAllocator(rc)
+	monster.InitCooldownRegistry(rc)
+	monster.InitAttackCooldownRegistry(rc)
+	monster.InitMonsterRegistry(rc)
+	monster.InitDropTimerRegistry(rc)
 ```
 
-- [ ] **Step 3: Add a unit test for `sampleCacheSizes`**
-
-Append to `cache_test.go`:
+Append this line at the end of that block (immediately after `monster.InitDropTimerRegistry(rc)`):
 
 ```go
-func TestSampleCacheSizes_PopulatesGauge(t *testing.T) {
-	resetCacheState(t)
-	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "true")
-	t.Setenv("MONSTER_DATA_CACHE_TTL", "1m")
-	t.Setenv("MONSTER_DATA_CACHE_NEGATIVE_TTL", "30s")
-
-	prev := upstreamFn
-	upstreamFn = func(_ logrus.FieldLogger, _ context.Context, id uint32) (Model, error) {
-		return Model{hp: id}, nil
-	}
-	t.Cleanup(func() { upstreamFn = prev })
-
-	ctx := ctxFor(t, "GMS")
-	get := GetById(logrus.New())(ctx)
-	for i := uint32(1); i <= 3; i++ {
-		if _, err := get(i); err != nil {
-			t.Fatalf("get(%d): %v", i, err)
-		}
-	}
-
-	// Drive the sampler synchronously rather than waiting on the goroutine.
-	sampleCacheSizes()
-
-	// We cannot easily read promauto gauge values without registering a
-	// custom registry; instead assert via Cache.Len directly.
-	tenantCachesMu.RLock()
-	defer tenantCachesMu.RUnlock()
-	if len(tenantCaches) != 1 {
-		t.Fatalf("tenantCaches len = %d, want 1", len(tenantCaches))
-	}
-	for _, c := range tenantCaches {
-		pos, _ := c.Len()
-		if pos != 3 {
-			t.Fatalf("positive Len = %d, want 3", pos)
-		}
-	}
-}
+	information.InitDataCache(rc)
 ```
 
-- [ ] **Step 4: Run, verify pass**
+- [ ] **Step 3: Build the service**
 
 ```bash
-cd services/atlas-monsters/atlas.com/monsters && go test -race ./monster/information/...
+cd services/atlas-monsters/atlas.com/monsters && go build ./...
 ```
-Expected: PASS.
+
+Expected: exit 0.
+
+- [ ] **Step 4: Run the full test suite under -race**
+
+```bash
+cd services/atlas-monsters/atlas.com/monsters && go test -race ./...
+```
+
+Expected: PASS, no DATA RACE warnings.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add services/atlas-monsters/atlas.com/monsters/monster/information/cache.go services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go
-git commit -m "feat(monsters): periodic cache_size gauge sampling"
+git add services/atlas-monsters/atlas.com/monsters/main.go
+git commit -m "feat(atlas-monsters): wire InitDataCache at startup"
 ```
 
 ---
 
-## Task 15: Verify acceptance criteria — full local verification pass
+## Task 17: Final verification pass
 
 **Files:** none modified.
 
-- [ ] **Step 1: Build everything**
+- [ ] **Step 1: Build everything from worktree root**
 
 ```bash
-cd libs/atlas-cache && go build ./...
 cd services/atlas-monsters/atlas.com/monsters && go build ./...
 ```
-Expected: both exit 0.
 
-- [ ] **Step 2: Run all tests with the race detector**
+Expected: exit 0.
+
+- [ ] **Step 2: Run the entire test suite under -race**
 
 ```bash
-cd libs/atlas-cache && go test -race ./...
 cd services/atlas-monsters/atlas.com/monsters && go test -race ./...
 ```
-Expected: both PASS, no DATA RACE warnings.
 
-- [ ] **Step 3: Run benchmarks one more time and record numbers**
+Expected: PASS, no DATA RACE warnings, no regressions in any package.
 
-```bash
-cd libs/atlas-cache && go test -bench=. -benchmem -run=^$ ./...
-```
-Expected: `Get_Hit` ≤ 200 ns/op, `Get_Miss` ≤ 100 ns/op, `Put` ≤ 500 ns/op (or ≤2x of those targets, per design §3.5).
+- [ ] **Step 3: Cross-check PRD §10 acceptance**
 
-- [ ] **Step 4: Cross-check the PRD §10 acceptance list**
+Walk PRD §10 (post-Task-1 reconciliation) and confirm each automated criterion:
 
-Walk PRD §10 manually:
-
-- New `libs/atlas-cache` module with positive/negative TTL, injectable `Now`, lazy expiration, race-clean tests — covered by Tasks 1–8.
-- `GetById` is read-through, scoped per tenant — Task 12.
-- Cache hit avoids HTTP — `TestGetById_HitAvoidsUpstream` (Task 13).
-- 404 records negative entry, subsequent calls hit it — `TestGetById_NegativeCache_AvoidsUpstream` (Task 13).
-- Transient errors not cached — `TestGetById_TransientErrorNotCached` (Task 13).
-- Two tenants isolated — `TestGetById_TenantIsolation` (Task 13).
+- No new shared library — verified by inspection: only `prometheus/client_golang` was added to `go.mod`; `libs/atlas-cache` was not created.
+- `GetById` is read-through, scoped per tenant — `processor.go` (Task 7) + `TestGetById_TenantIsolation` (Task 12).
+- Cache hit avoids HTTP — `TestGetById_HitAvoidsUpstream` (Task 9).
+- 404 records negative entry, subsequent calls hit it — `TestGetById_NegativeCache_AvoidsUpstream` (Task 10).
+- Transient / bad-request errors not cached — `TestGetById_TransientErrorNotCached`, `TestGetById_BadRequestNotCached` (Task 11).
+- Two tenants isolated — `TestGetById_TenantIsolation` (Task 12).
 - Kill-switch bypasses cache — `TestGetById_KillSwitchBypassesCache` (Task 13).
-- All five metrics declared and labeled — Task 10 + wired in Tasks 12, 14.
-- `go build ./...` clean in both modules — verified in this Task.
-- `go test -race ./...` clean in both modules — verified in this Task.
-- ≥95% reduction in `GET /api/data/monsters/{id}` traffic — **manual** verification against running stack; not part of the automated plan. Document the result in the PR description.
-- PRD `Status` and `Date implemented` updates — done at PR-merge time, outside this plan.
+- All four counters declared and labeled — `metrics.go` (Task 3) + emit sites in `processor.go` (Task 7).
+- `go build ./...` clean — Step 1.
+- `go test -race ./...` clean — Step 2.
+- Redis-down graceful fallthrough — `TestGetById_RedisDown_FallsThroughGracefully` (Task 14).
 
-If any automated criterion above fails, return to the relevant task. If only the manual ≥95% check is outstanding, proceed.
+The PRD bullet "≥95% reduction in `GET /api/data/monsters/{id}` traffic" is **manual** verification per PRD §10 — exercised against the running stack, not part of this plan. Document the observed before/after in the PR description.
 
-- [ ] **Step 5: Final commit if nothing changed**
+PRD `Status` and `Date implemented` updates happen at PR-merge time, outside this plan.
 
-If steps 1–3 ran clean with no edits, there is nothing to commit. Proceed to plan-complete sign-off.
+- [ ] **Step 4: If any criterion above fails**
 
-If a fix was required, commit it under the relevant prior task style and re-run steps 1–3.
+Return to the relevant task. Otherwise, the plan is complete.
 
 ---
 
 ## Self-Review Notes (run before handing off)
 
-- **Spec coverage:** every PRD §10 line item is mapped to a task above (see Task 15 step 4).
-- **Placeholder scan:** no "TBD", no "implement appropriate handling" without code, no "see Task N" cross-references that omit the code.
-- **Type consistency:** the cache value type is `Model` everywhere (Tasks 11, 12, 14); the cache key is `uint32`; tenant ids are `uuid.UUID`; the `Cache` interface signatures in Tasks 2/3/4/5/6 match how Task 11 calls them; `requests.ErrNotFound` is used identically in Tasks 11 and 13.
-- **Design correction noted:** design.md §4.4 referenced a `requests.HTTPError` typed error that does not exist. Task 11 uses `errors.Is(err, requests.ErrNotFound)` instead (recorded in `context.md` §3.2).
+- **Spec coverage:** every PRD §10 acceptance bullet (after Task 1's reconciliation) maps to a task above (see Task 17 Step 3).
+- **Placeholder scan:** zero "TBD", "implement appropriate handling", or "see Task N" cross-references that omit code. Each task body contains the full code block to write.
+- **Type consistency:**
+  - Cache positive value type is `RestModel` everywhere (`cache.go` Task 6, `processor.go` Task 7, tests Tasks 9–15). The Plan-Time Correction at the top calls out this divergence from design.md §5.2.
+  - Cache negative value type is `struct{}` everywhere.
+  - Cache key type is `uint32` everywhere.
+  - `tenant.Model` flows from `tenant.MustFromContext(ctx)` into `posReg.Get`/`negReg.Get`/`PutWithTTL`.
+  - `requests.ErrNotFound` is the sentinel used by `classifyError` (Task 5) and reproduced by `notFoundError` (Task 5) and asserted in tests via `errors.Is` (Tasks 10, 11, 15).
+  - `redislib.ErrNotFound` (different from `requests.ErrNotFound`!) is the Redis miss sentinel discriminated by `errors.Is` in `processor.go` (Task 7).
+- **Design correction recorded:** Plan-Time Correction at the top of this plan replaces design.md §5.2's `TenantRegistry[uint32, Model]` with `TenantRegistry[uint32, RestModel]` because `Model` has unexported fields and is not JSON-serializable. Every code block downstream uses `RestModel` consistently.
+- **No skipped acceptance criteria:** §10's "≥95% reduction" bullet is explicitly marked manual; every other bullet is automated and mapped.

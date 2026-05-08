@@ -1,12 +1,17 @@
 package information
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"sync"
 	"time"
 
+	redislib "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -103,4 +108,51 @@ func classifyError(err error) errKind {
 // would see from a live miss.
 func notFoundError(monsterId uint32) error {
 	return fmt.Errorf("monster %d not found: %w", monsterId, requests.ErrNotFound)
+}
+
+// --- Singleton + Init ------------------------------------------------------
+
+const (
+	posNamespace = "monsters:cache:data"
+	negNamespace = "monsters:cache:data:not_found"
+)
+
+type dataCache struct {
+	cfg    cacheConfig
+	posReg *redislib.TenantRegistry[uint32, RestModel]
+	negReg *redislib.TenantRegistry[uint32, struct{}]
+}
+
+var (
+	dataCacheOnce sync.Once
+	dataCachePtr  *dataCache
+)
+
+// InitDataCache wires the singleton DataCache. Idempotent; safe to call
+// from main.go alongside the other Init*Registry hooks. Reads env vars
+// once on first call.
+func InitDataCache(rc *goredis.Client) {
+	dataCacheOnce.Do(func() {
+		cfg := loadConfig()
+		dataCachePtr = &dataCache{
+			cfg:    cfg,
+			posReg: redislib.NewTenantRegistry[uint32, RestModel](rc, posNamespace, uint32KeyFn),
+			negReg: redislib.NewTenantRegistry[uint32, struct{}](rc, negNamespace, uint32KeyFn),
+		}
+	})
+}
+
+func uint32KeyFn(id uint32) string {
+	return strconv.FormatUint(uint64(id), 10)
+}
+
+// --- Upstream-fetch indirection (test-overridable) -------------------------
+
+// upstreamFn is the indirection that lets cache_test.go inject a fake
+// upstream without standing up a full httptest.Server. Production code
+// uses upstreamFetch.
+var upstreamFn = upstreamFetch
+
+func upstreamFetch(l logrus.FieldLogger, ctx context.Context, monsterId uint32) (RestModel, error) {
+	return requests.GetRequest[RestModel](getBaseRequest() + fmt.Sprintf(monsterResource, monsterId))(l, ctx)
 }

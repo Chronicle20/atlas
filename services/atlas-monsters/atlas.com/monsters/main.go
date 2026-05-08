@@ -1,6 +1,7 @@
 package main
 
 import (
+	data2 "atlas-monsters/kafka/consumer/data"
 	_map "atlas-monsters/kafka/consumer/map"
 	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/logger"
@@ -22,6 +23,7 @@ import (
 
 const serviceName = "atlas-monsters"
 const consumerGroupId = "Monster Registry Service"
+const dataEventsConsumerGroupId = "Monster Data Cache Invalidator"
 
 type Server struct {
 	baseUrl string
@@ -65,11 +67,15 @@ func main() {
 	cmf := consumer.GetManager().AddConsumer(l, tdm.Context(), tdm.WaitGroup())
 	monster2.InitConsumers(l)(cmf)(consumerGroupId)
 	_map.InitConsumers(l)(cmf)(consumerGroupId)
+	data2.InitConsumers(l)(cmf)(dataEventsConsumerGroupId)
 	if err := monster2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
 	}
 	if err := _map.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
 		l.WithError(err).Fatal("Unable to register kafka handlers.")
+	}
+	if err := data2.InitHandlers(l)(consumer.GetManager().RegisterHandler); err != nil {
+		l.WithError(err).Fatal("Unable to register data-events kafka handlers.")
 	}
 
 	tdm.TeardownFunc(func() { _ = producer.GetManager().Close(l) })

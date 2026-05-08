@@ -1,10 +1,12 @@
 package information
 
 import (
+	"errors"
+	"fmt"
 	"os"
-	"sync"
 	"time"
 
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
 	"github.com/sirupsen/logrus"
 )
 
@@ -75,5 +77,30 @@ func parseDurationEnv(name string, def, lo, hi time.Duration) time.Duration {
 	return d
 }
 
-// _ keeps sync imported until later tasks add the singleton.
-var _ sync.Once
+// --- Error classification --------------------------------------------------
+
+type errKind int
+
+const (
+	errKindTransient errKind = iota
+	errKindNotFound
+)
+
+// classifyError decides whether a failed upstream lookup should be cached
+// as a negative entry. The transport at libs/atlas-rest/requests returns
+// the sentinel requests.ErrNotFound on HTTP 404 (libs/atlas-rest/requests/get.go:14-15);
+// everything else (network, 5xx, parse, retry exhaustion, ErrBadRequest) is
+// treated as transient and not cached.
+func classifyError(err error) errKind {
+	if errors.Is(err, requests.ErrNotFound) {
+		return errKindNotFound
+	}
+	return errKindTransient
+}
+
+// notFoundError synthesizes a not-found error for negative-cache hits so
+// callers see the same errors.Is(err, requests.ErrNotFound) shape they
+// would see from a live miss.
+func notFoundError(monsterId uint32) error {
+	return fmt.Errorf("monster %d not found: %w", monsterId, requests.ErrNotFound)
+}

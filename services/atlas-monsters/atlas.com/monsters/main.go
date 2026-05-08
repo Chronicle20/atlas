@@ -17,6 +17,7 @@ import (
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	"github.com/Chronicle20/atlas/libs/atlas-service"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const serviceName = "atlas-monsters"
@@ -80,6 +81,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		AddRouteInitializer(monster.InitResource(GetServer())).
 		AddRouteInitializer(world.InitResource(GetServer())).
+		AddRouteInitializer(server.MountHandler("/metrics", promhttp.Handler())).
 		AddRouteInitializer(server.MountHandler("/debug/consumers", consumer.GetManager().DebugHandler())).
 		Run()
 

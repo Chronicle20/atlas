@@ -2,6 +2,8 @@ package extraction
 
 import (
 	"archive/zip"
+	"atlas-wz-extractor/extraction/job"
+	"atlas-wz-extractor/extraction/lock"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -13,6 +15,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -136,11 +139,27 @@ func writeEntry(e *zip.File, dst string) error {
 
 type uploadDeps struct {
 	inputDir string
+	tl       *lock.TenantLock
 }
 
 func (u *uploadDeps) handleUpload(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		t := tenant.MustFromContext(ctx)
+
+		if u.tl != nil {
+			uploadId := uuid.NewString()
+			key := job.LockKey(t.Id().String(), t.Region(), t.MajorVersion(), t.MinorVersion())
+			acquired, err := u.tl.Acquire(ctx, key, uploadId)
+			if err != nil {
+				writeJSONError(w, http.StatusServiceUnavailable, "redis unavailable")
+				return
+			}
+			if !acquired {
+				writeJSONError(w, http.StatusConflict, "another extraction or upload is in flight for this tenant")
+				return
+			}
+			defer func() { _ = u.tl.Release(ctx, key, uploadId) }()
+		}
 
 		started := time.Now()
 

@@ -13,6 +13,13 @@ type Directory struct {
 	images      []*Image
 }
 
+// NewDirectory constructs an in-memory Directory with the given name, child
+// directories, and images. Intended for constructing in-memory WZ trees in
+// tests and tooling without requiring a real WZ file on disk.
+func NewDirectory(name string, dirs []*Directory, images []*Image) *Directory {
+	return &Directory{name: name, directories: dirs, images: images}
+}
+
 // Name returns the directory name.
 func (d *Directory) Name() string {
 	return d.name

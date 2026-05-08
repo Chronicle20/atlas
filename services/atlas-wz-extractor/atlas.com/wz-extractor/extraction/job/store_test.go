@@ -58,3 +58,28 @@ func TestStore_CreateGetDelete(t *testing.T) {
 		t.Fatalf("expected ErrNotFound after Delete, got %v", err)
 	}
 }
+
+func TestStore_MarkJobRunning(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+
+	now := time.Now().UTC().Truncate(time.Second)
+	j := NewJobBuilder().SetId("j2").SetStatus(JobPending).
+		SetUnitsTotal(1).SetCreatedAt(now).SetUpdatedAt(now).Build()
+	if err := s.Create(ctx, j, []Unit{NewUnitBuilder().SetWzFile("Map.wz").SetStatus(UnitPending).Build()}, 3600); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	if err := s.MarkJobRunning(ctx, "j2"); err != nil {
+		t.Fatalf("MarkJobRunning: %v", err)
+	}
+
+	got, _, err := s.Get(ctx, "j2")
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if got.Status() != JobRunning {
+		t.Fatalf("status: got %s", got.Status())
+	}
+}

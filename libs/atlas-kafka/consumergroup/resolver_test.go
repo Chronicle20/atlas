@@ -18,7 +18,7 @@ func TestResolve_envSet_returnsEnvValue(t *testing.T) {
 	}
 }
 
-func TestResolve_envEmptyAfterTrim_returnsDefault(t *testing.T) {
+func TestResolve_envWhitespaceOnly_returnsVerbatim(t *testing.T) {
 	t.Setenv("KAFKA_CONSUMER_GROUP", "   ")
 	// design §5.4 decision: do NOT trim. Whitespace-only is a config bug,
 	// but we keep verbatim to avoid silently masking it.

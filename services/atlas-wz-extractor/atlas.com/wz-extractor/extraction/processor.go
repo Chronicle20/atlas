@@ -66,7 +66,7 @@ func (p *processorImpl) Extract(l logrus.FieldLogger, ctx context.Context, xmlOn
 		}
 	}
 
-	workers := parallelismFromEnv(l)
+	workers := ParallelismFromEnv(l)
 	files := make([]string, 0, len(wzFiles))
 	for _, full := range wzFiles {
 		files = append(files, filepath.Base(full))
@@ -116,9 +116,9 @@ func (p *processorImpl) ExtractUnit(l logrus.FieldLogger, ctx context.Context, w
 	return nil
 }
 
-// parallelismFromEnv reads WZ_EXTRACT_PARALLELISM with a runtime.NumCPU()
+// ParallelismFromEnv reads WZ_EXTRACT_PARALLELISM with a runtime.NumCPU()
 // fallback. Invalid/zero values fall back to default and log a warning.
-func parallelismFromEnv(l logrus.FieldLogger) int {
+func ParallelismFromEnv(l logrus.FieldLogger) int {
 	v := os.Getenv(envParallelism)
 	if v == "" {
 		return runtime.NumCPU()

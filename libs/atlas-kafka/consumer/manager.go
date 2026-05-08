@@ -121,6 +121,10 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			StartOffset: c.startOffset,
 		}
 
+		maxInFlight := c.maxInFlight
+		if maxInFlight < 1 {
+			maxInFlight = 1
+		}
 		con := &Consumer{
 			name:                   c.name,
 			topic:                  c.topic,
@@ -132,6 +136,7 @@ func (m *Manager) AddConsumer(cl logrus.FieldLogger, ctx context.Context, wg *sy
 			headerParsers:          c.headerParsers,
 			fetchTimeout:           c.fetchTimeout,
 			maxConsecutiveTimeouts: c.maxConsecutiveTimeouts,
+			maxInFlight:            maxInFlight,
 		}
 
 		m.consumers[c.topic] = con
@@ -198,6 +203,7 @@ type Consumer struct {
 	// Read-only after construction; copied from Config in AddConsumer.
 	fetchTimeout           time.Duration
 	maxConsecutiveTimeouts int
+	maxInFlight            int
 
 	// Observable state — protected by mu.
 	aliveSince          time.Time
@@ -362,16 +368,26 @@ func (c *Consumer) start(l logrus.FieldLogger, ctx context.Context, wg *sync.Wai
 	}
 }
 
-// runFetchLoop blocks the caller until the supplied reader errors out or
-// the parent ctx is canceled. Each iteration runs FetchMessage under a
-// per-call deadline (c.fetchTimeout). A deadline expiration is treated as
-// idle: the consumer ticks back to the top of the loop with a fresh
-// deadline, the same reader, and the same partition assignment. After
-// c.maxConsecutiveTimeouts consecutive deadline expirations without a
-// successful fetch in between, the loop returns errFetchWedged so the
-// outer start loop closes the reader and recreates it. A successful
-// fetch resets the counter via recordFetch.
+// runFetchLoop dispatches to the serial or parallel fetch loop depending on
+// c.maxInFlight. Default (maxInFlight == 1) uses the serial path, which is
+// bit-exact with the original implementation.
 func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
+	if c.maxInFlight <= 1 {
+		return c.runFetchLoopSerial(l, ctx, reader)
+	}
+	return c.runFetchLoopParallel(l, ctx, reader)
+}
+
+// runFetchLoopSerial is the original single-goroutine fetch loop. It blocks
+// until the reader errors or ctx is canceled.
+//
+// Each iteration runs FetchMessage under a per-call deadline (c.fetchTimeout).
+// A deadline expiration is treated as idle: the consumer ticks back to the top
+// of the loop with a fresh deadline. After c.maxConsecutiveTimeouts consecutive
+// deadline expirations the loop returns errFetchWedged so the outer start loop
+// closes the reader and recreates it. A successful fetch resets the counter via
+// recordFetch.
+func (c *Consumer) runFetchLoopSerial(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -406,6 +422,111 @@ func (c *Consumer) runFetchLoop(l logrus.FieldLogger, ctx context.Context, reade
 				l.WithError(cerr).Warnf("Could not commit message offset, it may be redelivered.")
 			}
 		}
+	}
+}
+
+// runFetchLoopParallel is an opt-in parallel fetch loop that uses a
+// prefix-commit cursor to commit offsets in order even when handlers complete
+// out of order. Up to c.maxInFlight handlers run concurrently; the in-flight
+// queue is capped at 4*c.maxInFlight to bound memory growth when the head is
+// stuck on a failing message.
+//
+// Commit semantics: only the highest contiguously-completed offset is
+// committed. A failed handler (processMessage returning false) blocks the
+// cursor — subsequent messages are not committed until the failed message is
+// redelivered and succeeds (matching at-least-once semantics).
+func (c *Consumer) runFetchLoopParallel(l logrus.FieldLogger, ctx context.Context, reader KafkaReader) error {
+	type pending struct {
+		msg  kafka.Message
+		done atomic.Bool
+		ok   atomic.Bool
+	}
+
+	maxQueue := 4 * c.maxInFlight
+	sem := make(chan struct{}, c.maxInFlight)
+
+	var qmu sync.Mutex // guards queue slice header
+	var queue []*pending
+
+	advanceCommit := func() {
+		qmu.Lock()
+		i := 0
+		for i < len(queue) && queue[i].done.Load() && queue[i].ok.Load() {
+			i++
+		}
+		if i == 0 {
+			qmu.Unlock()
+			return
+		}
+		commitMsg := queue[i-1].msg
+		queue = queue[i:]
+		qmu.Unlock()
+		if cerr := reader.CommitMessages(ctx, commitMsg); cerr != nil {
+			l.WithError(cerr).Warn("Could not commit message offset; may be redelivered.")
+		}
+	}
+
+	for {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+
+		// Back-pressure: stop fetching when the queue is full (head stuck on a
+		// failure). Wait one fetchTimeout tick then retry; advanceCommit may
+		// have moved the cursor by then.
+		qmu.Lock()
+		full := len(queue) >= maxQueue
+		qmu.Unlock()
+		if full {
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			case <-time.After(c.fetchTimeout):
+			}
+			advanceCommit()
+			continue
+		}
+
+		fetchCtx, cancelFetch := context.WithTimeout(ctx, c.fetchTimeout)
+		msg, err := reader.FetchMessage(fetchCtx)
+		cancelFetch()
+
+		if err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) {
+				return err
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				consecutive := c.recordTimeout()
+				if consecutive >= c.maxConsecutiveTimeouts {
+					l.Warnf("FetchMessage wedged: %d consecutive timeouts on topic [%s] (group [%s]); forcing reader recreate.",
+						consecutive, c.topic, c.groupId)
+					return errFetchWedged
+				}
+				l.Debugf("FetchMessage deadline expired (consecutive=%d/%d); ticking.",
+					consecutive, c.maxConsecutiveTimeouts)
+				// In-flight goroutines may have completed; try to advance.
+				advanceCommit()
+				continue
+			}
+			return err
+		}
+
+		c.recordFetch()
+		l.Debugf("Message received %s.", string(msg.Value))
+
+		pm := &pending{msg: msg}
+		qmu.Lock()
+		queue = append(queue, pm)
+		qmu.Unlock()
+
+		sem <- struct{}{}
+		go func(p *pending) {
+			defer func() { <-sem }()
+			ok := c.processMessage(l, ctx, p.msg)
+			p.ok.Store(ok)
+			p.done.Store(true)
+			advanceCommit()
+		}(pm)
 	}
 }
 

@@ -192,7 +192,8 @@ Within phases, tasks are TDD where applicable (write test → fail → implement
 | Whole workspace test | `go test ./...` from repo root | After Phase 5 |
 | Preflight Longhorn capacity | Phase 0 Task 0.4 commands | Before Phase 7 |
 | Preflight MetalLB pool | Phase 0 Task 0.5 commands | Before Phase 7.10 |
-| Preflight atlas-tenants channel-host config | Phase 0 Task 0.6 | Before Phase 6 bootstrap.sh implementation |
+| Preflight Longhorn RecurringJob exclusion label | Phase 0 Task 0.6 | Before Phase 7 PR overlay PVC patches |
+| Preflight atlas-tenants channel-host config | Phase 0 Task 0.7 | Before Phase 6 bootstrap.sh implementation |
 | Audit clean | `grep -rn '"atlas:' services/ libs/ --include='*.go' \| grep -v _test.go` | End of Phase 5 |
 | Bootstrap image lint | `shellcheck services/atlas-pr-bootstrap/scripts/*.sh && bats services/atlas-pr-bootstrap/test/` | End of Phase 6 |
 | Kustomize main render | `kustomize build deploy/k8s/overlays/main` | After Phase 7.2 |

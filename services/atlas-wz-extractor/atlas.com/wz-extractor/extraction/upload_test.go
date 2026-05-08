@@ -204,31 +204,6 @@ func TestUpload_NonWzEntry400(t *testing.T) {
 	}
 }
 
-func TestUpload_MutexBusy409(t *testing.T) {
-	inputDir := t.TempDir()
-	mock := newMockProcessor()
-	wg := &sync.WaitGroup{}
-	router := setupRouterWithDirs(mock, wg, Dirs{InputDir: inputDir})
-
-	tenantId := uuid.New()
-
-	// hand-craft a tenant to derive the same key used by handleUpload
-	key := tenantId.String() + ":GMS:83.1"
-	held := Acquire(key)
-	defer Release(held)
-
-	zipBytes := buildZip(t, []zipEntry{
-		{"Map.wz", []byte("ok")},
-	})
-
-	w := httptest.NewRecorder()
-	router.ServeHTTP(w, uploadRequest(t, zipBytes, tenantId))
-
-	if w.Code != http.StatusConflict {
-		t.Fatalf("expected 409, got %d: %s", w.Code, w.Body.String())
-	}
-}
-
 func TestUpload_ReuploadReplaces(t *testing.T) {
 	inputDir := t.TempDir()
 	mock := newMockProcessor()

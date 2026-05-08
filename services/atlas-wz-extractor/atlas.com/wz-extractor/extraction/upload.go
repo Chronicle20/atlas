@@ -141,14 +141,6 @@ type uploadDeps struct {
 func (u *uploadDeps) handleUpload(l logrus.FieldLogger, ctx context.Context) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		t := tenant.MustFromContext(ctx)
-		key := TenantKey(t)
-
-		m, ok := TryAcquire(key)
-		if !ok {
-			writeJSONError(w, http.StatusConflict, "tenant busy: another upload or extraction is in progress")
-			return
-		}
-		defer Release(m)
 
 		started := time.Now()
 

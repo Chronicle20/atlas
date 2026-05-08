@@ -44,6 +44,10 @@ func (m *mockProcessor) Extract(l logrus.FieldLogger, ctx context.Context, xmlOn
 	return m.extractErr
 }
 
+func (m *mockProcessor) ExtractUnit(l logrus.FieldLogger, ctx context.Context, wzFile string, xmlOnly, imagesOnly bool) error {
+	return nil
+}
+
 func (m *mockProcessor) waitForExtract(t *testing.T) {
 	t.Helper()
 	select {
@@ -282,4 +286,8 @@ type contextCapturingProcessor struct {
 
 func (p *contextCapturingProcessor) Extract(l logrus.FieldLogger, ctx context.Context, xmlOnly, imagesOnly bool) error {
 	return p.extractFunc(l, ctx, xmlOnly, imagesOnly)
+}
+
+func (p *contextCapturingProcessor) ExtractUnit(l logrus.FieldLogger, ctx context.Context, wzFile string, xmlOnly, imagesOnly bool) error {
+	return nil
 }

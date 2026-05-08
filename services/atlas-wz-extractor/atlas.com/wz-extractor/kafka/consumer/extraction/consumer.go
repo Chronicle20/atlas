@@ -4,6 +4,7 @@ import (
 	"atlas-wz-extractor/extraction/job"
 	"atlas-wz-extractor/extraction/lock"
 	consumer2 "atlas-wz-extractor/kafka/consumer"
+	mext "atlas-wz-extractor/kafka/message/extraction"
 	"context"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
@@ -26,7 +27,7 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(consumer.Config, ...model.
 	return func(rf func(consumer.Config, ...model.Decorator[consumer.Config])) func(string) {
 		return func(consumerGroupId string) {
 			rf(
-				consumer2.NewConfig(l)("wz_extraction_command")(EnvCommandTopic)(consumerGroupId),
+				consumer2.NewConfig(l)("wz_extraction_command")(mext.EnvCommandTopic)(consumerGroupId),
 				consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser),
 				consumer.SetStartOffset(kafka.LastOffset),
 			)
@@ -37,7 +38,7 @@ func InitConsumers(l logrus.FieldLogger) func(rf func(consumer.Config, ...model.
 func InitHandlers(l logrus.FieldLogger) func(p processor, store job.Store, tl *lock.TenantLock) func(rf func(string, handler.Handler) (string, error)) error {
 	return func(p processor, store job.Store, tl *lock.TenantLock) func(rf func(string, handler.Handler) (string, error)) error {
 		return func(rf func(string, handler.Handler) (string, error)) error {
-			t, _ := topic.EnvProvider(l)(EnvCommandTopic)()
+			t, _ := topic.EnvProvider(l)(mext.EnvCommandTopic)()
 			if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStartExtractionUnit(p, store, tl)))); err != nil {
 				return err
 			}
@@ -48,7 +49,7 @@ func InitHandlers(l logrus.FieldLogger) func(p processor, store job.Store, tl *l
 
 func handleStartExtractionUnit(p processor, store job.Store, tl *lock.TenantLock) message.Handler[command[startExtractionUnitBody]] {
 	return func(l logrus.FieldLogger, ctx context.Context, c command[startExtractionUnitBody]) {
-		if c.Type != CommandStartExtractionUnit {
+		if c.Type != mext.CommandStartExtractionUnit {
 			return
 		}
 		ll := l.WithFields(logrus.Fields{"jobId": c.Body.JobId, "wzFile": c.Body.WzFile})

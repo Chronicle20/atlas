@@ -3,6 +3,7 @@ package extraction
 import (
 	"atlas-wz-extractor/extraction/job"
 	"atlas-wz-extractor/extraction/lock"
+	mext "atlas-wz-extractor/kafka/message/extraction"
 	"context"
 	"errors"
 	"testing"
@@ -58,7 +59,7 @@ func TestHandler_HappyPath_FinalizesJob(t *testing.T) {
 	h := handleStartExtractionUnit(fp, store, tl)
 
 	h(l, ctx, command[startExtractionUnitBody]{
-		Type: CommandStartExtractionUnit,
+		Type: mext.CommandStartExtractionUnit,
 		Body: startExtractionUnitBody{JobId: "J", WzFile: "Map.wz"},
 	})
 
@@ -97,7 +98,7 @@ func TestHandler_RedeliverySkipsWork(t *testing.T) {
 	h := handleStartExtractionUnit(fp, store, tl)
 
 	h(l, ctx, command[startExtractionUnitBody]{
-		Type: CommandStartExtractionUnit,
+		Type: mext.CommandStartExtractionUnit,
 		Body: startExtractionUnitBody{JobId: "J2", WzFile: "Map.wz"},
 	})
 
@@ -125,7 +126,7 @@ func TestHandler_FailedUnit_MarksJobFailed(t *testing.T) {
 	h := handleStartExtractionUnit(fp, store, tl)
 
 	h(l, ctx, command[startExtractionUnitBody]{
-		Type: CommandStartExtractionUnit,
+		Type: mext.CommandStartExtractionUnit,
 		Body: startExtractionUnitBody{JobId: "J3", WzFile: "Bad.wz"},
 	})
 

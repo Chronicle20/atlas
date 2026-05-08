@@ -344,7 +344,42 @@ func (s *storeImpl) FinalizeUnit(ctx context.Context, jobId, wzFile string, term
 	return Counters{}, errors.New("FinalizeUnit: too many WATCH retries")
 }
 func (s *storeImpl) MarkJobTerminal(ctx context.Context, jobId string, terminal JobStatus) (bool, error) {
-	return false, errors.New("not implemented")
+	jKey := jobKey(jobId)
+
+	var claimed bool
+	txn := func(tx *goredis.Tx) error {
+		cur, err := tx.HGet(ctx, jKey, "status").Result()
+		if err == goredis.Nil {
+			return ErrNotFound
+		}
+		if err != nil {
+			return err
+		}
+		if JobStatus(cur) != JobRunning {
+			claimed = false
+			return nil
+		}
+		now := time.Now().UTC().Format(time.RFC3339)
+		_, err = tx.TxPipelined(ctx, func(p goredis.Pipeliner) error {
+			p.HSet(ctx, jKey, "status", string(terminal), "updatedAt", now, "completedAt", now)
+			return nil
+		})
+		if err == nil {
+			claimed = true
+		}
+		return err
+	}
+	for attempt := 0; attempt < 5; attempt++ {
+		err := s.client.Watch(ctx, txn, jKey)
+		if err == nil {
+			return claimed, nil
+		}
+		if err == goredis.TxFailedErr {
+			continue
+		}
+		return false, err
+	}
+	return false, errors.New("MarkJobTerminal: too many WATCH retries")
 }
 func (s *storeImpl) MarkUnitsSkippedByStatus(ctx context.Context, jobId string, fromStatuses []UnitStatus) error {
 	return errors.New("not implemented")

@@ -207,3 +207,37 @@ func TestStore_FinalizeUnit_RedeliveryNoOp(t *testing.T) {
 		t.Fatalf("redelivery double-counted: %+v", cnt)
 	}
 }
+
+func TestStore_MarkJobTerminal_Once(t *testing.T) {
+	ctx := context.Background()
+	c := newTestClient(t)
+	s := NewStore(c)
+	seedJob(t, ctx, s, "j8", []string{"Map.wz"})
+	if err := s.MarkJobRunning(ctx, "j8"); err != nil {
+		t.Fatalf("MarkJobRunning: %v", err)
+	}
+
+	claimed1, err := s.MarkJobTerminal(ctx, "j8", JobCompleted)
+	if err != nil {
+		t.Fatalf("first MarkJobTerminal: %v", err)
+	}
+	if !claimed1 {
+		t.Fatalf("expected first call to claim")
+	}
+
+	claimed2, err := s.MarkJobTerminal(ctx, "j8", JobCompleted)
+	if err != nil {
+		t.Fatalf("second MarkJobTerminal: %v", err)
+	}
+	if claimed2 {
+		t.Fatalf("expected second call to NOT claim")
+	}
+
+	got, _, _ := s.Get(ctx, "j8")
+	if got.Status() != JobCompleted {
+		t.Fatalf("status: %s", got.Status())
+	}
+	if got.CompletedAt().IsZero() {
+		t.Fatalf("completedAt not set")
+	}
+}

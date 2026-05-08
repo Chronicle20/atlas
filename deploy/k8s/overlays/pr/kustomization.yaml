@@ -33,7 +33,7 @@ resources:
   # Hooks (created in Phase 7.5-7.10):
   - presync-create-dbs.yaml
   - postsync-bootstrap.yaml
-  #   - postsync-pihole-add.yaml   # Phase 7.8
+  - postsync-pihole-add.yaml
   #   - postdelete-cleanup.yaml    # Phase 7.9
 
 patches:

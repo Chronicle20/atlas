@@ -34,12 +34,26 @@ get_attr() {
         "$1" | jq -r ".data.attributes.$2"
 }
 
+# Polling helpers — return 0 when the target value is non-zero/non-null,
+# 1 otherwise. Designed for use with retry().
+extraction_done() {
+    local count
+    count=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" fileCount)
+    [ -n "$count" ] && [ "$count" != "0" ] && [ "$count" != "null" ]
+}
+
+data_processing_done() {
+    local count
+    count=$(get_attr "$ATLAS_UI_BASE/api/data/status" documentCount)
+    [ -n "$count" ] && [ "$count" != "0" ] && [ "$count" != "null" ]
+}
+
 ATLAS_STEP=wait-ready log info "waiting for atlas-tenants, atlas-configurations, atlas-data, atlas-wz-extractor"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/tenants"
 retry 60 5 http_ok "$ATLAS_UI_BASE/api/configurations/services"
-retry 60 5 http_ok "$ATLAS_UI_BASE/api/data/status"
-retry 60 5 http_ok "$ATLAS_UI_BASE/api/wz/input"
-retry 60 5 http_ok "$ATLAS_UI_BASE/api/wz/extractions"
+retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/data/status"
+retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/wz/input"
+retry 60 5 http_ok_tenant "$ATLAS_UI_BASE/api/wz/extractions"
 
 # Tenant: POST canonical payload, capture the assigned id, override
 # downstream TENANT_ID for all subsequent calls. The atlas-tenants pitfall
@@ -190,7 +204,7 @@ extracted=$(get_attr "$ATLAS_UI_BASE/api/wz/extractions" fileCount)
 if [ "$extracted" = "0" ] || [ "$extracted" = "null" ]; then
     log info "running WZ extraction"
     post "$ATLAS_UI_BASE/api/wz/extractions"
-    retry 240 10 sh -c "[ \"$(curl -fsS -H 'TENANT_ID: $TENANT_ID' -H 'REGION: $REGION' -H 'MAJOR_VERSION: $MAJOR_VERSION' -H 'MINOR_VERSION: $MINOR_VERSION' -H 'Accept: application/vnd.api+json' '$ATLAS_UI_BASE/api/wz/extractions' | jq -r '.data.attributes.fileCount')\" != '0' ]"
+    retry 240 10 extraction_done
 fi
 
 # Data processing
@@ -199,7 +213,7 @@ docs=$(get_attr "$ATLAS_UI_BASE/api/data/status" documentCount)
 if [ "$docs" = "0" ] || [ "$docs" = "null" ]; then
     log info "running data processing"
     post "$ATLAS_UI_BASE/api/data/process"
-    retry 240 10 sh -c "[ \"$(curl -fsS -H 'TENANT_ID: $TENANT_ID' -H 'REGION: $REGION' -H 'MAJOR_VERSION: $MAJOR_VERSION' -H 'MINOR_VERSION: $MINOR_VERSION' -H 'Accept: application/vnd.api+json' '$ATLAS_UI_BASE/api/data/status' | jq -r '.data.attributes.documentCount')\" != '0' ]"
+    retry 240 10 data_processing_done
 fi
 
 # Per-domain seeds, in parallel

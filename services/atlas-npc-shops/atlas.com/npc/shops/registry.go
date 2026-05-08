@@ -31,7 +31,7 @@ func GetRegistry() *Registry {
 }
 
 func (r *Registry) shopSetKey(t tenant.Model, shopId uint32) string {
-	return fmt.Sprintf("atlas:npc-shop-chars:%s:%d", atlas.TenantKey(t), shopId)
+	return fmt.Sprintf("%s:npc-shop-chars:%s:%d", atlas.KeyPrefix(), atlas.TenantKey(t), shopId)
 }
 
 func (r *Registry) AddCharacter(ctx context.Context, characterId uint32, templateId uint32) {

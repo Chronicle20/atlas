@@ -30,11 +30,10 @@ resources:
   - ../../base
   - atlas-env-tokens.yaml
   - ingress-route.yaml
-  # Hooks (created in Phase 7.5-7.10):
   - presync-create-dbs.yaml
   - postsync-bootstrap.yaml
   - postsync-pihole-add.yaml
-  #   - postdelete-cleanup.yaml    # Phase 7.9
+  - postdelete-cleanup.yaml
 
 patches:
   - path: patches/db-name-suffix.yaml

@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-cleanup
+  annotations:
+    argocd.argoproj.io/hook: PostDelete
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 0
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: cleanup
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/cleanup.sh"]
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+            - configMapRef:
+                name: atlas-db-names
+            - secretRef:
+                name: db-credentials
+            - secretRef:
+                name: pihole-credentials
+            - secretRef:
+                name: ghcr-pat
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: DB_HOST
+            - name: BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: BOOTSTRAP_SERVERS
+            - name: REDIS_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: REDIS_URL
+            - name: PR_NUMBER
+              value: "PLACEHOLDER_PR_NUMBER"
+            - name: ATLAS_SERVICES
+              value: "atlas-account,atlas-asset-expiration,atlas-assets,atlas-ban,atlas-buddies,atlas-buffs,atlas-cashshop,atlas-chairs,atlas-chalkboards,atlas-channel,atlas-character,atlas-character-factory,atlas-configurations,atlas-consumables,atlas-data,atlas-drop-information,atlas-drops,atlas-effective-stats,atlas-expressions,atlas-fame,atlas-families,atlas-gachapons,atlas-guilds,atlas-inventory,atlas-invites,atlas-keys,atlas-login,atlas-map-actions,atlas-maps,atlas-marriages,atlas-merchant,atlas-messages,atlas-messengers,atlas-monster-death,atlas-monsters,atlas-notes,atlas-npc-conversations,atlas-npc-shops,atlas-parties,atlas-party-quests,atlas-pets,atlas-portal-actions,atlas-portals,atlas-query-aggregator,atlas-quest,atlas-rates,atlas-reactor-actions,atlas-reactors,atlas-saga-orchestrator,atlas-skills,atlas-storage,atlas-tenants,atlas-transports,atlas-world,atlas-wz-extractor,atlas-ui"

@@ -15,13 +15,15 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 )
 
 const serviceName = "atlas-party-quests"
-const consumerGroupId = "Party Quest Service"
+
+var consumerGroupId = consumergroup.Resolve("Party Quest Service")
 
 type Server struct {
 	baseUrl string

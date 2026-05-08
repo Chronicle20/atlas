@@ -29,9 +29,9 @@ atlas/                                        # this worktree's root
 │   └── atlas-tenant/                         # Model.Region/MajorVersion/MinorVersion used by TenantKey
 ├── services/
 │   ├── atlas-<name>/atlas.com/<module>/main.go  # 49 services, Phase 4 sweep
-│   ├── atlas-buffs, atlas-npc-shops, atlas-portals, atlas-pets, atlas-skills,
-│   │   atlas-expressions, atlas-maps, atlas-chairs, atlas-storage, atlas-character,
-│   │   atlas-chalkboards, atlas-monsters    # Phase 5 audit fixes (12 services)
+│   ├── atlas-account, atlas-buffs, atlas-chairs, atlas-chalkboards, atlas-character,
+│   │   atlas-expressions, atlas-maps, atlas-monsters, atlas-npc-shops, atlas-pets,
+│   │   atlas-portals, atlas-rates, atlas-skills, atlas-storage    # Phase 5 audit fixes (14 services; atlas-account + atlas-rates added at Phase 0 Task 0.3)
 │   └── atlas-pr-bootstrap/                   # Phase 6 NEW: Dockerfile + scripts/ + test/
 ├── .github/
 │   ├── config/services.json                  # service registry (Phase 6 adds atlas-pr-bootstrap; Phase 9 reads for cleanup)

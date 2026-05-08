@@ -18,6 +18,20 @@
 - After every Go-package edit, run `go build ./...` from the package directory and `go test ./...` if the package has tests.
 - Worktree: `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-063-ephemeral-pr-deployments`. All paths below are relative to this worktree root.
 
+## Phase 0 findings (read before implementing later phases)
+
+The Phase 0 preflight tasks ran against the live `bee` cluster and surfaced corrections to several plan-author assumptions. Each finding is captured verbatim in `docs/tasks/task-063-ephemeral-pr-deployments/preflight.md`; the load-bearing ones are summarised here so later-phase implementers don't re-discover them:
+
+- **`db-credentials` secret values carry trailing whitespace** (literal space + CR + LF on both `DB_USER` and `DB_PASSWORD`). In-cluster services tolerate it, but raw `psql` calls auth-fail with `password authentication failed for user "atlas "`. Phase 7.6 PreSync hook and Phase 11.2 cutover both `tr -d ' \r\n'` after base64-decode. Re-issuing the secret cleanly is deferred to Phase 11 cutover.
+- **Longhorn 1.9.1 group-label shape differs from plan assumption**: actual key is `recurring-job-group.longhorn.io/<group>` on the Longhorn `Volume` CR (not on K8s PV). Phase 7.4 Step 1b uses a dedicated StorageClass `longhorn-pr` instead of per-PVC labels (provisioned cluster-wide via Phase 8 Task 8.7).
+- **Soft cap on concurrent PR envs is 5, bound by Longhorn capacity** (167 GiB usable / 30 GiB per env); MetalLB pool has 16 free IPs but is not the binding constraint.
+- **Kafka `auto.create.topics.enable=true`** on bee — no PreSync topic-creation hook needed.
+- **atlas-tenants and atlas-configurations Alpine pods lack curl**. Phase 0 Task 0.7 commands rerun-from-scratch should use `wget` instead of curl, OR run from a pod that has curl. Phase 6 bootstrap is unaffected because the bootstrap container ships its own curl.
+- **Phase 5 service count grew from 12 to 14** once the live audit-redis-prefix grep ran; atlas-account and atlas-rates were added as Tasks 5.13/5.14, original final-grep renumbered to 5.15.
+- **`channel-service.json` `attributes.tenants[].ipAddress` is the live MetalLB VIP** (`192.168.23.232`). Phase 6 bootstrap.sh already substitutes this with the per-PR LB IP at runtime (no plan change required, but worth flagging).
+- **Apache Kafka KRaft broker uses `node.id=1` not 0**. Phase 0 Task 0.2's `kafka-configs.sh --entity-name 0` example fails on bee; use env-var inspection instead.
+- **`longhorn-manager` is a DaemonSet, not a Deployment**. Affects rerun of Phase 0 Task 0.6's image lookup.
+
 ---
 
 ## Phase 0: Pre-flight verification
@@ -77,12 +91,22 @@ kubectl get pod -A -l app.kubernetes.io/name=kafka -o name | head -1
 
 ```bash
 KAFKA_POD=<pod-from-step-1>
+# Apache vanilla in KRaft mode uses non-zero node.id (live bee broker = 1).
+# If this returns "broker '0' doesn't exist", read the broker's actual
+# node.id from env or server.properties:
+#     kubectl exec -n <kafka-ns> "$KAFKA_POD" -- env | grep KAFKA_NODE_ID
+# Then re-run with --entity-name <node.id>, OR fall back to the env/file
+# inspection below which doesn't depend on a node.id at all.
 kubectl exec -n <kafka-ns> "$KAFKA_POD" -- \
-  kafka-configs.sh --bootstrap-server localhost:9092 --describe --entity-type brokers --entity-name 0 \
+  /opt/kafka/bin/kafka-configs.sh --bootstrap-server localhost:9092 --describe --entity-type brokers --entity-name 1 \
   | grep -i auto.create
+
+# Fallback (works on any broker, any node.id, any image):
+kubectl exec -n <kafka-ns> "$KAFKA_POD" -- env | grep -i KAFKA_AUTO_CREATE_TOPICS_ENABLE
+kubectl exec -n <kafka-ns> "$KAFKA_POD" -- sh -c 'cat /opt/kafka/config/server.properties 2>/dev/null || cat /etc/kafka/server.properties 2>/dev/null' | grep -i auto.create
 ```
 
-Expected: `auto.create.topics.enable=true` (the value visible should be `true`).
+Expected: `auto.create.topics.enable=true` (the value visible should be `true`). On bee (Apache vanilla `apache/kafka:4.1.1`, KRaft, single broker `node.id=1`), the env-var check returns it cleanly even when the kafka-configs.sh node.id is wrong.
 
 - [ ] **Step 3: Append outcome to `preflight.md`**
 
@@ -232,8 +256,14 @@ Longhorn supports excluding volumes from a group via either:
 The PR overlay propagates labels to the volume via PVC annotations consumed by the Longhorn CSI driver. The exact annotation key is version-dependent; capture from upstream Longhorn docs at the version installed on bee:
 
 ```bash
-kubectl get deployment -n longhorn-system longhorn-manager -o jsonpath='{.spec.template.spec.containers[0].image}'
+# longhorn-manager is a DaemonSet on bee, not a Deployment.
+kubectl get daemonset -n longhorn-system longhorn-manager -o jsonpath='{.spec.template.spec.containers[0].image}'
 ```
+
+> **Phase 0 Task 0.6 finding:** the live cluster's actual exclusion shape diverges from the plan's expectations:
+> - On Longhorn 1.9.1, group-membership labels live on the Longhorn `Volume` CR in `longhorn-system`, NOT on the K8s `PersistentVolume`. Step 2's `grep -A20 'labels:'` against the PV will return empty because the PV's `metadata.labels` is `{}`.
+> - The actual label key is `recurring-job-group.longhorn.io/<group>` (e.g. `recurring-job-group.longhorn.io/default: enabled`) — different shape than the plan's example `recurringjob.longhorn.io/source: enabled`.
+> - Phase 7.4 Step 1b switches to **dedicated StorageClass `longhorn-pr`** with `recurringJobSelector: '[]'` (provisioned cluster-wide via Phase 8 Task 8.7). PR PVCs reference that StorageClass instead of being label-patched. Declarative, no race with the Longhorn recurring-job controller, no per-volume patching.
 
 - [ ] **Step 4: Append outcome to `preflight.md`**
 
@@ -924,7 +954,7 @@ If the workspace passes, no commit; the proof is the green build.
 
 ## Phase 5: Service raw-Redis-key audit fixes
 
-12 services compose Redis keys outside the helper, hardcoding `"atlas:"`. Each must call `atlasredis.KeyPrefix()` instead. The list is locked in Task 0.3's `audit-redis-prefix.txt`. The pattern is:
+14 services compose Redis keys outside the helper, hardcoding `"atlas:"`. Each must call `atlasredis.KeyPrefix()` instead. The list is locked in Task 0.3's `audit-redis-prefix.txt` (re-snapshotted at Phase 0; the originally-enumerated 12 grew to 14 once the live grep ran — atlas-account and atlas-rates were missed in the initial design pass). The pattern is:
 
 ```go
 // before
@@ -1203,7 +1233,91 @@ git commit -m "fix(atlas-monsters): cooldown key uses redis.KeyPrefix()
 Refs task-063."
 ```
 
-### Task 5.13: Final audit grep
+### Task 5.13: atlas-account
+
+**Files:** `services/atlas-account/atlas.com/account/account/registry.go:84,248,249`
+
+Three hits on the same registry, same shape as Task 5.10 (atlas-character).
+
+- [ ] **Step 1: Replace the three hardcoded prefixes**
+
+Change:
+
+```go
+// :84
+return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+// :248
+pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
+// :249
+prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+```
+
+to:
+
+```go
+return fmt.Sprintf("%s:%s:_tenants", atlasredis.KeyPrefix(), r.reg.Namespace())
+pattern := fmt.Sprintf("%s:%s:%s:*", atlasredis.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
+prefix := fmt.Sprintf("%s:%s:%s:", atlasredis.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
+```
+
+Verify `atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"` is already imported; add if missing.
+
+- [ ] **Step 2: Build and test**
+
+```bash
+cd services/atlas-account/atlas.com/account && go build ./... && go test ./...
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-account/atlas.com/account/account/registry.go
+git commit -m "fix(atlas-account): registry keys use redis.KeyPrefix()
+
+Fixes ATLAS_ENV bypass at account/registry.go:84,248,249. Same shape
+as the atlas-character fix in Task 5.10.
+
+Refs task-063."
+```
+
+### Task 5.14: atlas-rates
+
+**Files:** `services/atlas-rates/atlas.com/rates/character/item_tracker.go:216`
+
+- [ ] **Step 1: Replace the concatenation literal**
+
+Change:
+
+```go
+scanPattern := "atlas:" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
+```
+
+to:
+
+```go
+scanPattern := atlasredis.KeyPrefix() + ":" + t.items.Namespace() + ":" + atlas.TenantKey(ten) + ":" + strconv.FormatUint(uint64(characterId), 10) + ":*"
+```
+
+Add `atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"` to the import block if absent.
+
+- [ ] **Step 2: Build and test**
+
+```bash
+cd services/atlas-rates/atlas.com/rates && go build ./... && go test ./...
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add services/atlas-rates/atlas.com/rates/character/item_tracker.go
+git commit -m "fix(atlas-rates): item_tracker scan key uses redis.KeyPrefix()
+
+Fixes ATLAS_ENV bypass at character/item_tracker.go:216.
+
+Refs task-063."
+```
+
+### Task 5.15: Final audit grep
 
 - [ ] **Step 1: Re-run the audit**
 
@@ -1213,7 +1327,7 @@ grep -rn '"atlas:' services/ libs/ --include='*.go' | grep -v _test.go
 
 Expected: only matches inside test files OR inside string literals that are clearly documentation (e.g. `// example: "atlas:..."`). Every production composition must route through `atlasredis.KeyPrefix()`.
 
-- [ ] **Step 2: If any production hit remains, repeat the pattern from Tasks 5.1–5.12.**
+- [ ] **Step 2: If any production hit remains, repeat the pattern from Tasks 5.1–5.14.**
 
 - [ ] **Step 3: No commit if audit clean.**
 
@@ -1426,11 +1540,30 @@ if [ -z "$LB_IP" ]; then
 fi
 log info "LB IP for channel service: $LB_IP"
 
-# Service configs: per-tenant 'services' configuration resource carrying
-# the login/channel/drops topology. Captured shape is locked at Phase 0.7;
-# the canonical payload at /atlas/canonical/services.json holds the
-# default tenant id and a placeholder ipAddress that we rewrite to the
-# per-PR TENANT_ID and the just-discovered LB_IP.
+# Service configs: the live atlas-configurations API is keyed by service
+# UUID, not by tenant. Phase 0 Task 0.7 captured THREE separate canonical
+# payloads (login/channel/drops), one per pinned SERVICE_ID. The single-
+# payload form below is a SIMPLIFICATION that assumes a tenant-scoped
+# 'services' configuration resource; the real shape is per-service-UUID.
+#
+# OPEN — resolve before running Phase 6:
+#   The plan was drafted before Phase 0.7 captured live API responses.
+#   Two implementations are possible:
+#     (a) bootstrap iterates the three canonicals at /atlas/canonical/services/
+#         and POST/PATCHes each individually against
+#         GET/POST /api/configurations/services/{serviceId}
+#         (matches the live atlas-configurations API observed at Phase 0.7).
+#     (b) a tenant-scoped composite endpoint
+#         GET/PATCH /api/tenants/{tenantId}/configurations/services
+#         exists with a body that bundles all three under one record.
+#   Inspect services/atlas-configurations and services/atlas-tenants to
+#   decide. Path (a) is what the captured payloads support without further
+#   transformation; the reference command sketched below assumes (a).
+#
+# Captured shape is locked at Phase 0.7. The canonical payloads at
+# /atlas/canonical/services/{login,channel,drops}-service.json hold pinned
+# service UUIDs and the live channel-service ipAddress (192.168.23.232) which
+# we rewrite to the per-PR LB_IP for the channel record only.
 ATLAS_STEP=service-config
 payload=/atlas/canonical/services.json
 [ -f "$payload" ] || { log error "missing canonical services payload"; exit 1; }
@@ -2115,35 +2248,35 @@ data:
 
 - [ ] **Step 1b: Create `deploy/k8s/overlays/pr/patches/pvc-exclude-recurring-backup.yaml`**
 
-Annotates each per-PR PVC so the Longhorn CSI driver labels the volume with the RecurringJob exclusion captured in Phase 0 Task 0.6. PR PVCs are ephemeral; they have no place in the daily/weekly NFS backup cadence.
+Switches each per-PR PVC to the dedicated `longhorn-pr` StorageClass (provisioned cluster-wide once via Phase 8 Task 8.7). That StorageClass sets `parameters.recurringJobSelector: '[]'`, so Longhorn provisions per-PR Volumes outside the `default` recurring-job group from the very first reconcile — no per-volume labeling, no race with the recurring-job controller.
+
+> **Phase 0 Task 0.6 finding:** the original plan assumed per-PVC `recurringjob.longhorn.io/source: disabled` annotations would propagate through CSI to the Longhorn Volume CR. On Longhorn 1.9.1 the actual label key is `recurring-job-group.longhorn.io/<group>` (on the Volume CR, not the K8s PV), and propagation via PVC annotation isn't wired the way the plan-author assumed. A separate StorageClass with `recurringJobSelector: '[]'` is fully declarative and avoids both the propagation question and the post-create patching race.
 
 ```yaml
-# Exact annotation key/value comes from Phase 0 Task 0.6 preflight capture.
-# The pattern below is illustrative; replace with the captured value.
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: atlas-data-pvc
-  annotations:
-    recurringjob.longhorn.io/source: "disabled"
+spec:
+  storageClassName: longhorn-pr
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: atlas-wz-input-pvc
-  annotations:
-    recurringjob.longhorn.io/source: "disabled"
+spec:
+  storageClassName: longhorn-pr
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: atlas-assets-pvc
-  annotations:
-    recurringjob.longhorn.io/source: "disabled"
+spec:
+  storageClassName: longhorn-pr
 ```
 
-Add this patch to the PR overlay's `patches:` list in `kustomization.yaml`.
+Add this patch to the PR overlay's `patches:` list in `kustomization.yaml`. Main env PVCs continue to use `longhorn` (the default StorageClass) and remain in the daily/weekly backup cadence.
 
 - [ ] **Step 2: Create `deploy/k8s/overlays/pr/patches/db-name-suffix.yaml`**
 
@@ -2367,6 +2500,12 @@ spec:
             - -c
             - |
               set -e
+              # Phase 0 Task 0.1 finding: db-credentials values carry literal
+              # trailing whitespace (space + CR + LF). Strip before passing to
+              # psql, otherwise auth fails with: password authentication failed
+              # for user "atlas ".
+              DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
+              DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
               for raw in $ATLAS_DB_NAMES; do
                   full="${raw}-${ATLAS_ENV}"
                   PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
@@ -3232,6 +3371,70 @@ git commit -m "docs(deploy): bee-cluster Argo CD delivery README
 Refs task-063."
 ```
 
+### Task 8.7: Cluster-scoped `longhorn-pr` StorageClass
+
+The PR overlay (Phase 7.4 Step 1b) sets `spec.storageClassName: longhorn-pr` on each per-PR PVC. Because StorageClasses are cluster-scoped (one resource per name across the cluster), the StorageClass cannot live inside a per-PR namespace — it ships with the bee infrastructure manifests and is provisioned once.
+
+**Files:**
+- Create: `deploy/argocd-bee/storageclass-longhorn-pr.yaml`
+- Modify: `deploy/argocd-bee/README.md` (add a step in "Initial setup" to apply it)
+
+- [ ] **Step 1: Create the StorageClass**
+
+```yaml
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: longhorn-pr
+  # Same Longhorn provisioner as the cluster default; only the
+  # recurring-job parameter differs.
+provisioner: driver.longhorn.io
+allowVolumeExpansion: true
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+parameters:
+  numberOfReplicas: "3"
+  staleReplicaTimeout: "30"
+  fromBackup: ""
+  fsType: "ext4"
+  # Empty selector → Volumes provisioned by this class join no recurring-job
+  # group, so backup-daily/backup-weekly skip them entirely. PR envs are
+  # ephemeral by design; their data has no place in the NFS backup cadence.
+  recurringJobSelector: '[]'
+```
+
+> The default `longhorn` StorageClass installed on bee already targets `provisioner: driver.longhorn.io` with `numberOfReplicas: "3"`. Verify before applying:
+>
+> ```bash
+> kubectl get storageclass longhorn -o yaml | yq '.parameters'
+> ```
+>
+> Match `numberOfReplicas`, `staleReplicaTimeout`, `fromBackup`, and `fsType` to whatever the existing `longhorn` class advertises so per-PR Volumes have identical replication and FS shape — only `recurringJobSelector` differs.
+
+- [ ] **Step 2: Add an "Apply longhorn-pr StorageClass" step to `deploy/argocd-bee/README.md` "Initial setup" before the Application/ApplicationSet step**
+
+```markdown
+3a. Apply the per-PR StorageClass:
+   ```sh
+   cp storageclass-longhorn-pr.yaml ~/source/k3s/bee/storageclass-longhorn-pr.yaml
+   kubectl apply -f ~/source/k3s/bee/storageclass-longhorn-pr.yaml
+   kubectl get storageclass | grep longhorn-pr   # confirm
+   ```
+```
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add deploy/argocd-bee/storageclass-longhorn-pr.yaml deploy/argocd-bee/README.md
+git commit -m "feat(deploy): cluster-scoped longhorn-pr StorageClass for PR PVCs
+
+PR overlay PVCs reference this StorageClass; its empty recurringJobSelector
+keeps per-PR Volumes outside the default backup-daily/backup-weekly
+cadence. Provisioned once on bee, used by every PR overlay reconcile.
+
+Refs task-063, Phase 0 Task 0.6."
+```
+
 ---
 
 ## Phase 9: GitHub Actions
@@ -3757,8 +3960,11 @@ Wait until pods are gone (`kubectl get pods -n atlas` returns nothing). Active c
 - [ ] **Step 1: Rename each service DB**
 
 ```bash
-PGPASSWORD=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_PASSWORD}' | base64 -d)
-USER=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_USER}' | base64 -d)
+# Phase 0 Task 0.1 finding: db-credentials secret values carry literal
+# trailing whitespace (space + CR + LF). Strip after base64-decode or
+# psql will fail auth with: password authentication failed for user "atlas ".
+PGPASSWORD=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_PASSWORD}' | base64 -d | tr -d ' \r\n')
+USER=$(kubectl get secret -n atlas db-credentials -o jsonpath='{.data.DB_USER}' | base64 -d | tr -d ' \r\n')
 for db in atlas-accounts atlas-asset-expiration atlas-bans atlas-buddies \
          atlas-buffs atlas-cashshop atlas-chairs atlas-chalkboards \
          atlas-channel atlas-character atlas-character-factory \

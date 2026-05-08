@@ -414,3 +414,92 @@ func TestExtractCharacterPartsWorkerPool(t *testing.T) {
 		}
 	}
 }
+
+// TestExtractEquipmentIconsWorkerPool verifies that the parallel
+// extractEquipmentIcons dispatches exactly one canvasWriter call per
+// equipment image that has an info/icon canvas, with no duplicates or
+// missing entries.
+//
+// Run with -race to confirm no concurrent-mutation hazards.
+func TestExtractEquipmentIconsWorkerPool(t *testing.T) {
+	// Build a fake Character.wz tree with two equipment subdirs:
+	//   Cap/
+	//     images: 01002357.img  (has info/icon)
+	//             01002358.img  (has info/icon)
+	//   Weapon/
+	//     images: 01302000.img  (has info/icon)
+	//             01302001.img  (no info sub — must be skipped)
+	makeEquipImg := func(name string, hasIcon bool) *wz.Image {
+		var props []property.Property
+		if hasIcon {
+			props = []property.Property{
+				property.NewSub("info", []property.Property{
+					property.NewCanvas("icon", 32, 32, 2, 0, 0, nil),
+				}),
+			}
+		}
+		return wz.NewParsedImage(name, props)
+	}
+
+	capImg1 := makeEquipImg("01002357", true)
+	capImg2 := makeEquipImg("01002358", true)
+	weaponImg1 := makeEquipImg("01302000", true)
+	weaponImg2 := makeEquipImg("01302001", false) // no icon — must be skipped
+
+	capDir := wz.NewDirectory("Cap", nil, []*wz.Image{capImg1, capImg2})
+	weaponDir := wz.NewDirectory("Weapon", nil, []*wz.Image{weaponImg1, weaponImg2})
+
+	root := wz.NewDirectory("Character", []*wz.Directory{capDir, weaponDir}, nil)
+	f := wz.NewFileWithRoot("Character", root)
+
+	// Thread-safe recorder capturing all canvasWriter calls.
+	var mu sync.Mutex
+	type call struct{ dir, part string }
+	var calls []call
+	prev := canvasWriter
+	canvasWriter = func(_ logrus.FieldLogger, _ *wz.File, cp *property.CanvasProperty, dir, name string) error {
+		mu.Lock()
+		calls = append(calls, call{dir: dir, part: name})
+		mu.Unlock()
+		return nil
+	}
+	defer func() { canvasWriter = prev }()
+
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	outputDir := t.TempDir()
+
+	if err := extractEquipmentIcons(l, f, outputDir); err != nil {
+		t.Fatalf("extractEquipmentIcons: %v", err)
+	}
+
+	mu.Lock()
+	got := calls
+	mu.Unlock()
+
+	// Expect exactly 3 writes (capImg1, capImg2, weaponImg1; weaponImg2 has no icon).
+	if len(got) != 3 {
+		t.Fatalf("got %d canvasWriter calls, want 3; calls: %v", len(got), got)
+	}
+
+	// All part names must be "icon" (the fixed output name for equipment icons).
+	for i, c := range got {
+		if c.part != "icon" {
+			t.Errorf("call[%d] part = %q, want %q", i, c.part, "icon")
+		}
+	}
+
+	// Verify the three expected item IDs appear in the written dirs.
+	wantIds := []string{"1002357", "1002358", "1302000"}
+	gotDirs := make([]string, len(got))
+	for i, c := range got {
+		gotDirs[i] = filepath.Base(c.dir)
+	}
+	sort.Strings(gotDirs)
+	sort.Strings(wantIds)
+	for i := range wantIds {
+		if gotDirs[i] != wantIds[i] {
+			t.Errorf("dir[%d] item id = %q, want %q", i, gotDirs[i], wantIds[i])
+		}
+	}
+}

@@ -18,7 +18,7 @@ metadata:
   name: atlas-wz-extractor
   namespace: atlas
 spec:
-  replicas: 1
+  replicas: 4
   selector:
     matchLabels:
       app: atlas-wz-extractor
@@ -54,10 +54,10 @@ spec:
           value: "16"
         resources:
           requests:
-            cpu: "1"
+            cpu: "2"
             memory: "2Gi"
           limits:
-            cpu: "4"
+            cpu: "8"
             memory: "8Gi"
         volumeMounts:
           - mountPath: "/usr/wz-input"

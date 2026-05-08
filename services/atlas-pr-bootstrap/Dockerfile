@@ -7,7 +7,9 @@ ARG KAFKA_VERSION=3.7.2
 ARG SCALA_VERSION=2.13
 
 RUN apk add --no-cache curl tar
-RUN curl -fsSL "https://downloads.apache.org/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" -o /tmp/kafka.tgz && \
+RUN curl -fsSL --retry 3 --retry-delay 5 \
+    "https://archive.apache.org/dist/kafka/${KAFKA_VERSION}/kafka_${SCALA_VERSION}-${KAFKA_VERSION}.tgz" \
+    -o /tmp/kafka.tgz && \
     tar -xzf /tmp/kafka.tgz -C /opt && \
     mv /opt/kafka_${SCALA_VERSION}-${KAFKA_VERSION} /opt/kafka && \
     rm /tmp/kafka.tgz

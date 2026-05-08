@@ -431,12 +431,32 @@ func spawnNPCForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp 
 	}
 }
 
+// spawnMonsterForSession sends the per-mob spawn packet to the entering session
+// and, when the entering character is the current controller, also re-issues the
+// MonsterControl packet that grants client-side ownership.
+//
+// Why the re-issue: on cash-shop return atlas-monsters reassigns control via
+// CharacterEnter (MAP_STATUS) and emits StartControl events that atlas-channel
+// turns into MonsterControl packets — but those land on the wire ~1s before the
+// matching mob spawn packets that this function emits. The v83 client drops
+// (or ignores) MonsterControl for an unknown uniqueId, so by the time the spawn
+// renders the mob it has no formal owner. Sending MonsterControl right after
+// the spawn closes that gap deterministically; the earlier Kafka-driven
+// MonsterControl is at worst a harmless duplicate.
 func spawnMonsterForSession(l logrus.FieldLogger) func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 	return func(ctx context.Context) func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 		return func(wp writer.Producer) func(s session.Model) model.Operator[monster.Model] {
 			return func(s session.Model) model.Operator[monster.Model] {
 				return func(m monster.Model) error {
-					return session.Announce(l)(ctx)(wp)(monsterpkt.MonsterSpawnWriter)(writer.SpawnMonsterBody(m, false))(s)
+					if err := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterSpawnWriter)(writer.SpawnMonsterBody(m, false))(s); err != nil {
+						return err
+					}
+					if m.ControlCharacterId() == s.CharacterId() {
+						if err := session.Announce(l)(ctx)(wp)(monsterpkt.MonsterControlWriter)(writer.StartControlMonsterBody(m, m.ControllerHasAggro()))(s); err != nil {
+							l.WithError(err).Errorf("SpawnForSelf: unable to re-issue MonsterControl for character [%d] mob [%d].", s.CharacterId(), m.UniqueId())
+						}
+					}
+					return nil
 				}
 			}
 		}

@@ -1,8 +1,12 @@
 package lock
 
 import (
+	"errors"
+	"fmt"
+	"strings"
 	"time"
 
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,4 +53,51 @@ func applyDefaults(c *config) {
 	c.backoff = DefaultBackoff
 	c.gracePeriod = DefaultGracePeriod
 	c.log = logrus.New()
+}
+
+const keyPrefix = "atlas:lock:"
+
+// LeaderElection runs a callback on exactly one pod for a named lease.
+//
+// Construction is cheap; only Run blocks. A single LeaderElection instance
+// MUST NOT have Run called more than once concurrently. Construct one per
+// logical role per pod.
+type LeaderElection struct {
+	rc   *goredis.Client
+	name string
+	cfg  config
+}
+
+// New constructs a LeaderElection bound to a Redis client and a service-scoped
+// lease name. Returns an error for nil clients, empty/whitespace-only names,
+// or option values outside the allowed ranges.
+func New(rc *goredis.Client, name string, opts ...Option) (*LeaderElection, error) {
+	if rc == nil {
+		return nil, errors.New("lock: nil redis client")
+	}
+	if strings.TrimSpace(name) == "" {
+		return nil, errors.New("lock: name must be non-empty and not all-whitespace")
+	}
+	cfg := config{}
+	applyDefaults(&cfg)
+	for _, o := range opts {
+		o(&cfg)
+	}
+	if cfg.ttl < 5*time.Second || cfg.ttl > 5*time.Minute {
+		return nil, fmt.Errorf("lock: TTL %s out of range [5s, 5m]", cfg.ttl)
+	}
+	if cfg.refreshInterval < time.Second || cfg.refreshInterval > cfg.ttl/2 {
+		return nil, fmt.Errorf("lock: RefreshInterval %s out of range [1s, TTL/2]", cfg.refreshInterval)
+	}
+	if cfg.backoff < time.Second || cfg.backoff > time.Minute {
+		return nil, fmt.Errorf("lock: Backoff %s out of range [1s, 1m]", cfg.backoff)
+	}
+	if cfg.gracePeriod < time.Second || cfg.gracePeriod > 30*time.Second {
+		return nil, fmt.Errorf("lock: GracePeriod %s out of range [1s, 30s]", cfg.gracePeriod)
+	}
+	return &LeaderElection{rc: rc, name: name, cfg: cfg}, nil
+}
+
+func (le *LeaderElection) keyPath() string {
+	return keyPrefix + le.name
 }

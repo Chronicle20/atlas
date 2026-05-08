@@ -4,6 +4,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/require"
 )
@@ -33,4 +35,61 @@ func TestOptions_OverridesApplied(t *testing.T) {
 	require.Equal(t, 15*time.Second, cfg.backoff)
 	require.Equal(t, 10*time.Second, cfg.gracePeriod)
 	require.Same(t, l, cfg.log)
+}
+
+func newTestClient(t *testing.T) (*goredis.Client, *miniredis.Miniredis) {
+	mr := miniredis.RunT(t)
+	rc := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+	t.Cleanup(func() { _ = rc.Close() })
+	return rc, mr
+}
+
+func TestNew_RejectsNilClient(t *testing.T) {
+	_, err := New(nil, "x")
+	require.Error(t, err)
+}
+
+func TestNew_RejectsEmptyName(t *testing.T) {
+	rc, _ := newTestClient(t)
+	_, err := New(rc, "")
+	require.Error(t, err)
+	_, err = New(rc, "   ")
+	require.Error(t, err)
+}
+
+func TestNew_RejectsOutOfRangeOptions(t *testing.T) {
+	rc, _ := newTestClient(t)
+
+	cases := []struct {
+		name string
+		opt  Option
+	}{
+		{"ttl-too-low", WithTTL(time.Second)},
+		{"ttl-too-high", WithTTL(10 * time.Minute)},
+		{"refresh-too-low", WithRefreshInterval(0)},
+		{"refresh-too-high-vs-ttl", WithRefreshInterval(20 * time.Second)}, // > TTL/2 = 15s
+		{"backoff-too-low", WithBackoff(0)},
+		{"backoff-too-high", WithBackoff(2 * time.Minute)},
+		{"grace-too-low", WithGracePeriod(0)},
+		{"grace-too-high", WithGracePeriod(2 * time.Minute)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := New(rc, "x", tc.opt)
+			require.Error(t, err)
+		})
+	}
+}
+
+func TestNew_AcceptsValidConfig(t *testing.T) {
+	rc, _ := newTestClient(t)
+	le, err := New(rc, "monsters-sweep",
+		WithTTL(30*time.Second),
+		WithRefreshInterval(10*time.Second),
+		WithBackoff(5*time.Second),
+		WithGracePeriod(5*time.Second),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, le)
+	require.Equal(t, "atlas:lock:monsters-sweep", le.keyPath())
 }

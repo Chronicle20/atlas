@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-create-dbs
+  annotations:
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: psql
+          image: postgres:15-alpine
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+            - configMapRef:
+                name: atlas-db-names
+            - secretRef:
+                name: db-credentials
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-env
+                  key: DB_PORT
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              # Phase 0 Task 0.1 finding: db-credentials values carry literal
+              # trailing whitespace (space + CR + LF). Strip before passing to
+              # psql, otherwise auth fails with: password authentication failed
+              # for user "atlas ".
+              DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
+              DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
+              for raw in $ATLAS_DB_NAMES; do
+                  full="${raw}-${ATLAS_ENV}"
+                  PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
+                      -v "ON_ERROR_STOP=1" \
+                      -c "SELECT 'CREATE DATABASE \"'||'$full'||'\"' WHERE NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = '$full')\gexec"
+              done

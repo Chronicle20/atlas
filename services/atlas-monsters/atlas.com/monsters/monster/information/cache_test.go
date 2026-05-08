@@ -295,3 +295,45 @@ func TestGetById_TenantIsolation(t *testing.T) {
 		t.Fatalf("on second read, tenants A and B converged to the same Hp (%d) - cross-tenant key collision", a2.Hp())
 	}
 }
+
+func TestGetById_KillSwitchBypassesCache(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "false")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 1}, nil
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 3; i++ {
+		if _, err := get(1); err != nil {
+			t.Fatalf("call %d: %v", i, err)
+		}
+	}
+	if got := calls.Load(); got != 3 {
+		t.Fatalf("upstream calls = %d, want 3 (kill-switch must bypass cache)", got)
+	}
+}
+
+func TestGetById_NotInitialized_BypassesCache(t *testing.T) {
+	resetDataCache(t) // no InitDataCache
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{Hp: 1}, nil
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+	for i := 0; i < 2; i++ {
+		if _, err := get(1); err != nil {
+			t.Fatalf("call %d: %v", i, err)
+		}
+	}
+	if got := calls.Load(); got != 2 {
+		t.Fatalf("upstream calls = %d, want 2 (uninitialized cache must bypass)", got)
+	}
+}

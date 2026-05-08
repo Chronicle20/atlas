@@ -1,7 +1,6 @@
 go 1.25.5
 
 use (
-	./libs/atlas-cache
 	./libs/atlas-constants
 	./libs/atlas-database
 	./libs/atlas-kafka

@@ -2,6 +2,7 @@ package data
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 )
@@ -42,5 +43,32 @@ func TestDataUpdatedEventProvider_BodyShape(t *testing.T) {
 	}
 	if ev.Body.CompletedAt != "2026-05-08T12:30:00Z" {
 		t.Fatalf("CompletedAt = %q, want RFC3339 UTC", ev.Body.CompletedAt)
+	}
+}
+
+func TestProducerEnabled_DefaultTrue(t *testing.T) {
+	// Snapshot + restore env so other tests don't see our state.
+	if v, ok := os.LookupEnv("DATA_EVENTS_PRODUCER_ENABLED"); ok {
+		defer os.Setenv("DATA_EVENTS_PRODUCER_ENABLED", v)
+	} else {
+		defer os.Unsetenv("DATA_EVENTS_PRODUCER_ENABLED")
+	}
+	os.Unsetenv("DATA_EVENTS_PRODUCER_ENABLED")
+	if !producerEnabled() {
+		t.Fatal("expected default true when unset")
+	}
+}
+
+func TestProducerEnabled_ExplicitFalse(t *testing.T) {
+	t.Setenv("DATA_EVENTS_PRODUCER_ENABLED", "false")
+	if producerEnabled() {
+		t.Fatal("expected false when DATA_EVENTS_PRODUCER_ENABLED=false")
+	}
+}
+
+func TestProducerEnabled_UnparseableTrue(t *testing.T) {
+	t.Setenv("DATA_EVENTS_PRODUCER_ENABLED", "not-a-bool")
+	if !producerEnabled() {
+		t.Fatal("expected default true when unparseable")
 	}
 }

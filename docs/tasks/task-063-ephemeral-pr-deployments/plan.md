@@ -634,14 +634,16 @@ import "os"
 const envVar = "KAFKA_CONSUMER_GROUP"
 
 // Resolve returns the consumer group ID this service must use.
-// If KAFKA_CONSUMER_GROUP is set (even to a non-trimmed value) it is
-// returned verbatim. Otherwise defaultName is returned.
+// If KAFKA_CONSUMER_GROUP is set to a non-empty value (including a
+// whitespace-only value, which is preserved verbatim) it is returned.
+// Otherwise defaultName is returned. See design §5.4: empty string
+// is treated as unset for safety; whitespace-only is preserved
+// verbatim to surface config bugs rather than silently mask them.
 func Resolve(defaultName string) string {
-	v, ok := os.LookupEnv(envVar)
-	if !ok {
-		return defaultName
+	if v, ok := os.LookupEnv(envVar); ok && v != "" {
+		return v
 	}
-	return v
+	return defaultName
 }
 ```
 

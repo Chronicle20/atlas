@@ -169,3 +169,32 @@ func TestGetById_HitAvoidsUpstream(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 1 (second call must hit cache)", got)
 	}
 }
+
+func TestGetById_NegativeCache_AvoidsUpstream(t *testing.T) {
+	resetDataCache(t)
+	t.Setenv(envEnabled, "true")
+	t.Setenv(envTTL, "1m")
+	t.Setenv(envNegativeTTL, "30s")
+
+	rc, _ := newRedis(t)
+	InitDataCache(rc)
+
+	calls := withFakeUpstream(t, func(_ logrus.FieldLogger, _ context.Context, _ uint32) (RestModel, error) {
+		return RestModel{}, requests.ErrNotFound
+	})
+
+	ctx := ctxFor(t, "GMS")
+	get := GetById(logrus.New())(ctx)
+
+	_, err1 := get(404)
+	if !errors.Is(err1, requests.ErrNotFound) {
+		t.Fatalf("first call err = %v, want errors.Is(_, ErrNotFound)", err1)
+	}
+	_, err2 := get(404)
+	if !errors.Is(err2, requests.ErrNotFound) {
+		t.Fatalf("second call err = %v, want errors.Is(_, ErrNotFound)", err2)
+	}
+	if got := calls.Load(); got != 1 {
+		t.Fatalf("upstream calls = %d, want 1 (negative cache must absorb second call)", got)
+	}
+}

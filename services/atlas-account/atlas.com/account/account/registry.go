@@ -81,7 +81,7 @@ func parseServiceKey(s string) (ServiceKey, error) {
 }
 
 func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) getSessions(ctx context.Context, key AccountKey) (sessionsData, error) {
@@ -245,8 +245,8 @@ func (r *Registry) GetExpiredInTransition(ctx context.Context, timeout time.Dura
 
 		// We need to reconstruct account IDs from the keys, but GetAllValues only returns values.
 		// Instead, scan the keys directly.
-		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
-		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+		pattern := fmt.Sprintf("%s:%s:%s:*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
+		prefix := fmt.Sprintf("%s:%s:%s:", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
 		var cursor uint64
 		for {
 			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()

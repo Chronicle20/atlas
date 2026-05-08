@@ -90,3 +90,46 @@ Delete
 ```
 
 `Delete` is the expected value — when a PR namespace is torn down, the PVCs are deleted and Longhorn will reclaim their PVs automatically. The cleanup CronJob does NOT need to explicitly delete orphaned PVs.
+
+## MetalLB pool capacity
+- Pool ranges: `192.168.23.230-192.168.23.250` (single IPAddressPool `cluster-pool` in `metallb-system`, `autoAssign: false`); pool size = 250 − 230 + 1 = 21 IPs
+- Allocated IPs: 5 (reserved: .230 traefik, .231 atlas-login, .232 atlas-channel, .235 nginx-proxy-manager, .237 tempo-collector)
+- Free IPs: 21 − 5 = 16
+- Soft cap on concurrent PR envs (game-socket): 16 (each PR env claims one LB IP backing both its atlas-login and atlas-channel Services)
+- If main becomes symmetric (atlas-main namespace), atlas-login-lb and atlas-channel-lb keep their existing .231/.232 reservations during cutover; PR envs draw from the remaining pool.
+
+### Evidence
+IPAddressPool definition (`kubectl get ipaddresspools.metallb.io -A -o yaml`):
+
+```
+spec:
+  addresses:
+  - 192.168.23.230-192.168.23.250
+  autoAssign: false
+  avoidBuggyIPs: false
+```
+
+Allocated LoadBalancer external IPs (`kubectl get svc -A -o wide | awk '/LoadBalancer/ {print $5}' | sort -u`):
+
+```
+192.168.23.230
+192.168.23.231
+192.168.23.232
+192.168.23.235
+192.168.23.237
+```
+
+Mapping (namespace / name / IP):
+
+```
+atlas               atlas-channel-lb         192.168.23.232
+atlas               atlas-login-lb           192.168.23.231
+kube-system         traefik                  192.168.23.230
+nginx-proxy-manager nginx-proxy-manager-lb   192.168.23.235
+observability       tempo-collector-lb       192.168.23.237
+```
+
+No services were in `<pending>` state at survey time.
+
+### Binding constraint
+Task 0.4 set the Longhorn-derived soft cap at 5 concurrent PR envs. MetalLB allows 16. The smaller of the two (Longhorn = 5) is the binding constraint on concurrent PR envs; MetalLB has comfortable headroom.

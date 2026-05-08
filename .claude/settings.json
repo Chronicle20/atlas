@@ -8,11 +8,19 @@
   },
 
   "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-num-collision-detector.sh"
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
-
         "hooks": [
-
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/skill-activation-prompt.sh"

@@ -5,6 +5,7 @@ import (
 	monster2 "atlas-monsters/kafka/consumer/monster"
 	"atlas-monsters/logger"
 	"atlas-monsters/monster"
+	"atlas-monsters/monster/information"
 	"atlas-monsters/tasks"
 	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"atlas-monsters/world"
@@ -51,6 +52,7 @@ func main() {
 	monster.InitAttackCooldownRegistry(rc)
 	monster.InitMonsterRegistry(rc)
 	monster.InitDropTimerRegistry(rc)
+	information.InitDataCache(rc)
 
 	tdm := service.GetTeardownManager()
 

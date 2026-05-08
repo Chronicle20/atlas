@@ -1,6 +1,8 @@
 package lock
 
 import (
+	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -112,4 +114,43 @@ func TestMetrics_AllCountersExist(t *testing.T) {
 	require.Equal(t, float64(1), testutil.ToFloat64(lostTotal.WithLabelValues("test", "released")))
 	require.Equal(t, float64(1), testutil.ToFloat64(renewFailedTotal.WithLabelValues("test")))
 	require.Equal(t, float64(1), testutil.ToFloat64(acquireFailedTotal.WithLabelValues("test", "held_by_other")))
+}
+
+func TestRun_AcquireAndReleaseOnOuterCancel(t *testing.T) {
+	rc, mr := newTestClient(t)
+	le, err := New(rc, "release-test",
+		WithTTL(10*time.Second),
+		WithRefreshInterval(2*time.Second),
+		WithBackoff(time.Second),
+	)
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	var fnInvocations int
+	var mu sync.Mutex
+
+	done := make(chan error, 1)
+	go func() {
+		done <- le.Run(ctx, func(leaderCtx context.Context) {
+			mu.Lock()
+			fnInvocations++
+			mu.Unlock()
+			<-leaderCtx.Done()
+		})
+	}()
+
+	// Wait until lease is observed in miniredis.
+	require.Eventually(t, func() bool {
+		return mr.Exists("atlas:lock:release-test")
+	}, 2*time.Second, 25*time.Millisecond, "lease should be acquired")
+
+	cancel()
+	require.NoError(t, <-done, "Run should return nil on outer ctx cancel")
+
+	mu.Lock()
+	require.Equal(t, 1, fnInvocations, "fn invoked exactly once")
+	mu.Unlock()
+
+	// Lease should be gone (Released on shutdown).
+	require.False(t, mr.Exists("atlas:lock:release-test"), "lease released on shutdown")
 }

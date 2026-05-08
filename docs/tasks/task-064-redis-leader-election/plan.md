@@ -8,7 +8,7 @@
 
 **Tech Stack:** Go 1.25.5, `github.com/bsm/redislock` v0.9.4, `github.com/redis/go-redis/v9` v9.19.0, `github.com/sirupsen/logrus` v1.9.4, `github.com/prometheus/client_golang` v1.23.2, `github.com/alicebob/miniredis/v2` v2.37.0 (test), `github.com/stretchr/testify` v1.11.1 (test).
 
-**All paths are absolute under the worktree.** Working directory for every step: `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-064-redis-leader-election/`.
+**All paths are absolute under the worktree.** Working directory for every step: `<worktree-root>/`.
 
 ---
 
@@ -85,7 +85,7 @@ If `go mod tidy` rewrites the require block (e.g. to add indirect deps from mini
 - [ ] **Step 5: Commit**
 
 ```
-cd /home/tumidanski/source/atlas-ms/atlas/.worktrees/task-064-redis-leader-election
+cd <worktree-root>
 git add libs/atlas-lock/go.mod libs/atlas-lock/go.sum libs/atlas-lock/doc.go go.work
 git commit -m "feat(atlas-lock): scaffold module with package doc"
 ```
@@ -2098,7 +2098,7 @@ git commit -m "docs(TODO): catalogue 14 per-service follow-up adoption tasks for
 After Task 17, run the whole-tree verification (NOT a separate task — just sanity):
 
 ```
-cd /home/tumidanski/source/atlas-ms/atlas/.worktrees/task-064-redis-leader-election
+cd <worktree-root>
 cd libs/atlas-lock && go test -race ./... && go vet ./... && cd -
 cd services/atlas-monsters/atlas.com/monsters && go test -race ./... && go build ./... && go vet ./... && cd -
 git status --short  # expect clean

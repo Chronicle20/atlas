@@ -1126,7 +1126,7 @@ Expected: PASS.
 - [ ] **Step 10.4: Run vet across the workspace**
 
 ```bash
-cd /home/tumidanski/source/atlas-ms/atlas && go vet ./libs/atlas-kafka/... && go vet ./services/...
+cd <repo-root> && go vet ./libs/atlas-kafka/... && go vet ./services/...
 ```
 
 Expected: no output from either invocation. The new exported decorators (`SetFetchTimeout`, `SetMaxConsecutiveTimeouts`) are unused in services today; the `//goland:noinspection GoUnusedExportedFunction` annotations on each preempt vet's unused-export concern.
@@ -1142,7 +1142,7 @@ CLAUDE.md mandates Docker build verification for shared-library changes. PRD §1
 - [ ] **Step 11.1: Build atlas-maps**
 
 ```bash
-cd /home/tumidanski/source/atlas-ms/atlas && docker build -f services/atlas-maps/Dockerfile -t atlas-maps:task-039 .
+cd <repo-root> && docker build -f services/atlas-maps/Dockerfile -t atlas-maps:task-039 .
 ```
 
 Expected: build succeeds. The Dockerfile copies `libs/atlas-kafka` and references it via go.work replace — no Dockerfile changes are needed.
@@ -1150,7 +1150,7 @@ Expected: build succeeds. The Dockerfile copies `libs/atlas-kafka` and reference
 - [ ] **Step 11.2: Build atlas-monsters**
 
 ```bash
-cd /home/tumidanski/source/atlas-ms/atlas && docker build -f services/atlas-monsters/Dockerfile -t atlas-monsters:task-039 .
+cd <repo-root> && docker build -f services/atlas-monsters/Dockerfile -t atlas-monsters:task-039 .
 ```
 
 Expected: build succeeds.
@@ -1158,7 +1158,7 @@ Expected: build succeeds.
 - [ ] **Step 11.3: Build atlas-channel**
 
 ```bash
-cd /home/tumidanski/source/atlas-ms/atlas && docker build -f services/atlas-channel/Dockerfile -t atlas-channel:task-039 .
+cd <repo-root> && docker build -f services/atlas-channel/Dockerfile -t atlas-channel:task-039 .
 ```
 
 Expected: build succeeds.

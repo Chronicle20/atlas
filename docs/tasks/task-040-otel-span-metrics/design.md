@@ -15,7 +15,7 @@ This design realizes the PRD by:
 1. Enabling Tempo's built-in `metrics_generator` `span-metrics` processor with a curated dimension allowlist, producing `traces_spanmetrics_*` series in Prometheus.
 2. Adding one manual OTel span around `session.Announce` in atlas-channel — the single chokepoint for outbound client packets — with `writer.name`, `tenant.id`, `world.id` attributes.
 3. Extracting the 54 byte-identical copies of `tracing/tracing.go` across services into a new shared library `libs/atlas-tracing`, augmented with `TRACE_SAMPLING_RATIO` env-driven sampling.
-4. Shipping a Grafana dashboard JSON in the Atlas repo, file-provider-provisioned into the bee Grafana via a configmap-mounted directory.
+4. Shipping a Grafana dashboard JSON in the Atlas repo, file-provider-provisioned into the cluster Grafana via a configmap-mounted directory.
 5. Documenting the end-to-end pipeline, extension recipes, and cardinality budget in a new `docs/observability.md`.
 
 The design picks PRD §4.1 pathway (a) — Tempo `metrics_generator`. The single largest deviation from PRD §7 is the libs/atlas-tracing extraction; the rest is refinement of details deferred to design.
@@ -96,7 +96,7 @@ Forbidden span attributes (per PRD §8.2 cardinality budget): `character.id`, `a
 
 ### 3.3 Tempo overrides (out-of-tree)
 
-Append to `~/source/k3s/bee/observability-tempo.yml` ConfigMap `tempo-config` `tempo.yaml` data:
+Append to `<infra-repo>/observability-tempo.yml` ConfigMap `tempo-config` `tempo.yaml` data:
 
 ```yaml
 overrides:
@@ -154,7 +154,7 @@ Repo-side artifacts under new directory `deploy/grafana/`:
 
 - `deploy/grafana/README.md` — short, points at `docs/observability.md` for the full picture and at `apply.sh` as the entrypoint.
 
-Cluster-side change to `~/source/k3s/bee/observability-grafana.yml`:
+Cluster-side change to `<infra-repo>/observability-grafana.yml`:
 
 - Add to `volumeMounts`:
   ```yaml
@@ -268,7 +268,7 @@ This list is restated in `docs/observability.md`.
 
 This sequence verifies acceptance criteria #1–#9 and #13. AC #10 is verified during step 4. AC #11/#12 are verified by self-walking `docs/observability.md`.
 
-1. `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml`. Tempo's overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
+1. `kubectl apply -f <infra-repo>/observability-tempo.yml`. Tempo's overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 2. `cd ~/source/atlas-ms/atlas/deploy/grafana && ./apply.sh`. Grafana picks up the configmap on the rollout-restart inside the script.
 3. `kubectl rollout restart deployment/atlas-channel -n atlas`.
 4. Log in to a test character. Use a potion 5 times. Walk a few maps.
@@ -299,9 +299,9 @@ This sequence verifies acceptance criteria #1–#9 and #13. AC #10 is verified d
 | `deploy/grafana/apply.sh` | n/a | new |
 | `deploy/grafana/README.md` | n/a | new |
 | `docs/observability.md` | new | new |
-| `~/source/k3s/bee/observability-tempo.yml` | one of two paths | overrides block (path a) |
-| `~/source/k3s/bee/observability-grafana.yml` | maybe | yes — adds dashboards volumeMount + volume |
-| `~/source/k3s/bee/observability-alloy.yml` | maybe | unchanged |
+| `<infra-repo>/observability-tempo.yml` | one of two paths | overrides block (path a) |
+| `<infra-repo>/observability-grafana.yml` | maybe | yes — adds dashboards volumeMount + volume |
+| `<infra-repo>/observability-alloy.yml` | maybe | unchanged |
 
 ## 8. Open items deferred to plan-phase
 

@@ -6,7 +6,7 @@
 
 **Architecture:** Pathway (a) from PRD §4.1 — Tempo `metrics_generator` with a curated `span-metrics` dimension allowlist. Atlas service `TRACE_ENDPOINT` is unchanged at `tempo.home:4317`. The new `libs/atlas-tracing` is the single source of truth for tracer setup; atlas-channel adds one manual `session.Announce` span; the dashboard is file-provider provisioned via a configmap mount that ships from `deploy/grafana/`.
 
-**Tech Stack:** Go 1.25.5, OpenTelemetry SDK v1.43.0, Tempo 2.7.x, Grafana, Prometheus, Kubernetes (k3s "bee" cluster), Docker, `go.work`-based workspace with per-service `replace` directives.
+**Tech Stack:** Go 1.25.5, OpenTelemetry SDK v1.43.0, Tempo 2.7.x, Grafana, Prometheus, Kubernetes (k3s cluster), Docker, `go.work`-based workspace with per-service `replace` directives.
 
 **Reference docs (read first):**
 - `docs/tasks/task-040-otel-span-metrics/prd.md`
@@ -19,7 +19,7 @@
 - **Tasks 1–11** land library + atlas-channel migration + `session.Announce` span (smallest blast radius that satisfies AC #1–#3, #6–#7, #13).
 - **Tasks 12–17** ship deploy artifacts and documentation.
 - **Task 18** fans out the libs migration to the remaining 53 services.
-- **Task 19** lists the out-of-tree cluster changes the operator must apply for AC #4–#5, #9–#10 to verify in the bee cluster.
+- **Task 19** lists the out-of-tree cluster changes the operator must apply for AC #4–#5, #9–#10 to verify in the cluster.
 
 ---
 
@@ -56,8 +56,8 @@
 - `docs/observability.md` — pipeline diagram, add-a-span recipe, cardinality budget, smoke test, sampling caveat.
 
 **Out-of-tree (operator applies; tracked in Task 19):**
-- `~/source/k3s/bee/observability-tempo.yml` — overrides block enabling `span-metrics` processor with curated dimensions.
-- `~/source/k3s/bee/observability-grafana.yml` — `volumeMount` + `volume` referencing `grafana-dashboards-atlas` configmap.
+- `<infra-repo>/observability-tempo.yml` — overrides block enabling `span-metrics` processor with curated dimensions.
+- `<infra-repo>/observability-grafana.yml` — `volumeMount` + `volume` referencing `grafana-dashboards-atlas` configmap.
 
 ---
 
@@ -933,7 +933,7 @@ git commit -m "chore(deploy): add TRACE_SAMPLING_RATIO env var (default 1.0)"
 **Files:**
 - Create: `deploy/grafana/dashboards/atlas-latency.json`
 
-The dashboard has 7 panels, 2 template variables, and 1 annotation. The exact PromQL/LogQL queries come from design §4. Datasource UIDs follow Grafana's defaults — the operator can adjust at apply time if the bee cluster uses non-default UIDs (`prometheus` / `loki`).
+The dashboard has 7 panels, 2 template variables, and 1 annotation. The exact PromQL/LogQL queries come from design §4. Datasource UIDs follow Grafana's defaults — the operator can adjust at apply time if the cluster uses non-default UIDs (`prometheus` / `loki`).
 
 - [ ] **Step 1: Create the directory and write the JSON**
 
@@ -1113,7 +1113,7 @@ Write `deploy/grafana/dashboards/atlas-latency.json`:
 }
 ```
 
-> **NOTE FOR EXECUTOR:** Datasource UIDs (`prometheus`, `loki`) are conventional defaults. If the bee Grafana uses non-default UIDs, this dashboard will land but its panels show "Datasource not found." That's a configmap edit, not a JSON regeneration — fix is `kubectl get datasources` on the live Grafana to confirm and patch the JSON before applying.
+> **NOTE FOR EXECUTOR:** Datasource UIDs (`prometheus`, `loki`) are conventional defaults. If the cluster Grafana uses non-default UIDs, this dashboard will land but its panels show "Datasource not found." That's a configmap edit, not a JSON regeneration — fix is `kubectl get datasources` on the live Grafana to confirm and patch the JSON before applying.
 
 - [ ] **Step 2: Validate the JSON**
 
@@ -1272,7 +1272,7 @@ Spanmetrics auto-publishes the new span within ~60 seconds via Tempo's metrics_g
 
 ## How to add a new spanmetrics dimension
 
-Edit the Tempo overrides ConfigMap in `~/source/k3s/bee/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
+Edit the Tempo overrides ConfigMap in `<infra-repo>/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
 
 ⚠️ **Read the cardinality budget below before adding a dimension.** A bad pick can swamp Prometheus.
 
@@ -1323,7 +1323,7 @@ The Tempo overrides explicitly enumerates the allowlist; "all attributes become 
 
 ## Smoke test (verify a deploy end-to-end)
 
-1. `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
+1. `kubectl apply -f <infra-repo>/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 2. `cd ~/source/atlas-ms/atlas/deploy/grafana && ./apply.sh`.
 3. `kubectl rollout restart deployment/atlas-channel -n atlas`.
 4. Log in to a test character. Use a potion 5 times. Walk a few maps.
@@ -1680,7 +1680,7 @@ git commit -m "chore: post-fan-out fixups"
 ## Task 18: Document the out-of-tree cluster changes
 
 **Files:**
-- Modify: `docs/tasks/task-040-otel-span-metrics/cluster-changes.md` (new — captures what the operator must do in `~/source/k3s/bee/`)
+- Modify: `docs/tasks/task-040-otel-span-metrics/cluster-changes.md` (new — captures what the operator must do in `<infra-repo>/`)
 
 These changes live outside this repo but are part of task-040's acceptance. We capture them here so the operator (or a future agent) has a checklist.
 
@@ -1691,7 +1691,7 @@ These changes live outside this repo but are part of task-040's acceptance. We c
 ```markdown
 # Out-of-tree cluster changes for task-040
 
-These changes live in `~/source/k3s/bee/` (the bee cluster manifests). They are not in the Atlas repo but are required for the task-040 acceptance criteria to be observable.
+These changes live in `<infra-repo>/` (the cluster manifests). They are not in the Atlas repo but are required for the task-040 acceptance criteria to be observable.
 
 Apply order:
 1. Atlas repo PR merges and ships images (this repo).
@@ -1701,7 +1701,7 @@ Apply order:
 
 ## 1. Tempo overrides — enable span-metrics
 
-In `~/source/k3s/bee/observability-tempo.yml`, append to the `tempo-config` ConfigMap's `tempo.yaml` data:
+In `<infra-repo>/observability-tempo.yml`, append to the `tempo-config` ConfigMap's `tempo.yaml` data:
 
 ```yaml
 overrides:
@@ -1716,14 +1716,14 @@ overrides:
             - world.id
 ```
 
-Apply: `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml`.
+Apply: `kubectl apply -f <infra-repo>/observability-tempo.yml`.
 
 Tempo 2.7.x hot-reloads overrides — no pod restart required. Verify via:
 `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 
 ## 2. Grafana — mount the dashboards configmap
 
-In `~/source/k3s/bee/observability-grafana.yml`, on the Grafana Deployment:
+In `<infra-repo>/observability-grafana.yml`, on the Grafana Deployment:
 
 Add to `volumeMounts`:
 
@@ -1740,7 +1740,7 @@ Add to `volumes`:
     name: grafana-dashboards-atlas
 ```
 
-Apply: `kubectl apply -f ~/source/k3s/bee/observability-grafana.yml`.
+Apply: `kubectl apply -f <infra-repo>/observability-grafana.yml`.
 
 The `grafana-dashboards-atlas` configmap was created in step 2 of the apply order by Atlas's `deploy/grafana/apply.sh`.
 

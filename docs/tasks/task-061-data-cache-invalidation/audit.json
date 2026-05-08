@@ -10,7 +10,7 @@
     "services/atlas-maps/atlas.com/maps/kafka/consumer/data/{kafka.go,metrics.go,handler.go,consumer.go,handler_test.go}",
     "services/atlas-maps/atlas.com/maps/main.go"
   ],
-  "path": "<home>/source/atlas-ms/atlas/.worktrees/task-061-data-cache-invalidation",
+  "path": "<worktree-root>",
   "date": "2026-05-08",
   "build": "pass",
   "testsPassed": 4,

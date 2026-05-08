@@ -12,7 +12,7 @@ This document captures the incident evidence and code audit that motivated the P
 
 **Environment at the time of the incident:**
 - Cluster-run: atlas-inventory, atlas-quest, atlas-drops, atlas-maps, etc. (standard `atlas` namespace pods).
-- Locally-run: atlas-channel, atlas-saga-orchestrator, atlas-npc-conversations (GoLand debug build of atlas-channel, per the startup log: `<home>/.cache/JetBrains/GoLand2026.1/tmp/GoLand/___go_build_atlas_channel`).
+- Locally-run: atlas-channel, atlas-saga-orchestrator, atlas-npc-conversations (GoLand debug build of atlas-channel, per the startup log: `<jetbrains-cache>/GoLand2026.1/tmp/GoLand/___go_build_atlas_channel`).
 - Character ID 11, tenant `ec876921-c363-4cc6-9c51-5bb8d57f9553`.
 
 ## 2. Server-side timeline (from cluster atlas-quest pod)

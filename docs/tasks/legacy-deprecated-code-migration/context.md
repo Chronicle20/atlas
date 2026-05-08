@@ -134,5 +134,5 @@ grep -r 'lib/pq' services/*/go.mod                 # Phase 2.1
 grep -r 'SetItemId\|"itemId"' services/atlas-query-aggregator/  # Phase 1.4
 
 # Workspace-wide build
-cd <home>/source/pers/atlas && go build ./...
+cd <repo-root> && go build ./...
 ```

@@ -24,7 +24,7 @@
 
 **Severity:** Medium.
 
-**Trigger:** The bee Tempo deployment config has the `metrics_generator.registry` and `.storage` blocks (PRD §4.1) but the Tempo binary may not be configured with the `metrics-generator` target enabled in its `--target=` flag or `target:` config. If so, enabling overrides won't help — the component isn't running.
+**Trigger:** The cluster Tempo deployment config has the `metrics_generator.registry` and `.storage` blocks (PRD §4.1) but the Tempo binary may not be configured with the `metrics-generator` target enabled in its `--target=` flag or `target:` config. If so, enabling overrides won't help — the component isn't running.
 
 **Mitigation:** Design phase verifies (open question #4 in PRD §9). If not enabled, the Tempo deployment-spec change to add the target is a one-line patch but is required.
 

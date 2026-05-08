@@ -48,7 +48,7 @@ The plan was implemented faithfully. All 27 numbered tasks plus the prerequisite
 
 ## Skipped / Deferred Tasks
 
-- **Task 27 (memory note update)** — Cannot be verified from the worktree because the target file lives in `~/.claude/projects/-home-tumidanski-source-atlas-ms-atlas/memory/`. Plan acknowledges this as out-of-repo and instructs "no commit needed." No operational impact on the merged code; the runbook addendum is a developer-experience aid only.
+- **Task 27 (memory note update)** — Cannot be verified from the worktree because the target file lives in `~/.claude/projects/-<workspace-atlas>/memory/`. Plan acknowledges this as out-of-repo and instructs "no commit needed." No operational impact on the merged code; the runbook addendum is a developer-experience aid only.
 - **Plan note on partial-failure miniredis test (Task 4)** — Plan explicitly skips the dedicated unit test ("miniredis does not provide a 'force DEL to fail mid-scan' hook…") and relies on structural correctness of the `firstErr` accumulator. The wrapper-level `TestFlushTenant_*` tests in atlas-monsters Task 11 cover the partial-failure shape via the second-Clear-still-attempted invariant.
 - **Plan note on TestStartWorker_* integration tests (Task 10)** — Plan defers DB+filesystem integration tests to manual E2E (PRD §11.2). Unit coverage via `TestDataUpdatedEventProvider_*` + `TestProducerEnabled_*` is in place.
 

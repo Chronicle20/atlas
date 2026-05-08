@@ -135,7 +135,7 @@ Per PRD §2 and design §8:
 
 ## Memory files to update in reference sweep
 
-Files under `~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/` that currently reference `dev/active/...`:
+Files under `~/.claude/projects/-<workspace-pers-atlas>/memory/` that currently reference `dev/active/...`:
 - `MEMORY.md` (the index) — has 5 mentions
 - Any sibling file referenced by the index that describes one of the five migrated slugs (redis-migration.md, etc.)
 

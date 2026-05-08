@@ -19,12 +19,13 @@ set -euo pipefail
 # shellcheck source=lib.sh
 . "$(dirname "$0")/lib.sh"
 
-require_env ATLAS_ENV DB_HOST DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
-
 # Phase 0 Task 0.1 finding: db-credentials secret values carry trailing
-# whitespace (literal space + CR + LF). Strip before passing to psql.
-DB_USER="$(printf '%s' "$DB_USER" | tr -d ' \r\n')"
-DB_PASSWORD="$(printf '%s' "$DB_PASSWORD" | tr -d ' \r\n')"
+# whitespace (literal space + CR + LF). Strip BEFORE require_env so an
+# all-whitespace value is caught by the empty check.
+DB_USER="$(printf '%s' "${DB_USER:-}" | tr -d ' \r\n')"
+DB_PASSWORD="$(printf '%s' "${DB_PASSWORD:-}" | tr -d ' \r\n')"
+
+require_env ATLAS_ENV DB_HOST DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
 
 ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 IFS=',' read -ra dbs <<< "$ATLAS_DB_NAMES"

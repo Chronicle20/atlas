@@ -14,6 +14,18 @@ set -euo pipefail
 require_env ATLAS_ENV ATLAS_UI_BASE TENANT_ID REGION MAJOR_VERSION MINOR_VERSION
 WZ_CANONICAL="${WZ_CANONICAL:-/opt/wz/atlas.zip}"
 
+# Sanity-check TENANT_ID shape. The libs/atlas-rest middleware that
+# tenant-aware endpoints route through (ParseTenant) requires the
+# header to be UUID-parseable; a non-UUID value would return 400 from
+# every wait-ready probe and the retry loop would exhaust before the
+# operator could diagnose. The TENANT_ID supplied here is the *initial*
+# value (the canonical tenant lookup may overwrite it later); the only
+# requirement is that it parses as a UUID.
+if ! printf '%s' "$TENANT_ID" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'; then
+    log error "TENANT_ID '$TENANT_ID' is not UUID-shaped; tenant-aware probes will 400. Fix Phase 7's Helm chart to inject a UUID."
+    exit 1
+fi
+
 post() {
     curl -fsS -X POST \
         -H "TENANT_ID: $TENANT_ID" \

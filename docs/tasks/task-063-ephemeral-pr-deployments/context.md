@@ -43,16 +43,10 @@ atlas/                                        # this worktree's root
 ├── docs/
 │   ├── runbooks/ephemeral-pr-deployments.md  # Phase 10.2 NEW
 │   ├── observability.md                      # Phase 10.3 appends env-label section
-│   └── tasks/task-063-ephemeral-pr-deployments/   # this PRD/design/plan
-└── deploy/argocd/                        # Phase 8 NEW (delivered to <infra-repo> manually)
-    ├── argocd.yml
-    ├── argocd-atlas-main.yml
-    ├── argocd-atlas-pr.yml
-    ├── argocd-cleanup-cronjob.yml
-    ├── argocd-pihole-secret.yml.example
-    ├── argocd-ghcr-secret.yml.example
-    └── README.md
+    └── tasks/task-063-ephemeral-pr-deployments/   # this PRD/design/plan
 ```
+
+(Phase 8's gitops manifests — Argo CD install, Application(atlas-main), ApplicationSet(atlas-pr), cleanup CronJob, secrets, longhorn-pr StorageClass — live in the maintainer's separate cluster-infra repo, NOT under atlas. Atlas ships zero gitops files; cloners without Argo CD can still consume Phases 1–7.)
 
 ## 2. Key code surfaces
 

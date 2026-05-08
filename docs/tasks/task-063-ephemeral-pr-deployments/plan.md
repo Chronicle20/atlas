@@ -4,7 +4,7 @@
 
 **Goal:** Stand up Argo CD on the cluster, ship a Kustomize base/overlay layout for `deploy/k8s`, and add the per-environment isolation plumbing (`ATLAS_ENV` token through Postgres DB names, Kafka topics, Kafka consumer groups, Redis key prefix) so every open PR gets its own reachable, isolated review environment that auto-tears-down after a grace period.
 
-**Architecture:** Four layers, three of them in this repo: `libs/atlas-redis` becomes env-aware via `KeyPrefix()`; a new `libs/atlas-kafka/consumergroup` resolver lets every service derive its consumer group from `KAFKA_CONSUMER_GROUP` with literal fallback; `deploy/k8s/` restructures into a `base` plus `overlays/main` (auto-synced by Argo) and `overlays/pr` (templated per PR); CI gains per-PR image builds and a PR-close cleanup hook. The fourth layer — Argo `Application(atlas-main)`, `ApplicationSet(atlas-pr)`, cleanup CronJob, Pi-hole secret — is staged in this repo at `deploy/argocd/` for the maintainer to copy into the `<infra-repo>` infra repo.
+**Architecture:** Four layers, three of them in this repo: `libs/atlas-redis` becomes env-aware via `KeyPrefix()`; a new `libs/atlas-kafka/consumergroup` resolver lets every service derive its consumer group from `KAFKA_CONSUMER_GROUP` with literal fallback; `deploy/k8s/` restructures into a `base` plus `overlays/main` (auto-synced by Argo) and `overlays/pr` (templated per PR); CI gains per-PR image builds and a PR-close cleanup hook. The fourth layer — Argo CD install + `Application(atlas-main)` + `ApplicationSet(atlas-pr)` + cleanup CronJob + Pi-hole/ghcr Secrets + `longhorn-pr` StorageClass — lives in the maintainer's separate cluster-infrastructure repo, NOT in atlas. See Phase 8 for the bootstrap order; design.md §6 has the architecture detail.
 
 **Tech Stack:** Go 1.25.5, Kustomize 4.5+, Argo CD 2.13.x with `goTemplate: true` and the GitHub PR generator, Traefik IngressRoute, Longhorn (existing on the cluster), Pi-hole v6 REST API, GitHub Actions, ghcr.io, kafka-tools and redis-cli (for hooks), `psql` 15.
 
@@ -23,7 +23,7 @@
 The Phase 0 preflight tasks ran against the the cluster and surfaced corrections to several plan-author assumptions. Each finding is captured verbatim in `docs/tasks/task-063-ephemeral-pr-deployments/preflight.md`; the load-bearing ones are summarised here so later-phase implementers don't re-discover them:
 
 - **`db-credentials` secret values carry trailing whitespace** (literal space + CR + LF on both `DB_USER` and `DB_PASSWORD`). In-cluster services tolerate it, but raw `psql` calls auth-fail with `password authentication failed for user "atlas "`. Phase 7.6 PreSync hook and Phase 11.2 cutover both `tr -d ' \r\n'` after base64-decode. Re-issuing the secret cleanly is deferred to Phase 11 cutover.
-- **Longhorn 1.9.1 group-label shape differs from plan assumption**: actual key is `recurring-job-group.longhorn.io/<group>` on the Longhorn `Volume` CR (not on K8s PV). Phase 7.4 Step 1b uses a dedicated StorageClass `longhorn-pr` instead of per-PVC labels (provisioned cluster-wide via Phase 8 Task 8.7).
+- **Longhorn 1.9.1 group-label shape differs from plan assumption**: actual key is `recurring-job-group.longhorn.io/<group>` on the Longhorn `Volume` CR (not on K8s PV). Phase 7.4 Step 1b uses a dedicated StorageClass `longhorn-pr` instead of per-PVC labels (provisioned in the cluster-infra repo (see Phase 8)).
 - **Soft cap on concurrent PR envs is 5, bound by Longhorn capacity** (167 GiB usable / 30 GiB per env); MetalLB pool has 16 free IPs but is not the binding constraint.
 - **Kafka `auto.create.topics.enable=true`** on the cluster — no PreSync topic-creation hook needed.
 - **atlas-tenants and atlas-configurations Alpine pods lack curl**. Phase 0 Task 0.7 commands rerun-from-scratch should use `wget` instead of curl, OR run from a pod that has curl. Phase 6 bootstrap is unaffected because the bootstrap container ships its own curl.
@@ -263,7 +263,7 @@ kubectl get daemonset -n longhorn-system longhorn-manager -o jsonpath='{.spec.te
 > **Phase 0 Task 0.6 finding:** the live cluster's actual exclusion shape diverges from the plan's expectations:
 > - On Longhorn 1.9.1, group-membership labels live on the Longhorn `Volume` CR in `longhorn-system`, NOT on the K8s `PersistentVolume`. Step 2's `grep -A20 'labels:'` against the PV will return empty because the PV's `metadata.labels` is `{}`.
 > - The actual label key is `recurring-job-group.longhorn.io/<group>` (e.g. `recurring-job-group.longhorn.io/default: enabled`) — different shape than the plan's example `recurringjob.longhorn.io/source: enabled`.
-> - Phase 7.4 Step 1b switches to **dedicated StorageClass `longhorn-pr`** with `recurringJobSelector: '[]'` (provisioned cluster-wide via Phase 8 Task 8.7). PR PVCs reference that StorageClass instead of being label-patched. Declarative, no race with the Longhorn recurring-job controller, no per-volume patching.
+> - Phase 7.4 Step 1b switches to **dedicated StorageClass `longhorn-pr`** with `recurringJobSelector: '[]'` (provisioned in the cluster-infra repo (see Phase 8)). PR PVCs reference that StorageClass instead of being label-patched. Declarative, no race with the Longhorn recurring-job controller, no per-volume patching.
 
 - [ ] **Step 4: Append outcome to `preflight.md`**
 
@@ -2250,7 +2250,7 @@ data:
 
 - [ ] **Step 1b: Create `deploy/k8s/overlays/pr/patches/pvc-exclude-recurring-backup.yaml`**
 
-Switches each per-PR PVC to the dedicated `longhorn-pr` StorageClass (provisioned cluster-wide once via Phase 8 Task 8.7). That StorageClass sets `parameters.recurringJobSelector: '[]'`, so Longhorn provisions per-PR Volumes outside the `default` recurring-job group from the very first reconcile — no per-volume labeling, no race with the recurring-job controller.
+Switches each per-PR PVC to the dedicated `longhorn-pr` StorageClass (provisioned in the cluster-infra repo (see Phase 8)). That StorageClass sets `parameters.recurringJobSelector: '[]'`, so Longhorn provisions per-PR Volumes outside the `default` recurring-job group from the very first reconcile — no per-volume labeling, no race with the recurring-job controller.
 
 > **Phase 0 Task 0.6 finding:** the original plan assumed per-PVC `recurringjob.longhorn.io/source: disabled` annotations would propagate through CSI to the Longhorn Volume CR. On Longhorn 1.9.1 the actual label key is `recurring-job-group.longhorn.io/<group>` (on the Volume CR, not the K8s PV), and propagation via PVC annotation isn't wired the way the plan-author assumed. A separate StorageClass with `recurringJobSelector: '[]'` is fully declarative and avoids both the propagation question and the post-create patching race.
 
@@ -2926,518 +2926,34 @@ Expected: every resource validates against its schema. (Traefik/Argo CRDs requir
 
 ---
 
-## Phase 8: Argo CD Argo CD manifests (staged in this repo)
+## Phase 8: Cluster-side gitops setup (NOT in atlas)
 
-These belong in `<infra-repo>` but are committed here at `deploy/argocd/` for version control. The runbook (Phase 10) tells the maintainer to copy them into the cluster infra repo and apply.
+The Argo CD install, repo-credentials Secret, Pi-hole/ghcr Secrets, cluster-scoped `longhorn-pr` StorageClass, plus the `Application(atlas-main)` + `ApplicationSet(atlas-pr)` + cleanup CronJob that wire Argo CD to atlas — **all live in the maintainer's separate cluster-infrastructure repo**, not atlas.
 
-**Files:**
-- `deploy/argocd/argocd.yml` — Argo install with patches
-- `deploy/argocd/argocd-atlas-main.yml`
-- `deploy/argocd/argocd-atlas-pr.yml`
-- `deploy/argocd/argocd-cleanup-cronjob.yml`
-- `deploy/argocd/argocd-pihole-secret.yml.example`
-- `deploy/argocd/argocd-ghcr-secret.yml.example`
-- `deploy/argocd/README.md`
+This split keeps atlas free of cluster-specific gitops manifests; cloners who don't run Argo CD on their own cluster can still consume Phases 1–7 (the env-aware Go code, the Kustomize overlays, the bootstrap container) without the gitops baggage.
 
-### Task 8.1: Argo CD install manifest
+**Files in the cluster-infra repo (NOT atlas):**
 
-- [ ] **Step 1: Render and commit `deploy/argocd/argocd.yml`**
+| File | Purpose |
+|---|---|
+| `argocd.yml` | Namespace + Traefik IngressRoute (`argocd.home`) + apply-order bootstrap comment |
+| `argocd-atlas.yml` | `Application(atlas-main)` + `ApplicationSet(atlas-pr)` + cleanup CronJob with RBAC — atlas-specific gitops wiring |
+| `argocd-secrets.yml.example` | Templates for the three Secrets: `argocd-repo-creds-chronicle20-atlas` (GitHub PAT), `pihole-credentials`, `ghcr-pat`. Real `argocd-secrets.yml` is gitignored. |
+| `storageclass-longhorn-pr.yml` | Cluster-scoped Longhorn StorageClass with `recurringJobSelector: '[]'`; per-PR PVCs reference this so they're excluded from `backup-daily` / `backup-weekly` recurring jobs |
 
-```bash
-mkdir -p deploy/argocd
-curl -fsSL https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.0/manifests/install.yaml \
-    > deploy/argocd/argocd-upstream.yml
-```
+**Bootstrap order** (run once on a fresh cluster, manually):
 
-Copy `argocd-upstream.yml` to `argocd.yml` and apply patches:
+1. `kubectl create namespace argocd`
+2. `kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.0/manifests/install.yaml`
+3. Patch `argocd-server` Deployment with `--insecure` so it doesn't redirect HTTP→HTTPS (Traefik terminates HTTP at the edge): `kubectl -n argocd patch deployment argocd-server --type json -p '[{"op":"add","path":"/spec/template/spec/containers/0/command/-","value":"--insecure"}]'`
+4. `kubectl apply -f argocd.yml` (this file's IngressRoute)
+5. `cp argocd-secrets.yml.example argocd-secrets.yml`, fill in real tokens, `kubectl apply -f argocd-secrets.yml`
+6. `kubectl apply -f storageclass-longhorn-pr.yml`
+7. `kubectl apply -f argocd-atlas.yml`
 
-1. Add `--insecure` to the `argocd-server` deployment's `command:` list (Traefik terminates HTTP at the edge).
-2. Append the Traefik `IngressRoute` for `argocd.home`:
+**Architecture detail** for each manifest is captured in `design.md` §6. Atlas's `Application(atlas-main)` syncs `deploy/k8s/overlays/main` from `Chronicle20/atlas` `main`; `ApplicationSet(atlas-pr)` watches `Chronicle20/atlas` PRs labeled `deploy-env` and emits one Application per PR with `ATLAS_ENV = sha256("pr-<N>")[:4]`; the hourly CronJob polls each PR's GitHub state and deletes Applications past their `cleanup-grace` window (default 24h).
 
-```yaml
----
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: argocd
-  namespace: argocd
-spec:
-  entryPoints:
-    - web
-  routes:
-    - match: Host(`argocd.home`)
-      kind: Rule
-      services:
-        - name: argocd-server
-          port: 80
-```
-
-- [ ] **Step 2: Delete the upstream copy after extracting**
-
-```bash
-rm deploy/argocd/argocd-upstream.yml
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add deploy/argocd/argocd.yml
-git commit -m "chore(deploy): stage Argo CD install manifest
-
-Renders Argo CD v2.13.0 with --insecure and a Traefik IngressRoute at
-argocd.home. Maintainer copies this to <infra-repo>/
-and applies via kubectl. See deploy/argocd/README.md.
-
-Refs task-063."
-```
-
-### Task 8.2: Application(atlas-main)
-
-- [ ] **Step 1: Create `deploy/argocd/argocd-atlas-main.yml`**
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: atlas-main
-  namespace: argocd
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/Chronicle20/atlas.git
-    targetRevision: main
-    path: deploy/k8s/overlays/main
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: atlas
-  syncPolicy:
-    automated:
-      selfHeal: true
-      prune: false  # enable after stability window (see runbook §9)
-    syncOptions:
-      - ServerSideApply=true
-      - CreateNamespace=false
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add deploy/argocd/argocd-atlas-main.yml
-git commit -m "chore(deploy): stage Application(atlas-main)
-
-Argo CD Application that auto-syncs deploy/k8s/overlays/main from
-main branch into the atlas namespace. prune disabled until the
-stability window completes; see runbook §9.
-
-Refs task-063."
-```
-
-### Task 8.3: ApplicationSet(atlas-pr)
-
-- [ ] **Step 1: Create `deploy/argocd/argocd-atlas-pr.yml`**
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: atlas-pr
-  namespace: argocd
-spec:
-  goTemplate: true
-  goTemplateOptions: ["missingkey=error"]
-  generators:
-    - pullRequest:
-        github:
-          owner: Chronicle20
-          repo: atlas
-          tokenRef:
-            secretName: argocd-repo-creds-chronicle20-atlas
-            key: password
-          # On-demand provisioning: only PRs carrying the 'deploy-env' label
-          # produce an Application. Reviewer adds the label when they want
-          # to exercise the change in a real cluster; for doc-only / WIP /
-          # draft PRs the env never spins up and no resources are consumed.
-          # To switch to always-on, remove the labels: filter and (optionally)
-          # add a 'skip-env' label check in template.metadata.annotations.
-          labels:
-            - deploy-env
-        requeueAfterSeconds: 30
-  template:
-    metadata:
-      name: 'atlas-pr-{{.number}}'
-      annotations:
-        atlas.env: '{{ printf "%.4s" (sha256sum (printf "pr-%d" .number)) }}'
-        atlas.pr-number: '{{.number}}'
-        atlas.cleanup-grace: '24h'
-        atlas.head-sha: '{{.head_sha}}'
-    spec:
-      project: default
-      source:
-        repoURL: https://github.com/Chronicle20/atlas.git
-        targetRevision: '{{.head_sha}}'
-        path: deploy/k8s/overlays/pr
-        kustomize:
-          commonAnnotations:
-            atlas.env: '{{ printf "%.4s" (sha256sum (printf "pr-%d" .number)) }}'
-          replacements:
-            - source:
-                value: '{{ printf "%.4s" (sha256sum (printf "pr-%d" .number)) }}'
-              targets:
-                - select:
-                    kind: ConfigMap
-                    name: atlas-env-tokens
-                  fieldPaths:
-                    - data.ATLAS_ENV
-            - source:
-                value: '{{.number}}'
-              targets:
-                - select:
-                    kind: Namespace
-                  fieldPaths:
-                    - metadata.name
-                # Plus IngressRoute, Job env, etc — covered by overlay's own replacements
-          commonLabels:
-            atlas.env: '{{ printf "%.4s" (sha256sum (printf "pr-%d" .number)) }}'
-            atlas.pr-number: '{{.number}}'
-          # images mapping rewritten per service-built list — see runbook §9.7
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: 'atlas-pr-{{.number}}'
-      syncPolicy:
-        automated:
-          selfHeal: true
-          prune: true
-        syncOptions:
-          - ServerSideApply=true
-          - CreateNamespace=true
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add deploy/argocd/argocd-atlas-pr.yml
-git commit -m "chore(deploy): stage ApplicationSet(atlas-pr)
-
-GitHub PR generator polls Chronicle20/atlas every 30s and emits one
-Application per open PR. ATLAS_ENV is computed deterministically as
-sha256(\"pr-<N>\")[:4] via Argo's goTemplate sha256sum helper.
-
-Refs task-063."
-```
-
-### Task 8.4: Cleanup CronJob
-
-- [ ] **Step 1: Create `deploy/argocd/argocd-cleanup-cronjob.yml`**
-
-```yaml
-apiVersion: batch/v1
-kind: CronJob
-metadata:
-  name: atlas-pr-cleanup
-  namespace: argocd
-spec:
-  schedule: "5 * * * *"  # hourly at :05
-  concurrencyPolicy: Forbid
-  jobTemplate:
-    spec:
-      backoffLimit: 0
-      template:
-        spec:
-          restartPolicy: Never
-          serviceAccountName: atlas-pr-cleanup
-          containers:
-            - name: scan
-              image: bitnami/kubectl:1.30
-              command: ["/bin/bash", "-c"]
-              args:
-                - |
-                  set -euo pipefail
-                  PAT=$(cat /etc/github/token)
-                  kubectl get applications -n argocd -l atlas.pr-number -o json \
-                    | jq -c '.items[]' | while read -r app; do
-                      name=$(echo "$app" | jq -r '.metadata.name')
-                      pr=$(echo "$app" | jq -r '.metadata.annotations["atlas.pr-number"]')
-                      grace=$(echo "$app" | jq -r '.metadata.annotations["atlas.cleanup-grace"] // "24h"')
-                      deadline=$(echo "$app" | jq -r '.metadata.annotations["atlas.cleanup-deadline"] // ""')
-
-                      state=$(curl -fsS -H "Authorization: Bearer $PAT" \
-                        "https://api.github.com/repos/Chronicle20/atlas/pulls/$pr" \
-                        | jq -r .state)
-
-                      if [ "$state" = "open" ]; then
-                          # PR re-opened or still open — clear deadline if set
-                          if [ -n "$deadline" ]; then
-                              kubectl annotate -n argocd application "$name" atlas.cleanup-deadline-
-                          fi
-                          continue
-                      fi
-
-                      if [ -z "$deadline" ]; then
-                          # First time we noticed the PR is closed — set deadline
-                          new=$(date -u -d "+${grace/h/ hours}" +%Y-%m-%dT%H:%M:%SZ)
-                          kubectl annotate -n argocd application "$name" "atlas.cleanup-deadline=$new" --overwrite
-                          continue
-                      fi
-
-                      now=$(date -u +%s)
-                      due=$(date -u -d "$deadline" +%s)
-                      if [ "$now" -ge "$due" ]; then
-                          kubectl delete application -n argocd "$name"
-                      fi
-                  done
-              volumeMounts:
-                - name: github-token
-                  mountPath: /etc/github
-                  readOnly: true
-          volumes:
-            - name: github-token
-              secret:
-                secretName: argocd-repo-creds-chronicle20-atlas
-                items:
-                  - key: password
-                    path: token
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: atlas-pr-cleanup
-  namespace: argocd
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  namespace: argocd
-  name: atlas-pr-cleanup
-rules:
-  - apiGroups: ["argoproj.io"]
-    resources: ["applications"]
-    verbs: ["get", "list", "delete", "patch"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: atlas-pr-cleanup
-  namespace: argocd
-roleBinding: {}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: atlas-pr-cleanup
-subjects:
-  - kind: ServiceAccount
-    name: atlas-pr-cleanup
-    namespace: argocd
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add deploy/argocd/argocd-cleanup-cronjob.yml
-git commit -m "chore(deploy): stage cleanup CronJob
-
-Hourly job that polls each atlas-pr-* Application's GitHub state. On
-PR close, sets cleanup-deadline; on grace expiry, deletes the
-Application (which fires PostDelete cleanup hook).
-
-Refs task-063."
-```
-
-### Task 8.5: Secret examples
-
-- [ ] **Step 1: Create `deploy/argocd/argocd-pihole-secret.yml.example`**
-
-```yaml
-# DO NOT COMMIT REAL VALUES.
-# Apply via sealed-secrets or a one-time `kubectl apply -f`.
-# This Secret is replicated into every atlas-pr-* namespace by the
-# overlay (see deploy/k8s/overlays/pr/kustomization.yaml).
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pihole-credentials
-  namespace: argocd
-type: Opaque
-stringData:
-  PIHOLE_API_BASE_1: "http://pihole-1.home/admin"
-  PIHOLE_TOKEN_1: "REPLACE"
-  PIHOLE_API_BASE_2: "http://pihole-2.home/admin"
-  PIHOLE_TOKEN_2: "REPLACE"
-```
-
-- [ ] **Step 2: Create `deploy/argocd/argocd-ghcr-secret.yml.example`**
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: ghcr-pat
-  namespace: argocd
-type: Opaque
-stringData:
-  GHCR_TOKEN: "REPLACE"
-```
-
-- [ ] **Step 3: Commit (no real secrets)**
-
-```bash
-git add deploy/argocd/argocd-pihole-secret.yml.example \
-        deploy/argocd/argocd-ghcr-secret.yml.example
-git commit -m "chore(deploy): stage Pi-hole and ghcr secret examples
-
-Refs task-063."
-```
-
-### Task 8.6: README for cluster delivery
-
-- [ ] **Step 1: Create `deploy/argocd/README.md`**
-
-```markdown
-# Argo CD cluster Argo CD artifacts
-
-Files in this directory are version-controlled here but **belong in
-`<infra-repo>`** under the cluster infra repo. The Atlas repo carries them so the
-manifests that drive Atlas live alongside the Atlas code that drives
-them.
-
-## Initial setup (one-time)
-
-1. Install Argo CD:
-   ```sh
-   cp argocd.yml <infra-repo>/argocd.yml
-   kubectl apply -f <infra-repo>/argocd.yml
-   ```
-
-2. Provision repo credentials. Generate a fine-scoped GitHub PAT (read
-   access to Chronicle20/atlas only). Apply:
-   ```sh
-   kubectl create secret generic argocd-repo-creds-chronicle20-atlas \
-     --namespace argocd \
-     --from-literal=type=git \
-     --from-literal=url=https://github.com/Chronicle20/atlas.git \
-     --from-literal=username=Chronicle20 \
-     --from-literal=password=<PAT>
-   ```
-
-3. Apply Pi-hole and ghcr secrets (replace placeholders first):
-   ```sh
-   cp argocd-pihole-secret.yml.example <infra-repo>/argocd-pihole-secret.yml
-   cp argocd-ghcr-secret.yml.example <infra-repo>/argocd-ghcr-secret.yml
-   $EDITOR <infra-repo>/argocd-pihole-secret.yml
-   $EDITOR <infra-repo>/argocd-ghcr-secret.yml
-   kubectl apply -f <infra-repo>/argocd-pihole-secret.yml
-   kubectl apply -f <infra-repo>/argocd-ghcr-secret.yml
-   ```
-
-4. Apply the Application and ApplicationSet:
-   ```sh
-   cp argocd-atlas-main.yml <infra-repo>/argocd-atlas-main.yml
-   cp argocd-atlas-pr.yml <infra-repo>/argocd-atlas-pr.yml
-   kubectl apply -f <infra-repo>/argocd-atlas-main.yml
-   kubectl apply -f <infra-repo>/argocd-atlas-pr.yml
-   ```
-
-5. Apply the cleanup CronJob:
-   ```sh
-   cp argocd-cleanup-cronjob.yml <infra-repo>/argocd-cleanup-cronjob.yml
-   kubectl apply -f <infra-repo>/argocd-cleanup-cronjob.yml
-   ```
-
-6. Wait for Application(atlas-main) to report Synced/Healthy with zero
-   diffs. If non-zero, see runbook §9.
-
-## Migration cutover
-
-Application(atlas-main) ships with `prune: false` so the initial sync
-adopts existing resources without risk of deletion. After ~1 week of
-clean syncs, edit `<infra-repo>/argocd-atlas-main.yml` to set
-`prune: true` and reapply.
-
-## Updating Argo CD
-
-Re-render the upstream manifest, re-apply the patches, commit to the
-Atlas repo (this directory) and to `<infra-repo>`:
-
-```sh
-curl -fsSL https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.x/manifests/install.yaml \
-    > argocd.yml
-$EDITOR argocd.yml  # re-apply --insecure and IngressRoute patches
-```
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add deploy/argocd/README.md
-git commit -m "docs(deploy): Argo CD delivery README
-
-Refs task-063."
-```
-
-### Task 8.7: Cluster-scoped `longhorn-pr` StorageClass
-
-The PR overlay (Phase 7.4 Step 1b) sets `spec.storageClassName: longhorn-pr` on each per-PR PVC. Because StorageClasses are cluster-scoped (one resource per name across the cluster), the StorageClass cannot live inside a per-PR namespace — it ships with the cluster infrastructure manifests and is provisioned once.
-
-**Files:**
-- Create: `deploy/argocd/storageclass-longhorn-pr.yaml`
-- Modify: `deploy/argocd/README.md` (add a step in "Initial setup" to apply it)
-
-- [ ] **Step 1: Create the StorageClass**
-
-```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: longhorn-pr
-  # Same Longhorn provisioner as the cluster default; only the
-  # recurring-job parameter differs.
-provisioner: driver.longhorn.io
-allowVolumeExpansion: true
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-parameters:
-  numberOfReplicas: "3"
-  staleReplicaTimeout: "30"
-  fromBackup: ""
-  fsType: "ext4"
-  # Empty selector → Volumes provisioned by this class join no recurring-job
-  # group, so backup-daily/backup-weekly skip them entirely. PR envs are
-  # ephemeral by design; their data has no place in the NFS backup cadence.
-  recurringJobSelector: '[]'
-```
-
-> The default `longhorn` StorageClass installed on the cluster already targets `provisioner: driver.longhorn.io` with `numberOfReplicas: "3"`. Verify before applying:
->
-> ```bash
-> kubectl get storageclass longhorn -o yaml | yq '.parameters'
-> ```
->
-> Match `numberOfReplicas`, `staleReplicaTimeout`, `fromBackup`, and `fsType` to whatever the existing `longhorn` class advertises so per-PR Volumes have identical replication and FS shape — only `recurringJobSelector` differs.
-
-- [ ] **Step 2: Add an "Apply longhorn-pr StorageClass" step to `deploy/argocd/README.md` "Initial setup" before the Application/ApplicationSet step**
-
-```markdown
-3a. Apply the per-PR StorageClass:
-   ```sh
-   cp storageclass-longhorn-pr.yaml <infra-repo>/storageclass-longhorn-pr.yaml
-   kubectl apply -f <infra-repo>/storageclass-longhorn-pr.yaml
-   kubectl get storageclass | grep longhorn-pr   # confirm
-   ```
-```
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add deploy/argocd/storageclass-longhorn-pr.yaml deploy/argocd/README.md
-git commit -m "feat(deploy): cluster-scoped longhorn-pr StorageClass for PR PVCs
-
-PR overlay PVCs reference this StorageClass; its empty recurringJobSelector
-keeps per-PR Volumes outside the default backup-daily/backup-weekly
-cadence. Provisioned once on the cluster, used by every PR overlay reconcile.
-
-Refs task-063, Phase 0 Task 0.6."
-```
-
----
+Phase 8 is independent of Phases 1–7 in atlas (no atlas commits) and can be done at any time. Phase 11 (cutover) requires Phase 8 to be live before the canary PR test.
 
 ## Phase 9: GitHub Actions
 
@@ -3813,7 +3329,7 @@ push to perturb the head). Long-term mitigation: bump suffix to 6 hex.
        /tmp/built.yaml /tmp/live.yaml
    ```
    Expected: only Kustomize-injected labels are net new.
-2. Apply Argo CD per `deploy/argocd/README.md`.
+2. Apply Argo CD on the cluster per Phase 8's bootstrap order (Argo CD install → IngressRoute → secrets → StorageClass → atlas-specific Application/ApplicationSet/CronJob).
 3. Apply `Application(atlas-main)` with `prune: false`. Confirm
    `Synced/Healthy` with zero changes.
 4. Wait 7 days.
@@ -4036,10 +3552,10 @@ This reclaims the legacy PVCs (`atlas-data-pvc`, `atlas-wz-input-pvc`, `atlas-as
 - [ ] **Step 1: Apply `Application(atlas-main)`**
 
 ```bash
-kubectl apply -f <infra-repo>/argocd-atlas-main.yml
+kubectl apply -f <infra-repo>/argocd-atlas.yml
 ```
 
-Argo creates the `atlas-main` namespace, applies the rendered overlay, and triggers PostSync hooks. Bootstrap Job re-uploads the canonical WZ zip and seeds every domain.
+Argo creates the `atlas-main` namespace via the `Application(atlas-main)` defined in that file, applies the rendered overlay, and triggers PostSync hooks. Bootstrap Job re-uploads the canonical WZ zip and seeds every domain. (`argocd-atlas.yml` also defines the `ApplicationSet(atlas-pr)` and the cleanup CronJob — they take effect at the same kubectl apply.)
 
 - [ ] **Step 2: Watch sync to green**
 
@@ -4090,7 +3606,7 @@ Within 30s the `atlas-pr-<N>` Application should appear. Hooks fire; `<N>.atlas.
 
 ### Task 11.10: Stability window and prune cutover
 
-- After 7 days of green syncs against `Application(atlas-main)`, edit `argocd-atlas-main.yml` to set `prune: true`. Reapply.
+- After 7 days of green syncs against `Application(atlas-main)`, edit the Application section of `<infra-repo>/argocd-atlas.yml` to set `prune: true`. Reapply.
 
 ---
 

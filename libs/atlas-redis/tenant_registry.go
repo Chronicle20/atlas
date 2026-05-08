@@ -178,3 +178,46 @@ func (r *TenantRegistry[K, V]) Client() *goredis.Client {
 func (r *TenantRegistry[K, V]) Namespace() string {
 	return r.namespace
 }
+
+// Clear deletes every entry for tenant t in this registry's namespace.
+// Implementation uses SCAN with COUNT=100 to enumerate keys matching
+// tenantScanPattern(r.namespace, t), then pipelines DEL in batches of 100.
+// Returns the number of keys deleted (0 if the namespace was already empty
+// for this tenant). On a partial failure mid-scan, returns
+// (deleted_so_far, err) — the partial deletion is not rolled back; Redis
+// converges on the next call.
+func (r *TenantRegistry[K, V]) Clear(ctx context.Context, t tenant.Model) (int, error) {
+	pattern := tenantScanPattern(r.namespace, t)
+	iter := r.client.Scan(ctx, 0, pattern, 100).Iterator()
+
+	deleted := 0
+	pipe := r.client.Pipeline()
+	pipeSize := 0
+	var firstErr error
+
+	flushPipe := func() {
+		if pipeSize == 0 {
+			return
+		}
+		if _, err := pipe.Exec(ctx); err != nil && firstErr == nil {
+			firstErr = err
+		}
+		pipe = r.client.Pipeline()
+		pipeSize = 0
+	}
+
+	for iter.Next(ctx) {
+		pipe.Del(ctx, iter.Val())
+		deleted++
+		pipeSize++
+		if pipeSize >= 100 {
+			flushPipe()
+		}
+	}
+	flushPipe()
+
+	if err := iter.Err(); err != nil && firstErr == nil {
+		firstErr = err
+	}
+	return deleted, firstErr
+}

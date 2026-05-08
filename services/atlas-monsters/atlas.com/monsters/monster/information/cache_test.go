@@ -476,3 +476,85 @@ func TestGetById_NegativeTTLZero_DisablesNegativeCache(t *testing.T) {
 		t.Fatalf("upstream calls = %d, want 3 (NegativeTTL=0 must disable negative caching)", got)
 	}
 }
+
+func TestFlushTenant_ClearsBothNamespaces(t *testing.T) {
+	client, _ := newRedis(t)
+	resetDataCache(t)
+	InitDataCache(client)
+
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant.Create: %v", err)
+	}
+	ctx := context.Background()
+
+	for _, id := range []uint32{1, 2, 3} {
+		if err := dataCachePtr.posReg.Put(ctx, tm, id, RestModel{}); err != nil {
+			t.Fatalf("posReg.Put: %v", err)
+		}
+	}
+	for _, id := range []uint32{99, 100} {
+		if err := dataCachePtr.negReg.Put(ctx, tm, id, struct{}{}); err != nil {
+			t.Fatalf("negReg.Put: %v", err)
+		}
+	}
+
+	deleted, err := FlushTenant(ctx, tm)
+	if err != nil {
+		t.Fatalf("FlushTenant: %v", err)
+	}
+	if deleted != 5 {
+		t.Fatalf("deleted = %d, want 5", deleted)
+	}
+}
+
+func TestFlushTenant_TenantIsolation(t *testing.T) {
+	client, _ := newRedis(t)
+	resetDataCache(t)
+	InitDataCache(client)
+
+	tA, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	tB, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	ctx := context.Background()
+
+	_ = dataCachePtr.posReg.Put(ctx, tA, uint32(1), RestModel{})
+	_ = dataCachePtr.posReg.Put(ctx, tB, uint32(1), RestModel{})
+
+	if _, err := FlushTenant(ctx, tA); err != nil {
+		t.Fatalf("FlushTenant: %v", err)
+	}
+	if ok, _ := dataCachePtr.posReg.Exists(ctx, tA, uint32(1)); ok {
+		t.Fatal("tA key still exists")
+	}
+	if ok, _ := dataCachePtr.posReg.Exists(ctx, tB, uint32(1)); !ok {
+		t.Fatal("tB key should still exist")
+	}
+}
+
+func TestFlushTenant_KillSwitchNoOp(t *testing.T) {
+	t.Setenv("MONSTER_DATA_CACHE_ENABLED", "false")
+	client, _ := newRedis(t)
+	resetDataCache(t)
+	InitDataCache(client)
+
+	tm, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	deleted, err := FlushTenant(context.Background(), tm)
+	if err != nil {
+		t.Fatalf("FlushTenant: %v", err)
+	}
+	if deleted != 0 {
+		t.Fatalf("deleted = %d, want 0", deleted)
+	}
+}
+
+func TestFlushTenant_NilCacheNoOp(t *testing.T) {
+	resetDataCache(t)
+	tm, _ := tenant.Create(uuid.New(), "GMS", 83, 1)
+	deleted, err := FlushTenant(context.Background(), tm)
+	if err != nil {
+		t.Fatalf("FlushTenant: %v", err)
+	}
+	if deleted != 0 {
+		t.Fatalf("deleted = %d, want 0", deleted)
+	}
+}

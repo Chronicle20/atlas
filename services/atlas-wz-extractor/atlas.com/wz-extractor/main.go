@@ -4,13 +4,18 @@ import (
 	"atlas-wz-extractor/characterimage"
 	"atlas-wz-extractor/characterrender"
 	"atlas-wz-extractor/extraction"
+	"atlas-wz-extractor/extraction/job"
+	"atlas-wz-extractor/extraction/lock"
+	kproducer "atlas-wz-extractor/kafka/producer"
 	"atlas-wz-extractor/logger"
-	"github.com/Chronicle20/atlas/libs/atlas-service"
-	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
 	"os"
 	"time"
 
+	service "github.com/Chronicle20/atlas/libs/atlas-service"
+	tracing "github.com/Chronicle20/atlas/libs/atlas-tracing"
+
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
+	goredis "github.com/redis/go-redis/v9"
 )
 
 const serviceName = "atlas-wz-extractor"
@@ -53,8 +58,23 @@ func main() {
 		l.WithError(err).Fatal("Unable to initialize tracer.")
 	}
 
+	// Redis client for job store and tenant lock.
+	redisAddr := os.Getenv("REDIS_URL")
+	if redisAddr == "" {
+		redisAddr = "localhost:6379"
+	}
+	rc := goredis.NewClient(&goredis.Options{
+		Addr:     redisAddr,
+		Password: os.Getenv("REDIS_PASSWORD"),
+	})
+
+	jobStore := job.NewStore(rc)
+	tenantLock := lock.NewTenantLock(rc, 30*time.Minute)
+
 	p := extraction.NewProcessor(inputDir, outputXmlDir, outputImgDir)
 	cren := characterimage.NewCompositor()
+	prod := kproducer.ProviderImpl(l)(tdm.Context())
+	dirs := extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir, OutputImgDir: outputImgDir}
 
 	server.New(l).
 		WithContext(tdm.Context()).
@@ -63,7 +83,7 @@ func main() {
 		SetPort(os.Getenv("REST_PORT")).
 		SetReadTimeout(60 * time.Minute).
 		SetWriteTimeout(60 * time.Minute).
-		AddRouteInitializer(extraction.InitResource(p, tdm.WaitGroup(), extraction.Dirs{InputDir: inputDir, OutputXmlDir: outputXmlDir})(GetServer())).
+		AddRouteInitializer(extraction.InitResource(p, jobStore, tenantLock, prod, tdm.WaitGroup(), dirs)(GetServer())).
 		AddRouteInitializer(characterrender.InitResource(outputImgDir, cren)(GetServer())).
 		Run()
 

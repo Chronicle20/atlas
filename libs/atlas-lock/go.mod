@@ -3,7 +3,7 @@ module github.com/Chronicle20/atlas/libs/atlas-lock
 go 1.25.5
 
 require (
-	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/bsm/redislock v0.9.4
 	github.com/prometheus/client_golang v1.23.2
 	github.com/redis/go-redis/v9 v9.19.0

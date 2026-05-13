@@ -116,6 +116,11 @@
         "handler": "CharacterViewAllSelectedPicHandle"
       },
       {
+        "opCode": "0x22",
+        "validator": "NoOpValidator",
+        "handler": "NoOpHandler"
+      },
+      {
         "opCode": "0x23",
         "validator": "NoOpValidator",
         "handler": "ClientStartHandle"

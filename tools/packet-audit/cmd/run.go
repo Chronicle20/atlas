@@ -18,16 +18,6 @@ import (
 )
 
 func runPipeline(opts Options, stderr io.Writer) int {
-	cb, err := csvpkg.Load(opts.CSVClientbound, csvpkg.DirClientbound)
-	if err != nil {
-		fmt.Fprintln(stderr, "csv clientbound:", err)
-		return 3
-	}
-	sb, err := csvpkg.Load(opts.CSVServerbound, csvpkg.DirServerbound)
-	if err != nil {
-		fmt.Fprintln(stderr, "csv serverbound:", err)
-		return 3
-	}
 	template, err := tpl.Load(opts.Template)
 	if err != nil {
 		fmt.Fprintln(stderr, "template:", err)
@@ -54,15 +44,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	worstVerdict := diff.VerdictMatch
 	var summary []report.Packet
 
-	process := func(direction csvpkg.Direction, name string, fnameHint string) {
-		fname := fnameHint
-		if fname == "" {
-			f, ok := lookupFName(name, direction, cb, sb, template)
-			if !ok {
-				return
-			}
-			fname = f
-		}
+	process := func(direction csvpkg.Direction, name string, fname string) {
 		fields, err := src.Resolve(context.Background(), fname)
 		if err != nil {
 			if errors.Is(err, idasrc.ErrMCPUnavailable) {
@@ -106,28 +88,11 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		}
 	}
 
-	// Iterate writers from template (clientbound).
+	// Only audit packets that have an explicit IDA export entry with a known FName→writer
+	// mapping via candidatesFromFName. This prevents opcode-collision false positives that
+	// arise when the template maps multiple writer names to the same opcode and the IDA
+	// export only covers one of them.
 	seen := map[string]bool{}
-	for _, name := range template.Writers() {
-		if seen[name] {
-			continue
-		}
-		seen[name] = true
-		process(csvpkg.DirClientbound, name, "")
-	}
-	// Iterate handlers from template (serverbound).
-	for _, name := range template.Handlers() {
-		if seen[name] {
-			continue
-		}
-		seen[name] = true
-		process(csvpkg.DirServerbound, name, "")
-	}
-
-	// Phase A fallback: for each function the IDA export knows about,
-	// derive the atlas writer/handler name by mapping well-known IDA function names
-	// to atlas-packet file types. This ensures the spike's six packets are audited
-	// even if the template's opcode collisions hide them.
 	for _, fname := range idaExportFunctions(opts.IDASource) {
 		for _, candidate := range candidatesFromFName(fname) {
 			if seen[candidate.name] {
@@ -203,11 +168,12 @@ func openIDASource(s string) (idasrc.Source, error) {
 	return idasrc.NewExportSource(s)
 }
 
-func methodName(d csvpkg.Direction) string {
-	if d == csvpkg.DirClientbound {
-		return "Encode"
-	}
-	return "Decode"
+func methodName(_ csvpkg.Direction) string {
+	// Both clientbound and serverbound atlas types expose an Encode method as the
+	// canonical wire serializer. Analyze Encode for both directions — the Decode
+	// dispatcher methods often delegate to helper sub-methods that AnalyzeFile
+	// cannot descend into from the top-level Decode body.
+	return "Encode"
 }
 
 // lookupFName maps an atlas writer/handler name back to the IDA FName via the CSV.

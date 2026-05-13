@@ -276,13 +276,15 @@ func isWriterReaderReceiver(name string) bool {
 }
 
 // guardFromIf extracts and compiles the condition expression of an if statement.
-// If parsing fails, returns a GuardExpr with text "<unparsed:...>" that always evaluates false.
+// If parsing fails (e.g. field-presence checks like `m.ipAddr != ""`), returns a
+// GuardExpr that always evaluates true: we assume the common/full-payload code path
+// for audit purposes.
 func guardFromIf(n *ast.IfStmt, fset *token.FileSet) *GuardExpr {
 	var buf strings.Builder
 	printer.Fprint(&buf, fset, n.Cond)
 	g, err := ParseGuard(buf.String())
 	if err != nil {
-		return &GuardExpr{eval: func(GuardContext) bool { return false }, text: "<unparsed:" + buf.String() + ">"}
+		return &GuardExpr{eval: func(GuardContext) bool { return true }, text: "<unparsed:" + buf.String() + ">"}
 	}
 	return g
 }
@@ -333,6 +335,8 @@ func primFromName(name string) (Primitive, bool) {
 	case "WriteAsciiString", "ReadAsciiString":
 		return EncodeStr, true
 	case "WriteBytes", "ReadBytes":
+		return EncodeBuf, true
+	case "WriteByteArray", "ReadByteArray":
 		return EncodeBuf, true
 	}
 	return 0, false

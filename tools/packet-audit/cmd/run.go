@@ -151,6 +151,11 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "ServerListRecommendations", dir: csvpkg.DirClientbound}}
 	case "CLogin::SendCheckUserLimitPacket":
 		return []candidate{{name: "ServerStatusRequest", dir: csvpkg.DirServerbound}}
+	case "CLogin::OnCheckPinCodeResult":
+		return []candidate{
+			{name: "PinOperation", dir: csvpkg.DirClientbound},
+			{name: "PinUpdate", dir: csvpkg.DirClientbound},
+		}
 	}
 	return nil
 }

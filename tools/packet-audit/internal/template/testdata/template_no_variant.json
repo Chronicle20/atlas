@@ -1,0 +1,9 @@
+{
+  "region": "GMS",
+  "majorVersion": 83,
+  "minorVersion": 1,
+  "socket": {
+    "handlers": [{"opCode": "0x01", "handler": "LoginHandle"}],
+    "writers": [{"opCode": "0x00", "writer": "AuthSuccess"}]
+  }
+}

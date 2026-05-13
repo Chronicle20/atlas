@@ -1,0 +1,16 @@
+{
+  "region": "GMS",
+  "majorVersion": 95,
+  "minorVersion": 1,
+  "clientVariant": "modified",
+  "socket": {
+    "handlers": [
+      {"opCode": "0x01", "handler": "LoginHandle"},
+      {"opCode": "0x13", "handler": "CharacterSelectedHandle"}
+    ],
+    "writers": [
+      {"opCode": "0x00", "writer": "AuthSuccess"},
+      {"opCode": "0x0A", "writer": "ServerListEntry"}
+    ]
+  }
+}

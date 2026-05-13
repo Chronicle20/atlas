@@ -89,6 +89,17 @@ early-return blocks as exclusive, so the audit over-counts. Resolution
 would require an analyzer extension that flags `return` statements inside
 guarded blocks; deferred to a follow-up.
 
+## Cosmetic / cross-version concerns (not v95-specific bugs)
+
+- `ServerIP.codes.SERVER_UNDER_INSPECTION: 7` (template_gms_95_1.json) — in
+  v95 IDA, value 7 in `OnSelectCharacterResult`'s v3 switch triggers
+  `GotoTitle + Error(17)` which is the "already logged in" path, not
+  server-inspection. The wire value 7 still produces the right behavior
+  (kick to title), but the constant name is misleading. Renaming would
+  require updating the Go constant in `services/atlas-login/atlas.com/login/socket/writer/server_ip.go`
+  AND all version templates (v83/v87/v92/v95/v111/JMS) that share this
+  key. Left as-is for now to avoid cross-version breakage.
+
 ## Workflow notes
 
 Refresh procedure:

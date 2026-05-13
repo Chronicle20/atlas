@@ -1,0 +1,38 @@
+{
+  "WriterName": "ServerListRecommendations",
+  "IDAName": "CLogin::OnRecommendWorldMessage",
+  "Address": "0x5d7280",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/server_list_recommendations.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "nCount",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 0,
+      "AtlasKind": 2,
+      "IDAOp": 2,
+      "IDAComment": "nWorldID (loop body)",
+      "Verdict": 3,
+      "Note": "loop body — see follow-up scan"
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 4,
+      "IDAComment": "sMessage (loop body)",
+      "Verdict": 2,
+      "Note": "atlas: short — missing trailing field"
+    }
+  ],
+  "Verdict": 3
+}

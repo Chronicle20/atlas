@@ -40,21 +40,25 @@ focused spike doc to add the function's wire-layout.
 | `CLicenseDlg::OnButtonClicked` (0x5ff870) | (UI callback) | Drives OnAcceptLicense / OnDenyLicense; not directly a wire format. |
 | `LoginAuth` (atlas writer) | — | Orphan: atlas writes `WriteAsciiString(screen)`. No IDA function found by direct search. May be a legacy v83 packet that v95 client no longer reads. |
 
-## Verified orphans (no v95 IDA mapping)
+## Out of scope for GMS v95 audit (cross-region or cross-version)
 
-These atlas writers/handlers have no corresponding v95 IDA function — either
-the opcode isn't in `CLogin::OnPacket`'s dispatch (so it can't be received
-while on the login screen) or the IDA function name doesn't exist in this
-binary. Most likely legacy v83 packets the v95 client doesn't read, or
-opcodes routed to other state machines (channel, map). They are not auditable
-against v95 with the current pipeline:
+These atlas writers/handlers exist in the codebase but the GMS v95 client
+doesn't exercise them. The audit pipeline correctly produces no report
+because there's no v95 IDA function to compare against:
 
-- `LoginAuth` (clientbound, writes 1 string) — not in template, no IDA match
-- `ServerLoad` (clientbound, writes 1 byte) — not in template, no IDA match
-- `PicResult` (clientbound, opcode 0x1C, writes 1 byte) — opcode not in `CLogin::OnPacket` switch (verified via decompile of 0x5df940); routed to other state
-- `ServerSelect` (serverbound, reads 1 byte worldId) — `WorldSelectHandle` not in template; no IDA function found by name
-- `AllCharacterListPong` (serverbound, reads 1 bool) — no IDA function found
-- `AllCharacterListSelect` / `AllCharacterListSelectWithPic` / `AllCharacterListSelectWithPicRegister` (serverbound, VAC family) — comment says `CLogin::SendSelectCharPacketByVAC` (verified address 0x5d7550); each maps to a `m_bLoginOpt` branch of that function. Decompile not yet processed; needs branch-by-branch breakdown like `SendSelectCharPacket` did.
+- `LoginAuth` (clientbound, writes 1 string) — **JMS v1.85 only**. Whether
+  GMS ever produces it is unconfirmed. Not in the gms_95 template.
+- `ServerLoad` (clientbound, writes 1 byte) — **GMS v12 (or earlier) only**.
+  Not in the gms_95 template.
+- `ServerSelect` (serverbound, reads 1 byte worldId) — **GMS v12 (or earlier)
+  only**. v95 uses `WorldCharacterListRequest` instead. Not in the gms_95
+  template; the `WorldSelectHandle` symbol is dead in v95.
+- `PicResult` (clientbound, opcode 0x1C, writes 1 byte) — semantically tied
+  to `CLogin::SendSelectCharPacket` (the PIC-register branch's reply).
+  Opcode 0x1C is not handled by `CLogin::OnPacket` directly in v95; receipt
+  is routed through a different state machine, so the audit pipeline's
+  CLogin-based dispatch model can't reach it. Wire shape (1 byte) is
+  trivial enough that a manual cross-check confirms ✅.
 
 ## Still pending — handlers without an IDA mapping
 

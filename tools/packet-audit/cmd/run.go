@@ -28,6 +28,11 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "ida-source:", err)
 		return 3
 	}
+	reg, err := atlaspacket.NewTypeRegistry(opts.AtlasPacket)
+	if err != nil {
+		fmt.Fprintln(stderr, "type-registry:", err)
+		return 3
+	}
 
 	ctx := atlaspacket.GuardContext{
 		Region:       template.Region,
@@ -60,12 +65,12 @@ func runPipeline(opts Options, stderr io.Writer) int {
 		if !found {
 			return
 		}
-		calls, err := atlaspacket.AnalyzeFile(atlasPath, name, methodName(direction))
+		calls, err := atlaspacket.AnalyzeFileWithRegistry(atlasPath, name, methodName(direction), reg)
 		if err != nil {
 			fmt.Fprintln(stderr, "analyze", name+":", err)
 			return
 		}
-		flat := diff.Flatten(calls, ctx)
+		flat := diff.FlattenWithRegistry(calls, ctx, reg)
 		rows := diff.Diff(flat, fields)
 		v := worstRow(rows)
 		pkt := report.Packet{

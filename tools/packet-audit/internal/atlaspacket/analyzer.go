@@ -47,7 +47,15 @@ type Call struct {
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered
 // sequence of w.Write*/r.Read* calls inside the named method's outer return closure.
+// Optional registry enables sub-struct type resolution; pass nil to keep the
+// legacy variable-name behavior (used by existing tests).
 func AnalyzeFile(path, typeName, methodName string) ([]Call, error) {
+	return AnalyzeFileWithRegistry(path, typeName, methodName, nil)
+}
+
+// AnalyzeFileWithRegistry is like AnalyzeFile but accepts a TypeRegistry for
+// sub-struct type resolution. Pass nil for the legacy no-resolution path.
+func AnalyzeFileWithRegistry(path, typeName, methodName string, reg *TypeRegistry) ([]Call, error) {
 	src, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -85,7 +93,7 @@ func AnalyzeFile(path, typeName, methodName string) ([]Call, error) {
 	if inner == nil {
 		inner = body
 	}
-	return collectCalls(inner, fset), nil
+	return collectCallsWithCtx(inner, fset, reg, typeName), nil
 }
 
 // findReturnClosure finds the first return func literal's body in a block statement.
@@ -109,147 +117,295 @@ func findReturnClosure(b *ast.BlockStmt) *ast.BlockStmt {
 	return out
 }
 
-// collectCalls walks a block and collects all w.Write*/r.Read* primitive calls in order,
-// tagging each with a Guard derived from enclosing if-statement conditions.
-// It also emits KindRecurse markers for .Encode/.Decode sub-struct calls and
-// KindRepeat markers for for/range loops.
-func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
-	var out []Call
-	var stack []*GuardExpr
-	var walk func(node ast.Node)
-	walk = func(node ast.Node) {
-		switch n := node.(type) {
-		case *ast.IfStmt:
-			g := guardFromIf(n, fset)
-			stack = append(stack, g)
-			walk(n.Body)
-			stack = stack[:len(stack)-1]
-			if n.Else != nil {
-				ng := negate(g)
-				stack = append(stack, ng)
-				walk(n.Else)
-				stack = stack[:len(stack)-1]
-			}
-		case *ast.BlockStmt:
-			for _, s := range n.List {
-				walk(s)
-			}
-		case *ast.ExprStmt:
-			walk(n.X)
-		case *ast.RangeStmt:
-			sub := collectGuardedSub(n.Body, fset)
-			out = append(out, Call{
-				Kind:  KindRepeat,
-				Body:  sub,
-				Line:  fset.Position(n.Pos()).Line,
-				Guard: conjoin(stack),
-			})
-		case *ast.ForStmt:
-			sub := collectGuardedSub(n.Body, fset)
-			out = append(out, Call{
-				Kind:  KindRepeat,
-				Body:  sub,
-				Line:  fset.Position(n.Pos()).Line,
-				Guard: conjoin(stack),
-			})
-		case *ast.CallExpr:
-			sel, ok := n.Fun.(*ast.SelectorExpr)
-			if !ok {
-				// Handle chained calls like m.sub.Encode(l, ctx)(opts):
-				// the outer CallExpr has Fun = inner CallExpr; recurse into Fun.
-				if inner, ok := n.Fun.(*ast.CallExpr); ok {
-					walk(inner)
-				}
-				return
-			}
-			// Recurse marker: x.Encode(l, ctx) or x.Decode(l, ctx)
-			// Exclude common false-positives (writer/reader/logger receivers).
-			if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
-				recv := receiverTypeHint(sel.X)
-				if !isWriterReaderReceiver(recv) {
-					out = append(out, Call{
-						Kind:        KindRecurse,
-						RecurseType: recv,
-						Line:        fset.Position(n.Pos()).Line,
-						Guard:       conjoin(stack),
-					})
-					return
-				}
-			}
-			// Wrapped recurse marker: WriteByteArray(c.Encode(l, ctx)(opts)) — atlas's
-			// CharacterList encoder pre-encodes a sub-struct to []byte then writes the
-			// buffer verbatim. The wire shape is identical to inlining c.Encode's calls,
-			// so model this as KindRecurse rather than KindWrite EncodeBuf.
-			if p, ok := primFromName(sel.Sel.Name); ok {
-				if recv, ok := wrappedRecurseType(sel.Sel.Name, n.Args); ok {
-					out = append(out, Call{
-						Kind:        KindRecurse,
-						RecurseType: recv,
-						Line:        fset.Position(n.Pos()).Line,
-						Guard:       conjoin(stack),
-					})
-					return
-				}
-				out = append(out, Call{
-					Kind:  KindWrite,
-					Op:    p,
-					Line:  fset.Position(n.Pos()).Line,
-					Guard: conjoin(stack),
-				})
-			}
-		default:
-			ast.Inspect(node, func(c ast.Node) bool {
-				if c == node {
-					return true
-				}
-				if _, ok := c.(*ast.IfStmt); ok {
-					walk(c)
-					return false
-				}
-				if _, ok := c.(*ast.RangeStmt); ok {
-					walk(c)
-					return false
-				}
-				if _, ok := c.(*ast.ForStmt); ok {
-					walk(c)
-					return false
-				}
-				if ce, ok := c.(*ast.CallExpr); ok {
-					if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
-						// Recurse marker check
-						if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
-							recv := receiverTypeHint(sel.X)
-							if !isWriterReaderReceiver(recv) {
-								out = append(out, Call{
-									Kind:        KindRecurse,
-									RecurseType: recv,
-									Line:        fset.Position(ce.Pos()).Line,
-									Guard:       conjoin(stack),
-								})
-								return false
-							}
-						}
-						if p, ok := primFromName(sel.Sel.Name); ok {
-							out = append(out, Call{
-								Kind:  KindWrite,
-								Op:    p,
-								Line:  fset.Position(ce.Pos()).Line,
-								Guard: conjoin(stack),
-							})
-						}
-					}
-				}
-				return true
-			})
+// callCtx holds the context needed for registry-aware call collection.
+type callCtx struct {
+	reg       *TypeRegistry
+	enclosing string
+	// rangeVars maps a range-loop variable name to the field name it iterates over.
+	// E.g. for "for _, c := range m.characters" → rangeVars["c"] = "characters".
+	rangeVars map[string]string
+	// fieldVars maps a local variable name to a resolved Go type name.
+	// Used when a field is bound to a variable before calling .Write on it.
+	fieldVars map[string]string
+	out       *[]Call
+	stack     *[]*GuardExpr
+	fset      *token.FileSet
+}
+
+// resolveRecurse attempts to resolve a variable-name hint to an actual Go type
+// name using range-var bindings and field-type lookups on the enclosing struct.
+// Falls back to returning the hint unchanged.
+func resolveRecurse(hint string, cc *callCtx) string {
+	if cc == nil || cc.reg == nil || cc.enclosing == "" {
+		return hint
+	}
+	// If the registry already knows this name as a type, use it directly.
+	if cc.reg.HasType(hint) {
+		return hint
+	}
+	// Check if it is a range-bound variable name.
+	if fieldName, ok := cc.rangeVars[hint]; ok {
+		if resolved, ok := cc.reg.FieldType(cc.enclosing, fieldName); ok && resolved != "" {
+			return resolved
 		}
 	}
-	walk(b)
+	// Check if it is a field name directly on the enclosing struct.
+	if resolved, ok := cc.reg.FieldType(cc.enclosing, hint); ok && resolved != "" {
+		return resolved
+	}
+	return hint
+}
+
+// collectCallsWithCtx walks a block and collects all w.Write*/r.Read* primitive
+// calls in order, with optional registry-aware sub-struct type resolution.
+// Pass reg=nil and enclosing="" to get the legacy variable-name behavior.
+func collectCallsWithCtx(b *ast.BlockStmt, fset *token.FileSet, reg *TypeRegistry, enclosing string) []Call {
+	var out []Call
+	var stack []*GuardExpr
+	cc := &callCtx{
+		reg:       reg,
+		enclosing: enclosing,
+		rangeVars: map[string]string{},
+		fieldVars: map[string]string{},
+		out:       &out,
+		stack:     &stack,
+		fset:      fset,
+	}
+	cc.walk(b)
+	return out
+}
+
+// collectCalls is the legacy no-context wrapper — preserves the existing API.
+func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
+	return collectCallsWithCtx(b, fset, nil, "")
+}
+
+func (cc *callCtx) appendCall(c Call) {
+	*cc.out = append(*cc.out, c)
+}
+
+func (cc *callCtx) conjoin() *GuardExpr {
+	return conjoin(*cc.stack)
+}
+
+func (cc *callCtx) walk(node ast.Node) {
+	switch n := node.(type) {
+	case *ast.IfStmt:
+		g := guardFromIf(n, cc.fset)
+		*cc.stack = append(*cc.stack, g)
+		cc.walk(n.Body)
+		*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+		if n.Else != nil {
+			ng := negate(g)
+			*cc.stack = append(*cc.stack, ng)
+			cc.walk(n.Else)
+			*cc.stack = (*cc.stack)[:len(*cc.stack)-1]
+		}
+	case *ast.BlockStmt:
+		for _, s := range n.List {
+			cc.walk(s)
+		}
+	case *ast.ExprStmt:
+		cc.walk(n.X)
+	case *ast.RangeStmt:
+		// Record range variable binding for type resolution.
+		// Pattern: for _, varName := range m.<fieldName> { ... }
+		rangeVarName := ""
+		if n.Value != nil {
+			if id, ok := n.Value.(*ast.Ident); ok && id.Name != "_" {
+				rangeVarName = id.Name
+			}
+		}
+		if rangeVarName != "" && cc.reg != nil {
+			fieldName := rangeFieldName(n.X)
+			if fieldName != "" {
+				cc.rangeVars[rangeVarName] = fieldName
+			}
+		}
+		sub := cc.collectSub(n.Body)
+		cc.appendCall(Call{
+			Kind:  KindRepeat,
+			Body:  sub,
+			Line:  cc.fset.Position(n.Pos()).Line,
+			Guard: cc.conjoin(),
+		})
+		if rangeVarName != "" {
+			delete(cc.rangeVars, rangeVarName)
+		}
+	case *ast.ForStmt:
+		sub := cc.collectSub(n.Body)
+		cc.appendCall(Call{
+			Kind:  KindRepeat,
+			Body:  sub,
+			Line:  cc.fset.Position(n.Pos()).Line,
+			Guard: cc.conjoin(),
+		})
+	case *ast.CallExpr:
+		sel, ok := n.Fun.(*ast.SelectorExpr)
+		if !ok {
+			// Handle chained calls like m.sub.Encode(l, ctx)(opts):
+			// the outer CallExpr has Fun = inner CallExpr; recurse into Fun.
+			if inner, ok := n.Fun.(*ast.CallExpr); ok {
+				cc.walk(inner)
+			}
+			return
+		}
+		// Recurse marker: x.Encode(l, ctx) or x.Decode(l, ctx)
+		// Exclude common false-positives (writer/reader/logger receivers).
+		if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+			recv := receiverTypeHint(sel.X)
+			if !isWriterReaderReceiver(recv) {
+				resolved := resolveRecurse(recv, cc)
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved,
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
+		}
+		// Detect x.Write(w) pattern: a one-arg Write call whose receiver is not a
+		// writer/reader variable. This covers atlas's WorldRecommendation pattern
+		// where sub-structs expose Write(*response.Writer) instead of Encode().
+		if sel.Sel.Name == "Write" && len(n.Args) == 1 {
+			recv := receiverTypeHint(sel.X)
+			if !isWriterReaderReceiver(recv) {
+				resolved := resolveRecurse(recv, cc)
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved,
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
+		}
+		// Wrapped recurse marker: WriteByteArray(c.Encode(l, ctx)(opts)) — atlas's
+		// CharacterList encoder pre-encodes a sub-struct to []byte then writes the
+		// buffer verbatim. The wire shape is identical to inlining c.Encode's calls,
+		// so model this as KindRecurse rather than KindWrite EncodeBuf.
+		if p, ok := primFromName(sel.Sel.Name); ok {
+			if recv, ok := wrappedRecurseType(sel.Sel.Name, n.Args); ok {
+				resolved := resolveRecurse(recv, cc)
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved,
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
+			cc.appendCall(Call{
+				Kind:  KindWrite,
+				Op:    p,
+				Line:  cc.fset.Position(n.Pos()).Line,
+				Guard: cc.conjoin(),
+			})
+		}
+	default:
+		ast.Inspect(node, func(c ast.Node) bool {
+			if c == node {
+				return true
+			}
+			if _, ok := c.(*ast.IfStmt); ok {
+				cc.walk(c)
+				return false
+			}
+			if _, ok := c.(*ast.RangeStmt); ok {
+				cc.walk(c)
+				return false
+			}
+			if _, ok := c.(*ast.ForStmt); ok {
+				cc.walk(c)
+				return false
+			}
+			if ce, ok := c.(*ast.CallExpr); ok {
+				if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+					// Recurse marker check
+					if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+						recv := receiverTypeHint(sel.X)
+						if !isWriterReaderReceiver(recv) {
+							resolved := resolveRecurse(recv, cc)
+							cc.appendCall(Call{
+								Kind:        KindRecurse,
+								RecurseType: resolved,
+								Line:        cc.fset.Position(ce.Pos()).Line,
+								Guard:       cc.conjoin(),
+							})
+							return false
+						}
+					}
+					// Detect x.Write(w) in nested contexts too.
+					if sel.Sel.Name == "Write" && len(ce.Args) == 1 {
+						recv := receiverTypeHint(sel.X)
+						if !isWriterReaderReceiver(recv) {
+							resolved := resolveRecurse(recv, cc)
+							cc.appendCall(Call{
+								Kind:        KindRecurse,
+								RecurseType: resolved,
+								Line:        cc.fset.Position(ce.Pos()).Line,
+								Guard:       cc.conjoin(),
+							})
+							return false
+						}
+					}
+					if p, ok := primFromName(sel.Sel.Name); ok {
+						cc.appendCall(Call{
+							Kind:  KindWrite,
+							Op:    p,
+							Line:  cc.fset.Position(ce.Pos()).Line,
+							Guard: cc.conjoin(),
+						})
+					}
+				}
+			}
+			return true
+		})
+	}
+}
+
+// collectSub collects body calls for a loop body, inheriting the registry
+// context and current range-var bindings from the parent callCtx.
+func (cc *callCtx) collectSub(b *ast.BlockStmt) []Call {
+	var out []Call
+	var stack []*GuardExpr
+	// Copy rangeVars so the child inherits current bindings without polluting parent.
+	childRangeVars := make(map[string]string, len(cc.rangeVars))
+	for k, v := range cc.rangeVars {
+		childRangeVars[k] = v
+	}
+	child := &callCtx{
+		reg:       cc.reg,
+		enclosing: cc.enclosing,
+		rangeVars: childRangeVars,
+		fieldVars: map[string]string{},
+		out:       &out,
+		stack:     &stack,
+		fset:      cc.fset,
+	}
+	child.walk(b)
 	return out
 }
 
 // collectGuardedSub collects body calls fresh — the parent Repeat already carries the outer guard.
+// Kept for any direct callers outside this file.
 func collectGuardedSub(b *ast.BlockStmt, fset *token.FileSet) []Call {
 	return collectCalls(b, fset)
+}
+
+// rangeFieldName extracts the field name from a range expression like m.fieldName
+// or just fieldName. Returns "" if the expression doesn't match either pattern.
+func rangeFieldName(x ast.Expr) string {
+	switch v := x.(type) {
+	case *ast.SelectorExpr:
+		// m.fieldName → return fieldName
+		return v.Sel.Name
+	case *ast.Ident:
+		// bare variable — could be a field alias; return as-is
+		return v.Name
+	}
+	return ""
 }
 
 // receiverTypeHint returns a best-effort static type name for the receiver of
@@ -369,13 +525,13 @@ func negate(g *GuardExpr) *GuardExpr {
 // primFromName maps a method name to its Primitive encoding width.
 func primFromName(name string) (Primitive, bool) {
 	switch name {
-	case "WriteByte", "WriteBool", "ReadByte", "ReadBool":
+	case "WriteByte", "WriteBool", "WriteInt8", "ReadByte", "ReadBool", "ReadInt8":
 		return Encode1, true
-	case "WriteShort", "ReadUint16":
+	case "WriteShort", "WriteInt16", "ReadUint16", "ReadInt16":
 		return Encode2, true
-	case "WriteInt", "ReadUint32":
+	case "WriteInt", "WriteInt32", "ReadUint32", "ReadInt32":
 		return Encode4, true
-	case "WriteLong", "ReadUint64":
+	case "WriteLong", "WriteInt64", "ReadUint64", "ReadInt64":
 		return Encode8, true
 	case "WriteAsciiString", "ReadAsciiString":
 		return EncodeStr, true

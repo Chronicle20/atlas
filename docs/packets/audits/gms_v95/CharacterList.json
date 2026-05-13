@@ -26,12 +26,12 @@
     },
     {
       "Index": 2,
-      "AtlasOp": 0,
-      "AtlasKind": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "GW_CharacterStat::Decode start: characterName (loop body entry 0)",
-      "Verdict": 3,
-      "Note": "sub-struct: c — see _substruct/"
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 3,
@@ -44,12 +44,12 @@
     },
     {
       "Index": 4,
-      "AtlasOp": 2,
+      "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "level",
-      "Verdict": 0,
-      "Note": ""
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 5,
@@ -62,21 +62,21 @@
     },
     {
       "Index": 6,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "subJob (?)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 7,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "str",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 8,
@@ -85,142 +85,142 @@
       "IDAOp": 2,
       "IDAComment": "dex",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 9,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "int",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 10,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "luk",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 11,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "hp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 12,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "maxHp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "mp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 14,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "maxMp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 15,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "ap",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 16,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "sp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 17,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "exp",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 18,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "fame",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 19,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "gachaExp (?)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 20,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "mapId",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 21,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "spawnPoint",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 22,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "subJob2 (?)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 23,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "gender",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 24,
@@ -228,26 +228,26 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "skin",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 25,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "face",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 26,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "megaphoneFlag (AvatarLook)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 27,
@@ -256,7 +256,7 @@
       "IDAOp": 2,
       "IDAComment": "hair",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 28,
@@ -264,17 +264,17 @@
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "equip slot 0 itemId (AvatarLook equipment loop body)",
-      "Verdict": 1,
-      "Note": "loop body — atlas emits zero iterations (count==0)"
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 29,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "equip slot 0 itemId masked (AvatarLook masked-equip loop body)",
-      "Verdict": 1,
-      "Note": "loop body — atlas emits zero iterations (count==0)"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 30,
@@ -282,17 +282,17 @@
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "pet 0 itemId (AvatarLook pet loop body)",
-      "Verdict": 1,
-      "Note": "loop body — atlas emits zero iterations (count==0)"
+      "Verdict": 2,
+      "Note": "width mismatch"
     },
     {
       "Index": 31,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "onFamily",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 32,
@@ -300,8 +300,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "hasRank",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 33,
@@ -310,62 +310,152 @@
       "IDAOp": 2,
       "IDAComment": "worldRank",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 34,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "worldRankMove",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 35,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "jobRank",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 36,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "jobRankMove",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 37,
-      "AtlasOp": 0,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "m_bLoginOpt (hasPic)",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 38,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_nSlotCount",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
     },
     {
       "Index": 39,
-      "AtlasOp": 0,
+      "AtlasOp": 3,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "m_nBuyCharCount",
       "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Note": "width mismatch"
+    },
+    {
+      "Index": 40,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 41,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 42,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 43,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 44,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 45,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 46,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 47,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 48,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
+    },
+    {
+      "Index": 49,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "",
+      "Verdict": 2,
+      "Note": "atlas: extra — client never reads this field"
     }
   ],
-  "Verdict": 3
+  "Verdict": 2
 }

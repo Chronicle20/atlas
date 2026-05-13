@@ -32,6 +32,16 @@ func Create(id uuid.UUID, region string, majorVersion uint16, minorVersion uint1
 }
 
 //goland:noinspection GoUnusedExportedFunction
+func CreateWithVariant(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16, clientVariant string) (Model, error) {
+	m, err := Create(id, region, majorVersion, minorVersion)
+	if err != nil {
+		return m, err
+	}
+	m.clientVariant = clientVariant
+	return m, nil
+}
+
+//goland:noinspection GoUnusedExportedFunction
 func Register(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	t, err := Create(id, region, majorVersion, minorVersion)
 	if err != nil {

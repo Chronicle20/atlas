@@ -160,6 +160,13 @@
       "calls": [
         {"op": "Encode2", "comment": "nWorldID"}
       ]
+    },
+    "CLogin::OnCheckPinCodeResult": {
+      "address": "0x5db000",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (mode dispatch)"}
+      ]
     }
   }
 }

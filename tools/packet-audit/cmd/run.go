@@ -162,6 +162,20 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "PinUpdate", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnAcceptLicense":
 		return []candidate{{name: "AcceptTos", dir: csvpkg.DirServerbound}}
+	case "CLogin::OnCheckUserLimitResult":
+		return []candidate{{name: "ServerStatus", dir: csvpkg.DirClientbound}}
+	case "CLogin::ChangeStepImmediate":
+		return []candidate{{name: "ServerListRequest", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendLoginPacket":
+		return []candidate{{name: "WorldCharacterListRequest", dir: csvpkg.DirServerbound}}
+	case "CLogin::OnSetAccountResult#AfterLogin":
+		return []candidate{{name: "AfterLogin", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic":
+		return []candidate{{name: "CharacterSelectRegisterPic", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendSelectCharPacket#CharacterSelectWithPic":
+		return []candidate{{name: "CharacterSelectWithPic", dir: csvpkg.DirServerbound}}
+	case "CLogin::OnWorldInformation#ServerListEnd":
+		return []candidate{{name: "ServerListEnd", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckPasswordResult#AuthLoginFailed":
 		return []candidate{{name: "AuthLoginFailed", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckPasswordResult#AuthTemporaryBan":

@@ -40,6 +40,22 @@ focused spike doc to add the function's wire-layout.
 | `CLicenseDlg::OnButtonClicked` (0x5ff870) | (UI callback) | Drives OnAcceptLicense / OnDenyLicense; not directly a wire format. |
 | `LoginAuth` (atlas writer) | — | Orphan: atlas writes `WriteAsciiString(screen)`. No IDA function found by direct search. May be a legacy v83 packet that v95 client no longer reads. |
 
+## Verified orphans (no v95 IDA mapping)
+
+These atlas writers/handlers have no corresponding v95 IDA function — either
+the opcode isn't in `CLogin::OnPacket`'s dispatch (so it can't be received
+while on the login screen) or the IDA function name doesn't exist in this
+binary. Most likely legacy v83 packets the v95 client doesn't read, or
+opcodes routed to other state machines (channel, map). They are not auditable
+against v95 with the current pipeline:
+
+- `LoginAuth` (clientbound, writes 1 string) — not in template, no IDA match
+- `ServerLoad` (clientbound, writes 1 byte) — not in template, no IDA match
+- `PicResult` (clientbound, opcode 0x1C, writes 1 byte) — opcode not in `CLogin::OnPacket` switch (verified via decompile of 0x5df940); routed to other state
+- `ServerSelect` (serverbound, reads 1 byte worldId) — `WorldSelectHandle` not in template; no IDA function found by name
+- `AllCharacterListPong` (serverbound, reads 1 bool) — no IDA function found
+- `AllCharacterListSelect` / `AllCharacterListSelectWithPic` / `AllCharacterListSelectWithPicRegister` (serverbound, VAC family) — comment says `CLogin::SendSelectCharPacketByVAC` (verified address 0x5d7550); each maps to a `m_bLoginOpt` branch of that function. Decompile not yet processed; needs branch-by-branch breakdown like `SendSelectCharPacket` did.
+
 ## Still pending — handlers without an IDA mapping
 
 Atlas writers/handlers under `libs/atlas-packet/login/` whose corresponding IDA

@@ -237,6 +237,65 @@
       "calls": [
         {"op": "Encode1", "comment": "accepted flag (literal 1u)"}
       ]
+    },
+    "CLogin::OnCheckUserLimitResult": {
+      "address": "0x5d2250",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode2", "comment": "world status (2 bytes — v95 reads as 2 × Decode1; atlas writes WriteShort, wire-equivalent)"}
+      ]
+    },
+    "CLogin::ChangeStepImmediate": {
+      "address": "0x5d9730",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CLogin::SendLoginPacket": {
+      "address": "0x5dbef0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "gameStartMode (modified-client path: nGameStartMode != 1)"},
+        {"op": "Encode1", "comment": "nWorldID"},
+        {"op": "Encode1", "comment": "nChannelID"},
+        {"op": "Encode4", "comment": "socket addr (S_addr from getsockname)"}
+      ]
+    },
+    "CLogin::OnSetAccountResult#AfterLogin": {
+      "address": "0x5d5e80",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "pinMode (literal 1u from outbound opcode 9 builder)"},
+        {"op": "Encode1", "comment": "opt2 (literal 1u)"},
+        {"op": "EncodeStr", "comment": "pin (empty ZXString)"}
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectRegisterPic": {
+      "address": "0x5da2a0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "mode (literal 1u, m_bLoginOpt == 0 branch, opcode 0x1C)"},
+        {"op": "Encode4", "comment": "dwCharacterID"},
+        {"op": "EncodeStr", "comment": "sMacAddress"},
+        {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"},
+        {"op": "EncodeStr", "comment": "sSPW (PIC)"}
+      ]
+    },
+    "CLogin::SendSelectCharPacket#CharacterSelectWithPic": {
+      "address": "0x5da2a0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "EncodeStr", "comment": "sSPW (PIC, m_bLoginOpt == 1 branch, opcode 0x1D)"},
+        {"op": "Encode4", "comment": "dwCharacterID"},
+        {"op": "EncodeStr", "comment": "sMacAddress"},
+        {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"}
+      ]
+    },
+    "CLogin::OnWorldInformation#ServerListEnd": {
+      "address": "0x5da7f0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nWorldID terminator (0xFF dispatch — end of world list)"}
+      ]
     }
   }
 }

@@ -69,7 +69,7 @@ func (m ServerListEntry) Encode(l logrus.FieldLogger, ctx context.Context) func(
 		for _, x := range m.channelLoads {
 			w.WriteAsciiString(fmt.Sprintf("%s - %d", m.worldName, x.ChannelId()))
 			w.WriteInt(x.Capacity())
-			w.WriteByte(1)
+			w.WriteByte(byte(m.worldId))
 			w.WriteByte(byte(x.ChannelId() - 1))
 			w.WriteBool(false) // adult channel
 		}

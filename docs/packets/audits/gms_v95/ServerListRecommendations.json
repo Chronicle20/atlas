@@ -18,11 +18,11 @@
     {
       "Index": 1,
       "AtlasOp": 0,
-      "AtlasKind": 2,
+      "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "nWorldID (loop body)",
-      "Verdict": 3,
-      "Note": "loop body — see follow-up scan"
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
     },
     {
       "Index": 2,
@@ -30,9 +30,9 @@
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "sMessage (loop body)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
     }
   ],
-  "Verdict": 3
+  "Verdict": 1
 }

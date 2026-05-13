@@ -22,6 +22,7 @@ func TestServerListEntryWorldIdInChannels(t *testing.T) {
 					model.NewChannelLoad(channel.Id(1), 100),
 					model.NewChannelLoad(channel.Id(2), 100),
 				},
+				nil,
 			)
 			l, _ := testlog.NewNullLogger()
 			bytes := input.Encode(l, ctx)(nil)
@@ -85,6 +86,38 @@ func TestServerListEntryRoundTrip(t *testing.T) {
 			}
 			if len(output.ChannelLoads()) != len(input.ChannelLoads()) {
 				t.Errorf("channelLoads length: got %v, want %v", len(output.ChannelLoads()), len(input.ChannelLoads()))
+			}
+		})
+	}
+}
+
+func TestServerListEntryRoundTripWithBalloons(t *testing.T) {
+	for _, v := range pt.Variants {
+		// Balloon block is only emitted for (GMS && >12) || JMS.
+		if !((v.Region == "GMS" && v.MajorVersion > 12) || v.Region == "JMS") {
+			continue
+		}
+		t.Run(v.Name, func(t *testing.T) {
+			ctx := pt.CreateContext(v.Region, v.MajorVersion, v.MinorVersion)
+			balloons := []model.WorldBalloon{
+				model.NewWorldBalloon(10, 20, "Event running!"),
+				model.NewWorldBalloon(300, 400, "Maintenance Friday"),
+			}
+			input := NewServerListEntry(
+				3, "Scania", 1, "Welcome",
+				[]model.ChannelLoad{model.NewChannelLoad(1, 100)},
+				balloons,
+			)
+			output := ServerListEntry{}
+			pt.RoundTrip(t, ctx, input.Encode, output.Decode, nil)
+			if len(output.Balloons()) != 2 {
+				t.Fatalf("balloons length: got %d, want 2", len(output.Balloons()))
+			}
+			if output.Balloons()[0].Message() != "Event running!" {
+				t.Errorf("balloon[0] message: got %q", output.Balloons()[0].Message())
+			}
+			if output.Balloons()[1].X() != 300 || output.Balloons()[1].Y() != 400 {
+				t.Errorf("balloon[1] pos: got (%d,%d)", output.Balloons()[1].X(), output.Balloons()[1].Y())
 			}
 		})
 	}

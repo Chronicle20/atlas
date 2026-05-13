@@ -40,6 +40,15 @@ func NewExportSource(path string) (*ExportSource, error) {
 	return &ExportSource{file: f}, nil
 }
 
+// Functions returns all FNames in the export.
+func (s *ExportSource) Functions() []string {
+	out := make([]string, 0, len(s.file.Functions))
+	for k := range s.file.Functions {
+		out = append(out, k)
+	}
+	return out
+}
+
 func (s *ExportSource) Resolve(_ context.Context, fname string) (Fields, error) {
 	raw, ok := s.file.Functions[fname]
 	if !ok {

@@ -2,6 +2,7 @@ package templates
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"atlas-configurations/templates/characters"
@@ -149,5 +150,42 @@ func TestRestModel_EmptyState(t *testing.T) {
 
 	if rm.GetID() != "" {
 		t.Errorf("expected GetID() to return empty string for empty model, got '%s'", rm.GetID())
+	}
+}
+
+func TestRestModelClientVariantRoundTrip(t *testing.T) {
+	raw := `{"region":"GMS","majorVersion":95,"minorVersion":1,"clientVariant":"stock","usesPin":false,"socket":{},"characters":{},"npcs":[],"worlds":[],"cashShop":{}}`
+	var r RestModel
+	if err := json.Unmarshal([]byte(raw), &r); err != nil {
+		t.Fatal(err)
+	}
+	if r.ClientVariant != "stock" {
+		t.Errorf("got %q", r.ClientVariant)
+	}
+	out, _ := json.Marshal(r)
+	if !strings.Contains(string(out), `"clientVariant":"stock"`) {
+		t.Errorf("missing field in marshal: %s", out)
+	}
+}
+
+func TestRestModelClientVariantOmittedDefaults(t *testing.T) {
+	raw := `{"region":"GMS","majorVersion":83,"minorVersion":1,"usesPin":false,"socket":{},"characters":{},"npcs":[],"worlds":[],"cashShop":{}}`
+	var r RestModel
+	if err := json.Unmarshal([]byte(raw), &r); err != nil {
+		t.Fatal(err)
+	}
+	if r.ClientVariant != "" {
+		t.Errorf("expected unset zero value, got %q", r.ClientVariant)
+	}
+}
+
+func TestValidateClientVariant(t *testing.T) {
+	for _, v := range []string{"", "modified", "stock"} {
+		if err := validateClientVariant(v); err != nil {
+			t.Errorf("validateClientVariant(%q) = %v, want nil", v, err)
+		}
+	}
+	if err := validateClientVariant("bogus"); err == nil {
+		t.Error("validateClientVariant(\"bogus\") should error")
 	}
 }

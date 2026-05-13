@@ -43,6 +43,9 @@ func Run(args []string, stderr io.Writer) int {
 		fmt.Fprintln(stderr, "packet-audit: verify-export not yet implemented")
 		return 3
 	}
-	fmt.Fprintln(stderr, "packet-audit: pipeline not yet implemented")
-	return 3
+	if opts.CSVClientbound == "" || opts.CSVServerbound == "" || opts.Template == "" {
+		fmt.Fprintln(stderr, "packet-audit: missing required flags --csv-clientbound, --csv-serverbound, --template")
+		return 3
+	}
+	return runPipeline(opts, stderr)
 }

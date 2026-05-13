@@ -182,6 +182,8 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "AllCharacterListSelectWithPic", dir: csvpkg.DirServerbound}}
 	case "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect":
 		return []candidate{{name: "AllCharacterListSelect", dir: csvpkg.DirServerbound}}
+	case "CLogin::MakeVACDlg":
+		return []candidate{{name: "AllCharacterListPong", dir: csvpkg.DirServerbound}}
 	case "CLogin::OnCheckPasswordResult#AuthLoginFailed":
 		return []candidate{{name: "AuthLoginFailed", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckPasswordResult#AuthTemporaryBan":

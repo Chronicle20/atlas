@@ -329,6 +329,13 @@
         {"op": "EncodeStr", "comment": "sMacAddress"},
         {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"}
       ]
+    },
+    "CLogin::MakeVACDlg": {
+      "address": "0x5d44a0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)"}
+      ]
     }
   }
 }

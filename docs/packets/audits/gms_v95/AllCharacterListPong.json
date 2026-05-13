@@ -1,0 +1,20 @@
+{
+  "WriterName": "AllCharacterListPong",
+  "IDAName": "CLogin::MakeVACDlg",
+  "Address": "0x5d44a0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/serverbound/all_character_list_pong.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

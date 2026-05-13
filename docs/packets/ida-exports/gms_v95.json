@@ -196,6 +196,31 @@
         {"op": "Decode1", "comment": "post-auth flag"},
         {"op": "Decode4", "comment": "reserved (always decoded before branch)"}
       ]
+    },
+    "CLogin::SendViewAllCharPacket": {
+      "address": "0x5dfb40",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "gameStartMode (m_nGameStartMode)"},
+        {"op": "EncodeStr", "comment": "nexonPassport (szPassport) — only when gameStartMode==1"},
+        {"op": "EncodeBuf", "comment": "machineId (16 bytes) — only when gameStartMode==1"},
+        {"op": "Encode4", "comment": "gameRoomClient — only when gameStartMode==1"},
+        {"op": "Encode1", "comment": "gameStartMode (echoed) — only when gameStartMode==1"}
+      ]
+    },
+    "CLogin::OnUpdatePinCodeResult": {
+      "address": "0x5d2420",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (success/failure dispatch)"}
+      ]
+    },
+    "CLogin::OnAcceptLicense": {
+      "address": "0x5d4540",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "accepted flag (literal 1u)"}
+      ]
     }
   }
 }

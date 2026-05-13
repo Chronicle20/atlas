@@ -152,16 +152,19 @@ func candidatesFromFName(fname string) []candidate {
 	case "CLogin::SendCheckUserLimitPacket":
 		return []candidate{{name: "ServerStatusRequest", dir: csvpkg.DirServerbound}}
 	case "CLogin::OnCheckPinCodeResult":
-		return []candidate{
-			{name: "PinOperation", dir: csvpkg.DirClientbound},
-			{name: "PinUpdate", dir: csvpkg.DirClientbound},
-		}
+		return []candidate{{name: "PinOperation", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnUpdatePinCodeResult":
+		return []candidate{{name: "PinUpdate", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnAcceptLicense":
+		return []candidate{{name: "AcceptTos", dir: csvpkg.DirServerbound}}
 	case "CLogin::OnCheckPasswordResult#AuthLoginFailed":
 		return []candidate{{name: "AuthLoginFailed", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckPasswordResult#AuthTemporaryBan":
 		return []candidate{{name: "AuthTemporaryBan", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckPasswordResult#AuthPermanentBan":
 		return []candidate{{name: "AuthPermanentBan", dir: csvpkg.DirClientbound}}
+	case "CLogin::SendViewAllCharPacket":
+		return []candidate{{name: "AllCharacterListRequest", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

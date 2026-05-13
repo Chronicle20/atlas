@@ -1,0 +1,20 @@
+{
+  "WriterName": "AcceptTos",
+  "IDAName": "CLogin::OnAcceptLicense",
+  "Address": "0x5d4540",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/account/serverbound/accept_tos.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "accepted flag (literal 1u)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

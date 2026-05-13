@@ -1,0 +1,21 @@
+{
+  "binary": "GMS_v95.0_U_DEVM.exe",
+  "md5": "3c71fd8872d5efbe16183ae8c51f887d",
+  "generated_at": "2026-05-13T00:00:00Z",
+  "functions": {
+    "CLogin::OnCheckPasswordResult": {
+      "address": "0x5dc600",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode"},
+        {"op": "Decode1", "comment": "padding"},
+        {"op": "Decode4", "comment": "padding32"},
+        {"op": "Decode4", "comment": "accountId"},
+        {"op": "Decode1", "comment": "gender"},
+        {"op": "Decode1", "comment": "gm"},
+        {"op": "Decode1", "comment": "admin"},
+        {"op": "Decode2", "comment": "subGradeCode+testerAccount"}
+      ]
+    }
+  }
+}

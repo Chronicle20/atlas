@@ -7,6 +7,7 @@ import (
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
 )
 
@@ -28,16 +29,26 @@ func (m ServerStatusRequest) String() string {
 	return fmt.Sprintf("worldId [%d]", m.worldId)
 }
 
-func (m ServerStatusRequest) Encode(l logrus.FieldLogger, _ context.Context) func(options map[string]interface{}) []byte {
+func (m ServerStatusRequest) Encode(l logrus.FieldLogger, ctx context.Context) func(options map[string]interface{}) []byte {
 	w := response.NewWriter(l)
+	t := tenant.MustFromContext(ctx)
 	return func(options map[string]interface{}) []byte {
-		w.WriteByte(byte(m.worldId))
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteShort(uint16(m.worldId))
+		} else {
+			w.WriteByte(byte(m.worldId))
+		}
 		return w.Bytes()
 	}
 }
 
-func (m *ServerStatusRequest) Decode(_ logrus.FieldLogger, _ context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *ServerStatusRequest) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
-		m.worldId = world.Id(r.ReadByte())
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			m.worldId = world.Id(r.ReadUint16())
+		} else {
+			m.worldId = world.Id(r.ReadByte())
+		}
 	}
 }

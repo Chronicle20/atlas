@@ -8,10 +8,11 @@ import (
 )
 
 type Model struct {
-	id           uuid.UUID
-	region       string
-	majorVersion uint16
-	minorVersion uint16
+	id            uuid.UUID
+	region        string
+	majorVersion  uint16
+	minorVersion  uint16
+	clientVariant string
 }
 
 func (m *Model) Id() uuid.UUID {
@@ -30,26 +31,36 @@ func (m *Model) MinorVersion() uint16 {
 	return m.minorVersion
 }
 
+func (m *Model) ClientVariant() string {
+	if m.clientVariant == "" {
+		return "modified"
+	}
+	return m.clientVariant
+}
+
 func (m *Model) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&struct {
-		Id           uuid.UUID `json:"id"`
-		Region       string    `json:"region"`
-		MajorVersion uint16    `json:"majorVersion"`
-		MinorVersion uint16    `json:"minorVersion"`
+		Id            uuid.UUID `json:"id"`
+		Region        string    `json:"region"`
+		MajorVersion  uint16    `json:"majorVersion"`
+		MinorVersion  uint16    `json:"minorVersion"`
+		ClientVariant string    `json:"clientVariant,omitempty"`
 	}{
-		Id:           m.id,
-		Region:       m.region,
-		MajorVersion: m.majorVersion,
-		MinorVersion: m.minorVersion,
+		Id:            m.id,
+		Region:        m.region,
+		MajorVersion:  m.majorVersion,
+		MinorVersion:  m.minorVersion,
+		ClientVariant: m.clientVariant,
 	})
 }
 
 func (m *Model) UnmarshalJSON(data []byte) error {
 	t := &struct {
-		Id           uuid.UUID `json:"id"`
-		Region       string    `json:"region"`
-		MajorVersion uint16    `json:"majorVersion"`
-		MinorVersion uint16    `json:"minorVersion"`
+		Id            uuid.UUID `json:"id"`
+		Region        string    `json:"region"`
+		MajorVersion  uint16    `json:"majorVersion"`
+		MinorVersion  uint16    `json:"minorVersion"`
+		ClientVariant string    `json:"clientVariant,omitempty"`
 	}{}
 
 	if err := json.Unmarshal(data, t); err != nil {
@@ -60,6 +71,7 @@ func (m *Model) UnmarshalJSON(data []byte) error {
 	m.region = t.Region
 	m.majorVersion = t.MajorVersion
 	m.minorVersion = t.MinorVersion
+	m.clientVariant = t.ClientVariant
 	return nil
 }
 
@@ -76,9 +88,13 @@ func (m *Model) Is(tenant Model) bool {
 	if tenant.MinorVersion() != m.MinorVersion() {
 		return false
 	}
+	if tenant.ClientVariant() != m.ClientVariant() {
+		return false
+	}
 	return true
 }
 
 func (m *Model) String() string {
-	return fmt.Sprintf("Id [%s] Region [%s] Version [%d.%d]", m.Id().String(), m.Region(), m.MajorVersion(), m.MinorVersion())
+	return fmt.Sprintf("Id [%s] Region [%s] Version [%d.%d] Variant [%s]",
+		m.Id().String(), m.Region(), m.MajorVersion(), m.MinorVersion(), m.ClientVariant())
 }

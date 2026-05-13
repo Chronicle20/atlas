@@ -82,6 +82,11 @@
       {
         "opCode": "0x17",
         "validator": "LoggedInValidator",
+        "handler": "NoOpHandler"
+      },
+      {
+        "opCode": "0x18",
+        "validator": "LoggedInValidator",
         "handler": "DeleteCharacterHandle"
       },
       {
@@ -90,22 +95,22 @@
         "handler": "NoOpHandler"
       },
       {
-        "opCode": "0x1D",
+        "opCode": "0x1C",
         "validator": "LoggedInValidator",
         "handler": "RegisterPicHandle"
       },
       {
-        "opCode": "0x1E",
+        "opCode": "0x1D",
         "validator": "LoggedInValidator",
         "handler": "CharacterSelectedPicHandle"
       },
       {
-        "opCode": "0x1F",
+        "opCode": "0x1E",
         "validator": "LoggedInValidator",
         "handler": "CharacterViewAllSelectedPicRegisterHandle"
       },
       {
-        "opCode": "0x20",
+        "opCode": "0x1F",
         "validator": "LoggedInValidator",
         "handler": "CharacterViewAllSelectedPicHandle"
       },
@@ -290,11 +295,11 @@
         }
       },
       {
-        "opCode": "0x1A",
+        "opCode": "0x18",
         "writer": "SelectWorld"
       },
       {
-        "opCode": "0x1B",
+        "opCode": "0x19",
         "writer": "ServerListRecommendations"
       },
       {

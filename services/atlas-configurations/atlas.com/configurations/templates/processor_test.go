@@ -3,6 +3,7 @@ package templates
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -350,6 +351,75 @@ func TestMake(t *testing.T) {
 	}
 	if result.UsesPin != testData.UsesPin {
 		t.Errorf("expected usesPin %v, got %v", testData.UsesPin, result.UsesPin)
+	}
+}
+
+func TestCreateRejectsInvalidClientVariant(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	input := RestModel{
+		Region:        "GMS",
+		MajorVersion:  95,
+		MinorVersion:  1,
+		ClientVariant: "bogus",
+	}
+	_, err := p.Create(input)
+	if err == nil {
+		t.Fatal("expected validation error for bogus clientVariant; got nil")
+	}
+	if !strings.Contains(err.Error(), "clientVariant") {
+		t.Errorf("error message should mention clientVariant; got %q", err.Error())
+	}
+}
+
+func TestCreateAcceptsValidClientVariants(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	for _, v := range []string{"", "modified", "stock"} {
+		input := RestModel{
+			Region:        "GMS",
+			MajorVersion:  95,
+			MinorVersion:  1,
+			ClientVariant: v,
+		}
+		if _, err := p.Create(input); err != nil {
+			t.Errorf("Create with variant %q: unexpected error %v", v, err)
+		}
+	}
+}
+
+func TestUpdateByIdRejectsInvalidClientVariant(t *testing.T) {
+	db := setupTestDB(t)
+	l := testLogger()
+	ctx := context.Background()
+	p := NewProcessor(l, ctx, db)
+
+	// First create a valid template
+	input := createTestRestModel("GMS", 95, 1)
+	id, err := p.Create(input)
+	if err != nil {
+		t.Fatalf("failed to create template: %v", err)
+	}
+
+	// Now try to update with a bogus variant
+	bad := RestModel{
+		Region:        "GMS",
+		MajorVersion:  95,
+		MinorVersion:  1,
+		ClientVariant: "bogus",
+	}
+	err = p.UpdateById(id, bad)
+	if err == nil {
+		t.Fatal("expected validation error for bogus clientVariant in UpdateById; got nil")
+	}
+	if !strings.Contains(err.Error(), "clientVariant") {
+		t.Errorf("error message should mention clientVariant; got %q", err.Error())
 	}
 }
 

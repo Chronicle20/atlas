@@ -70,6 +70,9 @@ func (p *Processor) GetById(templateId uuid.UUID) (RestModel, error) {
 }
 
 func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
+	if err := validateClientVariant(input.ClientVariant); err != nil {
+		return uuid.Nil, err
+	}
 	res, err := json.Marshal(input)
 	if err != nil {
 		return uuid.Nil, err
@@ -103,6 +106,9 @@ func (p *Processor) Create(input RestModel) (uuid.UUID, error) {
 }
 
 func (p *Processor) UpdateById(templateId uuid.UUID, input RestModel) error {
+	if err := validateClientVariant(input.ClientVariant); err != nil {
+		return err
+	}
 	if p.validator != nil {
 		assigned, errs := p.validator.Validate(p.ctx, input.Characters.Presets)
 		input.Characters.Presets = assigned

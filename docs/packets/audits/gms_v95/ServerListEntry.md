@@ -4,7 +4,7 @@
 - **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_list_entry.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
-- **Verdict:** ⚠️
+- **Verdict:** ✅
 
 ## Wire-level diff
 
@@ -24,7 +24,7 @@
 | 11 | byte | byte `channel nChannelID` | ✅ |  |
 | 12 | byte | byte `channel bAdultChannel` | ✅ |  |
 | 13 | int16 | int16 `nBalloonCount` | ✅ |  |
-| 14 | byte | int16 `balloon x (loop body)` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
-| 15 | byte | int16 `balloon y` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
-| 16 | byte | string `balloon msg` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
+| 14 | int16 | int16 `balloon x (loop body)` | ✅ |  |
+| 15 | int16 | int16 `balloon y` | ✅ |  |
+| 16 | string | string `balloon msg` | ✅ |  |
 

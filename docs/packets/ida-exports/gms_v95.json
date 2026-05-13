@@ -1,0 +1,135 @@
+{
+  "binary": "GMS_v95.0_U_DEVM.exe",
+  "md5": "3c71fd8872d5efbe16183ae8c51f887d",
+  "generated_at": "2026-05-13T00:00:00Z",
+  "functions": {
+    "CLogin::OnCheckPasswordResult": {
+      "address": "0x5dc600",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode"},
+        {"op": "Decode1", "comment": "post-auth flag"},
+        {"op": "Decode4", "comment": "reserved (unused)"},
+        {"op": "Decode4", "comment": "accountId"},
+        {"op": "Decode1", "comment": "gender"},
+        {"op": "Decode1", "comment": "GM/admin flag"},
+        {"op": "Decode2", "comment": "subGradeCode+testerAccount"},
+        {"op": "Decode1", "comment": "countryCode"},
+        {"op": "DecodeStr", "comment": "nexonClubID"},
+        {"op": "Decode1", "comment": "purchaseExp/quiet-ban reason"},
+        {"op": "Decode1", "comment": "quiet-ban code"},
+        {"op": "Decode8", "comment": "chatUnblockDate (FILETIME)"},
+        {"op": "Decode8", "comment": "registerDate (FILETIME)"},
+        {"op": "Decode4", "comment": "numOfCharacter"},
+        {"op": "Decode1", "comment": "pinFlag"},
+        {"op": "Decode1", "comment": "picFlag"},
+        {"op": "Decode8", "comment": "clientKey/MAC (unconditional)"}
+      ]
+    },
+    "CLogin::OnSelectWorldResult": {
+      "address": "0x5dda00",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode"},
+        {"op": "Decode1", "comment": "nCount (character entries)"},
+        {"op": "DecodeStr", "comment": "GW_CharacterStat::Decode start: characterName (loop body entry 0)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "characterId"},
+        {"op": "Decode4", "comment": "level"},
+        {"op": "Decode4", "comment": "job"},
+        {"op": "Decode1", "comment": "subJob (?)"},
+        {"op": "Decode4", "comment": "str"},
+        {"op": "Decode4", "comment": "dex"},
+        {"op": "Decode4", "comment": "int"},
+        {"op": "Decode4", "comment": "luk"},
+        {"op": "Decode4", "comment": "hp"},
+        {"op": "Decode4", "comment": "maxHp"},
+        {"op": "Decode4", "comment": "mp"},
+        {"op": "Decode4", "comment": "maxMp"},
+        {"op": "Decode4", "comment": "ap"},
+        {"op": "Decode4", "comment": "sp"},
+        {"op": "Decode4", "comment": "exp"},
+        {"op": "Decode4", "comment": "fame"},
+        {"op": "Decode4", "comment": "gachaExp (?)"},
+        {"op": "Decode4", "comment": "mapId"},
+        {"op": "Decode1", "comment": "spawnPoint"},
+        {"op": "Decode4", "comment": "subJob2 (?)"},
+        {"op": "Decode1", "comment": "gender"},
+        {"op": "Decode1", "comment": "skin"},
+        {"op": "Decode4", "comment": "face"},
+        {"op": "Decode1", "comment": "megaphoneFlag (AvatarLook)"},
+        {"op": "Decode4", "comment": "hair"},
+        {"op": "Decode4", "comment": "equip slot 0 itemId (AvatarLook equipment loop body)", "guard": "loop AvatarLook equip slots"},
+        {"op": "Decode4", "comment": "equip slot 0 itemId masked (AvatarLook masked-equip loop body)", "guard": "loop AvatarLook masked equip slots"},
+        {"op": "Decode4", "comment": "pet 0 itemId (AvatarLook pet loop body)", "guard": "loop AvatarLook pets"},
+        {"op": "Decode1", "comment": "onFamily"},
+        {"op": "Decode1", "comment": "hasRank"},
+        {"op": "Decode4", "comment": "worldRank", "guard": "hasRank != 0"},
+        {"op": "Decode4", "comment": "worldRankMove", "guard": "hasRank != 0"},
+        {"op": "Decode4", "comment": "jobRank", "guard": "hasRank != 0"},
+        {"op": "Decode4", "comment": "jobRankMove", "guard": "hasRank != 0"},
+        {"op": "Decode1", "comment": "m_bLoginOpt (hasPic)"},
+        {"op": "Decode4", "comment": "m_nSlotCount"},
+        {"op": "Decode4", "comment": "m_nBuyCharCount"}
+      ]
+    },
+    "CLogin::OnWorldInformation": {
+      "address": "0x5da7f0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nWorldID"},
+        {"op": "DecodeStr", "comment": "sName"},
+        {"op": "Decode1", "comment": "nWorldState"},
+        {"op": "DecodeStr", "comment": "sWorldEventDesc"},
+        {"op": "Decode2", "comment": "nWorldEventEXP_WSE"},
+        {"op": "Decode2", "comment": "nWorldEventDrop_WSE"},
+        {"op": "Decode1", "comment": "nBlockCharCreation"},
+        {"op": "Decode1", "comment": "nChannelCount"},
+        {"op": "DecodeStr", "comment": "channel sName (loop body)", "guard": "loop nChannelCount"},
+        {"op": "Decode4", "comment": "channel nUserNo (load)", "guard": "loop nChannelCount"},
+        {"op": "Decode1", "comment": "channel nWorldID", "guard": "loop nChannelCount"},
+        {"op": "Decode1", "comment": "channel nChannelID", "guard": "loop nChannelCount"},
+        {"op": "Decode1", "comment": "channel bAdultChannel", "guard": "loop nChannelCount"},
+        {"op": "Decode2", "comment": "nBalloonCount"},
+        {"op": "Decode2", "comment": "balloon x (loop body)", "guard": "loop nBalloonCount"},
+        {"op": "Decode2", "comment": "balloon y", "guard": "loop nBalloonCount"},
+        {"op": "DecodeStr", "comment": "balloon msg", "guard": "loop nBalloonCount"}
+      ]
+    },
+    "CLogin::OnSelectCharacterResult": {
+      "address": "0x5dea80",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (v3)"},
+        {"op": "Decode1", "comment": "subMode"},
+        {"op": "Decode4", "comment": "ipv4 (4 octets)"},
+        {"op": "Decode2", "comment": "port"},
+        {"op": "Decode4", "comment": "dwCharacterID"},
+        {"op": "Decode1", "comment": "bAuthenCode"},
+        {"op": "Decode4", "comment": "ulPremiumArgument"}
+      ]
+    },
+    "CLogin::SendCheckPasswordPacket": {
+      "address": "0x5db9d0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "DecodeStr", "comment": "password (sPasswd)"},
+        {"op": "DecodeStr", "comment": "passport (szPassport / Nexon token)"},
+        {"op": "DecodeBuf", "comment": "machineId (16 bytes, CSystemInfo::GetMachineId)"},
+        {"op": "Decode4", "comment": "gameRoomClient (CSystemInfo::GetGameRoomClient)"},
+        {"op": "Decode1", "comment": "gameStartMode (m_nGameStartMode)"},
+        {"op": "Decode1", "comment": "const 0 (literal Encode1(0))"},
+        {"op": "Decode1", "comment": "const 0 (literal Encode1(0))"},
+        {"op": "Decode4", "comment": "partnerCode (CConfig::GetPartnerCode)"}
+      ]
+    },
+    "CLogin::SendSelectCharPacket": {
+      "address": "0x5da2a0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Decode4", "comment": "charId"},
+        {"op": "DecodeStr", "comment": "sMacAddress"},
+        {"op": "DecodeStr", "comment": "sMacAddressWithHDDSerial"}
+      ]
+    }
+  }
+}

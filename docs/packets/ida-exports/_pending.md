@@ -56,6 +56,19 @@ function hasn't been identified yet. Each likely corresponds to a
 - `ServerListEnd` (clientbound, opcode 0x0A end-of-list sentinel inside ServerListEntry) — already audited as part of ServerListEntry's dispatch byte
 - `PicResult` (clientbound)
 
+## Known false positives in current audit output
+
+`CharacterList.md` (verdict ❌): the per-entry trailer reports a 1-byte
+over-count from row 45 onward. Static analysis collects all conditional
+branches' calls (viewAll byte + gm byte + world-rank-enabled byte = 3
+bytes), but at runtime only 2 fire: either {viewAll=0, gm=0} → 2 bytes
+total (gm path returns early) or {viewAll=0, rank-enabled=1} → 1+16 = 17
++1 = 18 bytes total. v95 reads 2 bytes (onFamily + hasRank) + optional 16
+bytes — matches both runtime paths. The pipeline doesn't model
+early-return blocks as exclusive, so the audit over-counts. Resolution
+would require an analyzer extension that flags `return` statements inside
+guarded blocks; deferred to a follow-up.
+
 ## Workflow notes
 
 Refresh procedure:

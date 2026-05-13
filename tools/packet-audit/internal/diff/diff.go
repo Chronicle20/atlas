@@ -118,14 +118,27 @@ func idaWidth(p idasrc.Primitive) int {
 // bodies appear in the flattened sequence, matching the IDA export's
 // convention of emitting one entry per loop-body field with `guard: "loop X"`.
 func Flatten(calls []atlaspacket.Call, ctx atlaspacket.GuardContext) []atlaspacket.Call {
+	return FlattenWithRegistry(calls, ctx, nil)
+}
+
+// FlattenWithRegistry is like Flatten but also inlines KindRecurse calls by
+// looking up the sub-struct's pre-analyzed Call list in reg. When reg is nil
+// or a type is unknown, KindRecurse entries pass through unchanged (legacy path).
+func FlattenWithRegistry(calls []atlaspacket.Call, ctx atlaspacket.GuardContext, reg *atlaspacket.TypeRegistry) []atlaspacket.Call {
 	var out []atlaspacket.Call
 	for _, c := range calls {
 		if c.Guard != nil && !c.Guard.Eval(ctx) {
 			continue
 		}
 		if c.Kind == atlaspacket.KindRepeat {
-			out = append(out, Flatten(c.Body, ctx)...)
+			out = append(out, FlattenWithRegistry(c.Body, ctx, reg)...)
 			continue
+		}
+		if c.Kind == atlaspacket.KindRecurse && reg != nil {
+			if sub, ok := reg.Calls(c.RecurseType); ok {
+				out = append(out, FlattenWithRegistry(sub, ctx, reg)...)
+				continue
+			}
 		}
 		out = append(out, c)
 	}

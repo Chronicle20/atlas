@@ -296,6 +296,39 @@
       "calls": [
         {"op": "Decode1", "comment": "nWorldID terminator (0xFF dispatch — end of world list)"}
       ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPicRegister": {
+      "address": "0x5d7550",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "opt (literal 1u, m_bLoginOpt == 0 branch, opcode 0x1E)"},
+        {"op": "Encode4", "comment": "dwCharacterID"},
+        {"op": "Encode4", "comment": "m_anWorldID (int32)"},
+        {"op": "EncodeStr", "comment": "sMacAddress"},
+        {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"},
+        {"op": "EncodeStr", "comment": "sSPW (PIC)"}
+      ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelectWithPic": {
+      "address": "0x5d7550",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "EncodeStr", "comment": "sSPW (PIC, m_bLoginOpt == 1 branch, opcode 0x1F)"},
+        {"op": "Encode4", "comment": "dwCharacterID"},
+        {"op": "Encode4", "comment": "m_anWorldID (int32)"},
+        {"op": "EncodeStr", "comment": "sMacAddress"},
+        {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"}
+      ]
+    },
+    "CLogin::SendSelectCharPacketByVAC#AllCharacterListSelect": {
+      "address": "0x5d7550",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "dwCharacterID (m_bLoginOpt == 2/3 branch, opcode 0x0E)"},
+        {"op": "Encode4", "comment": "m_anWorldID (int32)"},
+        {"op": "EncodeStr", "comment": "sMacAddress"},
+        {"op": "EncodeStr", "comment": "sMacAddressWithHDDSerial"}
+      ]
     }
   }
 }

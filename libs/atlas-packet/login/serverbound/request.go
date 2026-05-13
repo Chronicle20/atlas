@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/Chronicle20/atlas/libs/atlas-packet/version"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/response"
 	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
@@ -16,6 +17,7 @@ const LoginHandle = "LoginHandle"
 type Request struct {
 	name           string
 	password       string
+	passport       string
 	hwid           []byte
 	gameRoomClient uint32
 	gameStartMode  byte
@@ -29,6 +31,10 @@ func (m Request) Name() string {
 
 func (m Request) Password() string {
 	return m.password
+}
+
+func (m Request) Passport() string {
+	return m.passport
 }
 
 func (m Request) HWID() []byte {
@@ -68,7 +74,15 @@ func (m Request) Encode(l logrus.FieldLogger, ctx context.Context) func(options 
 	}
 }
 
-func (m *Request) Decode(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+func (m *Request) Decode(l logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
+	t := tenant.MustFromContext(ctx)
+	if version.IsStock(t) && version.AtLeast(t, 95) {
+		return m.decodeStock(l, ctx)
+	}
+	return m.decodeModified(l, ctx)
+}
+
+func (m *Request) decodeModified(_ logrus.FieldLogger, ctx context.Context) func(r *request.Reader, options map[string]interface{}) {
 	t := tenant.MustFromContext(ctx)
 	return func(r *request.Reader, options map[string]interface{}) {
 		m.name = r.ReadAsciiString()

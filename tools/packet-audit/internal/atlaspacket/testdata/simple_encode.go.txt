@@ -1,0 +1,15 @@
+package fixture
+
+import "context"
+
+type Simple struct{}
+
+func (m Simple) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		w.WriteInt(1)
+		w.WriteAsciiString("hi")
+		return w.Bytes()
+	}
+}

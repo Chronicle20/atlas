@@ -9,16 +9,17 @@ import (
 )
 
 type RestModel struct {
-	Id           string               `json:"-"`
-	Region       string               `json:"region"`
-	MajorVersion uint16               `json:"majorVersion"`
-	MinorVersion uint16               `json:"minorVersion"`
-	UsesPin      bool                 `json:"usesPin"`
-	Socket       socket.RestModel     `json:"socket"`
-	Characters   characters.RestModel `json:"characters"`
-	NPCs         []npcs.RestModel     `json:"npcs"`
-	Worlds       []worlds.RestModel   `json:"worlds"`
-	CashShop     cashshop.RestModel   `json:"cashShop"`
+	Id            string               `json:"-"`
+	Region        string               `json:"region"`
+	MajorVersion  uint16               `json:"majorVersion"`
+	MinorVersion  uint16               `json:"minorVersion"`
+	UsesPin       bool                 `json:"usesPin"`
+	ClientVariant string               `json:"clientVariant,omitempty"`
+	Socket        socket.RestModel     `json:"socket"`
+	Characters    characters.RestModel `json:"characters"`
+	NPCs          []npcs.RestModel     `json:"npcs"`
+	Worlds        []worlds.RestModel   `json:"worlds"`
+	CashShop      cashshop.RestModel   `json:"cashShop"`
 }
 
 func (r RestModel) GetName() string {

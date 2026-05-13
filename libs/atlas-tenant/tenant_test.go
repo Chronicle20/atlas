@@ -1,6 +1,7 @@
 package tenant
 
 import (
+	"context"
 	"encoding/json"
 	"testing"
 
@@ -39,6 +40,34 @@ func TestJSONRoundTripVariant(t *testing.T) {
 	}
 	if got.ClientVariant() != "stock" {
 		t.Errorf("after roundtrip: %q", got.ClientVariant())
+	}
+}
+
+func TestContextRoundTripPreservesVariant(t *testing.T) {
+	orig, err := CreateWithVariant(uuid.New(), "GMS", 95, 1, "stock")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := WithContext(context.Background(), orig)
+	got := MustFromContext(ctx)
+	if got.ClientVariant() != "stock" {
+		t.Errorf("context round-trip lost variant: got %q, want stock", got.ClientVariant())
+	}
+}
+
+func TestContextDefaultVariantWhenMissing(t *testing.T) {
+	// A context populated by some older caller that doesn't set the variant key
+	// should still produce a usable tenant whose ClientVariant() defaults to "modified".
+	ctx := context.WithValue(context.Background(), ID, uuid.New())
+	ctx = context.WithValue(ctx, Region, "GMS")
+	ctx = context.WithValue(ctx, MajorVersion, uint16(83))
+	ctx = context.WithValue(ctx, MinorVersion, uint16(1))
+	got, err := FromContext(ctx)()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ClientVariant() != "modified" {
+		t.Errorf("missing variant key: got %q, want modified default", got.ClientVariant())
 	}
 }
 

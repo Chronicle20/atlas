@@ -11,7 +11,6 @@ focused spike doc to add the function's wire-layout.
 | `CLogin::OnSetAccountResult` | SetAccountResult | clientbound | |
 | `CLogin::OnCheckPinCodeResult` | PinOperation, PinUpdate | clientbound | |
 | `CLogin::SendCheckPinCodePacket` | RegisterPinHandle, etc. | serverbound | |
-| `CLogin::SendCheckPasswordPacket` (stock variant) | LoginHandle.Request (stock) | serverbound | stock-v95 wire shape: password, passport, machineId, partnerCode — modeled separately from modified shape; sibling task `task-NNN-atlas-packet-stock-nexon-v95` will refresh |
 | `CLogin::SendSelectCharPacketByPIC` | CharacterSelectedPicHandle, RegisterPicHandle | serverbound | PIC verify/register branches of opcode 0x13 family |
 | `CLogin::SendCheckUserLimitPacket` | ServerStatusRequest | serverbound | |
 | `CLogin::SendAcceptLicensePacket` / `CLicenseDlg::OnButtonClicked` | AcceptTosHandle | serverbound | |

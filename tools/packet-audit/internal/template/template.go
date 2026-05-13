@@ -17,21 +17,19 @@ import (
 // Phase A opcode-presence checks. Task 12 (reverse writer→opcode lookup) will
 // need to iterate the raw slice instead of using this map.
 type Template struct {
-	Region        string
-	MajorVersion  uint16
-	MinorVersion  uint16
-	ClientVariant string // "modified" | "stock"; defaults to "modified" when absent
+	Region       string
+	MajorVersion uint16
+	MinorVersion uint16
 
 	handlers map[int]string
 	writers  map[int]string
 }
 
 type rawTemplate struct {
-	Region        string `json:"region"`
-	MajorVersion  uint16 `json:"majorVersion"`
-	MinorVersion  uint16 `json:"minorVersion"`
-	ClientVariant string `json:"clientVariant,omitempty"`
-	Socket        struct {
+	Region       string `json:"region"`
+	MajorVersion uint16 `json:"majorVersion"`
+	MinorVersion uint16 `json:"minorVersion"`
+	Socket       struct {
 		Handlers []struct {
 			OpCode  string `json:"opCode"`
 			Handler string `json:"handler"`
@@ -54,15 +52,11 @@ func Load(path string) (*Template, error) {
 		return nil, err
 	}
 	t := &Template{
-		Region:        r.Region,
-		MajorVersion:  r.MajorVersion,
-		MinorVersion:  r.MinorVersion,
-		ClientVariant: r.ClientVariant,
-		handlers:      make(map[int]string),
-		writers:       make(map[int]string),
-	}
-	if t.ClientVariant == "" {
-		t.ClientVariant = "modified"
+		Region:       r.Region,
+		MajorVersion: r.MajorVersion,
+		MinorVersion: r.MinorVersion,
+		handlers:     make(map[int]string),
+		writers:      make(map[int]string),
 	}
 	for _, h := range r.Socket.Handlers {
 		op, err := parseOp(h.OpCode)

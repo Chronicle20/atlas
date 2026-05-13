@@ -46,7 +46,7 @@ func TestAuthSuccessGMSV95Variant(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := GuardContext{Region: "GMS", MajorVersion: 95, ClientVariant: "modified"}
+	ctx := GuardContext{Region: "GMS", MajorVersion: 95}
 	active := 0
 	for _, c := range calls {
 		if c.Guard == nil || c.Guard.Eval(ctx) {

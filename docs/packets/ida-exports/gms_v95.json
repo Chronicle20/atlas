@@ -111,14 +111,13 @@
     "CLogin::SendCheckPasswordPacket": {
       "address": "0x5db9d0",
       "direction": "serverbound",
-      "note": "modified-v95 wire shape: name+password instead of stock password+passport; stock shape deferred to _pending.md",
       "calls": [
-        {"op": "DecodeStr", "comment": "name (modified) — stock sends password here"},
-        {"op": "DecodeStr", "comment": "password (modified) — stock sends passport here"},
-        {"op": "DecodeBuf", "comment": "hwid/machineId (16 bytes)"},
+        {"op": "DecodeStr", "comment": "name"},
+        {"op": "DecodeStr", "comment": "password"},
+        {"op": "DecodeBuf", "comment": "hwid (16 bytes)"},
         {"op": "Decode4", "comment": "gameRoomClient"},
         {"op": "Decode1", "comment": "gameStartMode"},
-        {"op": "Decode1", "comment": "unknown1 (const 0)"},
+        {"op": "Decode1", "comment": "unknown1"},
         {"op": "Decode1", "comment": "unknown2 (v95 extra byte)"}
       ]
     },

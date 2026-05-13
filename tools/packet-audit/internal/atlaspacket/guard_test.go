@@ -7,7 +7,7 @@ func TestGuardParseRegion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ctx := GuardContext{Region: "GMS", MajorVersion: 95, ClientVariant: "modified"}
+	ctx := GuardContext{Region: "GMS", MajorVersion: 95}
 	if !g.Eval(ctx) {
 		t.Errorf("expected eval=true for GMS context")
 	}

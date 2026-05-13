@@ -11,10 +11,9 @@ import (
 
 // GuardContext holds the version/region parameters used to evaluate a guard expression.
 type GuardContext struct {
-	Region        string
-	MajorVersion  uint16
-	MinorVersion  uint16
-	ClientVariant string
+	Region       string
+	MajorVersion uint16
+	MinorVersion uint16
 }
 
 // GuardExpr is a compiled version-conditional guard expression.
@@ -34,7 +33,6 @@ func (g *GuardExpr) String() string { return g.text }
 //   - t.Region() == "X" / != "X"
 //   - t.MajorVersion() >/>=/</<=/==/!= N
 //   - t.MinorVersion() >/>=/</<=/==/!= N
-//   - t.ClientVariant() == "X" / != "X"
 //   - && / || combinations
 //   - !( ... ) negation
 func ParseGuard(text string) (*GuardExpr, error) {
@@ -105,17 +103,6 @@ func compileBinary(b *ast.BinaryExpr) (func(GuardContext) bool, error) {
 			return func(c GuardContext) bool { return c.Region == s }, nil
 		case token.NEQ:
 			return func(c GuardContext) bool { return c.Region != s }, nil
-		}
-	case "ClientVariant":
-		s, err := stringLit(b.Y)
-		if err != nil {
-			return nil, err
-		}
-		switch b.Op {
-		case token.EQL:
-			return func(c GuardContext) bool { return c.ClientVariant == s }, nil
-		case token.NEQ:
-			return func(c GuardContext) bool { return c.ClientVariant != s }, nil
 		}
 	case "MajorVersion":
 		n, err := intLit(b.Y)

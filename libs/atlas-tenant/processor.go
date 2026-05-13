@@ -9,11 +9,10 @@ import (
 )
 
 const (
-	ID               = "TENANT_ID"
-	Region           = "REGION"
-	MajorVersion     = "MAJOR_VERSION"
-	MinorVersion     = "MINOR_VERSION"
-	ClientVariantKey = "CLIENT_VARIANT"
+	ID           = "TENANT_ID"
+	Region       = "REGION"
+	MajorVersion = "MAJOR_VERSION"
+	MinorVersion = "MINOR_VERSION"
 )
 
 //goland:noinspection GoUnusedExportedFunction
@@ -30,16 +29,6 @@ func Creator(id uuid.UUID, region string, majorVersion uint16, minorVersion uint
 //goland:noinspection GoUnusedExportedFunction
 func Create(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16) (Model, error) {
 	return Creator(id, region, majorVersion, minorVersion)()
-}
-
-//goland:noinspection GoUnusedExportedFunction
-func CreateWithVariant(id uuid.UUID, region string, majorVersion uint16, minorVersion uint16, clientVariant string) (Model, error) {
-	m, err := Create(id, region, majorVersion, minorVersion)
-	if err != nil {
-		return m, err
-	}
-	m.clientVariant = clientVariant
-	return m, nil
 }
 
 //goland:noinspection GoUnusedExportedFunction
@@ -69,7 +58,6 @@ func FromContext(ctx context.Context) model.Provider[Model] {
 	var region string
 	var majorVersion uint16
 	var minorVersion uint16
-	var clientVariant string
 
 	if id, ok = ctx.Value(ID).(uuid.UUID); !ok {
 		return model.ErrorProvider[Model](errors.New("unable to retrieve id from context"))
@@ -83,14 +71,8 @@ func FromContext(ctx context.Context) model.Provider[Model] {
 	if minorVersion, ok = ctx.Value(MinorVersion).(uint16); !ok {
 		return model.ErrorProvider[Model](errors.New("unable to retrieve minorVersion from context"))
 	}
-	// ClientVariant is optional for back-compat: callers predating Task 14
-	// may not set it. Default behavior (empty string) is mapped to "modified"
-	// by Model.ClientVariant().
-	if v, ok := ctx.Value(ClientVariantKey).(string); ok {
-		clientVariant = v
-	}
 	return func() (Model, error) {
-		return Model{id: id, region: region, majorVersion: majorVersion, minorVersion: minorVersion, clientVariant: clientVariant}, nil
+		return Model{id: id, region: region, majorVersion: majorVersion, minorVersion: minorVersion}, nil
 	}
 }
 
@@ -110,10 +92,5 @@ func WithContext(ctx context.Context, tenant Model) context.Context {
 	wctx = context.WithValue(wctx, Region, tenant.Region())
 	wctx = context.WithValue(wctx, MajorVersion, tenant.MajorVersion())
 	wctx = context.WithValue(wctx, MinorVersion, tenant.MinorVersion())
-	// Only write the variant key when non-empty so older callers that read the
-	// optional key see the absence path (no key → "modified" default).
-	if tenant.clientVariant != "" {
-		wctx = context.WithValue(wctx, ClientVariantKey, tenant.clientVariant)
-	}
 	return wctx
 }

@@ -25,13 +25,25 @@ func (p Primitive) String() string {
 	return [...]string{"byte", "int16", "int32", "int64", "string", "bytes"}[p]
 }
 
-// Call represents a single writer/reader primitive call found inside an Encode/Decode method.
-type Call struct {
-	Op    Primitive
-	Line  int
-	Guard *GuardExpr // nil for unconditional; populated in Task 8
-}
+// Kind classifies what a Call represents.
+type Kind int
 
+const (
+	KindWrite   Kind = iota // a primitive write/read call (Op is valid)
+	KindRecurse             // a sub-struct .Encode/.Decode call (RecurseType is valid)
+	KindRepeat              // a for/range loop over a slice (Body is valid)
+)
+
+// Call represents a single writer/reader primitive call found inside an Encode/Decode method,
+// or a recurse/repeat marker for sub-struct and loop encoding.
+type Call struct {
+	Kind        Kind
+	Op          Primitive  // valid for KindWrite
+	RecurseType string     // valid for KindRecurse — Go receiver/field name (best-effort)
+	Body        []Call     // valid for KindRepeat
+	Line        int
+	Guard       *GuardExpr // nil for unconditional; populated in Task 8
+}
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered
 // sequence of w.Write*/r.Read* calls inside the named method's outer return closure.
@@ -99,6 +111,8 @@ func findReturnClosure(b *ast.BlockStmt) *ast.BlockStmt {
 
 // collectCalls walks a block and collects all w.Write*/r.Read* primitive calls in order,
 // tagging each with a Guard derived from enclosing if-statement conditions.
+// It also emits KindRecurse markers for .Encode/.Decode sub-struct calls and
+// KindRepeat markers for for/range loops.
 func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 	var out []Call
 	var stack []*GuardExpr
@@ -122,13 +136,49 @@ func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 			}
 		case *ast.ExprStmt:
 			walk(n.X)
+		case *ast.RangeStmt:
+			sub := collectGuardedSub(n.Body, fset)
+			out = append(out, Call{
+				Kind:  KindRepeat,
+				Body:  sub,
+				Line:  fset.Position(n.Pos()).Line,
+				Guard: conjoin(stack),
+			})
+		case *ast.ForStmt:
+			sub := collectGuardedSub(n.Body, fset)
+			out = append(out, Call{
+				Kind:  KindRepeat,
+				Body:  sub,
+				Line:  fset.Position(n.Pos()).Line,
+				Guard: conjoin(stack),
+			})
 		case *ast.CallExpr:
 			sel, ok := n.Fun.(*ast.SelectorExpr)
 			if !ok {
+				// Handle chained calls like m.sub.Encode(l, ctx)(opts):
+				// the outer CallExpr has Fun = inner CallExpr; recurse into Fun.
+				if inner, ok := n.Fun.(*ast.CallExpr); ok {
+					walk(inner)
+				}
 				return
+			}
+			// Recurse marker: x.Encode(l, ctx) or x.Decode(l, ctx)
+			// Exclude common false-positives (writer/reader/logger receivers).
+			if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+				recv := receiverTypeHint(sel.X)
+				if !isWriterReaderReceiver(recv) {
+					out = append(out, Call{
+						Kind:        KindRecurse,
+						RecurseType: recv,
+						Line:        fset.Position(n.Pos()).Line,
+						Guard:       conjoin(stack),
+					})
+					return
+				}
 			}
 			if p, ok := primFromName(sel.Sel.Name); ok {
 				out = append(out, Call{
+					Kind:  KindWrite,
 					Op:    p,
 					Line:  fset.Position(n.Pos()).Line,
 					Guard: conjoin(stack),
@@ -143,10 +193,32 @@ func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 					walk(c)
 					return false
 				}
+				if _, ok := c.(*ast.RangeStmt); ok {
+					walk(c)
+					return false
+				}
+				if _, ok := c.(*ast.ForStmt); ok {
+					walk(c)
+					return false
+				}
 				if ce, ok := c.(*ast.CallExpr); ok {
 					if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+						// Recurse marker check
+						if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+							recv := receiverTypeHint(sel.X)
+							if !isWriterReaderReceiver(recv) {
+								out = append(out, Call{
+									Kind:        KindRecurse,
+									RecurseType: recv,
+									Line:        fset.Position(ce.Pos()).Line,
+									Guard:       conjoin(stack),
+								})
+								return false
+							}
+						}
 						if p, ok := primFromName(sel.Sel.Name); ok {
 							out = append(out, Call{
+								Kind:  KindWrite,
 								Op:    p,
 								Line:  fset.Position(ce.Pos()).Line,
 								Guard: conjoin(stack),
@@ -160,6 +232,47 @@ func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 	}
 	walk(b)
 	return out
+}
+
+// collectGuardedSub collects body calls fresh — the parent Repeat already carries the outer guard.
+func collectGuardedSub(b *ast.BlockStmt, fset *token.FileSet) []Call {
+	return collectCalls(b, fset)
+}
+
+// receiverTypeHint returns a best-effort static type name for the receiver of
+// a .Encode/.Decode call. For x.Encode(...): returns "x". For m.sub.Encode(...):
+// returns "sub". Real type resolution requires a full type-check pass; Phase A
+// uses the identifier text as a placeholder for the diff engine to surface.
+func receiverTypeHint(x ast.Expr) string {
+	switch v := x.(type) {
+	case *ast.Ident:
+		// Could be a local variable name OR a package-level type name (for static methods).
+		name := v.Name
+		if name == "" {
+			return ""
+		}
+		return name
+	case *ast.SelectorExpr:
+		return v.Sel.Name
+	case *ast.CallExpr:
+		// e.g. someChain().Encode — chain too deep to resolve
+		return ""
+	case *ast.IndexExpr:
+		// e.g. arr[i].Encode
+		return receiverTypeHint(v.X)
+	}
+	return ""
+}
+
+// isWriterReaderReceiver returns true for common local variable names that are
+// writer/reader/logger instances (not sub-encoders), to avoid false-positive
+// KindRecurse classification.
+func isWriterReaderReceiver(name string) bool {
+	switch name {
+	case "w", "r", "l", "log", "ctx", "t":
+		return true
+	}
+	return false
 }
 
 // guardFromIf extracts and compiles the condition expression of an if statement.

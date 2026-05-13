@@ -35,8 +35,13 @@ func (m AuthPermanentBan) Encode(l logrus.FieldLogger, ctx context.Context) func
 			w.WriteInt(0)
 		}
 
-		w.WriteByte(0) // reason
-		w.WriteLong(0) // timestamp
+		// v95 client's OnCheckPasswordResult permanent-ban branch (resultCode == 27)
+		// reads only the 3 leading fields and routes to a dialog; the trailing
+		// reason+timestamp are wasted bytes on v95. Keep them for older versions.
+		if !(t.Region() == "GMS" && t.MajorVersion() >= 95) {
+			w.WriteByte(0) // reason
+			w.WriteLong(0) // timestamp
+		}
 		return w.Bytes()
 	}
 }
@@ -51,7 +56,9 @@ func (m *AuthPermanentBan) Decode(l logrus.FieldLogger, ctx context.Context) fun
 			_ = r.ReadUint32()
 		}
 
-		_ = r.ReadByte()   // reason
-		_ = r.ReadUint64() // timestamp
+		if !(t.Region() == "GMS" && t.MajorVersion() >= 95) {
+			_ = r.ReadByte()   // reason
+			_ = r.ReadUint64() // timestamp
+		}
 	}
 }

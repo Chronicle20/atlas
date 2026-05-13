@@ -167,6 +167,35 @@
       "calls": [
         {"op": "Decode1", "comment": "resultCode (mode dispatch)"}
       ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthLoginFailed": {
+      "address": "0x5dc600",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (failure code)"},
+        {"op": "Decode1", "comment": "post-auth flag"},
+        {"op": "Decode4", "comment": "reserved (always decoded before branch)"}
+      ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthTemporaryBan": {
+      "address": "0x5dc600",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (== 2)"},
+        {"op": "Decode1", "comment": "post-auth flag"},
+        {"op": "Decode4", "comment": "reserved (always decoded before branch)"},
+        {"op": "Decode1", "comment": "ban reason (v7)"},
+        {"op": "Decode8", "comment": "chatUnblockDate FILETIME (DecodeBuffer 8)"}
+      ]
+    },
+    "CLogin::OnCheckPasswordResult#AuthPermanentBan": {
+      "address": "0x5dc600",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resultCode (== 27)"},
+        {"op": "Decode1", "comment": "post-auth flag"},
+        {"op": "Decode4", "comment": "reserved (always decoded before branch)"}
+      ]
     }
   }
 }

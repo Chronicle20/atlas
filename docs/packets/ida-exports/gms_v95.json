@@ -129,6 +129,37 @@
         {"op": "DecodeStr", "comment": "sMacAddress"},
         {"op": "DecodeStr", "comment": "sMacAddressWithHDDSerial"}
       ]
+    },
+    "CLogin::OnSetAccountResult": {
+      "address": "0x5d5e80",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "gender"},
+        {"op": "Decode1", "comment": "success"}
+      ]
+    },
+    "CLogin::OnLatestConnectedWorld": {
+      "address": "0x5d2200",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "latestConnectedWorldID"}
+      ]
+    },
+    "CLogin::OnRecommendWorldMessage": {
+      "address": "0x5d7280",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nCount"},
+        {"op": "Decode4", "comment": "nWorldID (loop body)", "guard": "loop nCount"},
+        {"op": "DecodeStr", "comment": "sMessage (loop body)", "guard": "loop nCount"}
+      ]
+    },
+    "CLogin::SendCheckUserLimitPacket": {
+      "address": "0x5d43d0",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode2", "comment": "nWorldID"}
+      ]
     }
   }
 }

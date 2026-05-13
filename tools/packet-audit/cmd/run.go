@@ -143,6 +143,14 @@ func candidatesFromFName(fname string) []candidate {
 			{name: "CharacterSelectedHandle", dir: csvpkg.DirServerbound},
 			{name: "CharacterSelect", dir: csvpkg.DirServerbound},
 		}
+	case "CLogin::OnSetAccountResult":
+		return []candidate{{name: "SetAccountResult", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnLatestConnectedWorld":
+		return []candidate{{name: "SelectWorld", dir: csvpkg.DirClientbound}}
+	case "CLogin::OnRecommendWorldMessage":
+		return []candidate{{name: "ServerListRecommendations", dir: csvpkg.DirClientbound}}
+	case "CLogin::SendCheckUserLimitPacket":
+		return []candidate{{name: "ServerStatusRequest", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

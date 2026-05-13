@@ -1,0 +1,20 @@
+{
+  "WriterName": "ServerStatusRequest",
+  "IDAName": "CLogin::SendCheckUserLimitPacket",
+  "Address": "0x5d43d0",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/serverbound/server_status_request.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 1,
+      "IDAComment": "nWorldID",
+      "Verdict": 2,
+      "Note": "width mismatch"
+    }
+  ],
+  "Verdict": 2
+}

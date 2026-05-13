@@ -2,7 +2,6 @@
   "region": "GMS",
   "majorVersion": 95,
   "minorVersion": 1,
-  "clientVariant": "modified",
   "socket": {
     "handlers": [
       {"opCode": "0x01", "handler": "LoginHandle"},

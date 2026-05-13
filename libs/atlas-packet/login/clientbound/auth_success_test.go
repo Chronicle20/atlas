@@ -15,7 +15,7 @@ func TestAuthSuccessV95WireWidthMatchesIDA(t *testing.T) {
 	// = 1+1+4+4+1+1+2+1+(2+8)+1+1+8+8+4+1+1+8 = 57 bytes
 	const wantLen = 57
 
-	ctx := pt.CreateContextWithVariant("GMS", 95, 1, "modified")
+	ctx := pt.CreateContext("GMS", 95, 1)
 	input := AuthSuccess{
 		accountId: 1001,
 		name:      "TestUser",

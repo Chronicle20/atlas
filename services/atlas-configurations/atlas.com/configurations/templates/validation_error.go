@@ -32,14 +32,3 @@ func (e *validationFailureError) AsJSONAPIErrors() []jsonapiError {
 	}
 	return out
 }
-
-// validateClientVariant returns an error if v is not a recognized variant.
-// Kept as an unexported helper for future REST validation hooks. The empty
-// string normalizes to "modified" at the tenant layer.
-func validateClientVariant(v string) error {
-	switch v {
-	case "", "modified", "stock":
-		return nil
-	}
-	return fmt.Errorf("templates: clientVariant must be one of [\"\", modified, stock]; got %q", v)
-}

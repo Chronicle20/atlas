@@ -2,7 +2,7 @@
   "WriterName": "CharacterSelect",
   "IDAName": "CLogin::SendSelectCharPacket",
   "Address": "0x5da2a0",
-  "Variant": "GMS/v95/modified",
+  "Variant": "GMS/v95",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/login/serverbound/character_select.go",
   "Rows": [

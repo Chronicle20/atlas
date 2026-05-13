@@ -2,7 +2,7 @@
   "WriterName": "CharacterList",
   "IDAName": "CLogin::OnSelectWorldResult",
   "Address": "0x5dda00",
-  "Variant": "GMS/v95/modified",
+  "Variant": "GMS/v95",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/character/clientbound/list.go",
   "Rows": [

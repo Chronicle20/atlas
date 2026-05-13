@@ -2,7 +2,7 @@
 
 - **IDA:** 0x5da2a0
 - **Atlas file:** `../../libs/atlas-packet/login/serverbound/character_select.go`
-- **Variant:** GMS/v95/modified
+- **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅
 

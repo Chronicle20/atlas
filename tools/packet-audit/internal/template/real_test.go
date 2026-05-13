@@ -17,7 +17,4 @@ func TestLoadRealGMS95(t *testing.T) {
 	if tpl.Region != "GMS" || tpl.MajorVersion != 95 {
 		t.Fatalf("region/major: got %s/%d", tpl.Region, tpl.MajorVersion)
 	}
-	if tpl.ClientVariant != "modified" {
-		t.Errorf("default variant: got %q, want modified", tpl.ClientVariant)
-	}
 }

@@ -2,7 +2,7 @@
   "WriterName": "Request",
   "IDAName": "CLogin::SendCheckPasswordPacket",
   "Address": "0x5db9d0",
-  "Variant": "GMS/v95/modified",
+  "Variant": "GMS/v95",
   "BranchDepth": 2,
   "AtlasFile": "../../libs/atlas-packet/login/serverbound/request.go",
   "Rows": [
@@ -11,7 +11,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "name (modified) — stock sends password here",
+      "IDAComment": "name",
       "Verdict": 0,
       "Note": ""
     },
@@ -20,7 +20,7 @@
       "AtlasOp": 4,
       "AtlasKind": 0,
       "IDAOp": 4,
-      "IDAComment": "password (modified) — stock sends passport here",
+      "IDAComment": "password",
       "Verdict": 0,
       "Note": ""
     },
@@ -29,7 +29,7 @@
       "AtlasOp": 5,
       "AtlasKind": 0,
       "IDAOp": 5,
-      "IDAComment": "hwid/machineId (16 bytes)",
+      "IDAComment": "hwid (16 bytes)",
       "Verdict": 0,
       "Note": ""
     },
@@ -56,7 +56,7 @@
       "AtlasOp": 0,
       "AtlasKind": 0,
       "IDAOp": 0,
-      "IDAComment": "unknown1 (const 0)",
+      "IDAComment": "unknown1",
       "Verdict": 0,
       "Note": ""
     },

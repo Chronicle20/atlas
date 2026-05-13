@@ -30,10 +30,9 @@ func runPipeline(opts Options, stderr io.Writer) int {
 	}
 
 	ctx := atlaspacket.GuardContext{
-		Region:        template.Region,
-		MajorVersion:  template.MajorVersion,
-		MinorVersion:  template.MinorVersion,
-		ClientVariant: template.ClientVariant,
+		Region:       template.Region,
+		MajorVersion: template.MajorVersion,
+		MinorVersion: template.MinorVersion,
 	}
 	outDir := filepath.Join(opts.Output, fmt.Sprintf("%s_v%d", strings.ToLower(template.Region), template.MajorVersion))
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
@@ -73,7 +72,7 @@ func runPipeline(opts Options, stderr io.Writer) int {
 			WriterName:  name,
 			IDAName:     fname,
 			Address:     fields.Address,
-			Variant:     fmt.Sprintf("%s/v%d/%s", ctx.Region, ctx.MajorVersion, ctx.ClientVariant),
+			Variant:     fmt.Sprintf("%s/v%d", ctx.Region, ctx.MajorVersion),
 			BranchDepth: branchDepth(calls),
 			AtlasFile:   atlasPath,
 			Rows:        rows,

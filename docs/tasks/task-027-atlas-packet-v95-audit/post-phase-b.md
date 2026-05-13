@@ -12,7 +12,7 @@ Phase B (login-domain audit + fixes) shipped on branch
 | ServerListEntry | 🔍 | per-channel world-id fix shipped (Task 17); 🔍 verdict reflects loop-body sub-struct, not a wire bug |
 | ServerIP | ✅ | wire-perfect for v95 once analyzer learned `WriteByteArray` (Task 19) |
 | CharacterList | 🔍 | sub-struct recurse into CharacterListEntry/CharacterStat/AvatarLook |
-| Request (LoginHandle) | ✅ | modified-v95 shape; stock-v95 stubbed in `request_stock.go` (Task 18) — sibling task tracks Nexon-passport validator |
+| Request (LoginHandle) | ✅ | v95 wire shape (name + password + hwid + gameRoomClient + gameStartMode + unknown1 + unknown2) |
 | CharacterSelect | ✅ | no-PIC path wire-correct |
 
 Reports: `docs/packets/audits/gms_v95/`.
@@ -72,22 +72,9 @@ Symmetric to Phase D; same domain split. Sibling tasks pair (Phase D → Phase E
 per domain since clientbound + serverbound for a feature typically land
 together.
 
-## Phase F — Stock-Nexon v95 support (recommendation)
-
-**Recommend splitting Phase F into a sibling task** `task-NNN-atlas-packet-stock-nexon-v95`.
-
-Trigger condition: split as a sibling task as soon as any Phase C/D/E sub-task
-is open for review. Rationale: stock-v95 support requires both:
-1. Real `decodeStock` implementation for `LoginHandle.Request` (currently stubbed)
-2. Server-side Nexon-passport validation (out-of-band integration)
-
-Neither belongs in a per-domain audit pass. Carry the `_pending.md` entry
-`CLogin::SendCheckPasswordPacket (stock variant)` forward to that sibling task.
-
 ## What this task delivered
 
 - Audit pipeline (`tools/packet-audit/`) — reusable for any GMS/JMS version
-- `clientVariant` plumbing — template field, tenant accessor, version helper
 - Six spike-confirmed login packets audited; three concrete fixes shipped
 - Documented pending IDA exports in `docs/packets/ida-exports/_pending.md`
 - This checkpoint document

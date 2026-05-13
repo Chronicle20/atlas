@@ -3,7 +3,6 @@
   "majorVersion": 95,
   "minorVersion": 1,
   "usesPin": false,
-  "clientVariant": "modified",
   "socket": {
     "handlers": [{
         "opCode": "0x01",

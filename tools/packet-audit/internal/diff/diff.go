@@ -1,6 +1,8 @@
 package diff
 
 import (
+	"strings"
+
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/atlaspacket"
 	"github.com/Chronicle20/atlas/tools/packet-audit/internal/idasrc"
 )
@@ -44,8 +46,17 @@ func Diff(atlas []atlaspacket.Call, ida idasrc.Fields) []Row {
 		}
 		switch {
 		case i >= len(atlas):
-			r.Verdict = VerdictBlocker
-			r.Note = "atlas: short — missing trailing field"
+			// IDA's loop-body calls (guard "loop X") are optional at runtime:
+			// they only fire when the just-read count is > 0. Atlas correctly
+			// omits the loop body when its count is always 0 (e.g. balloons).
+			// Downgrade these trailing entries from blocker to minor.
+			if i < len(ida.Calls) && strings.HasPrefix(ida.Calls[i].Guard, "loop ") {
+				r.Verdict = VerdictMinor
+				r.Note = "loop body — atlas emits zero iterations (count==0)"
+			} else {
+				r.Verdict = VerdictBlocker
+				r.Note = "atlas: short — missing trailing field"
+			}
 		case i >= len(ida.Calls):
 			r.Verdict = VerdictBlocker
 			r.Note = "atlas: extra — client never reads this field"
@@ -103,11 +114,17 @@ func idaWidth(p idasrc.Primitive) int {
 }
 
 // Flatten resolves an atlas call list against a GuardContext: drops guarded
-// calls whose guard evaluates false.
+// calls whose guard evaluates false. Inlines KindRepeat bodies so that loop
+// bodies appear in the flattened sequence, matching the IDA export's
+// convention of emitting one entry per loop-body field with `guard: "loop X"`.
 func Flatten(calls []atlaspacket.Call, ctx atlaspacket.GuardContext) []atlaspacket.Call {
 	var out []atlaspacket.Call
 	for _, c := range calls {
 		if c.Guard != nil && !c.Guard.Eval(ctx) {
+			continue
+		}
+		if c.Kind == atlaspacket.KindRepeat {
+			out = append(out, Flatten(c.Body, ctx)...)
 			continue
 		}
 		out = append(out, c)

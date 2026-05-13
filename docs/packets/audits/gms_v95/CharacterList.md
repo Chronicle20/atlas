@@ -12,7 +12,7 @@
 |---|---|---|---|---|
 | 0 | byte | byte `resultCode` | ✅ |  |
 | 1 | byte | byte `nCount (character entries)` | ✅ |  |
-| 2 | byte | string `GW_CharacterStat::Decode start: characterName (loop body entry 0)` | 🔍 | loop body — see follow-up scan |
+| 2 | byte | string `GW_CharacterStat::Decode start: characterName (loop body entry 0)` | 🔍 | sub-struct: c — see _substruct/ |
 | 3 | byte | int32 `characterId` | ❌ | width mismatch |
 | 4 | int32 | int32 `level` | ✅ |  |
 | 5 | int32 | int32 `job` | ✅ |  |
@@ -38,9 +38,9 @@
 | 25 | byte | int32 `face` | ❌ | atlas: short — missing trailing field |
 | 26 | byte | byte `megaphoneFlag (AvatarLook)` | ❌ | atlas: short — missing trailing field |
 | 27 | byte | int32 `hair` | ❌ | atlas: short — missing trailing field |
-| 28 | byte | int32 `equip slot 0 itemId (AvatarLook equipment loop body)` | ❌ | atlas: short — missing trailing field |
-| 29 | byte | int32 `equip slot 0 itemId masked (AvatarLook masked-equip loop body)` | ❌ | atlas: short — missing trailing field |
-| 30 | byte | int32 `pet 0 itemId (AvatarLook pet loop body)` | ❌ | atlas: short — missing trailing field |
+| 28 | byte | int32 `equip slot 0 itemId (AvatarLook equipment loop body)` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
+| 29 | byte | int32 `equip slot 0 itemId masked (AvatarLook masked-equip loop body)` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
+| 30 | byte | int32 `pet 0 itemId (AvatarLook pet loop body)` | ⚠️ | loop body — atlas emits zero iterations (count==0) |
 | 31 | byte | byte `onFamily` | ❌ | atlas: short — missing trailing field |
 | 32 | byte | byte `hasRank` | ❌ | atlas: short — missing trailing field |
 | 33 | byte | int32 `worldRank` | ❌ | atlas: short — missing trailing field |

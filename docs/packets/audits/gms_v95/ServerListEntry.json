@@ -80,21 +80,21 @@
     },
     {
       "Index": 8,
-      "AtlasOp": 0,
-      "AtlasKind": 2,
+      "AtlasOp": 4,
+      "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "channel sName (loop body)",
-      "Verdict": 3,
-      "Note": "loop body — see follow-up scan"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 9,
-      "AtlasOp": 1,
+      "AtlasOp": 2,
       "AtlasKind": 0,
       "IDAOp": 2,
       "IDAComment": "channel nUserNo (load)",
-      "Verdict": 2,
-      "Note": "width mismatch"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 10,
@@ -102,8 +102,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "channel nWorldID",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 11,
@@ -111,8 +111,8 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "channel nChannelID",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 12,
@@ -120,17 +120,17 @@
       "AtlasKind": 0,
       "IDAOp": 0,
       "IDAComment": "channel bAdultChannel",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 13,
-      "AtlasOp": 0,
+      "AtlasOp": 1,
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "nBalloonCount",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 0,
+      "Note": ""
     },
     {
       "Index": 14,
@@ -138,8 +138,8 @@
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "balloon x (loop body)",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
     },
     {
       "Index": 15,
@@ -147,8 +147,8 @@
       "AtlasKind": 0,
       "IDAOp": 1,
       "IDAComment": "balloon y",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
     },
     {
       "Index": 16,
@@ -156,9 +156,9 @@
       "AtlasKind": 0,
       "IDAOp": 4,
       "IDAComment": "balloon msg",
-      "Verdict": 2,
-      "Note": "atlas: short — missing trailing field"
+      "Verdict": 1,
+      "Note": "loop body — atlas emits zero iterations (count==0)"
     }
   ],
-  "Verdict": 3
+  "Verdict": 1
 }

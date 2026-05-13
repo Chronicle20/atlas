@@ -176,7 +176,20 @@ func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 					return
 				}
 			}
+			// Wrapped recurse marker: WriteByteArray(c.Encode(l, ctx)(opts)) — atlas's
+			// CharacterList encoder pre-encodes a sub-struct to []byte then writes the
+			// buffer verbatim. The wire shape is identical to inlining c.Encode's calls,
+			// so model this as KindRecurse rather than KindWrite EncodeBuf.
 			if p, ok := primFromName(sel.Sel.Name); ok {
+				if recv, ok := wrappedRecurseType(sel.Sel.Name, n.Args); ok {
+					out = append(out, Call{
+						Kind:        KindRecurse,
+						RecurseType: recv,
+						Line:        fset.Position(n.Pos()).Line,
+						Guard:       conjoin(stack),
+					})
+					return
+				}
 				out = append(out, Call{
 					Kind:  KindWrite,
 					Op:    p,
@@ -273,6 +286,38 @@ func isWriterReaderReceiver(name string) bool {
 		return true
 	}
 	return false
+}
+
+// wrappedRecurseType detects the WriteByteArray(<sub>.Encode(...)(...)) pattern
+// used by atlas's CharacterList encoder. Returns the sub-receiver type hint and
+// true when the outer primitive is WriteByteArray and its sole arg is a call
+// chain whose terminal selector is Encode or Decode.
+func wrappedRecurseType(outerMethod string, args []ast.Expr) (string, bool) {
+	if outerMethod != "WriteByteArray" && outerMethod != "ReadByteArray" {
+		return "", false
+	}
+	if len(args) != 1 {
+		return "", false
+	}
+	// Unwrap: args[0] might be c.Encode(l, ctx)(opts) — a CallExpr whose Fun is
+	// itself a CallExpr whose Fun is a SelectorExpr ending in Encode/Decode.
+	expr := args[0]
+	for {
+		ce, ok := expr.(*ast.CallExpr)
+		if !ok {
+			return "", false
+		}
+		if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+			if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+				recv := receiverTypeHint(sel.X)
+				if !isWriterReaderReceiver(recv) {
+					return recv, true
+				}
+			}
+			return "", false
+		}
+		expr = ce.Fun
+	}
 }
 
 // guardFromIf extracts and compiles the condition expression of an if statement.

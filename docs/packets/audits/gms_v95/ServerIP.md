@@ -3,7 +3,7 @@
 - **IDA:** 0x5dea80
 - **Atlas file:** `../../libs/atlas-packet/login/clientbound/server_ip.go`
 - **Variant:** GMS/v95
-- **Branch depth:** 2
+- **Branch depth:** 3
 - **Verdict:** ✅
 
 ## Wire-level diff

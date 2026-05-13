@@ -3,7 +3,7 @@
   "IDAName": "CLogin::OnSelectCharacterResult",
   "Address": "0x5dea80",
   "Variant": "GMS/v95",
-  "BranchDepth": 2,
+  "BranchDepth": 3,
   "AtlasFile": "../../libs/atlas-packet/login/clientbound/server_ip.go",
   "Rows": [
     {

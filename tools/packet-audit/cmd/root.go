@@ -18,6 +18,9 @@ type Options struct {
 }
 
 func Run(args []string, stderr io.Writer) int {
+	if len(args) > 0 && args[0] == "export" {
+		return runExport(args[1:], stderr)
+	}
 	fs := flag.NewFlagSet("packet-audit", flag.ContinueOnError)
 	fs.SetOutput(stderr)
 	opts := Options{}

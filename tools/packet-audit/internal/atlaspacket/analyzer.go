@@ -243,6 +243,20 @@ func (cc *callCtx) walk(node ast.Node) {
 	case *ast.CallExpr:
 		sel, ok := n.Fun.(*ast.SelectorExpr)
 		if !ok {
+			// Handle free-function helpers like WritePaddedString(w, name, n) that
+			// atlas uses for fixed-length string fields. Treat as EncodeBuf since
+			// the IDA side typically models them as DecodeBuffer(buf, n).
+			if id, ok := n.Fun.(*ast.Ident); ok {
+				if p, ok := freeFnPrimitive(id.Name); ok {
+					cc.appendCall(Call{
+						Kind:  KindWrite,
+						Op:    p,
+						Line:  cc.fset.Position(n.Pos()).Line,
+						Guard: cc.conjoin(),
+					})
+					return
+				}
+			}
 			// Handle chained calls like m.sub.Encode(l, ctx)(opts):
 			// the outer CallExpr has Fun = inner CallExpr; recurse into Fun.
 			if inner, ok := n.Fun.(*ast.CallExpr); ok {
@@ -280,6 +294,16 @@ func (cc *callCtx) walk(node ast.Node) {
 				})
 				return
 			}
+		}
+		// Compound writer method: WriteKeyValue(byte, int32) is atlas's helper for
+		// equipment-slot maps. Decompose into two primitive writes so the diff
+		// engine aligns row-by-row against the IDA loop body's Decode1 + Decode4.
+		if sel.Sel.Name == "WriteKeyValue" {
+			line := cc.fset.Position(n.Pos()).Line
+			g := cc.conjoin()
+			cc.appendCall(Call{Kind: KindWrite, Op: Encode1, Line: line, Guard: g})
+			cc.appendCall(Call{Kind: KindWrite, Op: Encode4, Line: line, Guard: g})
+			return
 		}
 		// Wrapped recurse marker: WriteByteArray(c.Encode(l, ctx)(opts)) — atlas's
 		// CharacterList encoder pre-encodes a sub-struct to []byte then writes the
@@ -433,6 +457,18 @@ func receiverTypeHint(x ast.Expr) string {
 	return ""
 }
 
+// freeFnPrimitive returns a Primitive for known free-function helpers that
+// atlas uses outside the w.Write*/r.Read* method convention.
+//   WritePaddedString(w, str, n) writes a fixed-length buffer.
+//   ReadPaddedString(r, n) reads a fixed-length buffer.
+func freeFnPrimitive(name string) (Primitive, bool) {
+	switch name {
+	case "WritePaddedString", "ReadPaddedString":
+		return EncodeBuf, true
+	}
+	return 0, false
+}
+
 // isWriterReaderReceiver returns true for common local variable names that are
 // writer/reader/logger instances (not sub-encoders), to avoid false-positive
 // KindRecurse classification.
@@ -492,6 +528,12 @@ func guardFromIf(n *ast.IfStmt, fset *token.FileSet) *GuardExpr {
 
 // conjoin combines a stack of guards into a single AND-ed GuardExpr.
 // Returns nil if the stack is empty (unconditional call).
+//
+// If the stack contains an unparseable guard (e.g. <unparsed:...> for
+// expressions like `len(x) > 0` that the DSL parser can't model), the
+// text-based reparse fails. In that case we synthesize a GuardExpr whose
+// Eval AND-s the stack's eval functions directly — preserves the
+// outer-guard semantics that a "return last guard" fallback would lose.
 func conjoin(s []*GuardExpr) *GuardExpr {
 	if len(s) == 0 {
 		return nil
@@ -503,11 +545,22 @@ func conjoin(s []*GuardExpr) *GuardExpr {
 	for i, g := range s {
 		parts[i] = "(" + g.text + ")"
 	}
-	combined, err := ParseGuard(strings.Join(parts, " && "))
-	if err != nil {
-		return s[len(s)-1]
+	if combined, err := ParseGuard(strings.Join(parts, " && ")); err == nil {
+		return combined
 	}
-	return combined
+	snapshot := make([]*GuardExpr, len(s))
+	copy(snapshot, s)
+	return &GuardExpr{
+		eval: func(c GuardContext) bool {
+			for _, g := range snapshot {
+				if !g.eval(c) {
+					return false
+				}
+			}
+			return true
+		},
+		text: strings.Join(parts, " && "),
+	}
 }
 
 // negate wraps a guard expression in logical NOT.

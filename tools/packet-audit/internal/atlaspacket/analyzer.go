@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"go/ast"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"os"
+	"strings"
 )
 
 type Primitive int
@@ -30,8 +32,6 @@ type Call struct {
 	Guard *GuardExpr // nil for unconditional; populated in Task 8
 }
 
-// GuardExpr is a stub for Task 8; declared here so callers can reference it.
-type GuardExpr struct{}
 
 // AnalyzeFile parses a single .go (or .go.txt) file and extracts the ordered
 // sequence of w.Write*/r.Read* calls inside the named method's outer return closure.
@@ -97,24 +97,113 @@ func findReturnClosure(b *ast.BlockStmt) *ast.BlockStmt {
 	return out
 }
 
-// collectCalls walks a block and collects all w.Write*/r.Read* primitive calls in order.
+// collectCalls walks a block and collects all w.Write*/r.Read* primitive calls in order,
+// tagging each with a Guard derived from enclosing if-statement conditions.
 func collectCalls(b *ast.BlockStmt, fset *token.FileSet) []Call {
 	var out []Call
-	ast.Inspect(b, func(n ast.Node) bool {
-		ce, ok := n.(*ast.CallExpr)
-		if !ok {
-			return true
+	var stack []*GuardExpr
+	var walk func(node ast.Node)
+	walk = func(node ast.Node) {
+		switch n := node.(type) {
+		case *ast.IfStmt:
+			g := guardFromIf(n, fset)
+			stack = append(stack, g)
+			walk(n.Body)
+			stack = stack[:len(stack)-1]
+			if n.Else != nil {
+				ng := negate(g)
+				stack = append(stack, ng)
+				walk(n.Else)
+				stack = stack[:len(stack)-1]
+			}
+		case *ast.BlockStmt:
+			for _, s := range n.List {
+				walk(s)
+			}
+		case *ast.ExprStmt:
+			walk(n.X)
+		case *ast.CallExpr:
+			sel, ok := n.Fun.(*ast.SelectorExpr)
+			if !ok {
+				return
+			}
+			if p, ok := primFromName(sel.Sel.Name); ok {
+				out = append(out, Call{
+					Op:    p,
+					Line:  fset.Position(n.Pos()).Line,
+					Guard: conjoin(stack),
+				})
+			}
+		default:
+			ast.Inspect(node, func(c ast.Node) bool {
+				if c == node {
+					return true
+				}
+				if _, ok := c.(*ast.IfStmt); ok {
+					walk(c)
+					return false
+				}
+				if ce, ok := c.(*ast.CallExpr); ok {
+					if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+						if p, ok := primFromName(sel.Sel.Name); ok {
+							out = append(out, Call{
+								Op:    p,
+								Line:  fset.Position(ce.Pos()).Line,
+								Guard: conjoin(stack),
+							})
+						}
+					}
+				}
+				return true
+			})
 		}
-		sel, ok := ce.Fun.(*ast.SelectorExpr)
-		if !ok {
-			return true
-		}
-		if p, ok := primFromName(sel.Sel.Name); ok {
-			out = append(out, Call{Op: p, Line: fset.Position(ce.Pos()).Line})
-		}
-		return true
-	})
+	}
+	walk(b)
 	return out
+}
+
+// guardFromIf extracts and compiles the condition expression of an if statement.
+// If parsing fails, returns a GuardExpr with text "<unparsed:...>" that always evaluates false.
+func guardFromIf(n *ast.IfStmt, fset *token.FileSet) *GuardExpr {
+	var buf strings.Builder
+	printer.Fprint(&buf, fset, n.Cond)
+	g, err := ParseGuard(buf.String())
+	if err != nil {
+		return &GuardExpr{eval: func(GuardContext) bool { return false }, text: "<unparsed:" + buf.String() + ">"}
+	}
+	return g
+}
+
+// conjoin combines a stack of guards into a single AND-ed GuardExpr.
+// Returns nil if the stack is empty (unconditional call).
+func conjoin(s []*GuardExpr) *GuardExpr {
+	if len(s) == 0 {
+		return nil
+	}
+	if len(s) == 1 {
+		return s[0]
+	}
+	parts := make([]string, len(s))
+	for i, g := range s {
+		parts[i] = "(" + g.text + ")"
+	}
+	combined, err := ParseGuard(strings.Join(parts, " && "))
+	if err != nil {
+		return s[len(s)-1]
+	}
+	return combined
+}
+
+// negate wraps a guard expression in logical NOT.
+func negate(g *GuardExpr) *GuardExpr {
+	if g == nil {
+		return nil
+	}
+	ng, err := ParseGuard("!(" + g.text + ")")
+	if err != nil {
+		return g
+	}
+	return ng
 }
 
 // primFromName maps a method name to its Primitive encoding width.

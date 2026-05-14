@@ -4,18 +4,14 @@
 # main env's group IDs unchanged across the migration.
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 namespace: atlas-main
-
 resources:
   - ../../base
   - atlas-env-tokens.yaml
-
 patches:
   - path: lb-pin.yaml
   - path: patches/atlas-env-env.yaml
   - path: patches/db-name-suffix.yaml
-
 configMapGenerator:
   - name: atlas-env
     behavior: replace
@@ -107,122 +103,120 @@ configMapGenerator:
       - EVENT_TOPIC_SESSION_STATUS=EVENT_TOPIC_SESSION_STATUS-main
       - EVENT_TOPIC_SKILL_STATUS=EVENT_TOPIC_SKILL_STATUS-main
       - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-main
-
 images:
   - name: ghcr.io/chronicle20/atlas-account/atlas-account
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-character/atlas-character
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-data/atlas-data
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-families/atlas-families
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-login/atlas-login
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
     newTag: latest
   - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-world/atlas-world
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
-    newTag: latest
+    newTag: main-f3892bf
   - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
     newTag: latest
-
 commonLabels:
   atlas.env: main

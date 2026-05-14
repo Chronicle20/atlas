@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# Atlas pre-commit secret/identifier scan.
+#
+# Runs gitleaks against the staged diff. Uses .gitleaks.local.toml if
+# present (extends the committed .gitleaks.toml); otherwise uses
+# .gitleaks.toml directly.
+#
+# Enable on a fresh clone:
+#   ./.githooks/install.sh
+#
+# Bypass (NOT recommended) for a single commit:
+#   git commit --no-verify
+
+set -euo pipefail
+
+repo_root=$(git rev-parse --show-toplevel)
+cd "$repo_root"
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+  cat >&2 <<'EOF'
+[secret-scan] gitleaks is not installed.
+
+Install one of these ways:
+  # Linux/macOS one-liner
+  curl -sSfL https://raw.githubusercontent.com/gitleaks/gitleaks/master/install.sh \
+    | sh -s -- -b /usr/local/bin
+
+  # Homebrew
+  brew install gitleaks
+
+  # Go
+  go install github.com/gitleaks/gitleaks/v8@latest
+
+After installing, retry the commit. To bypass once (not recommended):
+  git commit --no-verify
+EOF
+  exit 1
+fi
+
+config=".gitleaks.toml"
+if [ -f .gitleaks.local.toml ]; then
+  config=".gitleaks.local.toml"
+fi
+
+if ! gitleaks protect \
+     --staged \
+     --config "$config" \
+     --no-banner \
+     --exit-code 1; then
+  cat >&2 <<EOF
+
+[secret-scan] gitleaks flagged staged changes.
+[secret-scan] Config: $config
+[secret-scan] Fix the findings above, restage, and retry.
+[secret-scan] If a finding is a false positive, add an allowlist entry to .gitleaks.toml
+[secret-scan] (or .gitleaks.local.toml for personal tokens). Bypass once with --no-verify.
+EOF
+  exit 1
+fi

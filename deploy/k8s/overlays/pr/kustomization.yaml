@@ -1,0 +1,292 @@
+# Per-PR overlay shell.
+#
+# PLACEHOLDER_ATLAS_ENV / PLACEHOLDER_PR_NUMBER / PLACEHOLDER_SHA are
+# sentinel strings resolved at CI time by .github/workflows/pr-validation.yml's
+# update-pr-overlay job, which sed-substitutes them across this directory
+# and force-pushes the result to bot/pr-<N>-resolved. The Argo CD
+# ApplicationSet(atlas-pr) targets that derived branch, NOT the PR head
+# directly — so kustomize never sees the placeholders.
+#
+# This approach sidesteps kustomize's substring-substitution limitations
+# (bracketed KAFKA_CONSUMER_GROUP, variable-dash DB_NAME) which couldn't
+# be cleanly resolved via either kustomization.yaml's `replacements:` or
+# Argo CD's `kustomize.patches`. The CI bot can use plain sed.
+#
+# As a side effect of the bot-branch model: the `images:` block below
+# starts with `newTag: latest` for every service. Bot job bumps only
+# the services it actually rebuilt to `pr-<N>-<sha>`; the rest stay on
+# `:latest`, which resolves to whatever main-side option-(b) image
+# promotion last digested.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# namespace is rewritten by the ApplicationSet at sync time:
+# atlas-pr-PLACEHOLDER_PR_NUMBER -> atlas-pr-<actual PR number>
+namespace: atlas-pr-PLACEHOLDER_PR_NUMBER
+
+resources:
+  - ../../base
+  - atlas-env-tokens.yaml
+  - ingress-route.yaml
+  - presync-create-dbs.yaml
+  - postsync-bootstrap.yaml
+  - postsync-pihole-add.yaml
+  - postdelete-cleanup.yaml
+
+patches:
+  - path: patches/db-name-suffix.yaml
+  - path: patches/consumer-group-env.yaml
+  - path: patches/pvc-storageclass.yaml
+  - path: patches/lb-allocate.yaml
+
+# Per-env atlas-env ConfigMap with topic suffixing.
+configMapGenerator:
+  - name: atlas-env
+    behavior: replace
+    literals:
+      # Infrastructure literals.
+      - BASE_SERVICE_URL=http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local:80/api/
+      - BOOTSTRAP_SERVERS=kafka.home:9093
+      - DB_HOST=postgres.home
+      - DB_PORT=5432
+      - REDIS_URL=redis.home:6379
+      - TRACE_ENDPOINT=tempo.home:4317
+      - TRACE_SAMPLING_RATIO=1.0
+      - REST_PORT=8080
+      # Topic env vars (suffixed -PLACEHOLDER_ATLAS_ENV; auto-generated
+      # below from deploy/k8s/base/env-configmap.yaml via
+      # scripts/gen-topic-config.sh).
+      - COMMAND_TOPIC_ACCOUNT=COMMAND_TOPIC_ACCOUNT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_ACCOUNT_LOGOUT=COMMAND_TOPIC_ACCOUNT_LOGOUT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_ACCOUNT_SESSION=COMMAND_TOPIC_ACCOUNT_SESSION-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_BUDDY_LIST=COMMAND_TOPIC_BUDDY_LIST-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CASH_COMPARTMENT=COMMAND_TOPIC_CASH_COMPARTMENT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHAIR=COMMAND_TOPIC_CHAIR-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHALKBOARD=COMMAND_TOPIC_CHALKBOARD-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHANNEL_STATUS=COMMAND_TOPIC_CHANNEL_STATUS-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHARACTER=COMMAND_TOPIC_CHARACTER-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHARACTER_BUFF=COMMAND_TOPIC_CHARACTER_BUFF-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHARACTER_CHAT=COMMAND_TOPIC_CHARACTER_CHAT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHARACTER_GENERAL_CHAT=COMMAND_TOPIC_CHARACTER_GENERAL_CHAT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CHARACTER_MOVEMENT=COMMAND_TOPIC_CHARACTER_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_COMPARTMENT=COMMAND_TOPIC_COMPARTMENT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_CONSUMABLE=COMMAND_TOPIC_CONSUMABLE-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_DATA=COMMAND_TOPIC_DATA-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_DROP=COMMAND_TOPIC_DROP-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_DROP_ITEM=COMMAND_TOPIC_DROP_ITEM-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_EQUIP_ITEM=COMMAND_TOPIC_EQUIP_ITEM-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_EXPRESSION=COMMAND_TOPIC_EXPRESSION-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_FAME=COMMAND_TOPIC_FAME-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_GUILD=COMMAND_TOPIC_GUILD-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_GUILD_THREAD=COMMAND_TOPIC_GUILD_THREAD-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_INVENTORY=COMMAND_TOPIC_INVENTORY-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_INVITE=COMMAND_TOPIC_INVITE-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MESSENGER=COMMAND_TOPIC_MESSENGER-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MONSTER=COMMAND_TOPIC_MONSTER-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MONSTER_DAMAGE=COMMAND_TOPIC_MONSTER_DAMAGE-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MONSTER_MOVEMENT=COMMAND_TOPIC_MONSTER_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_MOVE_ITEM=COMMAND_TOPIC_MOVE_ITEM-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_NPC_CONVERSATION=COMMAND_TOPIC_NPC_CONVERSATION-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PARTY=COMMAND_TOPIC_PARTY-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PET=COMMAND_TOPIC_PET-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PET_MOVEMENT=COMMAND_TOPIC_PET_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PORTAL=COMMAND_TOPIC_PORTAL-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_PORTAL_ACTIONS=COMMAND_TOPIC_PORTAL_ACTIONS-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_REACTOR=COMMAND_TOPIC_REACTOR-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_SKILL=COMMAND_TOPIC_SKILL-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_SKILL_MACRO=COMMAND_TOPIC_SKILL_MACRO-PLACEHOLDER_ATLAS_ENV
+      - COMMAND_TOPIC_UNEQUIP_ITEM=COMMAND_TOPIC_UNEQUIP_ITEM-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_ACCOUNT_SESSION_STATUS=EVENT_TOPIC_ACCOUNT_SESSION_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_ACCOUNT_STATUS=EVENT_TOPIC_ACCOUNT_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_ASSET_STATUS=EVENT_TOPIC_ASSET_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_BUDDY_LIST_STATUS=EVENT_TOPIC_BUDDY_LIST_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CASH_COMPARTMENT_STATUS=EVENT_TOPIC_CASH_COMPARTMENT_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CASH_SHOP_STATUS=EVENT_TOPIC_CASH_SHOP_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHAIR_STATUS=EVENT_TOPIC_CHAIR_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHALKBOARD_STATUS=EVENT_TOPIC_CHALKBOARD_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHANNEL_STATUS=EVENT_TOPIC_CHANNEL_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHARACTER_BUFF_STATUS=EVENT_TOPIC_CHARACTER_BUFF_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHARACTER_CHAT=EVENT_TOPIC_CHARACTER_CHAT-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHARACTER_GENERAL_CHAT=EVENT_TOPIC_CHARACTER_GENERAL_CHAT-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHARACTER_MOVEMENT=EVENT_TOPIC_CHARACTER_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CHARACTER_STATUS=EVENT_TOPIC_CHARACTER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_COMPARTMENT_STATUS=EVENT_TOPIC_COMPARTMENT_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_CONSUMABLE_STATUS=EVENT_TOPIC_CONSUMABLE_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_EXPRESSION=EVENT_TOPIC_EXPRESSION-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_FAME_STATUS=EVENT_TOPIC_FAME_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_GACHAPON_REWARD_WON=EVENT_TOPIC_GACHAPON_REWARD_WON-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_GUILD_STATUS=EVENT_TOPIC_GUILD_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_GUILD_THREAD_STATUS=EVENT_TOPIC_GUILD_THREAD_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_INVENTORY_CHANGED=EVENT_TOPIC_INVENTORY_CHANGED-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_INVITE_STATUS=EVENT_TOPIC_INVITE_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_ITEM_GAIN=EVENT_TOPIC_ITEM_GAIN-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MAP_STATUS=EVENT_TOPIC_MAP_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MESSENGER_MEMBER_STATUS=EVENT_TOPIC_MESSENGER_MEMBER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MESSENGER_STATUS=EVENT_TOPIC_MESSENGER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MONSTER_MOVEMENT=EVENT_TOPIC_MONSTER_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_MONSTER_STATUS=EVENT_TOPIC_MONSTER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PARTY_MEMBER_STATUS=EVENT_TOPIC_PARTY_MEMBER_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PARTY_STATUS=EVENT_TOPIC_PARTY_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PET_MOVEMENT=EVENT_TOPIC_PET_MOVEMENT-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_PET_STATUS=EVENT_TOPIC_PET_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_REACTOR_STATUS=EVENT_TOPIC_REACTOR_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_SESSION_STATUS=EVENT_TOPIC_SESSION_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_SKILL_STATUS=EVENT_TOPIC_SKILL_STATUS-PLACEHOLDER_ATLAS_ENV
+      - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-PLACEHOLDER_ATLAS_ENV
+  - name: atlas-db-names
+    literals:
+      - ATLAS_DB_NAMES=atlas-accounts atlas-ban atlas-buddies atlas-cashshop atlas-characters atlas-configurations atlas-data atlas-drops atlas-fame atlas-gachapons atlas-guilds atlas-inventory atlas-keys atlas-map-actions atlas-maps atlas-merchant atlas-notes atlas-npc-conversations atlas-npc-shops atlas-party-quests atlas-pets atlas-portal-actions atlas-quest atlas-reactor-actions atlas-saga-orchestrator atlas-skills atlas-storage atlas-tenants
+  - name: atlas-pr-bootstrap-tenant
+    literals:
+      - TENANT_ID=00000000-0000-0000-0000-000000000001
+      - REGION=GMS
+      - MAJOR_VERSION=83
+      - MINOR_VERSION=1
+
+# Token replacement: ATLAS_ENV from atlas-env-tokens flows into every
+# container's ATLAS_ENV env var (creating the env entry on stateless
+# Deployments like atlas-ingress / atlas-ui that aren't covered by
+# patches/consumer-group-env.yaml). atlas-env-tokens.data.ATLAS_ENV
+# itself is rewritten per-PR by pr-validation.yml's update-pr-overlay
+# job via sed across this directory — by the time kustomize runs on
+# the resolved bot/pr-<N>-resolved branch, the placeholder is already
+# the actual hash.
+replacements:
+  - source:
+      kind: ConfigMap
+      name: atlas-env-tokens
+      fieldPath: data.ATLAS_ENV
+    targets:
+      - select:
+          kind: Deployment
+        fieldPaths:
+          - spec.template.spec.containers.*.env.[name=ATLAS_ENV].value
+        options:
+          # create: true lets kustomize insert ATLAS_ENV when a Deployment
+          # doesn't already have it. Stateless services like atlas-ingress,
+          # atlas-ui, atlas-assets, atlas-query-aggregator, and
+          # atlas-wz-extractor are not patched by consumer-group-env.yaml,
+          # so their ATLAS_ENV env entry is created here.
+          create: true
+
+images:
+  - name: ghcr.io/chronicle20/atlas-account/atlas-account
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-character/atlas-character
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-data/atlas-data
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-families/atlas-families
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-login/atlas-login
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-world/atlas-world
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
+    newTag: latest
+
+commonLabels:
+  atlas.env: PLACEHOLDER_ATLAS_ENV
+  # Quoted so post-sed values like "500" parse as strings (Kustomize
+  # commonLabels values must be strings, not integers).
+  atlas.pr-number: "PLACEHOLDER_PR_NUMBER"

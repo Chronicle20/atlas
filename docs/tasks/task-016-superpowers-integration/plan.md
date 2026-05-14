@@ -69,7 +69,7 @@ dev/audits/                                         # Task 18 — removed outrig
 
 ```
 Tracked markdown referencing dev/(active|audits)/   # Task 19
-~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/*.md  # Task 20
+~/.claude/projects/-<workspace-pers-atlas>/memory/*.md  # Task 20
 ```
 
 ### End-to-end verification
@@ -1150,14 +1150,14 @@ paths (they describe the migration)."
 ## Task 20: Reference sweep — auto-memory files
 
 **Files:**
-- Modify: files under `~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/` referencing `dev/active/`.
+- Modify: files under `~/.claude/projects/-<workspace-pers-atlas>/memory/` referencing `dev/active/`.
 
 This sweep is OUTSIDE the repo — the auto-memory directory is user-level, not project-level. No git commit is made for these edits (the directory is not versioned inside this repo).
 
 - [ ] **Step 1: Inventory references**
 
 ```bash
-grep -rnE 'dev/(active|audits)/' ~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/ || echo "none found"
+grep -rnE 'dev/(active|audits)/' ~/.claude/projects/-<workspace-pers-atlas>/memory/ || echo "none found"
 ```
 
 Expected matches (per design §4.3 and MEMORY.md contents):
@@ -1174,7 +1174,7 @@ Use Edit tool per memory file.
 - [ ] **Step 3: Verify**
 
 ```bash
-grep -rE 'dev/(active|audits)/' ~/.claude/projects/-home-tumidanski-source-pers-atlas/memory/ || echo "OK: no references remain"
+grep -rE 'dev/(active|audits)/' ~/.claude/projects/-<workspace-pers-atlas>/memory/ || echo "OK: no references remain"
 ```
 
 Expected: `OK: no references remain`.

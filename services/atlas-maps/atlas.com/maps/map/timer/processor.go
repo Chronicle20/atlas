@@ -67,7 +67,15 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 	tok := uuid.New()
 	duration := time.Duration(seconds) * time.Second
 	expiresAt := time.Now().Add(duration)
+
+	// Block the AfterFunc callback until p.r.Add has installed the entry into
+	// the registry. Without this gate, time.AfterFunc(small) can schedule the
+	// callback fast enough that handleExpire's Claim races p.r.Add for the
+	// registry mutex, finds nothing, and silently no-ops — leaving the timer
+	// permanently inert. Forced returns then never emit CHANGE_MAP.
+	ready := make(chan struct{})
 	t := time.AfterFunc(duration, func() {
+		<-ready
 		p.handleExpire(p.t, characterId, tok)
 	})
 
@@ -83,8 +91,10 @@ func (p *ProcessorImpl) Register(transactionId uuid.UUID, characterId uint32, f 
 		Build()
 	if err := p.r.Add(entry); err != nil {
 		t.Stop()
+		close(ready)
 		return err
 	}
+	close(ready)
 
 	if err := message.Emit(p.p)(func(buf *message.Buffer) error {
 		return buf.Put(mapKafka.EnvEventTopicMapStatus, mapTimerStartedProvider(transactionId, f, characterId, seconds))
@@ -138,8 +148,9 @@ func (p *ProcessorImpl) CancelIfTracked(characterId uint32) bool {
 }
 
 // ForceReturnIfTracked is invoked on disconnect: if the character has a
-// tracked entry it is removed unconditionally and CHANGE_MAP is emitted so
-// they reappear at the forced-return map on next login.
+// tracked entry it is removed unconditionally so the per-entry timer stops
+// firing. Forced-return persistence is handled by location.Resolve at next
+// login, so no CHANGE_MAP is emitted here.
 func (p *ProcessorImpl) ForceReturnIfTracked(characterId uint32) bool {
 	entry, ok := p.r.ClaimAny(p.t, characterId)
 	if !ok {
@@ -150,16 +161,13 @@ func (p *ProcessorImpl) ForceReturnIfTracked(characterId uint32) bool {
 		attribute.String("tenant.id", p.t.Id().String()),
 		attribute.Int("world.id", int(entry.Field().WorldId())),
 		attribute.Int("map.id", int(entry.Field().MapId())),
-		attribute.Int("forced.return.map.id", int(entry.ForcedReturnMapId())),
 	)
 	defer span.End()
 	if entry.Timer() != nil {
 		entry.Timer().Stop()
 	}
-	if err := p.emitChangeMap(entry); err != nil {
-		p.l.WithError(err).Errorf("MapTimer.Disconnect: failed to emit CHANGE_MAP for character [%d].", characterId)
-	}
-	p.l.Warnf("MapTimer.Disconnect: tenant=[%s] character=[%d] map=[%d] forcedReturn=[%d].", p.t.Id(), characterId, entry.Field().MapId(), entry.ForcedReturnMapId())
+	p.l.Warnf("MapTimer.Disconnect: tenant=[%s] character=[%d] map=[%d] (forced-return persistence handled by location.Resolve).",
+		p.t.Id(), characterId, entry.Field().MapId())
 	return true
 }
 

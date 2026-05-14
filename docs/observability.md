@@ -47,7 +47,7 @@ Spanmetrics auto-publishes the new span within ~60 seconds via Tempo's metrics_g
 
 ## How to add a new spanmetrics dimension
 
-Edit the Tempo overrides ConfigMap in `~/source/k3s/bee/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
+Edit the Tempo overrides ConfigMap in `<infra-repo>/observability-tempo.yml` under `overrides.defaults.metrics_generator.processor.span_metrics.dimensions:`. Tempo 2.7+ hot-reloads overrides; no Tempo restart is needed.
 
 ⚠️ **Read the cardinality budget below before adding a dimension.** A bad pick can swamp Prometheus.
 
@@ -98,7 +98,7 @@ The Tempo overrides explicitly enumerates the allowlist; "all attributes become 
 
 ## Smoke test (verify a deploy end-to-end)
 
-1. `kubectl apply -f ~/source/k3s/bee/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
+1. `kubectl apply -f <infra-repo>/observability-tempo.yml` — Tempo overrides hot-reload; confirm `kubectl logs -n observability tempo-0 | grep "reloaded"`.
 2. `cd ~/source/atlas-ms/atlas/deploy/grafana && ./apply.sh`.
 3. `kubectl rollout restart deployment/atlas-channel -n atlas`.
 4. Log in to a test character. Use a potion 5 times. Walk a few maps.
@@ -110,3 +110,28 @@ The Tempo overrides explicitly enumerates the allowlist; "all attributes become 
 10. `count by (__name__) ({__name__=~"traces_spanmetrics_.*"})` does not include any series with `character_id`, `account_id`, `session_id`, `transaction_id`, `item_id` labels.
 11. Set `TRACE_SAMPLING_RATIO=0.5` in env-configmap, roll atlas-channel, observe `rate(traces_spanmetrics_calls_total{service_name="atlas-channel"}[1m])` halve under steady traffic. Restore to `1.0`.
 12. Tempo trace search via Grafana Explore (Tempo datasource) returns recent traces.
+
+## Filtering by environment
+
+Every per-environment pod carries the label `atlas.env=<token>`, and PR-environment pods additionally carry `atlas.pr-number=<N>`. Use these labels to scope queries:
+
+- `main` env: `atlas.env=main`
+- PR env: `atlas.env=<4-char-hex>` (deterministic per PR — see `docs/runbooks/ephemeral-pr-deployments.md`)
+
+### Loki
+
+```logql
+{atlas_env="a3f7"} |= "ERROR"
+```
+
+(Note: Promtail / Loki normalises Kubernetes label keys with dots to underscores at ingestion. `atlas.env` → `atlas_env` in LogQL selectors.)
+
+### Prometheus
+
+```promql
+sum by (pod) (rate(http_request_duration_seconds_count{atlas_env="a3f7"}[5m]))
+```
+
+### Grafana
+
+The `atlas-pr-environments` dashboard (when present in the cluster's Grafana) summarises open envs, time-to-ready, cleanup status, and bootstrap step durations. If absent, install via the standard Grafana dashboards-as-code mechanism on the cluster.

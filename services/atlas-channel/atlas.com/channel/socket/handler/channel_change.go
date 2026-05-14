@@ -4,6 +4,8 @@ import (
 	as "atlas-channel/account/session"
 	"atlas-channel/channel"
 	"atlas-channel/character"
+	characterMsg "atlas-channel/kafka/message/character"
+	producer2 "atlas-channel/kafka/producer"
 	"atlas-channel/session"
 	"atlas-channel/socket/model"
 	"atlas-channel/socket/writer"
@@ -13,6 +15,7 @@ import (
 
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-socket/request"
+	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -39,6 +42,10 @@ func ChannelChangeHandleFunc(l logrus.FieldLogger, ctx context.Context, _ writer
 			l.WithError(err).Errorf("Unable to retrieve channel information being logged in to.")
 			// TODO send server notice.
 			return
+		}
+
+		if err := producer2.ProviderImpl(l)(ctx)(characterMsg.EnvCommandTopicChannelChangeRequest)(character.ChannelChangeRequestProvider(uuid.New(), s.CharacterId(), s.WorldId(), s.ChannelId(), p.ChannelId())); err != nil {
+			l.WithError(err).Errorf("Failed to emit CHANGE_CHANNEL_REQUEST for [%d].", s.CharacterId())
 		}
 
 		err = as.NewProcessor(l, ctx).UpdateState(s.SessionId(), s.AccountId(), 2, model.ChannelChange{IPAddress: c.IpAddress(), Port: uint16(c.Port())})

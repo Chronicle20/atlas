@@ -18,7 +18,7 @@ Companion to `task-004-plan.md`. Captures the surrounding information needed to 
 - `services/atlas-ui/CLAUDE.md` — rewritten in Phase 7 (currently describes features that do not exist)
 
 ### Reference template
-- `/home/tumidanski/source/home-hub/frontend/` — Vite 8 + RR v7 reference app
+- `<home-hub>/frontend/` — Vite 8 + RR v7 reference app
 - `frontend/vite.config.ts` — template config
 - `frontend/src/App.tsx` — provider stack pattern (Toaster, Routes, TenantProvider, ThemeProvider, QueryProvider, BrowserRouter, inside → out)
 - `frontend/src/lib/api/client.ts` — 572-LOC client to adapt

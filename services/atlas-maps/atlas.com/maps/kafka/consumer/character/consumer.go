@@ -1,11 +1,13 @@
 package character
 
 import (
+	"atlas-maps/character/location"
 	"atlas-maps/data/map/info"
 	consumer2 "atlas-maps/kafka/consumer"
 	characterKafka "atlas-maps/kafka/message/character"
 	"atlas-maps/kafka/producer"
 	_map "atlas-maps/map"
+	mapcharacter "atlas-maps/map/character"
 	"atlas-maps/map/timer"
 	"atlas-maps/visit"
 	"context"
@@ -25,6 +27,8 @@ func InitConsumers(l logrus.FieldLogger) func(func(config consumer.Config, decor
 	return func(rf func(config consumer.Config, decorators ...model.Decorator[consumer.Config])) func(consumerGroupId string) {
 		return func(consumerGroupId string) {
 			rf(consumer2.NewConfig(l)("status_event")(characterKafka.EnvEventTopicCharacterStatus)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("channel_change_request")(characterKafka.EnvCommandTopicChannelChangeRequest)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
+			rf(consumer2.NewConfig(l)("character_command")(characterKafka.EnvCommandTopic)(consumerGroupId), consumer.SetHeaderParsers(consumer.SpanHeaderParser, consumer.TenantHeaderParser))
 		}
 	}
 }
@@ -33,6 +37,9 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 	return func(rf func(topic string, handler handler.Handler) (string, error)) error {
 		var t string
 		t, _ = topic.EnvProvider(l)(characterKafka.EnvEventTopicCharacterStatus)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventCreatedFunc(db)))); err != nil {
+			return err
+		}
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventLoginFunc(db)))); err != nil {
 			return err
 		}
@@ -48,7 +55,33 @@ func InitHandlers(l logrus.FieldLogger, db *gorm.DB) func(rf func(topic string, 
 		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleStatusEventDeletedFunc(l, db)))); err != nil {
 			return err
 		}
+		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopicChannelChangeRequest)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChannelChangeRequestFunc(db)))); err != nil {
+			return err
+		}
+		t, _ = topic.EnvProvider(l)(characterKafka.EnvCommandTopic)()
+		if _, err := rf(t, message.AdaptHandler(message.PersistentConfig(handleChangeMapFunc(db)))); err != nil {
+			return err
+		}
 		return nil
+	}
+}
+
+// handleStatusEventCreatedFunc seeds character_locations on character creation
+// (task-055 Blocker 2 follow-up). Without this, a freshly created character
+// has no row in character_locations until first LOGIN, and atlas-character's
+// pre-LOGIN location.GetField returns 404 — causing the LOGIN to anchor on
+// mapId=0. Seeding here means the first LOGIN can resolve to the spawn map.
+// channelId is 0 because the character is not yet bound to any channel.
+func handleStatusEventCreatedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventCreatedBody]) {
+	return func(l logrus.FieldLogger, ctx context.Context, event characterKafka.StatusEvent[characterKafka.StatusEventCreatedBody]) {
+		if event.Type == characterKafka.EventCharacterStatusTypeCreated {
+			l.Debugf("Character [%d] has been created. worldId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.MapId, event.Body.Instance)
+			f := field.NewBuilder(event.WorldId, 0, event.Body.MapId).SetInstance(event.Body.Instance).Build()
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+				l.WithError(err).Warnf("location.Set on CREATED failed for character [%d].", event.CharacterId)
+			}
+		}
 	}
 }
 
@@ -60,6 +93,9 @@ func handleStatusEventLoginFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx cont
 			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.EnterAndEmit(transactionId, f, event.CharacterId)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, f); err != nil {
+				l.WithError(err).Warnf("location.Set on LOGIN failed for character [%d].", event.CharacterId)
+			}
 		}
 	}
 }
@@ -69,9 +105,29 @@ func handleStatusEventLogoutFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx con
 		if event.Type == characterKafka.EventCharacterStatusTypeLogout {
 			l.Debugf("Character [%d] has logged out. worldId [%d] channelId [%d] mapId [%d] instance [%s].", event.CharacterId, event.WorldId, event.Body.ChannelId, event.Body.MapId, event.Body.Instance)
 			transactionId := uuid.New()
-			f := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
+			current := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
+
+			lp := location.NewProcessor(l, ctx, db)
+			resolved, reason, err := lp.Resolve(current)
+			if err != nil {
+				l.WithError(err).Warnf("location.Resolve on LOGOUT failed for [%d]; staying put.", event.CharacterId)
+				resolved = current
+				reason = location.ReasonStayPut
+			}
+			if reason != location.ReasonStayPut {
+				l.WithFields(logrus.Fields{
+					"character_id":      event.CharacterId,
+					"current_map_id":    current.MapId(),
+					"resolved_map_id":   resolved.MapId(),
+					"resolution_reason": string(reason),
+				}).Info("forced-return resolution on LOGOUT")
+			}
+			if _, err := lp.Set(event.CharacterId, resolved); err != nil {
+				l.WithError(err).Warnf("location.Set on LOGOUT failed for character [%d].", event.CharacterId)
+			}
+
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
-			_ = p.ExitAndEmit(transactionId, f, event.CharacterId)
+			_ = p.ExitAndEmit(transactionId, current, event.CharacterId)
 		}
 	}
 }
@@ -85,6 +141,9 @@ func handleStatusEventMapChangedFunc(db *gorm.DB) func(l logrus.FieldLogger, ctx
 			oldField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.OldMapId).SetInstance(event.Body.OldInstance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionMapAndEmit(transactionId, newField, event.CharacterId, oldField)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
+				l.WithError(err).Warnf("location.Set on MAP_CHANGED failed for character [%d].", event.CharacterId)
+			}
 
 			// --- map-time-limit timer hooks (task-050) ---
 			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
@@ -109,6 +168,9 @@ func handleStatusEventChannelChangedFunc(db *gorm.DB) func(l logrus.FieldLogger,
 			newField := field.NewBuilder(event.WorldId, event.Body.ChannelId, event.Body.MapId).SetInstance(event.Body.Instance).Build()
 			p := _map.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx), db)
 			_ = p.TransitionChannelAndEmit(transactionId, newField, event.Body.OldChannelId, event.CharacterId)
+			if _, err := location.NewProcessor(l, ctx, db).Set(event.CharacterId, newField); err != nil {
+				l.WithError(err).Warnf("location.Set on CHANNEL_CHANGED failed for character [%d].", event.CharacterId)
+			}
 
 			// --- map-time-limit timer hooks (task-050) ---
 			tp := timer.NewProcessor(l, ctx, producer.ProviderImpl(l)(ctx))
@@ -126,10 +188,19 @@ func handleStatusEventDeletedFunc(l logrus.FieldLogger, db *gorm.DB) func(logrus
 				count, err := vp.DeleteByCharacterId(event.CharacterId)
 				if err != nil {
 					fl.WithError(err).Errorf("Failed to delete visits for character [%d].", event.CharacterId)
-					return
+				} else {
+					fl.Debugf("Deleted [%d] visit records for character [%d].", count, event.CharacterId)
 				}
-				fl.Debugf("Deleted [%d] visit records for character [%d].", count, event.CharacterId)
+
+				if err := location.NewProcessor(fl, ctx, db).Delete(event.CharacterId); err != nil {
+					fl.WithError(err).Errorf("Failed to delete character_locations for character [%d].", event.CharacterId)
+				} else {
+					fl.Debugf("Deleted character_locations for character [%d].", event.CharacterId)
+				}
 			}
+
+			mapcharacter.NewProcessor(fl, ctx).ExitAll(event.CharacterId)
+			fl.Debugf("Removed character [%d] from all in-memory map registry entries.", event.CharacterId)
 		}
 	}
 }

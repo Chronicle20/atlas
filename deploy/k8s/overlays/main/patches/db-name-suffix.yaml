@@ -1,0 +1,364 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-account
+spec:
+  template:
+    spec:
+      containers:
+        - name: account
+          env:
+            - name: DB_NAME
+              value: "atlas-accounts-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-ban
+spec:
+  template:
+    spec:
+      containers:
+        - name: ban
+          env:
+            - name: DB_NAME
+              value: "atlas-bans-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-buddies
+spec:
+  template:
+    spec:
+      containers:
+        - name: buddies
+          env:
+            - name: DB_NAME
+              value: "atlas-buddies-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-cashshop
+spec:
+  template:
+    spec:
+      containers:
+        - name: cashshop
+          env:
+            - name: DB_NAME
+              value: "atlas-cashshop-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-character
+spec:
+  template:
+    spec:
+      containers:
+        - name: character
+          env:
+            - name: DB_NAME
+              value: "atlas-characters-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-configurations
+spec:
+  template:
+    spec:
+      containers:
+        - name: configurations
+          env:
+            - name: DB_NAME
+              value: "atlas-configurations-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-data
+spec:
+  template:
+    spec:
+      containers:
+        - name: data
+          env:
+            - name: DB_NAME
+              value: "atlas-data-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-drop-information
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-drop-information
+          env:
+            - name: DB_NAME
+              value: "atlas-drops-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-fame
+spec:
+  template:
+    spec:
+      containers:
+        - name: fame
+          env:
+            - name: DB_NAME
+              value: "atlas-fame-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-gachapons
+spec:
+  template:
+    spec:
+      containers:
+        - name: gachapons
+          env:
+            - name: DB_NAME
+              value: "atlas-gachapons-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-guilds
+spec:
+  template:
+    spec:
+      containers:
+        - name: guilds
+          env:
+            - name: DB_NAME
+              value: "atlas-guilds-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-inventory
+spec:
+  template:
+    spec:
+      containers:
+        - name: inventory
+          env:
+            - name: DB_NAME
+              value: "atlas-inventory-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-keys
+spec:
+  template:
+    spec:
+      containers:
+        - name: keys
+          env:
+            - name: DB_NAME
+              value: "atlas-keys-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-map-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: map-actions
+          env:
+            - name: DB_NAME
+              value: "atlas-map-actions-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-maps
+spec:
+  template:
+    spec:
+      containers:
+        - name: maps
+          env:
+            - name: DB_NAME
+              value: "atlas-maps-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-merchant
+spec:
+  template:
+    spec:
+      containers:
+        - name: merchant
+          env:
+            - name: DB_NAME
+              value: "atlas-merchant-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-notes
+spec:
+  template:
+    spec:
+      containers:
+        - name: notes
+          env:
+            - name: DB_NAME
+              value: "atlas-notes-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-npc-conversations
+spec:
+  template:
+    spec:
+      containers:
+        - name: npc-conversations
+          env:
+            - name: DB_NAME
+              value: "atlas-npc-conversations-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-npc-shops
+spec:
+  template:
+    spec:
+      containers:
+        - name: npc-shops
+          env:
+            - name: DB_NAME
+              value: "atlas-npc-shops-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-party-quests
+spec:
+  template:
+    spec:
+      containers:
+        - name: party-quests
+          env:
+            - name: DB_NAME
+              value: "atlas-party-quests-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-pets
+spec:
+  template:
+    spec:
+      containers:
+        - name: pets
+          env:
+            - name: DB_NAME
+              value: "atlas-pets-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-portal-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: portal-actions
+          env:
+            - name: DB_NAME
+              value: "atlas-portal-actions-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-quest
+spec:
+  template:
+    spec:
+      containers:
+        - name: quest
+          env:
+            - name: DB_NAME
+              value: "atlas-quest-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-reactor-actions
+spec:
+  template:
+    spec:
+      containers:
+        - name: reactor-actions
+          env:
+            - name: DB_NAME
+              value: "atlas-reactor-actions-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-saga-orchestrator
+spec:
+  template:
+    spec:
+      containers:
+        - name: saga-orchestrator
+          env:
+            - name: DB_NAME
+              value: "atlas-saga-orchestrator-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-skills
+spec:
+  template:
+    spec:
+      containers:
+        - name: skills
+          env:
+            - name: DB_NAME
+              value: "atlas-skills-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-storage
+spec:
+  template:
+    spec:
+      containers:
+        - name: storage
+          env:
+            - name: DB_NAME
+              value: "atlas-storage-main"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: atlas-tenants
+spec:
+  template:
+    spec:
+      containers:
+        - name: atlas-tenants
+          env:
+            - name: DB_NAME
+              value: "atlas-tenants-main"

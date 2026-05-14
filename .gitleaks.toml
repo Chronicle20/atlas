@@ -1,0 +1,83 @@
+title = "Atlas secret/identifier scanning config"
+
+# This file is committed. It must NOT contain personal identifiers
+# (usernames, cluster names, hostnames, emails). Personal tokens belong
+# in .gitleaks.local.toml (gitignored).
+
+[extend]
+useDefault = true
+
+# ---------------------------------------------------------------------
+# Generic identifying-path rules
+#
+# These match shapes that should never appear in committed source on a
+# game server repo. They catch the home-directory leaks ("/home/<user>/...")
+# without having to name any specific developer.
+# ---------------------------------------------------------------------
+
+[[rules]]
+id = "linux-home-path"
+description = "Linux home directory path (developer machine leak)"
+regex = '''/home/[a-z_][a-z0-9_-]{0,31}/'''
+tags = ["identifying", "filesystem"]
+
+[[rules]]
+id = "macos-user-path"
+description = "macOS user home directory path"
+regex = '''/Users/[a-zA-Z_][a-zA-Z0-9_.-]{0,31}/'''
+tags = ["identifying", "filesystem"]
+
+[[rules]]
+id = "windows-user-path"
+description = "Windows user profile path"
+regex = '''[A-Za-z]:\\Users\\[^\\\s"']+'''
+tags = ["identifying", "filesystem"]
+
+[[rules]]
+id = "personal-email-generic"
+description = "Email address in source (review before committing)"
+regex = '''[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'''
+tags = ["identifying", "email"]
+
+# ---------------------------------------------------------------------
+# Allowlist: paths/strings that legitimately match the rules above
+# ---------------------------------------------------------------------
+
+[allowlist]
+description = "Permitted matches"
+# Commit-scoped exceptions: historical commits whose CURRENT file content
+# is already sanitized but whose diff still contains the pre-sanitize text.
+# These are blanket-skipped from gitleaks history scans. Add new entries
+# sparingly; each one must cite the follow-up commit that sanitized the
+# file so the exception remains auditable.
+commits = [
+  # docs(task-063): backend-guidelines audit for Phases 1-5.
+  # Sanitized in commit 29312509d (chore(task-063): sanitize identifying
+  # refs from task docs).
+  "6e915c97a8dc6cbb3320dcdb06b07660e83ee560",
+  # plan(task-063): implementation plan and context (initial commit).
+  # Sanitized in commit 29312509d.
+  "50434603f771f4e51554155bc38ebeb55d365711",
+]
+paths = [
+  '''(^|/)\.git/''',
+  '''(^|/)go\.sum$''',
+  '''(^|/)go\.work\.sum$''',
+  '''(^|/)package-lock\.json$''',
+  '''(^|/)pnpm-lock\.yaml$''',
+  '''(^|/)yarn\.lock$''',
+  # This config file documents the patterns it scans for.
+  '''(^|/)\.gitleaks\.toml$''',
+  '''(^|/)\.gitleaks\.local\.toml\.example$''',
+]
+regexes = [
+  # GitHub Actions runner home (only legitimate when present in workflow files)
+  '''/home/runner/''',
+  # Common CI/Docker builder homes
+  '''/home/builder/''',
+  # noreply addresses used by Co-Authored-By trailers and bot accounts
+  '''[A-Za-z0-9._%+\-]+@(users\.)?noreply\.github\.com''',
+  '''noreply@anthropic\.com''',
+  # RFC 2606 reserved test/example domains. These are spec-mandated fakes.
+  '''[A-Za-z0-9._%+\-]+@(example\.(com|net|org)|test|invalid|localhost)''',
+]

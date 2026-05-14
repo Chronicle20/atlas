@@ -1,0 +1,20 @@
+package fixture
+
+import "context"
+
+type Nested struct{}
+
+func (m Nested) Encode(l interface{}, ctx context.Context) func(map[string]interface{}) []byte {
+	w := newWriter()
+	t := mustTenant(ctx)
+	return func(opts map[string]interface{}) []byte {
+		w.WriteByte(0)
+		if t.Region() == "GMS" {
+			w.WriteInt(1)
+			if t.MajorVersion() > 87 {
+				w.WriteLong(2)
+			}
+		}
+		return w.Bytes()
+	}
+}

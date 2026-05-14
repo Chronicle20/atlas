@@ -98,6 +98,9 @@ func (m *mockCharacterProcessor) Exit(transactionId uuid.UUID, f field.Model, ch
 	})
 }
 
+func (m *mockCharacterProcessor) ExitAll(_ uint32) {
+}
+
 func (m *mockCharacterProcessor) GetEnterCalls() []enterCall {
 	m.mu.Lock()
 	defer m.mu.Unlock()

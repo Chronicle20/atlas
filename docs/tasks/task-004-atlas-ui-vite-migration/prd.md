@@ -9,7 +9,7 @@ Created: 2026-04-17
 
 `services/atlas-ui` is currently a Next.js 16 App Router application that ships with `"use client"` on every one of its 46 pages, uses zero server components, zero server actions, zero route handlers, and no middleware. It is, in effect, a single-page application wrapped in the Next.js framework — paying the complexity cost (Turbopack config, `next.config.ts` image-loader fallback for container environments, App Router file conventions, dual `next/navigation` + `next/link` APIs, a 1801-line bespoke `lib/api/client.ts`) without collecting any of the framework's benefits.
 
-The companion project `home-hub` at `/home/tumidanski/source/home-hub/frontend/` is a comparable internal admin dashboard (React 19, TypeScript, shadcn/ui, Tailwind 4, React Query, react-hook-form + Zod, multi-tenant context) built on **Vite 8 + react-router-dom 7 + Vitest**. It is simpler, smaller, and proves the template is sufficient for this class of application.
+The companion project `home-hub` at `<home-hub>/frontend/` is a comparable internal admin dashboard (React 19, TypeScript, shadcn/ui, Tailwind 4, React Query, react-hook-form + Zod, multi-tenant context) built on **Vite 8 + react-router-dom 7 + Vitest**. It is simpler, smaller, and proves the template is sufficient for this class of application.
 
 This task rebuilds atlas-ui on the home-hub template in a single big-bang migration. Feature parity is the sole correctness bar. No backend services are touched. No UX changes. The goal is to end with an atlas-ui that is behaviourally identical to today's build but shorter, simpler, and using its tools idiomatically.
 

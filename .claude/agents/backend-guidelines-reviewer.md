@@ -1,7 +1,7 @@
 ---
 name: backend-guidelines-reviewer
 description: |
-  Use this agent to adversarially audit a Go service or changed Go packages against the Atlas backend developer guidelines. Runs the 20-item DOM-* domain checklist, the SUB-* sub-domain checklist, and SEC-* security checks where applicable. Default mindset is FAIL until file:line evidence proves PASS. Produces audit.md and audit.json.
+  Use this agent to adversarially audit a Go service or changed Go packages against the Atlas backend developer guidelines. Runs the 23-item DOM-* domain checklist, the SUB-* sub-domain checklist, and SEC-* security checks where applicable. Default mindset is FAIL until file:line evidence proves PASS. Produces audit.md and audit.json.
 
   <example>
   Context: A feature touched services/atlas-account.
@@ -47,6 +47,7 @@ If invoked with no argument and a `plan.md` exists in the current branch's task 
    - `.claude/skills/backend-dev-guidelines/resources/patterns-rest-jsonapi.md`
    - `.claude/skills/backend-dev-guidelines/resources/patterns-functional.md`
    - `.claude/skills/backend-dev-guidelines/resources/patterns-ingress-documentation.md`
+   - `.claude/skills/backend-dev-guidelines/resources/patterns-deploy.md`
    - `.claude/skills/backend-dev-guidelines/resources/scaffolding-checklist.md`
 
 ## Phase 1: Build & Test (Objective Gate)
@@ -95,6 +96,8 @@ For EACH domain package identified in Phase 2, run every check below. These are 
 | DOM-19 | Request models use flat structure | Read `rest.go` | CreateRequest/UpdateRequest have no nested Data/Type/Attributes structs |
 | DOM-20 | Table-driven tests | Read test files | Tests use `tests := []struct{...}` pattern with `t.Run` |
 | DOM-21 | No duplication of atlas-constants types | For each new `type X` declaration, named `const` block, or numeric-literal classification check in the changed packages, grep `libs/atlas-constants/` for an equivalent. Specifically check item-id classifications (`itemId / 10000`, `itemId / 1_000_000`), inventory types (1..5 enums for equipment/use/setup/etc/cash), weapon types, world/channel/character/map id widths, and job/skill/monster id types. | Either no shared equivalent exists, or the new type explicitly wraps/uses the atlas-constants version (e.g. `inventory.Type`, `item.Classification`, `item.GetClassification`, `world.Id`). FAIL if the service redeclares a type, helper, or numeric constant that already lives in `libs/atlas-constants/`. See `libs/atlas-constants/README.md` for the package index. |
+| DOM-22 | Dockerfile has 4 mentions per `Chronicle20/atlas/libs/*` direct require | For each `Chronicle20/atlas/libs/atlas-X` direct require in `services/<svc>/atlas.com/<svc>/go.mod`, grep `services/<svc>/Dockerfile` for the lib name and count occurrences. The Dockerfile must reference the lib in (a) the `COPY libs/atlas-X/go.mod ...` allowlist, (b) the embedded `go.work use(...)` block, (c) the source `COPY libs/atlas-X libs/atlas-X` line, and (d) the `go mod edit -replace=...=/app/libs/atlas-X` block. **Skip libs whose `go.mod` directives are listed in the service's `go.mod` only as `// indirect`.** | Each direct-require lib has ≥4 mentions in the Dockerfile. A lib with fewer mentions WILL break `docker build` even if local `go build ./...` succeeds (local builds use the root `go.work`, the docker build uses an in-image minimal `go.work`). See `patterns-deploy.md` for the 4-block template and the verification snippet. |
+| DOM-23 | Kafka topic naming convention | (a) Find every `COMMAND_TOPIC_*` / `EVENT_TOPIC_*` constant referenced in the service's Go code (typically `EnvCommandTopic`, `EnvEventTopic`, or used in `topic.EnvProvider(l)(...)` call sites). (b) For each, grep `deploy/k8s/env-configmap.yaml` for an entry of the form `<KEY>: "<KEY>"` (key and value identical). (c) Grep `deploy/k8s/<svc>.yaml` for a literal `- name: <KEY>\n  value:` block — that is forbidden because it bypasses the configmap. | Every topic the service consumes appears in `env-configmap.yaml` with `KEY: "KEY"` shape AND the service deployment manifest does NOT redeclare it as a literal env value. The service must consume topics via `envFrom: configMapRef: atlas-env`. Anti-patterns: dotted-lowercase names (`command.foo`), service-local literal overrides (`- name: COMMAND_TOPIC_FOO\n  value: ...`), versioned suffixes. See `patterns-deploy.md`. |
 
 ### Sub-Domain Package Checklist (action-event packages without `model.go`)
 

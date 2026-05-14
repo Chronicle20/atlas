@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strconv"
 
-	_map "github.com/Chronicle20/atlas/libs/atlas-constants/map"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -24,8 +23,6 @@ func InitResource(si jsonapi.ServerInformation) func(db *gorm.DB) server.RouteIn
 			r := router.PathPrefix("/characters").Subrouter()
 			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}", "include", "{include}")
 			r.HandleFunc("", registerGet("get_characters_for_account_in_world", handleGetCharactersForAccountInWorld)).Methods(http.MethodGet).Queries("accountId", "{accountId}", "worldId", "{worldId}")
-			r.HandleFunc("", registerGet("get_characters_by_map", handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}", "include", "{include}")
-			r.HandleFunc("", registerGet("get_characters_by_map", handleGetCharactersByMap)).Methods(http.MethodGet).Queries("worldId", "{worldId}", "mapId", "{mapId}")
 			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}", "include", "{include}")
 			r.HandleFunc("", registerGet("get_characters_by_name", handleGetCharactersByName)).Methods(http.MethodGet).Queries("name", "{name}")
 			r.HandleFunc("", registerGet("get_characters", handleGetCharacters)).Methods(http.MethodGet)
@@ -48,7 +45,7 @@ func handleGetCharacters(d *rest.HandlerDependency, c *rest.HandlerContext) http
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -83,7 +80,7 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -99,41 +96,6 @@ func handleGetCharactersForAccountInWorld(d *rest.HandlerDependency, c *rest.Han
 func decoratorsFromInclude(_ *http.Request, _ *rest.HandlerDependency, _ *rest.HandlerContext) []model.Decorator[Model] {
 	var decorators = make([]model.Decorator[Model], 0)
 	return decorators
-}
-
-func handleGetCharactersByMap(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		worldId, err := strconv.Atoi(mux.Vars(r)["worldId"])
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to properly parse worldId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		mapId, err := strconv.Atoi(mux.Vars(r)["mapId"])
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to properly parse mapId from path.")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).GetForMapInWorld(decoratorsFromInclude(r, d, c)...)(world.Id(worldId), _map.Id(mapId))
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Unable to get characters for map %d in world %d.", mapId, worldId)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
-		if err != nil {
-			d.Logger().WithError(err).Errorf("Creating REST model.")
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-
-		query := r.URL.Query()
-		queryParams := jsonapi.ParseQueryFields(&query)
-		server.MarshalResponse[[]RestModel](d.Logger())(w)(c.ServerInformation())(queryParams)(res)
-	}
 }
 
 func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext) http.HandlerFunc {
@@ -152,7 +114,7 @@ func handleGetCharactersByName(d *rest.HandlerDependency, c *rest.HandlerContext
 			return
 		}
 
-		res, err := model.SliceMap(Transform(d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
+		res, err := model.SliceMap(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))(model.ParallelMap())()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -174,7 +136,7 @@ func handleGetCharacter(d *rest.HandlerDependency, c *rest.HandlerContext) http.
 				return
 			}
 
-			res, err := model.Map(Transform(d.Context()))(model.FixedProvider(cs))()
+			res, err := model.Map(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))()
 			if err != nil {
 				d.Logger().WithError(err).Errorf("Creating REST model.")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -196,7 +158,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m)
+		cs, err := NewProcessor(d.Logger(), d.Context(), d.DB()).CreateAndEmit(uuid.New(), m, input.MapId)
 		if err != nil {
 			if errors.Is(err, blockedNameErr) || errors.Is(err, invalidLevelErr) {
 				w.WriteHeader(http.StatusBadRequest)
@@ -208,7 +170,7 @@ func handleCreateCharacter(d *rest.HandlerDependency, c *rest.HandlerContext, in
 			return
 		}
 
-		res, err := model.Map(Transform(d.Context()))(model.FixedProvider(cs))()
+		res, err := model.Map(Transform(d.Logger(), d.Context()))(model.FixedProvider(cs))()
 		if err != nil {
 			d.Logger().WithError(err).Errorf("Creating REST model.")
 			w.WriteHeader(http.StatusInternalServerError)

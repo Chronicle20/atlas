@@ -3,9 +3,12 @@ package character
 import (
 	"atlas-channel/kafka/message/character"
 
+	"github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/field"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-model/model"
+	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
 )
 
@@ -75,6 +78,18 @@ func ChangeMPCommandProvider(f field.Model, characterId uint32, amount int16) mo
 			ChannelId: f.ChannelId(),
 			Amount:    amount,
 		},
+	}
+	return producer.SingleMessageProvider(key, value)
+}
+
+func ChannelChangeRequestProvider(transactionId uuid.UUID, characterId uint32, worldId world.Id, oldChannelId channel.Id, targetChannelId channel.Id) model.Provider[[]kafka.Message] {
+	key := producer.CreateKey(int(characterId))
+	value := character.ChannelChangeRequestCommand{
+		TransactionId:   transactionId,
+		CharacterId:     characterId,
+		WorldId:         worldId,
+		OldChannelId:    oldChannelId,
+		TargetChannelId: targetChannelId,
 	}
 	return producer.SingleMessageProvider(key, value)
 }

@@ -282,20 +282,11 @@ func (p *ProcessorImpl) HandleLogoutAndEmit(characterId uint32, worldId world.Id
 
 func (p *ProcessorImpl) HandleLogin(mb *message.Buffer) func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error {
 	return func(characterId uint32, mapId _map.Id, worldId world.Id, channelId channel.Id) error {
-		if !getRouteRegistry().IsTransitMap(p.ctx, mapId) {
-			return nil // Not a transit map, nothing to do
-		}
-
-		// Character logged in on a transit map — crash recovery. Find a route that uses this transit map.
-		route, err := getRouteRegistry().GetRouteByTransitMap(p.ctx, mapId)
-		if err != nil {
-			return nil
-		}
-
-		p.l.Infof("Character [%d] logged in at transit map [%d] for route [%s], warping to start map [%d].",
-			characterId, mapId, route.Name(), route.StartMapId())
-
-		return mb.Put(character2EnvCommandTopic, warpToStartMapProvider(worldId, channelId, characterId, route.StartMapId()))
+		// Forced-return on disconnect (atlas-maps location.Resolve) ensures the
+		// player is never persisted on a transit map. The crash-recovery branch
+		// that used to re-warp from a transit map back to route.StartMapId is
+		// no longer necessary.
+		return nil
 	}
 }
 

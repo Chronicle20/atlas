@@ -91,7 +91,6 @@ Handles character operations.
 |-----------|-------------|
 | GetById | Retrieve character by ID |
 | GetForAccountInWorld | Retrieve characters for account in world |
-| GetForMapInWorld | Retrieve characters on map |
 | GetForName | Retrieve characters by name |
 | GetAll | Retrieve all characters |
 | IsValidName | Validate character name |

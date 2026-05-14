@@ -1,0 +1,11 @@
+{
+  "data": {
+    "type": "tenants",
+    "attributes": {
+      "name": "Tenant from Template 5b459ac2-69fe-4cf6-b885-8153d5a71f6a",
+      "region": "GMS",
+      "majorVersion": 83,
+      "minorVersion": 1
+    }
+  }
+}

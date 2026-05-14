@@ -46,8 +46,8 @@ Non-goals:
 
 The system SHALL emit per-span call counts and latency histograms to Prometheus for every span produced by services in the `atlas` namespace. Two viable architectures, to be picked in `/design-task`:
 
-- **(a) Tempo `metrics_generator` with `span-metrics` processor.** Tempo already has `metrics_generator.registry` and `metrics_generator.storage.remote_write` configured (see `~/source/k3s/bee/observability-tempo.yml`). Enabling span-metrics requires an `overrides` block with `defaults.metrics_generator.processors: [span-metrics]` (and optionally `service-graphs`) plus a `metrics_generator.processor.span_metrics.dimensions` list to promote `writer.name`, `tenant.id`, `world.id` into metric labels. **Pros:** ~10 lines of YAML, no new component, no service-side changes. **Cons:** Tempo-coupled; if we ever leave Tempo, the metrics path goes with it.
-- **(b) OTel collector / Grafana Alloy with `spanmetrics` connector.** Either deploy a new OpenTelemetry Collector or extend the existing Alloy DaemonSet (`~/source/k3s/bee/observability-alloy.yml`, currently log-collection-only) with an OTLP receiver, the `spanmetrics` connector, an OTLP exporter to Tempo, and a Prometheus remote-write exporter. Atlas service `TRACE_ENDPOINT` flips from `tempo.home:4317` to the collector's OTLP endpoint. **Pros:** vendor-neutral, future-proof, pipeline-flexible (filtering, redaction, etc.). **Cons:** new deployable component, every Atlas service env-var changes, more moving pieces to operate.
+- **(a) Tempo `metrics_generator` with `span-metrics` processor.** Tempo already has `metrics_generator.registry` and `metrics_generator.storage.remote_write` configured (see `<infra-repo>/observability-tempo.yml`). Enabling span-metrics requires an `overrides` block with `defaults.metrics_generator.processors: [span-metrics]` (and optionally `service-graphs`) plus a `metrics_generator.processor.span_metrics.dimensions` list to promote `writer.name`, `tenant.id`, `world.id` into metric labels. **Pros:** ~10 lines of YAML, no new component, no service-side changes. **Cons:** Tempo-coupled; if we ever leave Tempo, the metrics path goes with it.
+- **(b) OTel collector / Grafana Alloy with `spanmetrics` connector.** Either deploy a new OpenTelemetry Collector or extend the existing Alloy DaemonSet (`<infra-repo>/observability-alloy.yml`, currently log-collection-only) with an OTLP receiver, the `spanmetrics` connector, an OTLP exporter to Tempo, and a Prometheus remote-write exporter. Atlas service `TRACE_ENDPOINT` flips from `tempo.home:4317` to the collector's OTLP endpoint. **Pros:** vendor-neutral, future-proof, pipeline-flexible (filtering, redaction, etc.). **Cons:** new deployable component, every Atlas service env-var changes, more moving pieces to operate.
 
 Either pathway SHALL produce metric series with at minimum these labels (using OTel-collector spanmetrics naming as the canonical reference; Tempo's labels differ slightly but cover the same dimensions):
 - `service_name` — Atlas service emitting the span.
@@ -106,7 +106,7 @@ A Grafana dashboard JSON file SHALL be checked into the repo at `deploy/grafana/
 
 Each panel SHALL include the PromQL query in its definition for easy copy-paste into ad-hoc Explore queries.
 
-The dashboard SHALL be provisioned to Grafana via the same mechanism the rest of the bee observability stack uses (likely a Grafana sidecar configmap; design phase to confirm). If the bee deployment does not yet have a dashboards-as-code mechanism, this task SHALL add one — minimally, a configmap mounted into the Grafana pod with the file-provider provisioning datasource pointing at it.
+The dashboard SHALL be provisioned to Grafana via the same mechanism the rest of the clusterobservability stack uses (likely a Grafana sidecar configmap; design phase to confirm). If the cluster deployment does not yet have a dashboards-as-code mechanism, this task SHALL add one — minimally, a configmap mounted into the Grafana pod with the file-provider provisioning datasource pointing at it.
 
 ### 4.6 Documentation
 
@@ -137,7 +137,7 @@ No data-model changes. No DB migrations. No new persistent state in Atlas servic
 | `deploy/grafana/dashboards/atlas-latency.json` (new) | Dashboard JSON (§4.5). |
 | `deploy/grafana/dashboards-provisioning.yaml` (new, if needed) | Grafana file-provider provisioning config. |
 | `docs/observability.md` (new) | Documentation (§4.6). |
-| **External: `~/source/k3s/bee/`** | One of: (a) `observability-tempo.yml` overrides block + `metrics_generator.processor.span_metrics.dimensions`, OR (b) new OTel collector deployment / Alloy extension. Out-of-tree change tracked here for completeness. |
+| **External: `<infra-repo>/`** | One of: (a) `observability-tempo.yml` overrides block + `metrics_generator.processor.span_metrics.dimensions`, OR (b) new OTel collector deployment / Alloy extension. Out-of-tree change tracked here for completeness. |
 
 The other Atlas services (atlas-consumables, atlas-inventory, atlas-saga-orchestrator, etc.) require **zero code changes** in this task. They emit spans today via existing instrumentation; spanmetrics will pick them up automatically once the pipeline is enabled.
 
@@ -185,14 +185,14 @@ Existing Tempo trace ingestion SHALL be unaffected. A sudden absence of `traces_
 ## 9. Open Questions
 
 1. **Pipeline pathway choice** — (a) Tempo `metrics_generator` overrides vs (b) collector / Alloy spanmetrics connector. Deferred to `/design-task`.
-2. **Dashboard provisioning mechanism** — does the bee Grafana already have a file-provider for dashboards-as-code, or do we need to add one in this task? Design phase to confirm by reading `~/source/k3s/bee/observability-grafana.yml`.
+2. **Dashboard provisioning mechanism** — does the cluster Grafana already have a file-provider for dashboards-as-code, or do we need to add one in this task? Design phase to confirm by reading `<infra-repo>/observability-grafana.yml`.
 3. **Spanmetrics naming convention** — `traces_spanmetrics_*` (Tempo and collector spanmetrics processor) vs `traces_span_metrics_*` (older OTel collector versions). Implementation MUST verify which is emitted by the chosen pathway and use that prefix in PromQL.
-4. **Does the bee Tempo deployment have `metrics_generator` actually enabled at runtime?** Config has the storage block but no `target` line in the Tempo command-line flags / env was inspected during this PRD write-up. Design phase to verify and patch if missing.
+4. **Does the cluster Tempo deployment have `metrics_generator` actually enabled at runtime?** Config has the storage block but no `target` line in the Tempo command-line flags / env was inspected during this PRD write-up. Design phase to verify and patch if missing.
 5. **The session.Announce span name** — is `session.Announce` the right name, or should it be `client.outbound.write` (more vendor-neutral) or `atlas.session.announce`? Defer to design.
 
 ## 10. Acceptance Criteria
 
-Concrete, testable. Each item MUST hold true on a deployed bee cluster after the task ships.
+Concrete, testable. Each item MUST hold true on a cluster after the task ships.
 
 1. ✅ `histogram_quantile(0.5, sum by (le) (rate(traces_spanmetrics_latency_bucket{service_name="atlas-channel", span_name="session.Announce"}[5m])))` (or the Tempo-flavoured equivalent) returns a numeric value in Grafana Explore.
 2. ✅ The same query, scoped `writer_name="InventoryChangeWriter"`, returns a numeric value separately from `writer_name="StatChangedWriter"`.

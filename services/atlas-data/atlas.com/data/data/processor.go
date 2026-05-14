@@ -25,7 +25,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/sirupsen/logrus"
@@ -190,6 +192,7 @@ func StartWorker(l logrus.FieldLogger) func(ctx context.Context) func(db *gorm.D
 					return err
 				}
 				l.Infof("Worker [%s] completed.", name)
+				emitDataUpdated(l, ctx, t, name)
 				return nil
 			}
 		}
@@ -275,4 +278,31 @@ func RegisterFileData(l logrus.FieldLogger) func(ctx context.Context) func(rootD
 			}
 		}
 	}
+}
+
+func emitDataUpdated(l logrus.FieldLogger, ctx context.Context, t tenant.Model, worker string) {
+	if !producerEnabled() {
+		return
+	}
+	err := producer.ProviderImpl(l)(ctx)(EnvEventTopic)(
+		dataUpdatedEventProvider(t.Id().String(), worker, time.Now()),
+	)
+	if err != nil {
+		l.WithError(err).Warnf("Failed to emit DATA_UPDATED for tenant [%s] worker [%s]; cache invalidation will rely on TTL fallback.", t.Id(), worker)
+		eventsEmitFailuresTotal.WithLabelValues(worker, EventTypeDataUpdated).Inc()
+		return
+	}
+	eventsEmittedTotal.WithLabelValues(worker, EventTypeDataUpdated).Inc()
+}
+
+func producerEnabled() bool {
+	v, ok := os.LookupEnv("DATA_EVENTS_PRODUCER_ENABLED")
+	if !ok {
+		return true
+	}
+	enabled, err := strconv.ParseBool(v)
+	if err != nil {
+		return true
+	}
+	return enabled
 }

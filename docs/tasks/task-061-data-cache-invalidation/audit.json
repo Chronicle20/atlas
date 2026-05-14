@@ -1,0 +1,109 @@
+{
+  "service": "task-061-data-cache-invalidation (multi-service)",
+  "scope": [
+    "libs/atlas-redis/tenant_registry.go",
+    "services/atlas-data/atlas.com/data/data/{kafka.go,producer.go,processor.go,metrics.go,processor_test.go}",
+    "services/atlas-monsters/atlas.com/monsters/monster/information/{cache.go,cache_test.go}",
+    "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/{kafka.go,metrics.go,handler.go,consumer.go,handler_test.go}",
+    "services/atlas-monsters/atlas.com/monsters/main.go",
+    "services/atlas-maps/atlas.com/maps/map/monster/{registry.go,registry_test.go}",
+    "services/atlas-maps/atlas.com/maps/kafka/consumer/data/{kafka.go,metrics.go,handler.go,consumer.go,handler_test.go}",
+    "services/atlas-maps/atlas.com/maps/main.go"
+  ],
+  "path": "<worktree-root>",
+  "date": "2026-05-08",
+  "build": "pass",
+  "testsPassed": 4,
+  "testsFailed": 0,
+  "overallStatus": "pass",
+  "domains": [
+    {
+      "name": "libs/atlas-redis (TenantRegistry.Clear)",
+      "type": "support",
+      "checks": [
+        {"id": "Cache-05", "name": "SCAN+pipelined-DEL with bounded batch", "status": "pass", "evidence": "libs/atlas-redis/tenant_registry.go:189-223"},
+        {"id": "Test-01", "name": "No *_testhelpers.go files", "status": "pass", "evidence": "grep -rn _testhelpers libs/atlas-redis -> 0 matches"}
+      ]
+    },
+    {
+      "name": "services/atlas-data/atlas.com/data/data (producer extension)",
+      "type": "support",
+      "checks": [
+        {"id": "DOM-21", "name": "Use libs/atlas-constants types", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor.go:38-55 — Worker* are wire-protocol envelope strings; atlas-constants does not own message-protocol type strings"},
+        {"id": "Producer-01", "name": "ProviderImpl(l)(ctx)(token)(provider) curry", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor.go:287-289"},
+        {"id": "Producer-02", "name": "SingleMessageProvider(key, value) helper", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/producer.go:32 vs libs/atlas-kafka/producer/message.go:38"},
+        {"id": "Producer-03", "name": "Tenant uuid as Kafka key", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/producer.go:23"},
+        {"id": "Producer-04", "name": "TenantHeaderDecorator + SpanHeaderDecorator", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/kafka/producer/producer.go:14-15 (transitive)"},
+        {"id": "Producer-05", "name": "RFC3339 UTC timestamp", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/producer.go:29"},
+        {"id": "Producer-06", "name": "Log-and-continue on Kafka error", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor.go:283-296"},
+        {"id": "Producer-07", "name": "Kill-switch defaults true and defensive on parse error", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor.go:298-308"},
+        {"id": "Producer-08", "name": "Metrics namespacing atlas_data_events_*", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/metrics.go:9,14"},
+        {"id": "Tenant-02", "name": "tenant.MustFromContext(ctx)", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor.go:92,195"},
+        {"id": "Test-03", "name": "Env-var snapshot/restore", "status": "pass", "evidence": "services/atlas-data/atlas.com/data/data/processor_test.go:49-60"}
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/monster/information (cache wrapper)",
+      "type": "support",
+      "checks": [
+        {"id": "Cache-01", "name": "Application-scoped singleton", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/information/cache.go:127-130"},
+        {"id": "Cache-02", "name": "Nil-cache and kill-switch no-op", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/information/cache.go:168-170; tests cache_test.go:534-560"},
+        {"id": "Cache-03", "name": "Both namespaces flushed on partial failure", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/information/cache.go:172-179"},
+        {"id": "Cache-04", "name": "No mutation of cached models", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/information/cache.go:167-180 only invokes Clear"},
+        {"id": "Test-04", "name": "httptest-backed upstream integration test (pre-existing, unchanged)", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/monster/information/cache_test.go:380-452"}
+      ]
+    },
+    {
+      "name": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data (new consumer)",
+      "type": "support",
+      "checks": [
+        {"id": "Consumer-01", "name": "Curried InitConsumers(l)(rf)(groupId)", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/consumer.go:15-25"},
+        {"id": "Consumer-02", "name": "SetStartOffset(kafka.LastOffset)", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/consumer.go:21"},
+        {"id": "Consumer-03", "name": "Span+Tenant header parsers", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/consumer.go:20"},
+        {"id": "Consumer-05", "name": "Type+Worker filter, unknown skipped", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/handler.go:23-30"},
+        {"id": "Consumer-06", "name": "Malformed tenantId metric+return", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/handler.go:32-37"},
+        {"id": "Consumer-07", "name": "Header/body disagreement WARN+body", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/handler.go:39-55"},
+        {"id": "Tenant-01", "name": "TenantHeaderParser registered on consumer", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/consumer.go:20"},
+        {"id": "Producer-08", "name": "Metrics atlas_monsters_data_events_*", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/metrics.go:9,14,19,24"},
+        {"id": "Anti-pattern-01", "name": "No manual JSON unmarshaling in handler", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/kafka/consumer/data/consumer.go:34 (message.AdaptHandler+PersistentConfig)"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/map/monster (registry FlushTenant)",
+      "type": "support",
+      "checks": [
+        {"id": "Cache-04", "name": "No mutation; only Del", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/map/monster/registry.go:293-333"},
+        {"id": "Cache-05", "name": "SCAN+pipelined-DEL with bounded batch", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/map/monster/registry.go:295,320-322"}
+      ]
+    },
+    {
+      "name": "services/atlas-maps/atlas.com/maps/kafka/consumer/data (new consumer)",
+      "type": "support",
+      "checks": [
+        {"id": "Consumer-01", "name": "Curried InitConsumers(l)(rf)(groupId)", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/consumer.go:15-25"},
+        {"id": "Consumer-02", "name": "SetStartOffset(kafka.LastOffset)", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/consumer.go:21"},
+        {"id": "Consumer-03", "name": "Span+Tenant header parsers", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/consumer.go:20"},
+        {"id": "Consumer-05", "name": "Type+Worker filter, unknown skipped", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/handler.go:21-28"},
+        {"id": "Consumer-06", "name": "Malformed tenantId metric+return", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/handler.go:30-35"},
+        {"id": "Consumer-08", "name": "Direct uuid path (no tenant header reconciliation needed)", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/handler.go:30-37 + registry.go:293 (uuid.UUID signature)"},
+        {"id": "Producer-08", "name": "Metrics atlas_maps_data_events_*", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/metrics.go:9,14,19,24"},
+        {"id": "Anti-pattern-01", "name": "No manual JSON unmarshaling in handler", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/kafka/consumer/data/consumer.go:34 (message.AdaptHandler+PersistentConfig)"}
+      ]
+    },
+    {
+      "name": "main.go wire-up (atlas-monsters, atlas-maps)",
+      "type": "support",
+      "checks": [
+        {"id": "Wire-01", "name": "atlas-monsters InitConsumers + InitHandlers", "status": "pass", "evidence": "services/atlas-monsters/atlas.com/monsters/main.go:70,77-79; group id at :26"},
+        {"id": "Wire-02", "name": "atlas-maps InitConsumers + InitHandlers", "status": "pass", "evidence": "services/atlas-maps/atlas.com/maps/main.go:79,98-100; group id at :34"}
+      ]
+    }
+  ],
+  "blocking": [],
+  "nonBlocking": [
+    "atlas-maps SpawnPointRegistry.FlushTenant (map/monster/registry.go:293-333) duplicates the SCAN+pipelined-DEL algorithm in libs/atlas-redis. Justified — spawn key shape does not flow through tenantEntityKey. Documented in design.md §4.2.",
+    "dataUpdatedEventBody redeclared in atlas-data, atlas-monsters, atlas-maps. Matches repo convention for Kafka envelopes.",
+    "keysDeletedTotal carries a free-form 'tenant' label. Cardinality is bounded in this deployment but worth noting."
+  ],
+  "domSkipped": "DOM-01 through DOM-20 are not applicable: the diff does not add or modify any model.go, entity.go, rest.go, resource.go, administrator.go, processor.go, or builder.go files in any service domain. The changed packages are: a generic library helper, a worker-orchestration package (no model.go), two singleton-cache wrappers, and two new Kafka consumer glue packages."
+}

@@ -1,0 +1,20 @@
+{
+  "WriterName": "PinUpdate",
+  "IDAName": "CLogin::OnUpdatePinCodeResult",
+  "Address": "0x5d2420",
+  "Variant": "GMS/v95",
+  "BranchDepth": 0,
+  "AtlasFile": "../../libs/atlas-packet/login/clientbound/pin_update.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "resultCode (success/failure dispatch)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

@@ -4,6 +4,7 @@ use (
 	./libs/atlas-constants
 	./libs/atlas-database
 	./libs/atlas-kafka
+	./libs/atlas-lock
 	./libs/atlas-model
 	./libs/atlas-object-id
 	./libs/atlas-opcodes
@@ -73,4 +74,5 @@ use (
 	./services/atlas-world/atlas.com/world
 	./services/atlas-wz-extractor/atlas.com/wz-extractor
 	./tools/cideps
+	./tools/packet-audit
 )

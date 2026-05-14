@@ -11,14 +11,13 @@ You are a product-minded engineer turning a rough backlog idea into a structured
 
 Run `git rev-parse --show-toplevel` and `pwd`. If the result is under `.worktrees/`, stop and tell the user:
 
-> You're already inside a task worktree. `/spec-task` must be run from the main repo (`/home/tumidanski/source/atlas-ms/atlas`). `cd` there and re-run.
+> You're already inside a task worktree. `/spec-task` must be run from the main repo (`<repo-root>`). `cd` there and re-run.
 
 ### Step 2 — Determine task number and working slug
 
-1. Scan BOTH `docs/tasks/` in the main repo AND every `.worktrees/*/docs/tasks/` folder (use `find .worktrees -maxdepth 4 -type d -name 'task-*'`). Tasks-in-flight reserve their numbers even if not yet on main.
-2. Pick the next free `NNN` (zero-padded, three digits).
-3. Derive a working slug from `$ARGUMENTS` (lowercase, hyphenated, 3–4 words). Examples: "recurring reminders" → `recurring-reminders`, "household invitations" → `household-invitations`.
-4. Compose the task identifier: `task-NNN-<slug>`.
+1. Run `tools/task-numbers.sh next`. The number it prints (zero-padded, three digits) is the next free `NNN`. Do NOT pick a number any other way — that script is the only collision-safe source: it scans `docs/tasks/`, every `.worktrees/<wt>/docs/tasks/<wt>/`, and every local `task-*` git branch in one pass. Picking by hand has caused collisions before (May 2026: two tasks both numbered 063).
+2. Derive a working slug from `$ARGUMENTS` (lowercase, hyphenated, 3–4 words). Examples: "recurring reminders" → `recurring-reminders`, "household invitations" → `household-invitations`.
+3. Compose the task identifier: `task-NNN-<slug>`.
 
 ### Step 3 — Lightweight context scan
 
@@ -48,7 +47,7 @@ Once scope and slug are confirmed, invoke `superpowers:using-git-worktrees` to c
 - Branch: `task-NNN-<slug>` (from `main`)
 - Worktree: `.worktrees/task-NNN-<slug>` (relative to main repo root)
 
-From this point on, every file write, read, and shell command MUST use absolute paths under the worktree (e.g., `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-NNN-<slug>/docs/tasks/task-NNN-<slug>/prd.md`). Do NOT write any files under the main repo's `docs/tasks/`.
+From this point on, every file write, read, and shell command MUST use absolute paths under the worktree (e.g., `<worktree-root><slug>/docs/tasks/task-NNN-<slug>/prd.md`). Do NOT write any files under the main repo's `docs/tasks/`.
 
 ### Step 6 — Generate the PRD inside the worktree
 

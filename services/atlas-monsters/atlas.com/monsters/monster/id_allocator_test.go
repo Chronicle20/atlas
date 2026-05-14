@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	objectid "github.com/Chronicle20/atlas/libs/atlas-object-id"
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	"github.com/google/uuid"
 )
@@ -77,7 +78,7 @@ func TestAllocator_RecyclesLIFONearExhaustion(t *testing.T) {
 
 	// Jump the counter to the threshold by writing directly to miniredis --
 	// looping 2B allocations would be absurd.
-	counterKeyName := "atlas:oid:" + ten.Id().String() + ":next"
+	counterKeyName := atlasredis.KeyPrefix() + ":oid:" + ten.Id().String() + ":next"
 	if err := testMiniRedis.Set(counterKeyName, strconv.FormatUint(uint64(objectid.RecycleThreshold), 10)); err != nil {
 		t.Fatalf("prime counter: %v", err)
 	}

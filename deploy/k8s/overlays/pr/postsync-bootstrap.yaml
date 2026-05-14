@@ -1,0 +1,108 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlas-pr-bootstrap
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: atlas-pr-bootstrap
+rules:
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "patch", "update"]
+  - apiGroups: ["apps"]
+    resources: ["deployments/status"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: atlas-pr-bootstrap
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: atlas-pr-bootstrap
+subjects:
+  - kind: ServiceAccount
+    name: atlas-pr-bootstrap
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-pr-bootstrap
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: atlas-pr-bootstrap
+      containers:
+        - name: bootstrap
+          image: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap:latest
+          command: ["/atlas/bootstrap.sh"]
+          env:
+            - name: ATLAS_UI_BASE
+              value: http://atlas-ingress.atlas-pr-PLACEHOLDER_PR_NUMBER.svc.cluster.local
+            - name: TENANT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: TENANT_ID
+            - name: REGION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: REGION
+            - name: MAJOR_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: MAJOR_VERSION
+            - name: MINOR_VERSION
+              valueFrom:
+                configMapKeyRef:
+                  name: atlas-pr-bootstrap-tenant
+                  key: MINOR_VERSION
+          envFrom:
+            - configMapRef:
+                name: atlas-env-tokens
+          volumeMounts:
+            - name: wz-canonical
+              mountPath: /opt/wz
+              readOnly: true
+      initContainers:
+        # Canonical WZ atlas.zip lives in cluster-internal MinIO (namespace
+        # `minio`, bucket `atlas-canonical`, anonymous read). PVC mounts can't
+        # cross namespaces, so we fetch into an emptyDir instead.
+        # See runbook §9.1 for MinIO setup.
+        - name: fetch-wz-canonical
+          image: curlimages/curl:8.10.1
+          command:
+            - sh
+            - -c
+            - |
+              set -euo pipefail
+              curl -fsSL --connect-timeout 10 \
+                  --retry 5 --retry-delay 5 --retry-connrefused \
+                  -o /opt/wz/atlas.zip \
+                  "http://minio.minio.svc.cluster.local:9000/atlas-canonical/atlas.zip"
+          volumeMounts:
+            - name: wz-canonical
+              mountPath: /opt/wz
+      volumes:
+        - name: wz-canonical
+          # atlas.zip is ~1GB as of v83 canonical; 8Gi cap matches the prior
+          # PVC budget and gives ample headroom for future WZ revisions.
+          emptyDir:
+            sizeLimit: 8Gi

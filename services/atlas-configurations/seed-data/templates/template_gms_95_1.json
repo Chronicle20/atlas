@@ -311,6 +311,46 @@
       {
         "opCode": "0x1C",
         "writer": "PicResult"
+      },
+      {
+        "opCode": "0x1F",
+        "writer": "CharacterBuffGive"
+      },
+      {
+        "opCode": "0x23",
+        "writer": "CharacterSkillChange"
+      },
+      {
+        "opCode": "0xB3",
+        "writer": "CharacterSpawn"
+      },
+      {
+        "opCode": "0xD2",
+        "writer": "CharacterMovement"
+      },
+      {
+        "opCode": "0xD3",
+        "writer": "CharacterAttackMelee"
+      },
+      {
+        "opCode": "0xD4",
+        "writer": "CharacterAttackRanged"
+      },
+      {
+        "opCode": "0xD5",
+        "writer": "CharacterAttackMagic"
+      },
+      {
+        "opCode": "0xD6",
+        "writer": "CharacterAttackEnergy"
+      },
+      {
+        "opCode": "0xDA",
+        "writer": "CharacterDamage"
+      },
+      {
+        "opCode": "0xE1",
+        "writer": "CharacterBuffGiveForeign"
       }
     ]
   },

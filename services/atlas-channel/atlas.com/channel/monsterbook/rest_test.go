@@ -1,0 +1,189 @@
+package monsterbook
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/Chronicle20/atlas/libs/atlas-constants/character"
+	"github.com/Chronicle20/atlas/libs/atlas-constants/item"
+	"github.com/Chronicle20/atlas/libs/atlas-rest/requests"
+	tenant "github.com/Chronicle20/atlas/libs/atlas-tenant"
+	"github.com/google/uuid"
+	"github.com/jtumidanski/api2go/jsonapi"
+	"github.com/sirupsen/logrus"
+)
+
+// TestCollectionRestModel_Unmarshal asserts the JSON:API stubs are wired so
+// api2go.Unmarshal succeeds and every documented attribute round-trips into
+// the wire model. This is the regression guard for EXT-01..03 (missing
+// reference stubs causing decode failures even when no relationships are
+// present).
+func TestCollectionRestModel_Unmarshal(t *testing.T) {
+	body := []byte(`{
+		"data": {
+			"type": "monster-book",
+			"id": "42",
+			"attributes": {
+				"bookLevel": 3,
+				"normalCount": 5,
+				"specialCount": 2,
+				"totalUniqueCards": 7,
+				"coverCardId": 2380000,
+				"expBonusPercent": 3
+			}
+		}
+	}`)
+
+	var rm CollectionRestModel
+	if err := jsonapi.Unmarshal(body, &rm); err != nil {
+		t.Fatalf("jsonapi.Unmarshal: %v", err)
+	}
+
+	if rm.GetID() != "42" {
+		t.Errorf("GetID() = %q, want %q", rm.GetID(), "42")
+	}
+	if rm.Id != 42 {
+		t.Errorf("Id = %d, want 42", rm.Id)
+	}
+	if rm.BookLevel != 3 {
+		t.Errorf("BookLevel = %d, want 3", rm.BookLevel)
+	}
+	if rm.NormalCount != 5 {
+		t.Errorf("NormalCount = %d, want 5", rm.NormalCount)
+	}
+	if rm.SpecialCount != 2 {
+		t.Errorf("SpecialCount = %d, want 2", rm.SpecialCount)
+	}
+	if rm.TotalUniqueCards != 7 {
+		t.Errorf("TotalUniqueCards = %d, want 7", rm.TotalUniqueCards)
+	}
+	if rm.CoverCardId != item.Id(2380000) {
+		t.Errorf("CoverCardId = %d, want 2380000", rm.CoverCardId)
+	}
+	if rm.ExpBonusPercent != 3 {
+		t.Errorf("ExpBonusPercent = %d, want 3", rm.ExpBonusPercent)
+	}
+}
+
+// TestCollectionRestModel_ReferenceStubs documents that the JSON:API
+// reference interface methods exist and return empty/no-op values. The
+// presence of these methods is what api2go.Unmarshal checks for via
+// type assertion when walking a document; if the upstream ever adds
+// a `relationships` block, this guarantees decode does not error.
+func TestCollectionRestModel_ReferenceStubs(t *testing.T) {
+	var rm CollectionRestModel
+	if refs := rm.GetReferences(); len(refs) != 0 {
+		t.Errorf("GetReferences() len = %d, want 0", len(refs))
+	}
+	if ids := rm.GetReferencedIDs(); len(ids) != 0 {
+		t.Errorf("GetReferencedIDs() len = %d, want 0", len(ids))
+	}
+	if err := rm.SetToOneReferenceID("any", "id"); err != nil {
+		t.Errorf("SetToOneReferenceID: %v", err)
+	}
+	if err := rm.SetToManyReferenceIDs("any", []string{"a", "b"}); err != nil {
+		t.Errorf("SetToManyReferenceIDs: %v", err)
+	}
+}
+
+// TestExtract asserts the wire→domain mapping preserves every attribute,
+// independent of any HTTP plumbing.
+func TestExtract(t *testing.T) {
+	rm := CollectionRestModel{
+		Id:               42,
+		BookLevel:        3,
+		NormalCount:      5,
+		SpecialCount:     2,
+		TotalUniqueCards: 7,
+		CoverCardId:      item.Id(2380000),
+		ExpBonusPercent:  3,
+	}
+	c, err := Extract(rm)
+	if err != nil {
+		t.Fatalf("Extract: %v", err)
+	}
+	if c.BookLevel() != 3 || c.NormalCount() != 5 || c.SpecialCount() != 2 ||
+		c.TotalUniqueCards() != 7 || c.CoverCardId() != item.Id(2380000) ||
+		c.ExpBonusPercent() != 3 {
+		t.Fatalf("Extract round-trip mismatch: %#v", c)
+	}
+}
+
+func newTestTenant(t *testing.T) tenant.Model {
+	t.Helper()
+	tm, err := tenant.Create(uuid.New(), "GMS", 83, 1)
+	if err != nil {
+		t.Fatalf("tenant: %v", err)
+	}
+	return tm
+}
+
+// TestGetByCharacterId_RoundTrip stands up an httptest server returning a
+// canned monster-book JSON:API document and asserts NewProcessor.GetByCharacterId
+// decodes it into a populated Collection. This is the integration test
+// libs/atlas-rest/CLAUDE.md prescribes for every external client.
+func TestGetByCharacterId_RoundTrip(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !strings.HasSuffix(r.URL.Path, "/characters/42/monster-book") {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/vnd.api+json")
+		_, _ = w.Write([]byte(`{
+			"data": {
+				"type": "monster-book",
+				"id": "42",
+				"attributes": {
+					"bookLevel": 3,
+					"normalCount": 5,
+					"specialCount": 2,
+					"totalUniqueCards": 7,
+					"coverCardId": 2380000,
+					"expBonusPercent": 3
+				}
+			}
+		}`))
+	}))
+	defer srv.Close()
+	defer SetBaseURLForTest(srv.URL)()
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	col, err := NewProcessor(logrus.New(), ctx).GetByCharacterId(character.Id(42))
+	if err != nil {
+		t.Fatalf("GetByCharacterId: %v", err)
+	}
+	if col.BookLevel() != 3 {
+		t.Errorf("BookLevel = %d, want 3", col.BookLevel())
+	}
+	if col.CoverCardId() != item.Id(2380000) {
+		t.Errorf("CoverCardId = %d, want 2380000", col.CoverCardId())
+	}
+	if col.NormalCount() != 5 || col.SpecialCount() != 2 || col.TotalUniqueCards() != 7 || col.ExpBonusPercent() != 3 {
+		t.Errorf("collection mismatch: %#v", col)
+	}
+}
+
+// TestGetByCharacterId_NotFound asserts a 404 from the upstream surfaces as
+// requests.ErrNotFound (per libs/atlas-rest/CLAUDE.md), so callers can
+// distinguish "no collection yet" from a deploy-time bug.
+func TestGetByCharacterId_NotFound(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+	defer SetBaseURLForTest(srv.URL)()
+
+	tm := newTestTenant(t)
+	ctx := tenant.WithContext(context.Background(), tm)
+	_, err := NewProcessor(logrus.New(), ctx).GetByCharacterId(character.Id(42))
+	if err == nil {
+		t.Fatal("expected error on 404, got nil")
+	}
+	if !errors.Is(err, requests.ErrNotFound) {
+		t.Fatalf("expected requests.ErrNotFound, got %T: %v", err, err)
+	}
+}

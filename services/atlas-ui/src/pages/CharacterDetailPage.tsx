@@ -16,6 +16,7 @@ import { AttributesPanel } from "@/components/features/characters/AttributesPane
 import { EquipmentPanel } from "@/components/features/characters/EquipmentPanel";
 import { InventoryGrid } from "@/components/features/characters/InventoryGrid";
 import { SkillsSection } from "@/components/features/characters/SkillsSection";
+import { MonsterBookWidget } from "@/components/features/characters/MonsterBookWidget";
 import { QuestStatusTabs } from "@/components/features/quests";
 import { ErrorDisplay } from "@/components/common";
 import { CharacterDetailSkeleton } from "@/components/common/skeletons/CharacterDetailSkeleton";
@@ -184,6 +185,11 @@ export function CharacterDetailPage() {
       <section className="space-y-2">
         <h3 className="text-lg font-semibold">Skills</h3>
         <SkillsSection character={character} tenant={activeTenant} />
+      </section>
+
+      <section className="space-y-2">
+        <h3 className="text-lg font-semibold">Monster Book</h3>
+        <MonsterBookWidget characterId={parseInt(String(id ?? "0"), 10)} />
       </section>
 
       <Toaster richColors />

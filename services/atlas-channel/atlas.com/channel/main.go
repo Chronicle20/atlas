@@ -31,6 +31,7 @@ import (
 	"atlas-channel/kafka/consumer/messenger"
 	mistConsumer "atlas-channel/kafka/consumer/mist"
 	"atlas-channel/kafka/consumer/monster"
+	mbconsumer "atlas-channel/kafka/consumer/monsterbook"
 	monsterDomain "atlas-channel/monster"
 	note3 "atlas-channel/kafka/consumer/note"
 	"atlas-channel/kafka/consumer/npc/conversation"
@@ -67,7 +68,9 @@ import (
 	channelSB "github.com/Chronicle20/atlas/libs/atlas-packet/channel/serverbound"
 	character2 "github.com/Chronicle20/atlas/libs/atlas-packet/character"
 	charcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound"
+	mbcb "github.com/Chronicle20/atlas/libs/atlas-packet/character/clientbound/monsterbook"
 	charsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound"
+	mbsb "github.com/Chronicle20/atlas/libs/atlas-packet/character/serverbound/monsterbook"
 	chatCB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/clientbound"
 	chatSB "github.com/Chronicle20/atlas/libs/atlas-packet/chat/serverbound"
 	dropcb "github.com/Chronicle20/atlas/libs/atlas-packet/drop/clientbound"
@@ -114,6 +117,7 @@ import (
 	channel2 "github.com/Chronicle20/atlas/libs/atlas-constants/channel"
 	"github.com/Chronicle20/atlas/libs/atlas-constants/world"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-opcodes"
 	restserver "github.com/Chronicle20/atlas/libs/atlas-rest/server"
@@ -144,7 +148,7 @@ func main() {
 	if err != nil {
 		l.WithError(err).Fatal("Unable to successfully load configuration.")
 	}
-	var consumerGroupId = fmt.Sprintf(consumerGroupIdTemplate, config.Id.String())
+	var consumerGroupId = consumergroup.Resolve(fmt.Sprintf(consumerGroupIdTemplate, config.Id.String()))
 
 	validatorMap := produceValidators()
 	handlerMap := produceHandlers()
@@ -171,6 +175,7 @@ func main() {
 	member.InitConsumers(l)(cmf)(consumerGroupId)
 	message.InitConsumers(l)(cmf)(consumerGroupId)
 	monster.InitConsumers(l)(cmf)(consumerGroupId)
+	mbconsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	mistConsumer.InitConsumers(l)(cmf)(consumerGroupId)
 	party.InitConsumers(l)(cmf)(consumerGroupId)
 	party_quest.InitConsumers(l)(cmf)(consumerGroupId)
@@ -273,6 +278,9 @@ func main() {
 				}
 				if err = monster.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
+				}
+				if err = mbconsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
+					fl.WithError(err).Fatal("Unable to register monster-book status handlers.")
 				}
 				if err = mistConsumer.InitHandlers(fl)(sc)(wp)(consumer.GetManager().RegisterHandler); err != nil {
 					fl.WithError(err).Fatal("Unable to register kafka handlers.")
@@ -497,6 +505,8 @@ func produceWriters() []string {
 		merchantcb.HiredMerchantOperationWriter,
 		interactioncb.CharacterInteractionWriter,
 		interaction2.MiniRoomWriter,
+		mbcb.MonsterBookSetCardWriter,
+		mbcb.MonsterBookSetCoverWriter,
 	}
 }
 
@@ -572,6 +582,7 @@ func produceHandlers() map[string]handler.MessageHandler {
 	handlerMap[charsb.MonsterDamageFriendlyHandle] = handler.MonsterDamageFriendlyHandleFunc
 	handlerMap[interactionsb.CharacterInteractionHandle] = handler.CharacterInteractionHandleFunc
 	handlerMap[merchantsb.HiredMerchantOperationHandle] = handler.HiredMerchantOperationHandleFunc
+	handlerMap[mbsb.MonsterBookCoverHandler] = handler.MonsterBookCoverHandleFunc
 	return handlerMap
 }
 

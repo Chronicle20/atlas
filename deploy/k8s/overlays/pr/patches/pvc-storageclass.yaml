@@ -1,0 +1,29 @@
+# Switches the per-PR PVCs to the dedicated `longhorn-pr` StorageClass
+# (provisioned in the cluster-infra repo per Phase 8). That StorageClass
+# sets parameters.recurringJobSelector: '[]', so PR Volumes are
+# provisioned outside the default recurring backup group from the first
+# reconcile -- no per-volume label patching, no race with Longhorn's
+# recurring-job controller.
+#
+# See task-063 plan.md Phase 0 Task 0.6 for the rationale.
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-data-pvc
+spec:
+  storageClassName: longhorn-pr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-wz-input-pvc
+spec:
+  storageClassName: longhorn-pr
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: atlas-assets-pvc
+spec:
+  storageClassName: longhorn-pr

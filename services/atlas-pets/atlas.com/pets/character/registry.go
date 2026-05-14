@@ -37,7 +37,7 @@ func InitRegistry(client *goredis.Client) {
 func GetRegistry() *Registry { return registry }
 
 func (r *Registry) tenantSetKey() string {
-	return fmt.Sprintf("atlas:%s:_tenants", r.reg.Namespace())
+	return fmt.Sprintf("%s:%s:_tenants", atlas.KeyPrefix(), r.reg.Namespace())
 }
 
 func (r *Registry) AddCharacter(ctx context.Context, characterId uint32, f field.Model) {
@@ -66,8 +66,8 @@ func (r *Registry) GetLoggedIn(ctx context.Context) (map[uint32]MapKey, error) {
 			continue
 		}
 
-		pattern := fmt.Sprintf("atlas:%s:%s:*", r.reg.Namespace(), atlas.TenantKey(t))
-		prefix := fmt.Sprintf("atlas:%s:%s:", r.reg.Namespace(), atlas.TenantKey(t))
+		pattern := fmt.Sprintf("%s:%s:%s:*", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
+		prefix := fmt.Sprintf("%s:%s:%s:", atlas.KeyPrefix(), r.reg.Namespace(), atlas.TenantKey(t))
 		var cursor uint64
 		for {
 			keys, next, err := r.client.Scan(ctx, cursor, pattern, 100).Result()

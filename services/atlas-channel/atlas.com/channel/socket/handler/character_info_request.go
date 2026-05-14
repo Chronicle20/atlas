@@ -28,6 +28,7 @@ func CharacterInfoRequestHandleFunc(l logrus.FieldLogger, ctx context.Context, w
 		if p.PetInfo() {
 			decorators = append(decorators, cp.PetAssetEnrichmentDecorator)
 		}
+		decorators = append(decorators, cp.MonsterBookCoverDecorator)
 		c, err := cp.GetById(decorators...)(p.CharacterId())
 		if err != nil {
 			l.WithError(err).Errorf("Unable to retrieve character [%d] being requested.", p.CharacterId())

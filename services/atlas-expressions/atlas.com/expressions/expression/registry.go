@@ -28,7 +28,7 @@ func InitRegistry(client *goredis.Client) {
 			return strconv.FormatUint(uint64(k), 10)
 		}, defaultTTL),
 		client:    client,
-		tenantKey: "atlas:expression:_tenants",
+		tenantKey: atlas.KeyPrefix() + ":expression:_tenants",
 	}
 }
 

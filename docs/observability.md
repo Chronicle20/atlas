@@ -110,3 +110,28 @@ The Tempo overrides explicitly enumerates the allowlist; "all attributes become 
 10. `count by (__name__) ({__name__=~"traces_spanmetrics_.*"})` does not include any series with `character_id`, `account_id`, `session_id`, `transaction_id`, `item_id` labels.
 11. Set `TRACE_SAMPLING_RATIO=0.5` in env-configmap, roll atlas-channel, observe `rate(traces_spanmetrics_calls_total{service_name="atlas-channel"}[1m])` halve under steady traffic. Restore to `1.0`.
 12. Tempo trace search via Grafana Explore (Tempo datasource) returns recent traces.
+
+## Filtering by environment
+
+Every per-environment pod carries the label `atlas.env=<token>`, and PR-environment pods additionally carry `atlas.pr-number=<N>`. Use these labels to scope queries:
+
+- `main` env: `atlas.env=main`
+- PR env: `atlas.env=<4-char-hex>` (deterministic per PR — see `docs/runbooks/ephemeral-pr-deployments.md`)
+
+### Loki
+
+```logql
+{atlas_env="a3f7"} |= "ERROR"
+```
+
+(Note: Promtail / Loki normalises Kubernetes label keys with dots to underscores at ingestion. `atlas.env` → `atlas_env` in LogQL selectors.)
+
+### Prometheus
+
+```promql
+sum by (pod) (rate(http_request_duration_seconds_count{atlas_env="a3f7"}[5m]))
+```
+
+### Grafana
+
+The `atlas-pr-environments` dashboard (when present in the cluster's Grafana) summarises open envs, time-to-ready, cleanup status, and bootstrap step durations. If absent, install via the standard Grafana dashboards-as-code mechanism on the cluster.

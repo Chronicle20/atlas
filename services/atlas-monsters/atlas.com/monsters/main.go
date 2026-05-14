@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	lock "github.com/Chronicle20/atlas/libs/atlas-lock"
 	atlas "github.com/Chronicle20/atlas/libs/atlas-redis"
@@ -25,8 +26,9 @@ import (
 )
 
 const serviceName = "atlas-monsters"
-const consumerGroupId = "Monster Registry Service"
-const dataEventsConsumerGroupId = "Monster Data Cache Invalidator"
+
+var consumerGroupId = consumergroup.Resolve("Monster Registry Service")
+var dataEventsConsumerGroupId = consumergroup.Resolve("Monster Data Cache Invalidator")
 
 type Server struct {
 	baseUrl string

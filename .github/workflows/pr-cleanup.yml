@@ -1,0 +1,63 @@
+name: PR Cleanup
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr-number:
+        description: 'PR number to clean up'
+        required: true
+        type: string
+
+concurrency:
+  group: pr-cleanup-${{ github.event.pull_request.number || github.event.inputs.pr-number }}
+  cancel-in-progress: false
+
+env:
+  PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr-number }}
+
+jobs:
+  delete-images:
+    name: Delete per-PR ghcr image tags
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+    steps:
+      - name: Checkout (for services.json)
+        uses: actions/checkout@v4
+
+      - name: Compute service list
+        id: svc
+        run: |
+          jq -c '[.services[] | select(.docker_image) | select(.type != "support-image") | .name]' \
+            < .github/config/services.json > /tmp/svcs.json
+          echo "list=$(cat /tmp/svcs.json)" >> $GITHUB_OUTPUT
+
+      - name: Delete tags
+        env:
+          GH_TOKEN: ${{ secrets.GHCR_TOKEN }}
+        run: |
+          set -euo pipefail
+          for svc in $(jq -r '.[]' /tmp/svcs.json); do
+            echo "Cleaning up $svc tags matching pr-${PR_NUMBER}-*"
+            gh api "/users/chronicle20/packages/container/${svc}%2F${svc}/versions" \
+              --paginate \
+              --jq '.[] | select(.metadata.container.tags[]? | startswith("pr-'"${PR_NUMBER}"'-")) | .id' \
+              | while read -r vid; do
+                  gh api --method DELETE \
+                    "/users/chronicle20/packages/container/${svc}%2F${svc}/versions/${vid}" \
+                    || echo "skip: $svc/$vid"
+              done
+          done
+
+  notify-argo:
+    name: Notify Argo of PR close
+    runs-on: ubuntu-latest
+    needs: delete-images
+    steps:
+      - name: Log notice
+        run: |
+          echo "PR ${PR_NUMBER} closed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "Argo CD's hourly cleanup CronJob will set cleanup-deadline within the hour."
+          echo "Force-cleanup (bypassing grace) is documented in docs/runbooks/ephemeral-pr-deployments.md §9.2."

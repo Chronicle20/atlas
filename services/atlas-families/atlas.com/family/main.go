@@ -12,12 +12,14 @@ import (
 	"os"
 
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/consumer"
+	consumergroup "github.com/Chronicle20/atlas/libs/atlas-kafka/consumergroup"
 	"github.com/Chronicle20/atlas/libs/atlas-kafka/producer"
 	"github.com/Chronicle20/atlas/libs/atlas-rest/server"
 )
 
 const serviceName = "atlas-family"
-const consumerGroupId = "Family Service"
+
+var consumerGroupId = consumergroup.Resolve("Family Service")
 
 type Server struct {
 	baseUrl string

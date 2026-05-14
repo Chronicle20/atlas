@@ -53,6 +53,7 @@ const (
 	PartyLeaderCondition            ConditionType = ConditionType(sharedsaga.PartyLeaderCondition)
 	PartySizeCondition              ConditionType = ConditionType(sharedsaga.PartySizeCondition)
 	PqCustomDataCondition           ConditionType = ConditionType(sharedsaga.PqCustomDataCondition)
+	MonsterBookCountCondition       ConditionType = ConditionType(sharedsaga.MonsterBookCountCondition)
 )
 
 // Operator represents the comparison operator in a condition
@@ -121,7 +122,7 @@ func (b *ConditionBuilder) SetType(condType string) *ConditionBuilder {
 	}
 
 	switch ConditionType(condType) {
-	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition:
+	case JobCondition, MesoCondition, MapCondition, FameCondition, ItemCondition, GenderCondition, LevelCondition, RebornsCondition, DojoPointsCondition, VanquisherKillsCondition, GmLevelCondition, GuildIdCondition, GuildRankCondition, QuestStatusCondition, QuestProgressCondition, UnclaimedMarriageGiftsCondition, StrengthCondition, DexterityCondition, IntelligenceCondition, LuckCondition, GuildLeaderCondition, BuddyCapacityCondition, PetCountCondition, MapCapacityCondition, InventorySpaceCondition, TransportAvailableCondition, SkillLevelCondition, HpCondition, MaxHpCondition, BuffCondition, ExcessSPCondition, PartyIdCondition, PartyLeaderCondition, PartySizeCondition, PqCustomDataCondition, MonsterBookCountCondition:
 		b.conditionType = ConditionType(condType)
 	default:
 		b.err = fmt.Errorf("unsupported condition type: %s", condType)
@@ -557,6 +558,16 @@ func (c Condition) Evaluate(character character.Model) ConditionResult {
 			Value:       c.value,
 			ActualValue: 0,
 		}
+	case MonsterBookCountCondition:
+		// Monster book count validation requires context (REST lookup)
+		return ConditionResult{
+			Passed:      false,
+			Description: fmt.Sprintf("Monster Book Count validation requires ValidationContext"),
+			Type:        c.conditionType,
+			Operator:    c.operator,
+			Value:       c.value,
+			ActualValue: 0,
+		}
 	case ItemCondition:
 		// For item conditions, we need to check the inventory
 		itemQuantity := 0
@@ -833,6 +844,12 @@ func (c Condition) EvaluateWithContext(ctx ValidationContext) ConditionResult {
 		pqModel := ctx.PartyQuest()
 		actualValue = pqModel.GetCustomDataInt(c.step)
 		description = fmt.Sprintf("PQ Custom Data '%s' %s %d", c.step, c.operator, c.value)
+
+	case MonsterBookCountCondition:
+		// totalUniqueCards comes from atlas-monster-book via the injected
+		// monsterbook processor; absence/error degrades gracefully to 0.
+		actualValue = ctx.GetMonsterBookTotalUniqueCards()
+		description = fmt.Sprintf("Monster Book Total Unique Cards %s %d", c.operator, c.value)
 
 	default:
 		// For non-context-specific conditions, delegate to the original Evaluate method

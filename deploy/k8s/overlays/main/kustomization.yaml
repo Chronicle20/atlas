@@ -1,0 +1,222 @@
+# Note: KAFKA_CONSUMER_GROUP is intentionally not injected for the main
+# overlay. Each service's consumergroup.Resolve() falls back to its
+# historical literal (same behavior as before task-063), keeping the
+# main env's group IDs unchanged across the migration.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: atlas-main
+resources:
+  - ../../base
+  - atlas-env-tokens.yaml
+patches:
+  - path: lb-pin.yaml
+  - path: patches/atlas-env-env.yaml
+  - path: patches/db-name-suffix.yaml
+configMapGenerator:
+  - name: atlas-env
+    behavior: replace
+    literals:
+      - BASE_SERVICE_URL=http://atlas-ingress.atlas-main.svc.cluster.local:80/api/
+      - BOOTSTRAP_SERVERS=kafka.home:9093
+      - DB_HOST=postgres.home
+      - DB_PORT=5432
+      - REDIS_URL=redis.home:6379
+      - TRACE_ENDPOINT=tempo.home:4317
+      - TRACE_SAMPLING_RATIO=1.0
+      - REST_PORT=8080
+      - COMMAND_TOPIC_ACCOUNT=COMMAND_TOPIC_ACCOUNT-main
+      - COMMAND_TOPIC_ACCOUNT_LOGOUT=COMMAND_TOPIC_ACCOUNT_LOGOUT-main
+      - COMMAND_TOPIC_ACCOUNT_SESSION=COMMAND_TOPIC_ACCOUNT_SESSION-main
+      - COMMAND_TOPIC_BUDDY_LIST=COMMAND_TOPIC_BUDDY_LIST-main
+      - COMMAND_TOPIC_CASH_COMPARTMENT=COMMAND_TOPIC_CASH_COMPARTMENT-main
+      - COMMAND_TOPIC_CHAIR=COMMAND_TOPIC_CHAIR-main
+      - COMMAND_TOPIC_CHALKBOARD=COMMAND_TOPIC_CHALKBOARD-main
+      - COMMAND_TOPIC_CHANNEL_STATUS=COMMAND_TOPIC_CHANNEL_STATUS-main
+      - COMMAND_TOPIC_CHARACTER=COMMAND_TOPIC_CHARACTER-main
+      - COMMAND_TOPIC_CHARACTER_BUFF=COMMAND_TOPIC_CHARACTER_BUFF-main
+      - COMMAND_TOPIC_CHARACTER_CHAT=COMMAND_TOPIC_CHARACTER_CHAT-main
+      - COMMAND_TOPIC_CHARACTER_GENERAL_CHAT=COMMAND_TOPIC_CHARACTER_GENERAL_CHAT-main
+      - COMMAND_TOPIC_CHARACTER_MOVEMENT=COMMAND_TOPIC_CHARACTER_MOVEMENT-main
+      - COMMAND_TOPIC_COMPARTMENT=COMMAND_TOPIC_COMPARTMENT-main
+      - COMMAND_TOPIC_CONSUMABLE=COMMAND_TOPIC_CONSUMABLE-main
+      - COMMAND_TOPIC_DATA=COMMAND_TOPIC_DATA-main
+      - COMMAND_TOPIC_DROP=COMMAND_TOPIC_DROP-main
+      - COMMAND_TOPIC_DROP_ITEM=COMMAND_TOPIC_DROP_ITEM-main
+      - COMMAND_TOPIC_EQUIP_ITEM=COMMAND_TOPIC_EQUIP_ITEM-main
+      - COMMAND_TOPIC_EXPRESSION=COMMAND_TOPIC_EXPRESSION-main
+      - COMMAND_TOPIC_FAME=COMMAND_TOPIC_FAME-main
+      - COMMAND_TOPIC_GUILD=COMMAND_TOPIC_GUILD-main
+      - COMMAND_TOPIC_GUILD_THREAD=COMMAND_TOPIC_GUILD_THREAD-main
+      - COMMAND_TOPIC_INVENTORY=COMMAND_TOPIC_INVENTORY-main
+      - COMMAND_TOPIC_INVITE=COMMAND_TOPIC_INVITE-main
+      - COMMAND_TOPIC_MESSENGER=COMMAND_TOPIC_MESSENGER-main
+      - COMMAND_TOPIC_MONSTER=COMMAND_TOPIC_MONSTER-main
+      - COMMAND_TOPIC_MONSTER_DAMAGE=COMMAND_TOPIC_MONSTER_DAMAGE-main
+      - COMMAND_TOPIC_MONSTER_MOVEMENT=COMMAND_TOPIC_MONSTER_MOVEMENT-main
+      - COMMAND_TOPIC_MOVE_ITEM=COMMAND_TOPIC_MOVE_ITEM-main
+      - COMMAND_TOPIC_NPC_CONVERSATION=COMMAND_TOPIC_NPC_CONVERSATION-main
+      - COMMAND_TOPIC_PARTY=COMMAND_TOPIC_PARTY-main
+      - COMMAND_TOPIC_PET=COMMAND_TOPIC_PET-main
+      - COMMAND_TOPIC_PET_MOVEMENT=COMMAND_TOPIC_PET_MOVEMENT-main
+      - COMMAND_TOPIC_PORTAL=COMMAND_TOPIC_PORTAL-main
+      - COMMAND_TOPIC_PORTAL_ACTIONS=COMMAND_TOPIC_PORTAL_ACTIONS-main
+      - COMMAND_TOPIC_REACTOR=COMMAND_TOPIC_REACTOR-main
+      - COMMAND_TOPIC_SKILL=COMMAND_TOPIC_SKILL-main
+      - COMMAND_TOPIC_SKILL_MACRO=COMMAND_TOPIC_SKILL_MACRO-main
+      - COMMAND_TOPIC_UNEQUIP_ITEM=COMMAND_TOPIC_UNEQUIP_ITEM-main
+      - EVENT_TOPIC_ACCOUNT_SESSION_STATUS=EVENT_TOPIC_ACCOUNT_SESSION_STATUS-main
+      - EVENT_TOPIC_ACCOUNT_STATUS=EVENT_TOPIC_ACCOUNT_STATUS-main
+      - EVENT_TOPIC_ASSET_STATUS=EVENT_TOPIC_ASSET_STATUS-main
+      - EVENT_TOPIC_BUDDY_LIST_STATUS=EVENT_TOPIC_BUDDY_LIST_STATUS-main
+      - EVENT_TOPIC_CASH_COMPARTMENT_STATUS=EVENT_TOPIC_CASH_COMPARTMENT_STATUS-main
+      - EVENT_TOPIC_CASH_SHOP_STATUS=EVENT_TOPIC_CASH_SHOP_STATUS-main
+      - EVENT_TOPIC_CHAIR_STATUS=EVENT_TOPIC_CHAIR_STATUS-main
+      - EVENT_TOPIC_CHALKBOARD_STATUS=EVENT_TOPIC_CHALKBOARD_STATUS-main
+      - EVENT_TOPIC_CHANNEL_STATUS=EVENT_TOPIC_CHANNEL_STATUS-main
+      - EVENT_TOPIC_CHARACTER_BUFF_STATUS=EVENT_TOPIC_CHARACTER_BUFF_STATUS-main
+      - EVENT_TOPIC_CHARACTER_CHAT=EVENT_TOPIC_CHARACTER_CHAT-main
+      - EVENT_TOPIC_CHARACTER_GENERAL_CHAT=EVENT_TOPIC_CHARACTER_GENERAL_CHAT-main
+      - EVENT_TOPIC_CHARACTER_MOVEMENT=EVENT_TOPIC_CHARACTER_MOVEMENT-main
+      - EVENT_TOPIC_CHARACTER_STATUS=EVENT_TOPIC_CHARACTER_STATUS-main
+      - EVENT_TOPIC_COMPARTMENT_STATUS=EVENT_TOPIC_COMPARTMENT_STATUS-main
+      - EVENT_TOPIC_CONSUMABLE_STATUS=EVENT_TOPIC_CONSUMABLE_STATUS-main
+      - EVENT_TOPIC_DROP_STATUS=EVENT_TOPIC_DROP_STATUS-main
+      - EVENT_TOPIC_EQUIP_CHANGED=EVENT_TOPIC_EQUIP_CHANGED-main
+      - EVENT_TOPIC_EXPRESSION=EVENT_TOPIC_EXPRESSION-main
+      - EVENT_TOPIC_FAME_STATUS=EVENT_TOPIC_FAME_STATUS-main
+      - EVENT_TOPIC_GACHAPON_REWARD_WON=EVENT_TOPIC_GACHAPON_REWARD_WON-main
+      - EVENT_TOPIC_GUILD_STATUS=EVENT_TOPIC_GUILD_STATUS-main
+      - EVENT_TOPIC_GUILD_THREAD_STATUS=EVENT_TOPIC_GUILD_THREAD_STATUS-main
+      - EVENT_TOPIC_INVENTORY_CHANGED=EVENT_TOPIC_INVENTORY_CHANGED-main
+      - EVENT_TOPIC_INVITE_STATUS=EVENT_TOPIC_INVITE_STATUS-main
+      - EVENT_TOPIC_ITEM_GAIN=EVENT_TOPIC_ITEM_GAIN-main
+      - EVENT_TOPIC_MAP_STATUS=EVENT_TOPIC_MAP_STATUS-main
+      - EVENT_TOPIC_MESSENGER_MEMBER_STATUS=EVENT_TOPIC_MESSENGER_MEMBER_STATUS-main
+      - EVENT_TOPIC_MESSENGER_STATUS=EVENT_TOPIC_MESSENGER_STATUS-main
+      - EVENT_TOPIC_MONSTER_MOVEMENT=EVENT_TOPIC_MONSTER_MOVEMENT-main
+      - EVENT_TOPIC_MONSTER_STATUS=EVENT_TOPIC_MONSTER_STATUS-main
+      - EVENT_TOPIC_PARTY_MEMBER_STATUS=EVENT_TOPIC_PARTY_MEMBER_STATUS-main
+      - EVENT_TOPIC_PARTY_STATUS=EVENT_TOPIC_PARTY_STATUS-main
+      - EVENT_TOPIC_PET_MOVEMENT=EVENT_TOPIC_PET_MOVEMENT-main
+      - EVENT_TOPIC_PET_STATUS=EVENT_TOPIC_PET_STATUS-main
+      - EVENT_TOPIC_REACTOR_STATUS=EVENT_TOPIC_REACTOR_STATUS-main
+      - EVENT_TOPIC_SESSION_STATUS=EVENT_TOPIC_SESSION_STATUS-main
+      - EVENT_TOPIC_SKILL_STATUS=EVENT_TOPIC_SKILL_STATUS-main
+      - EVENT_TOPIC_WORLD_RATE=EVENT_TOPIC_WORLD_RATE-main
+images:
+  - name: ghcr.io/chronicle20/atlas-account/atlas-account
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-asset-expiration/atlas-asset-expiration
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-assets/atlas-assets
+    newTag: latest
+  - name: ghcr.io/chronicle20/atlas-ban/atlas-ban
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-buddies/atlas-buddies
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-buffs/atlas-buffs
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-cashshop/atlas-cashshop
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-chairs/atlas-chairs
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-chalkboards/atlas-chalkboards
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-channel/atlas-channel
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-character/atlas-character
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-character-factory/atlas-character-factory
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-configurations/atlas-configurations
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-consumables/atlas-consumables
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-data/atlas-data
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-drop-information/atlas-drop-information
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-drops/atlas-drops
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-effective-stats/atlas-effective-stats
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-expressions/atlas-expressions
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-fame/atlas-fame
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-families/atlas-families
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-gachapons/atlas-gachapons
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-guilds/atlas-guilds
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-inventory/atlas-inventory
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-invites/atlas-invites
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-keys/atlas-keys
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-login/atlas-login
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-map-actions/atlas-map-actions
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-maps/atlas-maps
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-marriages/atlas-marriages
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-merchant/atlas-merchant
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-messages/atlas-messages
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-messengers/atlas-messengers
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-monster-death/atlas-monster-death
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-monsters/atlas-monsters
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-notes/atlas-notes
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-npc-conversations/atlas-npc-conversations
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-npc-shops/atlas-npc-shops
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-parties/atlas-parties
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-party-quests/atlas-party-quests
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-pets/atlas-pets
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-portal-actions/atlas-portal-actions
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-portals/atlas-portals
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-pr-bootstrap/atlas-pr-bootstrap
+    newTag: main-21894c2
+  - name: ghcr.io/chronicle20/atlas-query-aggregator/atlas-query-aggregator
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-quest/atlas-quest
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-rates/atlas-rates
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-reactor-actions/atlas-reactor-actions
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-reactors/atlas-reactors
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-saga-orchestrator/atlas-saga-orchestrator
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-skills/atlas-skills
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-storage/atlas-storage
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-tenants/atlas-tenants
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-transports/atlas-transports
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-world/atlas-world
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-wz-extractor/atlas-wz-extractor
+    newTag: main-54aa431
+  - name: ghcr.io/chronicle20/atlas-ui/atlas-ui
+    newTag: main-378ee2a
+commonLabels:
+  atlas.env: main

@@ -1,0 +1,22 @@
+{
+  "data": {
+    "type": "services",
+    "id": "e7fb1d7e-47b8-46bd-97dc-867d93530856",
+    "attributes": {
+      "type": "login-service",
+      "tasks": [
+        {
+          "type": "timeout",
+          "interval": 30000,
+          "duration": 60000
+        }
+      ],
+      "tenants": [
+        {
+          "id": "ec876921-c363-4cc6-9c51-5bb8d57f9553",
+          "port": 8300
+        }
+      ]
+    }
+  }
+}

@@ -195,6 +195,10 @@ func (m Model) SlotMax() uint32 {
 	return m.slotMax
 }
 
+func (m Model) ConsumeOnPickup() bool {
+	return m.consumeOnPickup
+}
+
 type RewardModel struct {
 	itemId uint32
 	count  uint32

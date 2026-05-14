@@ -1,0 +1,16 @@
+{
+  "data": {
+    "type": "services",
+    "id": "00000000-0000-0000-0000-000000000000",
+    "attributes": {
+      "type": "drops-service",
+      "tasks": [
+        {
+          "type": "drop_expiration_task",
+          "interval": 30000,
+          "duration": 60000
+        }
+      ]
+    }
+  }
+}

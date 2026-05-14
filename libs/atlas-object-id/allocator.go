@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 
+	atlasredis "github.com/Chronicle20/atlas/libs/atlas-redis"
 	"github.com/Chronicle20/atlas/libs/atlas-tenant"
 	goredis "github.com/redis/go-redis/v9"
 )
@@ -100,11 +101,11 @@ func NewRedisAllocator(client *goredis.Client) Allocator {
 }
 
 func counterKey(t tenant.Model) string {
-	return fmt.Sprintf("atlas:oid:%s:next", t.Id().String())
+	return fmt.Sprintf("%s:oid:%s:next", atlasredis.KeyPrefix(), t.Id().String())
 }
 
 func freeKey(t tenant.Model) string {
-	return fmt.Sprintf("atlas:oid:%s:free", t.Id().String())
+	return fmt.Sprintf("%s:oid:%s:free", atlasredis.KeyPrefix(), t.Id().String())
 }
 
 func (a *redisAllocator) Allocate(ctx context.Context, t tenant.Model) (uint32, error) {

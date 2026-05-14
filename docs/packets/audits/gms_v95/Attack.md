@@ -30,7 +30,3 @@
 | 17 | int16 | int32 `tKeyDown (only for keydown skills: 2121001/2221001/2321001/22121000/22151001)` | ❌ | width mismatch |
 | 18 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-ack: Two tool-limitation causes — (1) dispatcher-layer +1 offset: CUserPool::OnUserRemotePacket consumes characterId before dispatching to OnAttack, while atlas writes characterId at offset 0; (2) the analyzer linearizes deeply conditional field expansion (skillId, strafe passive-SLV, meso-explosion, ranged, keydown) against IDA's guarded branches, producing width mismatches even after the offset is applied. No structural wire bug — atlas's encode tracks the IDA field sequence for the attack type subset wired through the service layer.
-

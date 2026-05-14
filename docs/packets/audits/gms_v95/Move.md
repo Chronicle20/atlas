@@ -20,7 +20,3 @@
 | 7 | int32 | int32 `crc32 (CRC32 of bDetect using dwKey)` | ✅ |  |
 | 8 | byte | bytes `movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation` | 🔍 | sub-struct: movement — see _substruct/ |
 
-## Notes
-
-ack: row 8 verdict 🔍 — movement sub-struct (CMovePath::Encode) is a variable-length loop the static analyzer cannot linearize; atlas correctly delegates to model.Movement.Encode; wire correctness verified by inspection of CVecCtrlUser::EndUpdateActive (0x9a0d20) and CMovePath::Encode (0x666e20).
-

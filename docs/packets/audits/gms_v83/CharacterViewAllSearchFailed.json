@@ -1,0 +1,20 @@
+{
+  "WriterName": "CharacterViewAllSearchFailed",
+  "IDAName": "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed",
+  "Address": "0x5facca",
+  "Variant": "GMS/v83",
+  "BranchDepth": 0,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/view_all.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "code byte (case 2/3/6/7 = error — no further reads in v83)",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

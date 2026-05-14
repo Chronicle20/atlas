@@ -18,14 +18,3 @@
 | 5 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 | 6 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-**ack: sub-op enum drift — deferred to `_pending.md § Sub-op enum drift — character domain`**
-
-This report represents the effect_skill_use.go file. Row 1 shows int32 vs byte
-mismatch: `EffectSkillUse.Encode` writes skillId (int32) after the mode byte,
-while the IDA flat sequence only has 2 fields and the second is the mode byte
-itself. The pipeline cannot model the sub-op dispatch tree. Also note row 0:
-IDA expects characterId (int32) but EffectSkillUse is a self-effect struct
-(no characterId prefix). All mismatches are sub-op enum drift artifacts.
-Deferred to Phase 3 for per-mode case-arm verification.

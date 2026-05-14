@@ -59,19 +59,3 @@
 | 46 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 47 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-ack: tool-limitation false positive — sub-struct trailing-byte over-emission.
-
-`AddCharacterEntry.Encode` delegates to `CharacterListEntry.Encode` (via `WriteByteArray`),
-which emits a viewAll placeholder byte (`WriteByte(0)`) + a rankEnabled byte (`WriteBool(!gm)`) +
-four rank int32s (`WriteInt` × 4) = 18 trailing bytes after the AvatarLook data.
-`CLogin::OnCreateNewCharacterResult` (IDA @ 0x5dab90) stops reading after `AvatarLook::Decode`
-and zero-fills the rank fields from client state — no trailing bytes are consumed.
-MapleStory packets are length-prefixed; the client ignores unconsumed trailing bytes in a
-standalone packet, so no functional wire corruption occurs.
-The 6 ❌ rows (42–47) are the sub-struct expansion of the CharacterListEntry viewAll/rank suffix;
-there is no client-visible defect. Resolving cleanly would require either a dedicated
-AddCharacterEntry payload type (without rank fields) or a context-aware encoder flag in
-CharacterListEntry — deferred to a follow-up refactor.
-

@@ -315,6 +315,522 @@
       "calls": [
         {"op": "Encode1", "comment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)"}
       ]
+    },
+
+    "CUserPool::OnUserEnterField": {
+      "address": "0x972100",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId (dwCharacterID)"}
+      ]
+    },
+    "CUserPool::OnUserRemotePacket": {
+      "address": "0x9724f9",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read before dispatching to OnAttack/OnHit/OnMove/etc."}
+      ]
+    },
+    "CUserPool::OnUserLeaveField": {
+      "address": "0x9722f9",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "dwCharacterID — user leaving the field"}
+      ]
+    },
+    "CUserRemote::OnAttack": {
+      "address": "0x9803ab",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "packed: high nibble=nDamagePerMob, low nibble=hits"},
+        {"op": "Decode1", "comment": "level (m_nLevel)"},
+        {"op": "Decode1", "comment": "nSLV (skill level; 0 means no skill)"},
+        {"op": "Decode4", "comment": "skillId (only if nSLV != 0)"},
+        {"op": "Decode1", "comment": "option / bSerialAttack (& 0x20)"},
+        {"op": "Decode2", "comment": "packed: bit15=bLeft, low15=nAction (attackAction)"},
+        {"op": "Decode1", "comment": "nActionSpeed (unconditional in v83 — no nAction <= 0x110 guard)"},
+        {"op": "Decode1", "comment": "nMastery (unconditional in v83)"},
+        {"op": "Decode4", "comment": "nBulletItemID (unconditional in v83)"},
+        {"op": "Decode4", "comment": "monsterId per damage target (loop nDamagePerMob times)"},
+        {"op": "Decode1", "comment": "hitAction per target (if monsterId != 0)"},
+        {"op": "Decode1", "comment": "damage count (only if meso explosion skill 4211006, per target)"},
+        {"op": "Decode4", "comment": "damage value per hit (loop nHits times, or damage-count for meso explosion)"},
+        {"op": "Decode2", "comment": "ptBallStart.x (only if nType==212 ranged / opcode 0xBB)"},
+        {"op": "Decode2", "comment": "ptBallStart.y (only if nType==212 ranged / opcode 0xBB)"},
+        {"op": "Decode4", "comment": "tKeyDown (only for keydown skills: 2121001/2221001/2321001)"}
+      ]
+    },
+    "CUserRemote::OnHit": {
+      "address": "0x9832e3",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nAttackIdx (signed; -1=miss/magic, -2=obstacle, >=0=mob attack index)"},
+        {"op": "Decode4", "comment": "nDamage (primary damage or miss sentinel)"},
+        {"op": "Decode4", "comment": "ptHit=monsterTemplateId (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "bLeft (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "v20: power guard flag (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "bPowerGuard% (only if v20 != 0)"},
+        {"op": "Decode4", "comment": "mobId for power guard (only if v20 != 0)"},
+        {"op": "Decode1", "comment": "stance source (only if mob found for power guard)"},
+        {"op": "Decode2", "comment": "power guard hit x (only if mob found)"},
+        {"op": "Decode2", "comment": "power guard hit y (only if mob found)"},
+        {"op": "Decode1", "comment": "v4: stance action (always, after power guard block, if nAttackIdx > -2)"},
+        {"op": "Decode4", "comment": "nDamage repeated (always)"},
+        {"op": "Decode4", "comment": "misdirection skill ID (only if nDamage == -1)"}
+      ]
+    },
+    "CWvsContext::OnTemporaryStatSet": {
+      "address": "0xa202be",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode2", "comment": "tDelay (after SecondaryStat::DecodeForLocal delegate)"},
+        {"op": "Decode1", "comment": "MovementAffectingStat byte (conditional: only if SecondaryStat::IsMovementAffectingStat)", "guard": "IsMovementAffectingStat"}
+      ]
+    },
+    "CUserRemote::OnSetTemporaryStat": {
+      "address": "0x98385d",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode2", "comment": "tDelay (after SecondaryStat::DecodeForRemote delegate)"}
+      ]
+    },
+    "CUserRemote::OnMove": {
+      "address": "0x9726ae",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CWvsContext::OnChangeSkillRecordResult": {
+      "address": "0xa1e48c",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "exclRequestSent flag (bExclRequestSent)"},
+        {"op": "Decode2", "comment": "count of skill entries"},
+        {"op": "Decode4", "comment": "nSkillID (per entry, loop count times)"},
+        {"op": "Decode4", "comment": "nLevel (nInfo, per entry)"},
+        {"op": "Decode4", "comment": "nMasterLevel (per entry, for skills needing master level)"},
+        {"op": "DecodeBuf", "comment": "dateExpire: 8-byte FILETIME (per entry)"},
+        {"op": "Decode1", "comment": "sn / MovementAffectingStat (after loop)"}
+      ]
+    },
+    "CWvsContext::OnTemporaryStatReset": {
+      "address": "0xa2071f",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "DecodeBuf", "comment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)"},
+        {"op": "Decode1", "comment": "nChangedStatPoint (only present when IsMovementAffectingStat(mask) is true)", "guard": "IsMovementAffectingStat"}
+      ]
+    },
+    "CUserRemote::OnResetTemporaryStat": {
+      "address": "0x983921",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"},
+        {"op": "DecodeBuf", "comment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)"}
+      ]
+    },
+    "CUser::OnEffect": {
+      "address": "0x9377d9",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"},
+        {"op": "Decode1", "comment": "nMode — sub-op byte dispatching to 27+ effect branches (case 0..26); sub-op enum not modeled by pipeline"}
+      ]
+    },
+    "CUserLocal::OnSkillCooltimeSet": {
+      "address": "0x95be66",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "nSkillID (v2 = Decode4)"},
+        {"op": "Decode2", "comment": "usRemainSec cooldown in seconds (Decode2)"}
+      ]
+    },
+    "CUserRemote::OnAvatarModified": {
+      "address": "0x98367e",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"},
+        {"op": "Decode1", "comment": "v4 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem"},
+        {"op": "DecodeBuf", "comment": "AvatarLook::Decode — full avatar look data (guard: v4 & 1)", "guard": "v4 & 1"},
+        {"op": "Decode1", "comment": "nSpeed (guard: v4 & 2)", "guard": "v4 & 2"},
+        {"op": "Decode1", "comment": "nCarryItemEffect (guard: v4 & 4)", "guard": "v4 & 4"},
+        {"op": "Decode1", "comment": "bCouple flag"},
+        {"op": "DecodeBuf", "comment": "liCoupleItemSN (8 bytes) + liPairItemSN (8 bytes) + dwPairCharacterId (4 bytes)", "guard": "bCouple"},
+        {"op": "Decode1", "comment": "bFriendship flag"},
+        {"op": "DecodeBuf", "comment": "liFriendshipItemSN (8 bytes) + liFriendshipPairItemSN (8 bytes) + dwFriendCharacterId (4 bytes)", "guard": "bFriendship"},
+        {"op": "Decode1", "comment": "bMarriage flag"},
+        {"op": "Decode4", "comment": "dwMarriageCharacterID (guard: bMarriage)", "guard": "bMarriage"},
+        {"op": "Decode4", "comment": "dwMarriagePairCharacterID (guard: bMarriage)", "guard": "bMarriage"},
+        {"op": "Decode4", "comment": "nWeddingRingID (guard: bMarriage)", "guard": "bMarriage"}
+      ]
+    },
+    "CWvsContext::OnCharacterInfo": {
+      "address": "0xa2370b",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "dwCharacterId"},
+        {"op": "Decode1", "comment": "nLevel"},
+        {"op": "Decode2", "comment": "nJob"},
+        {"op": "Decode2", "comment": "nPOP (fame)"},
+        {"op": "Decode1", "comment": "bMarriageRing (bool)"},
+        {"op": "DecodeStr", "comment": "sCommunity (guild name)"},
+        {"op": "DecodeStr", "comment": "sAlliance (alliance name)"},
+        {"op": "Decode1", "comment": "pMedalInfo (medal slot byte)"},
+        {"op": "Decode1", "comment": "v7 (pet count; if >0: SetMultiPetInfo reads pets in bool-terminated loop)"},
+        {"op": "Decode1", "comment": "taming mob active flag"},
+        {"op": "Decode1", "comment": "wish list count"},
+        {"op": "Decode4", "comment": "MedalAchievementInfo: nEquipedMedalID"},
+        {"op": "Decode2", "comment": "MedalAchievementInfo: ausMedalQuestID count"},
+        {"op": "Decode4", "comment": "chair list count (ZArray<long>::_Alloc + DecodeBuffer with 4 * count bytes)"}
+      ]
+    },
+    "CUserLocal::OnSitResult": {
+      "address": "0x959797",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "sitting flag (0=cancel sit / stand up, 1=sit in chair)"},
+        {"op": "Decode2", "comment": "chairId / nSeat (only if sitting flag == 1)"}
+      ]
+    },
+    "CLogin::OnDeleteCharacterResult": {
+      "address": "0x5f9d15",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "dwCharacterID (characterId of the deleted character)"},
+        {"op": "Decode1", "comment": "result code (0=success; error codes: 6=system error, 9=unknown, 10=too many connections, 18=?, 20=secondary pin mismatch, 22=guild master, 24=engaged, 26=account transfer, 29=has family)"}
+      ]
+    },
+    "CWvsContext::OnMessage": {
+      "address": "0xa209d4",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "mode/sub-op byte (0=drop pick-up, 1=quest record, 2=cash item expire, 3=inc EXP, 4=inc SP/POP, 5=inc meso, 6=inc GP, 7=give buff, 8=general item expire, 9=system message, 0xA=quest record ex, 0xB=item protect expire, 0xC=item expire replace, 0xD=skill expire; v83 has 14 modes, v95 added mode 14=skill expire as 0xE)"}
+      ]
+    },
+    "CUser::ShowItemUpgradeEffect": {
+      "address": "0x93354d",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — consumed by CUserPool::OnUserCommonPacket dispatcher (case 0xBA) before calling this function"},
+        {"op": "Decode1", "comment": "bSuccess (scroll succeeded flag)"},
+        {"op": "Decode1", "comment": "v4 / bCursed (cursed/failed outcome flag)"},
+        {"op": "Decode1", "comment": "bEnchantSkill (true = Vega/enchant scroll category; false = normal scroll)"},
+        {"op": "Decode1", "comment": "v5 (lucky/white-scroll display flag) — NOTE: v83 does NOT read nEnchantCategory(4 bytes) or nEnchantResultFlag(1 byte) that v95 added"}
+      ]
+    },
+    "CFuncKeyMappedMan::OnInit": {
+      "address": "0x58ddb4",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "resetToDefault flag (non-zero = reset to defaults; zero = read key bindings from packet)"},
+        {"op": "Decode1", "comment": "FUNCKEY_MAPPED::nType (key type byte; loop 89 entries in v83 vs 90 in v95, only if resetToDefault==0)", "guard": "loop 89, if resetToDefault==0"},
+        {"op": "Decode4", "comment": "FUNCKEY_MAPPED::nID (key action int32; loop 89 entries in v83, only if resetToDefault==0)", "guard": "loop 89, if resetToDefault==0"}
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeItemInit": {
+      "address": "0x58de2d",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPetConsumeItemID (HP auto-pot item ID; 0 = use config default)"}
+      ]
+    },
+    "CFuncKeyMappedMan::OnPetConsumeMPItemInit": {
+      "address": "0x58de53",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "m_nPetConsumeMPItemID (MP auto-pot item ID; 0 = use config default)"}
+      ]
+    },
+
+    "CLogin::OnViewAllCharResult#CharacterViewAllCount": {
+      "address": "0x5facca",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "code byte (case 1 = CHARACTER_COUNT)"},
+        {"op": "Decode4", "comment": "m_nCountRelatedSvrs (server/world count)"},
+        {"op": "Decode4", "comment": "m_nCountCharacters (total character count)"}
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllCharacters": {
+      "address": "0x5facca",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "code byte (case 0 = NORMAL)"},
+        {"op": "Decode1", "comment": "nWorldID (world for this batch)"},
+        {"op": "Decode1", "comment": "nCount (character entries in this world)"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::dwCharacterID", "guard": "loop nCount"},
+        {"op": "DecodeBuf", "comment": "GW_CharacterStat::sCharacterName (padded 13 bytes)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nGender", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nSkin", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nFace", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nHair", "guard": "loop nCount"},
+        {"op": "Decode8", "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24; atlas for-loop body collapses to 1 static entry)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nLevel", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nJob", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nSTR", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nDEX", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nINT", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nLUK", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nHP (v83 int16)", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMHP (v83 int16)", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMP (v83 int16)", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMMP (v83 int16)", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nAP", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nSP (common-job branch)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nEXP", "guard": "loop nCount"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nPOP (fame)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nTempEXP (gachaponExperience)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::dwPosMap (mapId)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nPortal (spawnPoint)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nPlaytime", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "AvatarLook::nGender (duplicate)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "AvatarLook::nSkin (duplicate)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::nFace (duplicate)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "AvatarLook::hairBase/mega flag", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::anHairEquip[0] (hair)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "AvatarLook::equipment slot (WriteKeyValue byte)", "guard": "loop nCount, loop equip"},
+        {"op": "Decode4", "comment": "AvatarLook::equipment itemId (WriteKeyValue int32)", "guard": "loop nCount, loop equip"},
+        {"op": "Decode1", "comment": "AvatarLook::equipment-loop terminator (0xFF)", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "AvatarLook::masked-equip slot", "guard": "loop nCount, loop maskedEquip"},
+        {"op": "Decode4", "comment": "AvatarLook::masked-equip itemId", "guard": "loop nCount, loop maskedEquip"},
+        {"op": "Decode1", "comment": "AvatarLook::masked-equipment-loop terminator (0xFF)", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::nWeaponStickerID", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[0]", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[1]", "guard": "loop nCount"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[2]", "guard": "loop nCount"},
+        {"op": "Decode1", "comment": "rankEnabled / hasRank byte", "guard": "loop nCount"},
+        {"op": "DecodeBuf", "comment": "rank buffer 16 bytes: worldRank + worldRankGap + jobRank + jobRankGap", "guard": "loop nCount && rankEnabled"},
+        {"op": "Decode1", "comment": "m_bLoginOpt (PIC handling — v83 included)"}
+      ]
+    },
+    "CLogin::OnViewAllCharResult#CharacterViewAllSearchFailed": {
+      "address": "0x5facca",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "code byte (case 2/3/6/7 = error — no further reads in v83)"}
+      ]
+    },
+    "CLogin::OnCreateNewCharacterResult": {
+      "address": "0x5fa26c",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "v3/v5 result code: 0=success, 10=limit, 26=notice, 30=cannotUse"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::dwCharacterID (success path)", "guard": "code == 0"},
+        {"op": "DecodeBuf", "comment": "GW_CharacterStat::sCharacterName (padded 13 bytes)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nGender", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nSkin", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nFace", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nHair", "guard": "code == 0"},
+        {"op": "Decode8", "comment": "GW_CharacterStat::petLockerSN (DecodeBuffer 24 bytes = 3 × int64)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nLevel", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nJob", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nSTR", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nDEX", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nINT", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nLUK", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nHP (v83 int16)", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMHP (v83 int16)", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMP (v83 int16)", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nMMP (v83 int16)", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nAP", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nSP (common-job branch)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nEXP", "guard": "code == 0"},
+        {"op": "Decode2", "comment": "GW_CharacterStat::nPOP (fame)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nTempEXP (gachaponExperience)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::dwPosMap (mapId)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "GW_CharacterStat::nPortal (spawnPoint)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "GW_CharacterStat::nPlaytime", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "AvatarLook::nGender (duplicate)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "AvatarLook::nSkin (duplicate)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::nFace (duplicate)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "AvatarLook::hairBase/mega flag", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::anHairEquip[0] (hair)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "AvatarLook::equipment slot (WriteKeyValue byte)", "guard": "code == 0, loop equip"},
+        {"op": "Decode4", "comment": "AvatarLook::equipment itemId (WriteKeyValue int32)", "guard": "code == 0, loop equip"},
+        {"op": "Decode1", "comment": "AvatarLook::equipment-loop terminator (0xFF)", "guard": "code == 0"},
+        {"op": "Decode1", "comment": "AvatarLook::masked-equip slot", "guard": "code == 0, loop maskedEquip"},
+        {"op": "Decode4", "comment": "AvatarLook::masked-equip itemId", "guard": "code == 0, loop maskedEquip"},
+        {"op": "Decode1", "comment": "AvatarLook::masked-equipment-loop terminator (0xFF)", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::nWeaponStickerID", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[0]", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[1]", "guard": "code == 0"},
+        {"op": "Decode4", "comment": "AvatarLook::anPetID[2]", "guard": "code == 0"}
+      ]
+    },
+    "CLogin::OnCreateNewCharacterResult#AddCharacterError": {
+      "address": "0x5fa26c",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "result code: non-zero = error (10=limit, 26=accountTransfer, 30=cannotUse)"}
+      ]
+    },
+    "CLogin::OnCheckDuplicatedIDResult": {
+      "address": "0x5f9c72",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "DecodeStr", "comment": "character name string (ZXString)"},
+        {"op": "Decode1", "comment": "v5 result code: 0=OK, 1=alreadyRegistered, 2=notAllowed, else=systemError"}
+      ]
+    },
+    "CUser::OnADBoard": {
+      "address": "0x937607",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId (consumed by CUserPool::OnUserCommonPacket dispatcher before calling this function)"},
+        {"op": "Decode1", "comment": "active (bool: 1=show chalkboard, 0=clear)"},
+        {"op": "DecodeStr", "comment": "message text (only if active != 0)"}
+      ]
+    },
+    "CUserLocal::OnBalloonMsg": {
+      "address": "0x95d88b",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "DecodeStr", "comment": "msg (hint text)"},
+        {"op": "Decode2", "comment": "width (balloon width)"},
+        {"op": "Decode2", "comment": "duration/height (1000 * value ms)"},
+        {"op": "Decode1", "comment": "notAtPoint flag (0=use explicit x,y; non-zero=use avatar position)"},
+        {"op": "Decode4", "comment": "x coordinate (only if notAtPoint == 0)"},
+        {"op": "Decode4", "comment": "y coordinate (only if notAtPoint == 0)"}
+      ]
+    },
+
+    "CVecCtrlUser::EndUpdateActive": {
+      "address": "0x9cb992",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode1", "comment": "fieldKey (Encode1; NO dr0/dr1/dr2/dr3/dwKey/crc32 in v83)"},
+        {"op": "Encode4", "comment": "crc (field CRC for anti-cheat; GMS>28 guard still applies in v83)"},
+        {"op": "EncodeBuf", "comment": "movement: CMovePath::Flush — encoded movement path; tool cannot linearize loop — ack:tool-limitation"}
+      ]
+    },
+    "CWvsContext::SendStatChangeRequest": {
+      "address": "0xa1e997",
+      "direction": "serverbound",
+      "notes": "v83 function is named SendStatChangeRequestByItemOption@0xa1e997; wire format identical to v95 SendStatChangeRequest",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time())"},
+        {"op": "Encode4", "comment": "val (constant 5120 = 0x1400 in typical sitdown-heal path)"},
+        {"op": "Encode2", "comment": "nHP (uint16 HP recovery amount)"},
+        {"op": "Encode2", "comment": "nMP (uint16 MP recovery amount)"},
+        {"op": "Encode1", "comment": "nOption (0=normal, 2=sitting)"}
+      ]
+    },
+    "CWvsContext::SendCharacterInfoRequest": {
+      "address": "0xa23fba",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time())"},
+        {"op": "Encode4", "comment": "dwCharacterID (target character ID)"},
+        {"op": "Encode1", "comment": "bPetInfo (1 = include pet info)"}
+      ]
+    },
+    "CUserLocal::SendSkillCancelRequest": {
+      "address": "0x96d873",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "nSkillID (skill to cancel; remapped for Aran/Evan aliases)"}
+      ]
+    },
+    "CWvsContext::SendStatChangeItemCancelRequest": {
+      "address": "0xa096af",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "nItemID (stat-change item ID to cancel)"}
+      ]
+    },
+    "CUserLocal::HandleXKeyDown": {
+      "address": "0x94e45f",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode2", "comment": "chairId (seat index from CField::FindSeatByPosition; 0xFFFF = get-up-from-chair)"}
+      ]
+    },
+    "CWvsContext::SendSitOnPortableChairRequest": {
+      "address": "0xa0f9e2",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "nItemID (portable chair item ID)"}
+      ]
+    },
+    "CUserLocal::HandleLButtonClk": {
+      "address": "0x94fa8e",
+      "direction": "serverbound",
+      "calls": []
+    },
+    "CWvsContext::SendEmotionChange": {
+      "address": "0xa24470",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "nEmotion (emotion/expression ID; validated <= 0x16 in v83 vs 0x17 in v95) — NOTE: v83 does NOT encode nDuration or bByItemOption"}
+      ]
+    },
+    "CWvsContext::SendDropMoneyRequest": {
+      "address": "0xa23de5",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time() at time of drop)"},
+        {"op": "Encode4", "comment": "nAmount (meso amount to drop)"}
+      ]
+    },
+    "CFuncKeyMappedMan::SaveFuncKeyMap": {
+      "address": "0x58df2f",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "mode (0 = key mapping change)"},
+        {"op": "Encode4", "comment": "count (number of changed key slot indices); per-entry: Encode4(keyId) + Encode1(nType) + Encode4(nID) via sub_4E43FA"}
+      ]
+    },
+    "CWvsContext::SendAbilityUpRequest#DistributeAp": {
+      "address": "0xa23b3d",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time())"},
+        {"op": "Encode4", "comment": "nValue (count of stat pairs = aStatUp->a[-1].nValue)"},
+        {"op": "Encode4", "comment": "dwStatFlag (stat flag for each pair)", "guard": "loop nValue"},
+        {"op": "Encode4", "comment": "nValue (amount for each stat pair)", "guard": "loop nValue"}
+      ]
+    },
+    "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
+      "address": "0xa23b3d",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time())"},
+        {"op": "Encode4", "comment": "nValue (count of stat pairs)"},
+        {"op": "Encode4", "comment": "dwStatFlag (stat flag for each pair)", "guard": "loop nValue"},
+        {"op": "Encode4", "comment": "nValue (amount for each stat pair)", "guard": "loop nValue"}
+      ]
+    },
+    "CWvsContext::SendSkillUpRequest": {
+      "address": "0xa23cf3",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "Encode4", "comment": "update_time (get_update_time())"},
+        {"op": "Encode4", "comment": "nSkillID (skill to level up)"}
+      ]
+    },
+    "CLogin::SendNewCharPacket": {
+      "address": "0x5f7e7a",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "EncodeStr", "comment": "name (checked character name)"},
+        {"op": "Encode4", "comment": "m_nCurSelectedRace (job/race index) — NOTE: v83 has NO Encode2(subJob) before the AL items"},
+        {"op": "Encode4", "comment": "GetSelectedAL(0) face"},
+        {"op": "Encode4", "comment": "GetSelectedAL(1) hair"},
+        {"op": "Encode4", "comment": "GetSelectedAL(2) hairColor"},
+        {"op": "Encode4", "comment": "GetSelectedAL(3) skinColor"},
+        {"op": "Encode4", "comment": "GetSelectedAL(4) top"},
+        {"op": "Encode4", "comment": "GetSelectedAL(5) bottom"},
+        {"op": "Encode4", "comment": "GetSelectedAL(6) shoes"},
+        {"op": "Encode4", "comment": "GetSelectedAL(7) weapon"},
+        {"op": "Encode1", "comment": "m_nGender"}
+      ]
+    },
+    "CLogin::SendDeleteCharPacket": {
+      "address": "0x5f7c4a",
+      "direction": "serverbound",
+      "calls": [
+        {"op": "EncodeStr", "comment": "sSPW (secondary password / deletion password from dialog)"},
+        {"op": "Encode4", "comment": "characterStat.dwCharacterID"}
+      ]
     }
   }
 }

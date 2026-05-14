@@ -25,6 +25,3 @@
 | 12 | byte | int32 `nDamage repeated (always)` | ❌ | atlas: short — missing trailing field |
 | 13 | byte | int32 `misdirection skill ID (only if nDamage == -1)` | ❌ | atlas: short — missing trailing field |
 
----
-
-ack: Two tool-limitation causes — (1) dispatcher-layer +1 offset: CUserPool::OnUserRemotePacket consumes characterId before dispatching to OnHit, while atlas writes characterId at offset 0; (2) the analyzer linearizes conditionally-emitted fields (mob hit type, hit coordinates, power-guard, knockback) against IDA's guarded entries, producing width mismatches the diff cannot reconcile. No structural wire bug — atlas only encodes the hit-type subset wired through the service layer.

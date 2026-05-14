@@ -3,7 +3,7 @@
   "IDAName": "CUser::ShowItemUpgradeEffect",
   "Address": "0x8e7b00",
   "Variant": "GMS/v95",
-  "BranchDepth": 0,
+  "BranchDepth": 2,
   "AtlasFile": "libs/atlas-packet/character/clientbound/item_upgrade.go",
   "Rows": [
     {

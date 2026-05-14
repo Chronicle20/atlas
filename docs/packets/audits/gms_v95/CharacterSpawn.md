@@ -76,6 +76,3 @@
 | 63 | int32 | byte `` | ❌ | atlas: extra — client never reads this field |
 | 64 | byte | byte `` | ❌ | atlas: extra — client never reads this field |
 
----
-
-ack: analyzer descent gap — CUserPool::OnUserEnterField@0x94db40 only directly reads characterId (Decode4); the remainder of the spawn packet is parsed by CUserRemote::Init which the tool cannot descend into. Atlas CharacterSpawn.Encode round-trips cleanly across all variants; no wire bug detected.

@@ -152,11 +152,64 @@ jobs:
           push: 'false'
 
   # ============================================
+  # Build and Push Per-PR Docker Images
+  # ============================================
+  build-docker-pr:
+    name: Build PR Image - ${{ matrix.service.name }}
+    needs: [detect-changes, test-go-services, test-go-libraries, test-ui]
+    if: |
+      always() &&
+      github.event_name == 'pull_request' &&
+      needs.detect-changes.outputs.docker-services-matrix != '[]' &&
+      (needs.test-go-services.result == 'success' || needs.test-go-services.result == 'skipped') &&
+      (needs.test-go-libraries.result == 'success' || needs.test-go-libraries.result == 'skipped') &&
+      (needs.test-ui.result == 'success' || needs.test-ui.result == 'skipped')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.docker-services-matrix) }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Compute short SHA
+        id: sha
+        run: echo "short=$(git rev-parse --short=7 ${{ github.event.pull_request.head.sha }})" >> $GITHUB_OUTPUT
+
+      - name: Build and push PR image (amd64)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.docker_context }}
+          file: ${{ matrix.service.path }}/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ matrix.service.docker_image }}:pr-${{ github.event.pull_request.number }}-${{ steps.sha.outputs.short }}
+          cache-from: type=gha,scope=${{ matrix.service.name }}-amd64
+          cache-to: type=gha,mode=max,scope=${{ matrix.service.name }}-amd64
+          provenance: false
+          sbom: false
+
+  # ============================================
   # Summary Job
   # ============================================
   pr-validation-complete:
     name: PR Validation Complete
-    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker]
+    needs: [detect-changes, test-go-libraries, test-go-services, test-ui, build-docker, build-docker-pr]
     if: always()
     runs-on: ubuntu-latest
 
@@ -171,6 +224,7 @@ jobs:
           SERVICES_RESULT="${{ needs.test-go-services.result }}"
           UI_RESULT="${{ needs.test-ui.result }}"
           DOCKER_RESULT="${{ needs.build-docker.result }}"
+          DOCKER_PR_RESULT="${{ needs.build-docker-pr.result }}"
 
           echo "| Job | Result |" >> $GITHUB_STEP_SUMMARY
           echo "|-----|--------|" >> $GITHUB_STEP_SUMMARY
@@ -178,9 +232,10 @@ jobs:
           echo "| Go Services | $SERVICES_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| UI | $UI_RESULT |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Builds | $DOCKER_RESULT |" >> $GITHUB_STEP_SUMMARY
+          echo "| Docker PR Push | $DOCKER_PR_RESULT |" >> $GITHUB_STEP_SUMMARY
 
           # Fail if any required job failed
-          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ]; then
+          if [ "$LIBS_RESULT" == "failure" ] || [ "$SERVICES_RESULT" == "failure" ] || [ "$UI_RESULT" == "failure" ] || [ "$DOCKER_RESULT" == "failure" ] || [ "$DOCKER_PR_RESULT" == "failure" ]; then
             echo ""
             echo "One or more jobs failed!"
             exit 1

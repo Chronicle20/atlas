@@ -1,7 +1,7 @@
 # Request (← `CLogin::SendCheckPasswordPacket`)
 
 - **IDA:** 0x5db9d0
-- **Atlas file:** `../../libs/atlas-packet/login/serverbound/request.go`
+- **Atlas file:** `libs/atlas-packet/login/serverbound/request.go`
 - **Variant:** GMS/v95
 - **Branch depth:** 2
 - **Verdict:** ✅

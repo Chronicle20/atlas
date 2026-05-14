@@ -36,3 +36,21 @@ func TestRegistryFieldTypeStrips(t *testing.T) {
 		t.Errorf("FieldType(CharacterList, characters) = (%q, %v); want CharacterListEntry", ft, ok)
 	}
 }
+
+func TestRegistryDiscoversEncodeForeign(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// CharacterTemporaryStat has both Encode and EncodeForeign; the registry must
+	// expose calls for the EncodeForeign variant under a distinct key.
+	if _, ok := reg.Calls("CharacterTemporaryStat::EncodeForeign"); !ok {
+		t.Errorf("expected calls registered for CharacterTemporaryStat::EncodeForeign; got none")
+	}
+	// Encode entry must still resolve under the bare type name.
+	if _, ok := reg.Calls("CharacterTemporaryStat"); !ok {
+		t.Errorf("expected calls registered for CharacterTemporaryStat (Encode); got none")
+	}
+}

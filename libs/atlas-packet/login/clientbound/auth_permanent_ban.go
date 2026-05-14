@@ -35,8 +35,14 @@ func (m AuthPermanentBan) Encode(l logrus.FieldLogger, ctx context.Context) func
 			w.WriteInt(0)
 		}
 
-		w.WriteByte(0) // reason
-		w.WriteLong(0) // timestamp
+		// GMS clients (v83 through v95 verified via IDA) route resultCode == 27
+		// to a dialog and never decode the trailing reason+timestamp. Skip them
+		// for all GMS to avoid emitting 9 wasted bytes. JMS retains the trailing
+		// bytes pending verification with a JMS binary.
+		if t.Region() != "GMS" {
+			w.WriteByte(0) // reason
+			w.WriteLong(0) // timestamp
+		}
 		return w.Bytes()
 	}
 }
@@ -51,7 +57,9 @@ func (m *AuthPermanentBan) Decode(l logrus.FieldLogger, ctx context.Context) fun
 			_ = r.ReadUint32()
 		}
 
-		_ = r.ReadByte()   // reason
-		_ = r.ReadUint64() // timestamp
+		if t.Region() != "GMS" {
+			_ = r.ReadByte()   // reason
+			_ = r.ReadUint64() // timestamp
+		}
 	}
 }

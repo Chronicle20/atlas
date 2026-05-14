@@ -151,3 +151,4 @@ func TestRestModel_EmptyState(t *testing.T) {
 		t.Errorf("expected GetID() to return empty string for empty model, got '%s'", rm.GetID())
 	}
 }
+

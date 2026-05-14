@@ -1,8 +1,15 @@
+# Per-PR LB Services request dynamic IPs from MetalLB's `pr-pool`
+# (192.168.23.210-.229; autoAssign: false, opt-in via annotation). The empty
+# loadBalancerIP lets MetalLB pick any free IP from the pool. The
+# `cluster-pool` (.230-.250) is reserved for main env Services with
+# hardcoded IPs and would refuse to allocate here.
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: atlas-login-lb
+  annotations:
+    metallb.universe.tf/address-pool: pr-pool
 spec:
   loadBalancerIP: ""
 ---
@@ -10,5 +17,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: atlas-channel-lb
+  annotations:
+    metallb.universe.tf/address-pool: pr-pool
 spec:
   loadBalancerIP: ""

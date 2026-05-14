@@ -1995,6 +1995,119 @@
           "comment": "m_nPetConsumeMPItemID (MP auto-pot item ID; 0 = use config default)"
         }
       ]
+    },
+    "CVecCtrlUser::EndUpdateActive": {
+      "address": "0x9a0d20",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "dr0 (~drInfo[0])",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dr1 (~drInfo[1])",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "Encode1",
+          "comment": "fieldKey"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dr2 (~drInfo[2])",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dr3 (~drInfo[3])",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "crc (field CRC for anti-cheat)",
+          "guard": "GMS>28||JMS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwKey (random seed for CRC32)",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "Encode4",
+          "comment": "crc32 (CRC32 of bDetect using dwKey)",
+          "guard": "GMS>83||JMS"
+        },
+        {
+          "op": "EncodeBuf",
+          "comment": "movement: CMovePath::Encode — Encode2(x)+Encode2(y)+Encode2(vx)+Encode2(vy)+Encode1(elemCount)+per-elem(nAttr+coords+bMoveAction+tElapse)+Encode1(keyPadStateCount)+keyPadStates+Encode2(rcMove.left/top/right/bottom); tool cannot linearize loop — ack:tool-limitation"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeRequest": {
+      "address": "0x9f2a00",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "val (constant 0x1400 = 5120 in typical sitdown-heal path)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nHP (uint16 HP recovery amount)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "nMP (uint16 MP recovery amount)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "nOption (0=normal, 2=sitting)"
+        }
+      ]
+    },
+    "CWvsContext::SendCharacterInfoRequest": {
+      "address": "0x9f2f70",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwCharacterID (target character ID)"
+        },
+        {
+          "op": "Encode1",
+          "comment": "bPetInfo (1 = include pet info)"
+        }
+      ]
+    },
+    "CUserLocal::SendSkillCancelRequest": {
+      "address": "0x93d730",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to cancel; remapped for Aran/Evan aliases)"
+        }
+      ]
+    },
+    "CWvsContext::SendStatChangeItemCancelRequest": {
+      "address": "0x9d9dd0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "nItemID (stat-change item ID to cancel)"
+        }
+      ]
     }
   }
 }

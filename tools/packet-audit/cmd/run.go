@@ -322,6 +322,31 @@ func candidatesFromFName(fname string) []candidate {
 		return []candidate{{name: "CharacterDespawn", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnCheckDuplicatedIDResult":
 		return []candidate{{name: "CharacterNameResponse", dir: csvpkg.DirClientbound}}
+	// --- Character serverbound hot bucket (Task 12) ---
+	case "CVecCtrlUser::EndUpdateActive":
+		// Struct is Move; handler constant = "CharacterMoveHandle".
+		// Client builds opcode 0x2C (44) packet in EndUpdateActive, writes
+		// dr0/dr1 (GMS>83), fieldKey, dr2/dr3 (GMS>83), crc (GMS>28), dwKey/crc32 (GMS>83)
+		// then delegates movement encoding to CMovePath::Encode/Flush (DecodeLoop).
+		return []candidate{{name: "Move", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendStatChangeRequest":
+		// Struct is HealOverTime; handler constant = "CharacterHealOverTimeHandle".
+		// Client sends opcode 0x64 (100) with Encode4(updateTime)+Encode4(val)+
+		// Encode2(hp)+Encode2(mp)+Encode1(option).
+		return []candidate{{name: "HealOverTime", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendCharacterInfoRequest":
+		// Struct is InfoRequest; handler constant = "CharacterInfoRequestHandle".
+		// Client sends opcode 0x6D (109) with Encode4(updateTime)+Encode4(characterId)+
+		// Encode1(bPetInfo).
+		return []candidate{{name: "InfoRequest", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::SendSkillCancelRequest":
+		// Struct is BuffCancelRequest; handler constant = "CharacterBuffCancel".
+		// Client sends opcode 0x68 (104) with Encode4(nSkillID).
+		return []candidate{{name: "BuffCancelRequest", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendStatChangeItemCancelRequest":
+		// Struct is ItemCancel; handler constant = "CharacterItemCancelHandle".
+		// Client sends opcode 0x4F (79) with Encode4(nItemID).
+		return []candidate{{name: "ItemCancel", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

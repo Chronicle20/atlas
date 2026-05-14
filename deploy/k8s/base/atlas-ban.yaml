@@ -35,7 +35,7 @@ spec:
               name: db-credentials
               key: DB_PASSWORD
         - name: DB_NAME
-          value: "atlas-ban"
+          value: "atlas-bans"
 ---
 apiVersion: v1
 kind: Service

@@ -23,7 +23,7 @@ spec:
         - name: ban
           env:
             - name: DB_NAME
-              value: "atlas-ban-main"
+              value: "atlas-bans-main"
 ---
 apiVersion: apps/v1
 kind: Deployment

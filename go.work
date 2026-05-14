@@ -4,6 +4,7 @@ use (
 	./libs/atlas-constants
 	./libs/atlas-database
 	./libs/atlas-kafka
+	./libs/atlas-lock
 	./libs/atlas-model
 	./libs/atlas-object-id
 	./libs/atlas-opcodes

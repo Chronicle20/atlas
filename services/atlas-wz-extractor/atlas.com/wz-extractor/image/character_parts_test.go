@@ -7,6 +7,8 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"sync"
 	"testing"
 
 	"github.com/sirupsen/logrus"
@@ -313,5 +315,191 @@ func TestExtractAnimatedFrameChildrenResolvesUOL(t *testing.T) {
 	}
 	if len(*rec) != 1 || (*rec)[0].partName != "head" || (*rec)[0].canvas != headCanvas {
 		t.Fatalf("unexpected writes: %+v", *rec)
+	}
+}
+
+// TestExtractCharacterPartsWorkerPool verifies that the parallel
+// extractCharacterParts dispatches exactly one canvasWriter call per canvas
+// across all subdomains, with no duplicates or missing entries.
+//
+// Run with -race to confirm no concurrent-mutation hazards are introduced.
+func TestExtractCharacterPartsWorkerPool(t *testing.T) {
+	// Build a fake WZ tree:
+	//   root:
+	//     images: 00001234.img  (body skin — prefix "0001")
+	//     Cap/
+	//       images: 01000001.img, 01000002.img
+	//     Hair/
+	//       images: 02000001.img
+	//
+	// Each img has one canvas child under "default" stance.
+	makeImg := func(name string) *wz.Image {
+		c := property.NewCanvas(name+"_canvas", 4, 4, 0, 0, 0, nil)
+		props := []property.Property{
+			property.NewSub("default", []property.Property{c}),
+		}
+		return wz.NewParsedImage(name, props)
+	}
+
+	bodyImg := makeImg("00001234")
+	capImg1 := makeImg("01000001")
+	capImg2 := makeImg("01000002")
+	hairImg := makeImg("02000001")
+
+	capDir := wz.NewDirectory("Cap", nil, []*wz.Image{capImg1, capImg2})
+	hairDir := wz.NewDirectory("Hair", nil, []*wz.Image{hairImg})
+
+	// Add empty stubs for remaining equipment subdirs so the code doesn't
+	// log about missing dirs (non-fatal, but keeps test output clean).
+	var allDirs []*wz.Directory
+	allDirs = append(allDirs, capDir, hairDir)
+	for _, sub := range equipmentSubdirs {
+		if sub == "Cap" || sub == "Hair" {
+			continue
+		}
+		allDirs = append(allDirs, wz.NewDirectory(sub, nil, nil))
+	}
+
+	root := wz.NewDirectory("Character", allDirs, []*wz.Image{bodyImg})
+	f := wz.NewFileWithRoot("Character", root)
+
+	// Thread-safe recorder to capture all canvasWriter calls.
+	var mu sync.Mutex
+	type call struct{ dir, part string }
+	var calls []call
+	prev := canvasWriter
+	canvasWriter = func(_ logrus.FieldLogger, _ *wz.File, cp *property.CanvasProperty, dir, name string) error {
+		mu.Lock()
+		calls = append(calls, call{dir: dir, part: name})
+		mu.Unlock()
+		return nil
+	}
+	defer func() { canvasWriter = prev }()
+
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	outputDir := t.TempDir()
+
+	if err := extractCharacterParts(l, f, outputDir); err != nil {
+		t.Fatalf("extractCharacterParts: %v", err)
+	}
+
+	// Expect exactly one write per canvas (4 total: body, cap1, cap2, hair).
+	// Sort for deterministic comparison.
+	mu.Lock()
+	got := calls
+	mu.Unlock()
+
+	if len(got) != 4 {
+		t.Fatalf("got %d canvasWriter calls, want 4; calls: %v", len(got), got)
+	}
+
+	parts := make([]string, len(got))
+	for i, c := range got {
+		parts[i] = c.part
+	}
+	sort.Strings(parts)
+
+	want := []string{
+		"00001234_canvas",
+		"01000001_canvas",
+		"01000002_canvas",
+		"02000001_canvas",
+	}
+	sort.Strings(want)
+
+	for i := range want {
+		if parts[i] != want[i] {
+			t.Errorf("call[%d] part = %q, want %q", i, parts[i], want[i])
+		}
+	}
+}
+
+// TestExtractEquipmentIconsWorkerPool verifies that the parallel
+// extractEquipmentIcons dispatches exactly one canvasWriter call per
+// equipment image that has an info/icon canvas, with no duplicates or
+// missing entries.
+//
+// Run with -race to confirm no concurrent-mutation hazards.
+func TestExtractEquipmentIconsWorkerPool(t *testing.T) {
+	// Build a fake Character.wz tree with two equipment subdirs:
+	//   Cap/
+	//     images: 01002357.img  (has info/icon)
+	//             01002358.img  (has info/icon)
+	//   Weapon/
+	//     images: 01302000.img  (has info/icon)
+	//             01302001.img  (no info sub — must be skipped)
+	makeEquipImg := func(name string, hasIcon bool) *wz.Image {
+		var props []property.Property
+		if hasIcon {
+			props = []property.Property{
+				property.NewSub("info", []property.Property{
+					property.NewCanvas("icon", 32, 32, 2, 0, 0, nil),
+				}),
+			}
+		}
+		return wz.NewParsedImage(name, props)
+	}
+
+	capImg1 := makeEquipImg("01002357", true)
+	capImg2 := makeEquipImg("01002358", true)
+	weaponImg1 := makeEquipImg("01302000", true)
+	weaponImg2 := makeEquipImg("01302001", false) // no icon — must be skipped
+
+	capDir := wz.NewDirectory("Cap", nil, []*wz.Image{capImg1, capImg2})
+	weaponDir := wz.NewDirectory("Weapon", nil, []*wz.Image{weaponImg1, weaponImg2})
+
+	root := wz.NewDirectory("Character", []*wz.Directory{capDir, weaponDir}, nil)
+	f := wz.NewFileWithRoot("Character", root)
+
+	// Thread-safe recorder capturing all canvasWriter calls.
+	var mu sync.Mutex
+	type call struct{ dir, part string }
+	var calls []call
+	prev := canvasWriter
+	canvasWriter = func(_ logrus.FieldLogger, _ *wz.File, cp *property.CanvasProperty, dir, name string) error {
+		mu.Lock()
+		calls = append(calls, call{dir: dir, part: name})
+		mu.Unlock()
+		return nil
+	}
+	defer func() { canvasWriter = prev }()
+
+	l := logrus.New()
+	l.SetOutput(io.Discard)
+	outputDir := t.TempDir()
+
+	if err := extractEquipmentIcons(l, f, outputDir); err != nil {
+		t.Fatalf("extractEquipmentIcons: %v", err)
+	}
+
+	mu.Lock()
+	got := calls
+	mu.Unlock()
+
+	// Expect exactly 3 writes (capImg1, capImg2, weaponImg1; weaponImg2 has no icon).
+	if len(got) != 3 {
+		t.Fatalf("got %d canvasWriter calls, want 3; calls: %v", len(got), got)
+	}
+
+	// All part names must be "icon" (the fixed output name for equipment icons).
+	for i, c := range got {
+		if c.part != "icon" {
+			t.Errorf("call[%d] part = %q, want %q", i, c.part, "icon")
+		}
+	}
+
+	// Verify the three expected item IDs appear in the written dirs.
+	wantIds := []string{"1002357", "1002358", "1302000"}
+	gotDirs := make([]string, len(got))
+	for i, c := range got {
+		gotDirs[i] = filepath.Base(c.dir)
+	}
+	sort.Strings(gotDirs)
+	sort.Strings(wantIds)
+	for i := range wantIds {
+		if gotDirs[i] != wantIds[i] {
+			t.Errorf("dir[%d] item id = %q, want %q", i, gotDirs[i], wantIds[i])
+		}
 	}
 }

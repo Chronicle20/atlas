@@ -110,7 +110,7 @@ $ npm test              # vitest run
    Duration  9.81s
 ```
 
-(Run via `PATH=/home/tumidanski/.nvm/versions/node/v22.22.2/bin`; the default `npm` on PATH is the Windows `/mnt/c/Program Files/nodejs/npm`, which cannot execute against the WSL UNC path. Closes Action Item 1 from the plan-adherence audit above — both build and test pass cleanly when invoked from a Linux-native node toolchain.)
+(Run via `PATH=<node-bin>/v22.22.2/bin`; the default `npm` on PATH is the Windows `/mnt/c/Program Files/nodejs/npm`, which cannot execute against the WSL UNC path. Closes Action Item 1 from the plan-adherence audit above — both build and test pass cleanly when invoked from a Linux-native node toolchain.)
 
 ## Acceptance Gate
 

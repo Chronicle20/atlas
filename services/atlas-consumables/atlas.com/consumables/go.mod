@@ -10,7 +10,7 @@ require (
 	github.com/Chronicle20/atlas/libs/atlas-rest v0.0.0
 	github.com/Chronicle20/atlas/libs/atlas-service v0.0.0-00010101000000-000000000000
 	github.com/Chronicle20/atlas/libs/atlas-tenant v0.0.0
-	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/google/uuid v1.6.0
 	github.com/jtumidanski/api2go v1.0.4
 	github.com/redis/go-redis/v9 v9.19.0

@@ -8,7 +8,7 @@ Verify each fact below against the source if anything in the plan looks off.
 
 ## 1. Worktree
 
-- Worktree root: `/home/tumidanski/source/atlas-ms/atlas/.worktrees/task-060-monsters-data-ttl-cache/`
+- Worktree root: `<worktree-root>/`
 - Branch: `task-060-monsters-data-ttl-cache`
 - All file paths in `plan.md` are relative to the worktree root.
 

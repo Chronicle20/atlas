@@ -98,7 +98,7 @@
 
 ```bash
 # Navigate to service
-cd /home/tumidanski/source/pers/atlas/services/atlas-character
+cd <repo-root>/services/atlas-character
 
 # Run tests
 go test ./atlas.com/character/character/...

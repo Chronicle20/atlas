@@ -361,6 +361,22 @@ func (cc *callCtx) walk(node ast.Node) {
 				return
 			}
 		}
+		// Recurse marker: x.EncodeForeign(l, ctx) — routes to the alternate "<Type>::EncodeForeign" key.
+		if sel.Sel.Name == "EncodeForeign" {
+			recv := receiverTypeHint(sel.X)
+			if !isWriterReaderReceiver(recv) {
+				resolved := resolveRecurse(recv, cc)
+				// Annotate the recurse with the EncodeForeign variant so the diff
+				// engine resolves via the alternate registry key.
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved + "::EncodeForeign",
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
+		}
 		// Detect x.Write(w) pattern: a one-arg Write call whose receiver is not a
 		// writer/reader variable. This covers atlas's WorldRecommendation pattern
 		// where sub-structs expose Write(*response.Writer) instead of Encode().
@@ -392,6 +408,18 @@ func (cc *callCtx) walk(node ast.Node) {
 		// buffer verbatim. The wire shape is identical to inlining c.Encode's calls,
 		// so model this as KindRecurse rather than KindWrite EncodeBuf.
 		if p, ok := primFromName(sel.Sel.Name); ok {
+			// Check for WriteByteArray(<sub>.EncodeForeign(...)(...)) first, since
+			// wrappedRecurseType only detects Encode/Decode. Use the alt-key.
+			if recv, ok := wrappedEncodeForeignRecurseType(sel.Sel.Name, n.Args); ok {
+				resolved := resolveRecurse(recv, cc)
+				cc.appendCall(Call{
+					Kind:        KindRecurse,
+					RecurseType: resolved + "::EncodeForeign",
+					Line:        cc.fset.Position(n.Pos()).Line,
+					Guard:       cc.conjoin(),
+				})
+				return
+			}
 			if recv, ok := wrappedRecurseType(sel.Sel.Name, n.Args); ok {
 				resolved := resolveRecurse(recv, cc)
 				cc.appendCall(Call{
@@ -436,6 +464,20 @@ func (cc *callCtx) walk(node ast.Node) {
 							cc.appendCall(Call{
 								Kind:        KindRecurse,
 								RecurseType: resolved,
+								Line:        cc.fset.Position(ce.Pos()).Line,
+								Guard:       cc.conjoin(),
+							})
+							return false
+						}
+					}
+					// Recurse marker: x.EncodeForeign(l, ctx) in nested contexts.
+					if sel.Sel.Name == "EncodeForeign" {
+						recv := receiverTypeHint(sel.X)
+						if !isWriterReaderReceiver(recv) {
+							resolved := resolveRecurse(recv, cc)
+							cc.appendCall(Call{
+								Kind:        KindRecurse,
+								RecurseType: resolved + "::EncodeForeign",
 								Line:        cc.fset.Position(ce.Pos()).Line,
 								Guard:       cc.conjoin(),
 							})
@@ -583,6 +625,36 @@ func wrappedRecurseType(outerMethod string, args []ast.Expr) (string, bool) {
 		}
 		if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
 			if sel.Sel.Name == "Encode" || sel.Sel.Name == "Decode" {
+				recv := receiverTypeHint(sel.X)
+				if !isWriterReaderReceiver(recv) {
+					return recv, true
+				}
+			}
+			return "", false
+		}
+		expr = ce.Fun
+	}
+}
+
+// wrappedEncodeForeignRecurseType detects WriteByteArray(<sub>.EncodeForeign(...)(...))
+// pattern — the foreign-receiver variant of wrappedRecurseType. Returns the
+// sub-receiver type hint (raw, without the "::EncodeForeign" suffix) and true
+// when the inner selector is EncodeForeign. The caller appends the suffix.
+func wrappedEncodeForeignRecurseType(outerMethod string, args []ast.Expr) (string, bool) {
+	if outerMethod != "WriteByteArray" && outerMethod != "ReadByteArray" {
+		return "", false
+	}
+	if len(args) != 1 {
+		return "", false
+	}
+	expr := args[0]
+	for {
+		ce, ok := expr.(*ast.CallExpr)
+		if !ok {
+			return "", false
+		}
+		if sel, ok := ce.Fun.(*ast.SelectorExpr); ok {
+			if sel.Sel.Name == "EncodeForeign" {
 				recv := receiverTypeHint(sel.X)
 				if !isWriterReaderReceiver(recv) {
 					return recv, true

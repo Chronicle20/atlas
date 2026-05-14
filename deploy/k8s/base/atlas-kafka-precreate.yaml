@@ -1,0 +1,56 @@
+# Pre-create every Kafka topic this env will use, before any service consumer
+# starts. Atlas services rely on Kafka topic auto-create on first publish, and
+# many subscribe to the same topic concurrently at startup — the result is a
+# "consumer fetch wedged: exceeded consecutive timeouts" stampede where
+# kafka-go's Readers wedge and rebalance until topics materialise.
+#
+# Mechanism: a one-shot Job at sync-wave 0 that reads its own envFrom-injected
+# atlas-env ConfigMap, picks out every COMMAND_TOPIC_* / EVENT_TOPIC_* value,
+# and calls kafka-topics.sh --create --if-not-exists once per topic. Argo CD
+# health-checks the Job — Deployments (pushed to sync-wave 10) won't start
+# until this completes.
+#
+# Idempotent: re-applying the manifest re-creates the Job; existing topics are
+# left alone (--if-not-exists). Adding a new topic on main or in a PR overlay
+# is picked up on the next sync.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: atlas-kafka-precreate
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 600
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: kafka-precreate
+          image: apache/kafka:3.7.2
+          envFrom:
+            - configMapRef:
+                name: atlas-env
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+              : "${BOOTSTRAP_SERVERS:?BOOTSTRAP_SERVERS not set in atlas-env}"
+              echo "[$(date -u +%FT%TZ)] precreating topics on $BOOTSTRAP_SERVERS"
+              count=0
+              for var in $(compgen -e | grep -E '^(COMMAND|EVENT)_TOPIC_' || true); do
+                  topic="${!var}"
+                  if [ -z "$topic" ]; then
+                      continue
+                  fi
+                  /opt/kafka/bin/kafka-topics.sh \
+                      --bootstrap-server "$BOOTSTRAP_SERVERS" \
+                      --create --if-not-exists \
+                      --topic "$topic" \
+                      --partitions 1 \
+                      --replication-factor 1 \
+                      >/dev/null
+                  count=$((count+1))
+              done
+              echo "[$(date -u +%FT%TZ)] reconciled $count topics"

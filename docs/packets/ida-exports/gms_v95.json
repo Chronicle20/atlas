@@ -425,6 +425,58 @@
         {"op": "DecodeBuf", "comment": "dateExpire: 8-byte FILETIME (per entry)"},
         {"op": "Decode1", "comment": "sn / MovementAffectingStat (after loop)"}
       ]
+    },
+    "CWvsContext::OnTemporaryStatReset": {
+      "address": "0x9f2ab0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "DecodeBuf", "comment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)"},
+        {"op": "Decode1", "comment": "nChangedStatPoint (only present when IsMovementAffectingStat(mask) is true)", "guard": "IsMovementAffectingStat"}
+      ]
+    },
+    "CUserRemote::OnResetTemporaryStat": {
+      "address": "0x953e40",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"},
+        {"op": "DecodeBuf", "comment": "uFlagTemp: 16-byte UINT128 stat mask (DecodeBuffer 0x10)"}
+      ]
+    },
+    "CUser::OnEffect": {
+      "address": "0x8f9a70",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch (foreign path); absent on self-effect opcode"},
+        {"op": "Decode1", "comment": "nMode — sub-op byte dispatching to 16+ effect branches (case 0..15+); sub-op enum not modeled by pipeline"}
+      ]
+    },
+    "CUserLocal::OnSkillCooltimeSet": {
+      "address": "0x908b90",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "nSkillID (v2 = Decode4)"},
+        {"op": "Decode2", "comment": "usRemainSec cooldown in seconds (Decode2)"}
+      ]
+    },
+    "CUserRemote::OnAvatarModified": {
+      "address": "0x954110",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read by CUserPool::OnUserRemotePacket before dispatch"},
+        {"op": "Decode1", "comment": "v4 flags byte: bit0=avatarLook, bit1=speed, bit2=carryItem"},
+        {"op": "DecodeBuf", "comment": "AvatarLook::Decode — full avatar look data (guard: v4 & 1)", "guard": "v4 & 1"},
+        {"op": "Decode1", "comment": "nSpeed (guard: v4 & 2)", "guard": "v4 & 2"},
+        {"op": "Decode1", "comment": "nCarryItemEffect (guard: v4 & 4)", "guard": "v4 & 4"},
+        {"op": "Decode1", "comment": "bCouple flag"},
+        {"op": "DecodeBuf", "comment": "liCoupleItemSN (8 bytes) + liPairItemSN (8 bytes) + dwPairCharacterId (4 bytes)", "guard": "bCouple"},
+        {"op": "Decode1", "comment": "bFriendship flag"},
+        {"op": "DecodeBuf", "comment": "liFriendshipItemSN (8 bytes) + liFriendshipPairItemSN (8 bytes) + dwFriendCharacterId (4 bytes)", "guard": "bFriendship"},
+        {"op": "Decode1", "comment": "bMarriage flag"},
+        {"op": "Decode4", "comment": "dwMarriageCharacterID (guard: bMarriage)", "guard": "bMarriage"},
+        {"op": "Decode4", "comment": "dwMarriagePairCharacterID (guard: bMarriage)", "guard": "bMarriage"},
+        {"op": "Decode4", "comment": "nWeddingRingID (guard: bMarriage)", "guard": "bMarriage"},
+        {"op": "Decode4", "comment": "nCompletedSetItemID"}
+      ]
     }
   }
 }

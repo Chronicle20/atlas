@@ -317,6 +317,10 @@
         "writer": "CharacterBuffGive"
       },
       {
+        "opCode": "0x20",
+        "writer": "CharacterBuffCancel"
+      },
+      {
         "opCode": "0x23",
         "writer": "CharacterSkillChange"
       },
@@ -349,8 +353,24 @@
         "writer": "CharacterDamage"
       },
       {
+        "opCode": "0xDF",
+        "writer": "CharacterAppearanceUpdate"
+      },
+      {
+        "opCode": "0xE0",
+        "writer": "CharacterEffect"
+      },
+      {
         "opCode": "0xE1",
         "writer": "CharacterBuffGiveForeign"
+      },
+      {
+        "opCode": "0xE2",
+        "writer": "CharacterBuffCancelForeign"
+      },
+      {
+        "opCode": "0x114",
+        "writer": "CharacterSkillCooldown"
       }
     ]
   },

@@ -1,0 +1,29 @@
+{
+  "WriterName": "CharacterExpression",
+  "IDAName": "CUser::OnEmotion",
+  "Address": "0x9f7492",
+  "Variant": "GMS/v87",
+  "BranchDepth": 2,
+  "AtlasFile": "libs/atlas-packet/character/clientbound/expression.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "characterId — read by CUserPool::OnUserRemotePacket dispatcher",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "nEmotion (expression/emote ID) — only field; no duration, no byItemOption in v87",
+      "Verdict": 0,
+      "Note": ""
+    }
+  ],
+  "Verdict": 0
+}

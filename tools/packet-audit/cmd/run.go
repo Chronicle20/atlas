@@ -347,6 +347,48 @@ func candidatesFromFName(fname string) []candidate {
 		// Struct is ItemCancel; handler constant = "CharacterItemCancelHandle".
 		// Client sends opcode 0x4F (79) with Encode4(nItemID).
 		return []candidate{{name: "ItemCancel", dir: csvpkg.DirServerbound}}
+	// --- Character serverbound chairs/expression bucket (Task 13) ---
+	case "CUserLocal::HandleXKeyDown":
+		// Struct is ChairFixed; handler constant = "CharacterChairInteractionHandle".
+		// Client sends opcode 0x2D (45) with Encode2(chairId).
+		// chairId is the seat index from CField::FindSeatByPosition; 0xFFFF (-1) = get-up-from-chair.
+		// SendGetUpFromChairRequest (CWvsContext) is a second codepath for the same opcode
+		// that always sends 0xFFFF; both paths share this struct.
+		return []candidate{{name: "ChairFixed", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendSitOnPortableChairRequest":
+		// Struct is ChairPortable; handler constant = "CharacterChairPortableHandle".
+		// Client sends opcode 0x2E (46) with Encode4(nItemID).
+		return []candidate{{name: "ChairPortable", dir: csvpkg.DirServerbound}}
+	case "CUserLocal::HandleLButtonClk":
+		// Struct is ChalkboardClose; handler constant = "ChalkboardCloseHandle".
+		// Client sends opcode 0x37 (55) with no payload (empty body).
+		// Triggered when CChatBalloon::ADBoardMouseUp returns true (user closes chalkboard).
+		return []candidate{{name: "ChalkboardClose", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendEmotionChange":
+		// Struct is ExpressionRequest; handler constant = "CharacterExpressionHandle".
+		// Client sends opcode 0x38 (56) with Encode4(emotion) + Encode4(nDuration) + Encode1(bByItemOption).
+		// Emotion validated <= 0x17; cooldown 2 s between sends.
+		return []candidate{{name: "ExpressionRequest", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendDropMoneyRequest":
+		// Struct is DropMeso; handler constant = "CharacterDropMesoHandle".
+		// Client sends opcode 0x6A (106) with Encode4(update_time) + Encode4(nAmount).
+		return []candidate{{name: "DropMeso", dir: csvpkg.DirServerbound}}
+	case "CFuncKeyMappedMan::SaveFuncKeyMap":
+		// Struct is KeyMapChange (mode=0); handler constant = "CharacterKeyMapChangeHandle".
+		// Client sends opcode 0x9F (159) with Encode4(0) + Encode4(count) +
+		// for each changed slot: Encode4(keySlotIdx) + FUNCKEY_MAPPED::Encode() (nType:byte + nID:int32).
+		// Per-entry layout = Encode4(keyId) + Encode1(theType) + Encode4(action) = 9 bytes.
+		return []candidate{{name: "KeyMapChange", dir: csvpkg.DirServerbound}}
+	case "CFuncKeyMappedMan::ChangePetConsumeItemID":
+		// Same opcode 0x9F (159) as SaveFuncKeyMap but mode=1.
+		// Client sends Encode4(1) + Encode4(nPetConsumeItemID).
+		// Covered by KeyMapChange (mode != 0 branch); skip to avoid duplicate report.
+		return nil
+	case "CFuncKeyMappedMan::ChangePetConsumeMPItemID":
+		// Same opcode 0x9F (159) as SaveFuncKeyMap but mode=2.
+		// Client sends Encode4(2) + Encode4(nPetConsumeMPItemID).
+		// Covered by KeyMapChange (mode != 0 branch); skip to avoid duplicate report.
+		return nil
 	}
 	return nil
 }

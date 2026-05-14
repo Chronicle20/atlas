@@ -1,0 +1,65 @@
+{
+  "WriterName": "KeyMapChange",
+  "IDAName": "CFuncKeyMappedMan::SaveFuncKeyMap",
+  "Address": "0x568a60",
+  "Variant": "GMS/v95",
+  "BranchDepth": 1,
+  "AtlasFile": "libs/atlas-packet/character/serverbound/key_map_change.go",
+  "Rows": [
+    {
+      "Index": 0,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "mode (0 = key mapping change; 1 = HP-pet item; 2 = MP-pet item)",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 1,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "count (number of changed key slot indices); per-entry: Encode4(keyId) + Encode1(nType) + Encode4(nID) via FUNCKEY_MAPPED::Encode@0x4f6d80",
+      "Verdict": 0,
+      "Note": ""
+    },
+    {
+      "Index": 2,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "[loop] keyId (key slot index; from anChangedIdx array)",
+      "Verdict": 3,
+      "Note": "ack:tool-limitation — loop body; IDA export limited to invariant header (mode+count); FUNCKEY_MAPPED::Decode@0x4f2b20 reads matching 5-byte struct"
+    },
+    {
+      "Index": 3,
+      "AtlasOp": 0,
+      "AtlasKind": 0,
+      "IDAOp": 0,
+      "IDAComment": "[loop] theType (FUNCKEY_MAPPED::nType)",
+      "Verdict": 3,
+      "Note": "ack:tool-limitation — see row 2"
+    },
+    {
+      "Index": 4,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "[loop] action (FUNCKEY_MAPPED::nID)",
+      "Verdict": 3,
+      "Note": "ack:tool-limitation — see row 2"
+    },
+    {
+      "Index": 5,
+      "AtlasOp": 2,
+      "AtlasKind": 0,
+      "IDAOp": 2,
+      "IDAComment": "[mode≠0] itemId (pet-consume item ID; mode=1→HP-pot, mode=2→MP-pot)",
+      "Verdict": 3,
+      "Note": "ack:tool-limitation — mode-branch field; verified via ChangePetConsumeItemID@0x568920 (mode=1) and ChangePetConsumeMPItemID@0x5689c0 (mode=2)"
+    }
+  ],
+  "Verdict": 3
+}

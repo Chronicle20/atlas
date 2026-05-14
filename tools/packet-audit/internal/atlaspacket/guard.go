@@ -28,6 +28,14 @@ func (g *GuardExpr) Eval(c GuardContext) bool { return g.eval(c) }
 // String returns the original source text of the guard.
 func (g *GuardExpr) String() string { return g.text }
 
+// Text returns the canonical string form of this guard expression.
+func (g *GuardExpr) Text() string {
+	if g == nil {
+		return ""
+	}
+	return g.text
+}
+
 // ParseGuard parses a Go expression string into a GuardExpr that can be evaluated
 // against a GuardContext. Supports:
 //   - t.Region() == "X" / != "X"

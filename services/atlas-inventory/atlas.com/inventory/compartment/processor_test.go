@@ -8,6 +8,7 @@ import (
 	"atlas-inventory/kafka/message"
 	compartmentMsg "atlas-inventory/kafka/message/compartment"
 	dropMsg "atlas-inventory/kafka/message/drop"
+	pickupMsg "atlas-inventory/kafka/message/pickup"
 	"context"
 	"encoding/json"
 	"os"
@@ -699,5 +700,107 @@ func TestAttemptItemPickUpInventoryFull(t *testing.T) {
 	}
 	if !sawCancel {
 		t.Fatalf("expected a CANCEL_RESERVATION drop command in the same buffer; got %d drop commands", len(dropCmds))
+	}
+}
+
+// TestAttemptItemPickUpConsumeOnPickup verifies that USE-type items flagged
+// with consumeOnPickup never enter the inventory. Instead the processor must
+// emit an ITEM_CONSUMED_ON_PICKUP command and release the drop reservation
+// via RequestPickUp (not CancelReservation).
+func TestAttemptItemPickUpConsumeOnPickup(t *testing.T) {
+	characterId := uint32(305)
+	templateId := uint32(2022000) // monster-book reward in the USE classification
+
+	l := testLogger()
+	te := testTenant()
+	ctx := tenant.WithContext(context.Background(), te)
+	db := testDatabase(t, l)
+
+	mb := message.NewBuffer()
+
+	dcpi := &dcp.ProcessorImpl{}
+	dcpi.GetByIdFn = func(itemId uint32) (consumable.Model, error) {
+		return consumable.Extract(consumable.RestModel{SlotMax: 100, ConsumeOnPickup: true})
+	}
+
+	ap := asset.NewProcessor(l, ctx, db).WithConsumableProcessor(dcpi)
+	cp := compartment.NewProcessor(l, ctx, db).WithAssetProcessor(ap)
+
+	// Create the USE compartment so the lookup that would normally happen
+	// in AttemptItemPickUp does not blow up if the branch ever falls through.
+	if _, err := cp.Create(mb)(uuid.New(), characterId, inventory.TypeValueUse, 24); err != nil {
+		t.Fatalf("Failed to create compartment: %v", err)
+	}
+
+	// Reset the buffer so we only inspect events from the pickup itself.
+	mb = message.NewBuffer()
+
+	transactionId := uuid.New()
+	if err := cp.AttemptItemPickUp(mb)(transactionId, testFieldModel(), characterId, uint32(43), templateId, uint32(1)); err != nil {
+		t.Fatalf("AttemptItemPickUp returned unexpected error: %v", err)
+	}
+
+	events := mb.GetAll()
+
+	// 1. ITEM_CONSUMED_ON_PICKUP command emitted.
+	pickupCmds := events[pickupMsg.EnvCommandTopic]
+	if len(pickupCmds) == 0 {
+		t.Fatalf("expected an ITEM_CONSUMED_ON_PICKUP command, got none")
+	}
+	var cmd pickupMsg.Command
+	if err := json.Unmarshal(pickupCmds[0].Value, &cmd); err != nil {
+		t.Fatalf("failed to unmarshal pickup command: %v", err)
+	}
+	if cmd.Type != pickupMsg.CommandType {
+		t.Fatalf("pickup command type = %q, want %q", cmd.Type, pickupMsg.CommandType)
+	}
+	if cmd.CharacterId != characterId {
+		t.Fatalf("pickup command characterId = %d, want %d", cmd.CharacterId, characterId)
+	}
+	if cmd.ItemId != templateId {
+		t.Fatalf("pickup command itemId = %d, want %d", cmd.ItemId, templateId)
+	}
+	if cmd.TransactionId != transactionId {
+		t.Fatalf("pickup command transactionId mismatch")
+	}
+	if cmd.TenantId != te.Id() {
+		t.Fatalf("pickup command tenantId = %s, want %s", cmd.TenantId, te.Id())
+	}
+
+	// 2. Drop reservation released via RequestPickUp (not CancelReservation).
+	dropCmds := events[dropMsg.EnvCommandTopic]
+	var sawRequestPickUp, sawCancel bool
+	for _, msg := range dropCmds {
+		var generic dropMsg.Command[json.RawMessage]
+		if err := json.Unmarshal(msg.Value, &generic); err != nil {
+			continue
+		}
+		if generic.Type == dropMsg.CommandTypeRequestPickUp {
+			sawRequestPickUp = true
+		}
+		if generic.Type == dropMsg.CommandTypeCancelReservation {
+			sawCancel = true
+		}
+	}
+	if !sawRequestPickUp {
+		t.Fatalf("expected a REQUEST_PICKUP drop command, got %d drop commands", len(dropCmds))
+	}
+	if sawCancel {
+		t.Fatalf("did not expect a CANCEL_RESERVATION drop command on the consume-on-pickup branch")
+	}
+
+	// 3. No inventory CREATED status for the consumed-on-pickup item.
+	statusMsgs := events[compartmentMsg.EnvEventTopicStatus]
+	for _, msg := range statusMsgs {
+		var ev compartmentMsg.StatusEvent[json.RawMessage]
+		if err := json.Unmarshal(msg.Value, &ev); err != nil {
+			continue
+		}
+		// The Create() call above legitimately produced one CREATED event for the
+		// compartment itself; that buffer was already drained. Any CREATED event
+		// in this buffer would indicate a stray inventory mutation.
+		if ev.Type == compartmentMsg.StatusEventTypeCreated {
+			t.Fatalf("unexpected CREATED status event on consume-on-pickup path")
+		}
 	}
 }

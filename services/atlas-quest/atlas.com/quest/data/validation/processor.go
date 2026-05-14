@@ -94,6 +94,17 @@ func buildStartConditions(questDef dataquest.RestModel) []ConditionInput {
 		})
 	}
 
+	// Monster book unique-card-count requirement (WZ `mbmin`). Quests like
+	// "Monster Card Collector" gate progression on the player's monster book
+	// total unique cards via this field.
+	if req.MonsterBookCountMin > 0 {
+		conditions = append(conditions, ConditionInput{
+			Type:     MonsterBookCountCondition,
+			Operator: ">=",
+			Value:    int(req.MonsterBookCountMin),
+		})
+	}
+
 	// Meso requirements
 	if req.MesoMin > 0 {
 		conditions = append(conditions, ConditionInput{
@@ -205,10 +216,11 @@ func (p *ProcessorImpl) ValidateStartRequirements(characterId uint32, questDef d
 	return false, result.GetFailedConditions(), nil
 }
 
-func (p *ProcessorImpl) ValidateEndRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
-	var conditions []ConditionInput
-
+// buildEndConditions translates a quest definition's end requirements into
+// the wire-format conditions submitted to query-aggregator. Pure helper; no IO.
+func buildEndConditions(questDef dataquest.RestModel) []ConditionInput {
 	req := questDef.EndRequirements
+	var conditions []ConditionInput
 
 	// Item requirements for completion
 	for _, item := range req.Items {
@@ -239,6 +251,24 @@ func (p *ProcessorImpl) ValidateEndRequirements(characterId uint32, questDef dat
 			Value:    int(req.MesoMin),
 		})
 	}
+
+	// Monster book unique-card-count requirement (WZ `mbmin`). Some quests gate
+	// completion (not just acceptance) on the player's collected card total —
+	// emit the same condition shape on the end-requirements path for parity
+	// with buildStartConditions.
+	if req.MonsterBookCountMin > 0 {
+		conditions = append(conditions, ConditionInput{
+			Type:     MonsterBookCountCondition,
+			Operator: ">=",
+			Value:    int(req.MonsterBookCountMin),
+		})
+	}
+
+	return conditions
+}
+
+func (p *ProcessorImpl) ValidateEndRequirements(characterId uint32, questDef dataquest.RestModel) (bool, []string, error) {
+	conditions := buildEndConditions(questDef)
 
 	// If no conditions, validation passes
 	if len(conditions) == 0 {

@@ -78,3 +78,30 @@ func TestRegistryRegistersCharacterSubStructs(t *testing.T) {
 		}
 	}
 }
+
+func TestRegistryRegistersMovementElements(t *testing.T) {
+	_, thisFile, _, _ := runtime.Caller(0)
+	root := filepath.Join(filepath.Dir(thisFile), "..", "..", "..", "..", "libs", "atlas-packet")
+	reg, err := NewTypeRegistry(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Top-level wrapper.
+	if !reg.HasType("Movement") {
+		t.Fatal("registry missing Movement")
+	}
+	// Element sub-types — each has its own Encode method.
+	for _, name := range []string{
+		"Element",
+		"NormalElement",
+		"TeleportElement",
+		"StartFallDownElement",
+		"FlyingBlockElement",
+		"JumpElement",
+		"StatChangeElement",
+	} {
+		if !reg.HasType(name) {
+			t.Errorf("registry missing movement element type %s", name)
+		}
+	}
+}

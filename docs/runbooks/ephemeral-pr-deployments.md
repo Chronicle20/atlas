@@ -25,6 +25,13 @@ The `atlas-canonical` bucket is created once and re-populated whenever the
 canonical WZ revision changes (monthly at most). Anonymous-read policy on
 the bucket means the per-PR init container needs no credentials.
 
+Install the MinIO client (`mc`) first if you don't have it:
+<https://min.io/download> (or `brew install minio/stable/mc` on macOS).
+
+Run the block below as a single script — the `trap` cleans up the
+port-forward only when the shell that set it exits, so copy-pasting line
+by line into an interactive shell will leak the background process.
+
 ```sh
 # Port-forward locally so `mc` can talk to the in-cluster MinIO.
 kubectl port-forward -n minio svc/minio 9000:9000 &
@@ -32,9 +39,10 @@ PF_PID=$!
 trap 'kill $PF_PID 2>/dev/null' EXIT
 
 # Set up the mc alias using the root credentials from minio-root-creds.
-USER=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_USER}' | base64 -d)
-PASS=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_PASSWORD}' | base64 -d)
-mc alias set bee "http://localhost:9000" "$USER" "$PASS"
+# (MINIO_USER instead of USER to avoid clobbering the shell's $USER.)
+MINIO_USER=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_USER}' | base64 -d)
+MINIO_PASS=$(kubectl -n minio get secret minio-root-creds -o jsonpath='{.data.MINIO_ROOT_PASSWORD}' | base64 -d)
+mc alias set bee "http://localhost:9000" "$MINIO_USER" "$MINIO_PASS"
 
 # First time only: create the bucket and set anonymous-read.
 mc mb --ignore-existing bee/atlas-canonical
@@ -43,6 +51,10 @@ mc anonymous set download bee/atlas-canonical
 # Upload (or re-upload) the canonical zip.
 mc cp /path/to/atlas.zip bee/atlas-canonical/atlas.zip
 ```
+
+If the bootstrap Job later fails with `curl: (22) The requested URL
+returned error: 404`, the bucket exists but the `atlas.zip` object is
+missing — re-run the `mc cp` step.
 
 The atlas-pr-bootstrap Job's init container `fetch-wz-canonical` runs:
 

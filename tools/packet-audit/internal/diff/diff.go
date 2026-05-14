@@ -129,6 +129,11 @@ func FlattenWithRegistry(calls []atlaspacket.Call, ctx atlaspacket.GuardContext,
 	return flattenWithRegistryGuarded(calls, ctx, reg, map[string]bool{})
 }
 
+// flattenWithRegistryGuarded is the internal recursion helper for FlattenWithRegistry.
+// The visited set tracks types currently on the recursion stack so self-referential
+// KindRecurse chains (e.g. Movement → Element → Movement via field-type resolution)
+// don't infinite-loop. Marks are added on entry and removed on exit so DAG re-visits
+// across separate branches still expand correctly.
 func flattenWithRegistryGuarded(calls []atlaspacket.Call, ctx atlaspacket.GuardContext, reg *atlaspacket.TypeRegistry, visited map[string]bool) []atlaspacket.Call {
 	var out []atlaspacket.Call
 	for _, c := range calls {

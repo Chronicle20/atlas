@@ -2207,6 +2207,136 @@
           "comment": "nPetConsumeMPItemID (MP auto-pot item ID)"
         }
       ]
+    },
+    "CWvsContext::SendAbilityUpRequest#DistributeAp": {
+      "address": "0x9f61c0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwFlag (stat flag to increment)"
+        }
+      ]
+    },
+    "CWvsContext::SendAbilityUpRequest#AutoDistributeAp": {
+      "address": "0x9f63b0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nValue (count of stat pairs = aStatUp->a[-1].nValue)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "dwStatFlag (stat flag for each pair)",
+          "guard": "loop nValue"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nValue (amount for each stat pair)",
+          "guard": "loop nValue"
+        }
+      ]
+    },
+    "CWvsContext::SendSkillUpRequest": {
+      "address": "0x9f2e90",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "Encode4",
+          "comment": "update_time (get_update_time())"
+        },
+        {
+          "op": "Encode4",
+          "comment": "nSkillID (skill to level up)"
+        }
+      ]
+    },
+    "CLogin::SendCheckDuplicateIDPacket": {
+      "address": "0x5d5690",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sCharName (character name to check)"
+        }
+      ]
+    },
+    "CLogin::SendNewCharPacket": {
+      "address": "0x5d7bd0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "name (checked character name)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "m_nCurSelectedRace (job/race index)"
+        },
+        {
+          "op": "Encode2",
+          "comment": "m_nCurSelectedSubJob (sub-job index)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(0) face"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(1) hair"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(2) hairColor"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(3) skinColor"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(4) top"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(5) bottom"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(6) shoes"
+        },
+        {
+          "op": "Encode4",
+          "comment": "GetSelectedAL(7) weapon"
+        },
+        {
+          "op": "Encode1",
+          "comment": "m_nGender"
+        }
+      ]
+    },
+    "CLogin::SendDeleteCharPacket": {
+      "address": "0x5d53a0",
+      "direction": "serverbound",
+      "calls": [
+        {
+          "op": "EncodeStr",
+          "comment": "sSPW (PIC/soft-keyboard password; v95 always uses PIC path, m_bLoginOpt==1)"
+        },
+        {
+          "op": "Encode4",
+          "comment": "characterStat.dwCharacterID"
+        }
+      ]
     }
   }
 }

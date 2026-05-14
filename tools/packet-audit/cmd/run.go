@@ -389,6 +389,39 @@ func candidatesFromFName(fname string) []candidate {
 		// Client sends Encode4(2) + Encode4(nPetConsumeMPItemID).
 		// Covered by KeyMapChange (mode != 0 branch); skip to avoid duplicate report.
 		return nil
+	// --- Character serverbound lifecycle bucket (Task 14) ---
+	case "CWvsContext::SendAbilityUpRequest#DistributeAp":
+		// Struct is DistributeAp; handler constant = "CharacterDistributeApHandle".
+		// Client sends opcode 0x62 (98) with Encode4(update_time) + Encode4(dwFlag).
+		// IDA: CWvsContext::SendAbilityUpRequest(DWORD)@0x9f61c0.
+		return []candidate{{name: "DistributeAp", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendAbilityUpRequest#AutoDistributeAp":
+		// Struct is AutoDistributeAp; handler constant = "CharacterAutoDistributeApHandle".
+		// Client sends opcode 0x63 (99) with Encode4(update_time) + Encode4(count) +
+		// [Encode4(flag) + Encode4(value)] * count.
+		// IDA: CWvsContext::SendAbilityUpRequest(ZArray<StatPair>*)@0x9f63b0.
+		return []candidate{{name: "AutoDistributeAp", dir: csvpkg.DirServerbound}}
+	case "CWvsContext::SendSkillUpRequest":
+		// Struct is DistributeSp; handler constant = "CharacterDistributeSpHandle".
+		// Client sends opcode 0x66 (102) with Encode4(update_time) + Encode4(nSkillID).
+		// IDA: CWvsContext::SendSkillUpRequest@0x9f2e90.
+		return []candidate{{name: "DistributeSp", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendCheckDuplicateIDPacket":
+		// Struct is CheckName; handler constant = "CharacterCheckNameHandle".
+		// Client sends opcode 0x15 (21) with EncodeStr(name).
+		// IDA: CLogin::SendCheckDuplicateIDPacket@0x5d5690.
+		return []candidate{{name: "CheckName", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendNewCharPacket":
+		// Struct is CreateCharacter; handler constant = "CreateCharacterHandle".
+		// Client sends opcode 0x16 (22) with EncodeStr(name)+Encode4(race)+Encode2(subJob)+
+		// Encode4×8(face/hair/hairColor/skinColor/top/bot/shoes/weapon)+Encode1(gender).
+		// IDA: CLogin::SendNewCharPacket@0x5d7bd0 (normal path; bCharSale=false).
+		return []candidate{{name: "CreateCharacter", dir: csvpkg.DirServerbound}}
+	case "CLogin::SendDeleteCharPacket":
+		// Struct is DeleteCharacter; handler constant = "DeleteCharacterHandle".
+		// Client sends opcode 0x18 (24) with EncodeStr(pic)+Encode4(charId) (v95: PIC path).
+		// IDA: CLogin::SendDeleteCharPacket@0x5d53a0 (m_bLoginOpt==1 branch).
+		return []candidate{{name: "DeleteCharacter", dir: csvpkg.DirServerbound}}
 	}
 	return nil
 }

@@ -34,6 +34,7 @@ func NewCharacterListEntry(statistics CharacterStatistics, avatar Avatar, viewAl
 }
 
 func (m CharacterListEntry) Statistics() CharacterStatistics { return m.statistics }
+func (m CharacterListEntry) Avatar() Avatar                  { return m.avatar }
 func (m CharacterListEntry) ViewAll() bool                   { return m.viewAll }
 func (m CharacterListEntry) Gm() bool                       { return m.gm }
 func (m CharacterListEntry) Rank() uint32                    { return m.rank }

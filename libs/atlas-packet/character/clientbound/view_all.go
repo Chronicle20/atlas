@@ -95,6 +95,9 @@ func (m *CharacterViewAllCharacters) Decode(l logrus.FieldLogger, ctx context.Co
 		count := r.ReadByte()
 		m.characters = make([]model.CharacterListEntry, count)
 		for i := byte(0); i < count; i++ {
+			// Pre-initialize with viewAll=true so CharacterListEntry.Decode skips
+			// the family/viewAll placeholder byte (not present in VIEW_ALL_CHAR packets).
+			m.characters[i] = model.NewCharacterListEntry(model.CharacterStatistics{}, model.Avatar{}, true, false, 0, 0, 0, 0)
 			m.characters[i].Decode(l, ctx)(r, options)
 		}
 		if t.Region() == "GMS" && t.MajorVersion() > 87 {

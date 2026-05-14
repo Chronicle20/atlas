@@ -4,8 +4,8 @@
 # 'cleanup-failed' state).
 #
 # Required env:
-#   ATLAS_ENV         — env hash
-#   DB_HOST/USER/PASS — Postgres credentials
+#   ATLAS_ENV              — env hash
+#   DB_HOST/PORT/USER/PASS — Postgres connection details
 #   ATLAS_DB_NAMES    — space-separated list of base DB names
 #   BOOTSTRAP_SERVERS — kafka.home:9093
 #   REDIS_URL         — redis.home:6379
@@ -25,7 +25,7 @@ set -euo pipefail
 DB_USER="$(printf '%s' "${DB_USER:-}" | tr -d ' \r\n')"
 DB_PASSWORD="$(printf '%s' "${DB_PASSWORD:-}" | tr -d ' \r\n')"
 
-require_env ATLAS_ENV DB_HOST DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
+require_env ATLAS_ENV DB_HOST DB_PORT DB_USER DB_PASSWORD ATLAS_DB_NAMES BOOTSTRAP_SERVERS REDIS_URL PR_NUMBER
 
 ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 # ATLAS_DB_NAMES is space-separated (matches kustomization.yaml's atlas-db-names
@@ -34,7 +34,7 @@ ATLAS_STEP=drop-dbs log info "dropping per-env Postgres databases"
 read -ra dbs <<< "$ATLAS_DB_NAMES"
 for db in "${dbs[@]}"; do
     full="${db}-${ATLAS_ENV}"
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -U "$DB_USER" -d postgres \
+    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres \
         -c "DROP DATABASE IF EXISTS \"$full\";" || {
             log error "failed to drop $full"
             exit 1

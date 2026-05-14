@@ -21,6 +21,10 @@ metadata:
 spec:
   backoffLimit: 3
   ttlSecondsAfterFinished: 600
+  # Cap each pod's wait for missing ConfigMaps/Secrets so a kustomize render
+  # bug or RBAC denial can't wedge the Job indefinitely. 300s is enough headroom
+  # for normal sync-wave-0 convergence (typically <10s).
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: OnFailure
@@ -49,7 +53,9 @@ spec:
             - /bin/sh
             - -c
             - |
-              set -e
+              set -euo pipefail
+              : "${ATLAS_DB_NAMES:?ATLAS_DB_NAMES not set in atlas-db-names ConfigMap}"
+              : "${ATLAS_ENV:?ATLAS_ENV not set in atlas-env-tokens ConfigMap}"
               # Phase 0 Task 0.1 finding: db-credentials values carry literal
               # trailing whitespace (space + CR + LF). Strip before passing to
               # psql, otherwise auth fails with: password authentication failed

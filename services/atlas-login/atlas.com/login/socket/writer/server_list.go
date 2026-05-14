@@ -20,7 +20,7 @@ func ServerListEntryBody(worldId world2.Id, worldName string, state world.State,
 			for i, x := range channelLoad {
 				cls[i] = packetmodel.NewChannelLoad(x.ChannelId(), x.Capacity())
 			}
-			return loginpkt.NewServerListEntry(worldId, worldName, byte(state), eventMessage, cls).Encode(l, ctx)(options)
+			return loginpkt.NewServerListEntry(worldId, worldName, byte(state), eventMessage, cls, nil).Encode(l, ctx)(options)
 		}
 	}
 }

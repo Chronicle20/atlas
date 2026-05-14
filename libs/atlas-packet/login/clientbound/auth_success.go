@@ -48,7 +48,11 @@ func (m AuthSuccess) Encode(l logrus.FieldLogger, ctx context.Context) func(opti
 		w.WriteInt(m.accountId)
 		w.WriteByte(m.gender)
 		w.WriteBool(false) // GM
-		w.WriteByte(0)     // admin byte
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			w.WriteShort(0) // subGradeCode + testerAccount (packed int16, v95+)
+		} else {
+			w.WriteByte(0) // admin byte
+		}
 
 		if t.Region() == "GMS" {
 			if t.MajorVersion() > 12 {
@@ -106,7 +110,11 @@ func (m *AuthSuccess) Decode(l logrus.FieldLogger, ctx context.Context) func(r *
 		m.accountId = r.ReadUint32()
 		m.gender = r.ReadByte()
 		_ = r.ReadBool() // GM
-		_ = r.ReadByte() // admin byte
+		if t.Region() == "GMS" && t.MajorVersion() >= 95 {
+			_ = r.ReadUint16() // subGradeCode + testerAccount (packed int16, v95+)
+		} else {
+			_ = r.ReadByte() // admin byte
+		}
 
 		if t.Region() == "GMS" {
 			if t.MajorVersion() > 12 {

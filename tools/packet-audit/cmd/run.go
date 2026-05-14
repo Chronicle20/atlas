@@ -130,6 +130,25 @@ type candidate struct {
 // likely atlas-packet writer/handler names.
 func candidatesFromFName(fname string) []candidate {
 	switch fname {
+	// --- Character domain ---
+	case "CUserPool::OnUserEnterField":
+		return []candidate{{name: "CharacterSpawn", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnAttack":
+		// The atlas struct is Attack (shared for all 4 attack types); analyse
+		// under CharacterAttackMelee so the report file has a descriptive name.
+		return []candidate{{name: "Attack", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnHit":
+		return []candidate{{name: "CharacterDamage", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnTemporaryStatSet":
+		// Atlas struct is BuffGive (self-buff); foreign variant is BuffGiveForeign.
+		return []candidate{{name: "BuffGive", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnSetTemporaryStat":
+		return []candidate{{name: "BuffGiveForeign", dir: csvpkg.DirClientbound}}
+	case "CUserRemote::OnMove":
+		return []candidate{{name: "CharacterMovement", dir: csvpkg.DirClientbound}}
+	case "CWvsContext::OnChangeSkillRecordResult":
+		return []candidate{{name: "CharacterSkillChange", dir: csvpkg.DirClientbound}}
+	// --- Login domain ---
 	case "CLogin::OnCheckPasswordResult":
 		return []candidate{{name: "AuthSuccess", dir: csvpkg.DirClientbound}}
 	case "CLogin::OnSelectWorldResult":

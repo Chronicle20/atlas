@@ -336,6 +336,95 @@
       "calls": [
         {"op": "Encode1", "comment": "render flag (literal 1u in MakeVACDlg; ResetVAC sends 0; opcode 0x0F)"}
       ]
+    },
+    "CUserPool::OnUserEnterField": {
+      "address": "0x94db40",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId (dwCharacterID)"}
+      ]
+    },
+    "CUserPool::OnUserRemotePacket": {
+      "address": "0x94b390",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode4", "comment": "characterId — read before dispatching to OnAttack/OnHit/OnMove/etc."}
+      ]
+    },
+    "CUserRemote::OnAttack": {
+      "address": "0x95a670",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "packed: high nibble=nDamagePerMob, low nibble=hits"},
+        {"op": "Decode1", "comment": "level (m_nLevel)"},
+        {"op": "Decode1", "comment": "nSLV (skill level; 0 means no skill)"},
+        {"op": "Decode4", "comment": "skillId (only if nSLV != 0)"},
+        {"op": "Decode1", "comment": "passive SLV byte (only if skillId==3211006 and SLV!=0)"},
+        {"op": "Decode4", "comment": "passive skill ID (only if skillId==3211006 and passive SLV!=0)"},
+        {"op": "Decode1", "comment": "option / bSerialAttack (& 0x20)"},
+        {"op": "Decode2", "comment": "packed: bit15=bLeft, low15=nAction (attackAction)"},
+        {"op": "Decode1", "comment": "nActionSpeed (only if nAction <= 0x110)"},
+        {"op": "Decode1", "comment": "nMastery (only if nAction <= 0x110)"},
+        {"op": "Decode4", "comment": "nBulletItemID (only if nAction <= 0x110)"},
+        {"op": "Decode4", "comment": "monsterId per damage target (loop nDamagePerMob times)"},
+        {"op": "Decode1", "comment": "hitAction per target (if monsterId != 0)"},
+        {"op": "Decode1", "comment": "damage count (only if meso explosion skill 4211006, per target)"},
+        {"op": "Decode4", "comment": "damage value per hit (loop nHits times, or damage-count for meso explosion)"},
+        {"op": "Decode2", "comment": "ptBallStart.x (only if nType==212 ranged)"},
+        {"op": "Decode2", "comment": "ptBallStart.y (only if nType==212 ranged)"},
+        {"op": "Decode4", "comment": "tKeyDown (only for keydown skills: 2121001/2221001/2321001/22121000/22151001)"}
+      ]
+    },
+    "CUserRemote::OnHit": {
+      "address": "0x954c50",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "nAttackIdx (signed; -1=miss/magic, -2=obstacle, >=0=mob attack index)"},
+        {"op": "Decode4", "comment": "nDamage (primary damage or miss sentinel)"},
+        {"op": "Decode4", "comment": "ptHit=monsterTemplateId (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "bLeft (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "v20: power guard flag (only if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "bPowerGuard% (only if v20 != 0)"},
+        {"op": "Decode4", "comment": "mobId for power guard (only if v20 != 0)"},
+        {"op": "Decode1", "comment": "stance source (only if mob found for power guard)"},
+        {"op": "Decode2", "comment": "power guard hit x (only if mob found)"},
+        {"op": "Decode2", "comment": "power guard hit y (only if mob found)"},
+        {"op": "Decode1", "comment": "v4: stance action (always, after power guard block, if nAttackIdx > -2)"},
+        {"op": "Decode1", "comment": "v33: stance flags, bit0=bStance, bit1=bStanceSkillOverride (if nAttackIdx > -2)"},
+        {"op": "Decode4", "comment": "nDamage repeated (always)"},
+        {"op": "Decode4", "comment": "misdirection skill ID (only if nDamage == -1)"}
+      ]
+    },
+    "CWvsContext::OnTemporaryStatSet": {
+      "address": "0xa02fc0",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode2", "comment": "tDelay (after SecondaryStat::DecodeForLocal delegate)"},
+        {"op": "Decode1", "comment": "MovementAffectingStat byte (conditional: only if SecondaryStat::IsMovementAffectingStat)"}
+      ]
+    },
+    "CUserRemote::OnSetTemporaryStat": {
+      "address": "0xb13200",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CUserRemote::OnMove": {
+      "address": "0x948a80",
+      "direction": "clientbound",
+      "calls": []
+    },
+    "CWvsContext::OnChangeSkillRecordResult": {
+      "address": "0x9f5f30",
+      "direction": "clientbound",
+      "calls": [
+        {"op": "Decode1", "comment": "exclRequestSent flag (bExclRequestSent)"},
+        {"op": "Decode2", "comment": "count of skill entries"},
+        {"op": "Decode4", "comment": "nSkillID (per entry, loop count times)"},
+        {"op": "Decode4", "comment": "nLevel (nInfo, per entry)"},
+        {"op": "Decode4", "comment": "nMasterLevel (per entry, for skills needing master level)"},
+        {"op": "DecodeBuf", "comment": "dateExpire: 8-byte FILETIME (per entry)"},
+        {"op": "Decode1", "comment": "sn / MovementAffectingStat (after loop)"}
+      ]
     }
   }
 }

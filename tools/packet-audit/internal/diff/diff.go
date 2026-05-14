@@ -124,19 +124,32 @@ func Flatten(calls []atlaspacket.Call, ctx atlaspacket.GuardContext) []atlaspack
 // FlattenWithRegistry is like Flatten but also inlines KindRecurse calls by
 // looking up the sub-struct's pre-analyzed Call list in reg. When reg is nil
 // or a type is unknown, KindRecurse entries pass through unchanged (legacy path).
+// Cycle detection prevents infinite recursion when a type transitively refers to itself.
 func FlattenWithRegistry(calls []atlaspacket.Call, ctx atlaspacket.GuardContext, reg *atlaspacket.TypeRegistry) []atlaspacket.Call {
+	return flattenWithRegistryGuarded(calls, ctx, reg, map[string]bool{})
+}
+
+func flattenWithRegistryGuarded(calls []atlaspacket.Call, ctx atlaspacket.GuardContext, reg *atlaspacket.TypeRegistry, visited map[string]bool) []atlaspacket.Call {
 	var out []atlaspacket.Call
 	for _, c := range calls {
 		if c.Guard != nil && !c.Guard.Eval(ctx) {
 			continue
 		}
 		if c.Kind == atlaspacket.KindRepeat {
-			out = append(out, FlattenWithRegistry(c.Body, ctx, reg)...)
+			out = append(out, flattenWithRegistryGuarded(c.Body, ctx, reg, visited)...)
 			continue
 		}
 		if c.Kind == atlaspacket.KindRecurse && reg != nil {
+			if visited[c.RecurseType] {
+				// Cycle detected — emit the KindRecurse call unchanged so the
+				// diff engine surfaces it as a deferred entry rather than looping.
+				out = append(out, c)
+				continue
+			}
 			if sub, ok := reg.Calls(c.RecurseType); ok {
-				out = append(out, FlattenWithRegistry(sub, ctx, reg)...)
+				visited[c.RecurseType] = true
+				out = append(out, flattenWithRegistryGuarded(sub, ctx, reg, visited)...)
+				delete(visited, c.RecurseType)
 				continue
 			}
 		}

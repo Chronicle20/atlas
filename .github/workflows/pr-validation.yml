@@ -3,6 +3,7 @@ name: PR Validation
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, labeled]
   workflow_dispatch:
     inputs:
       force-all:

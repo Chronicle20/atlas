@@ -186,6 +186,9 @@ func (cc *callCtx) appendCall(c Call) {
 	*cc.out = append(*cc.out, c)
 }
 
+// pushSuffixGuard appends g to this scope's suffix-guard accumulator, used to
+// taint sibling calls after an if-block whose body or else terminates with return.
+// Nil guards are dropped — they would AND-out into the existing stack as no-ops.
 func (cc *callCtx) pushSuffixGuard(g *GuardExpr) {
 	if g == nil {
 		return
@@ -193,6 +196,9 @@ func (cc *callCtx) pushSuffixGuard(g *GuardExpr) {
 	cc.suffixGuards = append(cc.suffixGuards, g)
 }
 
+// conjoin returns the active combined guard for the current call site, AND-ing the
+// explicit if-stack with any suffix guards accumulated from preceding if-returns
+// at this scope. Delegates to the package-level conjoin once the slices are merged.
 func (cc *callCtx) conjoin() *GuardExpr {
 	// Combine explicit stack and any accumulated suffix guards.
 	if len(cc.suffixGuards) == 0 {
@@ -260,7 +266,7 @@ func (cc *callCtx) walk(node ast.Node) {
 		switch {
 		case thenReturns && elseReturns:
 			// Both branches return — unreachable suffix. Mark and skip.
-			cc.unreachableSuffix = true
+			cc.unreachableSuffix = true // unreachableSuffix is read by the enclosing *ast.BlockStmt loop to skip dead code following a both-branch-return if. See the BlockStmt arm.
 		case thenReturns:
 			cc.pushSuffixGuard(negate(g))
 		case elseReturns && n.Else != nil:
@@ -274,7 +280,7 @@ func (cc *callCtx) walk(node ast.Node) {
 		cc.unreachableSuffix = false
 		for _, s := range n.List {
 			if cc.unreachableSuffix {
-				// Optionally emit a sentinel call for reviewer-visible reporting; for now skip.
+				// Dead code after both branches returned; skip remaining statements in this block.
 				break
 			}
 			cc.walk(s)

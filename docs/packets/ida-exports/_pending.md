@@ -324,6 +324,12 @@ that JMS v185 matched GMS v95 behaviour. JMS v185 IDA confirms it uses the older
 | `CUser::OnEmotion@0x9f636b` duration field | JMS reads Decode4(tDuration) — confirmed. Atlas now writes duration for JMS (without byItemOption). | `CharacterExpression` | Fixed — see resolved table above. |
 | `CLogin::OnCheckPasswordResult@0x66e79f` | JMS v185 success path decodes differently: `Decode4(accountId)+Decode1(gender)+Decode1(gradeCode)+Decode1(combined)+2×DecodeStr(nexon IDs)+5×Decode1+DecodeBuffer(8)+DecodeStr`. Fundamentally different structure from GMS v95. Atlas server only needs the pre-shared accountId for login; login domain is tracked separately in task-027. | `AuthSuccess` (login domain) | Out of scope for character domain audit. Login domain audit (task-027) tracks this separately. |
 
+### Deferred / known limitations — JMS v185
+
+| Issue | Details |
+|---|---|
+| ExpressionRequest (sb) JMS semantic mismatch | JMS opcode 0x2B carries only charId; atlas's `Decode` reads it as `emote`. Re-broadcast CharacterExpression carries the JMS charId in the expression slot. Pre-existing on `main` — not introduced by task-028. Follow-up: dedicated JMS-aware decoder. |
+
 ### Hard-cap gate check (Task 17)
 
 After Task 17 changes, no encoder/decoder in the character domain contains more than **2 nested** gates. The three fixed encoders each have flat sequential gates — `CharacterExpression` now has one `if GMS>87` + one `else if JMS`, `ItemUpgrade` has a single `if GMS>87`, `Move` has three sequential `if GMS>83` + one `if GMS>28`. No nested gates. Hard cap not triggered.

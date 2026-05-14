@@ -20,7 +20,7 @@ const CharacterExpressionWriter = "CharacterExpression"
 //
 //	Decode4  characterId   — read by CUserPool::OnUserRemotePacket dispatcher
 //	Decode4  expression    — emotion/expression ID
-//	Decode4  duration      — display duration in ms [GMS>87 only]
+//	Decode4  duration      — display duration in ms [GMS>87 or JMS]
 //	Decode1  byItemOption  — item-option emotion flag [GMS>87 only]
 //
 // IDA v83: case 0xC1 in CUserPool::OnUserRemotePacket reads only Decode4(expressionId)
